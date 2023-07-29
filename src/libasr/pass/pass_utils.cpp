@@ -300,24 +300,23 @@ namespace LCompilers {
 
     ASR::expr_t* create_var(int counter, std::string suffix, const Location& loc,
                             ASR::ttype_t* var_type, Allocator& al, SymbolTable*& current_scope) {
-        std::string str_name = current_scope->get_unique_name("__libasr__created__var__" + std::to_string(counter) + "_" + suffix);
+        ASR::expr_t* idx_var = nullptr;
+        std::string str_name = "__libasr__created__var__" + std::to_string(counter) + "_" + suffix;
         char* idx_var_name = s2c(al, str_name);
-        // if( current_scope->get_symbol(std::string(idx_var_name)) ) {
-            // str_name = current_scope->get_unique_name(str_name);
-        // }
-        // str_name = "__libasr__created__var__" + std::to_string(counter) + "_" + suffix;
-// std::cout << str_name << "\n";
-//             ASR::symbol_t* idx_sym = current_scope->get_symbol(std::string(idx_var_name));
-//             if (ASRUtils::check_equal_type(var_type, ASR::down_cast<ASR::Variable_t>(idx_sym)->m_type)) {
-// std::cout << "Why?\n";
-//                 return ASRUtils::EXPR(ASR::make_Var_t(al, loc, idx_sym));
-//             }
-        ASR::asr_t* idx_sym = ASR::make_Variable_t(al, loc, current_scope, idx_var_name, nullptr, 0,
-                                                ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
-                                                var_type, nullptr, ASR::abiType::Source, ASR::accessType::Public,
-                                                ASR::presenceType::Required, false);
-        current_scope->add_symbol(std::string(idx_var_name), ASR::down_cast<ASR::symbol_t>(idx_sym));
-        return ASRUtils::EXPR(ASR::make_Var_t(al, loc, ASR::down_cast<ASR::symbol_t>(idx_sym)));
+
+        if( current_scope->get_symbol(std::string(idx_var_name)) == nullptr ) {
+            ASR::asr_t* idx_sym = ASR::make_Variable_t(al, loc, current_scope, idx_var_name, nullptr, 0,
+                                                    ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
+                                                    var_type, nullptr, ASR::abiType::Source, ASR::accessType::Public,
+                                                    ASR::presenceType::Required, false);
+            current_scope->add_symbol(std::string(idx_var_name), ASR::down_cast<ASR::symbol_t>(idx_sym));
+            idx_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, ASR::down_cast<ASR::symbol_t>(idx_sym)));
+        } else {
+            ASR::symbol_t* idx_sym = current_scope->get_symbol(std::string(idx_var_name));
+            idx_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, idx_sym));
+        }
+
+        return idx_var;
     }
 
     ASR::expr_t* create_var(int counter, std::string suffix, const Location& loc,

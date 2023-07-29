@@ -718,7 +718,6 @@ public:
                  IntrinsicSignature({"mask"}, 1, 2)}},
         {"maxval", {IntrinsicSignature({"dim", "mask"}, 1, 3),
                 IntrinsicSignature({"mask"}, 1, 2)}},
-        // Problem with the argument being nullptr
         {"maxloc", {IntrinsicSignature({"dim", "mask", "kind", "back"}, 1, 5)}},
         {"minval", {IntrinsicSignature({"dim", "mask"}, 1, 3),
                 IntrinsicSignature({"mask"}, 1, 2)}},
@@ -3897,65 +3896,6 @@ public:
                                      vector, type, nullptr);
     }
 
-    ASR::asr_t* create_ArrayMaxloc(const AST::FuncCallOrArray_t& x) {
-        ASR::expr_t *array, *dim, *mask, *kind, *back;
-        array = dim = mask = kind = back = nullptr;
-
-        Vec<ASR::expr_t*> args_0, args_1;
-        std::vector<std::string> kwarg_names_0 = {"dim", "mask", "kind", "back"};
-        std::vector<std::string> kwarg_names_1 = {"mask", "kind", "back"};
-        // Try syntax MAXLOC(ARRAY, DIM [, MASK] [,KIND] [,BACK])
-        bool syntax_0_matched = handle_intrinsic_node_args(x, args_0, kwarg_names_0, 2, 5, "maxloc", false);
-        // Try syntax MAXLOC(ARRAY [, MASK] [,KIND] [,BACK])
-        bool syntax_1_matched = handle_intrinsic_node_args(x, args_1, kwarg_names_1, 1, 4, "maxloc", false);
-
-        if( !syntax_0_matched && !syntax_1_matched ) {
-            throw SemanticError("maxloc can only be called by either "
-                                "MAXLOC(ARRAY, DIM [, MASK] [,KIND] [,BACK])"
-                                " or MAXLOC(ARRAY [, MASK] [,KIND] [,BACK]) syntax.",
-                                x.base.base.loc);
-        }
-
-        if( syntax_0_matched ) {
-            array = args_0[0], dim = args_0[1], mask = args_0[2], kind = args_0[3], back = args_0[4];
-        } else {
-            array = args_1[0], mask = args_1[1], kind = args_1[2], back = args_1[3];
-        }
-
-        ASR::ttype_t *type = nullptr;
-        Vec<ASR::dimension_t> new_dims;
-        ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-        if( !dim ) {
-            new_dims.reserve(al, 1);
-            ASR::dimension_t new_dim;
-            new_dim.loc = x.base.base.loc;
-            new_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
-            new_dim.m_length = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(al, x.base.base.loc,
-                                    array, nullptr, int32_type, nullptr));
-            new_dims.push_back(al, new_dim);
-            type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(array), &new_dims);
-        } else {
-            ASR::dimension_t* m_dims;
-            int n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(array), m_dims);
-            if( n_dims == 1 ) {
-                type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(array));
-            } else {
-                new_dims.reserve(al, n_dims - 1);
-                for( int i = 0; i < n_dims - 1; i++ ) {
-                    ASR::dimension_t new_dim;
-                    new_dim.loc = x.base.base.loc;
-                    new_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
-                    new_dim.m_length = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(al, x.base.base.loc,
-                                            array, nullptr, int32_type, nullptr));
-                    new_dims.push_back(al, new_dim);
-                }
-                type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(array), &new_dims);
-            }
-        }
-        return ASR::make_ArrayMaxloc_t(al, x.base.base.loc, array, dim,
-                                       mask, kind, back, type, nullptr);
-    }
-
     ASR::asr_t* create_ArrayReshape(const AST::FuncCallOrArray_t& x) {
         if( x.n_args != 2 ) {
              throw SemanticError("reshape accepts only 2 arguments, got " +
@@ -4386,8 +4326,6 @@ public:
                 tmp = create_Iachar(x);
             } else if( var_name == "char" ) {
                 tmp = create_StringChr(x);
-            } else if( var_name == "maxloc" ) {
-                tmp = create_ArrayMaxloc(x);
             } else if( var_name == "scan" ) {
                 tmp = create_ScanVerify_util(x, var_name);
             } else if( var_name == "verify" ) {
