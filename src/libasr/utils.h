@@ -56,6 +56,7 @@ struct CompilerOptions {
     bool implicit_argument_casting = false;
     bool print_leading_space = false;
     bool rtlib = false;
+    bool use_loop_variable_after_loop = false;
     std::string target = "";
     std::string arg_o = "";
     bool emit_debug_info = false;
