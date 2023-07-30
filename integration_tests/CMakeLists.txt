@@ -1001,4 +1001,4 @@ RUN(NAME arrayitem_01 LABELS gfortran llvm)
 
 RUN(NAME implicit_argument_casting_01 LABELS gfortranImplicitArgument llvmImplicitArgument)
 
-RUN(NAME specfun_01 LABELS gfortran llvmImplicit)
+RUN(NAME specfun_01 LABELS gfortran llvmImplicit NOFAST)
