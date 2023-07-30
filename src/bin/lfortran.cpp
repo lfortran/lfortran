@@ -858,7 +858,8 @@ int emit_asm(const std::string &infile, CompilerOptions &compiler_options)
 int compile_to_object_file(const std::string &infile,
         const std::string &outfile,
         bool assembly,
-        CompilerOptions &compiler_options)
+        CompilerOptions &compiler_options,
+        bool require_main_program)
 {
     std::string input = read_file(infile);
 
@@ -905,9 +906,12 @@ int compile_to_object_file(const std::string &infile,
 
     if (!compiler_options.generate_object_code
             && !LCompilers::ASRUtils::main_program_present(*asr)) {
+        if (require_main_program) {
+            std::cerr << "The main program must be present to create a binary" << std::endl;
+            return 7;
+        }
         // Create an empty object file (things will be actually
         // compiled and linked when the main program is present):
-        std::cerr << "Semantic_error: " << "No main program found" << std::endl;
         e.create_empty_object_file(outfile);
         return 0;
     }
@@ -941,7 +945,7 @@ int compile_to_object_file(const std::string &infile,
 int compile_to_assembly_file(const std::string &infile,
     const std::string &outfile, CompilerOptions &compiler_options)
 {
-    return compile_to_object_file(infile, outfile, true, compiler_options);
+    return compile_to_object_file(infile, outfile, true, compiler_options, false);
 }
 #endif // HAVE_LFORTRAN_LLVM
 
@@ -2146,7 +2150,7 @@ int main(int argc, char *argv[])
             if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
                 return compile_to_object_file(arg_file, outfile, false,
-                    compiler_options);
+                    compiler_options, false);
 #else
                 std::cerr << "The -c option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
                 return 1;
@@ -2179,7 +2183,7 @@ int main(int argc, char *argv[])
             if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
                 err = compile_to_object_file(arg_file, tmp_o, false,
-                    compiler_options);
+                    compiler_options, true);
 #else
                 std::cerr << "Compiling Fortran files to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
                 return 1;
