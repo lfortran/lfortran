@@ -839,6 +839,7 @@ namespace LCompilers {
             ASR::expr_t *cond = nullptr;
             ASR::stmt_t *inc_stmt = nullptr;
             ASR::stmt_t *stmt1 = nullptr;
+            ASR::stmt_t *stmt_add_c = nullptr;
             if( !a && !b && !c ) {
                 int a_kind = 4;
                 if( loop.m_head.m_v ) {
@@ -932,6 +933,10 @@ namespace LCompilers {
                 stmt1 = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
                     ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, a,
                             ASR::binopType::Sub, c, type, nullptr)), nullptr));
+                
+                stmt_add_c = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
+                    ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, a,
+                            ASR::binopType::Add, c, type, nullptr)), nullptr));
 
                 inc_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
                             ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
@@ -959,6 +964,9 @@ namespace LCompilers {
                 result.push_back(al, stmt1);
             }
             result.push_back(al, stmt2);
+            if (stmt_add_c) {
+                result.push_back(al, stmt_add_c);
+            }
 
             return result;
         }

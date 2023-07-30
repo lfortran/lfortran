@@ -30,6 +30,7 @@ to:
         i = i+c
         ...
     end do
+    i = i + c
 
 The comparison is >= for c<0.
 */
