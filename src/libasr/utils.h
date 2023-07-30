@@ -95,6 +95,7 @@ namespace LCompilers {
         bool verbose = false; // For developer debugging
         bool pass_cumulative = false; // Apply passes cumulatively
         bool disable_main = false;
+        bool use_loop_variable_after_loop = false;
     };
 
 }
