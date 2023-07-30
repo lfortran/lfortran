@@ -926,6 +926,8 @@ RUN(NAME array_01 LABELS gfortran llvm)
 RUN(NAME array_02 LABELS gfortran llvm wasm)
 
 RUN(NAME do_loop_02 LABELS gfortran llvm)
+RUN(NAME do_loop_03 LABELS gfortran llvmUseLoopVariableAfterLoop)
+RUN(NAME do_loop_04 LABELS llvm) # This test is not supported by gfortran, as it uses a loop variable after the loop ( bad code practice )
 
 RUN(NAME block_07 LABELS gfortran llvm)
 
@@ -1003,3 +1005,5 @@ RUN(NAME implicit_argument_casting_01 LABELS llvmImplicitArgument)
 RUN(NAME arrayitem_01 LABELS gfortran llvm)
 
 RUN(NAME implicit_argument_casting_01 LABELS gfortranImplicitArgument llvmImplicitArgument)
+
+RUN(NAME specfun_01 LABELS gfortran llvmUseLoopVariableAfterLoop NOFAST)
