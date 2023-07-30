@@ -59,6 +59,7 @@ loop.body:                                        ; preds = %loop.head
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
+  store i32 2, i32* %i, align 4
   %19 = getelementptr [3 x %complex_4], [3 x %complex_4]* %a, i32 0, i32 0
   %20 = load %complex_4, %complex_4* %19, align 4
   %21 = alloca %complex_4, align 8
@@ -204,6 +205,7 @@ loop.body8:                                       ; preds = %loop.head7
   br label %loop.head7
 
 loop.end9:                                        ; preds = %loop.head7
+  store i32 12, i32* %i, align 4
   %99 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 0
   %100 = load %complex_4, %complex_4* %99, align 4
   %101 = alloca %complex_4, align 8
@@ -397,6 +399,7 @@ loop.body23:                                      ; preds = %loop.head22
   br label %loop.head22
 
 loop.end24:                                       ; preds = %loop.head22
+  store i32 2, i32* %i, align 4
   %207 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 0
   %208 = load %complex_4, %complex_4* %207, align 4
   %209 = alloca %complex_4, align 8
@@ -672,9 +675,11 @@ loop.body43:                                      ; preds = %loop.head42
   br label %loop.head42
 
 loop.end44:                                       ; preds = %loop.head42
+  store i32 2, i32* %j, align 4
   br label %loop.head40
 
 loop.end45:                                       ; preds = %loop.head40
+  store i32 2, i32* %i, align 4
   %364 = getelementptr [4 x %complex_4], [4 x %complex_4]* %c, i32 0, i32 0
   %365 = load %complex_4, %complex_4* %364, align 4
   %366 = alloca %complex_4, align 8

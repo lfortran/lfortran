@@ -96,6 +96,17 @@
                             ()
                         )]
                     )
+                    (=
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (IntegerConstant 1 (Integer 4))
+                            Add
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                    )
                     (If
                         (IntegerCompare
                             (Var 2 j)
@@ -181,6 +192,21 @@
                             ()
                         )]
                     )
+                    (=
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (IntegerConstant 10 (Integer 4))
+                            Add
+                            (IntegerUnaryMinus
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
+                                (IntegerConstant -1 (Integer 4))
+                            )
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                    )
                     (If
                         (IntegerCompare
                             (Var 2 j)
@@ -253,6 +279,17 @@
                             )
                             ()
                         )]
+                    )
+                    (=
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (IntegerConstant 1 (Integer 4))
+                            Add
+                            (IntegerConstant 2 (Integer 4))
+                            (Integer 4)
+                            ()
+                        )
+                        ()
                     )
                     (If
                         (IntegerCompare
@@ -339,6 +376,21 @@
                             ()
                         )]
                     )
+                    (=
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (IntegerConstant 9 (Integer 4))
+                            Add
+                            (IntegerUnaryMinus
+                                (IntegerConstant 2 (Integer 4))
+                                (Integer 4)
+                                (IntegerConstant -2 (Integer 4))
+                            )
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                    )
                     (If
                         (IntegerCompare
                             (Var 2 j)
@@ -412,6 +464,17 @@
                             ()
                         )]
                     )
+                    (=
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (IntegerConstant 1 (Integer 4))
+                            Add
+                            (IntegerConstant 2 (Integer 4))
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                    )
                     (If
                         (IntegerCompare
                             (Var 2 j)
@@ -484,6 +547,17 @@
                             )
                             ()
                         )]
+                    )
+                    (=
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (IntegerConstant 1 (Integer 4))
+                            Add
+                            (IntegerConstant 3 (Integer 4))
+                            (Integer 4)
+                            ()
+                        )
+                        ()
                     )
                     (If
                         (IntegerCompare
@@ -570,6 +644,21 @@
                             ()
                         )]
                     )
+                    (=
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (IntegerConstant 10 (Integer 4))
+                            Add
+                            (IntegerUnaryMinus
+                                (IntegerConstant 3 (Integer 4))
+                                (Integer 4)
+                                (IntegerConstant -3 (Integer 4))
+                            )
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                    )
                     (If
                         (IntegerCompare
                             (Var 2 j)
@@ -643,6 +732,17 @@
                             ()
                         )]
                     )
+                    (=
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (IntegerConstant 1 (Integer 4))
+                            Add
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                    )
                     (If
                         (IntegerCompare
                             (Var 2 j)
@@ -727,6 +827,21 @@
                             )
                             ()
                         )]
+                    )
+                    (=
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (IntegerConstant 1 (Integer 4))
+                            Add
+                            (IntegerUnaryMinus
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
+                                (IntegerConstant -1 (Integer 4))
+                            )
+                            (Integer 4)
+                            ()
+                        )
+                        ()
                     )
                     (If
                         (IntegerCompare
@@ -801,6 +916,17 @@
                             ()
                         )]
                     )
+                    (=
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (IntegerConstant 1 (Integer 4))
+                            Add
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                    )
                     (If
                         (IntegerCompare
                             (Var 2 j)
@@ -885,6 +1011,21 @@
                             )
                             ()
                         )]
+                    )
+                    (=
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (IntegerConstant 0 (Integer 4))
+                            Add
+                            (IntegerUnaryMinus
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
+                                (IntegerConstant -1 (Integer 4))
+                            )
+                            (Integer 4)
+                            ()
+                        )
+                        ()
                     )
                     (If
                         (IntegerCompare

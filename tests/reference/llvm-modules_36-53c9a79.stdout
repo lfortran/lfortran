@@ -80,16 +80,24 @@ ifcont:                                           ; preds = %else, %then
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
+  %42 = getelementptr %array, %array* %mask, i32 0, i32 2
+  %43 = load %dimension_descriptor*, %dimension_descriptor** %42, align 8
+  %44 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %43, i32 0
+  %45 = getelementptr %dimension_descriptor, %dimension_descriptor* %44, i32 0, i32 1
+  %46 = load i32, i32* %45, align 4
+  %47 = add i32 %46, 1
+  store i32 %47, i32* %__1_i, align 4
   br label %return
 
 return:                                           ; preds = %loop.end
-  %42 = load i1, i1* %any_4_1_0, align 1
-  ret i1 %42
+  %48 = load i1, i1* %any_4_1_0, align 1
+  ret i1 %48
 }
 
 define void @__module_modules_36_fpm_main_01_cmd_run(%fpm_run_settings_polymorphic* %settings, i1* %test) {
 .entry:
   %array_descriptor = alloca %array, align 8
+  %array_bound5 = alloca i32, align 4
   %array_bound1 = alloca i32, align 4
   %array_bound = alloca i32, align 4
   %0 = alloca %__vtab_fpm_run_settings, align 8
@@ -151,129 +159,142 @@ loop.body:                                        ; preds = %ifcont4
   br label %loop.head
 
 loop.end:                                         ; preds = %ifcont4
-  %22 = getelementptr [2 x i1], [2 x i1]* %__libasr__created__var__0__logicalnot_unary_op_res, i32 0, i32 0
-  %23 = getelementptr %array, %array* %array_descriptor, i32 0, i32 0
-  store i1* %22, i1** %23, align 8
-  %24 = getelementptr %array, %array* %array_descriptor, i32 0, i32 1
-  store i32 0, i32* %24, align 4
-  %25 = getelementptr %array, %array* %array_descriptor, i32 0, i32 2
-  %26 = alloca i32, align 4
-  store i32 1, i32* %26, align 4
-  %27 = load i32, i32* %26, align 4
-  %28 = alloca %dimension_descriptor, i32 %27, align 8
-  %29 = getelementptr %array, %array* %array_descriptor, i32 0, i32 4
-  store i32 1, i32* %29, align 4
-  store %dimension_descriptor* %28, %dimension_descriptor** %25, align 8
-  %30 = load %dimension_descriptor*, %dimension_descriptor** %25, align 8
-  %31 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %30, i32 0
-  %32 = getelementptr %dimension_descriptor, %dimension_descriptor* %31, i32 0, i32 0
-  %33 = getelementptr %dimension_descriptor, %dimension_descriptor* %31, i32 0, i32 1
-  %34 = getelementptr %dimension_descriptor, %dimension_descriptor* %31, i32 0, i32 2
-  store i32 1, i32* %32, align 4
-  store i32 1, i32* %33, align 4
-  store i32 2, i32* %34, align 4
-  %35 = call i1 @any_4_1_0(%array* %array_descriptor)
-  %36 = load i1, i1* %toomany, align 1
-  %37 = load i1, i1* %test, align 1
-  %38 = xor i1 %37, true
-  %39 = icmp eq i1 %36, false
-  %40 = alloca i1, align 1
-  br i1 %39, label %then5, label %else6
+  br i1 true, label %then6, label %else7
 
-then5:                                            ; preds = %loop.end
-  store i1 %36, i1* %40, align 1
-  br label %ifcont7
+then6:                                            ; preds = %loop.end
+  store i32 1, i32* %array_bound5, align 4
+  br label %ifcont8
 
-else6:                                            ; preds = %loop.end
-  store i1 %38, i1* %40, align 1
-  br label %ifcont7
+else7:                                            ; preds = %loop.end
+  br label %ifcont8
 
-ifcont7:                                          ; preds = %else6, %then5
-  %41 = load i1, i1* %40, align 1
-  %42 = load i1, i1* %toomany, align 1
-  %43 = getelementptr %fpm_run_settings_polymorphic, %fpm_run_settings_polymorphic* %settings, i32 0, i32 1
-  %44 = load %fpm_run_settings*, %fpm_run_settings** %43, align 8
-  %45 = getelementptr %fpm_run_settings, %fpm_run_settings* %44, i32 0, i32 3
-  %46 = load i8*, i8** %45, align 8
-  %47 = alloca i8*, align 8
-  store i8* %46, i8** %47, align 8
-  %48 = alloca i8*, align 8
-  store i8* getelementptr inbounds ([1 x i8], [1 x i8]* @0, i32 0, i32 0), i8** %48, align 8
-  %49 = call i1 @_lpython_str_compare_noteq(i8** %47, i8** %48)
-  %50 = icmp eq i1 %42, false
-  %51 = alloca i1, align 1
-  br i1 %50, label %then8, label %else9
+ifcont8:                                          ; preds = %else7, %then6
+  %22 = load i32, i32* %array_bound5, align 4
+  %23 = add i32 %22, 1
+  store i32 %23, i32* %__1_t, align 4
+  %24 = getelementptr [2 x i1], [2 x i1]* %__libasr__created__var__0__logicalnot_unary_op_res, i32 0, i32 0
+  %25 = getelementptr %array, %array* %array_descriptor, i32 0, i32 0
+  store i1* %24, i1** %25, align 8
+  %26 = getelementptr %array, %array* %array_descriptor, i32 0, i32 1
+  store i32 0, i32* %26, align 4
+  %27 = getelementptr %array, %array* %array_descriptor, i32 0, i32 2
+  %28 = alloca i32, align 4
+  store i32 1, i32* %28, align 4
+  %29 = load i32, i32* %28, align 4
+  %30 = alloca %dimension_descriptor, i32 %29, align 8
+  %31 = getelementptr %array, %array* %array_descriptor, i32 0, i32 4
+  store i32 1, i32* %31, align 4
+  store %dimension_descriptor* %30, %dimension_descriptor** %27, align 8
+  %32 = load %dimension_descriptor*, %dimension_descriptor** %27, align 8
+  %33 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %32, i32 0
+  %34 = getelementptr %dimension_descriptor, %dimension_descriptor* %33, i32 0, i32 0
+  %35 = getelementptr %dimension_descriptor, %dimension_descriptor* %33, i32 0, i32 1
+  %36 = getelementptr %dimension_descriptor, %dimension_descriptor* %33, i32 0, i32 2
+  store i32 1, i32* %34, align 4
+  store i32 1, i32* %35, align 4
+  store i32 2, i32* %36, align 4
+  %37 = call i1 @any_4_1_0(%array* %array_descriptor)
+  %38 = load i1, i1* %toomany, align 1
+  %39 = load i1, i1* %test, align 1
+  %40 = xor i1 %39, true
+  %41 = icmp eq i1 %38, false
+  %42 = alloca i1, align 1
+  br i1 %41, label %then9, label %else10
 
-then8:                                            ; preds = %ifcont7
-  store i1 %42, i1* %51, align 1
-  br label %ifcont10
+then9:                                            ; preds = %ifcont8
+  store i1 %38, i1* %42, align 1
+  br label %ifcont11
 
-else9:                                            ; preds = %ifcont7
-  store i1 %49, i1* %51, align 1
-  br label %ifcont10
+else10:                                           ; preds = %ifcont8
+  store i1 %40, i1* %42, align 1
+  br label %ifcont11
 
-ifcont10:                                         ; preds = %else9, %then8
-  %52 = load i1, i1* %51, align 1
-  %53 = icmp eq i1 %41, false
-  %54 = alloca i1, align 1
-  br i1 %53, label %then11, label %else12
+ifcont11:                                         ; preds = %else10, %then9
+  %43 = load i1, i1* %42, align 1
+  %44 = load i1, i1* %toomany, align 1
+  %45 = getelementptr %fpm_run_settings_polymorphic, %fpm_run_settings_polymorphic* %settings, i32 0, i32 1
+  %46 = load %fpm_run_settings*, %fpm_run_settings** %45, align 8
+  %47 = getelementptr %fpm_run_settings, %fpm_run_settings* %46, i32 0, i32 3
+  %48 = load i8*, i8** %47, align 8
+  %49 = alloca i8*, align 8
+  store i8* %48, i8** %49, align 8
+  %50 = alloca i8*, align 8
+  store i8* getelementptr inbounds ([1 x i8], [1 x i8]* @0, i32 0, i32 0), i8** %50, align 8
+  %51 = call i1 @_lpython_str_compare_noteq(i8** %49, i8** %50)
+  %52 = icmp eq i1 %44, false
+  %53 = alloca i1, align 1
+  br i1 %52, label %then12, label %else13
 
-then11:                                           ; preds = %ifcont10
-  store i1 %52, i1* %54, align 1
-  br label %ifcont13
+then12:                                           ; preds = %ifcont11
+  store i1 %44, i1* %53, align 1
+  br label %ifcont14
 
-else12:                                           ; preds = %ifcont10
-  store i1 %41, i1* %54, align 1
-  br label %ifcont13
+else13:                                           ; preds = %ifcont11
+  store i1 %51, i1* %53, align 1
+  br label %ifcont14
 
-ifcont13:                                         ; preds = %else12, %then11
-  %55 = load i1, i1* %54, align 1
-  %56 = getelementptr %fpm_run_settings_polymorphic, %fpm_run_settings_polymorphic* %settings, i32 0, i32 1
-  %57 = load %fpm_run_settings*, %fpm_run_settings** %56, align 8
-  %58 = getelementptr %fpm_run_settings, %fpm_run_settings* %57, i32 0, i32 0
-  %59 = getelementptr %fpm_build_settings, %fpm_build_settings* %58, i32 0, i32 0
-  %60 = load i1, i1* %59, align 1
-  %61 = xor i1 %60, true
-  %62 = icmp eq i1 %55, false
-  %63 = alloca i1, align 1
-  br i1 %62, label %then14, label %else15
+ifcont14:                                         ; preds = %else13, %then12
+  %54 = load i1, i1* %53, align 1
+  %55 = icmp eq i1 %43, false
+  %56 = alloca i1, align 1
+  br i1 %55, label %then15, label %else16
 
-then14:                                           ; preds = %ifcont13
-  store i1 %55, i1* %63, align 1
-  br label %ifcont16
+then15:                                           ; preds = %ifcont14
+  store i1 %54, i1* %56, align 1
+  br label %ifcont17
 
-else15:                                           ; preds = %ifcont13
-  store i1 %61, i1* %63, align 1
-  br label %ifcont16
+else16:                                           ; preds = %ifcont14
+  store i1 %43, i1* %56, align 1
+  br label %ifcont17
 
-ifcont16:                                         ; preds = %else15, %then14
-  %64 = load i1, i1* %63, align 1
-  %65 = icmp eq i1 %35, false
-  %66 = alloca i1, align 1
-  br i1 %65, label %then17, label %else18
+ifcont17:                                         ; preds = %else16, %then15
+  %57 = load i1, i1* %56, align 1
+  %58 = getelementptr %fpm_run_settings_polymorphic, %fpm_run_settings_polymorphic* %settings, i32 0, i32 1
+  %59 = load %fpm_run_settings*, %fpm_run_settings** %58, align 8
+  %60 = getelementptr %fpm_run_settings, %fpm_run_settings* %59, i32 0, i32 0
+  %61 = getelementptr %fpm_build_settings, %fpm_build_settings* %60, i32 0, i32 0
+  %62 = load i1, i1* %61, align 1
+  %63 = xor i1 %62, true
+  %64 = icmp eq i1 %57, false
+  %65 = alloca i1, align 1
+  br i1 %64, label %then18, label %else19
 
-then17:                                           ; preds = %ifcont16
-  store i1 %64, i1* %66, align 1
-  br label %ifcont19
+then18:                                           ; preds = %ifcont17
+  store i1 %57, i1* %65, align 1
+  br label %ifcont20
 
-else18:                                           ; preds = %ifcont16
-  store i1 %35, i1* %66, align 1
-  br label %ifcont19
+else19:                                           ; preds = %ifcont17
+  store i1 %63, i1* %65, align 1
+  br label %ifcont20
 
-ifcont19:                                         ; preds = %else18, %then17
-  %67 = load i1, i1* %66, align 1
-  br i1 %67, label %then20, label %else21
+ifcont20:                                         ; preds = %else19, %then18
+  %66 = load i1, i1* %65, align 1
+  %67 = icmp eq i1 %37, false
+  %68 = alloca i1, align 1
+  br i1 %67, label %then21, label %else22
 
-then20:                                           ; preds = %ifcont19
-  br label %ifcont22
+then21:                                           ; preds = %ifcont20
+  store i1 %66, i1* %68, align 1
+  br label %ifcont23
 
-else21:                                           ; preds = %ifcont19
-  br label %ifcont22
+else22:                                           ; preds = %ifcont20
+  store i1 %37, i1* %68, align 1
+  br label %ifcont23
 
-ifcont22:                                         ; preds = %else21, %then20
+ifcont23:                                         ; preds = %else22, %then21
+  %69 = load i1, i1* %68, align 1
+  br i1 %69, label %then24, label %else25
+
+then24:                                           ; preds = %ifcont23
+  br label %ifcont26
+
+else25:                                           ; preds = %ifcont23
+  br label %ifcont26
+
+ifcont26:                                         ; preds = %else25, %then24
   br label %return
 
-return:                                           ; preds = %ifcont22
+return:                                           ; preds = %ifcont26
   ret void
 }
 

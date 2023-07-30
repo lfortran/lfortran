@@ -121,9 +121,25 @@ ifcont:                                           ; preds = %else, %then
   br label %loop.head1
 
 loop.end:                                         ; preds = %loop.head1
+  %77 = load %array*, %array** %r, align 8
+  %78 = getelementptr %array, %array* %77, i32 0, i32 2
+  %79 = load %dimension_descriptor*, %dimension_descriptor** %78, align 8
+  %80 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %79, i32 1
+  %81 = getelementptr %dimension_descriptor, %dimension_descriptor* %80, i32 0, i32 1
+  %82 = load i32, i32* %81, align 4
+  %83 = add i32 %82, 1
+  store i32 %83, i32* %v, align 4
   br label %loop.head
 
 loop.end3:                                        ; preds = %loop.head
+  %84 = load %array*, %array** %r, align 8
+  %85 = getelementptr %array, %array* %84, i32 0, i32 2
+  %86 = load %dimension_descriptor*, %dimension_descriptor** %85, align 8
+  %87 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %86, i32 0
+  %88 = getelementptr %dimension_descriptor, %dimension_descriptor* %87, i32 0, i32 1
+  %89 = load i32, i32* %88, align 4
+  %90 = add i32 %89, 1
+  store i32 %90, i32* %u, align 4
   br label %return
 
 return:                                           ; preds = %loop.end3
@@ -236,9 +252,23 @@ ifcont:                                           ; preds = %else, %then
   br label %loop.head1
 
 loop.end:                                         ; preds = %loop.head1
+  %72 = getelementptr %array, %array* %r, i32 0, i32 2
+  %73 = load %dimension_descriptor*, %dimension_descriptor** %72, align 8
+  %74 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %73, i32 1
+  %75 = getelementptr %dimension_descriptor, %dimension_descriptor* %74, i32 0, i32 1
+  %76 = load i32, i32* %75, align 4
+  %77 = add i32 %76, 1
+  store i32 %77, i32* %v, align 4
   br label %loop.head
 
 loop.end3:                                        ; preds = %loop.head
+  %78 = getelementptr %array, %array* %r, i32 0, i32 2
+  %79 = load %dimension_descriptor*, %dimension_descriptor** %78, align 8
+  %80 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %79, i32 0
+  %81 = getelementptr %dimension_descriptor, %dimension_descriptor* %80, i32 0, i32 1
+  %82 = load i32, i32* %81, align 4
+  %83 = add i32 %82, 1
+  store i32 %83, i32* %u, align 4
   br label %return
 
 return:                                           ; preds = %loop.end3
@@ -500,12 +530,28 @@ loop.body9:                                       ; preds = %loop.head8
   br label %loop.head8
 
 loop.end:                                         ; preds = %loop.head8
+  %165 = load %array*, %array** %r, align 8
+  %166 = getelementptr %array, %array* %165, i32 0, i32 2
+  %167 = load %dimension_descriptor*, %dimension_descriptor** %166, align 8
+  %168 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %167, i32 1
+  %169 = getelementptr %dimension_descriptor, %dimension_descriptor* %168, i32 0, i32 1
+  %170 = load i32, i32* %169, align 4
+  %171 = add i32 %170, 1
+  store i32 %171, i32* %v, align 4
   br label %loop.head
 
 loop.end10:                                       ; preds = %loop.head
+  %172 = load %array*, %array** %r, align 8
+  %173 = getelementptr %array, %array* %172, i32 0, i32 2
+  %174 = load %dimension_descriptor*, %dimension_descriptor** %173, align 8
+  %175 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %174, i32 0
+  %176 = getelementptr %dimension_descriptor, %dimension_descriptor* %175, i32 0, i32 1
+  %177 = load i32, i32* %176, align 4
+  %178 = add i32 %177, 1
+  store i32 %178, i32* %u, align 4
   call void @check_real(%array** %r)
-  %165 = load %array*, %array** %r, align 8
-  call void @check_real_without_pointer(%array* %165)
+  %179 = load %array*, %array** %r, align 8
+  call void @check_real_without_pointer(%array* %179)
   ret i32 0
 }
 

@@ -44,6 +44,7 @@ loop.body:                                        ; preds = %loop.head
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
+  store i32 2, i32* %i, align 4
   %14 = getelementptr [3 x i32], [3 x i32]* %a, i32 0, i32 0
   %15 = load i32, i32* %14, align 4
   %16 = icmp ne i32 %15, 11
@@ -110,6 +111,7 @@ loop.body8:                                       ; preds = %loop.head7
   br label %loop.head7
 
 loop.end9:                                        ; preds = %loop.head7
+  store i32 12, i32* %i, align 4
   %35 = getelementptr [4 x i32], [4 x i32]* %b, i32 0, i32 0
   %36 = load i32, i32* %35, align 4
   %37 = icmp ne i32 %36, 11
@@ -195,6 +197,7 @@ loop.body23:                                      ; preds = %loop.head22
   br label %loop.head22
 
 loop.end24:                                       ; preds = %loop.head22
+  store i32 2, i32* %i, align 4
   %64 = getelementptr [4 x i32], [4 x i32]* %b, i32 0, i32 0
   %65 = load i32, i32* %64, align 4
   %66 = icmp ne i32 %65, 1

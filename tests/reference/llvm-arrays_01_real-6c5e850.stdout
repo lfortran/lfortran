@@ -51,6 +51,7 @@ loop.body:                                        ; preds = %loop.head
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
+  store i32 2, i32* %i, align 4
   %15 = getelementptr [3 x double], [3 x double]* %a, i32 0, i32 0
   %16 = load double, double* %15, align 8
   %17 = fcmp une double %16, 1.100000e+01
@@ -118,6 +119,7 @@ loop.body8:                                       ; preds = %loop.head7
   br label %loop.head7
 
 loop.end9:                                        ; preds = %loop.head7
+  store i32 12, i32* %i, align 4
   %37 = getelementptr [4 x double], [4 x double]* %b, i32 0, i32 0
   %38 = load double, double* %37, align 8
   %39 = fcmp une double %38, 1.100000e+01
@@ -203,6 +205,7 @@ loop.body23:                                      ; preds = %loop.head22
   br label %loop.head22
 
 loop.end24:                                       ; preds = %loop.head22
+  store i32 2, i32* %i, align 4
   %66 = getelementptr [4 x double], [4 x double]* %b, i32 0, i32 0
   %67 = load double, double* %66, align 8
   %68 = fcmp une double %67, 1.000000e+00
@@ -334,9 +337,11 @@ loop.body43:                                      ; preds = %loop.head42
   br label %loop.head42
 
 loop.end44:                                       ; preds = %loop.head42
+  store i32 2, i32* %j, align 4
   br label %loop.head40
 
 loop.end45:                                       ; preds = %loop.head40
+  store i32 2, i32* %i, align 4
   %120 = getelementptr [4 x double], [4 x double]* %c, i32 0, i32 0
   %121 = load double, double* %120, align 8
   %122 = fcmp une double %121, 1.200000e+01

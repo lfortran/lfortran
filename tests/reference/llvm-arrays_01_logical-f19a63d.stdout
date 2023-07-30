@@ -58,6 +58,7 @@ loop.body:                                        ; preds = %loop.head
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
+  store i32 3, i32* %i, align 4
   %21 = getelementptr [3 x i1], [3 x i1]* %a, i32 0, i32 0
   %22 = load i1, i1* %21, align 1
   %23 = xor i1 %22, true
@@ -133,6 +134,7 @@ loop.body8:                                       ; preds = %loop.head7
   br label %loop.head7
 
 loop.end9:                                        ; preds = %loop.head7
+  store i32 13, i32* %i, align 4
   %50 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 0
   %51 = load i1, i1* %50, align 1
   br i1 %51, label %then10, label %else11
@@ -229,6 +231,7 @@ ifcont26:                                         ; preds = %else25, %then24
   br label %loop.head22
 
 loop.end27:                                       ; preds = %loop.head22
+  store i32 2, i32* %i, align 4
   %79 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 0
   %80 = load i1, i1* %79, align 1
   br i1 %80, label %then28, label %else29
@@ -420,9 +423,11 @@ ifcont58:                                         ; preds = %else57, %then56
   br label %loop.head54
 
 loop.end59:                                       ; preds = %loop.head54
+  store i32 2, i32* %j, align 4
   br label %loop.head52
 
 loop.end60:                                       ; preds = %loop.head52
+  store i32 2, i32* %i, align 4
   %150 = getelementptr [4 x i1], [4 x i1]* %c, i32 0, i32 0
   %151 = load i1, i1* %150, align 1
   br i1 %151, label %then61, label %else62

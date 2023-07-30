@@ -65,6 +65,7 @@ ifcont3:                                          ; preds = %else2, %unreachable
   br label %loop.head
 
 loop.end:                                         ; preds = %then1, %loop.head
+  store i32 2, i32* %i, align 4
   %14 = load i32, i32* %j, align 4
   %15 = icmp ne i32 %14, 3
   br i1 %15, label %then4, label %else5
@@ -115,6 +116,7 @@ ifcont12:                                         ; preds = %else11, %unreachabl
   br label %loop.head7
 
 loop.end13:                                       ; preds = %then9, %loop.head7
+  store i32 2, i32* %i, align 4
   %27 = load i32, i32* %j, align 4
   %28 = icmp ne i32 %27, 1
   br i1 %28, label %then14, label %else15
@@ -165,6 +167,7 @@ ifcont21:                                         ; preds = %else20, %unreachabl
   br label %loop.head17
 
 loop.end22:                                       ; preds = %loop.head17
+  store i32 2, i32* %i, align 4
   %40 = load i32, i32* %j, align 4
   %41 = icmp ne i32 %40, 53
   br i1 %41, label %then23, label %else24
