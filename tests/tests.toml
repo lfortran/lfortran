@@ -3407,4 +3407,4 @@ asr_implicit_argument_casting = true
 
 [[test]]
 filename = "errors/no_main_program.f90"
-asr = true
+bin = true
