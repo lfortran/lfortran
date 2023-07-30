@@ -692,6 +692,7 @@ R"(
             }
         }
 
+        forward_decl_functions += "\n\n";
         src = get_final_combined_src(head, unit_src);
 
         if (!emit_headers.empty()) {

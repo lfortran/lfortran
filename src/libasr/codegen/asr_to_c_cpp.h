@@ -137,6 +137,7 @@ public:
     std::map<int32_t, std::string> gotoid2name;
     std::map<std::string, std::string> emit_headers;
     std::string array_types_decls;
+    std::string forward_decl_functions;
 
     // Output configuration:
     // Use std::string or char*
@@ -602,6 +603,9 @@ R"(#include <stdio.h>
         }
         func += ")";
         bracket_open--;
+        if (is_c && f_type->m_abi == ASR::abiType::Source) {
+            forward_decl_functions += func + ";\n";
+        }
         if( is_c || template_for_Kokkos.empty() ) {
             return func;
         }
