@@ -5,6 +5,10 @@
 #include <string.h>
 #include <lfortran_intrinsics.h>
 
+float func1(float a, float b);
+float func2(float a, float b);
+
+
 
 // Implementations
 float func1(float a, float b)

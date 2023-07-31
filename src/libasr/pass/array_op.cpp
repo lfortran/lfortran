@@ -499,6 +499,15 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_Associate_t_util(
             al, loc, array_section_pointer, *current_expr)));
         *current_expr = array_section_pointer;
+
+        // Might get used in other replace_* methods as well.
+        // In that case put it into macro
+        for( auto& itr: resultvar2value ) {
+            if( itr.second == (ASR::expr_t*)(&x->base) ) {
+                itr.second = *current_expr;
+            }
+        }
+        BaseExprReplacer<ReplaceArrayOp>::replace_expr(*current_expr);
     }
 
     #define allocate_result_var(op_arg, op_dims_arg, op_n_dims_arg) if( ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(result_var)) || \
@@ -1263,6 +1272,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
         }
 
         void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
+            bool remove_original_statement_copy = remove_original_statement;
             Vec<ASR::stmt_t*> body;
             body.reserve(al, n_body);
             if( parent_body ) {
@@ -1292,6 +1302,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
             replacer.result_var = nullptr;
             replacer.result_type = nullptr;
             pass_result.n = 0;
+            remove_original_statement = remove_original_statement_copy;
         }
 
         // TODO: Only Program and While is processed, we need to process all calls

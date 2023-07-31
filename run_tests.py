@@ -42,6 +42,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     asr_implicit_interface_and_typing = is_included("asr_implicit_interface_and_typing")
     asr_implicit_argument_casting = is_included("asr_implicit_argument_casting")
     asr_implicit_interface_and_typing_with_llvm = is_included("asr_implicit_interface_and_typing_with_llvm")
+    asr_use_loop_variable_after_loop = is_included("asr_use_loop_variable_after_loop")
     asr_preprocess = is_included("asr_preprocess")
     asr_indent = is_included("asr_indent")
     asr_json = is_included("asr_json")
@@ -215,6 +216,14 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             filename,
             "asr",
             "lfortran --show-asr --implicit-typing --implicit-interface --no-color {infile} -o {outfile}",
+            filename,
+            update_reference,
+            extra_args)
+    if asr_use_loop_variable_after_loop:
+        run_test(
+            filename,
+            "asr",
+            "lfortran --show-asr --use-loop-variable-after-loop --no-color {infile} -o {outfile}",
             filename,
             update_reference,
             extra_args)

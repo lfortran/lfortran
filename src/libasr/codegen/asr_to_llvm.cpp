@@ -8249,6 +8249,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     pass_options.run_fun = run_fn;
     pass_options.always_run = false;
     pass_options.verbose = co.verbose;
+    pass_options.use_loop_variable_after_loop = co.use_loop_variable_after_loop;
     pass_manager.rtlib = co.rtlib;
     pass_manager.apply_passes(al, &asr, pass_options, diagnostics);
 

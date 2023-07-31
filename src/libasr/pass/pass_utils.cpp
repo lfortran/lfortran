@@ -831,7 +831,7 @@ namespace LCompilers {
         }
 
         Vec<ASR::stmt_t*> replace_doloop(Allocator &al, const ASR::DoLoop_t &loop,
-                                         int comp) {
+                                         int comp, bool use_loop_variable_after_loop) {
             Location loc = loop.base.base.loc;
             ASR::expr_t *a=loop.m_head.m_start;
             ASR::expr_t *b=loop.m_head.m_end;
@@ -839,6 +839,7 @@ namespace LCompilers {
             ASR::expr_t *cond = nullptr;
             ASR::stmt_t *inc_stmt = nullptr;
             ASR::stmt_t *stmt1 = nullptr;
+            ASR::stmt_t *stmt_add_c = nullptr;
             if( !a && !b && !c ) {
                 int a_kind = 4;
                 if( loop.m_head.m_v ) {
@@ -933,6 +934,10 @@ namespace LCompilers {
                     ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, a,
                             ASR::binopType::Sub, c, type, nullptr)), nullptr));
 
+                stmt_add_c = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
+                    ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, a,
+                            ASR::binopType::Add, c, type, nullptr)), nullptr));
+
                 inc_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
                             ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
                                 ASR::binopType::Add, c, type, nullptr)), nullptr));
@@ -959,6 +964,9 @@ namespace LCompilers {
                 result.push_back(al, stmt1);
             }
             result.push_back(al, stmt2);
+            if (stmt_add_c && use_loop_variable_after_loop) {
+                result.push_back(al, stmt_add_c);
+            }
 
             return result;
         }
