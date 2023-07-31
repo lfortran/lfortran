@@ -27,6 +27,14 @@ program arrays_28
     if (minloc(arr_05, dim=1) /= 6) error stop
 
     ! MaxLoc
+    ! Compile-time
+    if (maxloc([-1, 0, -2, -3, -4], 1) /= 2) error stop
+    if (maxloc([-1., 0., -2., 3., -4.], 1) /= 4) error stop
+
+    res_03 = maxloc([-1_8, 2_8, -3_8, 4_8, -5_8])
+    if (res_03(1) /= 4) error stop
+
+    ! Run-time
     if (maxloc(arr_01, 1) /= 5) error stop
 
     res_02 = maxloc(arr_02)
