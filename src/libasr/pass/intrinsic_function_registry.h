@@ -2575,9 +2575,48 @@ namespace MaxLoc {
             "`maxloc` intrinsic cannot be nullptr", x.base.base.loc, diagnostics);
     }
 
-    static inline ASR::expr_t *eval_MaxLoc(Allocator & /*al*/,
-            const Location & /*loc*/, Vec<ASR::expr_t*>& /*args*/) {
-        // TODO
+    static inline ASR::expr_t *eval_MaxLoc(Allocator &al, const Location &loc,
+            Vec<ASR::expr_t*> &args) {
+        // TODO: Remove) {
+        ASR::ttype_t *return_type = nullptr;
+        ASR::dimension_t *m_dims;
+        ASR::expr_t *result_length = nullptr;
+        int kind = extract_kind_from_ttype_t(expr_type(args[0]));
+        int n_dims = extract_dimensions_from_ttype(expr_type(args[0]), m_dims);
+        if (args[1]) {
+            int dim = 0;
+            if (n_dims == 1) {
+                return_type = TYPE(ASR::make_Integer_t(al, loc, kind)); // 1D
+            } else {
+                result_length = m_dims[n_dims - dim].m_length; // 2D
+            }
+        } else {
+            result_length = i32(n_dims);
+        }
+        if (result_length) {
+            Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
+            ASR::dimension_t dim;
+            dim.loc = args[0]->base.loc;
+            dim.m_start = i32(1);
+            dim.m_length = result_length;
+            dims.push_back(al, dim);
+            return_type = TYPE(ASR::make_Integer_t(al, loc, kind));
+            return_type = duplicate_type(al, return_type, &dims);
+        }
+        // TODO: Remove }
+        if (ASRUtils::all_args_evaluated(args)) {
+            ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(args[0]);
+            std::vector<double> m_eles;
+            for (size_t i = 0; i < arr->n_args; i++) {
+                double ele;
+                if(extract_value(arr->m_args[i], ele)) {
+                    m_eles.push_back(ele);
+                }
+            }
+            int max_index = std::distance(m_eles.begin(),
+                std::max_element(m_eles.begin(), m_eles.end())) + 1;
+            return i(max_index, return_type);
+        }
         return nullptr;
     }
 
@@ -2589,7 +2628,7 @@ namespace MaxLoc {
         } else if (!is_integer(*expr_type(args[0])) && !is_real(*expr_type(args[0]))) {
             err("`array` argument of `maxloc` must be integer or real for now", loc);
         } else if (args[2] || args[3] || args[4]) {
-            err("Only `dim` keyword argument is supported for now!", loc);
+            err("Only `dim` keyword argument is supported for now", loc);
         }
         ASR::ttype_t *return_type = nullptr;
         Vec<ASR::expr_t *> m_args; m_args.reserve(al, 1);
@@ -2631,9 +2670,10 @@ namespace MaxLoc {
         } else {
             err("Only array with rank 1 or 2 is supported for now", loc);
         }
+        ASR::expr_t *m_value = eval_MaxLoc(al, loc, m_args);
         return ASRUtils::make_IntrinsicFunction_t_util(al, loc,
             static_cast<int64_t>(ASRUtils::IntrinsicFunctions::MaxLoc),
-            m_args.p, m_args.n, 0, return_type, nullptr);
+            m_args.p, m_args.n, 0, return_type, m_value);
     }
 
     static inline void maxloc(Allocator &al, const Location &loc,
