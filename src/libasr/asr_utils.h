@@ -3668,7 +3668,8 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
              argi->m_intent == ASRUtils::intent_inout) &&
             !ASR::is_a<ASR::Allocatable_t>(*argi->m_type) &&
             !ASR::is_a<ASR::Struct_t>(*argi->m_type) &&
-            !ASR::is_a<ASR::Character_t>(*argi->m_type)) {
+            !ASR::is_a<ASR::Character_t>(*argi->m_type) &&
+            argi->m_presence != ASR::presenceType::Optional) {
             v.push_back(i);
         }
     }
