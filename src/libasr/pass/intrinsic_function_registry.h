@@ -2565,9 +2565,14 @@ static inline ASR::expr_t* instantiate_MaxVal(Allocator &al, const Location &loc
 } // namespace MaxVal
 
 namespace MaxLoc {
-    static inline void verify_args(const ASR::IntrinsicFunction_t& /*x*/,
-            diag::Diagnostics& /*diagnostics*/) {
-        // TODO
+    static inline void verify_args(const ASR::IntrinsicFunction_t& x,
+            diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args >= 1, "`maxloc` intrinsic must accept "
+            "at least one argument", x.base.base.loc, diagnostics);
+        ASRUtils::require_impl(x.m_args[0], "`array` argument of `maxloc` "
+            "intrinsic cannot be nullptr", x.base.base.loc, diagnostics);
+        ASRUtils::require_impl(x.m_args[1], "`dim` argument of "
+            "`maxloc` intrinsic cannot be nullptr", x.base.base.loc, diagnostics);
     }
 
     static inline ASR::expr_t *eval_MaxLoc(Allocator & /*al*/,
