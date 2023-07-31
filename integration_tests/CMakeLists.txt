@@ -108,6 +108,10 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             execute_process(COMMAND lfortran ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90
 				${extra_args} --implicit-argument-casting -o ${name})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
+        elseif (LFORTRAN_BACKEND STREQUAL "llvmUseLoopVariableAfterLoop")
+            execute_process(COMMAND lfortran ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90
+                ${extra_args} --use-loop-variable-after-loop -o ${name})
+            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvm")
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC ${extra_args})
@@ -922,6 +926,8 @@ RUN(NAME array_01 LABELS gfortran llvm)
 RUN(NAME array_02 LABELS gfortran llvm wasm)
 
 RUN(NAME do_loop_02 LABELS gfortran llvm)
+RUN(NAME do_loop_03 LABELS gfortran llvmUseLoopVariableAfterLoop)
+RUN(NAME do_loop_04 LABELS llvm) # This test is not supported by gfortran, as it uses a loop variable after the loop ( bad code practice )
 
 RUN(NAME block_07 LABELS gfortran llvm)
 
@@ -999,3 +1005,5 @@ RUN(NAME implicit_argument_casting_01 LABELS llvmImplicitArgument)
 RUN(NAME arrayitem_01 LABELS gfortran llvm)
 
 RUN(NAME implicit_argument_casting_01 LABELS gfortranImplicitArgument llvmImplicitArgument)
+
+RUN(NAME specfun_01 LABELS gfortran llvmUseLoopVariableAfterLoop NOFAST)

@@ -113,7 +113,7 @@ namespace LCompilers {
             SymbolTable*& global_scope, Location& loc);
 
         Vec<ASR::stmt_t*> replace_doloop(Allocator &al, const ASR::DoLoop_t &loop,
-                                         int comp=-1);
+                                         int comp=-1, bool use_loop_variable_after_loop=false);
 
         static inline bool is_aggregate_type(ASR::expr_t* var) {
             return ASR::is_a<ASR::Struct_t>(*ASRUtils::expr_type(var));
