@@ -529,7 +529,8 @@ class ASRBuilder {
         return PassUtils::create_array_ref(arr, idx_vars, al);
     }
 
-    ASR::expr_t *ArrayConstant(std::vector<int> elements, ASR::ttype_t *type) {
+    ASR::expr_t *ArrayConstant(std::vector<int> elements, ASR::ttype_t *type,
+            bool physical_cast=true) {
         // This function only creates array with rank one
         // TODO: Support other dimensions
         Vec<ASR::dimension_t> m_dims; m_dims.reserve(al, 1);
@@ -552,9 +553,14 @@ class ASRBuilder {
         ASR::expr_t *arr_constant = EXPR(ASR::make_ArrayConstant_t(al, loc,
             m_elements.p, m_elements.n, fixed_size_type, ASR::arraystorageType::ColMajor));
 
-        return EXPR(ASR::make_ArrayPhysicalCast_t(al, loc, arr_constant,
-            ASR::array_physical_typeType::FixedSizeArray,
-            ASR::array_physical_typeType::DescriptorArray, descriptor_type, nullptr));
+        if (physical_cast) {
+            return EXPR(ASR::make_ArrayPhysicalCast_t(al, loc, arr_constant,
+                ASR::array_physical_typeType::FixedSizeArray,
+                ASR::array_physical_typeType::DescriptorArray,
+                descriptor_type, nullptr));
+        } else {
+            return arr_constant;
+        }
     }
 
     // Statements --------------------------------------------------------------
@@ -2573,7 +2579,10 @@ namespace MaxLoc {
 
     static inline ASR::expr_t *eval_MaxLoc(Allocator &al, const Location &loc,
             ASR::ttype_t *type, Vec<ASR::expr_t*> &args) {
-        if (ASRUtils::all_args_evaluated(args)) {
+        ASRBuilder b(al, loc);
+        if (ASRUtils::all_args_evaluated(args) &&
+                extract_n_dims_from_ttype(expr_type(args[0])) == 1) {
+            // Only supported for arrays with rank 1
             ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(args[0]);
             std::vector<double> m_eles;
             for (size_t i = 0; i < arr->n_args; i++) {
@@ -2584,7 +2593,11 @@ namespace MaxLoc {
             }
             int max_index = std::distance(m_eles.begin(),
                 std::max_element(m_eles.begin(), m_eles.end())) + 1;
-            return i(max_index, type);
+            if (!is_array(type)) {
+                return i(max_index, type);
+            } else {
+                return b.ArrayConstant({max_index}, extract_type(type), false);
+            }
         } else {
             return nullptr;
         }
@@ -2640,7 +2653,7 @@ namespace MaxLoc {
         } else {
             err("Only array with rank 1 or 2 is supported for now", loc);
         }
-        ASR::expr_t *m_value = eval_MaxLoc(al, loc, m_args);
+        ASR::expr_t *m_value = eval_MaxLoc(al, loc, return_type, m_args);
         return ASRUtils::make_IntrinsicFunction_t_util(al, loc,
             static_cast<int64_t>(ASRUtils::IntrinsicFunctions::MaxLoc),
             m_args.p, m_args.n, 0, return_type, m_value);
