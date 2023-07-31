@@ -925,15 +925,15 @@ namespace Abs {
             ASR::ttype_t *t, Vec<ASR::expr_t*> &args) {
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
         ASR::expr_t* arg = args[0];
-        if (ASRUtils::is_real(*t)) {
+        if (ASRUtils::is_real(*expr_type(arg))) {
             double rv = ASR::down_cast<ASR::RealConstant_t>(arg)->m_r;
             double val = std::abs(rv);
             return make_ConstantWithType(make_RealConstant_t, val, t, loc);
-        } else if (ASRUtils::is_integer(*t)) {
+        } else if (ASRUtils::is_integer(*expr_type(arg))) {
             int64_t rv = ASR::down_cast<ASR::IntegerConstant_t>(arg)->m_n;
             int64_t val = std::abs(rv);
             return make_ConstantWithType(make_IntegerConstant_t, val, t, loc);
-        } else if (ASRUtils::is_complex(*t)) {
+        } else if (ASRUtils::is_complex(*expr_type(arg))) {
             double re = ASR::down_cast<ASR::ComplexConstant_t>(arg)->m_re;
             double im = ASR::down_cast<ASR::ComplexConstant_t>(arg)->m_im;
             std::complex<double> x(re, im);
