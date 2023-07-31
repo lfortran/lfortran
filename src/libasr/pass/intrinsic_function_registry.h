@@ -2586,7 +2586,7 @@ namespace MaxLoc {
             ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(args[0]);
             std::vector<double> m_eles;
             for (size_t i = 0; i < arr->n_args; i++) {
-                double ele;
+                double ele = 0;
                 if(extract_value(arr->m_args[i], ele)) {
                     m_eles.push_back(ele);
                 }
