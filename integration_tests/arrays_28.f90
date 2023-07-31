@@ -7,9 +7,9 @@ program arrays_28
     integer(4)              :: arr_02(3, 3) = reshape( &
         [-14, 30, -23, 0, -2, 1, -17, 7, -13], [3, 3])
     integer(8)              :: arr_03(6) = [-14_8, 3_8, 20_8, -2_8, 19_8, 1_8]
-    real(4)                 :: arr_04(6) = [-14., 3., 0., -2., 19., 25.]
+    real   (4)              :: arr_04(6) = [-14., 3., 0., -2., 19., 25.]
     integer(4), allocatable :: arr_05(:)
-    real(8)   , allocatable :: arr_06(:)
+    real   (8), allocatable :: arr_06(:)
 
     allocate(arr_05(n))
     allocate(arr_06(n))

@@ -3580,6 +3580,14 @@ namespace IntrinsicFunctionRegistry {
         return -1;
     }
 
+    static inline bool handle_dim(ASRUtils::IntrinsicFunctions id) {
+        if( id == ASRUtils::IntrinsicFunctions::MaxLoc) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
     static inline create_intrinsic_function get_create_function(const std::string& name) {
         return  std::get<0>(intrinsic_function_by_name_db.at(name));
     }
