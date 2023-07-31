@@ -239,8 +239,13 @@ class ASRBuilder {
         for (auto &x: dims) {
             ASR::dimension_t dim;
             dim.loc = loc;
-            dim.m_start = EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int32));
-            dim.m_length = EXPR(ASR::make_IntegerConstant_t(al, loc, x, int32));
+            if (x == 0) {
+                dim.m_start = nullptr;
+                dim.m_length = nullptr;
+            } else {
+                dim.m_start = EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int32));
+                dim.m_length = EXPR(ASR::make_IntegerConstant_t(al, loc, x, int32));
+            }
             m_dims.push_back(al, dim);
         }
         return make_Array_t_util(al, loc, type, m_dims.p, m_dims.n);
@@ -524,20 +529,20 @@ class ASRBuilder {
         return PassUtils::create_array_ref(arr, idx_vars, al);
     }
 
-    ASR::expr_t *ArrayConstant(std::vector<int> elements) {
+    ASR::expr_t *ArrayConstant(std::vector<int> elements, ASR::ttype_t *type) {
         // This function only creates array with rank one
         // TODO: Support other dimensions
         Vec<ASR::dimension_t> m_dims; m_dims.reserve(al, 1);
         ASR::dimension_t dim;
         dim.loc = loc;
         dim.m_start = i32(1);
-        dim.m_length = i32(1);
+        dim.m_length = i32(elements.size());
         m_dims.push_back(al, dim);
 
-        ASR::ttype_t *fixed_size_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
-            int32, m_dims.p, m_dims.n, ASR::array_physical_typeType::FixedSizeArray));
-        ASR::ttype_t *descriptor_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
-            int32, m_dims.p, m_dims.n, ASR::array_physical_typeType::DescriptorArray));
+        ASR::ttype_t *fixed_size_type = TYPE(ASR::make_Array_t(al, loc,
+            type, m_dims.p, m_dims.n, ASR::array_physical_typeType::FixedSizeArray));
+        ASR::ttype_t *descriptor_type = TYPE(ASR::make_Array_t(al, loc,
+            type, m_dims.p, m_dims.n, ASR::array_physical_typeType::DescriptorArray));
 
         Vec<ASR::expr_t *> m_elements; m_elements.reserve(al, 1);
         for (auto &x: elements) {
@@ -557,30 +562,28 @@ class ASRBuilder {
     ASR::stmt_t *Assignment(ASR::expr_t *lhs, ASR::expr_t*rhs) {
         ASR::ttype_t *lhs_type = expr_type(lhs);
         ASR::ttype_t *rhs_type = expr_type(rhs);
-        if (!is_array(lhs_type)) {
-            int lhs_kind = extract_kind_from_ttype_t(lhs_type);
-            int rhs_kind = extract_kind_from_ttype_t(rhs_type);
-            if (lhs_kind != rhs_kind) {
-                switch(lhs_type->type) {
-                    case ASR::Integer : {
-                        if (lhs_kind == 4) {
-                            rhs = i2i32(rhs);
-                        } else if (lhs_kind == 8) {
-                            rhs = i2i64(rhs);
-                        }
-                        break;
+        int lhs_kind = extract_kind_from_ttype_t(lhs_type);
+        int rhs_kind = extract_kind_from_ttype_t(rhs_type);
+        if (lhs_kind != rhs_kind) {
+            switch(lhs_type->type) {
+                case ASR::Integer : {
+                    if (lhs_kind == 4) {
+                        rhs = i2i32(rhs);
+                    } else if (lhs_kind == 8) {
+                        rhs = i2i64(rhs);
                     }
-                    case ASR::Real : {
-                        if (lhs_kind == 4) {
-                            rhs = r2r32(rhs);
-                        } else if (lhs_kind == 8) {
-                            rhs = r2r64(rhs);
-                        }
-                        break;
-                    }
-                    default:
-                        break;
+                    break;
                 }
+                case ASR::Real : {
+                    if (lhs_kind == 4) {
+                        rhs = r2r32(rhs);
+                    } else if (lhs_kind == 8) {
+                        rhs = r2r64(rhs);
+                    }
+                    break;
+                }
+                default:
+                    break;
             }
         }
         LCOMPILERS_ASSERT(check_equal_type(expr_type(lhs), expr_type(rhs)));
@@ -2590,6 +2593,7 @@ namespace MaxLoc {
         int n_dims = extract_dimensions_from_ttype(expr_type(args[0]), m_dims);
         if (n_dims == 1 || n_dims == 2) {
             ASR::expr_t *result_length = nullptr;
+            int kind = extract_kind_from_ttype_t(expr_type(args[0]));
             if (args[1]) {
                 int dim = 0;
                 if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1]))) {
@@ -2601,7 +2605,6 @@ namespace MaxLoc {
                     err("`dim` argument of `maxloc` is out of array index range", loc);
                 }
                 if (n_dims == 1) {
-                    int kind = extract_kind_from_ttype_t(expr_type(args[0]));
                     return_type = TYPE(ASR::make_Integer_t(al, loc, kind)); // 1D
                 } else {
                     result_length = m_dims[n_dims - dim].m_length; // 2D
@@ -2617,7 +2620,8 @@ namespace MaxLoc {
                 dim.m_start = i32(1);
                 dim.m_length = result_length;
                 dims.push_back(al, dim);
-                return_type = duplicate_type(al, expr_type(args[0]), &dims);
+                return_type = TYPE(ASR::make_Integer_t(al, loc, kind));
+                return_type = duplicate_type(al, return_type, &dims);
             }
         } else {
             err("Only array with rank 1 or 2 is supported for now", loc);
@@ -2629,7 +2633,7 @@ namespace MaxLoc {
 
     static inline void maxloc(Allocator &al, const Location &loc,
             SymbolTable *fn_symtab, ASR::expr_t *array, ASR::expr_t *max_index,
-            Vec<ASR::stmt_t*> &body, bool is_real = false) {
+            Vec<ASR::stmt_t*> &body, bool is_real) {
         /*
          * int max_index, i;
          * max_index = 1;
@@ -2685,23 +2689,22 @@ namespace MaxLoc {
             } else  {
                 res = result;
             }
-            if(extract_kind_from_ttype_t(return_type) == 8) {
-                max_index = i2i64(max_index);
-            }
             body.push_back(al, b.Assignment(res, max_index));
         } else {
             if (m_args.n == 1 && is_fixed_size_array(arg_types[0])) {
                 // _1d_array = reshape(arr, [_1d_array_size])
                 // max_1d_index = maxloc(_1d_array)
                 int size = ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
-                ASR::expr_t* _1d_array_size = b.ArrayConstant({size});
                 ASR::expr_t *reshape_expr = EXPR(ASR::make_ArrayReshape_t(al, loc,
-                    args[0], _1d_array_size, expr_type(_1d_array_size), nullptr));
-                auto _1d_array = declare("_1d_array", b.Array({size}, int32), Local);
+                    args[0], b.ArrayConstant({size}, int32),
+                    b.Array({0}, extract_type(arg_types[0])), nullptr));
+                auto _1d_array = declare("_1d_array",
+                    b.Array({size}, extract_type(arg_types[0])), Local);
                 body.push_back(al, b.Assignment(_1d_array, reshape_expr));
 
                 auto max_index = declare("max_index", int32, Local);
-                maxloc(al, loc, fn_symtab, _1d_array, max_index, body);
+                maxloc(al, loc, fn_symtab, _1d_array, max_index, body,
+                    is_real(*arg_types[0]));
 
                 body.push_back(al, b.Assignment(max_index, iSub(max_index, i32(1))));
                 // 2d_n_column = max_1d_i % arr_n_column
@@ -2713,14 +2716,6 @@ namespace MaxLoc {
                 // r(2) = (max_i / arr_n_column) + 1
                 body.push_back(al, b.Assignment(b.ArrayItem(result, {i32(2)}),
                     iAdd(iDiv(max_index, m_dims[0].m_length), i32(1))));
-
-                Vec<ASR::expr_t *> x_exprs; x_exprs.reserve(al, 1);
-                x_exprs.push_back(al, _1d_array);
-                // x_exprs.push_back(al, max_index);
-                // x_exprs.push_back(al, b.ArrayItem(result, {i32(1)}));
-                // x_exprs.push_back(al, b.ArrayItem(result, {i32(2)}));
-                // x_exprs.push_back(al, ArraySize(tmp_array, i32(1)));
-                body.push_back(al, STMT(ASR::make_Print_t(al, loc, nullptr, x_exprs.p, x_exprs.n, nullptr, nullptr)));
             } else {
                 LCOMPILERS_ASSERT(false);
             }
