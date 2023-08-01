@@ -683,6 +683,30 @@ namespace LCompilers {
         ASR::expr_t* create_auxiliary_variable(const Location& loc, std::string& name,
             Allocator& al, SymbolTable*& current_scope, ASR::ttype_t* var_type,
             ASR::intentType var_intent) {
+            bool is_pointer = ASRUtils::is_pointer(var_type);
+            bool is_allocatable = ASRUtils::is_allocatable(var_type);
+            if( ASR::is_a<ASR::Struct_t>(
+                    *ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(var_type))) ) {
+                ASR::symbol_t* der_sym = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(var_type)))->m_derived_type;
+                if( (ASR::asr_t*) ASRUtils::get_asr_owner(der_sym) != current_scope->asr_owner ) {
+                    std::string unique_name = current_scope->get_unique_name(
+                        ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(der_sym)));
+                    der_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                        al, loc, current_scope, s2c(al, unique_name), ASRUtils::symbol_get_past_external(der_sym),
+                        ASRUtils::symbol_name(ASRUtils::get_asr_owner(ASRUtils::symbol_get_past_external(der_sym))), nullptr, 0,
+                        ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(der_sym)), ASR::accessType::Public));
+                    current_scope->add_symbol(unique_name, der_sym);
+                    var_type = ASRUtils::TYPE(ASR::make_Struct_t(al, loc, der_sym));
+                    if( is_pointer ) {
+                        var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, var_type));
+                    } else if( is_allocatable ) {
+                        var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, var_type));
+                    }
+                }
+            }
             ASR::asr_t* expr_sym = ASR::make_Variable_t(al, loc, current_scope, s2c(al, name), nullptr, 0,
                                                     var_intent, nullptr, nullptr, ASR::storage_typeType::Default,
                                                     var_type, nullptr, ASR::abiType::Source, ASR::accessType::Public,

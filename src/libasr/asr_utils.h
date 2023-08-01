@@ -639,7 +639,8 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
 
 static inline ASR::symbol_t *get_asr_owner(const ASR::symbol_t *sym) {
     const SymbolTable *s = symbol_parent_symtab(sym);
-    if( !ASR::is_a<ASR::symbol_t>(*s->asr_owner) ) {
+    if( s->asr_owner == nullptr ||
+        !ASR::is_a<ASR::symbol_t>(*s->asr_owner) ) {
         return nullptr;
     }
     return ASR::down_cast<ASR::symbol_t>(s->asr_owner);
