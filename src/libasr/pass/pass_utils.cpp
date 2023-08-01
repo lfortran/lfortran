@@ -685,12 +685,10 @@ namespace LCompilers {
             ASR::intentType var_intent) {
             bool is_pointer = ASRUtils::is_pointer(var_type);
             bool is_allocatable = ASRUtils::is_allocatable(var_type);
-            if( ASR::is_a<ASR::Struct_t>(
-                    *ASRUtils::type_get_past_allocatable(
-                        ASRUtils::type_get_past_pointer(var_type))) ) {
-                ASR::symbol_t* der_sym = ASR::down_cast<ASR::Struct_t>(
-                    ASRUtils::type_get_past_allocatable(
-                        ASRUtils::type_get_past_pointer(var_type)))->m_derived_type;
+            ASR::ttype_t* var_type_unwrapped = ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(var_type));
+            if( ASR::is_a<ASR::Struct_t>(*var_type_unwrapped) ) {
+                ASR::symbol_t* der_sym = ASR::down_cast<ASR::Struct_t>(var_type_unwrapped)->m_derived_type;
                 if( (ASR::asr_t*) ASRUtils::get_asr_owner(der_sym) != current_scope->asr_owner ) {
                     std::string unique_name = current_scope->get_unique_name(
                         ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(der_sym)));
@@ -706,11 +704,21 @@ namespace LCompilers {
                         var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, var_type));
                     }
                 }
+            } else if( ASR::is_a<ASR::Character_t>(*var_type_unwrapped) ) {
+                ASR::Character_t* char_t = ASR::down_cast<ASR::Character_t>(var_type_unwrapped);
+                if( char_t->m_len == -1 && var_intent == ASR::intentType::Local ) {
+                    var_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc, char_t->m_kind, 1, nullptr));
+                    if( is_pointer ) {
+                        var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, var_type));
+                    } else if( is_allocatable ) {
+                        var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, var_type));
+                    }
+                }
             }
             ASR::asr_t* expr_sym = ASR::make_Variable_t(al, loc, current_scope, s2c(al, name), nullptr, 0,
-                                                    var_intent, nullptr, nullptr, ASR::storage_typeType::Default,
-                                                    var_type, nullptr, ASR::abiType::Source, ASR::accessType::Public,
-                                                    ASR::presenceType::Required, false);
+                                            var_intent, nullptr, nullptr, ASR::storage_typeType::Default,
+                                            var_type, nullptr, ASR::abiType::Source, ASR::accessType::Public,
+                                            ASR::presenceType::Required, false);
             if( current_scope->get_symbol(name) == nullptr ) {
                 current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(expr_sym));
             } else {
