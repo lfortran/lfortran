@@ -80,10 +80,11 @@ class ReplaceIntrinsicFunction: public ASR::BaseExprReplacer<ReplaceIntrinsicFun
         } else {
             *current_expr = current_expr_;
         }
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionCall_t>(*func_call));
-        ASR::FunctionCall_t* function_call_t = ASR::down_cast<ASR::FunctionCall_t>(func_call);
-        ASR::symbol_t* function_call_t_symbol = ASRUtils::symbol_get_past_external(function_call_t->m_name);
-        func2intrinsicid[function_call_t_symbol] = (ASRUtils::IntrinsicFunctions) x->m_intrinsic_id;
+        if (ASR::is_a<ASR::FunctionCall_t>(*func_call)) {
+            ASR::symbol_t *call_sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::FunctionCall_t>(func_call)->m_name);
+            func2intrinsicid[call_sym] = (ASRUtils::IntrinsicFunctions) x->m_intrinsic_id;
+        }
     }
 
 };
