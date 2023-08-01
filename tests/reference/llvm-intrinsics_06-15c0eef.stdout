@@ -23,51 +23,6 @@ source_filename = "LFortran"
 @19 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @20 = private unnamed_addr constant [9 x i8] c"%13.8e%s\00", align 1
 
-define float @_lcompilers_acos_f32(float* %x) {
-.entry:
-  %_lcompilers_acos_f32 = alloca float, align 4
-  %0 = load float, float* %x, align 4
-  %1 = call float @_lfortran_sacos(float %0)
-  store float %1, float* %_lcompilers_acos_f32, align 4
-  br label %return
-
-return:                                           ; preds = %.entry
-  %2 = load float, float* %_lcompilers_acos_f32, align 4
-  ret float %2
-}
-
-declare float @_lfortran_sacos(float)
-
-define float @_lcompilers_asin_f32(float* %x) {
-.entry:
-  %_lcompilers_asin_f32 = alloca float, align 4
-  %0 = load float, float* %x, align 4
-  %1 = call float @_lfortran_sasin(float %0)
-  store float %1, float* %_lcompilers_asin_f32, align 4
-  br label %return
-
-return:                                           ; preds = %.entry
-  %2 = load float, float* %_lcompilers_asin_f32, align 4
-  ret float %2
-}
-
-declare float @_lfortran_sasin(float)
-
-define float @_lcompilers_atan_f32(float* %x) {
-.entry:
-  %_lcompilers_atan_f32 = alloca float, align 4
-  %0 = load float, float* %x, align 4
-  %1 = call float @_lfortran_satan(float %0)
-  store float %1, float* %_lcompilers_atan_f32, align 4
-  br label %return
-
-return:                                           ; preds = %.entry
-  %2 = load float, float* %_lcompilers_atan_f32, align 4
-  ret float %2
-}
-
-declare float @_lfortran_satan(float)
-
 define i32 @__module_lfortran_intrinsic_kind_kind(i1* %x) {
 .entry:
   %r = alloca i32, align 4

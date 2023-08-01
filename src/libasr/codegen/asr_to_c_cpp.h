@@ -29,7 +29,7 @@
 #include <map>
 #include <tuple>
 
-#define CHECK_FAST_C_CPP(compiler_options, x)                         \
+#define CHECK_FAST_C_CPP(compiler_options, x)                   \
         if (compiler_options.fast && x.m_value != nullptr) {    \
             self().visit_expr(*x.m_value);                      \
             return;                                             \
@@ -2867,6 +2867,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
     }
 
     void visit_IntrinsicFunction(const ASR::IntrinsicFunction_t &x) {
+        CHECK_FAST_C_CPP(compiler_options, x);
         std::string out;
         std::string indent(4, ' ');
         switch (x.m_intrinsic_id) {

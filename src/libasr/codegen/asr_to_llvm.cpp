@@ -1647,6 +1647,10 @@ public:
     }
 
     void visit_IntrinsicFunction(const ASR::IntrinsicFunction_t& x) {
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
         switch (static_cast<ASRUtils::IntrinsicFunctions>(x.m_intrinsic_id)) {
             case ASRUtils::IntrinsicFunctions::ListIndex: {
                 ASR::expr_t* m_arg = x.m_args[0];

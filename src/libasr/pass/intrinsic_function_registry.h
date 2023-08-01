@@ -614,6 +614,9 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
         ASR::ttype_t *arg_type, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/,
         ASR::expr_t *value) {
+    if (value) {
+        return value;
+    }
     std::string c_func_name;
     switch (arg_type->type) {
         case ASR::ttypeType::Complex : {
@@ -817,6 +820,7 @@ static inline ASR::expr_t* instantiate_LogGamma (Allocator &al,
         const Location &loc, SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
         ASR::ttype_t *return_type, Vec<ASR::call_arg_t>& new_args,
         int64_t overload_id,ASR::expr_t* compile_time_value) {
+    if (compile_time_value) return compile_time_value;
     LCOMPILERS_ASSERT(arg_types.size() == 1);
     ASR::ttype_t* arg_type = arg_types[0];
     return UnaryIntrinsicFunction::instantiate_functions(al, loc, scope,
@@ -868,6 +872,7 @@ namespace X {                                                                   
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,           \
             Vec<ASR::call_arg_t>& new_args,int64_t overload_id,                 \
             ASR::expr_t* compile_time_value)  {                                 \
+        if (compile_time_value) return compile_time_value;                      \
         LCOMPILERS_ASSERT(arg_types.size() == 1);                               \
         ASR::ttype_t* arg_type = arg_types[0];                                  \
         return UnaryIntrinsicFunction::instantiate_functions(al, loc, scope,    \
@@ -967,6 +972,9 @@ namespace Abs {
     static inline ASR::expr_t* instantiate_Abs(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, ASR::expr_t* compile_time_value) {
+        if (compile_time_value) {
+            return compile_time_value;
+        }
         std::string func_name = "_lcompilers_abs_" + type_to_str_python(arg_types[0]);
         declare_basic_variables(func_name);
         if (scope->get_symbol(func_name)) {
@@ -1135,6 +1143,9 @@ namespace Sign {
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/,
             ASR::expr_t* compile_time_value) {
+        if (compile_time_value) {
+            return compile_time_value;
+        }
         declare_basic_variables("_lcompilers_sign_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[0]);
@@ -1569,6 +1580,9 @@ static inline ASR::expr_t* instantiate_Any(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *logical_return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t overload_id,
         ASR::expr_t* compile_time_value) {
+    if (compile_time_value) {
+        return compile_time_value;
+    }
     ASRBuilder builder(al, loc);
     ASRBuilder& b = builder;
     ASR::ttype_t* arg_type = arg_types[0];
@@ -1739,6 +1753,9 @@ namespace Max {
     static inline ASR::expr_t* instantiate_Max(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, ASR::expr_t* compile_time_value) {
+        if (compile_time_value) {
+            return compile_time_value;
+        }
         std::string func_name = "_lcompilers_max0_" + type_to_str_python(arg_types[0]);
         std::string fn_name = scope->get_unique_name(func_name);
         SymbolTable *fn_symtab = al.make_new<SymbolTable>(scope);
@@ -1851,6 +1868,9 @@ namespace Min {
     static inline ASR::expr_t* instantiate_Min(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, ASR::expr_t* compile_time_value) {
+        if (compile_time_value) {
+            return compile_time_value;
+        }
         std::string func_name = "_lcompilers_min0_" + type_to_str_python(arg_types[0]);
         std::string fn_name = scope->get_unique_name(func_name);
         SymbolTable *fn_symtab = al.make_new<SymbolTable>(scope);
@@ -2255,6 +2275,9 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al, const Locatio
     Vec<ASR::call_arg_t>& new_args, int64_t overload_id,
     ASR::expr_t* compile_time_value, ASRUtils::IntrinsicFunctions intrinsic_func_id,
     get_initial_value_func get_initial_value, elemental_operation_func elemental_operation) {
+    if (compile_time_value) {
+        return compile_time_value;
+    }
     std::string intrinsic_func_name = ASRUtils::get_intrinsic_name(static_cast<int>(intrinsic_func_id));
     ASRBuilder builder(al, loc);
     ASRBuilder& b = builder;
@@ -2492,6 +2515,9 @@ namespace MaxLoc {
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& m_args, int64_t /*overload_id*/,
             ASR::expr_t* compile_time_value) {
+        if (compile_time_value) {
+            return compile_time_value;
+        }
         declare_basic_variables("_lcompilers_maxloc")
         fill_func_arg("array", arg_types[0]);
         fill_func_arg("dim", arg_types[1]);
@@ -2593,6 +2619,9 @@ namespace MinLoc {
             Vec<ASR::ttype_t*>& arg_types,  ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& m_args, int64_t /*overload_id*/,
             ASR::expr_t* compile_time_value) {
+        if (compile_time_value) {
+            return compile_time_value;
+        }
         declare_basic_variables("_lcompilers_minloc")
         fill_func_arg("array", arg_types[0]);
         fill_func_arg("dim", arg_types[1]);
@@ -2711,6 +2740,9 @@ namespace Partition {
             Vec<ASR::ttype_t*>& /*arg_types*/, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/,
             ASR::expr_t* compile_time_value) {
+        if (compile_time_value) {
+            return compile_time_value;
+        }
         // TODO: show runtime error for empty separator or pattern
         declare_basic_variables("_lpython_str_partition");
         fill_func_arg("target_string", character(-2));
@@ -2856,6 +2888,9 @@ namespace Merge {
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/,
             ASR::expr_t* compile_time_value) {
+        if (compile_time_value) {
+            return compile_time_value;
+        }
         LCOMPILERS_ASSERT(arg_types.size() == 3);
 
         // Array inputs should be elementalised in array_op pass already
