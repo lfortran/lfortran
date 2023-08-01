@@ -1,9 +1,8 @@
 (module
     (type (;0;) (func (param i32) (result)))
     (type (;1;) (func (param i32 i32 i32 i32) (result i32)))
-    (type (;2;) (func (param i32) (result i32)))
-    (type (;3;) (func (param) (result)))
-    (type (;4;) (func (param i64) (result)))
+    (type (;2;) (func (param) (result)))
+    (type (;3;) (func (param i64) (result)))
     (import "wasi_snapshot_preview1" "proc_exit" (func (;0;) (type 0)))
     (import "wasi_snapshot_preview1" "fd_write" (func (;1;) (type 1)))
     (global $0 (mut i32) (i32.const 0))
@@ -13,30 +12,13 @@
     (global $4 (mut f32) (f32.const 0.000000))
     (global $5 (mut f64) (f64.const 0.000000))
     (global $6 (mut f64) (f64.const 0.000000))
-    (func $2 (type 2) (param i32) (result i32)
-        (local i32)
-        local.get 0
-        i32.const 0
-        i32.ge_s
-        if
-            local.get 0
-            local.set 1
-        else
-            i32.const 0
-            local.get 0
-            i32.sub
-            local.set 1
-        end
-        local.get 1
-        return
-    )
-    (func $3 (type 3) (param) (result)
+    (func $2 (type 2) (param) (result)
         (local i32)
         i32.const 2
         local.set 0
         local.get 0
         i64.extend_i32_s
-        call 4
+        call 3
         i32.const 1
         i32.const 16
         i32.const 1
@@ -62,7 +44,7 @@
         local.set 0
         local.get 0
         i64.extend_i32_s
-        call 4
+        call 3
         i32.const 1
         i32.const 16
         i32.const 1
@@ -88,7 +70,7 @@
         call 0
         return
     )
-    (func $4 (type 4) (param i64) (result)
+    (func $3 (type 3) (param i64) (result)
         (local i64 i64 i64 i64)
         local.get 0
         i64.const 0
@@ -195,9 +177,8 @@
     )
     (memory (;0;) 100 100)
     (export "memory" (memory 0))
-    (export "_lcompilers_abs_i32" (func 2))
-    (export "_start" (func 3))
-    (export "print_i64" (func 4))
+    (export "_start" (func 2))
+    (export "print_i64" (func 3))
     (data (;0;) (i32.const 4) "\0c\00\00\00\01\00\00\00")
     (data (;1;) (i32.const 12) "    ")
     (data (;2;) (i32.const 16) "\18\00\00\00\01\00\00\00")
