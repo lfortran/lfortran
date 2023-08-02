@@ -758,6 +758,8 @@ TRIG2(sqrt, dsqrt)
         if (ASR::is_a<ASR::Complex_t>(*t)) {
             double im = ASR::down_cast<ASR::ComplexConstant_t>(trig_arg)->m_im;
             double result = im;
+            int kind = ASRUtils::extract_kind_from_ttype_t(t);
+            t = ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind));
             return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, result, t));
         } else {
             throw SemanticError("Argument of the aimag() function must be Complex", loc);
