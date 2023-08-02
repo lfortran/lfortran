@@ -1735,6 +1735,11 @@ public:
                 }
                 break ;
             }
+            case ASRUtils::IntrinsicFunctions::Shape: {
+                throw CodeGenError("Either the 'shape' intrinsic is not implemented yet "
+                    "or the compile-time value is not available", x.base.base.loc);
+                break;
+            }
             default: {
                 throw CodeGenError( ASRUtils::IntrinsicFunctionRegistry::
                         get_intrinsic_function_name(x.m_intrinsic_id) +
