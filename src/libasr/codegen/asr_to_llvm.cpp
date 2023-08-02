@@ -6453,20 +6453,30 @@ public:
         switch (type->type) {
             case (ASR::ttypeType::Integer): {
                 int a_kind = ASRUtils::extract_kind_from_ttype_t(type);
-                if (a_kind != 4) {
-                    throw CodeGenError("Read Integer function not implemented for integer kind: "
-                                        + std::to_string(a_kind));
-                }
-                std::string runtime_func_name = "_lfortran_read_int32";
-                fn = module->getFunction(runtime_func_name);
-                if (!fn) {
-                    llvm::FunctionType *function_type = llvm::FunctionType::get(
-                            llvm::Type::getVoidTy(context), {
-                                llvm::Type::getInt32Ty(context)->getPointerTo(),
-                                llvm::Type::getInt32Ty(context)
-                            }, false);
-                    fn = llvm::Function::Create(function_type,
-                            llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                if (a_kind == 4) {
+                    std::string runtime_func_name = "_lfortran_read_int32";
+                    fn = module->getFunction(runtime_func_name);
+                    if (!fn) {
+                        llvm::FunctionType *function_type = llvm::FunctionType::get(
+                                llvm::Type::getVoidTy(context), {
+                                    llvm::Type::getInt32Ty(context)->getPointerTo(),
+                                    llvm::Type::getInt32Ty(context)
+                                }, false);
+                        fn = llvm::Function::Create(function_type,
+                                llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                    }
+                } else {
+                    std::string runtime_func_name = "_lfortran_read_int64";
+                    fn = module->getFunction(runtime_func_name);
+                    if (!fn) {
+                        llvm::FunctionType *function_type = llvm::FunctionType::get(
+                                llvm::Type::getVoidTy(context), {
+                                    llvm::Type::getInt64Ty(context)->getPointerTo(),
+                                    llvm::Type::getInt32Ty(context)
+                                }, false);
+                        fn = llvm::Function::Create(function_type,
+                                llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                    }
                 }
                 break;
             }
