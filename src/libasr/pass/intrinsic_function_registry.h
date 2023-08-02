@@ -1222,7 +1222,14 @@ namespace Shape {
         Vec<ASR::expr_t *> m_shapes; m_shapes.reserve(al, n_dims);
         for (size_t i = 0; i < n_dims; i++) {
             if (m_dims[i].m_length) {
-                m_shapes.push_back(al, m_dims[i].m_length);
+                ASR::expr_t *e = nullptr;
+                if (extract_kind_from_ttype_t(type) != 4) {
+                    e = EXPR(make_Cast_t_value(al, loc, m_dims[i].m_length,
+                    ASR::cast_kindType::IntegerToInteger, extract_type(type)));
+                } else {
+                    e = m_dims[i].m_length;
+                }
+                m_shapes.push_back(al, e);
             }
         }
         ASR::expr_t *value = nullptr;
@@ -3303,7 +3310,7 @@ namespace IntrinsicFunctionRegistry {
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Sign),
             {&Sign::instantiate_Sign, &Sign::verify_args}},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Shape),
-            {nullptr, &Shape::verify_args}},
+            {&Shape::instantiate_Shape, &Shape::verify_args}},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicSymbol),
             {nullptr, &SymbolicSymbol::verify_args}},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicAdd),
