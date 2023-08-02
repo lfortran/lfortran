@@ -233,6 +233,22 @@ class ASRBuilder {
         }
         return TYPE(ASR::make_Tuple_t(al, loc, m_tuple_type.p, m_tuple_type.n));
     }
+    ASR::ttype_t *Array(std::vector<int64_t> dims, ASR::ttype_t *type) {
+        Vec<ASR::dimension_t> m_dims; m_dims.reserve(al, 1);
+        for (auto &x: dims) {
+            ASR::dimension_t dim;
+            dim.loc = loc;
+            if (x == 0) {
+                dim.m_start = nullptr;
+                dim.m_length = nullptr;
+            } else {
+                dim.m_start = EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int32));
+                dim.m_length = EXPR(ASR::make_IntegerConstant_t(al, loc, x, int32));
+            }
+            m_dims.push_back(al, dim);
+        }
+        return make_Array_t_util(al, loc, type, m_dims.p, m_dims.n);
+    }
 
     // Expressions -------------------------------------------------------------
     #define i(x, t)   EXPR(ASR::make_IntegerConstant_t(al, loc, x, t))
@@ -1220,11 +1236,7 @@ namespace Shape {
     static inline ASR::asr_t* create_Shape(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
             const std::function<void (const std::string &, const Location &)> err) {
-        if (is_allocatable(args[0])) {
-            // TODO
-            err("Allocatable `array` as an argument to `shape` is "
-                "not supported yet", loc);
-        }
+        ASRBuilder b(al, loc);
         Vec<ASR::expr_t *>m_args; m_args.reserve(al, 1);
         m_args.push_back(al, args[0]);
         int kind = 4; // default kind
@@ -1232,29 +1244,45 @@ namespace Shape {
             if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1]))) {
                 err("`kind` argument of `shape` must be a scalar integer", loc);
             }
-            extract_value(args[1], kind);
-            m_args.push_back(al, args[1]);
+            if (!extract_value(args[1], kind)) {
+                err("Only constant value for `kind` is supported for now", loc);
+            }
         }
-        ASR::dimension_t *dims = nullptr;
-        int n_dims = extract_dimensions_from_ttype(expr_type(args[0]), dims);
-        if (is_dimension_empty(dims, n_dims)) {
-            err("`shape` intrinsic doesn't support empty dimensions type yet", loc);
-        }
-        Vec<ASR::dimension_t> m_dims; m_dims.reserve(al, 1);
-        {
-            ASR::dimension_t dim;
-            dim.loc = loc;
-            dim.m_start = i32(1);
-            dim.m_length = i32(n_dims);
-            m_dims.push_back(al, dim);
-        }
-        ASR::ttype_t *return_type = make_Array_t_util(al, loc,
-            TYPE(ASR::make_Integer_t(al, loc, kind)), m_dims.p, m_dims.n);
+        // TODO: throw error for assumed size array
+        int n_dims = extract_n_dims_from_ttype(expr_type(args[0]));
+        ASR::ttype_t *return_type = b.Array({n_dims},
+            TYPE(ASR::make_Integer_t(al, loc, kind)));
         ASR::expr_t *m_value = eval_Shape(al, loc, return_type, args);
 
         return ASR::make_IntrinsicFunction_t(al, loc,
             static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Shape),
             m_args.p, m_args.n, 0, return_type, m_value);
+    }
+
+    static inline ASR::expr_t* instantiate_Shape(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/,
+            ASR::expr_t* compile_time_value) {
+        if (compile_time_value) {
+            return compile_time_value;
+        }
+        declare_basic_variables("_lcompilers_shape");
+        fill_func_arg("source", arg_types[0]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        int iter = extract_n_dims_from_ttype(arg_types[0]) + 1;
+        auto i = declare("i", int32, Local);
+        body.push_back(al, Assignment(i, i32(1)));
+        body.push_back(al, b.While(iLtE(i, i32(iter)), {
+            Assignment(b.ArrayItem(result, {i}), ArraySize(args[0], i)),
+            Assignment(i, iAdd(i, i32(1)))
+        }));
+
+        body.push_back(al, Return());
+
+        ASR::symbol_t *f_sym = make_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, Source, Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, compile_time_value);
     }
 
 } // namespace Shape
