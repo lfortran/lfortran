@@ -240,7 +240,7 @@ class ASRBuilder {
         for (auto &x: dims) {
             ASR::dimension_t dim;
             dim.loc = loc;
-            if (x == 0) {
+            if (x == -1) {
                 dim.m_start = nullptr;
                 dim.m_length = nullptr;
             } else {
@@ -285,6 +285,8 @@ class ASRBuilder {
         ASR::cast_kindType::IntegerToReal, real32, nullptr))
     #define i2r64(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
         ASR::cast_kindType::IntegerToReal, real64, nullptr))
+    #define i2i(x, t) EXPR(ASR::make_Cast_t(al, loc, x,                         \
+        ASR::cast_kindType::IntegerToInteger, t, nullptr))
     #define i2i64(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
         ASR::cast_kindType::IntegerToInteger, int64, nullptr))
     #define i2i32(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
@@ -293,6 +295,8 @@ class ASRBuilder {
         ASR::cast_kindType::RealToReal, real32, nullptr))
     #define r2r64(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
         ASR::cast_kindType::RealToReal, real64, nullptr))
+    #define r2r(x, t) EXPR(ASR::make_Cast_t(al, loc, x,                         \
+        ASR::cast_kindType::RealToReal, t, nullptr))
 
     #define iAdd(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
         ASR::binopType::Add, right, int32, nullptr))
@@ -1272,8 +1276,7 @@ namespace Shape {
             if (m_dims[i].m_length) {
                 ASR::expr_t *e = nullptr;
                 if (extract_kind_from_ttype_t(type) != 4) {
-                    e = EXPR(make_Cast_t_value(al, loc, m_dims[i].m_length,
-                    ASR::cast_kindType::IntegerToInteger, extract_type(type)));
+                    e = i2i(m_dims[i].m_length, extract_type(type));
                 } else {
                     e = m_dims[i].m_length;
                 }
@@ -1326,10 +1329,10 @@ namespace Shape {
         auto result = declare(fn_name, return_type, ReturnVar);
         int iter = extract_n_dims_from_ttype(arg_types[0]) + 1;
         auto i = declare("i", int32, Local);
-        body.push_back(al, Assignment(i, i32(1)));
+        body.push_back(al, b.Assignment(i, i32(1)));
         body.push_back(al, b.While(iLtE(i, i32(iter)), {
-            Assignment(b.ArrayItem(result, {i}), ArraySize(args[0], i)),
-            Assignment(i, iAdd(i, i32(1)))
+            b.Assignment(b.ArrayItem(result, {i}), ArraySize(args[0], i)),
+            b.Assignment(i, iAdd(i, i32(1)))
         }));
 
         body.push_back(al, Return());
