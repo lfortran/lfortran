@@ -1735,15 +1735,11 @@ public:
                 }
                 break ;
             }
-            case ASRUtils::IntrinsicFunctions::Shape: {
-                throw CodeGenError("Either the 'shape' intrinsic is not implemented yet "
-                    "or the compile-time value is not available", x.base.base.loc);
-                break;
-            }
             default: {
-                throw CodeGenError( ASRUtils::IntrinsicFunctionRegistry::
+                throw CodeGenError("Either the '"ASRUtils::IntrinsicFunctionRegistry::
                         get_intrinsic_function_name(x.m_intrinsic_id) +
-                        " is not implemented by LLVM backend.", x.base.base.loc);
+                        "' intrinsic is not implemented by LLVM backend or "
+                        "the compile-time value is not available", x.base.base.loc);
             }
         }
     }
