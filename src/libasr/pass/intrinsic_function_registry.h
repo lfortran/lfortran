@@ -549,33 +549,8 @@ class ASRBuilder {
 
     // Statements --------------------------------------------------------------
     #define Return() STMT(ASR::make_Return_t(al, loc))
+
     ASR::stmt_t *Assignment(ASR::expr_t *lhs, ASR::expr_t*rhs) {
-        ASR::ttype_t *lhs_type = expr_type(lhs);
-        ASR::ttype_t *rhs_type = expr_type(rhs);
-        int lhs_kind = extract_kind_from_ttype_t(lhs_type);
-        int rhs_kind = extract_kind_from_ttype_t(rhs_type);
-        if (lhs_kind != rhs_kind) {
-            switch(lhs_type->type) {
-                case ASR::Integer : {
-                    if (lhs_kind == 4) {
-                        rhs = i2i32(rhs);
-                    } else if (lhs_kind == 8) {
-                        rhs = i2i64(rhs);
-                    }
-                    break;
-                }
-                case ASR::Real : {
-                    if (lhs_kind == 4) {
-                        rhs = r2r32(rhs);
-                    } else if (lhs_kind == 8) {
-                        rhs = r2r64(rhs);
-                    }
-                    break;
-                }
-                default:
-                    break;
-            }
-        }
         LCOMPILERS_ASSERT(check_equal_type(expr_type(lhs), expr_type(rhs)));
         return STMT(ASR::make_Assignment_t(al, loc, lhs, rhs, nullptr));
     }
