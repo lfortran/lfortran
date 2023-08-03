@@ -34,66 +34,6 @@ return:                                           ; preds = %.entry
   ret i32 %0
 }
 
-define double @__module_lfortran_intrinsic_math_datan(double* %x) {
-.entry:
-  %r = alloca double, align 8
-  %0 = load double, double* %x, align 8
-  %1 = call double @_lfortran_datan(double %0)
-  store double %1, double* %r, align 8
-  br label %return
-
-return:                                           ; preds = %.entry
-  %2 = load double, double* %r, align 8
-  ret double %2
-}
-
-declare double @_lfortran_datan(double)
-
-define float @__module_lfortran_intrinsic_math_sacosh(float* %x) {
-.entry:
-  %r = alloca float, align 4
-  %0 = load float, float* %x, align 4
-  %1 = call float @_lfortran_sacosh(float %0)
-  store float %1, float* %r, align 4
-  br label %return
-
-return:                                           ; preds = %.entry
-  %2 = load float, float* %r, align 4
-  ret float %2
-}
-
-declare float @_lfortran_sacosh(float)
-
-define float @__module_lfortran_intrinsic_math_sasinh(float* %x) {
-.entry:
-  %r = alloca float, align 4
-  %0 = load float, float* %x, align 4
-  %1 = call float @_lfortran_sasinh(float %0)
-  store float %1, float* %r, align 4
-  br label %return
-
-return:                                           ; preds = %.entry
-  %2 = load float, float* %r, align 4
-  ret float %2
-}
-
-declare float @_lfortran_sasinh(float)
-
-define float @__module_lfortran_intrinsic_math_satanh(float* %x) {
-.entry:
-  %r = alloca float, align 4
-  %0 = load float, float* %x, align 4
-  %1 = call float @_lfortran_satanh(float %0)
-  store float %1, float* %r, align 4
-  br label %return
-
-return:                                           ; preds = %.entry
-  %2 = load float, float* %r, align 4
-  ret float %2
-}
-
-declare float @_lfortran_satanh(float)
-
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   call void @_lpython_set_argv(i32 %0, i8** %1)
