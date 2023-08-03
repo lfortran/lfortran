@@ -320,8 +320,10 @@ class ASRBuilder {
     #define iGt(x, y) EXPR(ASR::make_IntegerCompare_t(al, loc, x,               \
         ASR::cmpopType::Gt, y, logical, nullptr))
 
-    #define ArraySize(x, dim) EXPR(make_ArraySize_t_util(al, loc, x, dim,       \
+    #define ArraySize_1(x, dim) EXPR(make_ArraySize_t_util(al, loc, x, dim,       \
         int32, nullptr))
+    #define ArraySize_2(x, dim, t) EXPR(make_ArraySize_t_util(al, loc, x, dim,   \
+        t, nullptr))
 
     #define fGtE(x, y) EXPR(ASR::make_RealCompare_t(al, loc, x,                 \
         ASR::cmpopType::GtE, y, logical, nullptr))
@@ -1304,11 +1306,11 @@ namespace Shape {
         int iter = extract_n_dims_from_ttype(arg_types[0]) + 1;
         auto i = declare("i", int32, Local);
         body.push_back(al, b.Assignment(i, i32(1)));
-        body.push_back(al, b.While(iLtE(i, i32(iter)), {
-            b.Assignment(b.ArrayItem(result, {i}), ArraySize(args[0], i)),
+        body.push_back(al, b.While(iLt(i, i32(iter)), {
+            b.Assignment(b.ArrayItem(result, {i}),
+                ArraySize_2(args[0], i, extract_type(return_type))),
             b.Assignment(i, iAdd(i, i32(1)))
         }));
-
         body.push_back(al, Return());
 
         ASR::symbol_t *f_sym = make_Function_t(fn_name, fn_symtab, dep, args,
@@ -2666,7 +2668,7 @@ namespace MaxLoc {
             } else {
                 test = iGt(b.ArrayItem(args[0], {i}), b.ArrayItem(args[0], {result}));
             }
-            body.push_back(al, b.While(iLtE(i, ArraySize(args[0], i32(1))), {
+            body.push_back(al, b.While(iLtE(i, ArraySize_1(args[0], i32(1))), {
                 b.If(test, {
                     b.Assignment(result, i)
                 }, {}),
@@ -2770,7 +2772,7 @@ namespace MinLoc {
             } else {
                 test = iLt(b.ArrayItem(args[0], {i}), b.ArrayItem(args[0], {result}));
             }
-            body.push_back(al, b.While(iLtE(i, ArraySize(args[0], i32(1))), {
+            body.push_back(al, b.While(iLtE(i, ArraySize_1(args[0], i32(1))), {
                 b.If(test, {
                     b.Assignment(result, i)
                 }, {}),
