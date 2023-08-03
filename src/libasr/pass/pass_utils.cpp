@@ -933,10 +933,11 @@ namespace LCompilers {
                 stmt1 = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
                     ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, a,
                             ASR::binopType::Sub, c, type, nullptr)), nullptr));
-
-                stmt_add_c = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
-                    ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, a,
-                            ASR::binopType::Add, c, type, nullptr)), nullptr));
+                if (use_loop_variable_after_loop) {
+                    stmt_add_c = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
+                        ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, a,
+                                ASR::binopType::Add, c, type, nullptr)), nullptr));
+                }
 
                 inc_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
                             ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
