@@ -1736,7 +1736,7 @@ public:
                 break ;
             }
             default: {
-                throw CodeGenError("Either the '"ASRUtils::IntrinsicFunctionRegistry::
+                throw CodeGenError("Either the '" + ASRUtils::IntrinsicFunctionRegistry::
                         get_intrinsic_function_name(x.m_intrinsic_id) +
                         "' intrinsic is not implemented by LLVM backend or "
                         "the compile-time value is not available", x.base.base.loc);
