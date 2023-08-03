@@ -8015,12 +8015,15 @@ public:
 
         ASR::Function_t *s = nullptr;
         std::vector<llvm::Value*> args;
+        std::string self_argument = "";
         if (ASR::is_a<ASR::Function_t>(*proc_sym)) {
             s = ASR::down_cast<ASR::Function_t>(proc_sym);
         } else if (ASR::is_a<ASR::ClassProcedure_t>(*proc_sym)) {
             ASR::ClassProcedure_t *clss_proc = ASR::down_cast<
                 ASR::ClassProcedure_t>(proc_sym);
             s = ASR::down_cast<ASR::Function_t>(clss_proc->m_proc);
+            if (clss_proc->m_self_argument)
+            self_argument = std::string(clss_proc->m_self_argument);
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym)) {
             ASR::symbol_t *type_decl = ASR::down_cast<ASR::Variable_t>(proc_sym)->m_type_declaration;
             LCOMPILERS_ASSERT(type_decl);
@@ -8032,16 +8035,98 @@ public:
             s = ASR::down_cast<ASR::Function_t>(symbol_get_past_external(x.m_name));
         }
         bool is_method = false;
+        llvm::Value* pass_arg = nullptr;
         if (x.m_dt) {
             is_method = true;
-            ASR::Variable_t *caller = EXPR2VAR(x.m_dt);
-            std::uint32_t h = get_hash((ASR::asr_t*)caller);
-            llvm::Value* dt = llvm_symtab[h];
-            ASR::ttype_t* s_m_args0_type = ASRUtils::type_get_past_pointer(
-                                            ASRUtils::expr_type(s->m_args[0]));
-            ASR::ttype_t* dt_type = ASRUtils::type_get_past_pointer(caller->m_type);
-            dt = convert_to_polymorphic_arg(dt, s_m_args0_type, dt_type);
-            args.push_back(dt);
+            if (ASR::is_a<ASR::Var_t>(*x.m_dt)) {
+                ASR::Variable_t *caller = EXPR2VAR(x.m_dt);
+                std::uint32_t h = get_hash((ASR::asr_t*)caller);
+                // declared variable in the current scope
+                llvm::Value* dt = llvm_symtab[h];
+                // Function class type
+                ASR::ttype_t* s_m_args0_type = ASRUtils::type_get_past_pointer(
+                                                ASRUtils::expr_type(s->m_args[0]));
+                // derived type declared type
+                ASR::ttype_t* dt_type = ASRUtils::type_get_past_pointer(caller->m_type);
+                dt = convert_to_polymorphic_arg(dt, s_m_args0_type, dt_type);
+                args.push_back(dt);
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt)) {
+                ASR::StructInstanceMember_t *struct_mem
+                    = ASR::down_cast<ASR::StructInstanceMember_t>(x.m_dt);
+
+                // Declared struct variable
+                this->visit_expr_wrapper(struct_mem->m_v);
+                ASR::ttype_t* caller_type = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::expr_type(struct_mem->m_v));
+                llvm::Value* dt = tmp;
+
+                // Get struct symbol
+                ASR::ttype_t *arg_type = struct_mem->m_type;
+                arg_type = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_array(arg_type));
+                ASR::symbol_t* struct_sym;
+                if (ASR::is_a<ASR::Struct_t>(*arg_type)) {
+                    ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(arg_type);
+                    struct_sym = ASRUtils::symbol_get_past_external(
+                    struct_t->m_derived_type);
+                } else if (ASR::is_a<ASR::Class_t>(*arg_type)) {
+                    ASR::Class_t* struct_t = ASR::down_cast<ASR::Class_t>(arg_type);
+                    struct_sym = ASRUtils::symbol_get_past_external(
+                    struct_t->m_class_type);
+                } else {
+                    LCOMPILERS_ASSERT(false);
+                }
+
+                llvm::Value* dt_polymorphic;
+
+                // Function's class type
+                if (self_argument.length() > 0) {
+                    ASR::symbol_t *class_sym = s->m_symtab->resolve_symbol(self_argument);
+                    ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(class_sym);
+                    dt_polymorphic = builder->CreateAlloca(
+                        llvm_utils->getClassType(ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(var->m_type)), true));
+                } else {
+                    ASR::ttype_t* s_m_args0_type = ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(
+                                                ASRUtils::expr_type(s->m_args[0])));
+                    // Convert to polymorphic argument
+                    dt_polymorphic = builder->CreateAlloca(
+                        llvm_utils->getClassType(s_m_args0_type, true));
+                }
+                llvm::Value* hash_ptr = llvm_utils->create_gep(dt_polymorphic, 0);
+                llvm::Value* hash = llvm::ConstantInt::get(
+                    llvm_utils->getIntType(8), llvm::APInt(64, get_class_hash(struct_sym)));
+                builder->CreateStore(hash, hash_ptr);
+
+
+                if (ASR::is_a<ASR::Struct_t>(*caller_type)) {
+                    struct_sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Struct_t>(caller_type)->m_derived_type);
+                } else if (ASR::is_a<ASR::Class_t>(*caller_type)) {
+                     struct_sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Class_t>(caller_type)->m_class_type);
+                } else {
+                    LCOMPILERS_ASSERT(false);
+                }
+
+                int dt_idx = name2memidx[ASRUtils::symbol_name(struct_sym)]
+                    [ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(struct_mem->m_m))];
+                llvm::Value* dt_1 = llvm_utils->create_gep(
+                    dt, dt_idx);
+                dt_1 = llvm_utils->create_gep(dt_1, 1);
+                llvm::Value* class_ptr = llvm_utils->create_gep(dt_polymorphic, 1);
+                if (dt_1->getType()->isPointerTy()) {
+                    dt_1 = CreateLoad(dt_1);
+                }
+                builder->CreateStore(dt_1, class_ptr);
+                if (self_argument.length() == 0) {
+                    args.push_back(dt_polymorphic);
+                } else {
+                    pass_arg = dt_polymorphic;
+                }
+
+            } else {
+                throw CodeGenError("FunctionCall: Struct symbol type not supported");
+            }
         }
         if( ASRUtils::is_intrinsic_function2(s) ) {
             std::string symbol_name = ASRUtils::symbol_name(x.m_name);
@@ -8133,6 +8218,9 @@ public:
             std::string m_name = std::string(((ASR::Function_t*)(&(x.m_name->base)))->m_name);
             std::vector<llvm::Value *> args2 = convert_call_args(x, is_method);
             args.insert(args.end(), args2.begin(), args2.end());
+            if (pass_arg) {
+                args.push_back(pass_arg);
+            }
             ASR::ttype_t *return_var_type0 = EXPR2VAR(s->m_return_var)->m_type;
             if (ASRUtils::get_FunctionType(s)->m_abi == ASR::abiType::BindC) {
                 if (is_a<ASR::Complex_t>(*return_var_type0)) {
@@ -8463,7 +8551,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     pass_manager.apply_passes(al, &asr, pass_options, diagnostics);
 
     // Uncomment for debugging the ASR after the transformation
-    // std::cout << LCompilers::LPython::pickle(asr, true, true, false) << std::endl;
+    // std::cout << LFortran::pickle(asr, true, true, false) << std::endl;
 
     try {
         v.visit_asr((ASR::asr_t&)asr);
