@@ -2579,7 +2579,7 @@ namespace MaxLoc {
         int n_dims = extract_dimensions_from_ttype(expr_type(args[0]), m_dims);
         if (n_dims == 1 || n_dims == 2) {
             ASR::expr_t *result_length = nullptr;
-            int kind = extract_kind_from_ttype_t(expr_type(args[0]));
+            int kind = 4; // default kind
             if (args[1]) {
                 int dim = 0;
                 if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1]))) {
