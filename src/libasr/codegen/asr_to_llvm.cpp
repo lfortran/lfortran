@@ -7805,11 +7805,9 @@ public:
 
     void visit_RuntimePolymorphicSubroutineCall(const ASR::SubroutineCall_t& x, std::string proc_sym_name) {
         std::vector<std::pair<llvm::Value*, ASR::symbol_t*>> vtabs;
-        ASR::Var_t* dt_Var = ASR::down_cast<ASR::Var_t>(x.m_dt);
-        ASR::symbol_t* dt_sym = ASRUtils::symbol_get_past_external(dt_Var->m_v);
         ASR::StructType_t* dt_sym_type = nullptr;
-        ASR::ttype_t* dt_ttype_t = ASRUtils::type_get_past_pointer(
-                                        ASRUtils::symbol_type(dt_sym));
+        ASR::ttype_t* dt_ttype_t = ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(
+                                        ASRUtils::expr_type(x.m_dt)));
         if( ASR::is_a<ASR::Struct_t>(*dt_ttype_t) ) {
             ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(dt_ttype_t);
             dt_sym_type = ASR::down_cast<ASR::StructType_t>(
@@ -7836,7 +7834,7 @@ public:
 
         uint64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
-        visit_Var(*dt_Var);
+        this->visit_expr_wrapper(x.m_dt);
         ptr_loads = ptr_loads_copy;
         llvm::Value* llvm_dt = tmp;
         llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
@@ -7895,11 +7893,9 @@ public:
 
     void visit_RuntimePolymorphicFunctionCall(const ASR::FunctionCall_t& x, std::string proc_sym_name) {
         std::vector<std::pair<llvm::Value*, ASR::symbol_t*>> vtabs;
-        ASR::Var_t* dt_Var = ASR::down_cast<ASR::Var_t>(x.m_dt);
-        ASR::symbol_t* dt_sym = ASRUtils::symbol_get_past_external(dt_Var->m_v);
         ASR::StructType_t* dt_sym_type = nullptr;
-        ASR::ttype_t* dt_ttype_t = ASRUtils::type_get_past_pointer(
-                                        ASRUtils::symbol_type(dt_sym));
+        ASR::ttype_t* dt_ttype_t = ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(
+                                        ASRUtils::expr_type(x.m_dt)));
         if( ASR::is_a<ASR::Struct_t>(*dt_ttype_t) ) {
             ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(dt_ttype_t);
             dt_sym_type = ASR::down_cast<ASR::StructType_t>(
@@ -7926,7 +7922,7 @@ public:
 
         uint64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
-        visit_Var(*dt_Var);
+        this->visit_expr_wrapper(x.m_dt);
         ptr_loads = ptr_loads_copy;
         llvm::Value* llvm_dt = tmp;
         tmp = builder->CreateAlloca(llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get()));
