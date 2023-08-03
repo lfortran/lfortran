@@ -1013,25 +1013,51 @@ public:
         for( size_t i = 0; i < x.n_vars; i++ ) {
             const ASR::expr_t* tmp_expr = x.m_vars[i];
             ASR::symbol_t* curr_obj = nullptr;
+            ASR::abiType abt = ASR::abiType::Source;
             if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
                 const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
                 curr_obj = tmp_var->m_v;
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
+                                    symbol_get_past_external(curr_obj));
+                int64_t ptr_loads_copy = ptr_loads;
+                ptr_loads = 1 - LLVM::is_llvm_pointer(*v->m_type);
+                fetch_var(v);
+                ptr_loads = ptr_loads_copy;
+                abt = v->m_abi;
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr)) {
+                ASR::StructInstanceMember_t* sm = ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr);
+                this->visit_expr_wrapper(sm->m_v);
+                ASR::ttype_t* caller_type = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::expr_type(sm->m_v));
+                llvm::Value* dt = tmp;
+                ASR::symbol_t *struct_sym;
+
+                if (ASR::is_a<ASR::Struct_t>(*caller_type)) {
+                    struct_sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Struct_t>(caller_type)->m_derived_type);
+                } else if (ASR::is_a<ASR::Class_t>(*caller_type)) {
+                     struct_sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Class_t>(caller_type)->m_class_type);
+                } else {
+                    LCOMPILERS_ASSERT(false);
+                }
+
+                int dt_idx = name2memidx[ASRUtils::symbol_name(struct_sym)]
+                    [ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(sm->m_m))];
+                llvm::Value* dt_1 = llvm_utils->create_gep(
+                    dt, dt_idx);
+                tmp = dt_1;
             } else {
                 throw CodeGenError("Cannot deallocate variables in expression " +
                                     std::to_string(tmp_expr->type),
                                     tmp_expr->base.loc);
             }
-            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
-                                    symbol_get_past_external(curr_obj));
-            int64_t ptr_loads_copy = ptr_loads;
-            ptr_loads = 1 - LLVM::is_llvm_pointer(*v->m_type);
-            fetch_var(v);
-            ptr_loads = ptr_loads_copy;
-            int dims = ASRUtils::extract_n_dims_from_ttype(v->m_type);
+            ASR::ttype_t *cur_type = ASRUtils::expr_type(tmp_expr);
+            int dims = ASRUtils::extract_n_dims_from_ttype(cur_type);
             if (dims == 0) {
-                if (ASRUtils::is_character(*v->m_type)) {
+                if (ASRUtils::is_character(*cur_type)) {
                     llvm::Value* tmp_ = tmp;
-                    if( LLVM::is_llvm_pointer(*v->m_type) ) {
+                    if( LLVM::is_llvm_pointer(*cur_type) ) {
                         tmp = LLVM::CreateLoad(*builder, tmp);
                     }
                     llvm::Value *cond = builder->CreateICmpNE(
@@ -1046,14 +1072,14 @@ public:
                     continue;
                 } else {
                     llvm::Value* tmp_ = tmp;
-                    if( LLVM::is_llvm_pointer(*v->m_type) ) {
+                    if( LLVM::is_llvm_pointer(*cur_type) ) {
                         tmp = LLVM::CreateLoad(*builder, tmp);
                     }
                     llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(
                         ASRUtils::type_get_past_array(
                             ASRUtils::type_get_past_pointer(
-                                ASRUtils::type_get_past_allocatable(v->m_type))),
-                        module.get(), v->m_abi);
+                                ASRUtils::type_get_past_allocatable(cur_type))),
+                        module.get(), abt);
                     llvm::Value *cond = builder->CreateICmpNE(
                         builder->CreatePtrToInt(tmp, llvm::Type::getInt64Ty(context)),
                         builder->CreatePtrToInt(
@@ -1069,14 +1095,14 @@ public:
                     }, [](){});
                 }
             } else {
-                if( LLVM::is_llvm_pointer(*v->m_type) ) {
+                if( LLVM::is_llvm_pointer(*cur_type) ) {
                     tmp = LLVM::CreateLoad(*builder, tmp);
                 }
                 llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(
                     ASRUtils::type_get_past_array(
                         ASRUtils::type_get_past_pointer(
-                            ASRUtils::type_get_past_allocatable(v->m_type))),
-                    module.get(), v->m_abi);
+                            ASRUtils::type_get_past_allocatable(cur_type))),
+                    module.get(), abt);
                 llvm::Value *cond = arr_descr->get_is_allocated_flag(tmp, llvm_data_type);
                 llvm_utils->create_if_else(cond, [=]() {
                     call_lfortran_free(free_fn, llvm_data_type);
