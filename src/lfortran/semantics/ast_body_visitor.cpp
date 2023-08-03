@@ -835,13 +835,19 @@ public:
                             }
                         }
                     } else {
-                        LCOMPILERS_ASSERT_MSG(false, std::string(func_call_t->m_func));
+                        throw SemanticError("The type-spec: `" + std::string(func_call_t->m_func)
+                            + "` is not supported yet", x.m_args[i].m_start->base.loc);
                     }
                 } else if( AST::is_a<AST::Name_t>(*x.m_args[i].m_start) ) {
                     AST::Name_t* name_t = AST::down_cast<AST::Name_t>(x.m_args[i].m_start);
                     ASR::symbol_t *v = current_scope->resolve_symbol(name_t->m_id);
-                    ASR::ttype_t* struct_t = ASRUtils::TYPE(ASR::make_Struct_t(al, x.base.base.loc, v));
-                    new_arg.m_type = struct_t;
+                    if (v) {
+                        ASR::ttype_t* struct_t = ASRUtils::TYPE(ASR::make_Struct_t(al, x.base.base.loc, v));
+                        new_arg.m_type = struct_t;
+                    } else {
+                        throw SemanticError("`The type-spec: " + std::string(name_t->m_id)
+                            + "` is not supported yet", x.m_args[i].m_start->base.loc);
+                    }
                 } else {
                     LCOMPILERS_ASSERT_MSG(false, std::to_string(x.m_args[i].m_start->type));
                 }
