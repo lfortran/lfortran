@@ -220,7 +220,9 @@ class ASRBuilder {
 
     // Types -------------------------------------------------------------------
     #define int32        TYPE(ASR::make_Integer_t(al, loc, 4))
+    #define int64        TYPE(ASR::make_Integer_t(al, loc, 8))
     #define real32       TYPE(ASR::make_Real_t(al, loc, 4))
+    #define real64       TYPE(ASR::make_Real_t(al, loc, 8))
     #define logical      TYPE(ASR::make_Logical_t(al, loc, 4))
     #define character(x) TYPE(ASR::make_Character_t(al, loc, 1, x, nullptr))
     #define List(x)      TYPE(ASR::make_List_t(al, loc, x))
@@ -255,6 +257,24 @@ class ASRBuilder {
     #define StringConstant(s, type) EXPR(ASR::make_StringConstant_t(al, loc,    \
         s2c(al, s), type))
     #define StringLen(s) EXPR(ASR::make_StringLen_t(al, loc, s, int32, nullptr))
+
+    // Cast --------------------------------------------------------------------
+    #define r2i32(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
+        ASR::cast_kindType::RealToInteger, int32, nullptr))
+    #define r2i64(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
+        ASR::cast_kindType::RealToInteger, int64, nullptr))
+    #define i2r32(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
+        ASR::cast_kindType::IntegerToReal, real32, nullptr))
+    #define i2r64(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
+        ASR::cast_kindType::IntegerToReal, real64, nullptr))
+    #define i2i64(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
+        ASR::cast_kindType::IntegerToInteger, int64, nullptr))
+    #define i2i32(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
+        ASR::cast_kindType::IntegerToInteger, int32, nullptr))
+    #define r2r32(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
+        ASR::cast_kindType::RealToReal, real32, nullptr))
+    #define r2r64(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
+        ASR::cast_kindType::RealToReal, real64, nullptr))
 
     #define iAdd(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
         ASR::binopType::Add, right, int32, nullptr))
