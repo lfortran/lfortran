@@ -2,7 +2,6 @@ program arrays_28
     implicit none
     integer                 :: dim = 1, i, j, n = 6
     integer(4)              :: res_01(1), res_02(2)
-    integer(8)              :: res_03(1)
     integer(4)              :: arr_01(6) = [-14, 3, 0, -2, 19, 1]
     integer(4)              :: arr_02(3, 3) = reshape( &
         [-14, 30, -23, 0, -2, 1, -17, 7, -13], [3, 3])
@@ -31,8 +30,8 @@ program arrays_28
     if (maxloc([-1, 0, -2, -3, -4], 1) /= 2) error stop
     if (maxloc([-1., 0., -2., 3., -4.], 1) /= 4) error stop
 
-    res_03 = maxloc([-1_8, 2_8, -3_8, 4_8, -5_8])
-    if (res_03(1) /= 4) error stop
+    res_01 = maxloc([-1_8, 2_8, -3_8, 4_8, -5_8])
+    if (res_01(1) /= 4) error stop
 
     ! Run-time
     if (maxloc(arr_01, 1) /= 5) error stop
@@ -40,14 +39,14 @@ program arrays_28
     res_02 = maxloc(arr_02)
     if (res_02(1) /= 2 .and. res_02(2) /= 1) error stop
 
-    res_03 = maxloc(arr_03)
-    if (res_03(1) /= 3) error stop
+    res_01 = maxloc(arr_03)
+    if (res_01(1) /= 3) error stop
 
     res_01 = maxloc(arr_04)
     if (res_01(1) /= 6) error stop
 
     if (maxloc(arr_05, dim=1) /= 2) error stop
 
-    res_03 = maxloc(arr_06)
-    if (res_03(1) /= 1) error stop
+    res_01 = maxloc(arr_06)
+    if (res_01(1) /= 1) error stop
 end program arrays_28
