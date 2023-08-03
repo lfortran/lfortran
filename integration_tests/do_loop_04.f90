@@ -6,6 +6,7 @@ program do_loop_04
 
     ! without --use-loop-variable-after-loop
 
+    ! remove/ update this test if we make using the loop variable after the loop by default
     if (k /= 2) error stop
 
     print *, "k after = ", k
