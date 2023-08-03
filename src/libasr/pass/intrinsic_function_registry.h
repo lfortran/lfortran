@@ -234,12 +234,12 @@ class ASRBuilder {
         }
         return TYPE(ASR::make_Tuple_t(al, loc, m_tuple_type.p, m_tuple_type.n));
     }
-    ASR::ttype_t *Array(std::vector<int> dims, ASR::ttype_t *type) {
+    ASR::ttype_t *Array(std::vector<int64_t> dims, ASR::ttype_t *type) {
         Vec<ASR::dimension_t> m_dims; m_dims.reserve(al, 1);
         for (auto &x: dims) {
             ASR::dimension_t dim;
             dim.loc = loc;
-            if (x == 0) {
+            if (x == -1) {
                 dim.m_start = nullptr;
                 dim.m_length = nullptr;
             } else {
@@ -529,35 +529,19 @@ class ASRBuilder {
         return PassUtils::create_array_ref(arr, idx_vars, al);
     }
 
-    ASR::expr_t *ArrayConstant(std::vector<int> elements, ASR::ttype_t *type,
-            bool physical_cast=true) {
+    ASR::expr_t *ArrayConstant(std::vector<ASR::expr_t *> elements,
+            ASR::ttype_t *base_type, bool cast2descriptor=true) {
         // This function only creates array with rank one
         // TODO: Support other dimensions
-        Vec<ASR::dimension_t> m_dims; m_dims.reserve(al, 1);
-        ASR::dimension_t dim;
-        dim.loc = loc;
-        dim.m_start = i32(1);
-        dim.m_length = i32(elements.size());
-        m_dims.push_back(al, dim);
+        Vec<ASR::expr_t *> m_eles; m_eles.reserve(al, 1);
+        for (auto &x: elements) m_eles.push_back(al, x);
 
-        ASR::ttype_t *fixed_size_type = TYPE(ASR::make_Array_t(al, loc,
-            type, m_dims.p, m_dims.n, ASR::array_physical_typeType::FixedSizeArray));
-        ASR::ttype_t *descriptor_type = TYPE(ASR::make_Array_t(al, loc,
-            type, m_dims.p, m_dims.n, ASR::array_physical_typeType::DescriptorArray));
-
-        Vec<ASR::expr_t *> m_elements; m_elements.reserve(al, 1);
-        for (auto &x: elements) {
-            m_elements.push_back(al, i32(x));
-        }
-
+        ASR::ttype_t *fixed_size_type = Array({(int64_t) elements.size()}, base_type);
         ASR::expr_t *arr_constant = EXPR(ASR::make_ArrayConstant_t(al, loc,
-            m_elements.p, m_elements.n, fixed_size_type, ASR::arraystorageType::ColMajor));
+            m_eles.p, m_eles.n, fixed_size_type, ASR::arraystorageType::ColMajor));
 
-        if (physical_cast) {
-            return EXPR(ASR::make_ArrayPhysicalCast_t(al, loc, arr_constant,
-                ASR::array_physical_typeType::FixedSizeArray,
-                ASR::array_physical_typeType::DescriptorArray,
-                descriptor_type, nullptr));
+        if (cast2descriptor) {
+            return cast_to_descriptor(al, arr_constant);
         } else {
             return arr_constant;
         }
@@ -2596,7 +2580,7 @@ namespace MaxLoc {
             if (!is_array(type)) {
                 return i(max_index, type);
             } else {
-                return b.ArrayConstant({max_index}, extract_type(type), false);
+                return b.ArrayConstant({i32(max_index)}, extract_type(type), false);
             }
         } else {
             return nullptr;
@@ -2724,8 +2708,8 @@ namespace MaxLoc {
                 // max_1d_index = maxloc(_1d_array)
                 int size = ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
                 ASR::expr_t *reshape_expr = EXPR(ASR::make_ArrayReshape_t(al, loc,
-                    args[0], b.ArrayConstant({size}, int32),
-                    b.Array({0}, extract_type(arg_types[0])), nullptr));
+                    args[0], b.ArrayConstant({i32(size)}, int32),
+                    b.Array({-1}, extract_type(arg_types[0])), nullptr));
                 auto _1d_array = declare("_1d_array",
                     b.Array({size}, extract_type(arg_types[0])), Local);
                 body.push_back(al, b.Assignment(_1d_array, reshape_expr));
