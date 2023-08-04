@@ -1046,6 +1046,11 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         if (current_scope == nullptr) {
             return ;
         }
+        if (x->m_value) {
+            remove_original_statement = false;
+            *current_expr = x->m_value;
+            return;
+        }
 
         const Location& loc = x->base.base.loc;
         bool is_return_var_handled = false;

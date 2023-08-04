@@ -56,6 +56,7 @@ enum class IntrinsicFunctions : int64_t {
     MinLoc,
     Merge,
     Sign,
+    Shape,
     SymbolicSymbol,
     SymbolicAdd,
     SymbolicSub,
@@ -111,6 +112,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(MinLoc)
         INTRINSIC_NAME_CASE(Merge)
         INTRINSIC_NAME_CASE(Sign)
+        INTRINSIC_NAME_CASE(Shape)
         INTRINSIC_NAME_CASE(SymbolicSymbol)
         INTRINSIC_NAME_CASE(SymbolicAdd)
         INTRINSIC_NAME_CASE(SymbolicSub)
@@ -285,6 +287,8 @@ class ASRBuilder {
         ASR::cast_kindType::IntegerToReal, real32, nullptr))
     #define i2r64(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
         ASR::cast_kindType::IntegerToReal, real64, nullptr))
+    #define i2i(x, t) EXPR(ASR::make_Cast_t(al, loc, x,                         \
+        ASR::cast_kindType::IntegerToInteger, t, nullptr))
     #define i2i64(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
         ASR::cast_kindType::IntegerToInteger, int64, nullptr))
     #define i2i32(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
@@ -293,6 +297,8 @@ class ASRBuilder {
         ASR::cast_kindType::RealToReal, real32, nullptr))
     #define r2r64(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
         ASR::cast_kindType::RealToReal, real64, nullptr))
+    #define r2r(x, t) EXPR(ASR::make_Cast_t(al, loc, x,                         \
+        ASR::cast_kindType::RealToReal, t, nullptr))
 
     // Binop -------------------------------------------------------------------
     #define iAdd(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
@@ -325,8 +331,10 @@ class ASRBuilder {
     #define iGt(x, y) EXPR(ASR::make_IntegerCompare_t(al, loc, x,               \
         ASR::cmpopType::Gt, y, logical, nullptr))
 
-    #define ArraySize(x, dim) EXPR(make_ArraySize_t_util(al, loc, x, dim,       \
+    #define ArraySize_1(x, dim) EXPR(make_ArraySize_t_util(al, loc, x, dim,       \
         int32, nullptr))
+    #define ArraySize_2(x, dim, t) EXPR(make_ArraySize_t_util(al, loc, x, dim,   \
+        t, nullptr))
 
     #define fGtE(x, y) EXPR(ASR::make_RealCompare_t(al, loc, x,                 \
         ASR::cmpopType::GtE, y, logical, nullptr))
@@ -555,7 +563,6 @@ class ASRBuilder {
         return STMT(ASR::make_Assignment_t(al, loc, lhs, rhs, nullptr));
     }
 
-
     template <typename LOOP_BODY>
     ASR::stmt_t* create_do_loop(
         const Location& loc, int rank, ASR::expr_t* array,
@@ -683,6 +690,9 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
         ASR::ttype_t *arg_type, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/,
         ASR::expr_t *value) {
+    if (value) {
+        return value;
+    }
     std::string c_func_name;
     switch (arg_type->type) {
         case ASR::ttypeType::Complex : {
@@ -886,6 +896,7 @@ static inline ASR::expr_t* instantiate_LogGamma (Allocator &al,
         const Location &loc, SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
         ASR::ttype_t *return_type, Vec<ASR::call_arg_t>& new_args,
         int64_t overload_id,ASR::expr_t* compile_time_value) {
+    if (compile_time_value) return compile_time_value;
     LCOMPILERS_ASSERT(arg_types.size() == 1);
     ASR::ttype_t* arg_type = arg_types[0];
     return UnaryIntrinsicFunction::instantiate_functions(al, loc, scope,
@@ -937,6 +948,7 @@ namespace X {                                                                   
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,           \
             Vec<ASR::call_arg_t>& new_args,int64_t overload_id,                 \
             ASR::expr_t* compile_time_value)  {                                 \
+        if (compile_time_value) return compile_time_value;                      \
         LCOMPILERS_ASSERT(arg_types.size() == 1);                               \
         ASR::ttype_t* arg_type = arg_types[0];                                  \
         return UnaryIntrinsicFunction::instantiate_functions(al, loc, scope,    \
@@ -1036,6 +1048,9 @@ namespace Abs {
     static inline ASR::expr_t* instantiate_Abs(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, ASR::expr_t* compile_time_value) {
+        if (compile_time_value) {
+            return compile_time_value;
+        }
         std::string func_name = "_lcompilers_abs_" + type_to_str_python(arg_types[0]);
         declare_basic_variables(func_name);
         if (scope->get_symbol(func_name)) {
@@ -1204,6 +1219,9 @@ namespace Sign {
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/,
             ASR::expr_t* compile_time_value) {
+        if (compile_time_value) {
+            return compile_time_value;
+        }
         declare_basic_variables("_lcompilers_sign_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[0]);
@@ -1239,10 +1257,99 @@ namespace Sign {
         ASR::symbol_t *f_sym = make_Function_t(fn_name, fn_symtab, dep, args,
             body, result, Source, Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
-        return b.Call(f_sym, new_args, arg_types[0], compile_time_value);
+        return b.Call(f_sym, new_args, return_type, compile_time_value);
     }
 } // namespace Sign
 
+namespace Shape {
+    static inline void verify_args(const ASR::IntrinsicFunction_t &x,
+            diag::Diagnostics &diagnostics) {
+        ASRUtils::require_impl(x.n_args == 1 || x.n_args == 2,
+            "`shape` intrinsic accepts either 1 or 2 arguments",
+            x.base.base.loc, diagnostics);
+        ASRUtils::require_impl(x.m_args[0], "`source` argument of `shape` "
+            "cannot be nullptr", x.base.base.loc, diagnostics);
+        ASRUtils::require_impl(x.m_args[1], "`kind` argument of `shape` "
+            "cannot be nullptr", x.base.base.loc, diagnostics);
+    }
+
+    static ASR::expr_t *eval_Shape(Allocator &al, const Location &loc,
+            ASR::ttype_t *type, Vec<ASR::expr_t*> &args) {
+        ASR::dimension_t *m_dims;
+        size_t n_dims = extract_dimensions_from_ttype(expr_type(args[0]), m_dims);
+        Vec<ASR::expr_t *> m_shapes; m_shapes.reserve(al, n_dims);
+        for (size_t i = 0; i < n_dims; i++) {
+            if (m_dims[i].m_length) {
+                ASR::expr_t *e = nullptr;
+                if (extract_kind_from_ttype_t(type) != 4) {
+                    e = i2i(m_dims[i].m_length, extract_type(type));
+                } else {
+                    e = m_dims[i].m_length;
+                }
+                m_shapes.push_back(al, e);
+            }
+        }
+        ASR::expr_t *value = nullptr;
+        if (m_shapes.n > 0) {
+            value = EXPR(ASR::make_ArrayConstant_t(al, loc, m_shapes.p, m_shapes.n,
+                type, ASR::arraystorageType::ColMajor));
+        }
+        return value;
+    }
+
+    static inline ASR::asr_t* create_Shape(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args,
+            const std::function<void (const std::string &, const Location &)> err) {
+        ASRBuilder b(al, loc);
+        Vec<ASR::expr_t *>m_args; m_args.reserve(al, 1);
+        m_args.push_back(al, args[0]);
+        int kind = 4; // default kind
+        if (args[1]) {
+            if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1]))) {
+                err("`kind` argument of `shape` must be a scalar integer", loc);
+            }
+            if (!extract_value(args[1], kind)) {
+                err("Only constant value for `kind` is supported for now", loc);
+            }
+        }
+        // TODO: throw error for assumed size array
+        int n_dims = extract_n_dims_from_ttype(expr_type(args[0]));
+        ASR::ttype_t *return_type = b.Array({n_dims},
+            TYPE(ASR::make_Integer_t(al, loc, kind)));
+        ASR::expr_t *m_value = eval_Shape(al, loc, return_type, args);
+
+        return ASR::make_IntrinsicFunction_t(al, loc,
+            static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Shape),
+            m_args.p, m_args.n, 0, return_type, m_value);
+    }
+
+    static inline ASR::expr_t* instantiate_Shape(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/,
+            ASR::expr_t* compile_time_value) {
+        if (compile_time_value) {
+            return compile_time_value;
+        }
+        declare_basic_variables("_lcompilers_shape");
+        fill_func_arg("source", arg_types[0]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        int iter = extract_n_dims_from_ttype(arg_types[0]) + 1;
+        auto i = declare("i", int32, Local);
+        body.push_back(al, b.Assignment(i, i32(1)));
+        body.push_back(al, b.While(iLt(i, i32(iter)), {
+            b.Assignment(b.ArrayItem(result, {i}),
+                ArraySize_2(args[0], i, extract_type(return_type))),
+            b.Assignment(i, iAdd(i, i32(1)))
+        }));
+        body.push_back(al, Return());
+
+        ASR::symbol_t *f_sym = make_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, Source, Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, compile_time_value);
+    }
+
+} // namespace Shape
 
 #define create_exp_macro(X, stdeval)                                                      \
 namespace X {                                                                             \
@@ -1638,6 +1745,9 @@ static inline ASR::expr_t* instantiate_Any(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *logical_return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t overload_id,
         ASR::expr_t* compile_time_value) {
+    if (compile_time_value) {
+        return compile_time_value;
+    }
     ASRBuilder builder(al, loc);
     ASRBuilder& b = builder;
     ASR::ttype_t* arg_type = arg_types[0];
@@ -1808,6 +1918,9 @@ namespace Max {
     static inline ASR::expr_t* instantiate_Max(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, ASR::expr_t* compile_time_value) {
+        if (compile_time_value) {
+            return compile_time_value;
+        }
         std::string func_name = "_lcompilers_max0_" + type_to_str_python(arg_types[0]);
         std::string fn_name = scope->get_unique_name(func_name);
         SymbolTable *fn_symtab = al.make_new<SymbolTable>(scope);
@@ -1920,6 +2033,9 @@ namespace Min {
     static inline ASR::expr_t* instantiate_Min(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, ASR::expr_t* compile_time_value) {
+        if (compile_time_value) {
+            return compile_time_value;
+        }
         std::string func_name = "_lcompilers_min0_" + type_to_str_python(arg_types[0]);
         std::string fn_name = scope->get_unique_name(func_name);
         SymbolTable *fn_symtab = al.make_new<SymbolTable>(scope);
@@ -2324,6 +2440,9 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al, const Locatio
     Vec<ASR::call_arg_t>& new_args, int64_t overload_id,
     ASR::expr_t* compile_time_value, ASRUtils::IntrinsicFunctions intrinsic_func_id,
     get_initial_value_func get_initial_value, elemental_operation_func elemental_operation) {
+    if (compile_time_value) {
+        return compile_time_value;
+    }
     std::string intrinsic_func_name = ASRUtils::get_intrinsic_name(static_cast<int>(intrinsic_func_id));
     ASRBuilder builder(al, loc);
     ASRBuilder& b = builder;
@@ -2656,9 +2775,11 @@ namespace MaxLoc {
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& m_args, int64_t /*overload_id*/,
             ASR::expr_t* compile_time_value) {
+        if (compile_time_value) {
+            return compile_time_value;
+        }
         declare_basic_variables("_lcompilers_maxloc")
         fill_func_arg("array", arg_types[0]);
-
         ASR::dimension_t *m_dims;
         int n_dims = extract_dimensions_from_ttype(expr_type(m_args[0].m_value), m_dims);
         if (m_args.n > 1) {
@@ -2779,6 +2900,9 @@ namespace MinLoc {
             Vec<ASR::ttype_t*>& arg_types,  ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& m_args, int64_t /*overload_id*/,
             ASR::expr_t* compile_time_value) {
+        if (compile_time_value) {
+            return compile_time_value;
+        }
         declare_basic_variables("_lcompilers_minloc")
         fill_func_arg("array", arg_types[0]);
         fill_func_arg("dim", arg_types[1]);
@@ -2794,7 +2918,7 @@ namespace MinLoc {
             } else {
                 test = iLt(b.ArrayItem(args[0], {i}), b.ArrayItem(args[0], {result}));
             }
-            body.push_back(al, b.While(iLtE(i, ArraySize(args[0], i32(1))), {
+            body.push_back(al, b.While(iLtE(i, ArraySize_1(args[0], i32(1))), {
                 b.If(test, {
                     b.Assignment(result, i)
                 }, {}),
@@ -2897,6 +3021,9 @@ namespace Partition {
             Vec<ASR::ttype_t*>& /*arg_types*/, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/,
             ASR::expr_t* compile_time_value) {
+        if (compile_time_value) {
+            return compile_time_value;
+        }
         // TODO: show runtime error for empty separator or pattern
         declare_basic_variables("_lpython_str_partition");
         fill_func_arg("target_string", character(-2));
@@ -3042,6 +3169,9 @@ namespace Merge {
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/,
             ASR::expr_t* compile_time_value) {
+        if (compile_time_value) {
+            return compile_time_value;
+        }
         LCOMPILERS_ASSERT(arg_types.size() == 3);
 
         // Array inputs should be elementalised in array_op pass already
@@ -3352,6 +3482,8 @@ namespace IntrinsicFunctionRegistry {
             {&Merge::instantiate_Merge, &Merge::verify_args}},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Sign),
             {&Sign::instantiate_Sign, &Sign::verify_args}},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Shape),
+            {&Shape::instantiate_Shape, &Shape::verify_args}},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicSymbol),
             {nullptr, &SymbolicSymbol::verify_args}},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicAdd),
@@ -3438,6 +3570,8 @@ namespace IntrinsicFunctionRegistry {
             "merge"},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Sign),
             "sign"},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Shape),
+            "shape"},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicSymbol),
             "Symbol"},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicAdd),
@@ -3507,6 +3641,7 @@ namespace IntrinsicFunctionRegistry {
                 {"minloc", {&MinLoc::create_MinLoc, &MinLoc::eval_MinLoc}},
                 {"merge", {&Merge::create_Merge, &Merge::eval_Merge}},
                 {"sign", {&Sign::create_Sign, &Sign::eval_Sign}},
+                {"shape", {&Shape::create_Shape, &Shape::eval_Shape}},
                 {"Symbol", {&SymbolicSymbol::create_SymbolicSymbol, &SymbolicSymbol::eval_SymbolicSymbol}},
                 {"SymbolicAdd", {&SymbolicAdd::create_SymbolicAdd, &SymbolicAdd::eval_SymbolicAdd}},
                 {"SymbolicSub", {&SymbolicSub::create_SymbolicSub, &SymbolicSub::eval_SymbolicSub}},
@@ -3569,7 +3704,8 @@ namespace IntrinsicFunctionRegistry {
     }
 
     static inline bool handle_dim(ASRUtils::IntrinsicFunctions id) {
-        if( id == ASRUtils::IntrinsicFunctions::MaxLoc) {
+        if( id == ASRUtils::IntrinsicFunctions::Shape ||
+            id == ASRUtils::IntrinsicFunctions::MaxLoc ) {
             return false;
         } else {
             return true;

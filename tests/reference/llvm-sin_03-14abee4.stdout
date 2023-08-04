@@ -5,21 +5,6 @@ source_filename = "LFortran"
 @1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @2 = private unnamed_addr constant [10 x i8] c"%23.17e%s\00", align 1
 
-define double @_lcompilers_sin_f64(double* %x) {
-.entry:
-  %_lcompilers_sin_f64 = alloca double, align 8
-  %0 = load double, double* %x, align 8
-  %1 = call double @_lfortran_dsin(double %0)
-  store double %1, double* %_lcompilers_sin_f64, align 8
-  br label %return
-
-return:                                           ; preds = %.entry
-  %2 = load double, double* %_lcompilers_sin_f64, align 8
-  ret double %2
-}
-
-declare double @_lfortran_dsin(double)
-
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   call void @_lpython_set_argv(i32 %0, i8** %1)
