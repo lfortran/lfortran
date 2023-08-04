@@ -2764,7 +2764,7 @@ namespace MaxLoc {
             test = iGt(b.ArrayItem(array, {i}),
                        b.ArrayItem(array, {max_index}));
         }
-        body.push_back(al, b.While(iLtE(i, ArraySize(array, i32(1))), {
+        body.push_back(al, b.While(iLtE(i, ArraySize_1(array, i32(1))), {
             b.If(test, { b.Assignment(max_index, i) }, {}),
             b.Assignment(i, iAdd(i, i32(1)))
         }));
