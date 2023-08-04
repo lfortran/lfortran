@@ -2165,12 +2165,11 @@ int main(int argc, char *argv[])
             }
         }
 
-        if (endswith(arg_file, ".f90")) {
+        if (endswith(arg_file, ".f90") || endswith(arg_file, ".f")) {
             if (backend == Backend::x86) {
                 return compile_to_binary_x86(arg_file, outfile,
                         time_report, compiler_options);
-            }
-            else if (backend == Backend::wasm) {
+            } else if (backend == Backend::wasm) {
                 return compile_to_binary_wasm(arg_file, outfile,
                         time_report, compiler_options);
             }
