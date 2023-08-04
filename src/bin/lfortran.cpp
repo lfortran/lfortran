@@ -1612,7 +1612,12 @@ int emit_c_preprocessor(const std::string &infile, CompilerOptions &compiler_opt
         lm.file_ends.push_back(input.size());
     }
     std::string s = cpp.run(input, lm, cpp.macro_definitions);
-    std::cout << s;
+    if(!compiler_options.arg_o.empty()) {
+        std::ofstream fout(compiler_options.arg_o);
+        fout << s;
+    } else {
+        std::cout << s;
+    }
     return 0;
 }
 
