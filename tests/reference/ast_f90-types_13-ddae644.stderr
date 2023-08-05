@@ -21,6 +21,7 @@ style suggestion: Use real(8) instead of real*8
    |
 60 |     real*8, value, intent(in) :: b
    |     ^^^^^^ help: write this as 'real(8)'
+   
 style suggestion: Use integer(4) instead of integer*4
   --> tests/../integration_tests/types_13.f90:36:5
    |
