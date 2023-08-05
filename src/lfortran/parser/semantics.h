@@ -1487,7 +1487,7 @@ static inline void repeat_list_add(Vec<ast_t*> &v, Allocator &al,
 
 void add_ws_warning(const Location &loc,
         LCompilers::diag::Diagnostics &diagnostics, bool fixed_form,
-        int end_token) {
+        int end_token, int a_kind = 4) {
     if (!fixed_form) {
         if (end_token == yytokentype::KW_ENDDO) {
             diagnostics.parser_style_label(
@@ -1499,12 +1499,26 @@ void add_ws_warning(const Location &loc,
                 "Use 'end if' instead of 'endif'",
                 {loc},
                 "help: write this as 'end if'");
+        } else if (end_token == yytokentype::KW_REAL) {
+                if(a_kind == 4){
+                        diagnostics.parser_style_label(
+                        "Use real(4) x or real(4) :: x instead of real*4 x",
+                        {loc},
+                        "help: write this as 'real(4) x' or 'real(4) :: x'");
+                } else{
+                        diagnostics.parser_style_label(
+                        "Use real(8) x or real(8) :: x instead of real*8 x",
+                        {loc},
+                        "help: write this as 'real(8) x' or 'real(8) :: x'");
+                }
+        
         }
     }
 }
 
 #define WARN_ENDDO(l) add_ws_warning(l, p.diag, p.fixed_form, KW_ENDDO)
 #define WARN_ENDIF(l) add_ws_warning(l, p.diag, p.fixed_form, KW_ENDIF)
+#define WARN_REALSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_REAL, x.int_n.n)
 
 #define DO1(trivia, body, l) make_DoLoop_t(p.m_a, l, 0, nullptr, 0, \
         nullptr, nullptr, nullptr, nullptr, \
