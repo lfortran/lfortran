@@ -1395,7 +1395,7 @@ var_type
             $$ = ATTR_TYPE_STAR(Character, DoubleAsterisk, @$); }
     | KW_REAL { $$ = ATTR_TYPE(Real, @$); }
     | KW_REAL "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Real, $3, @$); }
-    | KW_REAL "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Real, $3, @$); }
+    | KW_REAL "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Real, $3, @$); WARN_REALSTAR($3, @$); }
     | KW_COMPLEX { $$ = ATTR_TYPE(Complex, @$); }
     | KW_COMPLEX "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Complex, $3, @$); }
     | KW_COMPLEX "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Complex, DIV2($3), @$); }
@@ -2020,7 +2020,7 @@ endif
 
 endwhere
     : KW_END_WHERE
-    | KW_ENDWHERE
+    | KW_ENDWHERE 
     ;
 
 exit_statement
