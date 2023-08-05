@@ -1,0 +1,5 @@
+style suggestion: Use real(8) x or real(8) :: x instead of real*8 x
+ --> tests/../integration_tests/expr_11.f90:3:5
+  |
+3 |     real*8 x
+  |     ^^^^^^ help: write this as 'real(8) x' or 'real(8) :: x'
