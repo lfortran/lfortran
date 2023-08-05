@@ -1034,18 +1034,18 @@ public:
 
                 if (ASR::is_a<ASR::Struct_t>(*caller_type)) {
                     struct_sym = ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::Struct_t>(caller_type)->m_derived_type);
+                        ASR::down_cast<ASR::Struct_t>(caller_type)->m_derived_type);
                 } else if (ASR::is_a<ASR::Class_t>(*caller_type)) {
-                     struct_sym = ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::Class_t>(caller_type)->m_class_type);
+                    struct_sym = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Class_t>(caller_type)->m_class_type);
+                    dt = LLVM::CreateLoad(*builder, llvm_utils->create_gep(dt, 1));
                 } else {
                     LCOMPILERS_ASSERT(false);
                 }
 
                 int dt_idx = name2memidx[ASRUtils::symbol_name(struct_sym)]
                     [ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(sm->m_m))];
-                llvm::Value* dt_1 = llvm_utils->create_gep(
-                    dt, dt_idx);
+                llvm::Value* dt_1 = llvm_utils->create_gep(dt, dt_idx);
                 tmp = dt_1;
             } else {
                 throw CodeGenError("Cannot deallocate variables in expression " +
