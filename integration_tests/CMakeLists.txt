@@ -122,9 +122,6 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             target_compile_options(${name} PUBLIC ${extra_args})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         else ()
-            if ("gfortranImplicitArgument" IN_LIST labels)
-                set(gfortran_args ${extra_args} -fallow-argument-mismatch)
-            endif()
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC ${gfortran_args})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
@@ -145,7 +142,7 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
 endmacro(RUN_UTIL)
 
 macro(RUN)
-    set(options FAIL NOFAST CPP_PRE)
+    set(options FAIL NOFAST CPP_PRE IMPLICIT_ARGS)
     set(oneValueArgs NAME INCLUDE_PATH  COPY_TO_BIN)
     set(multiValueArgs LABELS EXTRAFILES)
     cmake_parse_arguments(RUN "${options}" "${oneValueArgs}"
@@ -165,6 +162,11 @@ macro(RUN)
     if (RUN_CPP_PRE)
         set(RUN_EXTRA_ARGS ${RUN_EXTRA_ARGS} "--cpp")
         set(RUN_GFORTRAN_ARGS ${RUN_GFORTRAN_ARGS} "-cpp")
+    endif()
+
+    if (RUN_IMPLICIT_ARGS)
+        set(RUN_EXTRA_ARGS ${RUN_EXTRA_ARGS} "--implicit-argument-casting")
+        set(RUN_GFORTRAN_ARGS ${RUN_GFORTRAN_ARGS} "-fallow-argument-mismatch")
     endif()
 
     if (NOT FAST)
@@ -1020,7 +1022,7 @@ RUN(NAME implicit_argument_casting_01 LABELS llvmImplicitArgument)
 
 RUN(NAME arrayitem_01 LABELS gfortran llvm)
 
-RUN(NAME implicit_argument_casting_01 LABELS gfortranImplicitArgument llvmImplicitArgument)
+RUN(NAME implicit_argument_casting_01 LABELS gfortran IMPLICIT_ARGS)
 
 RUN(NAME specfun_01 LABELS gfortran llvmUseLoopVariableAfterLoop NOFAST)
 
