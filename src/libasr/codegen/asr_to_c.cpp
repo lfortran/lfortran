@@ -1314,7 +1314,7 @@ R"(    // Initialise Numpy
             if( is_data_only_array ) {
                 current_index += src;
                 for( size_t j = i + 1; j < x.n_args; j++ ) {
-                    int64_t dim_size;
+                    int64_t dim_size = 0;
                     ASRUtils::extract_value(m_dims[j].m_length, dim_size);
                     std::string length = std::to_string(dim_size);
                     current_index += " * " + length;

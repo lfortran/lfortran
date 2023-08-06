@@ -781,10 +781,18 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
     }
     if (ASR::is_a<ASR::IntegerConstant_t>(*a_value)) {
         // OK
+    } else if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*a_value)) {
+        ASR::expr_t *val = ASR::down_cast<ASR::IntegerUnaryMinus_t>(
+            a_value)->m_value;
+        return is_value_constant(val);
     } else if (ASR::is_a<ASR::UnsignedIntegerConstant_t>(*a_value)) {
         // OK
     } else if (ASR::is_a<ASR::RealConstant_t>(*a_value)) {
         // OK
+    } else if (ASR::is_a<ASR::RealUnaryMinus_t>(*a_value)) {
+        ASR::expr_t *val = ASR::down_cast<ASR::RealUnaryMinus_t>(
+            a_value)->m_value;
+        return is_value_constant(val);
     } else if (ASR::is_a<ASR::ComplexConstant_t>(*a_value)) {
         // OK
     } else if (ASR::is_a<ASR::LogicalConstant_t>(*a_value)) {
@@ -1036,6 +1044,14 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
             value = (T) const_int->m_n;
             break;
         }
+        case ASR::exprType::IntegerUnaryMinus: {
+            ASR::IntegerUnaryMinus_t*
+                const_int = ASR::down_cast<ASR::IntegerUnaryMinus_t>(value_expr);
+            if (!extract_value(const_int->m_value, value)) {
+                return false;
+            }
+            break;
+        }
         case ASR::exprType::UnsignedIntegerConstant: {
             ASR::UnsignedIntegerConstant_t* const_int = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(value_expr);
             value = (T) const_int->m_n;
@@ -1044,6 +1060,14 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
         case ASR::exprType::RealConstant: {
             ASR::RealConstant_t* const_real = ASR::down_cast<ASR::RealConstant_t>(value_expr);
             value = (T) const_real->m_r;
+            break;
+        }
+        case ASR::exprType::RealUnaryMinus: {
+            ASR::RealUnaryMinus_t*
+                const_int = ASR::down_cast<ASR::RealUnaryMinus_t>(value_expr);
+            if (!extract_value(const_int->m_value, value)) {
+                return false;
+            }
             break;
         }
         case ASR::exprType::LogicalConstant: {
