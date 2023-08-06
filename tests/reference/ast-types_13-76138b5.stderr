@@ -1,0 +1,23 @@
+style suggestion: Use real(8) instead of real*8
+  --> tests/../integration_tests/types_13.f90:37:5
+   |
+37 |     real*8, value, intent(in) :: b
+   |     ^^^^^^ help: write this as 'real(8)'
+
+style suggestion: Use real(8) instead of real*8
+  --> tests/../integration_tests/types_13.f90:44:5
+   |
+44 |     real*8, value, intent(in) :: b
+   |     ^^^^^^ help: write this as 'real(8)'
+
+style suggestion: Use real(8) instead of real*8
+  --> tests/../integration_tests/types_13.f90:52:5
+   |
+52 |     real*8, value, intent(in) :: b
+   |     ^^^^^^ help: write this as 'real(8)'
+
+style suggestion: Use real(8) instead of real*8
+  --> tests/../integration_tests/types_13.f90:60:5
+   |
+60 |     real*8, value, intent(in) :: b
+   |     ^^^^^^ help: write this as 'real(8)'
