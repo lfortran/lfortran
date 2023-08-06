@@ -45,3 +45,26 @@ style suggestion: Use integer(4) instead of integer*4
    |
 59 |     integer*4, value, intent(in) :: a
    |     ^^^^^^^^^ help: write this as 'integer(4)'
+style suggestion: Use real(8) x or real(8) :: x instead of real*8 x
+  --> tests/../integration_tests/types_13.f90:37:5
+   |
+37 |     real*8, value, intent(in) :: b
+   |     ^^^^^^ help: write this as 'real(8) x' or 'real(8) :: x'
+
+style suggestion: Use real(8) x or real(8) :: x instead of real*8 x
+  --> tests/../integration_tests/types_13.f90:44:5
+   |
+44 |     real*8, value, intent(in) :: b
+   |     ^^^^^^ help: write this as 'real(8) x' or 'real(8) :: x'
+
+style suggestion: Use real(8) x or real(8) :: x instead of real*8 x
+  --> tests/../integration_tests/types_13.f90:52:5
+   |
+52 |     real*8, value, intent(in) :: b
+   |     ^^^^^^ help: write this as 'real(8) x' or 'real(8) :: x'
+
+style suggestion: Use real(8) x or real(8) :: x instead of real*8 x
+  --> tests/../integration_tests/types_13.f90:60:5
+   |
+60 |     real*8, value, intent(in) :: b
+   |     ^^^^^^ help: write this as 'real(8) x' or 'real(8) :: x'
