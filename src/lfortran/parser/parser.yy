@@ -1390,7 +1390,7 @@ var_type
     | KW_INTEGER "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Integer, $3, @$); WARN_INTEGERSTAR($3, @$); }
     | KW_CHARACTER { $$ = ATTR_TYPE(Character, @$); }
     | KW_CHARACTER "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Character, $3, @$); }
-    | KW_CHARACTER "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Character, $3, @$); }
+    | KW_CHARACTER "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Character, $3, @$); WARN_CHARACTERSTAR($3, @$);}
     | KW_CHARACTER "*" "(" "*" ")" {
             $$ = ATTR_TYPE_STAR(Character, DoubleAsterisk, @$); }
     | KW_REAL { $$ = ATTR_TYPE(Real, @$); }
