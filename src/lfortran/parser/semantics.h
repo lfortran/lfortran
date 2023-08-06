@@ -1502,14 +1502,14 @@ void add_ws_warning(const Location &loc,
         } else if (end_token == yytokentype::KW_REAL) {
                 if(a_kind == 4){
                         diagnostics.parser_style_label(
-                        "Use real(4) x or real(4) :: x instead of real*4 x",
+                        "Use real(4) instead of real*4",
                         {loc},
-                        "help: write this as 'real(4) x' or 'real(4) :: x'");
+                        "help: write this as 'real(4)'");
                 } else{
                         diagnostics.parser_style_label(
-                        "Use real(8) x or real(8) :: x instead of real*8 x",
+                        "Use real(8) instead of real*8",
                         {loc},
-                        "help: write this as 'real(8) x' or 'real(8) :: x'");
+                        "help: write this as 'real(8)'");
                 }
         
         }

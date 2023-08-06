@@ -2020,7 +2020,7 @@ endif
 
 endwhere
     : KW_END_WHERE
-    | KW_ENDWHERE 
+    | KW_ENDWHERE
     ;
 
 exit_statement
