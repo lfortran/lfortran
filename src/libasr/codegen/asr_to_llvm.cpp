@@ -894,6 +894,10 @@ public:
             this->visit_expr_wrapper(tmp_expr, false);
             ptr_loads = ptr_loads_copy;
             llvm::Value* x_arr = tmp;
+            if (ASR::is_a<ASR::Class_t>(*ASRUtils::type_get_past_allocatable(
+                    expr_type((tmp_expr))))) {
+                x_arr = llvm_utils->create_gep(x_arr, 1);
+            }
             ASR::ttype_t* curr_arg_m_a_type = ASRUtils::type_get_past_pointer(
                 ASRUtils::type_get_past_allocatable(
                 ASRUtils::expr_type(tmp_expr)));
@@ -920,8 +924,13 @@ public:
                     llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(
                         context, *module, *builder, malloc_size);
                     llvm::Type* llvm_arg_type = llvm_utils->get_type_from_ttype_t_util(curr_arg_m_a_type, module.get());
-                    builder->CreateStore(builder->CreateBitCast(
-                        malloc_ptr, llvm_arg_type->getPointerTo()), x_arr);
+                    malloc_ptr = builder->CreateBitCast(
+                        malloc_ptr, llvm_arg_type->getPointerTo());
+                    if (ASR::is_a<ASR::Class_t>(*curr_arg_m_a_type)) {
+                        malloc_ptr = LLVM::CreateLoad(*builder,
+                            llvm_utils->create_gep(malloc_ptr, 1));
+                    }
+                    builder->CreateStore(malloc_ptr, x_arr);
                 } else {
                     LCOMPILERS_ASSERT(false);
                 }
@@ -2267,27 +2276,29 @@ public:
             current_der_type_name = dertype2parent[current_der_type_name];
         }
         int member_idx = name2memidx[current_der_type_name][member_name];
-        std::vector<llvm::Value*> idx_vec = {
-            llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-            llvm::ConstantInt::get(context, llvm::APInt(32, member_idx))};
         // if( (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) ||
         //      ASR::is_a<ASR::UnionInstanceMember_t>(*x.m_v)) &&
         //     is_nested_pointer(tmp) ) {
         //     tmp = CreateLoad(tmp);
         // }
-        llvm::Value* tmp1 = CreateGEP(tmp, idx_vec);
-        ASR::ttype_t* member_type = member->m_type;
-        if( ASR::is_a<ASR::Pointer_t>(*member_type) ) {
-            member_type = ASR::down_cast<ASR::Pointer_t>(member_type)->m_type;
-        }
-        if( member_type->type == ASR::ttypeType::Struct ) {
-            ASR::Struct_t* der = (ASR::Struct_t*)(&(member_type->base));
-            ASR::StructType_t* der_type = (ASR::StructType_t*)(&(der->m_derived_type->base));
+        llvm::Value* tmp1 = llvm_utils->create_gep(tmp, member_idx);
+        ASR::ttype_t* member_type = ASRUtils::type_get_past_pointer(
+            ASRUtils::type_get_past_allocatable(member->m_type));
+        if( ASR::is_a<ASR::Struct_t>(*member_type) ) {
+            ASR::Struct_t* der = ASR::down_cast<ASR::Struct_t>(member_type);
+            ASR::StructType_t* der_type = ASR::down_cast<ASR::StructType_t>(
+                der->m_derived_type);
             current_der_type_name = std::string(der_type->m_name);
             uint32_t h = get_hash((ASR::asr_t*)member);
             if( llvm_symtab.find(h) != llvm_symtab.end() ) {
+                // This doesn't seems to be used, verify while submitting a PR
                 tmp = llvm_symtab[h];
             }
+        }
+        if (ASR::is_a<ASR::Class_t>(*ASRUtils::type_get_past_allocatable(x.m_type))) {
+            ASR::symbol_t *class_type = ASR::down_cast<ASR::Class_t>(
+                ASRUtils::type_get_past_allocatable(x.m_type))->m_class_type;
+            current_der_type_name = ASRUtils::symbol_name(class_type);
         }
         tmp = tmp1;
     }
