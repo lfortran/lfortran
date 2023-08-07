@@ -27,14 +27,16 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
     ASR::expr_t* result_var;
     int result_counter;
     std::map<ASR::expr_t*, ASR::expr_t*>& resultvar2value;
+    bool realloc_lhs;
 
     ReplaceArrayConstant(Allocator& al_, Vec<ASR::stmt_t*>& pass_result_,
         bool& remove_original_statement_,
-        std::map<ASR::expr_t*, ASR::expr_t*>& resultvar2value_) :
+        std::map<ASR::expr_t*, ASR::expr_t*>& resultvar2value_,
+        bool realloc_lhs_) :
     al(al_), pass_result(pass_result_),
     remove_original_statement(remove_original_statement_),
     current_scope(nullptr), result_var(nullptr), result_counter(0),
-    resultvar2value(resultvar2value_) {}
+    resultvar2value(resultvar2value_), realloc_lhs(realloc_lhs_) {}
 
     ASR::expr_t* get_ImpliedDoLoop_size(ASR::ImpliedDoLoop_t* implied_doloop) {
         const Location& loc = implied_doloop->base.base.loc;
@@ -97,7 +99,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                         ASR::down_cast<ASR::ArrayConstant_t>(element));
                 } else {
                     ASR::expr_t* element_array_size = get_ArrayConstant_size(
-                                    ASR::down_cast<ASR::ArrayConstant_t>(element), is_allocatable);
+                        ASR::down_cast<ASR::ArrayConstant_t>(element), is_allocatable);
                     if( array_size == nullptr ) {
                         array_size = element_array_size;
                     } else {
@@ -173,28 +175,40 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             array_size = builder.ElementalAdd(array_size, constant_size_asr, x->base.base.loc);
         }
         is_allocatable = true;
+        if( array_size == nullptr ) {
+            array_size = make_ConstantWithKind(make_IntegerConstant_t,
+                make_Integer_t, 0, 4, x->base.base.loc);
+        }
         return array_size;
     }
 
     void replace_ArrayConstant(ASR::ArrayConstant_t* x) {
         const Location& loc = x->base.base.loc;
         ASR::expr_t* result_var_copy = result_var;
-        if (result_var == nullptr ||
-            !(resultvar2value.find(result_var) != resultvar2value.end() &&
-              resultvar2value[result_var] == &(x->base))) {
-            remove_original_statement = false;
-            ASR::ttype_t* result_type_ = nullptr;
-            bool is_allocatable = false;
-            ASR::expr_t* array_constant_size = get_ArrayConstant_size(x, is_allocatable);
-            Vec<ASR::dimension_t> dims;
-            dims.reserve(al, 1);
-            ASR::dimension_t dim;
-            dim.loc = loc;
-            dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
-                            1, ASRUtils::type_get_past_allocatable(
-                                ASRUtils::expr_type(array_constant_size))));
-            dim.m_length = array_constant_size;
-            dims.push_back(al, dim);
+        bool is_result_var_fixed_size = false;
+        if (result_var != nullptr &&
+            resultvar2value.find(result_var) != resultvar2value.end() &&
+            resultvar2value[result_var] == &(x->base)) {
+            is_result_var_fixed_size = ASRUtils::is_fixed_size_array(ASRUtils::expr_type(result_var));
+        }
+        ASR::ttype_t* result_type_ = nullptr;
+        bool is_allocatable = false;
+        ASR::expr_t* array_constant_size = get_ArrayConstant_size(x, is_allocatable);
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, 1);
+        ASR::dimension_t dim;
+        dim.loc = loc;
+        dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
+                        ASRUtils::type_get_past_pointer(
+                            ASRUtils::type_get_past_allocatable(
+                                ASRUtils::expr_type(array_constant_size)))));
+        dim.m_length = array_constant_size;
+        dims.push_back(al, dim);
+        remove_original_statement = false;
+        if( is_result_var_fixed_size ) {
+            result_type_ = ASRUtils::expr_type(result_var);
+            is_allocatable = false;
+        } else {
             if( is_allocatable ) {
                 result_type_ = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x->m_type->base.loc,
                     ASRUtils::type_get_past_allocatable(
@@ -203,28 +217,26 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                 result_type_ = ASRUtils::duplicate_type(al,
                     ASRUtils::type_get_past_allocatable(x->m_type), &dims);
             }
-            result_var = PassUtils::create_var(result_counter, "_array_constant_",
-                            loc, result_type_, al, current_scope);
-            result_counter += 1;
-            if( is_allocatable ) {
-                Vec<ASR::alloc_arg_t> alloc_args;
-                alloc_args.reserve(al, 1);
-                ASR::alloc_arg_t arg;
-                arg.m_len_expr = nullptr;
-                arg.m_type = nullptr;
-                arg.loc = result_var->base.loc;
-                arg.m_a = result_var;
-                arg.m_dims = dims.p;
-                arg.n_dims = dims.size();
-                alloc_args.push_back(al, arg);
-                ASR::stmt_t* allocate_stmt = ASRUtils::STMT(ASR::make_Allocate_t(al, loc,
-                                                alloc_args.p, alloc_args.size(),
-                                                nullptr, nullptr, nullptr));
-                pass_result.push_back(al, allocate_stmt);
-            }
-            *current_expr = result_var;
-        } else {
-            remove_original_statement = true;
+        }
+        result_var = PassUtils::create_var(result_counter, "_array_constant_",
+                        loc, result_type_, al, current_scope);
+        result_counter += 1;
+        *current_expr = result_var;
+
+        if( is_allocatable ) {
+            Vec<ASR::alloc_arg_t> alloc_args;
+            alloc_args.reserve(al, 1);
+            ASR::alloc_arg_t arg;
+            arg.m_len_expr = nullptr;
+            arg.m_type = nullptr;
+            arg.loc = result_var->base.loc;
+            arg.m_a = result_var;
+            arg.m_dims = dims.p;
+            arg.n_dims = dims.size();
+            alloc_args.push_back(al, arg);
+            ASR::stmt_t* allocate_stmt = ASRUtils::STMT(ASR::make_Allocate_t(
+                al, loc, alloc_args.p, alloc_args.size(), nullptr, nullptr, nullptr));
+            pass_result.push_back(al, allocate_stmt);
         }
         LCOMPILERS_ASSERT(result_var != nullptr);
         Vec<ASR::stmt_t*>* result_vec = &pass_result;
@@ -263,10 +275,10 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
 
     public:
 
-        ArrayConstantVisitor(Allocator& al_) :
+        ArrayConstantVisitor(Allocator& al_, bool realloc_lhs_) :
         al(al_), remove_original_statement(false),
         replacer(al_, pass_result,
-            remove_original_statement, resultvar2value) {
+            remove_original_statement, resultvar2value, realloc_lhs_) {
             pass_result.n = 0;
             pass_result.reserve(al, 0);
         }
@@ -338,8 +350,8 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
 
 void pass_replace_implied_do_loops(Allocator &al,
     ASR::TranslationUnit_t &unit,
-    const LCompilers::PassOptions& /*pass_options*/) {
-    ArrayConstantVisitor v(al);
+    const LCompilers::PassOptions& pass_options) {
+    ArrayConstantVisitor v(al, pass_options.realloc_lhs);
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(unit);

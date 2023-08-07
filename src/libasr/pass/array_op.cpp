@@ -76,6 +76,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
     ASR::dimension_t* op_dims; size_t op_n_dims;
     ASR::expr_t* op_expr;
     std::map<ASR::expr_t*, ASR::expr_t*>& resultvar2value;
+    bool realloc_lhs;
 
     public:
 
@@ -89,14 +90,16 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                    Vec<ASR::expr_t*>& result_lbound_,
                    Vec<ASR::expr_t*>& result_ubound_,
                    Vec<ASR::expr_t*>& result_inc_,
-                   std::map<ASR::expr_t*, ASR::expr_t*>& resultvar2value_) :
+                   std::map<ASR::expr_t*, ASR::expr_t*>& resultvar2value_,
+                   bool realloc_lhs_) :
     al(al_), pass_result(pass_result_),
     result_counter(0), use_custom_loop_params(use_custom_loop_params_),
     apply_again(apply_again_), remove_original_statement(remove_original_statement_),
     result_lbound(result_lbound_), result_ubound(result_ubound_),
     result_inc(result_inc_), op_dims(nullptr), op_n_dims(0),
     op_expr(nullptr), resultvar2value(resultvar2value_),
-    current_scope(nullptr), result_var(nullptr), result_type(nullptr) {}
+    realloc_lhs(realloc_lhs_), current_scope(nullptr), result_var(nullptr),
+    result_type(nullptr) {}
 
     template <typename LOOP_BODY>
     void create_do_loop(const Location& loc, int var_rank, int result_rank,
@@ -204,6 +207,32 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         }
 
         const Location& loc = x->base.base.loc;
+        if( ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(result_var)) &&
+            ASRUtils::is_array(ASRUtils::expr_type(*current_expr)) && realloc_lhs ) {
+            ASR::ttype_t* result_var_type = ASRUtils::expr_type(result_var);
+            Vec<ASR::dimension_t> result_var_m_dims;
+            size_t result_var_n_dims = ASRUtils::extract_n_dims_from_ttype(result_var_type);
+            result_var_m_dims.reserve(al, result_var_n_dims);
+            ASR::alloc_arg_t result_alloc_arg;
+            result_alloc_arg.loc = loc;
+            result_alloc_arg.m_a = result_var;
+            for( size_t i = 0; i < result_var_n_dims; i++ ) {
+                ASR::dimension_t result_var_dim;
+                result_var_dim.loc = loc;
+                result_var_dim.m_start = make_ConstantWithKind(
+                    make_IntegerConstant_t, make_Integer_t, 1, 4, loc);
+                result_var_dim.m_length = ASRUtils::get_size(*current_expr, i + 1, al);
+                result_var_m_dims.push_back(al, result_var_dim);
+            }
+            result_alloc_arg.m_dims = result_var_m_dims.p;
+            result_alloc_arg.n_dims = result_var_n_dims;
+            result_alloc_arg.m_len_expr = nullptr;
+            result_alloc_arg.m_type = nullptr;
+            Vec<ASR::alloc_arg_t> alloc_result_args; alloc_result_args.reserve(al, 1);
+            alloc_result_args.push_back(al, result_alloc_arg);
+            pass_result.push_back(al, ASRUtils::STMT(ASR::make_ReAlloc_t(
+                al, loc, alloc_result_args.p, 1)));
+        }
         int var_rank = PassUtils::get_rank(*current_expr);
         int result_rank = PassUtils::get_rank(result_var);
         Vec<ASR::expr_t*> idx_vars, loop_vars, idx_vars_value;
@@ -215,11 +244,11 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         [=, &idx_vars_value, &idx_vars, &doloop_body]() {
             ASR::expr_t* ref = nullptr;
             if( var_rank > 0 ) {
-                ref = PassUtils::create_array_ref(*current_expr, idx_vars_value, al);
+                ref = PassUtils::create_array_ref(*current_expr, idx_vars_value, al, current_scope);
             } else {
                 ref = *current_expr;
             }
-            ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al);
+            ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al, current_scope);
             ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, res, ref, nullptr));
             doloop_body.push_back(al, assign);
         });
@@ -303,7 +332,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             loop_vars, loop_var_indices, doloop_body,
             [=, &idx_vars, &doloop_body] () {
             ASR::expr_t* ref = *current_expr;
-            ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al);
+            ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al, current_scope);
             ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, res, ref, nullptr));
             doloop_body.push_back(al, assign);
         });
@@ -641,9 +670,9 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             create_do_loop(loc, rank_left, result_rank, idx_vars,
                 loop_vars, idx_vars_value, loop_var_indices, doloop_body, left, 1,
                 [=, &left, &right, &idx_vars_value, &idx_vars, &doloop_body]() {
-                ASR::expr_t* ref_1 = PassUtils::create_array_ref(left, idx_vars_value, al);
-                ASR::expr_t* ref_2 = PassUtils::create_array_ref(right, idx_vars_value, al);
-                ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al);
+                ASR::expr_t* ref_1 = PassUtils::create_array_ref(left, idx_vars_value, al, current_scope);
+                ASR::expr_t* ref_2 = PassUtils::create_array_ref(right, idx_vars_value, al, current_scope);
+                ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al, current_scope);
                 ASR::expr_t* op_el_wise = generate_element_wise_operation(loc, ref_1, ref_2, x);
                 ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, res, op_el_wise, nullptr));
                 doloop_body.push_back(al, assign);
@@ -698,8 +727,8 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             create_do_loop(loc, n_dims, result_rank, idx_vars,
                 loop_vars, idx_vars_value, loop_var_indices, doloop_body,
                 op_expr, 2, [=, &arr_expr, &idx_vars, &idx_vars_value, &doloop_body]() {
-                ASR::expr_t* ref = PassUtils::create_array_ref(arr_expr, idx_vars_value, al);
-                ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al);
+                ASR::expr_t* ref = PassUtils::create_array_ref(arr_expr, idx_vars_value, al, current_scope);
+                ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al, current_scope);
                 ASR::expr_t *lexpr = nullptr, *rexpr = nullptr;
                 if( rank_left > 0 ) {
                     lexpr = ref;
@@ -750,9 +779,9 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             [=, &tmp_val, &idx_vars, &is_arg_array, &doloop_body] () {
             ASR::expr_t* ref = tmp_val;
             if( is_arg_array ) {
-                ref = PassUtils::create_array_ref(tmp_val, idx_vars, al);
+                ref = PassUtils::create_array_ref(tmp_val, idx_vars, al, current_scope);
             }
-            ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al);
+            ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al, current_scope);
             ASR::ttype_t* x_m_type = ASRUtils::duplicate_type_without_dims(
                                         al, x->m_type, x->m_type->base.loc);
             ASR::expr_t* impl_cast_el_wise = ASRUtils::EXPR(ASR::make_Cast_t(
@@ -802,7 +831,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                         loop_vars, loop_var_indices, doloop_body,
                         [=, &idx_vars, &doloop_body] () {
                         ASR::expr_t* ref = ASRUtils::EXPR((ASR::asr_t*)x);
-                        ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al);
+                        ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al, current_scope);
                         ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, res, ref, nullptr));
                         doloop_body.push_back(al, assign);
                     });
@@ -834,8 +863,8 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             create_do_loop(loc, rank_operand, idx_vars,
                 loop_vars, loop_var_indices, doloop_body,
                 [=, &operand, &idx_vars, &x, &doloop_body] () {
-                ASR::expr_t* ref = PassUtils::create_array_ref(operand, idx_vars, al);
-                ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al);
+                ASR::expr_t* ref = PassUtils::create_array_ref(operand, idx_vars, al, current_scope);
+                ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al, current_scope);
                 ASR::expr_t* op_el_wise = nullptr;
                 ASR::ttype_t* x_m_type = ASRUtils::type_get_past_array(x->m_type);
                 if (unary_type == 0) {
@@ -1008,7 +1037,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             for( size_t iarg = 0; iarg < x->n_args; iarg++ ) {
                 ASR::expr_t* ref = operands[iarg];
                 if( array_mask[iarg] ) {
-                    ref = PassUtils::create_array_ref(operands[iarg], idx_vars, al);
+                    ref = PassUtils::create_array_ref(operands[iarg], idx_vars, al, current_scope);
                 }
                 ref_args.push_back(al, ref);
             }
@@ -1018,7 +1047,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             ASR::expr_t* op_el_wise = ASRUtils::EXPR(ASRUtils::make_IntrinsicFunction_t_util(al, loc,
                 x->m_intrinsic_id, ref_args.p, ref_args.size(), x->m_overload_id,
                 dim_less_type, nullptr));
-            ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al);
+            ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al, current_scope);
             ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, res, op_el_wise, nullptr));
             doloop_body.push_back(al, assign);
         });
@@ -1217,7 +1246,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 for( size_t iarg = 0; iarg < x->n_args; iarg++ ) {
                     ASR::expr_t* ref = operands[iarg];
                     if( array_mask[iarg] ) {
-                        ref = PassUtils::create_array_ref(operands[iarg], idx_vars, al);
+                        ref = PassUtils::create_array_ref(operands[iarg], idx_vars, al, current_scope);
                     }
                     ASR::call_arg_t ref_arg;
                     ref_arg.loc = ref->base.loc;
@@ -1231,7 +1260,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 op_el_wise = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, loc,
                                 x->m_name, x->m_original_name, ref_args.p, ref_args.size(), dim_less_type,
                                 nullptr, x->m_dt));
-                ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al);
+                ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al, current_scope);
                 ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, res, op_el_wise, nullptr));
                 doloop_body.push_back(al, assign);
             });
@@ -1260,13 +1289,13 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
 
         bool apply_again;
 
-        ArrayOpVisitor(Allocator& al_) :
+        ArrayOpVisitor(Allocator& al_, bool realloc_lhs_) :
         al(al_), use_custom_loop_params(false),
         remove_original_statement(false),
         replacer(al_, pass_result, use_custom_loop_params,
                  apply_again, remove_original_statement,
                  result_lbound, result_ubound, result_inc,
-                 resultvar2value),
+                 resultvar2value, realloc_lhs_),
         parent_body(nullptr), apply_again(false) {
             pass_result.n = 0;
             result_lbound.n = 0;
@@ -1480,8 +1509,8 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
 };
 
 void pass_replace_array_op(Allocator &al, ASR::TranslationUnit_t &unit,
-                           const LCompilers::PassOptions& /*pass_options*/) {
-    ArrayOpVisitor v(al);
+                           const LCompilers::PassOptions& pass_options) {
+    ArrayOpVisitor v(al, pass_options.realloc_lhs);
     do {
         v.apply_again = false;
         v.visit_TranslationUnit(unit);
