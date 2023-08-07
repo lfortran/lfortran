@@ -1984,7 +1984,6 @@ public:
         this->visit_expr(*x.m_value);
         ASR::expr_t *value = ASRUtils::EXPR(tmp);
         ASR::stmt_t *overloaded_stmt = nullptr;
-        bool is_allocatable = false;
         if (ASR::is_a<ASR::Var_t>(*target)) {
             ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(target);
             ASR::symbol_t *sym = var->m_v;
@@ -1995,7 +1994,6 @@ public:
             }
             if (ASR::is_a<ASR::Variable_t>(*sym)){
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
-                is_allocatable = ASR::is_a<ASR::Allocatable_t>(*v->m_type);
                 ASR::intentType intent = v->m_intent;
                 if (intent == ASR::intentType::In) {
                     throw SemanticError("Cannot assign to an intent(in) variable `" + std::string(v->m_name) + "`", target->base.loc);
@@ -2051,6 +2049,13 @@ public:
                                                 ASRUtils::type_get_past_allocatable(target_type));
                     }
                     LCOMPILERS_ASSERT(ASRUtils::is_array(ac->m_type));
+                    if( ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_pointer(
+                            ASRUtils::type_get_past_allocatable(ac->m_type))) ) {
+                        ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(
+                            ASRUtils::type_get_past_pointer(
+                                ASRUtils::type_get_past_allocatable(ac->m_type)));
+                        array_t->m_type = ASRUtils::expr_type(ac->m_args[0]);
+                    }
                 } else {
                     ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
                                         value_type, target_type);
@@ -2082,35 +2087,6 @@ public:
                     throw SemanticAbort();
                 }
             }
-        }
-        if (ASR::is_a<ASR::ArrayConstant_t>(*value) && is_allocatable) {
-            ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
-            Vec<ASR::alloc_arg_t> vec_alloc;
-            vec_alloc.reserve(al, 1);
-            ASR::alloc_arg_t alloc_arg;
-            alloc_arg.loc = ac->base.base.loc;
-            alloc_arg.m_len_expr = nullptr;
-            alloc_arg.m_type = nullptr;
-            alloc_arg.m_a = target;
-            alloc_arg.n_dims = ASRUtils::extract_n_dims_from_ttype(ac->m_type);
-            Vec<ASR::dimension_t> dims;
-            dims.reserve(al, alloc_arg.n_dims);
-            ASR::dimension_t dim;
-            dim.loc = x.base.base.loc;
-            dim.m_length = make_ConstantWithKind(make_IntegerConstant_t,
-                make_Integer_t, ac->n_args, 4, dim.loc);
-            dim.m_start = make_ConstantWithKind(make_IntegerConstant_t,
-                make_Integer_t, 1, 4, dim.loc);
-            dims.push_back(al, dim);
-            alloc_arg.m_dims = dims.p;
-            vec_alloc.push_back(al, alloc_arg);
-            tmp_vec.push_back(ASR::make_Allocate_t(al, ac->base.base.loc,
-                vec_alloc.p, 1, nullptr, nullptr, nullptr));
-            tmp_vec.push_back(ASR::make_Assignment_t(al, x.base.base.loc, target,
-                value, overloaded_stmt));
-            tmp = nullptr;
-            LCOMPILERS_ASSERT(ASRUtils::is_array(ac->m_type));
-            return;
         }
 
         tmp = ASR::make_Assignment_t(al, x.base.base.loc, target, value,
