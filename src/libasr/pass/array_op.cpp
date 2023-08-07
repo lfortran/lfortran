@@ -163,25 +163,29 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             }
             pass_result.push_back(al, doloop);
         } else if (var_rank == 0) {
-            ASR::do_loop_head_t head;
-            head.m_v = loop_vars[0];
-            if( use_custom_loop_params ) {
-                int j = loop_var_indices[0];
-                head.m_start = result_lbound[j];
-                head.m_end = result_ubound[j];
-                head.m_increment = result_inc[j];
-            } else {
-                head.m_start = PassUtils::get_bound(result_var, 1, "lbound", al);
-                head.m_end = PassUtils::get_bound(result_var, 1, "ubound", al);
-                head.m_increment = nullptr;
+            for( int i = loop_vars.size() - 1; i >= 0; i-- ) {
+                // TODO: Add an If debug node to check if the lower and upper bounds of both the arrays are same.
+                ASR::do_loop_head_t head;
+                head.m_v = loop_vars[i];
+                if( use_custom_loop_params ) {
+                    int j = loop_var_indices[i];
+                    head.m_start = result_lbound[j];
+                    head.m_end = result_ubound[j];
+                    head.m_increment = result_inc[j];
+                } else {
+                    head.m_start = PassUtils::get_bound(result_var, i + 1, "lbound", al);
+                    head.m_end = PassUtils::get_bound(result_var, i + 1, "ubound", al);
+                    head.m_increment = nullptr;
+                }
+                head.loc = head.m_v->base.loc;
+                doloop_body.reserve(al, 1);
+                if( doloop == nullptr ) {
+                    loop_body();
+                } else {
+                    doloop_body.push_back(al, doloop);
+                }
+                doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head, doloop_body.p, doloop_body.size()));
             }
-            doloop_body.reserve(al, 1);
-            if( doloop == nullptr ) {
-                loop_body();
-            } else {
-                doloop_body.push_back(al, doloop);
-            }
-            doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head, doloop_body.p, doloop_body.size()));
             pass_result.push_back(al, doloop);
         }
 
