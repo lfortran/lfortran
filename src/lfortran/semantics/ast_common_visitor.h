@@ -1114,6 +1114,24 @@ public:
         return target;
     }
 
+    bool check_equal_value(AST::expr_t** values, size_t n_values) {
+        this->visit_expr(*values[0]);
+        ASR::expr_t* value = ASRUtils::EXPR(tmp);
+        ASR::expr_t* expression_value = ASRUtils::expr_value(value);
+
+        for (size_t i=1; i<n_values; i++) {
+            this->visit_expr(*values[i]);
+            ASR::expr_t* value_ = ASRUtils::EXPR(tmp);
+            ASR::expr_t* expression_value_ = ASRUtils::expr_value(value_);
+            if (!ASRUtils::expr_equal(expression_value, expression_value_)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+
     void visit_DataStmt(const AST::DataStmt_t &x) {
         // The DataStmt is a statement, so it occurs in the BodyVisitor.
         // We add its contents into the symbol table here. This visitor
@@ -1137,55 +1155,86 @@ public:
                     ASR::ttype_t* obj_type = ASRUtils::expr_type(object);
                     if (ASRUtils::is_array(obj_type)) { // it is an array
                         ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(obj_type);
-                        Vec<ASR::expr_t*> body;
-                        body.reserve(al, a->n_value);
-                        for (size_t j=0; j < a->n_value; j++) {
-                            this->visit_expr(*a->m_value[j]);
-                            ASR::expr_t* value = ASRUtils::EXPR(tmp);
-                            if (!ASRUtils::types_equal(ASRUtils::expr_type(value), array_type->m_type)) {
-                                throw SemanticError("Type mismatch during data initialization",
-                                    x.base.base.loc);
-                            }
-                            ASR::expr_t* expression_value = ASRUtils::expr_value(value);
-                            if (expression_value) {
-                                body.push_back(al, expression_value);
-                            } else {
-                                throw SemanticError("The value in data must be a constant",
-                                    x.base.base.loc);
-                            }
+                        if (check_equal_value(a->m_value, a->n_value)) {
+                           /*
+                               Case:
+                               integer :: x(5)
+                               data x / 5*1 /
 
-                        }
-                        Vec<ASR::dimension_t> dims;
-                        dims.reserve(al, 1);
-                        ASR::dimension_t dim;
-                        dim.loc = x.base.base.loc;
-                        ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-                        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
-                        ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
-                                            a->n_value, int32_type));
-                        dim.m_start = one;
-                        dim.m_length = x_n_args;
-                        dims.push_back(al, dim);
-                        obj_type = ASRUtils::duplicate_type(al, obj_type, &dims);
-                        tmp = ASRUtils::make_ArrayConstant_t_util(al, x.base.base.loc, body.p,
-                            body.size(), obj_type, ASR::arraystorageType::ColMajor);
-                        ASR::Variable_t* v2 = nullptr;
-                        if (ASR::is_a<ASR::StructInstanceMember_t>(*object)) {
-                            ASR::StructInstanceMember_t *mem = ASR::down_cast<ASR::StructInstanceMember_t>(object);
-                            v2 = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(mem->m_m));
+
+                               Here the data statement gets expanded to:
+                               integer :: x(5)
+                               x = 1
+
+
+                               Because for arrays of larger size, the current implementation
+                               of data statement is not efficient.
+                           */
+                           this->visit_expr(*a->m_value[0]);
+                           ASR::expr_t* value = ASRUtils::EXPR(tmp);
+                           if (!ASRUtils::types_equal(ASRUtils::expr_type(value), array_type->m_type)) {
+                               throw SemanticError("Type mismatch during data initialization",
+                                   x.base.base.loc);
+                           }
+                           ASR::expr_t* expression_value = ASRUtils::expr_value(value);
+                           if (expression_value) {
+                               ASR::stmt_t* assignment_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc,
+                                                           object, expression_value, nullptr));
+                               current_body->push_back(al, assignment_stmt);
+                           } else {
+                               throw SemanticError("The value in data must be a constant",
+                                   x.base.base.loc);
+                           }
                         } else {
-                            ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
-                            v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
-                        }
-                        v2->m_value = ASRUtils::EXPR(tmp);
-                        v2->m_symbolic_value = ASRUtils::EXPR(tmp);
-                        SetChar var_deps_vec;
-                        var_deps_vec.reserve(al, 1);
-                        ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
-                            v2->m_symbolic_value, v2->m_value);
-                        v2->m_dependencies = var_deps_vec.p;
-                        v2->n_dependencies = var_deps_vec.size();
+                            Vec<ASR::expr_t*> body;
+                            body.reserve(al, a->n_value);
+                            for (size_t j=0; j < a->n_value; j++) {
+                                this->visit_expr(*a->m_value[j]);
+                                ASR::expr_t* value = ASRUtils::EXPR(tmp);
+                                if (!ASRUtils::types_equal(ASRUtils::expr_type(value), array_type->m_type)) {
+                                    throw SemanticError("Type mismatch during data initialization",
+                                        x.base.base.loc);
+                                }
+                                ASR::expr_t* expression_value = ASRUtils::expr_value(value);
+                                if (expression_value) {
+                                    body.push_back(al, expression_value);
+                                } else {
+                                    throw SemanticError("The value in data must be a constant",
+                                        x.base.base.loc);
+                                }
 
+                            }
+                            Vec<ASR::dimension_t> dims;
+                            dims.reserve(al, 1);
+                            ASR::dimension_t dim;
+                            dim.loc = x.base.base.loc;
+                            ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                            ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
+                            ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
+                                                a->n_value, int32_type));
+                            dim.m_start = one;
+                            dim.m_length = x_n_args;
+                            dims.push_back(al, dim);
+                            obj_type = ASRUtils::duplicate_type(al, obj_type, &dims);
+                            tmp = ASRUtils::make_ArrayConstant_t_util(al, x.base.base.loc, body.p,
+                                body.size(), obj_type, ASR::arraystorageType::ColMajor);
+                            ASR::Variable_t* v2 = nullptr;
+                            if (ASR::is_a<ASR::StructInstanceMember_t>(*object)) {
+                                ASR::StructInstanceMember_t *mem = ASR::down_cast<ASR::StructInstanceMember_t>(object);
+                                v2 = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(mem->m_m));
+                            } else {
+                                ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
+                                v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
+                            }
+                            v2->m_value = ASRUtils::EXPR(tmp);
+                            v2->m_symbolic_value = ASRUtils::EXPR(tmp);
+                            SetChar var_deps_vec;
+                            var_deps_vec.reserve(al, 1);
+                            ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
+                                v2->m_symbolic_value, v2->m_value);
+                            v2->m_dependencies = var_deps_vec.p;
+                            v2->n_dependencies = var_deps_vec.size();
+                        }
                     } else if (ASR::is_a<ASR::ImpliedDoLoop_t>(*object)) {
                         /*
                             case: DATA (a(i),i=1,5) /1.0, 2.0, 3*0.0/

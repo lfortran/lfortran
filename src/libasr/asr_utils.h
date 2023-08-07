@@ -2432,6 +2432,16 @@ inline bool expr_equal(ASR::expr_t* x, ASR::expr_t* y) {
             ASR::Var_t* var_y = ASR::down_cast<ASR::Var_t>(y);
             return var_x->m_v == var_y->m_v;
         }
+        case ASR::exprType::IntegerConstant: {
+            ASR::IntegerConstant_t* intconst_x = ASR::down_cast<ASR::IntegerConstant_t>(x);
+            ASR::IntegerConstant_t* intconst_y = ASR::down_cast<ASR::IntegerConstant_t>(y);
+            return intconst_x->m_n == intconst_y->m_n;
+        }
+        case ASR::exprType::RealConstant: {
+            ASR::RealConstant_t* realconst_x = ASR::down_cast<ASR::RealConstant_t>(x);
+            ASR::RealConstant_t* realconst_y = ASR::down_cast<ASR::RealConstant_t>(y);
+            return realconst_x->m_r == realconst_y->m_r;
+        }
         default: {
             // Let it pass for now.
             return true;
