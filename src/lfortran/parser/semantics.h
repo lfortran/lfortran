@@ -1511,7 +1511,18 @@ void add_ws_warning(const Location &loc,
                         {loc},
                         "help: write this as 'real(8)'");
                 }
-        
+        } else if (end_token == yytokentype::KW_INTEGER) {
+                if(a_kind == 4){
+                        diagnostics.parser_style_label(
+                        "Use integer(4) instead of integer*4",
+                        {loc},
+                        "help: write this as 'integer(4)'");
+                } else{
+                        diagnostics.parser_style_label(
+                        "Use integer(8) instead of integer*8",
+                        {loc},
+                        "help: write this as 'integer(8)'");
+                }
         }
     }
 }
@@ -1519,6 +1530,7 @@ void add_ws_warning(const Location &loc,
 #define WARN_ENDDO(l) add_ws_warning(l, p.diag, p.fixed_form, KW_ENDDO)
 #define WARN_ENDIF(l) add_ws_warning(l, p.diag, p.fixed_form, KW_ENDIF)
 #define WARN_REALSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_REAL, x.int_n.n)
+#define WARN_INTEGERSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_INTEGER, x.int_n.n)
 
 #define DO1(trivia, body, l) make_DoLoop_t(p.m_a, l, 0, nullptr, 0, \
         nullptr, nullptr, nullptr, nullptr, \
