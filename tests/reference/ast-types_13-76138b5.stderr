@@ -1,3 +1,9 @@
+style suggestion: Use character(5) instead of character*5
+  --> tests/../integration_tests/types_13.f90:30:5
+   |
+30 |     character*5 :: d
+   |     ^^^^^^^^^^^ help: write this as 'character(5)'
+
 style suggestion: Use integer(4) instead of integer*4
   --> tests/../integration_tests/types_13.f90:36:5
    |

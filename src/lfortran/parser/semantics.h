@@ -1523,6 +1523,14 @@ void add_ws_warning(const Location &loc,
                         {loc},
                         "help: write this as 'integer(8)'");
                 }
+        } else if (end_token == yytokentype::KW_CHARACTER) {
+                std::string msg1 = "Use character("+std::to_string(a_kind)+") instead of character*"+std::to_string(a_kind);
+                std::string msg2 = "help: write this as 'character("+std::to_string(a_kind)+")'";
+                diagnostics.parser_style_label(
+                msg1,
+                {loc},
+                msg2);
+                
         }
     }
 }
@@ -1531,6 +1539,7 @@ void add_ws_warning(const Location &loc,
 #define WARN_ENDIF(l) add_ws_warning(l, p.diag, p.fixed_form, KW_ENDIF)
 #define WARN_REALSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_REAL, x.int_n.n)
 #define WARN_INTEGERSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_INTEGER, x.int_n.n)
+#define WARN_CHARACTERSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_CHARACTER, x.int_n.n)
 
 #define DO1(trivia, body, l) make_DoLoop_t(p.m_a, l, 0, nullptr, 0, \
         nullptr, nullptr, nullptr, nullptr, \
