@@ -2266,6 +2266,8 @@ public:
         }
         ASR::Variable_t* member = down_cast<ASR::Variable_t>(symbol_get_past_external(x.m_m));
         std::string member_name = std::string(member->m_name);
+        ASR::ttype_t *cur_type = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(x_m_v_type));
         LCOMPILERS_ASSERT(current_der_type_name.size() != 0);
         while( name2memidx[current_der_type_name].find(member_name) == name2memidx[current_der_type_name].end() ) {
             if( dertype2parent.find(current_der_type_name) == dertype2parent.end() ) {
@@ -2273,6 +2275,20 @@ public:
                                     x.base.base.loc);
             }
             tmp = llvm_utils->create_gep(tmp, 0);
+            if (ASR::is_a<ASR::Struct_t>(*cur_type)) {
+                ASR::Struct_t* der = ASR::down_cast<ASR::Struct_t>(cur_type);
+                ASR::StructType_t *st = ASR::down_cast<ASR::StructType_t>(der->m_derived_type);
+                cur_type = ASRUtils::symbol_type(st->m_symtab->get_symbol(current_der_type_name));
+                cur_type = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(cur_type));
+            } else if (ASR::is_a<ASR::Class_t>(*cur_type)) {
+                tmp = llvm_utils->create_gep(tmp, 1);
+                ASR::Class_t* der = ASR::down_cast<ASR::Class_t>(cur_type);
+                ASR::StructType_t *st = ASR::down_cast<ASR::StructType_t>(der->m_class_type);
+                cur_type = ASRUtils::symbol_type(st->m_symtab->get_symbol(current_der_type_name));
+                cur_type = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(cur_type));
+            }
             current_der_type_name = dertype2parent[current_der_type_name];
         }
         int member_idx = name2memidx[current_der_type_name][member_name];
@@ -2281,7 +2297,7 @@ public:
         //     is_nested_pointer(tmp) ) {
         //     tmp = CreateLoad(tmp);
         // }
-        llvm::Value* tmp1 = llvm_utils->create_gep(tmp, member_idx);
+        tmp = llvm_utils->create_gep(tmp, member_idx);
         ASR::ttype_t* member_type = ASRUtils::type_get_past_pointer(
             ASRUtils::type_get_past_allocatable(member->m_type));
         if( ASR::is_a<ASR::Struct_t>(*member_type) ) {
@@ -2295,12 +2311,11 @@ public:
                 tmp = llvm_symtab[h];
             }
         }
-        if (ASR::is_a<ASR::Class_t>(*ASRUtils::type_get_past_allocatable(x.m_type))) {
+        else if (ASR::is_a<ASR::Class_t>(*member_type)) {
             ASR::symbol_t *class_type = ASR::down_cast<ASR::Class_t>(
-                ASRUtils::type_get_past_allocatable(x.m_type))->m_class_type;
+                member_type)->m_class_type;
             current_der_type_name = ASRUtils::symbol_name(class_type);
         }
-        tmp = tmp1;
     }
 
     void visit_Variable(const ASR::Variable_t &x) {
