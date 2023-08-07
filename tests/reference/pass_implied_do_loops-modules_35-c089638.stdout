@@ -12,6 +12,52 @@
                                     (SymbolTable
                                         3
                                         {
+                                            __libasr__created__var__0__array_constant_:
+                                                (Variable
+                                                    3
+                                                    __libasr__created__var__0__array_constant_
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Character 1 1 ())
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            __libasr__created__var__1__array_constant_:
+                                                (Variable
+                                                    3
+                                                    __libasr__created__var__1__array_constant_
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Character 1 1 ())
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
                                             place:
                                                 (Variable
                                                     3
@@ -167,7 +213,7 @@
                                                 ()
                                             )]
                                             [(Allocate
-                                                [((Var 3 strings)
+                                                [((Var 3 __libasr__created__var__0__array_constant_)
                                                 [((IntegerConstant 1 (Integer 4))
                                                 (IntegerConstant 0 (Integer 4)))]
                                                 ()
@@ -188,7 +234,7 @@
                                             ()
                                         )
                                         [(Allocate
-                                            [((Var 3 strings)
+                                            [((Var 3 __libasr__created__var__1__array_constant_)
                                             [((IntegerConstant 1 (Integer 4))
                                             (IntegerConstant 0 (Integer 4)))]
                                             ()

@@ -79,17 +79,7 @@
                         })
                     arrays_20
                     []
-                    [(Allocate
-                        [((Var 2 list_integer)
-                        [((IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 0 (Integer 4)))]
-                        ()
-                        ())]
-                        ()
-                        ()
-                        ()
-                    )
-                    (=
+                    [(=
                         (Var 2 list_integer)
                         (ArrayConstant
                             []
@@ -101,16 +91,6 @@
                             )
                             ColMajor
                         )
-                        ()
-                    )
-                    (Allocate
-                        [((Var 2 list_logical)
-                        [((IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 0 (Integer 4)))]
-                        ()
-                        ())]
-                        ()
-                        ()
                         ()
                     )
                     (=
@@ -125,16 +105,6 @@
                             )
                             ColMajor
                         )
-                        ()
-                    )
-                    (Allocate
-                        [((Var 2 list_character)
-                        [((IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 0 (Integer 4)))]
-                        ()
-                        ())]
-                        ()
-                        ()
                         ()
                     )
                     (=
