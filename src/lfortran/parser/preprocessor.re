@@ -187,6 +187,7 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
 
             end = "\x00";
             newline = "\n";
+            single_line_comment = "//" [^\n\x00]*;
             whitespace = [ \t\v\r]+;
             digit = [0-9];
             char =  [a-zA-Z_];
@@ -309,7 +310,7 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "else" whitespace? newline  {
+            "#" whitespace? "else" whitespace? single_line_comment? newline  {
                 if (ifdef_stack.size() == 0) {
                     throw LCompilersException("C preprocessor: #else encountered outside of #ifdef or #ifndef");
                 }
@@ -324,7 +325,7 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "endif" whitespace? newline  {
+            "#" whitespace? "endif" whitespace? single_line_comment? newline  {
                 if (ifdef_stack.size() == 0) {
                     throw LCompilersException("C preprocessor: #endif encountered outside of #ifdef or #ifndef");
                 }
@@ -461,6 +462,15 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
             "'" ("''"|[^'\x00])* "'" {
                 if (!branch_enabled) continue;
                 output.append(token(tok, cur));
+                continue;
+            }
+            [/][*] {
+                if (!branch_enabled) continue;
+                while (!(*cur == '/' && *(cur - 1) == '*')) {
+                    cur++;
+                }
+                cur++;
+                interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
         */
