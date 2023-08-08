@@ -2703,7 +2703,7 @@ namespace MaxLoc {
                 int dim = 0;
                 if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1]))) {
                     err("`dim` should be a scalar integer type", loc);
-                } else if (!ASRUtils::extract_value(ASRUtils::expr_value(args[1]), dim)) {
+                } else if (!extract_value(expr_value(args[1]), dim)) {
                     err("Runtime values for `dim` argument is not supported yet", loc);
                 }
                 if (1 > dim || dim > n_dims) {
@@ -2781,7 +2781,7 @@ namespace MaxLoc {
         declare_basic_variables("_lcompilers_maxloc")
         fill_func_arg("array", arg_types[0]);
         ASR::dimension_t *m_dims;
-        int n_dims = extract_dimensions_from_ttype(expr_type(m_args[0].m_value), m_dims);
+        int n_dims = extract_dimensions_from_ttype(arg_types[0], m_dims);
         if (m_args.n > 1) {
             // TODO: Use overload_id
             fill_func_arg("dim", arg_types[1]);
@@ -2825,7 +2825,31 @@ namespace MaxLoc {
                 body.push_back(al, b.Assignment(b.ArrayItem(result, {i32(2)}),
                     iAdd(iDiv(max_index, m_dims[0].m_length), i32(1))));
             } else {
-                LCOMPILERS_ASSERT(false);
+                Vec<ASR::expr_t*> idx_vars, target_idx_vars;
+                Vec<ASR::stmt_t*> doloop_body;
+                int dim = 0;
+                extract_value(expr_value(m_args[1].m_value), dim);
+                b.generate_reduction_intrinsic_stmts_for_array_output(
+                    loc, args[0], args[1], fn_symtab, body, idx_vars,
+                    target_idx_vars, doloop_body,
+                    [=, &al, &body, &b] () {
+                        body.push_back(al, b.Assignment(result, i32(1)));
+                    },
+                    [=, &al, &idx_vars, &target_idx_vars, &doloop_body, &b, &result] () {
+                        ASR::expr_t *result_ref = PassUtils::create_array_ref(
+                            result, target_idx_vars, al);
+                        ASR::expr_t *array_ref = PassUtils::create_array_ref(
+                            args[0], idx_vars, al);
+                        ASR::expr_t *test;
+                        if (is_real(*expr_type(array_ref))) {
+                            test = fGt(array_ref, result_ref);
+                        } else {
+                            test = iGt(array_ref, result_ref);
+                        }
+                        doloop_body.push_back(al, b.If(test, {
+                            b.Assignment(result_ref, idx_vars[dim - 1])
+                        }, {}));
+                    });
             }
         }
         body.push_back(al, Return());
