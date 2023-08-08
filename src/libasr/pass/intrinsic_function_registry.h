@@ -2838,16 +2838,24 @@ namespace MaxLoc {
                     [=, &al, &idx_vars, &target_idx_vars, &doloop_body, &b, &result] () {
                         ASR::expr_t *result_ref = PassUtils::create_array_ref(
                             result, target_idx_vars, al);
-                        ASR::expr_t *array_ref = PassUtils::create_array_ref(
+                        ASR::expr_t *array_ref_01 = PassUtils::create_array_ref(
                             args[0], idx_vars, al);
+
+                        std::vector<ASR::expr_t *> tmp_1 = idx_vars.as_vector();
+                        tmp_1[dim - 1] = result_ref;
+                        Vec<ASR::expr_t *> tmp_2; tmp_2.reserve(al, 1);
+                        for (auto &x: tmp_1) tmp_2.push_back(al, x);
+                        ASR::expr_t *array_ref_02 = PassUtils::create_array_ref(
+                            args[0], tmp_2, al);
+
                         ASR::expr_t *test;
-                        if (is_real(*expr_type(array_ref))) {
-                            test = fGt(array_ref, result_ref);
+                        if (is_real(*arg_types[0])) {
+                            test = fGt(array_ref_01, array_ref_02);
                         } else {
-                            test = iGt(array_ref, result_ref);
+                            test = iGt(array_ref_01, array_ref_02);
                         }
                         doloop_body.push_back(al, b.If(test, {
-                            b.Assignment(result_ref, idx_vars[dim - 1])
+                            b.Assignment(result_ref, idx_vars.p[dim - 1])
                         }, {}));
                     });
             }
