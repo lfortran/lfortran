@@ -562,6 +562,60 @@ jobs:
             cd integration_tests
             ./run_tests.py -b gfortran
 
+  scipy:
+    name: Check SciPy Build and Test Run
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/setup-micromamba@v1
+        with:
+          environment-file: ci/environment_linux.yml
+          create-args: >-
+            python=3.10
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.os }}
+
+      - name: Build Linux
+        shell: bash -e -l {0}
+        run: |
+            ./build0.sh
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+      - name: Test SciPy Specfun
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/scipy/scipy
+            cd scipy
+            git remote add ondrej https://github.com/certik/scipy
+            git fetch ondrej
+            git checkout -t ondrej/special
+            git checkout 9b3bbc1f333d7a0b3f6f1112f5fb224968457cba
+            micromamba env create -f environment.yml
+            micromamba activate scipy-dev
+            git submodule update --init
+            ../src/bin/lfortran -c scipy/special/specfun/specfun.f -o scipy/special/specfun.o --use-loop-variable-after-loop --fixed-form --implicit-typing --implicit-interface --generate-object-code --rtlib
+            clang -shared -fPIC -o scipy/special/specfun.so scipy/special/specfun.o -L../src/runtime -llfortran_runtime
+            mkdir -p $CONDA_PREFIX/lib/scipy/special/
+            cp scipy/special/specfun.so $CONDA_PREFIX/lib/scipy/special/
+            cp ../src/runtime/liblfortran_runtime.so $CONDA_PREFIX/lib/
+            python dev.py test -t scipy.special
+
   test_codes:
     name: Check Production Codes with LFortran
     runs-on: ubuntu-latest
@@ -627,7 +681,8 @@ jobs:
             for file in $files; do
                 ../src/bin/lfortran --fixed-form --implicit-typing --implicit-interface --implicit-argument-casting --show-asr --no-color $file > $file.f90
             done
-
+            cd ..
+            rm -rf scipy/
 
 
   test_without_llvm:
