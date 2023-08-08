@@ -66,6 +66,7 @@ struct CompilerOptions {
     bool enable_cpython = false;
     bool enable_symengine = false;
     bool link_numpy = false;
+    bool realloc_lhs = false;
     std::vector<std::string> import_paths;
     Platform platform;
 
@@ -96,6 +97,7 @@ namespace LCompilers {
         bool pass_cumulative = false; // Apply passes cumulatively
         bool disable_main = false;
         bool use_loop_variable_after_loop = false;
+        bool realloc_lhs = false;
     };
 
 }

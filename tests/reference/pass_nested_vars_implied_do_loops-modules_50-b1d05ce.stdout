@@ -223,6 +223,31 @@
                                                                     []
                                                                     __lcompilers_created__nested_context__prune_build_targets_modules_used
                                                                     Public
+                                                                ),
+                                                            __libasr__created__var__0__array_constant_:
+                                                                (Variable
+                                                                    6
+                                                                    __libasr__created__var__0__array_constant_
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Allocatable
+                                                                        (Array
+                                                                            (Struct
+                                                                                4 int_t
+                                                                            )
+                                                                            [(()
+                                                                            ())]
+                                                                            DescriptorArray
+                                                                        )
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
                                                                 )
                                                         })
                                                     collect_used_modules
@@ -263,9 +288,14 @@
                                                         ()
                                                     )
                                                     (Allocate
-                                                        [((Var 6 __lcompilers_created__nested_context__prune_build_targets_modules_used)
+                                                        [((Var 6 __libasr__created__var__0__array_constant_)
                                                         [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 1 (Integer 4)))]
+                                                        (ArraySize
+                                                            (Var 6 __lcompilers_created__nested_context__prune_build_targets_modules_used)
+                                                            ()
+                                                            (Integer 4)
+                                                            ()
+                                                        ))]
                                                         ()
                                                         ())]
                                                         ()
@@ -275,7 +305,7 @@
                                                     (=
                                                         (Var 6 __1_k)
                                                         (ArrayBound
-                                                            (Var 6 __lcompilers_created__nested_context__prune_build_targets_modules_used)
+                                                            (Var 6 __libasr__created__var__0__array_constant_)
                                                             (IntegerConstant 1 (Integer 4))
                                                             (Integer 4)
                                                             LBound
@@ -303,14 +333,12 @@
                                                         ())
                                                         [(=
                                                             (ArrayItem
-                                                                (Var 6 __lcompilers_created__nested_context__prune_build_targets_modules_used)
+                                                                (Var 6 __libasr__created__var__0__array_constant_)
                                                                 [(()
                                                                 (Var 6 __1_k)
                                                                 ())]
-                                                                (Pointer
-                                                                    (Struct
-                                                                        4 int_t
-                                                                    )
+                                                                (Struct
+                                                                    4 int_t
                                                                 )
                                                                 RowMajor
                                                                 ()
@@ -339,6 +367,11 @@
                                                             )
                                                             ()
                                                         )]
+                                                    )
+                                                    (=
+                                                        (Var 6 __lcompilers_created__nested_context__prune_build_targets_modules_used)
+                                                        (Var 6 __libasr__created__var__0__array_constant_)
+                                                        ()
                                                     )]
                                                     ()
                                                     Public

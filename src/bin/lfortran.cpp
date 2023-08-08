@@ -668,6 +668,7 @@ int emit_asr(const std::string &infile,
     pass_options.run_fun = "f";
     pass_options.verbose = compiler_options.verbose;
     pass_options.pass_cumulative = compiler_options.pass_cumulative;
+    pass_options.realloc_lhs = compiler_options.realloc_lhs;
 
     pass_manager.apply_passes(al, asr, pass_options, diagnostics);
     if (compiler_options.tree) {
@@ -1912,6 +1913,7 @@ int main(int argc, char *argv[])
         app.add_flag("--interactive-parse", compiler_options.interactive, "Use interactive parse");
         app.add_flag("--verbose", compiler_options.verbose, "Print debugging statements");
         app.add_flag("--cumulative", compiler_options.pass_cumulative, "Apply all the passes cumulatively till the given pass");
+        app.add_flag("--realloc-lhs", compiler_options.realloc_lhs, "Reallocate left hand side if its not of the required size.");
 
         /*
         * Subcommands:

@@ -20,19 +20,19 @@ namespace LCompilers {
         int get_rank(ASR::expr_t* x);
 
         ASR::expr_t* create_array_ref(ASR::expr_t* arr_expr, Vec<ASR::expr_t*>& idx_vars,
-            Allocator& al, bool perform_cast=false,
+            Allocator& al, SymbolTable* current_scope=nullptr, bool perform_cast=false,
             ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
             ASR::ttype_t* casted_type=nullptr);
 
         ASR::expr_t* create_array_ref(ASR::symbol_t* arr, Vec<ASR::expr_t*>& idx_vars, Allocator& al,
-                                      const Location& loc, ASR::ttype_t* _type, bool perform_cast=false,
-                                      ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
-                                      ASR::ttype_t* casted_type=nullptr);
+            const Location& loc, ASR::ttype_t* _type, SymbolTable* current_scope=nullptr,
+            bool perform_cast=false, ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
+            ASR::ttype_t* casted_type=nullptr);
 
         ASR::expr_t* create_array_ref(ASR::expr_t* arr_expr, ASR::expr_t* idx_var, Allocator& al,
-                                      SymbolTable* current_scope, bool perform_cast=false,
-                                      ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
-                                      ASR::ttype_t* casted_type=nullptr);
+            SymbolTable* current_scope=nullptr, bool perform_cast=false,
+            ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
+            ASR::ttype_t* casted_type=nullptr);
 
         static inline bool is_elemental(ASR::symbol_t* x) {
             x = ASRUtils::symbol_get_past_external(x);
@@ -529,9 +529,10 @@ namespace LCompilers {
         }
 
         template <typename LOOP_BODY>
-        static inline void create_do_loop(Allocator& al, const Location& loc, int value_rank, ASR::expr_t* value_array,
-            Vec<ASR::expr_t*>& idx_vars, Vec<ASR::stmt_t*>& doloop_body,
-            LOOP_BODY loop_body, SymbolTable* current_scope, Vec<ASR::stmt_t*>* result_vec) {
+        static inline void create_do_loop(Allocator& al, const Location& loc,
+            int value_rank, ASR::expr_t* value_array, Vec<ASR::expr_t*>& idx_vars,
+            Vec<ASR::stmt_t*>& doloop_body, LOOP_BODY loop_body, SymbolTable* current_scope,
+            Vec<ASR::stmt_t*>* result_vec) {
             PassUtils::create_idx_vars(idx_vars, value_rank, loc, al, current_scope, "_t");
             LCOMPILERS_ASSERT(value_rank == (int) idx_vars.size())
 
@@ -591,9 +592,9 @@ namespace LCompilers {
         }
 
         void visit_ArrayConstant(ASR::ArrayConstant_t* x, Allocator& al,
-            ASR::expr_t* arr_var, Vec<ASR::stmt_t*>* result_vec, ASR::expr_t* idx_var,
-            SymbolTable* current_scope, bool perform_cast=false,
-            ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
+            ASR::expr_t* arr_var, Vec<ASR::stmt_t*>* result_vec,
+            ASR::expr_t* idx_var, SymbolTable* current_scope,
+            bool perform_cast=false, ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
             ASR::ttype_t* casted_type=nullptr);
 
         template <typename T>
@@ -623,7 +624,8 @@ namespace LCompilers {
                                                 loc, idx_var, lb, nullptr));
                 result_vec->push_back(replacer->al, assign_stmt);
                 visit_ArrayConstant(x, replacer->al, replacer->result_var, result_vec,
-                    idx_var, replacer->current_scope, perform_cast, cast_kind, casted_type);
+                                    idx_var, replacer->current_scope,
+                                    perform_cast, cast_kind, casted_type);
             } else if( ASR::is_a<ASR::ArraySection_t>(*replacer->result_var) ) {
                 ASR::ArraySection_t* target_section = ASR::down_cast<ASR::ArraySection_t>(replacer->result_var);
                 int sliced_dims_count = 0;

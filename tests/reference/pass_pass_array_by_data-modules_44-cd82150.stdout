@@ -156,17 +156,7 @@
                                     )
                                     [warnwrite_data]
                                     [(Var 8 settings)]
-                                    [(Allocate
-                                        [((Var 8 littlefile)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 2 (Integer 4)))]
-                                        ()
-                                        ())]
-                                        ()
-                                        ()
-                                        ()
-                                    )
-                                    (=
+                                    [(=
                                         (Var 8 littlefile)
                                         (ArrayConstant
                                             [(StringConstant

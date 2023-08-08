@@ -74,7 +74,7 @@ public:
             Vec<ASR::stmt_t*> doloop_body;
             doloop_body.reserve(al, 1);
             if( doloop == nullptr ) {
-                ASR::expr_t* ref = PassUtils::create_array_ref(arr_expr, idx_vars, al);
+                ASR::expr_t* ref = PassUtils::create_array_ref(arr_expr, idx_vars, al, current_scope);
                 Vec<ASR::expr_t*> print_args;
                 print_args.reserve(al, 1);
                 print_args.push_back(al, ref);
@@ -181,7 +181,7 @@ public:
             Vec<ASR::stmt_t*> doloop_body;
             doloop_body.reserve(al, 1);
             if( doloop == nullptr ) {
-                ASR::expr_t* ref = PassUtils::create_array_ref(arr_expr, idx_vars, al);
+                ASR::expr_t* ref = PassUtils::create_array_ref(arr_expr, idx_vars, al, current_scope);
                 Vec<ASR::expr_t*> print_args;
                 print_args.reserve(al, 1);
                 print_args.push_back(al, ref);

@@ -22,6 +22,24 @@ namespace LCompilers {
             return builder.CreateCall(fn, args);
         }
 
+        llvm::Value* lfortran_realloc(llvm::LLVMContext &context, llvm::Module &module,
+                llvm::IRBuilder<> &builder, llvm::Value* ptr, llvm::Value* arg_size) {
+            std::string func_name = "_lfortran_realloc";
+            llvm::Function *fn = module.getFunction(func_name);
+            if (!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getInt8PtrTy(context), {
+                            llvm::Type::getInt8PtrTy(context),
+                            llvm::Type::getInt32Ty(context)
+                        }, true);
+                fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, func_name, module);
+            }
+            std::vector<llvm::Value*> args = {
+                builder.CreateBitCast(ptr, llvm::Type::getInt8PtrTy(context)), arg_size};
+            return builder.CreateCall(fn, args);
+        }
+
         bool compile_time_dimensions_t(ASR::dimension_t* m_dims, int n_dims) {
             if( n_dims <= 0 ) {
                 return false;
@@ -302,7 +320,7 @@ namespace LCompilers {
         void SimpleCMODescriptor::fill_malloc_array_details(
             llvm::Value* arr, llvm::Type* llvm_data_type, int n_dims,
             std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims,
-            llvm::Module* module) {
+            llvm::Module* module, bool realloc) {
             arr = LLVM::CreateLoad(*builder, arr);
             llvm::Value* offset_val = llvm_utils->create_gep(arr, 1);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
@@ -328,7 +346,15 @@ namespace LCompilers {
             llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
             prod = builder->CreateMul(prod, llvm_size);
             builder->CreateStore(prod, arg_size);
-            llvm::Value* ptr_as_char_ptr = lfortran_malloc(context, *module, *builder, LLVM::CreateLoad(*builder, arg_size));
+            llvm::Value* ptr_as_char_ptr = nullptr;
+            if( realloc ) {
+                ptr_as_char_ptr = lfortran_realloc(context, *module,
+                    *builder, LLVM::CreateLoad(*builder, ptr2firstptr),
+                    LLVM::CreateLoad(*builder, arg_size));
+            } else {
+                ptr_as_char_ptr = lfortran_malloc(context, *module,
+                    *builder, LLVM::CreateLoad(*builder, arg_size));
+            }
             llvm::Value* first_ptr = builder->CreateBitCast(ptr_as_char_ptr, ptr_type);
             builder->CreateStore(first_ptr, ptr2firstptr);
         }
