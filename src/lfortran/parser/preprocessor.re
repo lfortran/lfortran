@@ -145,8 +145,7 @@ void interval_end(LocationManager &lm, size_t output_len,
 
 void interval_end_type_0(LocationManager &lm, size_t output_len,
                 size_t input_len) {
-    size_t input_interval_len = output_len - lm.files.back().out_start0[
-        lm.files.back().out_start0.size() - 1];
+    size_t input_interval_len = output_len - lm.files.back().out_start0.back();
     interval_end(lm, output_len, input_len, input_interval_len, 0);
 }
 
