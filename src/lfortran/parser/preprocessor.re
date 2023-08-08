@@ -134,12 +134,6 @@ std::vector<std::string> parse_arguments(unsigned char *&cur, bool skip_spaces) 
     return args;
 }
 
-void get_newlines(const std::string &s, std::vector<uint32_t> &newlines) {
-    for (uint32_t pos=0; pos < s.size(); pos++) {
-        if (s[pos] == '\n') newlines.push_back(pos);
-    }
-}
-
 void interval_end(LocationManager &lm, size_t output_len,
                 size_t input_len, size_t input_interval_len,
                 uint32_t interval_type) {
@@ -151,8 +145,7 @@ void interval_end(LocationManager &lm, size_t output_len,
 
 void interval_end_type_0(LocationManager &lm, size_t output_len,
                 size_t input_len) {
-    size_t input_interval_len = output_len - lm.files.back().out_start0[
-        lm.files.back().out_start0.size() - 1];
+    size_t input_interval_len = output_len - lm.files.back().out_start0.back();
     interval_end(lm, output_len, input_len, input_interval_len, 0);
 }
 
@@ -174,7 +167,7 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
     unsigned char *cur = string_start;
     std::string output;
     lm.files.back().preprocessor = true;
-    get_newlines(input, lm.files.back().in_newlines0);
+    lm.get_newlines(input, lm.files.back().in_newlines0);
     lm.files.back().out_start0.push_back(0);
     lm.files.back().in_start0.push_back(0);
     std::vector<IfDef> ifdef_stack;
@@ -194,6 +187,7 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
 
             end = "\x00";
             newline = "\n";
+            single_line_comment = "//" [^\n\x00]*;
             whitespace = [ \t\v\r]+;
             digit = [0-9];
             char =  [a-zA-Z_];
@@ -316,7 +310,7 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "else" whitespace? newline  {
+            "#" whitespace? "else" whitespace? single_line_comment? newline  {
                 if (ifdef_stack.size() == 0) {
                     throw LCompilersException("C preprocessor: #else encountered outside of #ifdef or #ifndef");
                 }
@@ -331,7 +325,7 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "endif" whitespace? newline  {
+            "#" whitespace? "endif" whitespace? single_line_comment? newline  {
                 if (ifdef_stack.size() == 0) {
                     throw LCompilersException("C preprocessor: #endif encountered outside of #ifdef or #ifndef");
                 }
@@ -468,6 +462,15 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
             "'" ("''"|[^'\x00])* "'" {
                 if (!branch_enabled) continue;
                 output.append(token(tok, cur));
+                continue;
+            }
+            [/][*] {
+                if (!branch_enabled) continue;
+                while (!(*cur == '/' && *(cur - 1) == '*')) {
+                    cur++;
+                }
+                cur++;
+                interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
         */

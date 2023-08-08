@@ -11,7 +11,6 @@ std::string get_runtime_library_dir();
 std::string get_runtime_library_header_dir();
 std::string get_runtime_library_c_header_dir();
 std::string generate_visualize_html(std::string &astr_data_json);
-std::string remove_cpp_comments(const std::string &input);
 
 } // LCompilers::LFortran
 
