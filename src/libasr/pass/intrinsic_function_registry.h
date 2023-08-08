@@ -2696,40 +2696,36 @@ namespace MaxLoc {
         m_args.push_back(al, args[0]);
         ASR::dimension_t *m_dims;
         int n_dims = extract_dimensions_from_ttype(expr_type(args[0]), m_dims);
-        if (n_dims == 1 || n_dims == 2) {
-            ASR::expr_t *result_length = nullptr;
-            int kind = 4; // default kind
-            if (args[1]) {
-                int dim = 0;
-                if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1]))) {
-                    err("`dim` should be a scalar integer type", loc);
-                } else if (!extract_value(expr_value(args[1]), dim)) {
-                    err("Runtime values for `dim` argument is not supported yet", loc);
-                }
-                if (1 > dim || dim > n_dims) {
-                    err("`dim` argument of `maxloc` is out of array index range", loc);
-                }
-                if (n_dims == 1) {
-                    return_type = TYPE(ASR::make_Integer_t(al, loc, kind)); // 1D
-                } else {
-                    result_length = m_dims[n_dims - dim].m_length; // 2D
-                }
-                m_args.push_back(al, args[1]);
+        ASR::expr_t *result_length = nullptr;
+        int kind = 4; // default kind
+        if (args[1]) {
+            int dim = 0;
+            if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1]))) {
+                err("`dim` should be a scalar integer type", loc);
+            } else if (!extract_value(expr_value(args[1]), dim)) {
+                err("Runtime values for `dim` argument is not supported yet", loc);
+            }
+            if (1 > dim || dim > n_dims) {
+                err("`dim` argument of `maxloc` is out of array index range", loc);
+            }
+            if (n_dims == 1) {
+                return_type = TYPE(ASR::make_Integer_t(al, loc, kind)); // 1D
             } else {
-                result_length = i32(n_dims);
+                result_length = m_dims[n_dims - dim].m_length;
             }
-            if (result_length) {
-                Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
-                ASR::dimension_t dim;
-                dim.loc = args[0]->base.loc;
-                dim.m_start = i32(1);
-                dim.m_length = result_length;
-                dims.push_back(al, dim);
-                return_type = TYPE(ASR::make_Integer_t(al, loc, kind));
-                return_type = duplicate_type(al, return_type, &dims);
-            }
+            m_args.push_back(al, args[1]);
         } else {
-            err("Only array with rank 1 or 2 is supported for now", loc);
+            result_length = i32(n_dims);
+        }
+        if (result_length) {
+            Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
+            ASR::dimension_t dim;
+            dim.loc = args[0]->base.loc;
+            dim.m_start = i32(1);
+            dim.m_length = result_length;
+            dims.push_back(al, dim);
+            return_type = TYPE(ASR::make_Integer_t(al, loc, kind));
+            return_type = duplicate_type(al, return_type, &dims);
         }
         ASR::expr_t *m_value = eval_MaxLoc(al, loc, return_type, m_args);
         return ASRUtils::make_IntrinsicFunction_t_util(al, loc,
@@ -2799,31 +2795,38 @@ namespace MaxLoc {
             }
             body.push_back(al, b.Assignment(res, max_index));
         } else {
-            if (m_args.n == 1 && is_fixed_size_array(arg_types[0])) {
-                // _1d_array = reshape(arr, [_1d_array_size])
-                // max_1d_index = maxloc(_1d_array)
-                int size = ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
-                ASR::expr_t *reshape_expr = EXPR(ASR::make_ArrayReshape_t(al, loc,
-                    args[0], b.ArrayConstant({i32(size)}, int32),
-                    b.Array({-1}, extract_type(arg_types[0])), nullptr));
-                auto _1d_array = declare("_1d_array",
-                    b.Array({size}, extract_type(arg_types[0])), Local);
-                body.push_back(al, b.Assignment(_1d_array, reshape_expr));
+            if (m_args.n == 1) {
+                Vec<ASR::expr_t*> idx_vars;
+                Vec<ASR::stmt_t*> doloop_body;
+                b.generate_reduction_intrinsic_stmts_for_scalar_output(
+                    loc, args[0], fn_symtab, body, idx_vars, doloop_body,
+                    [=, &al, &body, &b] () {
+                        body.push_back(al, b.Assignment(result, i32(1)));
+                    },
+                    [=, &al, &idx_vars, &doloop_body, &b] () {
+                        std::vector<ASR::stmt_t *> if_body; if_body.reserve(n_dims);
+                        Vec<ASR::expr_t *> result_idx; result_idx.reserve(al, 1);
+                        for (int i = 0; i < n_dims; i++) {
+                            Vec<ASR::expr_t *> idx; idx.reserve(al, 1);
+                            idx.push_back(al, i32(i + 1));
+                            result_idx.push_back(al,
+                                PassUtils::create_array_ref(result, idx, al));
+                            if_body.push_back(b.Assignment(result_idx.back(),
+                                idx_vars.p[i]));
+                        }
+                        ASR::expr_t *array_ref_01 = PassUtils::create_array_ref(
+                            args[0], idx_vars, al);
+                        ASR::expr_t *array_ref_02 = PassUtils::create_array_ref(
+                            args[0], result_idx, al);
 
-                auto max_index = declare("max_index", int32, Local);
-                maxloc(al, loc, fn_symtab, _1d_array, max_index, body,
-                    is_real(*arg_types[0]));
-
-                body.push_back(al, b.Assignment(max_index, iSub(max_index, i32(1))));
-                // 2d_n_column = max_1d_i % arr_n_column
-                // r(1) = (max_1d_i - (int(max_1d_i / arr_n_column) * arr_n_column)) + 1
-                body.push_back(al, b.Assignment(b.ArrayItem(result, {i32(1)}),
-                    iAdd(iSub(max_index, iMul(iDiv(max_index, m_dims[0].m_length),
-                    m_dims[0].m_length)), i32(1))));
-                // 2d_n_row = max_1d_i / arr_n_column
-                // r(2) = (max_i / arr_n_column) + 1
-                body.push_back(al, b.Assignment(b.ArrayItem(result, {i32(2)}),
-                    iAdd(iDiv(max_index, m_dims[0].m_length), i32(1))));
+                        ASR::expr_t *test;
+                        if (is_real(*arg_types[0])) {
+                            test = fGt(array_ref_01, array_ref_02);
+                        } else {
+                            test = iGt(array_ref_01, array_ref_02);
+                        }
+                        doloop_body.push_back(al, b.If(test, if_body, {}));
+                    });
             } else {
                 Vec<ASR::expr_t*> idx_vars, target_idx_vars;
                 Vec<ASR::stmt_t*> doloop_body;
