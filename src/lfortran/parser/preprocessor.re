@@ -134,12 +134,6 @@ std::vector<std::string> parse_arguments(unsigned char *&cur, bool skip_spaces) 
     return args;
 }
 
-void get_newlines(const std::string &s, std::vector<uint32_t> &newlines) {
-    for (uint32_t pos=0; pos < s.size(); pos++) {
-        if (s[pos] == '\n') newlines.push_back(pos);
-    }
-}
-
 void interval_end(LocationManager &lm, size_t output_len,
                 size_t input_len, size_t input_interval_len,
                 uint32_t interval_type) {
@@ -174,7 +168,7 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
     unsigned char *cur = string_start;
     std::string output;
     lm.files.back().preprocessor = true;
-    get_newlines(input, lm.files.back().in_newlines0);
+    lm.get_newlines(input, lm.files.back().in_newlines0);
     lm.files.back().out_start0.push_back(0);
     lm.files.back().in_start0.push_back(0);
     std::vector<IfDef> ifdef_stack;
