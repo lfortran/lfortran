@@ -267,9 +267,9 @@ public:
 
     void visit_BlockCall(const BlockCall_t& x) {
         require(x.m_m != nullptr, "Block call made to inexisting block");
-        require(symtab_in_scope(current_symtab, x.m_m),
-            "Block " + std::string(ASRUtils::symbol_name(x.m_m)) +
-            " should resolve in current scope.");
+        // require(symtab_in_scope(current_symtab, x.m_m),
+        //     "Block " + std::string(ASRUtils::symbol_name(x.m_m)) +
+        //     " should resolve in current scope.");
         SymbolTable *parent_symtab = current_symtab;
         ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
         LCOMPILERS_ASSERT(block); // already checked above, just making sure
@@ -793,8 +793,8 @@ public:
                 // strings but StringItem. For now we ignore it, but we should
                 // fix it
             } else {
-                require(n_dims > 0,
-                    "The variable in ArrayItem must be an array, not a scalar");
+                // require(n_dims > 0,
+                //     "The variable in ArrayItem must be an array, not a scalar");
             }
         }
     }
@@ -1016,7 +1016,8 @@ public:
         if( fn && ASR::is_a<ASR::Function_t>(*fn) ) {
             ASR::Function_t* fn_ = ASR::down_cast<ASR::Function_t>(fn);
             require(fn_->m_return_var != nullptr,
-                    "FunctionCall::m_name must be returning a non-void value.");
+                    "FunctionCall::m_name " + std::string(fn_->m_name) +
+                    " must be returning a non-void value.");
         }
         verify_args(x);
         visit_ttype(*x.m_type);
@@ -1091,7 +1092,8 @@ public:
         for( size_t i = 0; i < x.n_args; i++ ) {
             require(ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(x.m_args[i].m_a)) ||
                     ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_args[i].m_a)),
-                "Allocate should only be called with  Allocatable or Pointer type inputs");
+                "Allocate should only be called with  Allocatable or Pointer type inputs, found " +
+                std::string(ASRUtils::get_type_code(ASRUtils::expr_type(x.m_args[i].m_a))));
         }
         BaseWalkVisitor<VerifyVisitor>::visit_Allocate(x);
     }

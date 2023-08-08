@@ -639,7 +639,8 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
 
 static inline ASR::symbol_t *get_asr_owner(const ASR::symbol_t *sym) {
     const SymbolTable *s = symbol_parent_symtab(sym);
-    if( !ASR::is_a<ASR::symbol_t>(*s->asr_owner) ) {
+    if( s->asr_owner == nullptr ||
+        !ASR::is_a<ASR::symbol_t>(*s->asr_owner) ) {
         return nullptr;
     }
     return ASR::down_cast<ASR::symbol_t>(s->asr_owner);
@@ -3246,6 +3247,12 @@ class SymbolDuplicator {
                 new_symbol_name = block->m_name;
                 break;
             }
+            case ASR::symbolType::StructType: {
+                ASR::StructType_t* struct_type = ASR::down_cast<ASR::StructType_t>(symbol);
+                new_symbol = duplicate_StructType(struct_type, destination_symtab);
+                new_symbol_name = struct_type->m_name;
+                break;
+            }
             default: {
                 throw LCompilersException("Duplicating ASR::symbolType::" +
                         std::to_string(symbol->type) + " is not supported yet.");
@@ -3399,6 +3406,19 @@ class SymbolDuplicator {
         return ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(al,
                 block_t->base.base.loc, block_symtab, block_t->m_name,
                 new_body.p, new_body.size()));
+    }
+
+    ASR::symbol_t* duplicate_StructType(ASR::StructType_t* struct_type_t,
+        SymbolTable* destination_symtab) {
+        SymbolTable* struct_type_symtab = al.make_new<SymbolTable>(destination_symtab);
+        duplicate_SymbolTable(struct_type_t->m_symtab, struct_type_symtab);
+        return ASR::down_cast<ASR::symbol_t>(ASR::make_StructType_t(
+            al, struct_type_t->base.base.loc, struct_type_symtab,
+            struct_type_t->m_name, struct_type_t->m_dependencies, struct_type_t->n_dependencies,
+            struct_type_t->m_members, struct_type_t->n_members, struct_type_t->m_abi,
+            struct_type_t->m_access, struct_type_t->m_is_packed, struct_type_t->m_is_abstract,
+            struct_type_t->m_initializers, struct_type_t->n_initializers, struct_type_t->m_alignment,
+            struct_type_t->m_parent));
     }
 
 };
@@ -3649,7 +3669,8 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
              argi->m_intent == ASRUtils::intent_inout) &&
             !ASR::is_a<ASR::Allocatable_t>(*argi->m_type) &&
             !ASR::is_a<ASR::Struct_t>(*argi->m_type) &&
-            !ASR::is_a<ASR::Character_t>(*argi->m_type)) {
+            !ASR::is_a<ASR::Character_t>(*argi->m_type) &&
+            argi->m_presence != ASR::presenceType::Optional) {
             v.push_back(i);
         }
     }
@@ -3943,6 +3964,10 @@ static inline ASR::dimension_t* duplicate_dimensions(Allocator& al, ASR::dimensi
 
 static inline bool is_allocatable(ASR::expr_t* expr) {
     return ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(expr));
+}
+
+static inline bool is_allocatable(ASR::ttype_t* type) {
+    return ASR::is_a<ASR::Allocatable_t>(*type);
 }
 
 static inline ASR::asr_t* make_ArrayPhysicalCast_t_util(Allocator &al, const Location &a_loc,

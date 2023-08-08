@@ -1809,6 +1809,28 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
     }
 }
 
+LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num)
+{
+    if (unit_num == -1) {
+        // Read from stdin
+        scanf("%lld", p);
+        return;
+    }
+
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+    if (!filep) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        fread(p, sizeof(*p), 1, filep);
+    } else {
+        fscanf(filep, "%lld", p);
+    }
+}
+
 LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t unit_num)
 {
     if (unit_num == -1) {
