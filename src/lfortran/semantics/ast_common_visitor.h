@@ -738,6 +738,7 @@ public:
     Allocator &al;
     CompilerOptions &compiler_options;
     SymbolTable *current_scope;
+    SymbolTable *implicit_interface_parent_scope = nullptr;
     ASR::Module_t *current_module = nullptr;
     SetChar current_module_dependencies;
     IntrinsicProcedures intrinsic_procedures;
@@ -769,6 +770,7 @@ public:
     bool in_Subroutine = false;
     bool is_common_variable = false;
     bool _processing_dimensions = false;
+    bool is_implicit_interface = false;
     Vec<ASR::stmt_t*> *current_body = nullptr;
 
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;
@@ -877,6 +879,9 @@ public:
             if (!in_Subroutine) {
                 if (implicit_mapping.size() != 0) {
                     implicit_dictionary = implicit_mapping[get_hash(current_scope->asr_owner)];
+                    if (implicit_dictionary.size() == 0 && is_implicit_interface) {
+                        implicit_dictionary = implicit_mapping[get_hash(implicit_interface_parent_scope->asr_owner)];
+                    }
                 }
             }
         }
@@ -4470,6 +4475,8 @@ public:
 
     template <class Call>
     void create_implicit_interface_function(const Call &x, std::string func_name, bool add_return, ASR::ttype_t* old_type) {
+        is_implicit_interface = true;
+        implicit_interface_parent_scope = current_scope;
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
@@ -4544,6 +4551,9 @@ public:
             false, false, false);
         parent_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
+
+        is_implicit_interface = false;
+        implicit_interface_parent_scope = nullptr;
     }
 
     void visit_DataImpliedDo(const AST::DataImpliedDo_t& x) {
