@@ -34,9 +34,9 @@ implicit none
    res_01 = shape(maxloc(i2, 1))
    if (res_01(1) /= 16) error stop
    res_02 = shape(maxloc(i3, 2))
-   if (res_02(1) /= 2 .and. res_02(2) /= 8) error stop
+   if (res_02(1) /= 2 .or. res_02(2) /= 8) error stop
    res_03 = shape(maxloc(i4, 3))
-   if (res_03(1) /= 2 .and. res_03(2) /= 8 .and. res_03(3) /= 4) error stop
+   if (res_03(1) /= 2 .or. res_03(2) /= 4 .or. res_03(3) /= 4) error stop
 
    res_04 = maxloc(i2, 2)
    if (i2(1, res_04(1)) /= 995) error stop
