@@ -613,7 +613,7 @@ jobs:
             clang -shared -fPIC -o scipy/special/specfun.so scipy/special/specfun.o -L../src/runtime -llfortran_runtime
             mkdir -p $CONDA_PREFIX/lib/scipy/special/
             cp scipy/special/specfun.so $CONDA_PREFIX/lib/scipy/special/
-            cp ../src/runtime/liblfortran_runtime.so $CONDA_PREFIX/lib/
+            cp ../src/runtime/liblfortran_runtime.so* $CONDA_PREFIX/lib/
             python dev.py build
             mkdir -p ./build-install/lib/python3.10/scipy/special/
             cp scipy/special/specfun.so ./build-install/lib/python3.10/scipy/special/
