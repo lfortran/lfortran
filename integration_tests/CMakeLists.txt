@@ -1027,3 +1027,5 @@ RUN(NAME implicit_argument_casting_01 LABELS gfortran IMPLICIT_ARGS)
 RUN(NAME specfun_01 LABELS gfortran llvmUseLoopVariableAfterLoop NOFAST)
 
 RUN(NAME cpp_pre_01 LABELS gfortran llvm c CPP_PRE)
+
+RUN(NAME return_var_01 LABELS gfortran llvm)
