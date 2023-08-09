@@ -356,6 +356,7 @@ class ASRBuilder {
             return iGt(left, right);
         } else {
             LCOMPILERS_ASSERT(false);
+            return nullptr;
         }
     }
 
