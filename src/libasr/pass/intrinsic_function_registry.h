@@ -2684,52 +2684,55 @@ namespace MaxLoc {
     static inline ASR::asr_t* create_MaxLoc(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
             const std::function<void (const std::string &, const Location &)> err) {
-        if (!is_array(expr_type(args[0])) && !is_allocatable(args[0] )) {
+        ASR::ttype_t *array_type = expr_type(args[0]);
+        if ( !is_array(array_type) ) {
             err("`array` argument of `maxloc` must be an array", loc);
-        } else if (!is_integer(*expr_type(args[0])) && !is_real(*expr_type(args[0]))) {
+        } else if ( !is_integer(*array_type) && !is_real(*array_type) ) {
             err("`array` argument of `maxloc` must be integer or real for now", loc);
-        } else if (args[2] || args[3] || args[4]) {
+        } else if ( args[2] || args[3] || args[4] ) {
             err("Only `dim` keyword argument is supported for now", loc);
         }
         ASR::ttype_t *return_type = nullptr;
         Vec<ASR::expr_t *> m_args; m_args.reserve(al, 1);
         m_args.push_back(al, args[0]);
+        Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, 1);
         ASR::dimension_t *m_dims;
-        int n_dims = extract_dimensions_from_ttype(expr_type(args[0]), m_dims);
-        if (n_dims == 1 || n_dims == 2) {
-            ASR::expr_t *result_length = nullptr;
-            int kind = 4; // default kind
-            if (args[1]) {
-                int dim = 0;
-                if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1]))) {
-                    err("`dim` should be a scalar integer type", loc);
-                } else if (!ASRUtils::extract_value(ASRUtils::expr_value(args[1]), dim)) {
-                    err("Runtime values for `dim` argument is not supported yet", loc);
-                }
-                if (1 > dim || dim > n_dims) {
-                    err("`dim` argument of `maxloc` is out of array index range", loc);
-                }
-                if (n_dims == 1) {
-                    return_type = TYPE(ASR::make_Integer_t(al, loc, kind)); // 1D
-                } else {
-                    result_length = m_dims[n_dims - dim].m_length; // 2D
-                }
-                m_args.push_back(al, args[1]);
+        int n_dims = extract_dimensions_from_ttype(array_type, m_dims);
+        int dim = 0, kind = 4; // default kind
+        if ( args[1] ) {
+            if ( !ASR::is_a<ASR::Integer_t>(*expr_type(args[1])) ) {
+                err("`dim` should be a scalar integer type", loc);
+            } else if (!extract_value(expr_value(args[1]), dim)) {
+                err("Runtime values for `dim` argument is not supported yet", loc);
+            }
+            if ( 1 > dim || dim > n_dims ) {
+                err("`dim` argument of `maxloc` is out of array index range", loc);
+            }
+            if ( n_dims == 1 ) {
+                return_type = TYPE(ASR::make_Integer_t(al, loc, kind)); // 1D
             } else {
-                result_length = i32(n_dims);
+                for ( int i = 1; i <= n_dims; i++ ) {
+                    if ( i == dim ) {
+                        continue;
+                    }
+                    ASR::dimension_t tmp_dim;
+                    tmp_dim.loc = args[0]->base.loc;
+                    tmp_dim.m_start = m_dims[i - 1].m_start;
+                    tmp_dim.m_length = m_dims[i - 1].m_length;
+                    result_dims.push_back(al, tmp_dim);
+                }
             }
-            if (result_length) {
-                Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
-                ASR::dimension_t dim;
-                dim.loc = args[0]->base.loc;
-                dim.m_start = i32(1);
-                dim.m_length = result_length;
-                dims.push_back(al, dim);
-                return_type = TYPE(ASR::make_Integer_t(al, loc, kind));
-                return_type = duplicate_type(al, return_type, &dims);
-            }
+            m_args.push_back(al, args[1]);
         } else {
-            err("Only array with rank 1 or 2 is supported for now", loc);
+            ASR::dimension_t tmp_dim;
+            tmp_dim.loc = args[0]->base.loc;
+            tmp_dim.m_start = i32(1);
+            tmp_dim.m_length = i32(n_dims);
+            result_dims.push_back(al, tmp_dim);
+        }
+        if ( !return_type ) {
+            return_type = duplicate_type(al, TYPE(
+                ASR::make_Integer_t(al, loc, kind)), &result_dims);
         }
         ASR::expr_t *m_value = eval_MaxLoc(al, loc, return_type, m_args);
         return ASRUtils::make_IntrinsicFunction_t_util(al, loc,
@@ -2781,52 +2784,85 @@ namespace MaxLoc {
         declare_basic_variables("_lcompilers_maxloc")
         fill_func_arg("array", arg_types[0]);
         ASR::dimension_t *m_dims;
-        int n_dims = extract_dimensions_from_ttype(expr_type(m_args[0].m_value), m_dims);
+        int n_dims = extract_dimensions_from_ttype(arg_types[0], m_dims);
         if (m_args.n > 1) {
             // TODO: Use overload_id
             fill_func_arg("dim", arg_types[1]);
         }
         auto result = declare("result", return_type, ReturnVar);
-        if (n_dims == 1) {
-            auto max_index = declare("max_index", int32, Local);
-            maxloc(al, loc, fn_symtab, args[0], max_index, body,
-                is_real(*arg_types[0]));
-            ASR::expr_t *res;
-            if (is_array(return_type)) {
-                res = b.ArrayItem(result, {i32(1)});
-            } else  {
-                res = result;
-            }
-            body.push_back(al, b.Assignment(res, max_index));
+        if (m_args.n == 1) {
+            Vec<ASR::expr_t*> idx_vars;
+            Vec<ASR::stmt_t*> doloop_body;
+            b.generate_reduction_intrinsic_stmts_for_scalar_output(
+                loc, args[0], fn_symtab, body, idx_vars, doloop_body,
+                [=, &al, &body, &b] () {
+                    body.push_back(al, b.Assignment(result, i32(1)));
+                },
+                [=, &al, &idx_vars, &doloop_body, &b] () {
+                    std::vector<ASR::stmt_t *> if_body; if_body.reserve(n_dims);
+                    Vec<ASR::expr_t *> result_idx; result_idx.reserve(al, 1);
+                    for (int i = 0; i < n_dims; i++) {
+                        Vec<ASR::expr_t *> idx; idx.reserve(al, 1);
+                        idx.push_back(al, i32(i + 1));
+                        result_idx.push_back(al,
+                            PassUtils::create_array_ref(result, idx, al));
+                        if_body.push_back(b.Assignment(result_idx.back(),
+                            idx_vars.p[i]));
+                    }
+                    ASR::expr_t *array_ref_01 = PassUtils::create_array_ref(
+                        args[0], idx_vars, al);
+                    ASR::expr_t *array_ref_02 = PassUtils::create_array_ref(
+                        args[0], result_idx, al);
+
+                    ASR::expr_t *test;
+                    if (is_real(*arg_types[0])) {
+                        test = fGt(array_ref_01, array_ref_02);
+                    } else {
+                        test = iGt(array_ref_01, array_ref_02);
+                    }
+                    doloop_body.push_back(al, b.If(test, if_body, {}));
+                });
         } else {
-            if (m_args.n == 1 && is_fixed_size_array(arg_types[0])) {
-                // _1d_array = reshape(arr, [_1d_array_size])
-                // max_1d_index = maxloc(_1d_array)
-                int size = ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
-                ASR::expr_t *reshape_expr = EXPR(ASR::make_ArrayReshape_t(al, loc,
-                    args[0], b.ArrayConstant({i32(size)}, int32),
-                    b.Array({-1}, extract_type(arg_types[0])), nullptr));
-                auto _1d_array = declare("_1d_array",
-                    b.Array({size}, extract_type(arg_types[0])), Local);
-                body.push_back(al, b.Assignment(_1d_array, reshape_expr));
+            Vec<ASR::expr_t*> idx_vars, target_idx_vars;
+            Vec<ASR::stmt_t*> doloop_body;
+            int dim = 0;
+            extract_value(expr_value(m_args[1].m_value), dim);
+            b.generate_reduction_intrinsic_stmts_for_array_output(
+                loc, args[0], args[1], fn_symtab, body, idx_vars,
+                target_idx_vars, doloop_body,
+                [=, &al, &body, &b] () {
+                    body.push_back(al, b.Assignment(result, i32(1)));
+                },
+                [=, &al, &idx_vars, &target_idx_vars, &doloop_body, &b, &result] () {
+                    ASR::expr_t *result_ref;
+                    ASR::expr_t *array_ref_02;
+                    if (is_array(return_type)) {
+                        result_ref = PassUtils::create_array_ref(result,
+                            target_idx_vars, al);
 
-                auto max_index = declare("max_index", int32, Local);
-                maxloc(al, loc, fn_symtab, _1d_array, max_index, body,
-                    is_real(*arg_types[0]));
-
-                body.push_back(al, b.Assignment(max_index, iSub(max_index, i32(1))));
-                // 2d_n_column = max_1d_i % arr_n_column
-                // r(1) = (max_1d_i - (int(max_1d_i / arr_n_column) * arr_n_column)) + 1
-                body.push_back(al, b.Assignment(b.ArrayItem(result, {i32(1)}),
-                    iAdd(iSub(max_index, iMul(iDiv(max_index, m_dims[0].m_length),
-                    m_dims[0].m_length)), i32(1))));
-                // 2d_n_row = max_1d_i / arr_n_column
-                // r(2) = (max_i / arr_n_column) + 1
-                body.push_back(al, b.Assignment(b.ArrayItem(result, {i32(2)}),
-                    iAdd(iDiv(max_index, m_dims[0].m_length), i32(1))));
-            } else {
-                LCOMPILERS_ASSERT(false);
-            }
+                        std::vector<ASR::expr_t *> tmp_1 = idx_vars.as_vector();
+                        tmp_1[dim - 1] = result_ref;
+                        Vec<ASR::expr_t *> tmp_2; tmp_2.reserve(al, 1);
+                        for (auto &x: tmp_1) tmp_2.push_back(al, x);
+                        array_ref_02 = PassUtils::create_array_ref(
+                            args[0], tmp_2, al);
+                    } else {
+                        // 1D scalar output
+                        result_ref = result;
+                        array_ref_02 = b.ArrayItem(args[0], {result});
+                    }
+                    ASR::expr_t *array_ref_01 = PassUtils::create_array_ref(
+                        args[0], idx_vars, al);
+                    ASR::expr_t *test;
+                    if (is_real(*arg_types[0])) {
+                        test = fGt(array_ref_01, array_ref_02);
+                    } else {
+                        test = iGt(array_ref_01, array_ref_02);
+                    }
+                    doloop_body.push_back(al, b.If(test, {
+                        b.Assignment(result_ref, idx_vars.p[dim - 1])
+                    }, {}));
+                });
         }
         body.push_back(al, Return());
         ASR::symbol_t *fn_sym = make_Function_t(fn_name, fn_symtab, dep, args,
