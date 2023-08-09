@@ -2695,8 +2695,8 @@ namespace MaxLoc {
         ASR::ttype_t *return_type = nullptr;
         Vec<ASR::expr_t *> m_args; m_args.reserve(al, 1);
         m_args.push_back(al, args[0]);
+        Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, 1);
         ASR::dimension_t *m_dims;
-        Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
         int n_dims = extract_dimensions_from_ttype(array_type, m_dims);
         int dim = 0, kind = 4; // default kind
         if (args[1]) {
@@ -2712,17 +2712,15 @@ namespace MaxLoc {
                 return_type = TYPE(ASR::make_Integer_t(al, loc, kind)); // 1D
             } else {
                 for (int i = 1; i <= n_dims; i++) {
-                    if (i == dim) {
+                    if ( i == dim ) {
                         continue;
                     }
                     ASR::dimension_t tmp_dim;
                     tmp_dim.loc = args[0]->base.loc;
                     tmp_dim.m_start = m_dims[i - 1].m_start;
                     tmp_dim.m_length = m_dims[i - 1].m_length;
-                    dims.push_back(al, tmp_dim);
+                    result_dims.push_back(al, tmp_dim);
                 }
-                return_type = duplicate_type(al, TYPE(
-                    ASR::make_Integer_t(al, loc, kind)), &dims);
             }
             m_args.push_back(al, args[1]);
         } else {
@@ -2730,9 +2728,11 @@ namespace MaxLoc {
             tmp_dim.loc = args[0]->base.loc;
             tmp_dim.m_start = i32(1);
             tmp_dim.m_length = i32(n_dims);
-            dims.push_back(al, tmp_dim);
+            result_dims.push_back(al, tmp_dim);
+        }
+        if (!return_type) {
             return_type = duplicate_type(al, TYPE(
-                ASR::make_Integer_t(al, loc, kind)), &dims);
+                ASR::make_Integer_t(al, loc, kind)), &result_dims);
         }
         ASR::expr_t *m_value = eval_MaxLoc(al, loc, return_type, m_args);
         return ASRUtils::make_IntrinsicFunction_t_util(al, loc,
