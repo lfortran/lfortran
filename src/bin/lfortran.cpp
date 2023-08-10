@@ -2051,6 +2051,12 @@ int main(int argc, char *argv[])
         if (CLI::NonexistentPath(arg_file).empty())
             throw LCompilers::LCompilersException("File does not exist: " + arg_file);
 
+        // Decide if a file is fixed format based on the extension
+        // Gfortran does the same thing
+        if (arg_file.size() >= 2 && arg_file.substr(arg_file.size() - 2) == ".f") {
+            compiler_options.fixed_form = true;
+        }
+
         std::string outfile;
         std::filesystem::path basename = std::filesystem::path(arg_file).filename();
         if (compiler_options.arg_o.size() > 0) {
