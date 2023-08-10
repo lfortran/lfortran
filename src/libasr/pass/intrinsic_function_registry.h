@@ -2704,8 +2704,8 @@ namespace MaxLoc {
             err("`array` argument of `maxloc` must be an array", loc);
         } else if ( !is_integer(*array_type) && !is_real(*array_type) ) {
             err("`array` argument of `maxloc` must be integer or real for now", loc);
-        } else if ( args[2] || args[3] || args[4] ) {
-            err("Only `dim` keyword argument is supported for now", loc);
+        } else if ( args[2] || args[4] ) {
+            err("`mask` and `back` keyword argument is not supported yet", loc);
         }
         ASR::ttype_t *return_type = nullptr;
         Vec<ASR::expr_t *> m_args; m_args.reserve(al, 1);
@@ -2714,6 +2714,11 @@ namespace MaxLoc {
         ASR::dimension_t *m_dims;
         int n_dims = extract_dimensions_from_ttype(array_type, m_dims);
         int dim = 0, kind = 4; // default kind
+        if (args[3]) {
+            if (!extract_value(expr_value(args[3]), kind)) {
+                err("Runtime value for `kind` argument is not supported yet", loc);
+            }
+        }
         if ( args[1] ) {
             if ( !ASR::is_a<ASR::Integer_t>(*expr_type(args[1])) ) {
                 err("`dim` should be a scalar integer type", loc);
@@ -2776,6 +2781,7 @@ namespace MaxLoc {
          */
         fill_func_arg("array", arg_types[0]);
         int n_dims = extract_n_dims_from_ttype(arg_types[0]);
+        ASR::ttype_t *type = extract_type(return_type);
         if (m_args.n > 1) {
             // TODO: Use overload_id
             fill_func_arg("dim", arg_types[1]);
@@ -2787,14 +2793,19 @@ namespace MaxLoc {
             b.generate_reduction_intrinsic_stmts_for_scalar_output(
                 loc, args[0], fn_symtab, body, idx_vars, doloop_body,
                 [=, &al, &body, &b] () {
-                    body.push_back(al, b.Assignment(result, i32(1)));
+                    body.push_back(al, b.Assignment(result, i(1, type)));
                 }, [=, &al, &b, &idx_vars, &doloop_body] () {
                     std::vector<ASR::stmt_t *> if_body; if_body.reserve(n_dims);
                     Vec<ASR::expr_t *> result_idx; result_idx.reserve(al, n_dims);
                     for (int i = 0; i < n_dims; i++) {
-                        ASR::expr_t *idx = b.ArrayItem_01(result, {i32(i + 1)});
-                        result_idx.push_back(al, idx);
-                        if_body.push_back(b.Assignment(idx, idx_vars.p[i]));
+                        ASR::expr_t *idx = b.ArrayItem_01(result, {i32(i+1)});
+                        if (extract_kind_from_ttype_t(type) != 4) {
+                            if_body.push_back(b.Assignment(idx, i2i(idx_vars[i], type)));
+                            result_idx.push_back(al, i2i32(idx));
+                        } else {
+                            if_body.push_back(b.Assignment(idx, idx_vars[i]));
+                            result_idx.push_back(al, idx);
+                        }
                     }
                     ASR::expr_t *array_ref_01 = ArrayItem_02(args[0], idx_vars);
                     ASR::expr_t *array_ref_02 = ArrayItem_02(args[0], result_idx);
@@ -2808,25 +2819,27 @@ namespace MaxLoc {
                 loc, args[0], args[1], fn_symtab, body, idx_vars,
                 target_idx_vars, doloop_body,
                 [=, &al, &body, &b] () {
-                    body.push_back(al, b.Assignment(result, i32(1)));
+                    body.push_back(al, b.Assignment(result, i(1, type)));
                 }, [=, &al, &b, &idx_vars, &target_idx_vars, &doloop_body] () {
                     ASR::expr_t *result_ref, *array_ref_02;
                     if (is_array(return_type)) {
                         result_ref = ArrayItem_02(result, target_idx_vars);
-                        // TODO: Simplify the following assignment
-                        std::vector<ASR::expr_t *> tmp_1 = idx_vars.as_vector();
-                        tmp_1[dim - 1] = result_ref;
-                        Vec<ASR::expr_t *> tmp_2; tmp_2.reserve(al, 1);
-                        for (auto &x: tmp_1) tmp_2.push_back(al, x);
-                        array_ref_02 = ArrayItem_02(args[0], tmp_2);
+                        Vec<ASR::expr_t*> tmp_idx_vars;
+                        tmp_idx_vars.from_pointer_n_copy(al, idx_vars.p, idx_vars.n);
+                        tmp_idx_vars.p[dim - 1] = i2i32(result_ref);
+                        array_ref_02 = ArrayItem_02(args[0], tmp_idx_vars);
                     } else {
                         // 1D scalar output
                         result_ref = result;
                         array_ref_02 = b.ArrayItem_01(args[0], {result});
                     }
                     ASR::expr_t *array_ref_01 = ArrayItem_02(args[0], idx_vars);
+                    ASR::expr_t *res_idx = idx_vars.p[dim - 1];
+                    if (extract_kind_from_ttype_t(type) != 4) {
+                        res_idx = i2i(res_idx, type);
+                    }
                     doloop_body.push_back(al, b.If(b.Gt(array_ref_01, array_ref_02), {
-                        b.Assignment(result_ref, idx_vars.p[dim - 1])
+                        b.Assignment(result_ref, res_idx)
                     }, {}));
                 });
         }
