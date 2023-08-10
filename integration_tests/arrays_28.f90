@@ -22,9 +22,36 @@ program arrays_28
         arr_06(i) = arr_04(n - i + 1)
     end do
 
-    ! MinLoc
-    if (minloc(arr_01, dim) /= 1) error stop
+    ! MaxLoc
+    ! Compile-time
+    if (minloc([-1, 0, -2, -3, -4], 1) /= 5) error stop
+    if (minloc([-1., 0., -2., -5., -4.], 1) /= 4) error stop
+
+    res_01 = minloc([-1_8, 2_8, -3_8, 4_8, -2_8])
+    if (res_01(1) /= 3) error stop
+
+    res_03(1) = minloc([-1_8, 2_8, -3_8, 4_8, -5_8], 1, kind=8)
+    if (res_03(1) /= 5_8) error stop
+
+    ! Run-time
+    if (minloc(arr_01, 1) /= 1) error stop
+
+    res_02 = minloc(arr_02)
+    if (res_02(1) /= 3 .or. res_02(2) /= 1) error stop
+
+    res_01 = minloc(arr_03)
+    if (res_01(1) /= 1) error stop
+
+    res_01 = minloc(arr_04)
+    if (res_01(1) /= 1) error stop
+
     if (minloc(arr_05, dim=1) /= 6) error stop
+
+    res_01 = minloc(arr_06)
+    if (res_01(1) /= 6) error stop
+
+    res_03 = minloc(arr_04, kind=8)
+    if (res_03(1) /= 1_8) error stop
 
     ! MaxLoc
     ! Compile-time
