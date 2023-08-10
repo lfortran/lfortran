@@ -2053,7 +2053,7 @@ int main(int argc, char *argv[])
 
         // Decide if a file is fixed format based on the extension
         // Gfortran does the same thing
-        if (arg_file.size() >= 2 && arg_file.substr(arg_file.size() - 2) == ".f") {
+        if (endswith(arg_file, ".f")) {
             compiler_options.fixed_form = true;
         }
 
