@@ -1060,9 +1060,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     bool is_unsupported_function(const ASR::Function_t &x) {
         if (strcmp(x.m_name, "_start") == 0) return false;
 
-        if (!x.n_body) {
-            return true;
-        }
         if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC &&
             ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface) {
             if (ASRUtils::is_intrinsic_function2(&x)) {
