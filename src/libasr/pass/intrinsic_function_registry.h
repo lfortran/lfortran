@@ -360,6 +360,18 @@ class ASRBuilder {
         }
     }
 
+    ASR::expr_t *Lt(ASR::expr_t *left, ASR::expr_t *right) {
+        LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
+        if (is_real(*expr_type(left))) {
+            return fLt(left, right);
+        } else if (is_integer(*expr_type(left))) {
+            return iLt(left, right);
+        } else {
+            LCOMPILERS_ASSERT(false);
+            return nullptr;
+        }
+    }
+
     ASR::stmt_t *If(ASR::expr_t *a_test, std::vector<ASR::stmt_t*> if_body,
             std::vector<ASR::stmt_t*> else_body) {
         Vec<ASR::stmt_t*> m_if_body; m_if_body.reserve(al, 1);
@@ -2573,6 +2585,219 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al, const Locatio
                         compile_time_value);
 }
 
+static inline void verify_MaxMinLoc_args(const ASR::IntrinsicFunction_t& x,
+        diag::Diagnostics& diagnostics) {
+    std::string intrinsic_name = get_intrinsic_name(
+        static_cast<int>(x.m_intrinsic_id));
+    require_impl(x.n_args >= 1, "`"+ intrinsic_name +"` intrinsic "
+        "must accept at least one argument", x.base.base.loc, diagnostics);
+    require_impl(x.m_args[0], "`array` argument of `"+ intrinsic_name
+        + "` intrinsic cannot be nullptr", x.base.base.loc, diagnostics);
+    require_impl(x.m_args[1], "`dim` argument of `" + intrinsic_name
+        + "` intrinsic cannot be nullptr", x.base.base.loc, diagnostics);
+}
+
+static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
+        ASR::ttype_t *type, Vec<ASR::expr_t*> &args, int intrinsic_id) {
+    ASRBuilder b(al, loc);
+    if (all_args_evaluated(args) &&
+            extract_n_dims_from_ttype(expr_type(args[0])) == 1) {
+        // Only supported for arrays with rank 1
+        ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(args[0]);
+        std::vector<double> m_eles;
+        for (size_t i = 0; i < arr->n_args; i++) {
+            double ele = 0;
+            if(extract_value(arr->m_args[i], ele)) {
+                m_eles.push_back(ele);
+            }
+        }
+        int index = 0;
+        if (static_cast<int>(IntrinsicFunctions::MaxLoc) == intrinsic_id) {
+            index = std::distance(m_eles.begin(),
+                std::max_element(m_eles.begin(), m_eles.end())) + 1;
+        } else {
+            index = std::distance(m_eles.begin(),
+                std::min_element(m_eles.begin(), m_eles.end())) + 1;
+        }
+        if (!is_array(type)) {
+            return i(index, type);
+        } else {
+            return b.ArrayConstant({i32(index)}, extract_type(type), false);
+        }
+    } else {
+        return nullptr;
+    }
+}
+
+static inline ASR::asr_t* create_MaxMinLoc(Allocator& al, const Location& loc,
+        Vec<ASR::expr_t*>& args, int intrinsic_id,
+        const std::function<void (const std::string &, const Location &)> err) {
+    std::string intrinsic_name = get_intrinsic_name(static_cast<int>(intrinsic_id));
+    ASR::ttype_t *array_type = expr_type(args[0]);
+    if ( !is_array(array_type) ) {
+        err("`array` argument of `"+ intrinsic_name +"` must be an array", loc);
+    } else if ( !is_integer(*array_type) && !is_real(*array_type) ) {
+        err("`array` argument of `"+ intrinsic_name +"` must be integer or "
+            "real for now", loc);
+    } else if ( args[2] || args[4] ) {
+        err("`mask` and `back` keyword argument is not supported yet", loc);
+    }
+    ASR::ttype_t *return_type = nullptr;
+    Vec<ASR::expr_t *> m_args; m_args.reserve(al, 1);
+    m_args.push_back(al, args[0]);
+    Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, 1);
+    ASR::dimension_t *m_dims;
+    int n_dims = extract_dimensions_from_ttype(array_type, m_dims);
+    int dim = 0, kind = 4; // default kind
+    if (args[3]) {
+        if (!extract_value(expr_value(args[3]), kind)) {
+            err("Runtime value for `kind` argument is not supported yet", loc);
+        }
+    }
+    if ( args[1] ) {
+        if ( !ASR::is_a<ASR::Integer_t>(*expr_type(args[1])) ) {
+            err("`dim` should be a scalar integer type", loc);
+        } else if (!extract_value(expr_value(args[1]), dim)) {
+            err("Runtime values for `dim` argument is not supported yet", loc);
+        }
+        if ( 1 > dim || dim > n_dims ) {
+            err("`dim` argument of `"+ intrinsic_name +"` is out of "
+                "array index range", loc);
+        }
+        if ( n_dims == 1 ) {
+            return_type = TYPE(ASR::make_Integer_t(al, loc, kind)); // 1D
+        } else {
+            for ( int i = 1; i <= n_dims; i++ ) {
+                if ( i == dim ) {
+                    continue;
+                }
+                ASR::dimension_t tmp_dim;
+                tmp_dim.loc = args[0]->base.loc;
+                tmp_dim.m_start = m_dims[i - 1].m_start;
+                tmp_dim.m_length = m_dims[i - 1].m_length;
+                result_dims.push_back(al, tmp_dim);
+            }
+        }
+        m_args.push_back(al, args[1]);
+    } else {
+        ASR::dimension_t tmp_dim;
+        tmp_dim.loc = args[0]->base.loc;
+        tmp_dim.m_start = i32(1);
+        tmp_dim.m_length = i32(n_dims);
+        result_dims.push_back(al, tmp_dim);
+    }
+    if ( !return_type ) {
+        return_type = duplicate_type(al, TYPE(
+            ASR::make_Integer_t(al, loc, kind)), &result_dims);
+    }
+    ASR::expr_t *m_value = eval_MaxMinLoc(al, loc, return_type, m_args,
+        intrinsic_id);
+    return make_IntrinsicFunction_t_util(al, loc,
+        intrinsic_id, m_args.p, m_args.n, 0, return_type, m_value);
+}
+
+static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
+        const Location &loc, SymbolTable *scope, int intrinsic_id,
+        Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+        Vec<ASR::call_arg_t>& m_args, int64_t /*overload_id*/) {
+    std::string intrinsic_name = get_intrinsic_name(static_cast<int>(intrinsic_id));
+    declare_basic_variables("_lcompilers_" + intrinsic_name)
+    /*
+     * max_index = 1; min_index
+     * do i = 1, size(arr))
+     *  do ...
+     *    if (arr[i] > arr[max_index]) then
+     *      max_index = i;
+     *    end if
+     * ------------------------------------
+     *    if (arr[i] < arr[max_index]) then
+     *      min_index = i;
+     *    end if
+     *  end ...
+     * end do
+     */
+    fill_func_arg("array", arg_types[0]);
+    int n_dims = extract_n_dims_from_ttype(arg_types[0]);
+    ASR::ttype_t *type = extract_type(return_type);
+    if (m_args.n > 1) {
+        // TODO: Use overload_id
+        fill_func_arg("dim", arg_types[1]);
+    }
+    ASR::expr_t *result = declare("result", return_type, ReturnVar);
+    Vec<ASR::expr_t*> idx_vars, target_idx_vars;
+    Vec<ASR::stmt_t*> doloop_body;
+    if (m_args.n == 1) {
+        b.generate_reduction_intrinsic_stmts_for_scalar_output(
+            loc, args[0], fn_symtab, body, idx_vars, doloop_body,
+            [=, &al, &body, &b] () {
+                body.push_back(al, b.Assignment(result, i(1, type)));
+            }, [=, &al, &b, &idx_vars, &doloop_body] () {
+                std::vector<ASR::stmt_t *> if_body; if_body.reserve(n_dims);
+                Vec<ASR::expr_t *> result_idx; result_idx.reserve(al, n_dims);
+                for (int i = 0; i < n_dims; i++) {
+                    ASR::expr_t *idx = b.ArrayItem_01(result, {i32(i+1)});
+                    if (extract_kind_from_ttype_t(type) != 4) {
+                        if_body.push_back(b.Assignment(idx, i2i(idx_vars[i], type)));
+                        result_idx.push_back(al, i2i32(idx));
+                    } else {
+                        if_body.push_back(b.Assignment(idx, idx_vars[i]));
+                        result_idx.push_back(al, idx);
+                    }
+                }
+                ASR::expr_t *array_ref_01 = ArrayItem_02(args[0], idx_vars);
+                ASR::expr_t *array_ref_02 = ArrayItem_02(args[0], result_idx);
+                if (static_cast<int>(IntrinsicFunctions::MaxLoc) == intrinsic_id) {
+                    doloop_body.push_back(al, b.If(b.Gt(array_ref_01,
+                        array_ref_02), if_body, {}));
+                } else {
+                    doloop_body.push_back(al, b.If(b.Lt(array_ref_01,
+                        array_ref_02), if_body, {}));
+                }
+            });
+    } else {
+        int dim = 0;
+        extract_value(expr_value(m_args[1].m_value), dim);
+        b.generate_reduction_intrinsic_stmts_for_array_output(
+            loc, args[0], args[1], fn_symtab, body, idx_vars,
+            target_idx_vars, doloop_body,
+            [=, &al, &body, &b] () {
+                body.push_back(al, b.Assignment(result, i(1, type)));
+            }, [=, &al, &b, &idx_vars, &target_idx_vars, &doloop_body] () {
+                ASR::expr_t *result_ref, *array_ref_02;
+                if (is_array(return_type)) {
+                    result_ref = ArrayItem_02(result, target_idx_vars);
+                    Vec<ASR::expr_t*> tmp_idx_vars;
+                    tmp_idx_vars.from_pointer_n_copy(al, idx_vars.p, idx_vars.n);
+                    tmp_idx_vars.p[dim - 1] = i2i32(result_ref);
+                    array_ref_02 = ArrayItem_02(args[0], tmp_idx_vars);
+                } else {
+                    // 1D scalar output
+                    result_ref = result;
+                    array_ref_02 = b.ArrayItem_01(args[0], {result});
+                }
+                ASR::expr_t *array_ref_01 = ArrayItem_02(args[0], idx_vars);
+                ASR::expr_t *res_idx = idx_vars.p[dim - 1];
+                if (extract_kind_from_ttype_t(type) != 4) {
+                    res_idx = i2i(res_idx, type);
+                }
+                if (static_cast<int>(IntrinsicFunctions::MaxLoc) == intrinsic_id) {
+                    doloop_body.push_back(al, b.If(b.Gt(array_ref_01, array_ref_02), {
+                        b.Assignment(result_ref, res_idx)
+                    }, {}));
+                } else {
+                    doloop_body.push_back(al, b.If(b.Lt(array_ref_01, array_ref_02), {
+                        b.Assignment(result_ref, res_idx)
+                    }, {}));
+                }
+            });
+    }
+    body.push_back(al, Return());
+    ASR::symbol_t *fn_sym = make_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, Source, Implementation, nullptr);
+    scope->add_symbol(fn_name, fn_sym);
+    return b.Call(fn_sym, m_args, return_type, nullptr);
+}
+
 } // namespace ArrIntrinsic
 
 namespace Sum {
@@ -2662,192 +2887,27 @@ static inline ASR::expr_t* instantiate_MaxVal(Allocator &al, const Location &loc
 namespace MaxLoc {
     static inline void verify_args(const ASR::IntrinsicFunction_t& x,
             diag::Diagnostics& diagnostics) {
-        ASRUtils::require_impl(x.n_args >= 1, "`maxloc` intrinsic must accept "
-            "at least one argument", x.base.base.loc, diagnostics);
-        ASRUtils::require_impl(x.m_args[0], "`array` argument of `maxloc` "
-            "intrinsic cannot be nullptr", x.base.base.loc, diagnostics);
-        ASRUtils::require_impl(x.m_args[1], "`dim` argument of "
-            "`maxloc` intrinsic cannot be nullptr", x.base.base.loc, diagnostics);
-    }
-
-    static inline ASR::expr_t *eval_MaxLoc(Allocator &al, const Location &loc,
-            ASR::ttype_t *type, Vec<ASR::expr_t*> &args) {
-        ASRBuilder b(al, loc);
-        if (ASRUtils::all_args_evaluated(args) &&
-                extract_n_dims_from_ttype(expr_type(args[0])) == 1) {
-            // Only supported for arrays with rank 1
-            ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(args[0]);
-            std::vector<double> m_eles;
-            for (size_t i = 0; i < arr->n_args; i++) {
-                double ele = 0;
-                if(extract_value(arr->m_args[i], ele)) {
-                    m_eles.push_back(ele);
-                }
-            }
-            int max_index = std::distance(m_eles.begin(),
-                std::max_element(m_eles.begin(), m_eles.end())) + 1;
-            if (!is_array(type)) {
-                return i(max_index, type);
-            } else {
-                return b.ArrayConstant({i32(max_index)}, extract_type(type), false);
-            }
-        } else {
-            return nullptr;
-        }
+        ArrIntrinsic::verify_MaxMinLoc_args(x, diagnostics);
     }
 
     static inline ASR::asr_t* create_MaxLoc(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
             const std::function<void (const std::string &, const Location &)> err) {
-        ASR::ttype_t *array_type = expr_type(args[0]);
-        if ( !is_array(array_type) ) {
-            err("`array` argument of `maxloc` must be an array", loc);
-        } else if ( !is_integer(*array_type) && !is_real(*array_type) ) {
-            err("`array` argument of `maxloc` must be integer or real for now", loc);
-        } else if ( args[2] || args[4] ) {
-            err("`mask` and `back` keyword argument is not supported yet", loc);
-        }
-        ASR::ttype_t *return_type = nullptr;
-        Vec<ASR::expr_t *> m_args; m_args.reserve(al, 1);
-        m_args.push_back(al, args[0]);
-        Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, 1);
-        ASR::dimension_t *m_dims;
-        int n_dims = extract_dimensions_from_ttype(array_type, m_dims);
-        int dim = 0, kind = 4; // default kind
-        if (args[3]) {
-            if (!extract_value(expr_value(args[3]), kind)) {
-                err("Runtime value for `kind` argument is not supported yet", loc);
-            }
-        }
-        if ( args[1] ) {
-            if ( !ASR::is_a<ASR::Integer_t>(*expr_type(args[1])) ) {
-                err("`dim` should be a scalar integer type", loc);
-            } else if (!extract_value(expr_value(args[1]), dim)) {
-                err("Runtime values for `dim` argument is not supported yet", loc);
-            }
-            if ( 1 > dim || dim > n_dims ) {
-                err("`dim` argument of `maxloc` is out of array index range", loc);
-            }
-            if ( n_dims == 1 ) {
-                return_type = TYPE(ASR::make_Integer_t(al, loc, kind)); // 1D
-            } else {
-                for ( int i = 1; i <= n_dims; i++ ) {
-                    if ( i == dim ) {
-                        continue;
-                    }
-                    ASR::dimension_t tmp_dim;
-                    tmp_dim.loc = args[0]->base.loc;
-                    tmp_dim.m_start = m_dims[i - 1].m_start;
-                    tmp_dim.m_length = m_dims[i - 1].m_length;
-                    result_dims.push_back(al, tmp_dim);
-                }
-            }
-            m_args.push_back(al, args[1]);
-        } else {
-            ASR::dimension_t tmp_dim;
-            tmp_dim.loc = args[0]->base.loc;
-            tmp_dim.m_start = i32(1);
-            tmp_dim.m_length = i32(n_dims);
-            result_dims.push_back(al, tmp_dim);
-        }
-        if ( !return_type ) {
-            return_type = duplicate_type(al, TYPE(
-                ASR::make_Integer_t(al, loc, kind)), &result_dims);
-        }
-        ASR::expr_t *m_value = eval_MaxLoc(al, loc, return_type, m_args);
-        return ASRUtils::make_IntrinsicFunction_t_util(al, loc,
-            static_cast<int64_t>(ASRUtils::IntrinsicFunctions::MaxLoc),
-            m_args.p, m_args.n, 0, return_type, m_value);
+        return ArrIntrinsic::create_MaxMinLoc(al, loc, args,
+            static_cast<int>(IntrinsicFunctions::MaxLoc), err);
     }
 
     static inline ASR::expr_t *instantiate_MaxLoc(Allocator &al,
             const Location &loc, SymbolTable *scope,
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& m_args, int64_t /*overload_id*/,
+            Vec<ASR::call_arg_t>& m_args, int64_t overload_id,
             ASR::expr_t* compile_time_value) {
         if (compile_time_value) {
             return compile_time_value;
         }
-        declare_basic_variables("_lcompilers_maxloc")
-        /*
-         * max_index = 1;
-         * do i = 1, size(arr))
-         *  do ...
-         *    if (arr[i] > arr[max_index]) then
-         *      max_index = i;
-         *    end if
-         *  end ...
-         * end do
-         */
-        fill_func_arg("array", arg_types[0]);
-        int n_dims = extract_n_dims_from_ttype(arg_types[0]);
-        ASR::ttype_t *type = extract_type(return_type);
-        if (m_args.n > 1) {
-            // TODO: Use overload_id
-            fill_func_arg("dim", arg_types[1]);
-        }
-        ASR::expr_t *result = declare("result", return_type, ReturnVar);
-        Vec<ASR::expr_t*> idx_vars, target_idx_vars;
-        Vec<ASR::stmt_t*> doloop_body;
-        if (m_args.n == 1) {
-            b.generate_reduction_intrinsic_stmts_for_scalar_output(
-                loc, args[0], fn_symtab, body, idx_vars, doloop_body,
-                [=, &al, &body, &b] () {
-                    body.push_back(al, b.Assignment(result, i(1, type)));
-                }, [=, &al, &b, &idx_vars, &doloop_body] () {
-                    std::vector<ASR::stmt_t *> if_body; if_body.reserve(n_dims);
-                    Vec<ASR::expr_t *> result_idx; result_idx.reserve(al, n_dims);
-                    for (int i = 0; i < n_dims; i++) {
-                        ASR::expr_t *idx = b.ArrayItem_01(result, {i32(i+1)});
-                        if (extract_kind_from_ttype_t(type) != 4) {
-                            if_body.push_back(b.Assignment(idx, i2i(idx_vars[i], type)));
-                            result_idx.push_back(al, i2i32(idx));
-                        } else {
-                            if_body.push_back(b.Assignment(idx, idx_vars[i]));
-                            result_idx.push_back(al, idx);
-                        }
-                    }
-                    ASR::expr_t *array_ref_01 = ArrayItem_02(args[0], idx_vars);
-                    ASR::expr_t *array_ref_02 = ArrayItem_02(args[0], result_idx);
-                    doloop_body.push_back(al, b.If(b.Gt(array_ref_01,
-                        array_ref_02), if_body, {}));
-                });
-        } else {
-            int dim = 0;
-            extract_value(expr_value(m_args[1].m_value), dim);
-            b.generate_reduction_intrinsic_stmts_for_array_output(
-                loc, args[0], args[1], fn_symtab, body, idx_vars,
-                target_idx_vars, doloop_body,
-                [=, &al, &body, &b] () {
-                    body.push_back(al, b.Assignment(result, i(1, type)));
-                }, [=, &al, &b, &idx_vars, &target_idx_vars, &doloop_body] () {
-                    ASR::expr_t *result_ref, *array_ref_02;
-                    if (is_array(return_type)) {
-                        result_ref = ArrayItem_02(result, target_idx_vars);
-                        Vec<ASR::expr_t*> tmp_idx_vars;
-                        tmp_idx_vars.from_pointer_n_copy(al, idx_vars.p, idx_vars.n);
-                        tmp_idx_vars.p[dim - 1] = i2i32(result_ref);
-                        array_ref_02 = ArrayItem_02(args[0], tmp_idx_vars);
-                    } else {
-                        // 1D scalar output
-                        result_ref = result;
-                        array_ref_02 = b.ArrayItem_01(args[0], {result});
-                    }
-                    ASR::expr_t *array_ref_01 = ArrayItem_02(args[0], idx_vars);
-                    ASR::expr_t *res_idx = idx_vars.p[dim - 1];
-                    if (extract_kind_from_ttype_t(type) != 4) {
-                        res_idx = i2i(res_idx, type);
-                    }
-                    doloop_body.push_back(al, b.If(b.Gt(array_ref_01, array_ref_02), {
-                        b.Assignment(result_ref, res_idx)
-                    }, {}));
-                });
-        }
-        body.push_back(al, Return());
-        ASR::symbol_t *fn_sym = make_Function_t(fn_name, fn_symtab, dep, args,
-                body, result, Source, Implementation, nullptr);
-        scope->add_symbol(fn_name, fn_sym);
-        return b.Call(fn_sym, m_args, return_type, compile_time_value);
+        return ArrIntrinsic::instantiate_MaxMinLoc(al, loc, scope,
+            static_cast<int>(IntrinsicFunctions::MaxLoc), arg_types, return_type,
+            m_args, overload_id);
     }
 } // namespace MaxLoc
 
@@ -2880,74 +2940,29 @@ static inline ASR::expr_t* instantiate_MinVal(Allocator &al, const Location &loc
 } // namespace MinVal
 
 namespace MinLoc {
-    static inline void verify_args(const ASR::IntrinsicFunction_t& /*x*/,
-            diag::Diagnostics& /*diagnostics*/) {
-        // TODO
-    }
-
-    static inline ASR::expr_t *eval_MinLoc(Allocator & /*al*/,
-            const Location & /*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/) {
-        // TODO
-        return nullptr;
+    static inline void verify_args(const ASR::IntrinsicFunction_t& x,
+            diag::Diagnostics& diagnostics) {
+        ArrIntrinsic::verify_MaxMinLoc_args(x, diagnostics);
     }
 
     static inline ASR::asr_t* create_MinLoc(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
             const std::function<void (const std::string &, const Location &)> err) {
-        int n_dims = extract_n_dims_from_ttype(expr_type(args[0]));
-        ASR::ttype_t *return_type = int32;
-        if (!args[1]) {
-            err("Unsupported argument for minloc, please specify `dim` argument", loc);
-        } else if (!is_integer(*expr_type(args[0])) && !is_real(*expr_type(args[0]))) {
-            err("`array` argument of `minloc` must be integer or real", loc);
-        } else if (!is_integer(*expr_type(args[1]))) {
-            err("`dim` should be a scalar integer type", loc);
-        } else if (n_dims != 1) {
-            err("Only array with rank one is supported for now", loc);
-        }
-        return ASRUtils::make_IntrinsicFunction_t_util(al, loc,
-            static_cast<int64_t>(ASRUtils::IntrinsicFunctions::MinLoc),
-            args.p, args.n, 0, return_type, nullptr);
+        return ArrIntrinsic::create_MaxMinLoc(al, loc, args,
+            static_cast<int>(IntrinsicFunctions::MinLoc), err);
     }
 
-    static inline ASR::expr_t* instantiate_MinLoc(Allocator &al,
+    static inline ASR::expr_t *instantiate_MinLoc(Allocator &al,
             const Location &loc, SymbolTable *scope,
-            Vec<ASR::ttype_t*>& arg_types,  ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& m_args, int64_t /*overload_id*/,
+            Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& m_args, int64_t overload_id,
             ASR::expr_t* compile_time_value) {
         if (compile_time_value) {
             return compile_time_value;
         }
-        declare_basic_variables("_lcompilers_minloc")
-        fill_func_arg("array", arg_types[0]);
-        fill_func_arg("dim", arg_types[1]);
-        auto result = declare("result", return_type, ReturnVar);
-        body.push_back(al, b.Assignment(result, i32(1)));
-        int n_dims = extract_n_dims_from_ttype(arg_types[0]);
-        if (n_dims == 1) {
-            auto i = declare("i", int32, Local);
-            body.push_back(al, b.Assignment(i, i32(2)));
-            ASR::expr_t *test;
-            if (is_real(*arg_types[0])) {
-                test = fLt(b.ArrayItem_01(args[0], {i}), b.ArrayItem_01(args[0], {result}));
-            } else {
-                test = iLt(b.ArrayItem_01(args[0], {i}), b.ArrayItem_01(args[0], {result}));
-            }
-            body.push_back(al, b.While(iLtE(i, ArraySize_1(args[0], i32(1))), {
-                b.If(test, {
-                    b.Assignment(result, i)
-                }, {}),
-                b.Assignment(i, iAdd(i, i32(1)))
-            }));
-            body.push_back(al, Return());
-        } else {
-            LCOMPILERS_ASSERT(false)
-            // TODO
-        }
-        ASR::symbol_t *fn_sym = make_Function_t(fn_name, fn_symtab, dep, args,
-                body, result, Source, Implementation, nullptr);
-        scope->add_symbol(fn_name, fn_sym);
-        return b.Call(fn_sym, m_args, return_type, compile_time_value);
+        return ArrIntrinsic::instantiate_MaxMinLoc(al, loc, scope,
+            static_cast<int>(IntrinsicFunctions::MinLoc), arg_types, return_type,
+            m_args, overload_id);
     }
 } // namespace MinLoc
 
@@ -3649,11 +3664,11 @@ namespace IntrinsicFunctionRegistry {
                 {"list.pop", {&ListPop::create_ListPop, &ListPop::eval_list_pop}},
                 {"max0", {&Max::create_Max, &Max::eval_Max}},
                 {"maxval", {&MaxVal::create_MaxVal, &MaxVal::eval_MaxVal}},
-                {"maxloc", {&MaxLoc::create_MaxLoc, &MaxLoc::eval_MaxLoc}},
+                {"maxloc", {&MaxLoc::create_MaxLoc, nullptr}},
                 {"min0", {&Min::create_Min, &Min::eval_Min}},
                 {"min", {&Min::create_Min, &Min::eval_Min}},
                 {"minval", {&MinVal::create_MinVal, &MinVal::eval_MinVal}},
-                {"minloc", {&MinLoc::create_MinLoc, &MinLoc::eval_MinLoc}},
+                {"minloc", {&MinLoc::create_MinLoc, nullptr}},
                 {"merge", {&Merge::create_Merge, &Merge::eval_Merge}},
                 {"sign", {&Sign::create_Sign, &Sign::eval_Sign}},
                 {"shape", {&Shape::create_Shape, &Shape::eval_Shape}},
@@ -3719,8 +3734,9 @@ namespace IntrinsicFunctionRegistry {
     }
 
     static inline bool handle_dim(ASRUtils::IntrinsicFunctions id) {
-        if( id == ASRUtils::IntrinsicFunctions::Shape ||
-            id == ASRUtils::IntrinsicFunctions::MaxLoc ) {
+        if( id == ASRUtils::IntrinsicFunctions::Shape  ||
+            id == ASRUtils::IntrinsicFunctions::MaxLoc ||
+            id == ASRUtils::IntrinsicFunctions::MinLoc ) {
             return false;
         } else {
             return true;
