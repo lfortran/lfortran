@@ -188,7 +188,7 @@ end function
 
 elemental real(dp) function dabs(x) result(r)
 real(dp), intent(in) :: x
-if (x >= 0) then
+if (x > 0) then
     r = x
 else
     r = -x
