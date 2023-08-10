@@ -380,6 +380,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> enum_decl
 %type <ast> program
 %type <ast> subroutine
+%type <ast> end_subroutine
+%type <ast> id_opt
 %type <ast> procedure
 %type <ast> sub_or_func
 %type <vec_ast> sub_args
@@ -862,9 +864,9 @@ end_blockdata
     ;
 
 end_subroutine
-    : KW_END_SUBROUTINE id_opt
-    | KW_ENDSUBROUTINE id_opt
-    | KW_END
+    : KW_END_SUBROUTINE id_opt { $$ = $2; }
+    | KW_ENDSUBROUTINE id_opt { $$ = $2; }
+    | KW_END { $$ = nullptr; }
     ;
 
 end_procedure
@@ -910,7 +912,7 @@ subroutine
         contains_block_opt
         end_subroutine sep {
             LLOC(@$, @12); $$ = SUBROUTINE($2, $3, $4, TRIVIA($5, $12, @$), $6,
-                $7, $8, SPLIT_DECL(p.m_a, $9), SPLIT_STMT(p.m_a, $9), $10, @$); }
+                $7, $8, SPLIT_DECL(p.m_a, $9), SPLIT_STMT(p.m_a, $9), $10, $11, @$); }
     | fn_mod_plus KW_SUBROUTINE id sub_args bind_opt sep use_statement_star
     import_statement_star implicit_statement_star decl_statements
         contains_block_opt
@@ -2350,8 +2352,8 @@ id_list
 
 // id?
 id_opt
-    : id
-    | %empty
+    : id { $$ = $1; }
+    | %empty { $$ = nullptr; }
     ;
 
 

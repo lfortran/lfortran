@@ -1192,7 +1192,7 @@ Vec<ast_t*> empty_sync(Allocator &al) {
 #define EVENT_WAIT_KW_ARG(id, e, l) make_AttrEventWaitKwArg_t(p.m_a, l, \
         name2char(id), EXPR(e))
 
-#define SUBROUTINE(name, args, bind, trivia, use, import, implicit, decl, stmts, contains, l) \
+#define SUBROUTINE(name, args, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) \
     make_Subroutine_t(p.m_a, l, \
         /*name*/ name2char(name), \
         /*args*/ ARGS(p.m_a, l, args), \
