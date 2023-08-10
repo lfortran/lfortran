@@ -2824,12 +2824,10 @@ namespace MaxLoc {
                     ASR::expr_t *result_ref, *array_ref_02;
                     if (is_array(return_type)) {
                         result_ref = ArrayItem_02(result, target_idx_vars);
-                        // TODO: Simplify the following assignment
-                        std::vector<ASR::expr_t *> tmp_1 = idx_vars.as_vector();
-                        tmp_1[dim - 1] = i2i32(result_ref);
-                        Vec<ASR::expr_t *> tmp_2; tmp_2.reserve(al, 1);
-                        for (auto &x: tmp_1) tmp_2.push_back(al, x);
-                        array_ref_02 = ArrayItem_02(args[0], tmp_2);
+                        Vec<ASR::expr_t*> tmp_idx_vars;
+                        tmp_idx_vars.from_pointer_n_copy(al, idx_vars.p, idx_vars.n);
+                        tmp_idx_vars.p[dim - 1] = i2i32(result_ref);
+                        array_ref_02 = ArrayItem_02(args[0], tmp_idx_vars);
                     } else {
                         // 1D scalar output
                         result_ref = result;
