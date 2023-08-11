@@ -957,7 +957,7 @@ namespace X {                                                                   
         ASR::ttype_t* arg_type = arg_types[0];                                  \
         return UnaryIntrinsicFunction::instantiate_functions(al, loc, scope,    \
             #lcompilers_name, arg_type, return_type, new_args, overload_id,     \
-            nullptr);                                                \
+            nullptr);                                                           \
     }                                                                           \
 } // namespace X
 
@@ -1407,7 +1407,7 @@ static inline ASR::asr_t* create_ListReverse(Allocator& al, const Location& loc,
     }
     ASR::expr_t* compile_time_value = eval_list_reverse(al, loc, nullptr, arg_values);
     return ASR::make_Expr_t(al, loc,
-            ASRUtils::EXPR(ASR::make_IntrinsicFunction_t(al, loc,
+            ASRUtils::EXPR(ASRUtils::make_IntrinsicFunction_t_util(al, loc,
             static_cast<int64_t>(ASRUtils::IntrinsicFunctions::ListReverse),
             args.p, args.size(), 0, nullptr, compile_time_value)));
 }
@@ -1715,7 +1715,7 @@ namespace Min {
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
-}  // namespace Min
+} // namespace Min
 
 namespace Partition {
 
@@ -1987,7 +1987,6 @@ namespace SymbolicInteger {
 
 #define create_symbolic_unary_macro(X)                                                    \
 namespace X {                                                                             \
-                                                                                          \
     static inline void verify_args(const ASR::IntrinsicFunction_t& x,                     \
             diag::Diagnostics& diagnostics) {                                             \
         const Location& loc = x.base.base.loc;                                            \
@@ -2022,7 +2021,6 @@ namespace X {                                                                   
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_##X,      \
             static_cast<int64_t>(ASRUtils::IntrinsicFunctions::X), 0, to_type);           \
     }                                                                                     \
-                                                                                          \
 } // namespace X
 
 create_symbolic_unary_macro(SymbolicSin)

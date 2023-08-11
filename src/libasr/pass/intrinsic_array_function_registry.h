@@ -29,7 +29,7 @@ enum class IntrinsicArrayFunctions : int64_t {
     // ...
 };
 
-#define ARRAY_INTRINSIC_NAME_CASE(X)                                           \
+#define ARRAY_INTRINSIC_NAME_CASE(X)                                            \
     case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::X)) : {       \
         return #X;                                                              \
     }
