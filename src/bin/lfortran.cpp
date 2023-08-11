@@ -1309,13 +1309,12 @@ int compile_to_object_file_cpp(const std::string &infile,
 int compile_to_object_file_c(const std::string &infile,
         const std::string &outfile,
         bool assembly, const std::string &rtlib_header_dir,
+        LCompilers::PassManager pass_manager,
         CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
-    LCompilers::ASR::TranslationUnit_t* asr;
-
     // Src -> AST -> ASR
     LCompilers::LocationManager lm;
     {
@@ -1326,14 +1325,28 @@ int compile_to_object_file_c(const std::string &infile,
     }
     LCompilers::diag::Diagnostics diagnostics;
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
-        result = fe.get_asr2(input, lm, diagnostics);
+        r = fe.get_asr2(input, lm, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
-    if (result.ok) {
-        asr = result.result;
-    } else {
+    if (!r.ok) {
         LCOMPILERS_ASSERT(diagnostics.has_error())
-        return 1;
+        return 2;
     }
+    LCompilers::ASR::TranslationUnit_t* asr = r.result;
+
+    Allocator al(64*1024*1024);
+
+    LCompilers::PassOptions pass_options;
+    pass_options.runtime_library_dir = compiler_options.runtime_library_dir;
+    pass_options.mod_files_dir = compiler_options.mod_files_dir;
+    pass_options.include_dirs = compiler_options.include_dirs;
+
+    pass_options.always_run = true;
+    pass_options.run_fun = "f";
+    pass_options.verbose = compiler_options.verbose;
+    pass_options.pass_cumulative = compiler_options.pass_cumulative;
+    pass_options.realloc_lhs = compiler_options.realloc_lhs;
+
+    pass_manager.apply_passes(al, asr, pass_options, diagnostics);
 
     // Save .mod files
     {
@@ -2178,7 +2191,7 @@ int main(int argc, char *argv[])
 #endif
             } else if (backend == Backend::c) {
                 return compile_to_object_file_c(arg_file, outfile, false,
-                        rtlib_c_header_dir, compiler_options);
+                        rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
             } else if (backend == Backend::cpp) {
                 return compile_to_object_file_cpp(arg_file, outfile, false,
                         true, rtlib_c_header_dir, compiler_options);
@@ -2214,7 +2227,7 @@ int main(int argc, char *argv[])
                         true, rtlib_header_dir, compiler_options);
             } else if (backend == Backend::c) {
                 err = compile_to_object_file_c(arg_file, tmp_o,
-                        false, rtlib_c_header_dir, compiler_options);
+                        false, rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
             } else {
                 throw LCompilers::LCompilersException("Backend not supported");
             }
