@@ -767,7 +767,7 @@ static inline ASR::asr_t* create_UnaryFunction(Allocator& al, const Location& lo
         value = eval_function(al, loc, type, arg_values);
     }
 
-    return ASR::make_IntrinsicFunction_t(al, loc, intrinsic_id,
+    return ASRUtils::make_IntrinsicFunction_t_util(al, loc, intrinsic_id,
         args.p, args.n, overload_id, type, value);
 }
 
@@ -1160,6 +1160,7 @@ namespace Abs {
 } // namespace Abs
 
 namespace Sign {
+
      static inline void verify_args(const ASR::IntrinsicFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args == 2,
             "ASR Verify: Call to sign must have exactly two arguments",
@@ -1262,6 +1263,7 @@ namespace Sign {
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
+
 } // namespace Sign
 
 #define create_exp_macro(X, stdeval)                                                      \
@@ -1470,7 +1472,9 @@ static inline ASR::asr_t* create_ListPop(Allocator& al, const Location& loc,
 }
 
 } // namespace ListPop
+
 namespace Max {
+
     static inline void verify_args(const ASR::IntrinsicFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args > 1, "ASR Verify: Call to max0 must have at least two arguments",
             x.base.base.loc, diagnostics);
@@ -1583,9 +1587,10 @@ namespace Max {
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
-}  // namespace max0
+}  // namespace Max
 
 namespace Min {
+
     static inline void verify_args(const ASR::IntrinsicFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args > 1, "ASR Verify: Call to min0 must have at least two arguments",
             x.base.base.loc, diagnostics);
@@ -1710,7 +1715,8 @@ namespace Min {
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
-}  // namespace min0
+}  // namespace Min
+
 namespace Partition {
 
     static inline void verify_args(const ASR::IntrinsicFunction_t& x, diag::Diagnostics& diagnostics) {
@@ -1825,6 +1831,7 @@ namespace Partition {
         scope->add_symbol(fn_name, fn_sym);
         return b.Call(fn_sym, new_args, return_type, nullptr);
     }
+
 } // namespace Partition
 
 namespace SymbolicSymbol {
@@ -1867,13 +1874,12 @@ namespace SymbolicSymbol {
 
 } // namespace SymbolicSymbol
 
-#define create_symbolic_binary_macro(X)                                                     \
+#define create_symbolic_binary_macro(X)                                                    \
 namespace X{                                                                               \
-                                                                                           \
     static inline void verify_args(const ASR::IntrinsicFunction_t& x,                      \
             diag::Diagnostics& diagnostics) {                                              \
-        ASRUtils::require_impl(x.n_args == 2, "Intrinsic function `"#X"` accepts           \
-            exactly 2 arguments", x.base.base.loc, diagnostics);                           \
+        ASRUtils::require_impl(x.n_args == 2, "Intrinsic function `"#X"` accepts"          \
+            "exactly 2 arguments", x.base.base.loc, diagnostics);                          \
                                                                                            \
         ASR::ttype_t* left_type = ASRUtils::expr_type(x.m_args[0]);                        \
         ASR::ttype_t* right_type = ASRUtils::expr_type(x.m_args[1]);                       \
@@ -1976,6 +1982,7 @@ namespace SymbolicInteger {
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_SymbolicInteger,
             static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicInteger), 0, to_type);
     }
+
 } // namespace SymbolicInteger
 
 #define create_symbolic_unary_macro(X)                                                    \
@@ -2239,7 +2246,6 @@ namespace IntrinsicFunctionRegistry {
                  id_ == ASRUtils::IntrinsicFunctions::Exp ||
                  id_ == ASRUtils::IntrinsicFunctions::Exp2 ||
                  id_ == ASRUtils::IntrinsicFunctions::Expm1 ||
-                //  id_ == ASRUtils::IntrinsicArrayFunctions::Merge ||
                  id_ == ASRUtils::IntrinsicFunctions::SymbolicSymbol);
     }
 

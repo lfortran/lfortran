@@ -1571,6 +1571,11 @@ namespace IntrinsicArrayFunctionRegistry {
         }
     }
 
+    static inline bool is_elemental(int64_t id) {
+        IntrinsicArrayFunctions id_ = static_cast<IntrinsicArrayFunctions>(id);
+        return (id_ == IntrinsicArrayFunctions::Merge);
+    }
+
 } // namespace IntrinsicArrayFunctionRegistry
 
 } // namespace ASRUtils
