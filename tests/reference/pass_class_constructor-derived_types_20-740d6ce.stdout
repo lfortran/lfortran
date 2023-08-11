@@ -390,7 +390,7 @@
                                         ()
                                     )
                                     (If
-                                        (IntrinsicFunction
+                                        (IntrinsicArrayFunction
                                             Any
                                             [(ArrayPhysicalCast
                                                 (FunctionCall
