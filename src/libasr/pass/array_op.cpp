@@ -956,8 +956,8 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         replace_ArrayOpCommon<ASR::StringCompare_t>(x, "_string_comp_op_res");
     }
 
-    void replace_IntrinsicFunction(ASR::IntrinsicFunction_t* x) {
-        if( !ASRUtils::IntrinsicFunctionRegistry::is_elemental(x->m_intrinsic_id) ) {
+    void replace_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t* x) {
+        if( !ASRUtils::IntrinsicFunctionRegistry::is_elemental(x->m_arr_intrinsic_id) ) {
             return ;
         }
         LCOMPILERS_ASSERT(current_scope != nullptr);
@@ -1044,8 +1044,8 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             Vec<ASR::dimension_t> empty_dim;
             empty_dim.reserve(al, 1);
             ASR::ttype_t* dim_less_type = ASRUtils::duplicate_type(al, x->m_type, &empty_dim);
-            ASR::expr_t* op_el_wise = ASRUtils::EXPR(ASRUtils::make_IntrinsicFunction_t_util(al, loc,
-                x->m_intrinsic_id, ref_args.p, ref_args.size(), x->m_overload_id,
+            ASR::expr_t* op_el_wise = ASRUtils::EXPR(ASRUtils::make_IntrinsicArrayFunction_t_util(al, loc,
+                x->m_arr_intrinsic_id, ref_args.p, ref_args.size(), x->m_overload_id,
                 dim_less_type, nullptr));
             ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al, current_scope);
             ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, res, op_el_wise, nullptr));
