@@ -710,7 +710,8 @@ int emit_cpp(const std::string &infile, CompilerOptions &compiler_options)
     }
 }
 
-int emit_c(const std::string &infile, CompilerOptions &compiler_options)
+int emit_c(const std::string &infile,
+    LCompilers::PassManager& pass_manager, CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
 
@@ -723,10 +724,33 @@ int emit_c(const std::string &infile, CompilerOptions &compiler_options)
         lm.files.push_back(fl);
         lm.file_ends.push_back(input.size());
     }
-    LCompilers::Result<std::string> cpp = fe.get_c(input, lm, diagnostics, 1);
+    LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
+        r = fe.get_asr2(input, lm, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
-    if (cpp.ok) {
-        std::cout << cpp.result;
+    if (!r.ok) {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return 2;
+    }
+    LCompilers::ASR::TranslationUnit_t* asr = r.result;
+
+    Allocator al(64*1024*1024);
+
+    LCompilers::PassOptions pass_options;
+    pass_options.runtime_library_dir = compiler_options.runtime_library_dir;
+    pass_options.mod_files_dir = compiler_options.mod_files_dir;
+    pass_options.include_dirs = compiler_options.include_dirs;
+
+    pass_options.always_run = true;
+    pass_options.run_fun = "f";
+    pass_options.verbose = compiler_options.verbose;
+    pass_options.pass_cumulative = compiler_options.pass_cumulative;
+    pass_options.realloc_lhs = compiler_options.realloc_lhs;
+
+    pass_manager.apply_passes(al, asr, pass_options, diagnostics);
+    LCompilers::Result<std::string> c_result = fe.get_c2(*asr, diagnostics, 1);
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (c_result.ok) {
+        std::cout << c_result.result;
         return 0;
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -2123,7 +2147,7 @@ int main(int argc, char *argv[])
             return emit_cpp(arg_file, compiler_options);
         }
         if (show_c) {
-            return emit_c(arg_file, compiler_options);
+            return emit_c(arg_file, lfortran_pass_manager, compiler_options);
         }
         if (show_julia) {
             return emit_julia(arg_file, compiler_options);
