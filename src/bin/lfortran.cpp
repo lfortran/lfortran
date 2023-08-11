@@ -745,7 +745,7 @@ int emit_c(const std::string &infile,
     pass_options.verbose = compiler_options.verbose;
     pass_options.pass_cumulative = compiler_options.pass_cumulative;
     pass_options.realloc_lhs = compiler_options.realloc_lhs;
-
+    pass_manager.skip_c_passes();
     pass_manager.apply_passes(al, asr, pass_options, diagnostics);
     LCompilers::Result<std::string> c_result = fe.get_c2(*asr, diagnostics, 1);
     std::cerr << diagnostics.render(lm, compiler_options);
@@ -1345,7 +1345,7 @@ int compile_to_object_file_c(const std::string &infile,
     pass_options.verbose = compiler_options.verbose;
     pass_options.pass_cumulative = compiler_options.pass_cumulative;
     pass_options.realloc_lhs = compiler_options.realloc_lhs;
-
+    pass_manager.skip_c_passes();
     pass_manager.apply_passes(al, asr, pass_options, diagnostics);
 
     // Save .mod files
