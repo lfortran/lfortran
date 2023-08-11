@@ -1090,7 +1090,7 @@ namespace LCompilers {
                 m_dims = v_type->m_dims;
                 n_dims = v_type->n_dims;
                 a_kind = ASRUtils::extract_kind_from_ttype_t(v_type->m_type);
-                                switch( v_type->m_physical_type ) {
+                switch( v_type->m_physical_type ) {
                     case ASR::array_physical_typeType::DescriptorArray: {
                         is_array_type = true;
                         llvm::Type* el_type = get_el_type(v_type->m_type, module);
