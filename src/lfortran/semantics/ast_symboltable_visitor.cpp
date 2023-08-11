@@ -2333,6 +2333,8 @@ public:
                             s = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, 4));
                         } else if (arg.compare("character") == 0) {
                             s = ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc, 1, 0, nullptr));
+                        } else if (arg.compare("logical") == 0) {
+                            s = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
                         } else {
                             throw SemanticError(
                                 "The type " + arg + " is not yet handled for template instantiation",
@@ -2369,49 +2371,57 @@ public:
                 }
             } else if (AST::is_a<AST::IntrinsicOperator_t>(*x.m_args[i])) {
                 AST::IntrinsicOperator_t *intrinsic_op = AST::down_cast<AST::IntrinsicOperator_t>(x.m_args[i]);
-                ASR::binopType binop = ASR::Add;
-                ASR::cmpopType cmop = ASR::Eq;
-                bool is_binop = true;
-                bool is_cmop = false;
-                std::string op_name = "~add";
+                ASR::binopType binop;
+                ASR::cmpopType cmpop;
+                bool is_binop = false, is_cmpop = false;
+                std::string op_name;
                 switch (intrinsic_op->m_op) {
                     case (AST::PLUS):
+                        is_binop = true; binop = ASR::Add; op_name = "~add";
                         break;
                     case (AST::MINUS):
-                        binop = ASR::Sub;
-                        op_name = "~sub";
+                        is_binop = true; binop = ASR::Sub; op_name = "~sub";
                         break;
                     case (AST::STAR):
-                        binop = ASR::Mul;
-                        op_name = "~mul";
+                        is_binop = true; binop = ASR::Mul; op_name = "~mul";
                         break;
                     case (AST::DIV):
-                        binop = ASR::Div;
-                        op_name = "~div";
+                        is_binop = true; binop = ASR::Div; op_name = "~div";
+                        break;
+                    case (AST::POW):
+                        is_binop = true; binop = ASR::Pow; op_name = "~pow";
                         break;
                     case (AST::EQ):
-                        is_binop = false;
-                        is_cmop = true;
-                        cmop = ASR::Eq;
-                        op_name = "~eq";
+                        is_cmpop = true; cmpop = ASR::Eq; op_name = "~eq";
                         break;
                     case (AST::NOTEQ):
-                        is_binop = false;
-                        is_cmop = true;
-                        cmop = ASR::NotEq;
-                        op_name = "~neq";
+                        is_cmpop = true; cmpop = ASR::NotEq; op_name = "~neq";
+                        break;
+                    case (AST::LT):
+                        is_cmpop = true; cmpop = ASR::Lt; op_name = "~lt";
+                        break;
+                    case (AST::LTE):
+                        is_cmpop = true; cmpop = ASR::LtE; op_name = "~lte";
+                        break;
+                    case (AST::GT):
+                        is_cmpop = true; cmpop = ASR::Gt; op_name = "~gt";
+                        break;
+                    case (AST::GTE):
+                        is_cmpop = true; cmpop = ASR::GtE; op_name = "~gte";
                         break;
                     default:
                         throw SemanticError("Unsupported binary operator", x.m_args[i]->base.loc);
                 }
+
                 bool is_overloaded;
                 if (is_binop) {
-                  is_overloaded = ASRUtils::is_op_overloaded(binop, op_name, current_scope, nullptr);
-                } else if (is_cmop) {
-                  is_overloaded = ASRUtils::is_op_overloaded(cmop, op_name, current_scope, nullptr);
+                    is_overloaded = ASRUtils::is_op_overloaded(binop, op_name, current_scope, nullptr);
+                } else if (is_cmpop) {
+                    is_overloaded = ASRUtils::is_op_overloaded(cmpop, op_name, current_scope, nullptr);
                 } else {
                     throw LCompilersException("ICE: must be binop or cmop");
                 }
+
                 ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(param_sym);
                 std::string f_name = f->m_name;
                 bool found = false;
@@ -2431,6 +2441,7 @@ public:
                         }
                     }
                 }
+
                 // if not found, then try to build a function for intrinsic operator
                 if (!found) {
                     if (f->n_args != 2) {
@@ -2442,10 +2453,10 @@ public:
                     ASR::ttype_t *ftype = ASRUtils::subs_expr_type(type_subs, f->m_return_var);
                     if (is_binop) {
                       if (!ASRUtils::check_equal_type(ltype, rtype) || !ASRUtils::check_equal_type(rtype, ftype)) {
-                          throw SemanticError("Intrinsic operator doesn't apply to "
-                              "restriction with different parameter types.", x.base.base.loc);
+                          throw SemanticError("Intrinsic operator "+ op_name + " does not apply to "
+                              "arguments of different types", x.base.base.loc);
                       }
-                    } else if (is_cmop) {
+                    } else if (is_cmpop) {
                       if (!ASRUtils::check_equal_type(ltype, rtype) || !ASRUtils::is_logical(*ftype)) {
                           throw SemanticError("Intrinsic operator " + op_name + 
                               " requires same-typed arguments and a logical return type", x.base.base.loc);
@@ -2469,68 +2480,22 @@ public:
                         args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, var)));
                     }
 
-                    std::string func_name;
+                    std::string func_name = op_name + "_intrinsic_" + ASRUtils::type_to_str(ltype);
+                    ASR::ttype_t *return_type;
                     ASR::expr_t *value = nullptr;
                     ASR::expr_t *lexpr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                         current_scope->get_symbol("arg0")));
                     ASR::expr_t *rexpr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                         current_scope->get_symbol("arg1")));
-                    switch (ltype->type) {
-                        case ASR::ttypeType::Real: {
-                            func_name = op_name + "_intrinsic_real";
-                            if (is_binop) {
-                              value = ASRUtils::EXPR(ASR::make_RealBinOp_t(al, x.base.base.loc,
-                                  lexpr, binop, rexpr, ASRUtils::duplicate_type(al, ltype), nullptr));
-                            } else if (is_cmop) {
-                              value = ASRUtils::EXPR(ASR::make_RealCompare_t(al, x.base.base.loc,
-                                  lexpr, cmop, rexpr, 
-                                  ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4)), nullptr));
-                            }
-                            break;
-                        }
-                        case ASR::ttypeType::Integer: {
-                            func_name = op_name + "_intrinsic_integer";
-                            if (is_binop) {
-                              value = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, x.base.base.loc,
-                                  lexpr, binop, rexpr, ASRUtils::duplicate_type(al, ltype), nullptr));
-                            } else if (is_cmop) {
-                              value = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, x.base.base.loc,
-                                  lexpr, cmop, rexpr, 
-                                  ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4)), nullptr));
-                            }
-                            break;
-                        }
-                        case ASR::ttypeType::Complex: {
-                            func_name = op_name + "_intrinsic_complex";
-                            if (is_binop) {
-                              value = ASRUtils::EXPR(ASR::make_ComplexBinOp_t(al, x.base.base.loc,
-                                  lexpr, binop, rexpr, ASRUtils::duplicate_type(al, ltype), nullptr));
-                            } else if (is_cmop) {
-                              value = ASRUtils::EXPR(ASR::make_ComplexCompare_t(al, x.base.base.loc,
-                                  lexpr, cmop, rexpr, 
-                                  ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4)), nullptr));
-                            }
-                            break;
-                        }
-                        case ASR::ttypeType::Character: {
-                            func_name = op_name + "_intrinsic_character";
-                            if (is_cmop) {
-                              value = ASRUtils::EXPR(ASR::make_StringCompare_t(al, x.base.base.loc,
-                                  lexpr, cmop, rexpr, 
-                                  ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4)), nullptr));
-                            }
-                            break;
-                        }
-                        default:
-                            throw LCompilersException("Not implemented " + std::to_string(ltype->type));
+                        
+                    if (is_binop) {
+                        value = ASRUtils::EXPR(ASRUtils::make_Binop_util(al, x.base.base.loc, binop, lexpr, rexpr, ltype));
+                        return_type = ASRUtils::duplicate_type(al, ltype);
+                    } else if (is_cmpop) {
+                        value = ASRUtils::EXPR(ASRUtils::make_Cmpop_util(al, x.base.base.loc, cmpop, lexpr, rexpr, ltype));
+                        return_type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
                     }
 
-                    ASR::ttype_t *return_type;
-                    if (is_binop) {
-                      return_type = ASRUtils::duplicate_type(al, ltype);
-                    } else {
-                      return_type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
-                    }
                     ASR::asr_t *return_v = ASR::make_Variable_t(al, x.base.base.loc,
                         current_scope, s2c(al, "ret"), nullptr, 0,
                         ASR::intentType::ReturnVar, nullptr, nullptr, ASR::storage_typeType::Default,

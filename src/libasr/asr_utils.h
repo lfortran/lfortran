@@ -20,6 +20,12 @@ namespace LCompilers  {
 ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
         ASR::symbol_t* original_sym, SymbolTable *current_scope);
 
+ASR::asr_t* make_Binop_util(Allocator &al, const Location& loc, ASR::binopType binop, 
+                        ASR::expr_t* lexpr, ASR::expr_t* rexpr, ASR::ttype_t* ttype);
+
+ASR::asr_t* make_Cmpop_util(Allocator &al, const Location& loc, ASR::cmpopType cmpop, 
+                        ASR::expr_t* lexpr, ASR::expr_t* rexpr, ASR::ttype_t* ttype);
+
 static inline  double extract_real(const char *s) {
     // TODO: this is inefficient. We should
     // convert this in the tokenizer where we know most information
@@ -1737,17 +1743,6 @@ static inline bool is_requirement_function(ASR::symbol_t *x) {
     }
 }
 
-static inline bool is_restriction_function(ASR::symbol_t *x) {
-    ASR::symbol_t* x2 = symbol_get_past_external(x);
-    switch (x2->type) {
-        case ASR::symbolType::Function: {
-            ASR::Function_t *func_sym = ASR::down_cast<ASR::Function_t>(x2);
-            return ASRUtils::get_FunctionType(func_sym)->m_is_restriction;
-        }
-        default: return false;
-    }
-}
-
 static inline bool is_generic_function(ASR::symbol_t *x) {
     ASR::symbol_t* x2 = symbol_get_past_external(x);
     switch (x2->type) {
@@ -2101,8 +2096,6 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
         }
         case ASR::ttypeType::TypeParameter: {
             ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(t);
-            //return ASRUtils::TYPE(ASR::make_TypeParameter_t(al, t->base.loc,
-            //            tp->m_param, dimsp, dimsn, tp->m_rt, tp->n_rt));
             t_ = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, t->base.loc, tp->m_param));
             break;
         }
@@ -2215,8 +2208,6 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
         }
         case ASR::ttypeType::TypeParameter: {
             ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(t);
-            //return ASRUtils::TYPE(ASR::make_TypeParameter_t(al, t->base.loc,
-            //            tp->m_param, nullptr, 0, tp->m_rt, tp->n_rt));
             return ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc, tp->m_param));
         }
         default : throw LCompilersException("Not implemented " + std::to_string(t->type));
