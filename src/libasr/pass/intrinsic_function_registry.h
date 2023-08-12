@@ -1563,8 +1563,7 @@ namespace Max {
         if (scope->get_symbol(fn_name)) {
             ASR::symbol_t *s = scope->get_symbol(fn_name);
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
-            return b.Call(s, new_args, expr_type(f->m_return_var),
-                                nullptr);
+            return b.Call(s, new_args, expr_type(f->m_return_var), nullptr);
         }
         for (size_t i = 0; i < new_args.size(); i++) {
             fill_func_arg("x" + std::to_string(i), arg_types[0]);
@@ -1679,8 +1678,7 @@ namespace Min {
         if (scope->get_symbol(fn_name)) {
             ASR::symbol_t *s = scope->get_symbol(fn_name);
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
-            return b.Call(s, new_args, expr_type(f->m_return_var),
-                                nullptr);
+            return b.Call(s, new_args, expr_type(f->m_return_var), nullptr);
         }
         for (size_t i = 0; i < new_args.size(); i++) {
             fill_func_arg("x" + std::to_string(i), arg_types[0]);
