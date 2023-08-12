@@ -3077,10 +3077,16 @@ public:
                         for( size_t i = 0; i < v->n_dependencies; i++ ) {
                             std::string variable_name = v->m_dependencies[i];
                             ASR::symbol_t* dep_sym = x.m_symtab->resolve_symbol(variable_name);
-                            if( (dep_sym && ASR::is_a<ASR::Variable_t>(*dep_sym) &&
-                                !ASR::down_cast<ASR::Variable_t>(dep_sym)->m_symbolic_value) )  {
-                                init_expr = nullptr;
-                                break;
+                            if (dep_sym) {
+                                if (ASR::is_a<ASR::Variable_t>(*dep_sym)) {
+                                    ASR::Variable_t* dep_v = ASR::down_cast<ASR::Variable_t>(dep_sym);
+                                    if ( dep_v->m_symbolic_value == nullptr &&
+                                        !(ASRUtils::is_array(dep_v->m_type) && ASRUtils::extract_physical_type(dep_v->m_type) ==
+                                            ASR::array_physical_typeType::FixedSizeArray)) {
+                                        init_expr = nullptr;
+                                        break;
+                                    }
+                                }
                             }
                         }
                     }
