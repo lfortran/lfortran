@@ -138,31 +138,19 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
 endmacro(RUN_UTIL)
 
 macro(RUN)
-    set(options FAIL NOFAST CPP_PRE IMPLICIT_ARGS)
+    set(options FAIL NOFAST)
     set(oneValueArgs NAME INCLUDE_PATH  COPY_TO_BIN)
-    set(multiValueArgs LABELS EXTRAFILES)
+    set(multiValueArgs LABELS EXTRAFILES EXTRA_ARGS GFORTRAN_ARGS)
     cmake_parse_arguments(RUN "${options}" "${oneValueArgs}"
                         "${multiValueArgs}" ${ARGN} )
 
-    set(RUN_EXTRA_ARGS "")
     set(RUN_FILE_NAME ${RUN_NAME})
-    set(RUN_GFORTRAN_ARGS "")
 
     if (RUN_INCLUDE_PATH)
         # Only one include path supported for now
         # Later add support for multiple include paths by looping over and appending to extra args
         set(RUN_EXTRA_ARGS ${RUN_EXTRA_ARGS} -I${CMAKE_CURRENT_SOURCE_DIR}/${RUN_INCLUDE_PATH})
         set(RUN_GFORTRAN_ARGS ${RUN_GFORTRAN_ARGS} -I${CMAKE_CURRENT_SOURCE_DIR}/${RUN_INCLUDE_PATH})
-    endif()
-
-    if (RUN_CPP_PRE)
-        set(RUN_EXTRA_ARGS ${RUN_EXTRA_ARGS} "--cpp")
-        set(RUN_GFORTRAN_ARGS ${RUN_GFORTRAN_ARGS} "-cpp")
-    endif()
-
-    if (RUN_IMPLICIT_ARGS)
-        set(RUN_EXTRA_ARGS ${RUN_EXTRA_ARGS} "--implicit-argument-casting")
-        set(RUN_GFORTRAN_ARGS ${RUN_GFORTRAN_ARGS} "-fallow-argument-mismatch")
     endif()
 
     if (NOT FAST)
@@ -1018,12 +1006,18 @@ RUN(NAME c_ptr_01 LABELS gfortran llvm NOFAST)
 
 RUN(NAME arrayitem_01 LABELS gfortran llvm)
 
-RUN(NAME implicit_argument_casting_01 LABELS gfortran llvm IMPLICIT_ARGS)
+RUN(NAME implicit_argument_casting_01 LABELS gfortran llvm
+    EXTRA_ARGS --implicit-argument-casting
+    GFORTRAN_ARGS -fallow-argument-mismatch)
 
 RUN(NAME specfun_01 LABELS gfortran llvmUseLoopVariableAfterLoop NOFAST)
 
-RUN(NAME cpp_pre_01 LABELS gfortran llvm c CPP_PRE)
-RUN(NAME cpp_pre_02 LABELS gfortran llvm c wasm CPP_PRE)
+RUN(NAME cpp_pre_01 LABELS gfortran llvm c
+    EXTRA_ARGS --cpp
+    GFORTRAN_ARGS -cpp)
+RUN(NAME cpp_pre_02 LABELS gfortran llvm c wasm
+    EXTRA_ARGS --cpp
+    GFORTRAN_ARGS -cpp)
 
 RUN(NAME dabs_01 LABELS gfortran llvmImplicit)
 
