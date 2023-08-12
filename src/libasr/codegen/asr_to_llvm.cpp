@@ -1956,9 +1956,7 @@ public:
         ASR::Variable_t *v = nullptr;
         if( ASR::is_a<ASR::Var_t>(*x.m_v) ) {
             v = ASRUtils::EXPR2VAR(x.m_v);
-            ASR::ttype_t* v_m_type = ASRUtils::type_get_past_array(
-                ASRUtils::type_get_past_allocatable(
-                    ASRUtils::type_get_past_pointer(v->m_type)));
+            ASR::ttype_t* v_m_type = ASRUtils::extract_type(v->m_type);
             if( ASR::is_a<ASR::Struct_t>(*v_m_type) ) {
                 ASR::Struct_t* der_type = ASR::down_cast<ASR::Struct_t>(v_m_type);
                 current_der_type_name = ASRUtils::symbol_name(
@@ -5901,9 +5899,7 @@ public:
         switch( t2_->type ) {
             case ASR::ttypeType::Pointer:
             case ASR::ttypeType::Allocatable: {
-                ASR::ttype_t *t2 = ASRUtils::type_get_past_array(
-                    ASRUtils::type_get_past_pointer(
-                        ASRUtils::type_get_past_allocatable(x->m_type)));
+                ASR::ttype_t *t2 = ASRUtils::extract_type(x->m_type);
                 switch (t2->type) {
                     case ASR::ttypeType::Integer:
                     case ASR::ttypeType::UnsignedInteger:
