@@ -10,4 +10,5 @@ program character_02
     character bmat(5)
     bmat = 't'
     call dnaitr ( bmat )
+    if( any(bmat /= "t")) error stop
 end
