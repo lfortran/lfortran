@@ -105,10 +105,6 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             execute_process(COMMAND lfortran ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90
 				${extra_args} --implicit-typing --implicit-interface -o ${name})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
-        elseif (LFORTRAN_BACKEND STREQUAL "llvmReAllocLHS")
-            execute_process(COMMAND lfortran ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90
-				${extra_args} --realloc-lhs=true -o ${name})
-            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvmUseLoopVariableAfterLoop")
             execute_process(COMMAND lfortran ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90
                 ${extra_args} --use-loop-variable-after-loop -o ${name})
@@ -331,13 +327,15 @@ RUN(NAME arrays_op_7 LABELS gfortran llvm wasm)
 RUN(NAME arrays_op_8 LABELS gfortran llvm)
 RUN(NAME arrays_op_9 LABELS gfortran llvm)
 RUN(NAME arrays_op_10 LABELS gfortran llvm wasm)
-RUN(NAME arrays_op_11 LABELS gfortran llvmReAllocLHS)
+RUN(NAME arrays_op_11 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs)
 RUN(NAME arrays_op_13 LABELS gfortran llvm wasm)
 RUN(NAME arrays_op_14 LABELS gfortran llvm wasm)
 RUN(NAME arrays_op_15 LABELS gfortran llvm)
 RUN(NAME arrays_op_16 LABELS gfortran llvm)
 RUN(NAME arrays_op_17 LABELS gfortran llvm)
-RUN(NAME arrays_op_18 LABELS gfortran llvmReAllocLHS)
+RUN(NAME arrays_op_18 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs)
 RUN(NAME arrays_reshape_14 LABELS gfortran llvm)
 RUN(NAME arrays_elemental_15 LABELS gfortran llvm)
 RUN(NAME arrays_03_func LABELS gfortran cpp llvm wasm  NOFAST)
@@ -958,7 +956,8 @@ RUN(NAME procedure_04 LABELS gfortran llvm)
 RUN(NAME allocated_01 LABELS gfortran llvm)
 RUN(NAME allocated_02 LABELS gfortran llvm)
 RUN(NAME allocated_03 LABELS gfortran llvm)
-RUN(NAME allocate_07 LABELS gfortran llvmReAllocLHS)
+RUN(NAME allocate_07 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs)
 RUN(NAME allocate_08 LABELS gfortran llvm)
 RUN(NAME allocate_09 LABELS gfortran llvm)
 
