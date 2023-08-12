@@ -1024,7 +1024,7 @@ RUN(NAME implicit_argument_casting_01 LABELS llvmImplicitArgument)
 
 RUN(NAME arrayitem_01 LABELS gfortran llvm)
 
-RUN(NAME implicit_argument_casting_01 LABELS gfortran IMPLICIT_ARGS)
+RUN(NAME implicit_argument_casting_01 LABELS gfortran llvm IMPLICIT_ARGS)
 
 RUN(NAME specfun_01 LABELS gfortran llvmUseLoopVariableAfterLoop NOFAST)
 
