@@ -731,23 +731,11 @@ int emit_c(const std::string &infile,
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 2;
     }
+    diagnostics.diagnostics.clear();
     LCompilers::ASR::TranslationUnit_t* asr = r.result;
 
-    Allocator al(64*1024*1024);
-
-    LCompilers::PassOptions pass_options;
-    pass_options.runtime_library_dir = compiler_options.runtime_library_dir;
-    pass_options.mod_files_dir = compiler_options.mod_files_dir;
-    pass_options.include_dirs = compiler_options.include_dirs;
-
-    pass_options.always_run = true;
-    pass_options.run_fun = "f";
-    pass_options.verbose = compiler_options.verbose;
-    pass_options.pass_cumulative = compiler_options.pass_cumulative;
-    pass_options.realloc_lhs = compiler_options.realloc_lhs;
-    pass_manager.skip_c_passes();
-    pass_manager.apply_passes(al, asr, pass_options, diagnostics);
-    LCompilers::Result<std::string> c_result = fe.get_c2(*asr, diagnostics, 1);
+    LCompilers::Result<std::string> c_result = fe.get_c3(*asr, diagnostics,
+                                                pass_manager, 1);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (c_result.ok) {
         std::cout << c_result.result;
@@ -1331,22 +1319,8 @@ int compile_to_object_file_c(const std::string &infile,
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 2;
     }
+    diagnostics.diagnostics.clear();
     LCompilers::ASR::TranslationUnit_t* asr = r.result;
-
-    Allocator al(64*1024*1024);
-
-    LCompilers::PassOptions pass_options;
-    pass_options.runtime_library_dir = compiler_options.runtime_library_dir;
-    pass_options.mod_files_dir = compiler_options.mod_files_dir;
-    pass_options.include_dirs = compiler_options.include_dirs;
-
-    pass_options.always_run = true;
-    pass_options.run_fun = "f";
-    pass_options.verbose = compiler_options.verbose;
-    pass_options.pass_cumulative = compiler_options.pass_cumulative;
-    pass_options.realloc_lhs = compiler_options.realloc_lhs;
-    pass_manager.skip_c_passes();
-    pass_manager.apply_passes(al, asr, pass_options, diagnostics);
 
     // Save .mod files
     {
@@ -1387,7 +1361,7 @@ int compile_to_object_file_c(const std::string &infile,
     std::string src;
     diagnostics.diagnostics.clear();
     LCompilers::Result<std::string> res
-        = fe.get_c2(*asr, diagnostics, 1);
+        = fe.get_c3(*asr, diagnostics, pass_manager, 1);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (res.ok) {
         src = res.result;

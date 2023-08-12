@@ -467,6 +467,27 @@ Result<std::string> FortranEvaluator::get_c2(ASR::TranslationUnit_t &asr,
                     default_lower_bound);
 }
 
+Result<std::string> FortranEvaluator::get_c3(ASR::TranslationUnit_t &asr,
+        diag::Diagnostics &diagnostics, LCompilers::PassManager& pass_manager, int64_t default_lower_bound)
+{
+    // ASR -> ASR pass
+    Allocator al(64*1024*1024);
+    LCompilers::PassOptions pass_options;
+    pass_options.runtime_library_dir = compiler_options.runtime_library_dir;
+    pass_options.mod_files_dir = compiler_options.mod_files_dir;
+    pass_options.include_dirs = compiler_options.include_dirs;
+
+    pass_options.always_run = false;
+    pass_options.run_fun = "f";
+    pass_options.verbose = compiler_options.verbose;
+    pass_options.pass_cumulative = compiler_options.pass_cumulative;
+    pass_options.realloc_lhs = compiler_options.realloc_lhs;
+    pass_manager.skip_c_passes();
+    pass_manager.apply_passes(al, &asr, pass_options, diagnostics);
+    // ASR pass -> C
+    return asr_to_c(al, asr, diagnostics, compiler_options, default_lower_bound);
+}
+
 Result<std::string> FortranEvaluator::get_julia(const std::string &code,
     LocationManager &lm, diag::Diagnostics &diagnostics)
 {
