@@ -374,6 +374,7 @@ RUN(NAME arrays_27 LABELS gfortran llvm)
 RUN(NAME arrays_28 LABELS gfortran llvm) # maxloc, minloc
 RUN(NAME arrays_29 LABELS gfortran llvm NOFAST)
 RUN(NAME arrays_30 LABELS gfortran llvm) # maxloc
+RUN(NAME arrays_31 LABELS gfortran llvm wasm) # init expr with fixed size arr as dependency
 
 
 # GFortran
