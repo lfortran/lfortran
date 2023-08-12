@@ -342,8 +342,15 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             }
         }
 
-        void visit_CPtrToPointer(const ASR::CPtrToPointer_t& /*x*/) {
-            // Do nothing.
+        void visit_CPtrToPointer(const ASR::CPtrToPointer_t& x) {
+            if (x.m_shape) {
+                ASR::expr_t** current_expr_copy = current_expr;
+                current_expr = const_cast<ASR::expr_t**>(&(x.m_shape));
+                this->call_replacer();
+                current_expr = current_expr_copy;
+                if( x.m_shape )
+                this->visit_expr(*x.m_shape);
+            }
         }
 
 };
