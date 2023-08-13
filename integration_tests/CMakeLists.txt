@@ -1206,3 +1206,4 @@ RUN(NAME save_04 LABELS gfortran llvmImplicit)
 
 RUN(NAME procedure_05 LABELS gfortran llvmImplicit)
 
+RUN(NAME min_three_args LABELS gfortran llvm)
