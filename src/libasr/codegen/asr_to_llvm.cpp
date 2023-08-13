@@ -6492,12 +6492,16 @@ public:
                                             + std::to_string(a_kind));
                     }
                 } else if (ASR::is_a<ASR::Real_t>(*type)) {
-                    if (a_kind != 4) {
-                        throw CodeGenError("Real arrays of kind 4 only supported for now. Found kind: "
+                    if (a_kind == 4) {
+                        runtime_func_name = "_lfortran_read_array_float";
+                        type_arg = llvm::Type::getFloatTy(context);
+                    } else if (a_kind == 8) {
+                        runtime_func_name = "_lfortran_read_array_double";
+                        type_arg = llvm::Type::getDoubleTy(context);
+                    } else {
+                        throw CodeGenError("Real arrays of kind 4 or 8 only supported for now. Found kind: "
                                             + std::to_string(a_kind));
                     }
-                    runtime_func_name = "_lfortran_read_array_float";
-                    type_arg = llvm::Type::getFloatTy(context);
                 } else {
                     throw CodeGenError("Type not supported.");
                 }
