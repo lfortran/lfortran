@@ -1,0 +1,18 @@
+FUNCTION DNAN()
+    DOUBLE PRECISION DNAN
+    DNAN = 0.0D0
+END
+
+SUBROUTINE CLQMN(X,Y)
+    IMPLICIT DOUBLE PRECISION (X,Y)
+    IMPLICIT COMPLEX*16 (C,Z)
+    Z = DCMPLX(X, Y)
+
+    XC=ABS(Z)
+    LS=0
+    IF (DIMAG(Z).EQ.0.0D0.OR.XC.LT.1.0D0) LS=1
+
+    RETURN
+END
+program main
+end program main
