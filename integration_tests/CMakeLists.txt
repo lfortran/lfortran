@@ -196,41 +196,41 @@ endmacro(RUN)
 
 # GFortran + LFortran LLVM + LFortran C++
 
-RUN(NAME program_cmake_01 LABELS gfortran llvm cpp x86 wasm)
-RUN(NAME program_cmake_02 LABELS gfortran llvm cpp x86 wasm)
+RUN(NAME program_cmake_01 LABELS gfortran llvm cpp x86 wasm c)
+RUN(NAME program_cmake_02 LABELS gfortran llvm cpp x86 wasm c)
 
 RUN(NAME error_stop_01 FAIL LABELS gfortran llvm cpp x86 wasm llvm2)
 RUN(NAME error_stop_02 FAIL LABELS llvm wasm llvm2)
-RUN(NAME stop_01 LABELS llvm wasm llvm2)
+RUN(NAME stop_01 LABELS llvm wasm llvm2 c)
 
 RUN(NAME print_01 LABELS gfortran llvm cpp llvm2 wasm)
 RUN(NAME print_02 LABELS gfortran llvm llvm2 wasm)
-RUN(NAME print_03 LABELS gfortran llvm llvm2 wasm)
+RUN(NAME print_03 LABELS gfortran llvm llvm2 wasm c)
 RUN(NAME print_04 LABELS gfortran llvm llvm2)
-RUN(NAME print_arr_01 LABELS gfortran llvm llvm2 wasm)
-RUN(NAME print_arr_02 LABELS gfortran llvm llvm2 wasm)
+RUN(NAME print_arr_01 LABELS gfortran llvm llvm2 wasm c)
+RUN(NAME print_arr_02 LABELS gfortran llvm llvm2 wasm c)
 RUN(NAME print_arr_03 LABELS gfortran llvm llvm2 NOFAST)
 
-RUN(NAME include_01 LABELS gfortran llvm wasm)
-RUN(NAME include_02 LABELS gfortran llvm wasm)
-RUN(NAME include_03 LABELS gfortran llvm wasm INCLUDE_PATH include_03)
+RUN(NAME include_01 LABELS gfortran llvm wasm c)
+RUN(NAME include_02 LABELS gfortran llvm wasm c)
+RUN(NAME include_03 LABELS gfortran llvm wasm c INCLUDE_PATH include_03)
 
-RUN(NAME cond_01 LABELS gfortran llvm cpp x86 wasm)
-RUN(NAME cond_02 LABELS gfortran llvm wasm)
+RUN(NAME cond_01 LABELS gfortran llvm cpp x86 wasm c)
+RUN(NAME cond_02 LABELS gfortran llvm wasm c)
 
 RUN(NAME expr_01 FAIL LABELS gfortran llvm cpp x86 wasm c)
-RUN(NAME expr_02 LABELS gfortran llvm cpp x86 wasm)
-RUN(NAME expr_03 LABELS gfortran llvm cpp x86 wasm)
-RUN(NAME expr_04 LABELS gfortran llvm cpp wasm)
-RUN(NAME expr_05 LABELS gfortran llvm cpp) # it contains pow, wasm supports only x**2
-RUN(NAME expr_06 LABELS gfortran llvm wasm)
-RUN(NAME expr_07 LABELS gfortran llvm wasm)
-RUN(NAME expr_08 LABELS gfortran llvm wasm)
-RUN(NAME expr_09 LABELS gfortran llvm wasm)
-RUN(NAME expr_10 LABELS gfortran llvm wasm)
-RUN(NAME expr_12 LABELS gfortran llvm) # it uses string compare
-RUN(NAME expr_13 LABELS gfortran llvm wasm NOFAST)
-RUN(NAME expr_14 LABELS gfortran llvm wasm)
+RUN(NAME expr_02 LABELS gfortran llvm cpp x86 wasm c)
+RUN(NAME expr_03 LABELS gfortran llvm cpp x86 wasm c)
+RUN(NAME expr_04 LABELS gfortran llvm cpp wasm c)
+RUN(NAME expr_05 LABELS gfortran llvm cpp c) # it contains pow, wasm supports only x**2
+RUN(NAME expr_06 LABELS gfortran llvm wasm c)
+RUN(NAME expr_07 LABELS gfortran llvm wasm c)
+RUN(NAME expr_08 LABELS gfortran llvm wasm c)
+RUN(NAME expr_09 LABELS gfortran llvm wasm c)
+RUN(NAME expr_10 LABELS gfortran llvm wasm c)
+RUN(NAME expr_12 LABELS gfortran llvm c) # it uses string compare
+RUN(NAME expr_13 LABELS gfortran llvm wasm c NOFAST)
+RUN(NAME expr_14 LABELS gfortran llvm wasm c)
 
 RUN(NAME data_01 LABELS gfortran llvm)
 RUN(NAME data_02 LABELS gfortran)

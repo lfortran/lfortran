@@ -253,7 +253,8 @@ namespace LCompilers {
                 "pass_list_expr",
                 "print_list_tuple",
                 "do_loops",
-                "inline_function_calls"
+                "inline_function_calls",
+                "select_case"
             };
             _user_defined_passes.clear();
         }
@@ -294,6 +295,10 @@ namespace LCompilers {
         void use_default_passes(bool _c_skip_pass=false) {
             apply_default_passes = true;
             c_skip_pass = _c_skip_pass;
+        }
+
+        void skip_c_passes() {
+            c_skip_pass = true;
         }
 
         void do_not_use_default_passes() {

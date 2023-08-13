@@ -710,7 +710,8 @@ int emit_cpp(const std::string &infile, CompilerOptions &compiler_options)
     }
 }
 
-int emit_c(const std::string &infile, CompilerOptions &compiler_options)
+int emit_c(const std::string &infile,
+    LCompilers::PassManager& pass_manager, CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
 
@@ -723,10 +724,21 @@ int emit_c(const std::string &infile, CompilerOptions &compiler_options)
         lm.files.push_back(fl);
         lm.file_ends.push_back(input.size());
     }
-    LCompilers::Result<std::string> cpp = fe.get_c(input, lm, diagnostics, 1);
+    LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
+        r = fe.get_asr2(input, lm, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
-    if (cpp.ok) {
-        std::cout << cpp.result;
+    if (!r.ok) {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return 2;
+    }
+    diagnostics.diagnostics.clear();
+    LCompilers::ASR::TranslationUnit_t* asr = r.result;
+
+    LCompilers::Result<std::string> c_result = fe.get_c3(*asr, diagnostics,
+                                                pass_manager, 1);
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (c_result.ok) {
+        std::cout << c_result.result;
         return 0;
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -1285,13 +1297,12 @@ int compile_to_object_file_cpp(const std::string &infile,
 int compile_to_object_file_c(const std::string &infile,
         const std::string &outfile,
         bool assembly, const std::string &rtlib_header_dir,
+        LCompilers::PassManager pass_manager,
         CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
-    LCompilers::ASR::TranslationUnit_t* asr;
-
     // Src -> AST -> ASR
     LCompilers::LocationManager lm;
     {
@@ -1302,14 +1313,14 @@ int compile_to_object_file_c(const std::string &infile,
     }
     LCompilers::diag::Diagnostics diagnostics;
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
-        result = fe.get_asr2(input, lm, diagnostics);
+        r = fe.get_asr2(input, lm, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
-    if (result.ok) {
-        asr = result.result;
-    } else {
+    if (!r.ok) {
         LCOMPILERS_ASSERT(diagnostics.has_error())
-        return 1;
+        return 2;
     }
+    diagnostics.diagnostics.clear();
+    LCompilers::ASR::TranslationUnit_t* asr = r.result;
 
     // Save .mod files
     {
@@ -1350,7 +1361,7 @@ int compile_to_object_file_c(const std::string &infile,
     std::string src;
     diagnostics.diagnostics.clear();
     LCompilers::Result<std::string> res
-        = fe.get_c2(*asr, diagnostics, 1);
+        = fe.get_c3(*asr, diagnostics, pass_manager, 1);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (res.ok) {
         src = res.result;
@@ -2131,7 +2142,7 @@ int main(int argc, char *argv[])
             return emit_cpp(arg_file, compiler_options);
         }
         if (show_c) {
-            return emit_c(arg_file, compiler_options);
+            return emit_c(arg_file, lfortran_pass_manager, compiler_options);
         }
         if (show_julia) {
             return emit_julia(arg_file, compiler_options);
@@ -2162,7 +2173,7 @@ int main(int argc, char *argv[])
 #endif
             } else if (backend == Backend::c) {
                 return compile_to_object_file_c(arg_file, outfile, false,
-                        rtlib_c_header_dir, compiler_options);
+                        rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
             } else if (backend == Backend::cpp) {
                 return compile_to_object_file_cpp(arg_file, outfile, false,
                         true, rtlib_c_header_dir, compiler_options);
@@ -2198,7 +2209,7 @@ int main(int argc, char *argv[])
                         true, rtlib_header_dir, compiler_options);
             } else if (backend == Backend::c) {
                 err = compile_to_object_file_c(arg_file, tmp_o,
-                        false, rtlib_c_header_dir, compiler_options);
+                        false, rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
             } else {
                 throw LCompilers::LCompilersException("Backend not supported");
             }
