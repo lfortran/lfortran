@@ -1151,6 +1151,7 @@ RUN(NAME dabs_01 LABELS gfortran llvmImplicit)
 
 RUN(NAME minpack_03 LABELS gfortran llvm)
 
+<<<<<<< HEAD
 RUN(NAME optional_01 LABELS gfortran llvm)
 RUN(NAME optional_02 LABELS gfortran llvm)
 RUN(NAME optional_03 LABELS gfortran llvm)
@@ -1196,3 +1197,12 @@ RUN(NAME min_01 LABELS gfortran)
 RUN(NAME goto_gototarget_return_01 LABELS gfortran llvm fortran)
 
 RUN(NAME selected_int_kind_01 LABELS gfortran llvm)
+
+RUN(NAME file_08 LABELS gfortran llvm NOFAST COPY_TO_BIN file_08.txt)
+
+RUN(NAME capital_01 LABELS gfortran llvmImplicit)
+
+RUN(NAME save_04 LABELS gfortran llvmImplicit)
+
+RUN(NAME procedure_05 LABELS gfortran llvmImplicit)
+
