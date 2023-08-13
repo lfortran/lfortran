@@ -1019,3 +1019,5 @@ RUN(NAME cpp_pre_02 LABELS gfortran llvm c wasm
 RUN(NAME dabs_01 LABELS gfortran llvmImplicit)
 
 RUN(NAME minpack_03 LABELS gfortran llvm NOFAST)
+
+RUN(NAME file_08 LABELS gfortran llvm NOFAST COPY_TO_BIN file_08.txt)

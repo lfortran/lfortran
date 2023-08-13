@@ -1934,6 +1934,32 @@ LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t u
     }
 }
 
+LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t unit_num)
+{
+    if (unit_num == -1) {
+        // Read from stdin
+        for (int i = 0; i < array_size; i++) {
+            scanf("%lf", &p[i]);
+        }
+        return;
+    }
+
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+    if (!filep) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        fread(p, sizeof(double), array_size, filep);
+    } else {
+        for (int i = 0; i < array_size; i++) {
+            fscanf(filep, "%lf", &p[i]);
+        }
+    }
+}
+
 LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num)
 {
     if (unit_num == -1) {
