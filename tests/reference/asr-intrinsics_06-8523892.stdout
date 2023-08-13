@@ -134,7 +134,7 @@
                     [lfortran_intrinsic_kind]
                     [(=
                         (Var 2 x)
-                        (IntrinsicFunction
+                        (IntrinsicScalarFunction
                             Asin
                             [(RealConstant
                                 0.841471
@@ -157,7 +157,7 @@
                     )
                     (=
                         (Var 2 x)
-                        (IntrinsicFunction
+                        (IntrinsicScalarFunction
                             Acos
                             [(RealConstant
                                 0.540302
@@ -180,7 +180,7 @@
                     )
                     (=
                         (Var 2 x)
-                        (IntrinsicFunction
+                        (IntrinsicScalarFunction
                             Atan
                             [(RealConstant
                                 1.557408

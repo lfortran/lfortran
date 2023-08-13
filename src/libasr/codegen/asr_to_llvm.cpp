@@ -1680,13 +1680,13 @@ public:
         tmp = list_api->pop_position(plist, pos, asr_el_type, module.get(), name2memidx);
     }
 
-    void visit_IntrinsicFunction(const ASR::IntrinsicFunction_t& x) {
+    void visit_IntrinsicScalarFunction(const ASR::IntrinsicScalarFunction_t& x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        switch (static_cast<ASRUtils::IntrinsicFunctions>(x.m_intrinsic_id)) {
-            case ASRUtils::IntrinsicFunctions::ListIndex: {
+        switch (static_cast<ASRUtils::IntrinsicScalarFunctions>(x.m_intrinsic_id)) {
+            case ASRUtils::IntrinsicScalarFunctions::ListIndex: {
                 ASR::expr_t* m_arg = x.m_args[0];
                 ASR::expr_t* m_ele = x.m_args[1];
                 ASR::expr_t* m_start = nullptr;
@@ -1712,11 +1712,11 @@ public:
                 generate_ListIndex(m_arg, m_ele, m_start, m_end);
                 break ;
             }
-            case ASRUtils::IntrinsicFunctions::ListReverse: {
+            case ASRUtils::IntrinsicScalarFunctions::ListReverse: {
                 generate_ListReverse(x.m_args[0]);
                 break;
             }
-            case ASRUtils::IntrinsicFunctions::ListPop: {
+            case ASRUtils::IntrinsicScalarFunctions::ListPop: {
                 switch(x.m_overload_id) {
                     case 0:
                         generate_ListPop_0(x.m_args[0]);
@@ -1727,7 +1727,7 @@ public:
                 }
                 break;
             }
-            case ASRUtils::IntrinsicFunctions::Exp: {
+            case ASRUtils::IntrinsicScalarFunctions::Exp: {
                 switch (x.m_overload_id) {
                     case 0: {
                         ASR::expr_t* m_arg = x.m_args[0];
@@ -1741,7 +1741,7 @@ public:
                 }
                 break ;
             }
-            case ASRUtils::IntrinsicFunctions::Exp2: {
+            case ASRUtils::IntrinsicScalarFunctions::Exp2: {
                 switch (x.m_overload_id) {
                     case 0: {
                         ASR::expr_t* m_arg = x.m_args[0];
@@ -1755,7 +1755,7 @@ public:
                 }
                 break ;
             }
-            case ASRUtils::IntrinsicFunctions::Expm1: {
+            case ASRUtils::IntrinsicScalarFunctions::Expm1: {
                 switch (x.m_overload_id) {
                     case 0: {
                         ASR::expr_t* m_arg = x.m_args[0];
@@ -1770,7 +1770,7 @@ public:
                 break ;
             }
             default: {
-                throw CodeGenError("Either the '" + ASRUtils::IntrinsicFunctionRegistry::
+                throw CodeGenError("Either the '" + ASRUtils::IntrinsicScalarFunctionRegistry::
                         get_intrinsic_function_name(x.m_intrinsic_id) +
                         "' intrinsic is not implemented by LLVM backend or "
                         "the compile-time value is not available", x.base.base.loc);

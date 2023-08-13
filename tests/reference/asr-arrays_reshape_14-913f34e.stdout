@@ -490,7 +490,7 @@
                                             ())
                                             [(If
                                                 (RealCompare
-                                                    (IntrinsicFunction
+                                                    (IntrinsicScalarFunction
                                                         Abs
                                                         [(RealBinOp
                                                             (RealBinOp
@@ -656,7 +656,7 @@
                                                 ())
                                                 [(If
                                                     (RealCompare
-                                                        (IntrinsicFunction
+                                                        (IntrinsicScalarFunction
                                                             Abs
                                                             [(RealBinOp
                                                                 (RealBinOp
@@ -1109,7 +1109,7 @@
                                         )
                                         (If
                                             (RealCompare
-                                                (IntrinsicFunction
+                                                (IntrinsicScalarFunction
                                                     Abs
                                                     [(RealBinOp
                                                         (RealBinOp
@@ -1391,7 +1391,7 @@
                                         )
                                         (If
                                             (RealCompare
-                                                (IntrinsicFunction
+                                                (IntrinsicScalarFunction
                                                     Abs
                                                     [(RealBinOp
                                                         (RealBinOp

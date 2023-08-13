@@ -1893,12 +1893,7 @@ public:
         src = out;
     }
 
-    #define SET_INTRINSIC_NAME(X, func_name)                             \
-        case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::X)) : { \
-            out += func_name; break;                                     \
-        }
-
-    void visit_IntrinsicFunction(const ASR::IntrinsicFunction_t &x) {
+    void visit_IntrinsicScalarFunction(const ASR::IntrinsicScalarFunction_t &x) {
         std::string out;
         LCOMPILERS_ASSERT(x.n_args == 1);
         visit_expr(*x.m_args[0]);

@@ -82,7 +82,7 @@
                     )
                     (=
                         (Var 2 x)
-                        (IntrinsicFunction
+                        (IntrinsicScalarFunction
                             Tan
                             [(Var 2 x)]
                             0
@@ -99,7 +99,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 2 x)
@@ -130,10 +130,10 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
-                                    (IntrinsicFunction
+                                    (IntrinsicScalarFunction
                                         Tan
                                         [(RealConstant
                                             1.500000
@@ -182,13 +182,13 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
-                                    (IntrinsicFunction
+                                    (IntrinsicScalarFunction
                                         Tan
                                         [(RealBinOp
-                                            (IntrinsicFunction
+                                            (IntrinsicScalarFunction
                                                 Tan
                                                 [(RealConstant
                                                     1.500000
@@ -203,12 +203,12 @@
                                             )
                                             Add
                                             (Cast
-                                                (IntrinsicFunction
+                                                (IntrinsicScalarFunction
                                                     Tan
                                                     [(RealBinOp
                                                         (Var 2 x)
                                                         Add
-                                                        (IntrinsicFunction
+                                                        (IntrinsicScalarFunction
                                                             Tan
                                                             [(Var 2 x)]
                                                             0
@@ -280,7 +280,7 @@
                     )
                     (=
                         (Var 2 z)
-                        (IntrinsicFunction
+                        (IntrinsicScalarFunction
                             Tan
                             [(Var 2 z)]
                             0
@@ -297,7 +297,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (Cast
@@ -333,11 +333,11 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (Cast
-                                        (IntrinsicFunction
+                                        (IntrinsicScalarFunction
                                             Tan
                                             [(ComplexConstructor
                                                 (RealConstant

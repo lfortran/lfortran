@@ -114,7 +114,7 @@
                     )
                     (=
                         (Var 2 x)
-                        (IntrinsicFunction
+                        (IntrinsicScalarFunction
                             Cos
                             [(RealConstant
                                 9.500000
@@ -131,7 +131,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 2 x)
@@ -162,10 +162,10 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
-                                    (IntrinsicFunction
+                                    (IntrinsicScalarFunction
                                         Cos
                                         [(Var 2 a)]
                                         0
@@ -215,13 +215,13 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
-                                    (IntrinsicFunction
+                                    (IntrinsicScalarFunction
                                         Cos
                                         [(RealBinOp
-                                            (IntrinsicFunction
+                                            (IntrinsicScalarFunction
                                                 Cos
                                                 [(RealConstant
                                                     1.500000
@@ -236,12 +236,12 @@
                                             )
                                             Add
                                             (Cast
-                                                (IntrinsicFunction
+                                                (IntrinsicScalarFunction
                                                     Cos
                                                     [(RealBinOp
                                                         (Var 2 a)
                                                         Add
-                                                        (IntrinsicFunction
+                                                        (IntrinsicScalarFunction
                                                             Cos
                                                             [(Var 2 a)]
                                                             0

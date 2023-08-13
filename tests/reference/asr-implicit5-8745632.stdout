@@ -176,7 +176,7 @@
                     (=
                         (Var 2 ca0)
                         (Cast
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Exp
                                 [(RealBinOp
                                     (RealBinOp

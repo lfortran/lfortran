@@ -100,7 +100,7 @@
                                                     (=
                                                         (Var 2 d)
                                                         (Cast
-                                                            (IntrinsicFunction
+                                                            (IntrinsicScalarFunction
                                                                 Cos
                                                                 [(RealBinOp
                                                                     (Var 4 b)

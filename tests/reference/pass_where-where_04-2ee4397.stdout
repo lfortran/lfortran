@@ -204,7 +204,7 @@
                                                 (RealBinOp
                                                     (Var 3 absdiff)
                                                     Div
-                                                    (IntrinsicFunction
+                                                    (IntrinsicScalarFunction
                                                         Abs
                                                         [(ArrayItem
                                                             (Var 3 __libasr__created__var__1_x)
@@ -229,7 +229,7 @@
                                     )
                                     (If
                                         (RealCompare
-                                            (IntrinsicFunction
+                                            (IntrinsicScalarFunction
                                                 Abs
                                                 [(RealBinOp
                                                     (ArrayItem
@@ -268,7 +268,7 @@
                                     )
                                     (If
                                         (RealCompare
-                                            (IntrinsicFunction
+                                            (IntrinsicScalarFunction
                                                 Abs
                                                 [(RealBinOp
                                                     (ArrayItem
