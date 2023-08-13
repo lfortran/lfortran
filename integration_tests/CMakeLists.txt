@@ -1034,3 +1034,7 @@ RUN(NAME cpp_pre_02 LABELS gfortran llvm c wasm CPP_PRE)
 RUN(NAME dabs_01 LABELS gfortran llvmImplicit)
 
 RUN(NAME minpack_03 LABELS gfortran llvm NOFAST)
+
+RUN(NAME implicit_argument_casting_01 LABELS gfortranImplicitArgument llvmImplicitArgument)
+
+RUN(NAME character_02 LABELS gfortran llvm)
