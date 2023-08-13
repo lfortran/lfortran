@@ -120,7 +120,7 @@
                                     )
                                     (Print
                                         ()
-                                        [(IntrinsicFunction
+                                        [(IntrinsicArrayFunction
                                             Any
                                             [(ArrayPhysicalCast
                                                 (IntegerCompare
@@ -164,7 +164,7 @@
                                     )
                                     (Print
                                         ()
-                                        [(IntrinsicFunction
+                                        [(IntrinsicArrayFunction
                                             Any
                                             [(ArrayPhysicalCast
                                                 (IntegerCompare
@@ -217,7 +217,7 @@
                     []
                     [(=
                         (Var 2 l)
-                        (IntrinsicFunction
+                        (IntrinsicArrayFunction
                             Any
                             [(ArrayPhysicalCast
                                 (ArrayConstant

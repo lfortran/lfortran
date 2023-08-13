@@ -670,7 +670,7 @@
                     )
                     (=
                         (Var 2 ar1)
-                        (IntrinsicFunction
+                        (IntrinsicArrayFunction
                             Merge
                             [(Var 2 tsource)
                             (Var 2 fsource)

@@ -43,9 +43,30 @@
                     []
                     [(Print
                         ()
-                        [(IntrinsicFunction
+                        [(IntrinsicArrayFunction
                             Shape
-                            [(Var 2 a)]
+                            [(ArrayPhysicalCast
+                                (Var 2 a)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerUnaryMinus
+                                        (IntegerConstant 1 (Integer 4))
+                                        (Integer 4)
+                                        (IntegerConstant -1 (Integer 4))
+                                    )
+                                    (IntegerConstant 3 (Integer 4)))
+                                    ((IntegerUnaryMinus
+                                        (IntegerConstant 1 (Integer 4))
+                                        (Integer 4)
+                                        (IntegerConstant -1 (Integer 4))
+                                    )
+                                    (IntegerConstant 4 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            )]
                             0
                             (Array
                                 (Integer 4)
@@ -71,7 +92,7 @@
                     (Print
                         ()
                         [(ArraySize
-                            (IntrinsicFunction
+                            (IntrinsicArrayFunction
                                 Shape
                                 [(IntegerConstant 42 (Integer 4))]
                                 0
