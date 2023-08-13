@@ -4317,11 +4317,11 @@ public:
         std::string var_name = to_lower(x.m_func);
         if( intrinsic_procedures_as_asr_nodes.is_intrinsic_present_in_ASR(var_name) ||
             intrinsic_procedures_as_asr_nodes.is_kind_based_selection_required(var_name) ||
-            ASRUtils::IntrinsicFunctionRegistry::is_intrinsic_function(var_name) ||
+            ASRUtils::IntrinsicScalarFunctionRegistry::is_intrinsic_function(var_name) ||
             ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ||
             ASRUtils::IntrinsicImpureFunctionRegistry::is_intrinsic_function(var_name)) {
             is_function = false;
-            if( ASRUtils::IntrinsicFunctionRegistry::is_intrinsic_function(var_name) ||
+            if( ASRUtils::IntrinsicScalarFunctionRegistry::is_intrinsic_function(var_name) ||
                     ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ) {
                 std::vector<IntrinsicSignature> signatures = get_intrinsic_signature(var_name);
                 Vec<ASR::expr_t*> args;
@@ -4340,10 +4340,10 @@ public:
                     throw SemanticError("No matching signature found for intrinsic " + var_name,
                                         x.base.base.loc);
                 }
-                if( ASRUtils::IntrinsicFunctionRegistry::is_intrinsic_function(var_name) ){
+                if( ASRUtils::IntrinsicScalarFunctionRegistry::is_intrinsic_function(var_name) ){
                     ASRUtils::create_intrinsic_function create_func =
-                        ASRUtils::IntrinsicFunctionRegistry::get_create_function(var_name);
-                    if( !ASRUtils::IntrinsicFunctionRegistry::is_input_type_supported(var_name, args) ) {
+                        ASRUtils::IntrinsicScalarFunctionRegistry::get_create_function(var_name);
+                    if( !ASRUtils::IntrinsicScalarFunctionRegistry::is_input_type_supported(var_name, args) ) {
                         is_function = true;
                         return resolve_intrinsic_function(x.base.base.loc, var_name);
                     } else {

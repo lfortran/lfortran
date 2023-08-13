@@ -156,7 +156,7 @@
                     []
                     [(If
                         (IntegerCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Min
                                 [(Var 2 a)
                                 (Var 2 b)
@@ -236,7 +236,7 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Min
                                 [(Var 2 a)
                                 (Var 2 b)]

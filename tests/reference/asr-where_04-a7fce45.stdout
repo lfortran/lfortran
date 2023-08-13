@@ -131,7 +131,7 @@
                                             (RealBinOp
                                                 (Var 3 absdiff)
                                                 Div
-                                                (IntrinsicFunction
+                                                (IntrinsicScalarFunction
                                                     Abs
                                                     [(FunctionCall
                                                         2 solution
@@ -168,7 +168,7 @@
                                     )
                                     (If
                                         (RealCompare
-                                            (IntrinsicFunction
+                                            (IntrinsicScalarFunction
                                                 Abs
                                                 [(RealBinOp
                                                     (ArrayItem
@@ -207,7 +207,7 @@
                                     )
                                     (If
                                         (RealCompare
-                                            (IntrinsicFunction
+                                            (IntrinsicScalarFunction
                                                 Abs
                                                 [(RealBinOp
                                                     (ArrayItem

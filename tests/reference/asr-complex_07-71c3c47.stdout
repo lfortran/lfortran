@@ -297,7 +297,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(ComplexBinOp
                                     (Var 2 x)
@@ -334,7 +334,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(ComplexBinOp
                                     (Var 2 y)
@@ -371,7 +371,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(ComplexBinOp
                                     (Var 2 z)
@@ -408,7 +408,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(ComplexBinOp
                                     (Var 2 x2)
@@ -458,7 +458,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(ComplexBinOp
                                     (Var 2 y2)
@@ -508,7 +508,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(ComplexBinOp
                                     (Var 2 z2)

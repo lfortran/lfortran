@@ -49,7 +49,7 @@
                                     pi
                                     []
                                     Local
-                                    (IntrinsicFunction
+                                    (IntrinsicScalarFunction
                                         Acos
                                         [(RealUnaryMinus
                                             (RealConstant
@@ -87,7 +87,7 @@
                                     pi_dp
                                     []
                                     Local
-                                    (IntrinsicFunction
+                                    (IntrinsicScalarFunction
                                         Acos
                                         [(RealUnaryMinus
                                             (RealConstant
@@ -125,7 +125,7 @@
                                     x
                                     []
                                     Local
-                                    (IntrinsicFunction
+                                    (IntrinsicScalarFunction
                                         Cos
                                         [(RealBinOp
                                             (Cast
@@ -233,7 +233,7 @@
                     )
                     (Print
                         ()
-                        [(IntrinsicFunction
+                        [(IntrinsicScalarFunction
                             Cos
                             [(RealBinOp
                                 (Cast
@@ -274,7 +274,7 @@
                     )
                     (Print
                         ()
-                        [(IntrinsicFunction
+                        [(IntrinsicScalarFunction
                             Cos
                             [(RealBinOp
                                 (Cast
@@ -306,7 +306,7 @@
                     )
                     (Print
                         ()
-                        [(IntrinsicFunction
+                        [(IntrinsicScalarFunction
                             Cos
                             [(RealBinOp
                                 (Cast
@@ -349,7 +349,7 @@
                         ()
                         [(RealBinOp
                             (RealBinOp
-                                (IntrinsicFunction
+                                (IntrinsicScalarFunction
                                     Cos
                                     [(RealBinOp
                                         (Var 2 x)
@@ -394,7 +394,7 @@
                             )
                             Add
                             (RealBinOp
-                                (IntrinsicFunction
+                                (IntrinsicScalarFunction
                                     Sin
                                     [(RealBinOp
                                         (Var 2 x)

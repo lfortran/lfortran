@@ -394,7 +394,7 @@
                             (RealBinOp
                                 (Var 2 u)
                                 Div
-                                (IntrinsicFunction
+                                (IntrinsicScalarFunction
                                     Exp
                                     [(RealBinOp
                                         (Var 2 y)

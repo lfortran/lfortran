@@ -193,7 +193,7 @@
                         (RealBinOp
                             (Var 2 rxsp)
                             Mul
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Sign
                                 [(RealConstant
                                     1.000000
@@ -217,7 +217,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 2 rxsp)
@@ -248,7 +248,7 @@
                         (RealBinOp
                             (Var 2 rxsp)
                             Mul
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Sign
                                 [(RealConstant
                                     1.000000
@@ -276,7 +276,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 2 rxsp)
@@ -307,7 +307,7 @@
                         (RealBinOp
                             (Var 2 rxdp)
                             Mul
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Sign
                                 [(RealConstant
                                     1.000000
@@ -331,7 +331,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 2 rxdp)
@@ -370,7 +370,7 @@
                         (RealBinOp
                             (Var 2 rxdp)
                             Mul
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Sign
                                 [(RealConstant
                                     1.000000
@@ -398,7 +398,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 2 rxdp)
@@ -437,7 +437,7 @@
                         (IntegerBinOp
                             (Var 2 ixsp)
                             Mul
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Sign
                                 [(IntegerConstant 1 (Integer 4))
                                 (Var 2 epsisp)]
@@ -474,7 +474,7 @@
                         (IntegerBinOp
                             (Var 2 ixdp)
                             Mul
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Sign
                                 [(IntegerConstant 1 (Integer 8))
                                 (Var 2 epsidp)]
