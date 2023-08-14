@@ -2616,12 +2616,14 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
 
     void visit_GoTo(const ASR::GoTo_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
-        src =  indent + "goto " + std::string(x.m_name) + ";\n";
-        gotoid2name[x.m_target_id] = std::string(x.m_name);
+        std::string goto_c_name = "__c__goto__" + std::string(x.m_name);
+        src =  indent + "goto " + goto_c_name + ";\n";
+        gotoid2name[x.m_target_id] = goto_c_name;
     }
 
     void visit_GoToTarget(const ASR::GoToTarget_t &x) {
-        src = std::string(x.m_name) + ":\n";
+        std::string goto_c_name = "__c__goto__" + std::string(x.m_name);
+        src = goto_c_name + ":\n";
     }
 
     void visit_Stop(const ASR::Stop_t &x) {
