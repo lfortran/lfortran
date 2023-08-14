@@ -1006,6 +1006,8 @@ RUN(NAME implicit_argument_casting_01 LABELS gfortran llvm
     EXTRA_ARGS --implicit-argument-casting
     GFORTRAN_ARGS -fallow-argument-mismatch)
 
+RUN(NAME implicit_argument_casting_02 LABELS gfortran llvm)
+
 RUN(NAME specfun_01 LABELS gfortran llvm NOFAST
     EXTRA_ARGS --use-loop-variable-after-loop --implicit-typing)
 
