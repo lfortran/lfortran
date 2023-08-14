@@ -208,20 +208,20 @@ RUN(NAME expr_12 LABELS gfortran llvm c) # it uses string compare
 RUN(NAME expr_13 LABELS gfortran llvm wasm c NOFAST)
 RUN(NAME expr_14 LABELS gfortran llvm wasm c)
 
-RUN(NAME data_01 LABELS gfortran llvm)
+RUN(NAME data_01 LABELS gfortran llvm c)
 RUN(NAME data_02 LABELS gfortran)
-RUN(NAME data_03 LABELS gfortran llvm)
-RUN(NAME data_04 LABELS gfortran llvm)
+RUN(NAME data_03 LABELS gfortran llvm c)
+RUN(NAME data_04 LABELS gfortran llvm c)
 RUN(NAME data_05 LABELS gfortran) # llvmImplicit removed
-RUN(NAME data_06 LABELS gfortran llvm)
+RUN(NAME data_06 LABELS gfortran llvm c)
 RUN(NAME data_07 LABELS gfortran) # TODO: Fix this test
 RUN(NAME data_08 LABELS gfortran llvmImplicit NOFAST)
-RUN(NAME data_09 LABELS gfortran llvm)
-RUN(NAME minmax_01 LABELS gfortran llvm wasm)
-RUN(NAME arithmetic_if_01 LABELS gfortran llvm) # arithmetic tests use goto
-RUN(NAME arithmetic_if_02 LABELS gfortran llvm)
-RUN(NAME arithmetic_if_03 LABELS gfortran llvm)
-RUN(NAME arithmetic_if_04 LABELS gfortran llvm)
+RUN(NAME data_09 LABELS gfortran llvm c)
+RUN(NAME minmax_01 LABELS gfortran llvm wasm c)
+RUN(NAME arithmetic_if_01 LABELS gfortran llvm c) # arithmetic tests use goto
+RUN(NAME arithmetic_if_02 LABELS gfortran llvm c)
+RUN(NAME arithmetic_if_03 LABELS gfortran llvm c)
+RUN(NAME arithmetic_if_04 LABELS gfortran llvm c)
 
 RUN(NAME variables_01 LABELS gfortran llvm cpp x86 wasm c)
 RUN(NAME variables_02 LABELS gfortran llvm cpp x86 wasm c)
