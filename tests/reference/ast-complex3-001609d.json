@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "ast-complex3-001609d.stdout",
     "stdout_hash": "18d0959826ffe5ccc861460f6ec4687d3f712a2e3c79ea9480ecd52b",
-    "stderr": null,
-    "stderr_hash": null,
+    "stderr": "ast-complex3-001609d.stderr",
+    "stderr_hash": "b4f2ed6713b9fff0208d94de90bdd856e18f1362509c5f5c0c4ecdd6",
     "returncode": 0
 }

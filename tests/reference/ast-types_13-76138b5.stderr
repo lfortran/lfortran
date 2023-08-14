@@ -16,6 +16,12 @@ style suggestion: Use real(8) instead of real*8
 37 |     real*8, value, intent(in) :: b
    |     ^^^^^^ help: write this as 'real(8)'
 
+style suggestion: Use logical(4) instead of logical*4
+  --> tests/../integration_tests/types_13.f90:38:5
+   |
+38 |     logical*4 :: c
+   |     ^^^^^^^^^ help: write this as 'logical(4)'
+
 style suggestion: Use integer(4) instead of integer*4
   --> tests/../integration_tests/types_13.f90:43:5
    |
@@ -27,6 +33,12 @@ style suggestion: Use real(8) instead of real*8
    |
 44 |     real*8, value, intent(in) :: b
    |     ^^^^^^ help: write this as 'real(8)'
+
+style suggestion: Use logical(4) instead of logical*4
+  --> tests/../integration_tests/types_13.f90:45:5
+   |
+45 |     logical*4 :: c
+   |     ^^^^^^^^^ help: write this as 'logical(4)'
 
 style suggestion: Use integer(4) instead of integer*4
   --> tests/../integration_tests/types_13.f90:51:5
@@ -40,6 +52,12 @@ style suggestion: Use real(8) instead of real*8
 52 |     real*8, value, intent(in) :: b
    |     ^^^^^^ help: write this as 'real(8)'
 
+style suggestion: Use logical(4) instead of logical*4
+  --> tests/../integration_tests/types_13.f90:53:5
+   |
+53 |     logical*4 :: c
+   |     ^^^^^^^^^ help: write this as 'logical(4)'
+
 style suggestion: Use integer(4) instead of integer*4
   --> tests/../integration_tests/types_13.f90:59:5
    |
@@ -51,3 +69,9 @@ style suggestion: Use real(8) instead of real*8
    |
 60 |     real*8, value, intent(in) :: b
    |     ^^^^^^ help: write this as 'real(8)'
+
+style suggestion: Use logical(4) instead of logical*4
+  --> tests/../integration_tests/types_13.f90:61:5
+   |
+61 |     logical*4 :: c
+   |     ^^^^^^^^^ help: write this as 'logical(4)'

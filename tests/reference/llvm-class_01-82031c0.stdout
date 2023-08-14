@@ -55,7 +55,7 @@ return:                                           ; preds = %.entry
   ret void
 }
 
-; Function Attrs: nounwind readnone speculatable willreturn
+; Function Attrs: nocallback nofree nosync nounwind readnone speculatable willreturn
 declare float @llvm.pow.f32(float, float) #0
 
 declare void @_lfortran_printf(i8*, ...)
@@ -86,4 +86,4 @@ define i32 @main(i32 %0, i8** %1) {
 
 declare void @_lpython_set_argv(i32, i8**)
 
-attributes #0 = { nounwind readnone speculatable willreturn }
+attributes #0 = { nocallback nofree nosync nounwind readnone speculatable willreturn }
