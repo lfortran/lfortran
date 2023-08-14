@@ -62,6 +62,7 @@ struct CDeclarationOptions: public DeclarationOptions {
     std::string force_declare_name;
     bool declare_as_constant;
     std::string const_name;
+    bool do_not_initialize;
 
     CDeclarationOptions() :
     pre_initialise_derived_type{true},
@@ -70,7 +71,8 @@ struct CDeclarationOptions: public DeclarationOptions {
     force_declare{false},
     force_declare_name{""},
     declare_as_constant{false},
-    const_name{""} {
+    const_name{""},
+    do_not_initialize{false} {
     }
 };
 
