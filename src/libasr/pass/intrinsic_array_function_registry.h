@@ -18,6 +18,7 @@ namespace ASRUtils {
 /************************* Intrinsic Array Functions **************************/
 enum class IntrinsicArrayFunctions : int64_t {
     Any,
+    MatMul,
     MaxLoc,
     MaxVal,
     Merge,
@@ -37,6 +38,7 @@ enum class IntrinsicArrayFunctions : int64_t {
 inline std::string get_array_intrinsic_name(int x) {
     switch (x) {
         ARRAY_INTRINSIC_NAME_CASE(Any)
+        ARRAY_INTRINSIC_NAME_CASE(MatMul)
         ARRAY_INTRINSIC_NAME_CASE(MaxLoc)
         ARRAY_INTRINSIC_NAME_CASE(MaxVal)
         ARRAY_INTRINSIC_NAME_CASE(Merge)
@@ -1482,12 +1484,129 @@ namespace MinLoc {
 
 } // namespace MinLoc
 
+namespace MatMul {
+
+    static inline void verify_args(const ASR::IntrinsicArrayFunction_t &/*x*/,
+            diag::Diagnostics& /*diagnostics*/) {
+    }
+
+    static inline ASR::expr_t *eval_MatMul(Allocator &,
+        const Location &, ASR::ttype_t *, Vec<ASR::expr_t*>&) {
+        // TODO
+        return nullptr;
+    }
+
+    static inline ASR::asr_t* create_MatMul(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args,
+            const std::function<void (const std::string &, const Location &)> err) {
+        ASR::expr_t *matrix_a = args[0], *matrix_b = args[1];
+        if (is_allocatable(matrix_a) || is_allocatable(matrix_b)) {
+            err("The allocatable array is not supported yet for the `matmul`", loc);
+        }
+        ASR::ttype_t *type_a = ASRUtils::expr_type(matrix_a);
+        ASR::ttype_t *type_b = ASRUtils::expr_type(matrix_b);
+        bool matrix_a_numeric = ASRUtils::is_integer(*type_a) ||
+                                ASRUtils::is_real(*type_a) ||
+                                ASRUtils::is_complex(*type_a);
+        bool matrix_a_logical = ASRUtils::is_logical(*type_a);
+        bool matrix_b_numeric = ASRUtils::is_integer(*type_b) ||
+                                ASRUtils::is_real(*type_b) ||
+                                ASRUtils::is_complex(*type_b);
+        bool matrix_b_logical = ASRUtils::is_logical(*type_b);
+        if ( !matrix_a_numeric && !matrix_a_logical ) {
+            err("The argument `matrix_a` in `matmul` must be of type Integer, "
+                "Real, Complex or Logical", matrix_a->base.loc);
+        } else if ( matrix_a_numeric ) {
+            if( !matrix_b_numeric ) {
+                err("The argument `matrix_b` in `matmul` must be of type "
+                    "Integer, Real or Complex, if first matrix is of numeric "
+                    "type", matrix_b->base.loc);
+            }
+        } else {
+            if( !matrix_b_logical ) {
+                err("The argument `matrix_b` in `matmul` must be of type Logical"
+                    " if first matrix is of Logical type", matrix_b->base.loc);
+            }
+        }
+        ASR::dimension_t* matrix_a_dims = nullptr;
+        ASR::dimension_t* matrix_b_dims = nullptr;
+        int matrix_a_rank = extract_dimensions_from_ttype(type_a, matrix_a_dims);
+        int matrix_b_rank = extract_dimensions_from_ttype(type_b, matrix_b_dims);
+        if ( matrix_a_rank != 1 && matrix_a_rank != 2 ) {
+            err("`matmul` accepts arrays of rank 1 or 2 only, but provided an array "
+                "with rank, " + std::to_string(matrix_a_rank), matrix_a->base.loc);
+        } else if ( matrix_b_rank != 1 && matrix_b_rank != 2 ) {
+            err("`matmul` accepts arrays of rank 1 or 2 only, but provided an array "
+                "with rank, " + std::to_string(matrix_b_rank), matrix_b->base.loc);
+        }
+
+        ASRBuilder b(al, loc);
+        Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, 1);
+        if (matrix_a_rank == 1 && matrix_b_rank == 2) {
+            if (!dimension_expr_equal(matrix_a_dims[0].m_length,
+                    matrix_b_dims[0].m_length)) {
+                int matrix_a_dim_1 = -1, matrix_b_dim_1 = -1;
+                extract_value(matrix_a_dims[0].m_length, matrix_a_dim_1);
+                extract_value(matrix_b_dims[0].m_length, matrix_b_dim_1);
+                err("The argument `matrix_b` must be of dimension "
+                    + std::to_string(matrix_a_dim_1) + ", but provided an array "
+                    "with dimension " + std::to_string(matrix_b_dim_1) +
+                    " in `matrix_b('n', m)`", matrix_b->base.loc);
+            } else {
+                result_dims.push_back(al, b.set_dim(i32(1), matrix_b_dims[1].m_length));
+            }
+        } else if (matrix_a_rank == 2) {
+            if (!dimension_expr_equal(matrix_a_dims[1].m_length,
+                    matrix_b_dims[0].m_length)) {
+                int matrix_a_dim_2 = -1, matrix_b_dim_1 = -1;
+                extract_value(matrix_a_dims[1].m_length, matrix_a_dim_2);
+                extract_value(matrix_b_dims[0].m_length, matrix_b_dim_1);
+                std::string err_dims = "('n', m)";
+                if (matrix_b_rank == 1) err_dims = "('n')";
+                err("The argument `matrix_b` must be of dimension "
+                    + std::to_string(matrix_a_dim_2) + ", but provided an array "
+                    "with dimension " + std::to_string(matrix_b_dim_1) +
+                    " in matrix_b" + err_dims, matrix_b->base.loc);
+            }
+            result_dims.push_back(al, b.set_dim(i32(1), matrix_a_dims[0].m_length));
+            if (matrix_b_rank == 2) {
+                result_dims.push_back(al, b.set_dim(i32(1), matrix_b_dims[1].m_length));
+            }
+        } else {
+            err("The argument `matrix_b` in `matmul` must be of rank 2, "
+                "provided an array with rank, " + std::to_string(matrix_b_rank),
+                matrix_b->base.loc);
+        }
+        ASR::ttype_t* ret_type = ASRUtils::duplicate_type(al,
+            extract_type(type_a), &result_dims);
+        ASR::expr_t *value = eval_MatMul(al, loc, ret_type, args);
+        return make_IntrinsicArrayFunction_t_util(al, loc,
+            static_cast<int64_t>(IntrinsicArrayFunctions::MatMul),
+            args.p, args.n, 0, ret_type, value);
+    }
+
+    static inline ASR::expr_t *instantiate_MatMul(Allocator &/*al*/,
+            const Location &/*loc*/, SymbolTable */*scope*/,
+            Vec<ASR::ttype_t*> &/*arg_types*/, ASR::ttype_t */*return_type*/,
+            Vec<ASR::call_arg_t> &/*m_args*/, int64_t /*overload_id*/,
+            ASR::expr_t */*compile_time_value*/) {
+        // if (compile_time_value) {
+        //     return compile_time_value;
+        // }
+        return nullptr;
+        // TODO
+    }
+
+} // namespace MatMul
+
 namespace IntrinsicArrayFunctionRegistry {
 
     static const std::map<int64_t, std::tuple<impl_function,
             verify_array_function>>& intrinsic_function_by_id_db = {
         {static_cast<int64_t>(IntrinsicArrayFunctions::Any),
             {&Any::instantiate_Any, &Any::verify_args}},
+        {static_cast<int64_t>(IntrinsicArrayFunctions::MatMul),
+            {&MatMul::instantiate_MatMul, &MatMul::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::MaxLoc),
             {&MaxLoc::instantiate_MaxLoc, &MaxLoc::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::MaxVal),
@@ -1509,6 +1628,7 @@ namespace IntrinsicArrayFunctionRegistry {
     static const std::map<std::string, std::tuple<create_intrinsic_function,
             eval_intrinsic_function>>& function_by_name_db = {
         {"any", {&Any::create_Any, &Any::eval_Any}},
+        {"matmul", {&MatMul::create_MatMul, &MatMul::eval_MatMul}},
         {"maxloc", {&MaxLoc::create_MaxLoc, nullptr}},
         {"maxval", {&MaxVal::create_MaxVal, &MaxVal::eval_MaxVal}},
         {"merge", {&Merge::create_Merge, &Merge::eval_Merge}},

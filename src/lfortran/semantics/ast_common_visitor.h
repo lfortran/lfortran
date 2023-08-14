@@ -717,6 +717,7 @@ public:
                  IntrinsicSignature({"mask"}, 1, 2)}},
         {"product", {IntrinsicSignature({"dim", "mask"}, 1, 3),
                  IntrinsicSignature({"mask"}, 1, 2)}},
+        {"matmul", {IntrinsicSignature({}, 2, 2)}},
         {"maxval", {IntrinsicSignature({"dim", "mask"}, 1, 3),
                 IntrinsicSignature({"mask"}, 1, 2)}},
         {"maxloc", {IntrinsicSignature({"dim", "mask", "kind", "back"}, 1, 5)}},
@@ -3887,98 +3888,6 @@ public:
         return ASR::make_ArrayTranspose_t(al, x.base.base.loc, matrix, ret_type, nullptr);
     }
 
-    ASR::asr_t* create_ArrayMatMul(const AST::FuncCallOrArray_t& x) {
-        Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names;
-        handle_intrinsic_node_args(x, args, kwarg_names, 2, 2, std::string("matmul"));
-        ASR::expr_t *matrix_a = args[0], *matrix_b = args[1];
-        ASR::ttype_t *type_a = ASRUtils::expr_type(matrix_a);
-        ASR::ttype_t *type_b = ASRUtils::expr_type(matrix_b);
-        bool matrix_a_numeric = ASRUtils::is_integer(*type_a) ||
-                                ASRUtils::is_real(*type_a) ||
-                                ASRUtils::is_complex(*type_a);
-        bool matrix_a_logical = ASRUtils::is_logical(*type_a);
-        bool matrix_b_numeric = ASRUtils::is_integer(*type_b) ||
-                                ASRUtils::is_real(*type_b) ||
-                                ASRUtils::is_complex(*type_b);
-        bool matrix_b_logical = ASRUtils::is_logical(*type_b);
-        if( !matrix_a_numeric && !matrix_a_logical ) {
-            throw SemanticError("matmul accepts first matrix of "
-                                "type Integer, Real, Complex or Logical.",
-                                matrix_a->base.loc);
-        }
-        if( matrix_a_numeric ) {
-            if( !matrix_b_numeric ) {
-                throw SemanticError("matmul accepts second matrix of "
-                                    "type Integer, Real or Complex if "
-                                    "first matrix is of numeric type.",
-                                    matrix_b->base.loc);
-            }
-        } else {
-            if( !matrix_b_logical ) {
-                throw SemanticError("matmul accepts second matrix of type "
-                                    "Logical if first matrix is of Logical type",
-                                    matrix_b->base.loc);
-            }
-        }
-        ASR::dimension_t* matrix_a_dims = nullptr;
-        ASR::dimension_t* matrix_b_dims = nullptr;
-        int matrix_a_rank = ASRUtils::extract_dimensions_from_ttype(type_a, matrix_a_dims);
-        int matrix_b_rank = ASRUtils::extract_dimensions_from_ttype(type_b, matrix_b_dims);
-        if( matrix_a_rank != 1 && matrix_a_rank != 2 ) {
-            throw SemanticError("matmul accepts arrays "
-                                "of rank 1 or 2 only, provided an array "
-                                "with rank, " + std::to_string(matrix_a_rank),
-                                matrix_a->base.loc);
-        }
-        if( matrix_b_rank != 1 && matrix_b_rank != 2 ) {
-            throw SemanticError("matmul accepts arrays "
-                                "of rank 1 or 2 only, provided an array "
-                                "with rank, " + std::to_string(matrix_b_rank),
-                                matrix_b->base.loc);
-        }
-        if( matrix_a_rank == 1 && matrix_b_rank == 1 ) {
-            throw SemanticError("matmul provided with two arrays, each of rank 1.",
-                                x.base.base.loc);
-        }
-        ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
-        ASR::dimension_t default_dim;
-        default_dim.m_start = one;
-        default_dim.m_length = one;
-        default_dim.loc = one->base.loc;
-        std::vector<ASR::dimension_t> pair_a(2), pair_b(2);
-        if( matrix_a_rank == 1 ) {
-            pair_a[0] = matrix_a_dims[0];
-            pair_a[1] = default_dim;
-        } else {
-            pair_a[0] = matrix_a_dims[0];
-            pair_a[1] = matrix_a_dims[1];
-        }
-        if( matrix_b_rank == 1 ) {
-            pair_b[0] = matrix_b_dims[0];
-            pair_b[1] = default_dim;
-        } else {
-            pair_b[0] = matrix_b_dims[0];
-            pair_b[1] = matrix_b_dims[1];
-        }
-        // TODO: Check if second dimension of matrix is equal
-        // TODO: to first dimension of matrix_b
-        Vec<ASR::dimension_t> reversed_dims;
-        reversed_dims.reserve(al, 2);
-        reversed_dims.push_back(al, pair_a[0]);
-        reversed_dims.push_back(al, pair_b[1]);
-        ASR::ttype_t* selected_type = nullptr;
-        if( ImplicitCastRules::get_type_priority(type_a->type) >=
-            ImplicitCastRules::get_type_priority(type_b->type) ) {
-            selected_type = type_a;
-        } else {
-            selected_type = type_b;
-        }
-        ASR::ttype_t* ret_type = ASRUtils::duplicate_type(al, selected_type, &reversed_dims);
-        return ASR::make_ArrayMatMul_t(al, x.base.base.loc, matrix_a, matrix_b, ret_type, nullptr);
-    }
-
     ASR::asr_t* create_ArrayPack(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"vector"};
@@ -4422,8 +4331,6 @@ public:
                 tmp = create_ArrayBound(x, var_name);
             } else if( var_name == "transpose" ) {
                 tmp = create_ArrayTranspose(x);
-            } else if( var_name == "matmul" ) {
-                tmp = create_ArrayMatMul(x);
             } else if( var_name == "pack" ) {
                 tmp = create_ArrayPack(x);
             } else if( var_name == "transfer" ) {

@@ -562,6 +562,14 @@ class ASRBuilder {
         }
     }
 
+    ASR::dimension_t set_dim(ASR::expr_t *start, ASR::expr_t *length) {
+        ASR::dimension_t dim;
+        dim.loc = loc;
+        dim.m_start = start;
+        dim.m_length = length;
+        return dim;
+    }
+
     // Statements --------------------------------------------------------------
     #define Return() STMT(ASR::make_Return_t(al, loc))
 
