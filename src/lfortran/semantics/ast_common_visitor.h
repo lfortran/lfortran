@@ -3681,6 +3681,20 @@ public:
         int64_t kind_const = handle_kind(kind);
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_const));
         ASR::expr_t* bound_value = nullptr;
+        if (dim == nullptr) {
+            int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(v_Var));
+            Vec<ASR::expr_t*> arr_args;
+            arr_args.reserve(al, 0);
+            ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+            for (int i = 1; i <= n_dims; i++) {
+                ASR::expr_t* dim_ = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, i, int32_type));
+                arr_args.push_back(al, ASRUtils::EXPR(ASR::make_ArrayBound_t(al, x.base.base.loc, v_Var, dim_, type,
+                                      bound, bound_value)));
+            }
+            return ASRUtils::make_ArrayConstant_t_util(al, x.base.base.loc, arr_args.p,
+                                arr_args.size(), type, ASR::arraystorageType::ColMajor);
+        }
+
         ASR::expr_t* dim_value = ASRUtils::expr_value(dim);
         if( ASRUtils::is_value_constant(dim_value) ) {
             int64_t const_dim = -1;
