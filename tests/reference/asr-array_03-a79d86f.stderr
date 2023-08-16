@@ -1,0 +1,5 @@
+semantic error: Assumed size array must be a dummy argument
+ --> tests/errors/array_03.f90:3:17
+  |
+3 |     real ::  e2(*)
+  |                 ^ 

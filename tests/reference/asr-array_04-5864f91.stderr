@@ -1,0 +1,5 @@
+semantic error: Assumed size array must be a dummy argument
+ --> tests/errors/array_04.f90:2:18
+  |
+2 |     integer :: w(*)
+  |                  ^ 
