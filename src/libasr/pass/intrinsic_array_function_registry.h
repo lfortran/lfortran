@@ -1501,19 +1501,26 @@ namespace MatMul {
             const std::function<void (const std::string &, const Location &)> err) {
         ASR::expr_t *matrix_a = args[0], *matrix_b = args[1];
         bool is_type_allocatable = false;
-        if (is_allocatable(matrix_a) || is_allocatable(matrix_b)) {
+        if (ASRUtils::is_allocatable(matrix_a) || ASRUtils::is_allocatable(matrix_b)) {
             is_type_allocatable = true;
         }
-        ASR::ttype_t *type_a = ASRUtils::expr_type(matrix_a);
-        ASR::ttype_t *type_b = ASRUtils::expr_type(matrix_b);
-        bool matrix_a_numeric = ASRUtils::is_integer(*type_a) ||
-                                ASRUtils::is_real(*type_a) ||
-                                ASRUtils::is_complex(*type_a);
-        bool matrix_a_logical = ASRUtils::is_logical(*type_a);
-        bool matrix_b_numeric = ASRUtils::is_integer(*type_b) ||
-                                ASRUtils::is_real(*type_b) ||
-                                ASRUtils::is_complex(*type_b);
-        bool matrix_b_logical = ASRUtils::is_logical(*type_b);
+        ASR::ttype_t *type_a = expr_type(matrix_a);
+        ASR::ttype_t *type_b = expr_type(matrix_b);
+        ASR::ttype_t *ret_type;
+        bool matrix_a_numeric = is_integer(*type_a) ||
+                                is_real(*type_a) ||
+                                is_complex(*type_a);
+        bool matrix_a_logical = is_logical(*type_a);
+        bool matrix_b_numeric = is_integer(*type_b) ||
+                                is_real(*type_b) ||
+                                is_complex(*type_b);
+        bool matrix_b_logical = is_logical(*type_b);
+        if (is_complex(*type_a) || is_complex(*type_b) ||
+            matrix_a_logical || matrix_b_logical) {
+            // TODO
+            err("The `matmul` intrinsic doesn't handle logical or "
+                "complex type yet", loc);
+        }
         if ( !matrix_a_numeric && !matrix_a_logical ) {
             err("The argument `matrix_a` in `matmul` must be of type Integer, "
                 "Real, Complex or Logical", matrix_a->base.loc);
@@ -1528,6 +1535,16 @@ namespace MatMul {
                 err("The argument `matrix_b` in `matmul` must be of type Logical"
                     " if first matrix is of Logical type", matrix_b->base.loc);
             }
+        }
+        if ( matrix_a_numeric || matrix_b_numeric ) {
+            if ( is_real(*type_a) ) {
+                ret_type = extract_type(type_a);
+            } else if ( is_real(*type_b) ) {
+                ret_type = extract_type(type_b);
+            }
+            // TODO: Handle return_type for following types
+            LCOMPILERS_ASSERT(!is_complex(*type_a) && !is_complex(*type_b))
+            LCOMPILERS_ASSERT(!matrix_a_logical && !matrix_b_logical)
         }
         ASR::dimension_t* matrix_a_dims = nullptr;
         ASR::dimension_t* matrix_b_dims = nullptr;
@@ -1585,8 +1602,7 @@ namespace MatMul {
                 "provided an array with rank, " + std::to_string(matrix_b_rank),
                 matrix_b->base.loc);
         }
-        ASR::ttype_t* ret_type = ASRUtils::duplicate_type(al,
-            extract_type(type_a), &result_dims);
+        ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         if (is_type_allocatable) {
             ret_type = TYPE(ASR::make_Allocatable_t(al, loc, ret_type));
         }
@@ -1693,6 +1709,14 @@ namespace MatMul {
         if (is_allocatable(result)) {
             body.push_back(al, b.Allocate(result, alloc_dims));
         }
+        ASR::expr_t *mul_value;
+        if (is_real(*expr_type(a_ref)) && is_integer(*expr_type(b_ref))) {
+            mul_value = b.Mul(a_ref, i2r(b_ref, expr_type(a_ref)));
+        } else if (is_real(*expr_type(b_ref)) && is_integer(*expr_type(a_ref))) {
+            mul_value = b.Mul(i2r(a_ref, expr_type(b_ref)), b_ref);
+        } else {
+            mul_value = b.Mul(a_ref, b_ref);
+        }
         body.push_back(al, STMT(ASR::make_Assert_t(al, loc, dim_mismatch_check,
             EXPR(ASR::make_StringConstant_t(al, loc, s2c(al, assert_msg),
             character(assert_msg.size()))))));
@@ -1703,7 +1727,7 @@ namespace MatMul {
                 b.Assign_Constant(res_ref, 0),
                 b.Assignment(k, i32(1)),
                 b.While(iLtE(k, size_k), {
-                    b.Assignment(res_ref, b.Add(res_ref, b.Mul(a_ref, b_ref))),
+                    b.Assignment(res_ref, b.Add(res_ref, mul_value)),
                     b.Assignment(k, iAdd(k, i32(1)))
                 }),
                 b.Assignment(j, iAdd(j, i32(1)))

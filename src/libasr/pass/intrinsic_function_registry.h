@@ -279,6 +279,8 @@ class ASRBuilder {
         ASR::cast_kindType::RealToReal, real64, nullptr))
     #define r2r(x, t) EXPR(ASR::make_Cast_t(al, loc, x,                         \
         ASR::cast_kindType::RealToReal, t, nullptr))
+    #define i2r(x, t) EXPR(ASR::make_Cast_t(al, loc, x,                         \
+        ASR::cast_kindType::IntegerToReal, t, nullptr))
 
     // Binop -------------------------------------------------------------------
     #define iAdd(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
