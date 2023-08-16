@@ -1519,7 +1519,7 @@ namespace MatMul {
         } else if ( matrix_a_numeric ) {
             if( !matrix_b_numeric ) {
                 err("The argument `matrix_b` in `matmul` must be of type "
-                    "Integer, Real or Complex, if first matrix is of numeric "
+                    "Integer, Real or Complex if first matrix is of numeric "
                     "type", matrix_b->base.loc);
             }
         } else {
@@ -1533,29 +1533,32 @@ namespace MatMul {
         int matrix_a_rank = extract_dimensions_from_ttype(type_a, matrix_a_dims);
         int matrix_b_rank = extract_dimensions_from_ttype(type_b, matrix_b_dims);
         if ( matrix_a_rank != 1 && matrix_a_rank != 2 ) {
-            err("`matmul` accepts arrays of rank 1 or 2 only, but provided an array "
+            err("`matmul` accepts arrays of rank 1 or 2 only, provided an array "
                 "with rank, " + std::to_string(matrix_a_rank), matrix_a->base.loc);
         } else if ( matrix_b_rank != 1 && matrix_b_rank != 2 ) {
-            err("`matmul` accepts arrays of rank 1 or 2 only, but provided an array "
+            err("`matmul` accepts arrays of rank 1 or 2 only, provided an array "
                 "with rank, " + std::to_string(matrix_b_rank), matrix_b->base.loc);
         }
 
         ASRBuilder b(al, loc);
         Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, 1);
+        int overload_id = -1;
         if (matrix_a_rank == 1 && matrix_b_rank == 2) {
+            overload_id = 1;
             if (!dimension_expr_equal(matrix_a_dims[0].m_length,
                     matrix_b_dims[0].m_length)) {
                 int matrix_a_dim_1 = -1, matrix_b_dim_1 = -1;
                 extract_value(matrix_a_dims[0].m_length, matrix_a_dim_1);
                 extract_value(matrix_b_dims[0].m_length, matrix_b_dim_1);
                 err("The argument `matrix_b` must be of dimension "
-                    + std::to_string(matrix_a_dim_1) + ", but provided an array "
+                    + std::to_string(matrix_a_dim_1) + ", provided an array "
                     "with dimension " + std::to_string(matrix_b_dim_1) +
                     " in `matrix_b('n', m)`", matrix_b->base.loc);
             } else {
                 result_dims.push_back(al, b.set_dim(i32(1), matrix_b_dims[1].m_length));
             }
         } else if (matrix_a_rank == 2) {
+            overload_id = 2;
             if (!dimension_expr_equal(matrix_a_dims[1].m_length,
                     matrix_b_dims[0].m_length)) {
                 int matrix_a_dim_2 = -1, matrix_b_dim_1 = -1;
@@ -1564,12 +1567,13 @@ namespace MatMul {
                 std::string err_dims = "('n', m)";
                 if (matrix_b_rank == 1) err_dims = "('n')";
                 err("The argument `matrix_b` must be of dimension "
-                    + std::to_string(matrix_a_dim_2) + ", but provided an array "
+                    + std::to_string(matrix_a_dim_2) + ", provided an array "
                     "with dimension " + std::to_string(matrix_b_dim_1) +
                     " in matrix_b" + err_dims, matrix_b->base.loc);
             }
             result_dims.push_back(al, b.set_dim(i32(1), matrix_a_dims[0].m_length));
             if (matrix_b_rank == 2) {
+                overload_id = 3;
                 result_dims.push_back(al, b.set_dim(i32(1), matrix_b_dims[1].m_length));
             }
         } else {
@@ -1582,19 +1586,90 @@ namespace MatMul {
         ASR::expr_t *value = eval_MatMul(al, loc, ret_type, args);
         return make_IntrinsicArrayFunction_t_util(al, loc,
             static_cast<int64_t>(IntrinsicArrayFunctions::MatMul),
-            args.p, args.n, 0, ret_type, value);
+            args.p, args.n, overload_id, ret_type, value);
     }
 
-    static inline ASR::expr_t *instantiate_MatMul(Allocator &/*al*/,
-            const Location &/*loc*/, SymbolTable */*scope*/,
-            Vec<ASR::ttype_t*> &/*arg_types*/, ASR::ttype_t */*return_type*/,
-            Vec<ASR::call_arg_t> &/*m_args*/, int64_t /*overload_id*/,
-            ASR::expr_t */*compile_time_value*/) {
-        // if (compile_time_value) {
-        //     return compile_time_value;
-        // }
-        return nullptr;
-        // TODO
+    static inline ASR::expr_t *instantiate_MatMul(Allocator &al,
+            const Location &loc, SymbolTable *scope,
+            Vec<ASR::ttype_t*> &arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t> &m_args, int64_t overload_id,
+            ASR::expr_t *compile_time_value) {
+        if (compile_time_value) {
+            return compile_time_value;
+        }
+        /*
+         *   ------>
+         * [ 1, 2, 3 ]  *  [ 1, 2 ] │  =  [ 14, 20 ]
+         * [ 2, 3, 4 ]     │ 2, 3 │ │     [ 20, 29 ]
+         *                 [ 3, 4 ] ▼
+         */
+        declare_basic_variables("_lcompilers_matmul");
+        fill_func_arg("matrix_a", arg_types[0]);
+        fill_func_arg("matrix_b", arg_types[1]);
+        ASR::expr_t *result = declare("result", return_type, ReturnVar);
+        ASR::expr_t *i = declare("i", int32, Local);
+        ASR::expr_t *j = declare("j", int32, Local);
+        ASR::expr_t *k = declare("k", int32, Local);
+        ASR::dimension_t* matrix_a_dims = nullptr;
+        ASR::dimension_t* matrix_b_dims = nullptr;
+        extract_dimensions_from_ttype(arg_types[0], matrix_a_dims);
+        extract_dimensions_from_ttype(arg_types[1], matrix_b_dims);
+        int n_i = -1, n_j = -1, n_k = -1;
+        ASR::expr_t *res_ref, *a_ref, *b_ref;
+        if ( overload_id == 1 ) {
+            // r(j) = r(j) + a(k) * b(k, j)
+            res_ref = b.ArrayItem_01(result,  {j});
+            a_ref   = b.ArrayItem_01(args[0], {k});
+            b_ref   = b.ArrayItem_01(args[1], {k, j});
+            n_i = 1;
+            if ( !extract_value(matrix_b_dims[1].m_length, n_j) ) {
+                ArraySize_1(args[1], i32(2));
+            } else if ( !extract_value(matrix_b_dims[0].m_length, n_k) ) {
+                ArraySize_1(args[1], i32(1));
+            }
+        } else if ( overload_id == 2 ) {
+            // r(i) = r(i) + a(i, k) * b(k)
+            res_ref = b.ArrayItem_01(result,  {i});
+            a_ref   = b.ArrayItem_01(args[0], {i, k});
+            b_ref   = b.ArrayItem_01(args[1], {k});
+            if ( !extract_value(matrix_a_dims[0].m_length, n_i) ) {
+                ArraySize_1(args[0], i32(1));
+            } else if ( !extract_value(matrix_b_dims[0].m_length, n_k) ) {
+                ArraySize_1(args[1], i32(1));
+            }
+            n_j = 1;
+        } else {
+            // r(i, j) = r(i, j) + a(i, k) * b(k, j)
+            res_ref = b.ArrayItem_01(result,  {i, j});
+            a_ref   = b.ArrayItem_01(args[0], {i, k});
+            b_ref   = b.ArrayItem_01(args[1], {k, j});
+            if ( !extract_value(matrix_a_dims[0].m_length, n_i) ) {
+                ArraySize_1(args[0], i32(1));
+            } else if ( !extract_value(matrix_b_dims[1].m_length, n_j) ) {
+                ArraySize_1(args[1], i32(2));
+            } else if ( !extract_value(matrix_b_dims[0].m_length, n_k) ) {
+                ArraySize_1(args[1], i32(1));
+            }
+        }
+        LCOMPILERS_ASSERT(n_i != -1 && n_j != -1 && n_k != -1)
+        body.push_back(al, b.Assignment(i, i32(1)));
+        body.push_back(al, b.While(iLtE(i, i32(n_i)), {
+            b.Assignment(j, i32(1)),
+            b.While(iLtE(j, i32(n_j)), {
+                b.Assignment(res_ref, i32(0)), b.Assignment(k, i32(1)),
+                b.While(iLtE(k, i32(n_k)), {
+                    b.Assignment(res_ref, iAdd(res_ref, iMul(a_ref, b_ref))),
+                    b.Assignment(k, iAdd(k, i32(1)))
+                }),
+                b.Assignment(j, iAdd(j, i32(1)))
+            }),
+            b.Assignment(i, iAdd(i, i32(1)))
+        }));
+        body.push_back(al, Return());
+        ASR::symbol_t *fn_sym = make_Function_t(fn_name, fn_symtab, dep, args,
+                body, result, Source, Implementation, nullptr);
+        scope->add_symbol(fn_name, fn_sym);
+        return b.Call(fn_sym, m_args, return_type, nullptr);
     }
 
 } // namespace MatMul
@@ -1684,7 +1759,8 @@ namespace IntrinsicArrayFunctionRegistry {
         // Dim argument is already handled for the following
         if( id == IntrinsicArrayFunctions::Shape  ||
             id == IntrinsicArrayFunctions::MaxLoc ||
-            id == IntrinsicArrayFunctions::MinLoc ) {
+            id == IntrinsicArrayFunctions::MinLoc ||
+            id == IntrinsicArrayFunctions:: MatMul ) {
             return false;
         } else {
             return true;
