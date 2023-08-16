@@ -2452,15 +2452,15 @@ public:
                     ASR::ttype_t *rtype = ASRUtils::subs_expr_type(type_subs, f->m_args[1]);
                     ASR::ttype_t *ftype = ASRUtils::subs_expr_type(type_subs, f->m_return_var);
                     if (is_binop) {
-                      if (!ASRUtils::check_equal_type(ltype, rtype) || !ASRUtils::check_equal_type(rtype, ftype)) {
-                          throw SemanticError("Intrinsic operator "+ op_name + " does not apply to "
-                              "arguments of different types", x.base.base.loc);
-                      }
+                        if (!ASRUtils::check_equal_type(ltype, rtype) || !ASRUtils::check_equal_type(rtype, ftype)) {
+                            throw SemanticError("Intrinsic operator "+ op_name + " does not apply to "
+                                "arguments of different types", x.base.base.loc);
+                        }
                     } else if (is_cmpop) {
-                      if (!ASRUtils::check_equal_type(ltype, rtype) || !ASRUtils::is_logical(*ftype)) {
-                          throw SemanticError("Intrinsic operator " + op_name + 
-                              " requires same-typed arguments and a logical return type", x.base.base.loc);
-                      }
+                        if (!ASRUtils::check_equal_type(ltype, rtype) || !ASRUtils::is_logical(*ftype)) {
+                            throw SemanticError("Intrinsic operator " + op_name + 
+                                " requires same-typed arguments and a logical return type", x.base.base.loc);
+                        }
                     }
 
                     SymbolTable *parent_scope = current_scope;
