@@ -527,6 +527,7 @@ public:
             throw SemanticError("Program already defined", tmp->loc);
         }
         handle_save();
+        handle_array_empty_dimension(current_scope, nullptr, 0);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
 
@@ -673,6 +674,7 @@ public:
             nullptr, 0,
             is_requirement, false, false);
         handle_save();
+        handle_array_empty_dimension(current_scope, args.p, args.n);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         /* FIXME: This can become incorrect/get cleared prematurely, perhaps
@@ -758,6 +760,48 @@ public:
             }
         }
         return r;
+    }
+
+    void handle_array_empty_dimension(SymbolTable* current_scope, ASR::expr_t** args, size_t n_args) {
+        // iterate over all the variables
+        auto scope = current_scope->get_scope();
+        for (auto it: scope) {
+            ASR::symbol_t* sym = it.second;
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+            ASR::ttype_t* sym_type = ASRUtils::symbol_type(sym);
+                if (sym_type && ASR::is_a<ASR::Array_t>(*sym_type)) {
+                    ASR::Array_t* sym_array = ASR::down_cast<ASR::Array_t>(sym_type);
+                    ASR::Variable_t* sym_variable = ASR::down_cast<ASR::Variable_t>(sym);
+                    // check if it is function argument
+                    bool function_arg = false;
+                    for (size_t i = 0; i < n_args; i++) {
+                        ASR::expr_t* arg = args[i];
+                        if (ASR::is_a<ASR::Var_t>(*arg)) {
+                            ASR::Var_t* arg_var = ASR::down_cast<ASR::Var_t>(arg);
+                            if (ASRUtils::symbol_name(arg_var->m_v) == it.first) {
+                                function_arg = true;
+                                break;
+                            }
+                        }
+                    }
+                    if ( !function_arg ) {
+                        sym_type = ASRUtils::type_get_past_array(sym_type);
+                        if (sym_array->n_dims > 0) {
+                            // check if any dimension has both lower and upper bound as nullptr
+                            for (size_t i = 0; i < sym_array->n_dims; i++) {
+                                ASR::dimension_t dim = sym_array->m_dims[i];
+                                if (dim.m_start == nullptr && dim.m_length == nullptr
+                                    && sym_variable->m_storage != ASR::storage_typeType::Parameter
+                                    && (sym_variable->m_intent != ASRUtils::intent_in && sym_variable->m_intent != ASRUtils::intent_inout)
+                                    && !ASR::is_a<ASR::Character_t>(*sym_type)) {
+                                    throw SemanticError("Assumed size array must be a dummy argument", sym_array->m_dims[i].loc);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     void visit_Function(const AST::Function_t &x) {
@@ -1003,6 +1047,7 @@ public:
             bindc_name, is_elemental, false, false, false, false,
             nullptr, 0, is_requirement, false, false);
         handle_save();
+        handle_array_empty_dimension(current_scope, args.p, args.n);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         current_procedure_args.clear();
