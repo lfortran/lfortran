@@ -2371,8 +2371,8 @@ public:
                 }
             } else if (AST::is_a<AST::IntrinsicOperator_t>(*x.m_args[i])) {
                 AST::IntrinsicOperator_t *intrinsic_op = AST::down_cast<AST::IntrinsicOperator_t>(x.m_args[i]);
-                ASR::binopType binop;
-                ASR::cmpopType cmpop;
+                ASR::binopType binop = ASR::Add;
+                ASR::cmpopType cmpop = ASR::Eq;
                 bool is_binop = false, is_cmpop = false;
                 std::string op_name;
                 switch (intrinsic_op->m_op) {
@@ -2481,7 +2481,7 @@ public:
                     }
 
                     std::string func_name = op_name + "_intrinsic_" + ASRUtils::type_to_str(ltype);
-                    ASR::ttype_t *return_type;
+                    ASR::ttype_t *return_type = nullptr;
                     ASR::expr_t *value = nullptr;
                     ASR::expr_t *lexpr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                         current_scope->get_symbol("arg0")));
@@ -2491,7 +2491,7 @@ public:
                     if (is_binop) {
                         value = ASRUtils::EXPR(ASRUtils::make_Binop_util(al, x.base.base.loc, binop, lexpr, rexpr, ltype));
                         return_type = ASRUtils::duplicate_type(al, ltype);
-                    } else if (is_cmpop) {
+                    } else {
                         value = ASRUtils::EXPR(ASRUtils::make_Cmpop_util(al, x.base.base.loc, cmpop, lexpr, rexpr, ltype));
                         return_type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
                     }
