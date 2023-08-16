@@ -1,4 +1,4 @@
-semantic error: matmul accepts second matrix of type Integer, Real or Complex if first matrix is of numeric type.
+semantic error: The argument `matrix_b` in `matmul` must be of type Integer, Real or Complex if first matrix is of numeric type
  --> tests/errors/matrix_matmul_02.f90:5:24
   |
 5 |     print *, matmul(b, a)
