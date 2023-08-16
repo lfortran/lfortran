@@ -562,9 +562,13 @@ class ASRBuilder {
         }
     }
 
-    ASR::dimension_t set_dim(ASR::expr_t *start, ASR::expr_t *length) {
+    ASR::dimension_t set_dim(ASR::expr_t *start, ASR::expr_t *length,
+        bool is_allocatable=false) {
         ASR::dimension_t dim;
         dim.loc = loc;
+        if (is_allocatable) {
+            start = length = nullptr;
+        }
         dim.m_start = start;
         dim.m_length = length;
         return dim;
@@ -573,9 +577,23 @@ class ASRBuilder {
     // Statements --------------------------------------------------------------
     #define Return() STMT(ASR::make_Return_t(al, loc))
 
-    ASR::stmt_t *Assignment(ASR::expr_t *lhs, ASR::expr_t*rhs) {
+    ASR::stmt_t *Assignment(ASR::expr_t *lhs, ASR::expr_t *rhs) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(lhs), expr_type(rhs)));
         return STMT(ASR::make_Assignment_t(al, loc, lhs, rhs, nullptr));
+    }
+
+    ASR::stmt_t *Allocate(ASR::expr_t *m_a, Vec<ASR::dimension_t> dims) {
+        Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
+        ASR::alloc_arg_t alloc_arg;
+        alloc_arg.loc = loc;
+        alloc_arg.m_a = m_a;
+        alloc_arg.m_dims = dims.p;
+        alloc_arg.n_dims = dims.n;
+        alloc_arg.m_type = nullptr;
+        alloc_arg.m_len_expr = nullptr;
+        alloc_args.push_back(al, alloc_arg);
+        return STMT(ASR::make_Allocate_t(al, loc, alloc_args.p, 1,
+            nullptr, nullptr, nullptr));
     }
 
     template <typename LOOP_BODY>
