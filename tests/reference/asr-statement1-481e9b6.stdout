@@ -407,7 +407,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 2 ti)
@@ -465,7 +465,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 2 sum)
@@ -496,7 +496,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (FunctionCall

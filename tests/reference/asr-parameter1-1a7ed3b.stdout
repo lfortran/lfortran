@@ -130,21 +130,21 @@
                         (FunctionCall
                             2 max@dmax_3args
                             2 max
-                            [((IntrinsicFunction
+                            [((IntrinsicScalarFunction
                                 Abs
                                 [(Var 2 three)]
                                 0
                                 (Real 8)
                                 ()
                             ))
-                            ((IntrinsicFunction
+                            ((IntrinsicScalarFunction
                                 Abs
                                 [(Var 2 two)]
                                 0
                                 (Real 8)
                                 ()
                             ))
-                            ((IntrinsicFunction
+                            ((IntrinsicScalarFunction
                                 Abs
                                 [(Var 2 p66)]
                                 0

@@ -62,6 +62,7 @@ struct CDeclarationOptions: public DeclarationOptions {
     std::string force_declare_name;
     bool declare_as_constant;
     std::string const_name;
+    bool do_not_initialize;
 
     CDeclarationOptions() :
     pre_initialise_derived_type{true},
@@ -70,7 +71,8 @@ struct CDeclarationOptions: public DeclarationOptions {
     force_declare{false},
     force_declare_name{""},
     declare_as_constant{false},
-    const_name{""} {
+    const_name{""},
+    do_not_initialize{false} {
     }
 };
 
@@ -2614,12 +2616,14 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
 
     void visit_GoTo(const ASR::GoTo_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
-        src =  indent + "goto " + std::string(x.m_name) + ";\n";
-        gotoid2name[x.m_target_id] = std::string(x.m_name);
+        std::string goto_c_name = "__c__goto__" + std::string(x.m_name);
+        src =  indent + "goto " + goto_c_name + ";\n";
+        gotoid2name[x.m_target_id] = goto_c_name;
     }
 
     void visit_GoToTarget(const ASR::GoToTarget_t &x) {
-        src = std::string(x.m_name) + ":\n";
+        std::string goto_c_name = "__c__goto__" + std::string(x.m_name);
+        src = goto_c_name + ":\n";
     }
 
     void visit_Stop(const ASR::Stop_t &x) {
@@ -2819,12 +2823,13 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = out;
     }
 
-    #define SET_INTRINSIC_NAME(X, func_name)                             \
-        case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::X)) : { \
-            out += func_name; break;                                     \
+    #define SET_INTRINSIC_NAME(X, func_name)                                    \
+        case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::X)) : {  \
+            out += func_name; break;                                            \
         }
 
-    std::string performBinarySymbolicOperation(const std::string& functionName, const ASR::IntrinsicFunction_t& x) {
+    std::string performBinarySymbolicOperation(const std::string& functionName,
+            const ASR::IntrinsicScalarFunction_t& x) {
         headers.insert("symengine/cwrapper.h");
         std::string indent(4, ' ');
         LCOMPILERS_ASSERT(x.n_args == 2);
@@ -2849,7 +2854,8 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         return target;
     }
 
-    std::string performUnarySymbolicOperation(const std::string& functionName, const ASR::IntrinsicFunction_t& x) {
+    std::string performUnarySymbolicOperation(const std::string& functionName,
+            const ASR::IntrinsicScalarFunction_t& x) {
         headers.insert("symengine/cwrapper.h");
         std::string indent(4, ' ');
         LCOMPILERS_ASSERT(x.n_args == 1);
@@ -2866,7 +2872,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         return target;
     }
 
-    void visit_IntrinsicFunction(const ASR::IntrinsicFunction_t &x) {
+    void visit_IntrinsicScalarFunction(const ASR::IntrinsicScalarFunction_t &x) {
         CHECK_FAST_C_CPP(compiler_options, x);
         std::string out;
         std::string indent(4, ' ');
@@ -2884,55 +2890,55 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             SET_INTRINSIC_NAME(Exp, "exp");
             SET_INTRINSIC_NAME(Exp2, "exp2");
             SET_INTRINSIC_NAME(Expm1, "expm1");
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicAdd)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicAdd)): {
                 src = performBinarySymbolicOperation("basic_add", x);
                 return;
             }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicSub)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicSub)): {
                 src = performBinarySymbolicOperation("basic_sub", x);
                 return;
             }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicMul)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicMul)): {
                 src = performBinarySymbolicOperation("basic_mul", x);
                 return;
             }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicDiv)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicDiv)): {
                 src = performBinarySymbolicOperation("basic_div", x);
                 return;
             }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicPow)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicPow)): {
                 src = performBinarySymbolicOperation("basic_pow", x);
                 return;
             }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicDiff)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicDiff)): {
                 src = performBinarySymbolicOperation("basic_diff", x);
                 return;
             }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicSin)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicSin)): {
                 src = performUnarySymbolicOperation("basic_sin", x);
                 return;
             }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicCos)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicCos)): {
                 src = performUnarySymbolicOperation("basic_cos", x);
                 return;
             }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicLog)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicLog)): {
                 src = performUnarySymbolicOperation("basic_log", x);
                 return;
             }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicExp)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicExp)): {
                 src = performUnarySymbolicOperation("basic_exp", x);
                 return;
             }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicAbs)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicAbs)): {
                 src = performUnarySymbolicOperation("basic_abs", x);
                 return;
             }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicExpand)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicExpand)): {
                 src = performUnarySymbolicOperation("basic_expand", x);
                 return;
             }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicPi)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicPi)): {
                 headers.insert("symengine/cwrapper.h");
                 LCOMPILERS_ASSERT(x.n_args == 0);
                 std::string target = symengine_queue.push();
@@ -2940,7 +2946,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 src = target;
                 return;
             }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicSymbol)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicSymbol)): {
                 headers.insert("symengine/cwrapper.h");
                 LCOMPILERS_ASSERT(x.n_args == 1);
                 this->visit_expr(*x.m_args[0]);
@@ -2949,7 +2955,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 src = target;
                 return;
             }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicInteger)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicInteger)): {
                 headers.insert("symengine/cwrapper.h");
                 LCOMPILERS_ASSERT(x.n_args == 1);
                 this->visit_expr(*x.m_args[0]);
@@ -2959,7 +2965,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 return;
             }
             default : {
-                throw LCompilersException("IntrinsicFunction: `"
+                throw LCompilersException("IntrinsicScalarFunction: `"
                     + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)
                     + "` is not implemented");
             }

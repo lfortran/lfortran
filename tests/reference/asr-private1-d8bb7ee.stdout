@@ -126,7 +126,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 5 y)
@@ -169,7 +169,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 5 y)

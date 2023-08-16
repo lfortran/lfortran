@@ -201,7 +201,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (FunctionCall
@@ -251,7 +251,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (FunctionCall
@@ -301,7 +301,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (RealBinOp

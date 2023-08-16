@@ -40,7 +40,7 @@
                     [iso_fortran_env]
                     [(=
                         (Var 2 x)
-                        (IntrinsicFunction
+                        (IntrinsicScalarFunction
                             Sin
                             [(RealConstant
                                 1.500000

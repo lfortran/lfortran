@@ -113,7 +113,7 @@
                                                 ((RealBinOp
                                                     (Var 88 reltol)
                                                     Mul
-                                                    (IntrinsicFunction
+                                                    (IntrinsicScalarFunction
                                                         Abs
                                                         [(Var 89 zx)]
                                                         0
@@ -343,7 +343,7 @@
                                                 ((RealBinOp
                                                     (Var 2 reltol)
                                                     Mul
-                                                    (IntrinsicFunction
+                                                    (IntrinsicScalarFunction
                                                         Abs
                                                         [(Var 4 zx)]
                                                         0
@@ -559,7 +559,7 @@
                         ())
                         [(If
                             (RealCompare
-                                (IntrinsicFunction
+                                (IntrinsicScalarFunction
                                     Abs
                                     [(RealBinOp
                                         (ArrayItem

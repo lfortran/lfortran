@@ -76,7 +76,7 @@
                     [(=
                         (Var 2 a)
                         (Cast
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Max
                                 [(IntegerConstant 1 (Integer 4))
                                 (IntegerConstant 2 (Integer 4))]
@@ -96,7 +96,7 @@
                     (=
                         (Var 2 b)
                         (Cast
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Max
                                 [(IntegerConstant 1 (Integer 4))
                                 (IntegerBinOp

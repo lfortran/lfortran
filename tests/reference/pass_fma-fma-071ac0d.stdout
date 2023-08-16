@@ -191,7 +191,7 @@
                                     0.500000
                                     (Real 4)
                                 ))
-                                ((IntrinsicFunction
+                                ((IntrinsicScalarFunction
                                     Sign
                                     [(RealConstant
                                         1.000000
@@ -234,7 +234,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 2 x)
@@ -265,7 +265,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 2 z)

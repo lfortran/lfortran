@@ -2946,11 +2946,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_ArrayBound(const ASR::ArrayBound_t& x) {
-        ASR::ttype_t *ttype = ASRUtils::expr_type(x.m_v);
-        uint32_t kind = ASRUtils::extract_kind_from_ttype_t(ttype);
         ASR::dimension_t *m_dims;
-        int n_dims = ASRUtils::extract_dimensions_from_ttype(ttype, m_dims);
-        if (kind != 4) {
+        int n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(x.m_v), m_dims);
+        if (ASRUtils::extract_kind_from_ttype_t(x.m_type) != 4) {
             throw CodeGenError("ArrayBound: Kind 4 only supported currently");
         }
 

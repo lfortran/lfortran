@@ -8,6 +8,7 @@
 #include <libasr/bigint.h>
 #include <libasr/string_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
+#include <libasr/pass/intrinsic_array_function_registry.h>
 #include <lfortran/utils.h>
 #include <lfortran/semantics/comptime_eval.h>
 
@@ -3680,6 +3681,20 @@ public:
         int64_t kind_const = handle_kind(kind);
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_const));
         ASR::expr_t* bound_value = nullptr;
+        if (dim == nullptr) {
+            int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(v_Var));
+            Vec<ASR::expr_t*> arr_args;
+            arr_args.reserve(al, 0);
+            ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+            for (int i = 1; i <= n_dims; i++) {
+                ASR::expr_t* dim_ = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, i, int32_type));
+                arr_args.push_back(al, ASRUtils::EXPR(ASR::make_ArrayBound_t(al, x.base.base.loc, v_Var, dim_, type,
+                                      bound, bound_value)));
+            }
+            return ASRUtils::make_ArrayConstant_t_util(al, x.base.base.loc, arr_args.p,
+                                arr_args.size(), type, ASR::arraystorageType::ColMajor);
+        }
+
         ASR::expr_t* dim_value = ASRUtils::expr_value(dim);
         if( ASRUtils::is_value_constant(dim_value) ) {
             int64_t const_dim = -1;
@@ -4316,10 +4331,12 @@ public:
         std::string var_name = to_lower(x.m_func);
         if( intrinsic_procedures_as_asr_nodes.is_intrinsic_present_in_ASR(var_name) ||
             intrinsic_procedures_as_asr_nodes.is_kind_based_selection_required(var_name) ||
-            ASRUtils::IntrinsicFunctionRegistry::is_intrinsic_function(var_name) ||
+            ASRUtils::IntrinsicScalarFunctionRegistry::is_intrinsic_function(var_name) ||
+            ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ||
             ASRUtils::IntrinsicImpureFunctionRegistry::is_intrinsic_function(var_name)) {
             is_function = false;
-            if( ASRUtils::IntrinsicFunctionRegistry::is_intrinsic_function(var_name) ) {
+            if( ASRUtils::IntrinsicScalarFunctionRegistry::is_intrinsic_function(var_name) ||
+                    ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ) {
                 std::vector<IntrinsicSignature> signatures = get_intrinsic_signature(var_name);
                 Vec<ASR::expr_t*> args;
                 bool signature_matched = false;
@@ -4337,14 +4354,23 @@ public:
                     throw SemanticError("No matching signature found for intrinsic " + var_name,
                                         x.base.base.loc);
                 }
-                ASRUtils::create_intrinsic_function create_func =
-                    ASRUtils::IntrinsicFunctionRegistry::get_create_function(var_name);
-                if( !ASRUtils::IntrinsicFunctionRegistry::is_input_type_supported(var_name, args) ) {
-                    is_function = true;
-                    return resolve_intrinsic_function(x.base.base.loc, var_name);
-                } else {
+                if( ASRUtils::IntrinsicScalarFunctionRegistry::is_intrinsic_function(var_name) ){
+                    ASRUtils::create_intrinsic_function create_func =
+                        ASRUtils::IntrinsicScalarFunctionRegistry::get_create_function(var_name);
+                    if( !ASRUtils::IntrinsicScalarFunctionRegistry::is_input_type_supported(var_name, args) ) {
+                        is_function = true;
+                        return resolve_intrinsic_function(x.base.base.loc, var_name);
+                    } else {
+                        tmp = create_func(al, x.base.base.loc, args,
+                            [&](const std::string &msg, const Location &loc) {
+                                throw SemanticError(msg, loc); });
+                    }
+                } else if ( ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ) {
+                    ASRUtils::create_intrinsic_function create_func =
+                        ASRUtils::IntrinsicArrayFunctionRegistry::get_create_function(var_name);
                     tmp = create_func(al, x.base.base.loc, args,
-                            [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); });
+                        [&](const std::string &msg, const Location &loc) {
+                            throw SemanticError(msg, loc); });
                 }
             } else if( ASRUtils::IntrinsicImpureFunctionRegistry::is_intrinsic_function(var_name) ) {
                 Vec<ASR::expr_t*> args;

@@ -1680,13 +1680,13 @@ public:
         tmp = list_api->pop_position(plist, pos, asr_el_type, module.get(), name2memidx);
     }
 
-    void visit_IntrinsicFunction(const ASR::IntrinsicFunction_t& x) {
+    void visit_IntrinsicScalarFunction(const ASR::IntrinsicScalarFunction_t& x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        switch (static_cast<ASRUtils::IntrinsicFunctions>(x.m_intrinsic_id)) {
-            case ASRUtils::IntrinsicFunctions::ListIndex: {
+        switch (static_cast<ASRUtils::IntrinsicScalarFunctions>(x.m_intrinsic_id)) {
+            case ASRUtils::IntrinsicScalarFunctions::ListIndex: {
                 ASR::expr_t* m_arg = x.m_args[0];
                 ASR::expr_t* m_ele = x.m_args[1];
                 ASR::expr_t* m_start = nullptr;
@@ -1712,11 +1712,11 @@ public:
                 generate_ListIndex(m_arg, m_ele, m_start, m_end);
                 break ;
             }
-            case ASRUtils::IntrinsicFunctions::ListReverse: {
+            case ASRUtils::IntrinsicScalarFunctions::ListReverse: {
                 generate_ListReverse(x.m_args[0]);
                 break;
             }
-            case ASRUtils::IntrinsicFunctions::ListPop: {
+            case ASRUtils::IntrinsicScalarFunctions::ListPop: {
                 switch(x.m_overload_id) {
                     case 0:
                         generate_ListPop_0(x.m_args[0]);
@@ -1727,7 +1727,7 @@ public:
                 }
                 break;
             }
-            case ASRUtils::IntrinsicFunctions::Exp: {
+            case ASRUtils::IntrinsicScalarFunctions::Exp: {
                 switch (x.m_overload_id) {
                     case 0: {
                         ASR::expr_t* m_arg = x.m_args[0];
@@ -1741,7 +1741,7 @@ public:
                 }
                 break ;
             }
-            case ASRUtils::IntrinsicFunctions::Exp2: {
+            case ASRUtils::IntrinsicScalarFunctions::Exp2: {
                 switch (x.m_overload_id) {
                     case 0: {
                         ASR::expr_t* m_arg = x.m_args[0];
@@ -1755,7 +1755,7 @@ public:
                 }
                 break ;
             }
-            case ASRUtils::IntrinsicFunctions::Expm1: {
+            case ASRUtils::IntrinsicScalarFunctions::Expm1: {
                 switch (x.m_overload_id) {
                     case 0: {
                         ASR::expr_t* m_arg = x.m_args[0];
@@ -1770,7 +1770,7 @@ public:
                 break ;
             }
             default: {
-                throw CodeGenError("Either the '" + ASRUtils::IntrinsicFunctionRegistry::
+                throw CodeGenError("Either the '" + ASRUtils::IntrinsicScalarFunctionRegistry::
                         get_intrinsic_function_name(x.m_intrinsic_id) +
                         "' intrinsic is not implemented by LLVM backend or "
                         "the compile-time value is not available", x.base.base.loc);
@@ -1956,9 +1956,7 @@ public:
         ASR::Variable_t *v = nullptr;
         if( ASR::is_a<ASR::Var_t>(*x.m_v) ) {
             v = ASRUtils::EXPR2VAR(x.m_v);
-            ASR::ttype_t* v_m_type = ASRUtils::type_get_past_array(
-                ASRUtils::type_get_past_allocatable(
-                    ASRUtils::type_get_past_pointer(v->m_type)));
+            ASR::ttype_t* v_m_type = ASRUtils::extract_type(v->m_type);
             if( ASR::is_a<ASR::Struct_t>(*v_m_type) ) {
                 ASR::Struct_t* der_type = ASR::down_cast<ASR::Struct_t>(v_m_type);
                 current_der_type_name = ASRUtils::symbol_name(
@@ -3077,10 +3075,16 @@ public:
                         for( size_t i = 0; i < v->n_dependencies; i++ ) {
                             std::string variable_name = v->m_dependencies[i];
                             ASR::symbol_t* dep_sym = x.m_symtab->resolve_symbol(variable_name);
-                            if( (dep_sym && ASR::is_a<ASR::Variable_t>(*dep_sym) &&
-                                !ASR::down_cast<ASR::Variable_t>(dep_sym)->m_symbolic_value) )  {
-                                init_expr = nullptr;
-                                break;
+                            if (dep_sym) {
+                                if (ASR::is_a<ASR::Variable_t>(*dep_sym)) {
+                                    ASR::Variable_t* dep_v = ASR::down_cast<ASR::Variable_t>(dep_sym);
+                                    if ( dep_v->m_symbolic_value == nullptr &&
+                                        !(ASRUtils::is_array(dep_v->m_type) && ASRUtils::extract_physical_type(dep_v->m_type) ==
+                                            ASR::array_physical_typeType::FixedSizeArray)) {
+                                        init_expr = nullptr;
+                                        break;
+                                    }
+                                }
                             }
                         }
                     }
@@ -5895,9 +5899,7 @@ public:
         switch( t2_->type ) {
             case ASR::ttypeType::Pointer:
             case ASR::ttypeType::Allocatable: {
-                ASR::ttype_t *t2 = ASRUtils::type_get_past_array(
-                    ASRUtils::type_get_past_pointer(
-                        ASRUtils::type_get_past_allocatable(x->m_type)));
+                ASR::ttype_t *t2 = ASRUtils::extract_type(x->m_type);
                 switch (t2->type) {
                     case ASR::ttypeType::Integer:
                     case ASR::ttypeType::UnsignedInteger:
@@ -6490,12 +6492,16 @@ public:
                                             + std::to_string(a_kind));
                     }
                 } else if (ASR::is_a<ASR::Real_t>(*type)) {
-                    if (a_kind != 4) {
-                        throw CodeGenError("Real arrays of kind 4 only supported for now. Found kind: "
+                    if (a_kind == 4) {
+                        runtime_func_name = "_lfortran_read_array_float";
+                        type_arg = llvm::Type::getFloatTy(context);
+                    } else if (a_kind == 8) {
+                        runtime_func_name = "_lfortran_read_array_double";
+                        type_arg = llvm::Type::getDoubleTy(context);
+                    } else {
+                        throw CodeGenError("Real arrays of kind 4 or 8 only supported for now. Found kind: "
                                             + std::to_string(a_kind));
                     }
-                    runtime_func_name = "_lfortran_read_array_float";
-                    type_arg = llvm::Type::getFloatTy(context);
                 } else {
                     throw CodeGenError("Type not supported.");
                 }

@@ -107,7 +107,7 @@
                                                 ()
                                             )
                                             Mul
-                                            (IntrinsicFunction
+                                            (IntrinsicScalarFunction
                                                 Cos
                                                 [(Var 2 theta)]
                                                 0

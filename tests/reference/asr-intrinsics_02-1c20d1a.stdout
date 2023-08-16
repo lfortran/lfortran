@@ -13,7 +13,7 @@
                                     x
                                     []
                                     Local
-                                    (IntrinsicFunction
+                                    (IntrinsicScalarFunction
                                         Sin
                                         [(RealConstant
                                             1.500000
@@ -60,7 +60,7 @@
                     [(=
                         (Var 2 y)
                         (Cast
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Sin
                                 [(RealConstant
                                     1.500000
@@ -91,7 +91,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 2 x)
@@ -122,10 +122,10 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
-                                    (IntrinsicFunction
+                                    (IntrinsicScalarFunction
                                         Sin
                                         [(Var 2 x)]
                                         0
@@ -159,7 +159,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 2 y)
@@ -206,13 +206,13 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
-                                    (IntrinsicFunction
+                                    (IntrinsicScalarFunction
                                         Sin
                                         [(RealBinOp
-                                            (IntrinsicFunction
+                                            (IntrinsicScalarFunction
                                                 Sin
                                                 [(RealConstant
                                                     1.500000
@@ -226,7 +226,7 @@
                                                 )
                                             )
                                             Add
-                                            (IntrinsicFunction
+                                            (IntrinsicScalarFunction
                                                 Sin
                                                 [(RealBinOp
                                                     (RealConstant
@@ -234,7 +234,7 @@
                                                         (Real 4)
                                                     )
                                                     Add
-                                                    (IntrinsicFunction
+                                                    (IntrinsicScalarFunction
                                                         Sin
                                                         [(RealConstant
                                                             0.500000
@@ -309,13 +309,13 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
-                                    (IntrinsicFunction
+                                    (IntrinsicScalarFunction
                                         Sin
                                         [(RealBinOp
-                                            (IntrinsicFunction
+                                            (IntrinsicScalarFunction
                                                 Sin
                                                 [(Var 2 y)]
                                                 0
@@ -324,12 +324,12 @@
                                             )
                                             Add
                                             (Cast
-                                                (IntrinsicFunction
+                                                (IntrinsicScalarFunction
                                                     Sin
                                                     [(RealBinOp
                                                         (Var 2 x)
                                                         Add
-                                                        (IntrinsicFunction
+                                                        (IntrinsicScalarFunction
                                                             Sin
                                                             [(Var 2 x)]
                                                             0

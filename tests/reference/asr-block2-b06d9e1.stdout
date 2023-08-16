@@ -79,7 +79,7 @@
                                     main
                                     [(=
                                         (Var 2 delta)
-                                        (IntrinsicFunction
+                                        (IntrinsicScalarFunction
                                             Abs
                                             [(Var 2 ratio)]
                                             0

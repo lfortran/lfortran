@@ -292,7 +292,7 @@
                                     (Var 6 y)]
                                     [(=
                                         (Var 6 result)
-                                        (IntrinsicFunction
+                                        (IntrinsicScalarFunction
                                             Min
                                             [(Var 6 x)
                                             (Var 6 y)]
@@ -786,7 +786,7 @@
                                     (Var 14 y)]
                                     [(=
                                         (Var 14 result)
-                                        (IntrinsicFunction
+                                        (IntrinsicScalarFunction
                                             Min
                                             [(Var 14 x)
                                             (Var 14 y)]
