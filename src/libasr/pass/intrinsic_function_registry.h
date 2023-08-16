@@ -297,6 +297,48 @@ class ASRBuilder {
         ASR::logicalbinopType::And, y, logical, nullptr))
     #define Not(x)    EXPR(ASR::make_LogicalNot_t(al, loc, x, logical, nullptr))
 
+    ASR::expr_t *Add(ASR::expr_t *left, ASR::expr_t *right) {
+        LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
+        ASR::ttype_t *type = expr_type(left);
+        switch (type->type) {
+            case ASR::ttypeType::Integer : {
+                return EXPR(ASR::make_IntegerBinOp_t(al, loc, left,
+                    ASR::binopType::Add, right, type, nullptr));
+                break;
+            }
+            case ASR::ttypeType::Real : {
+                return EXPR(ASR::make_RealBinOp_t(al, loc, left,
+                    ASR::binopType::Add, right, type, nullptr));
+                break;
+            }
+            default: {
+                LCOMPILERS_ASSERT(false);
+                return nullptr;
+            }
+        }
+    }
+
+    ASR::expr_t *Mul(ASR::expr_t *left, ASR::expr_t *right) {
+        LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
+        ASR::ttype_t *type = expr_type(left);
+        switch (type->type) {
+            case ASR::ttypeType::Integer : {
+                return EXPR(ASR::make_IntegerBinOp_t(al, loc, left,
+                    ASR::binopType::Mul, right, type, nullptr));
+                break;
+            }
+            case ASR::ttypeType::Real : {
+                return EXPR(ASR::make_RealBinOp_t(al, loc, left,
+                    ASR::binopType::Mul, right, type, nullptr));
+                break;
+            }
+            default: {
+                LCOMPILERS_ASSERT(false);
+                return nullptr;
+            }
+        }
+    }
+
     // Compare -----------------------------------------------------------------
     #define iEq(x, y) EXPR(ASR::make_IntegerCompare_t(al, loc, x,               \
         ASR::cmpopType::Eq, y, logical, nullptr))
@@ -580,6 +622,23 @@ class ASRBuilder {
     ASR::stmt_t *Assignment(ASR::expr_t *lhs, ASR::expr_t *rhs) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(lhs), expr_type(rhs)));
         return STMT(ASR::make_Assignment_t(al, loc, lhs, rhs, nullptr));
+    }
+
+    template <typename T>
+    ASR::stmt_t *Assign_Constant(ASR::expr_t *lhs, T init_value) {
+        ASR::ttype_t *type = expr_type(lhs);
+        switch(type->type) {
+            case ASR::ttypeType::Integer : {
+                return Assignment(lhs, i(init_value, type));
+            }
+            case ASR::ttypeType::Real : {
+                return Assignment(lhs, f(init_value, type));
+            }
+            default : {
+                LCOMPILERS_ASSERT(false);
+                return nullptr;
+            }
+        }
     }
 
     ASR::stmt_t *Allocate(ASR::expr_t *m_a, Vec<ASR::dimension_t> dims) {

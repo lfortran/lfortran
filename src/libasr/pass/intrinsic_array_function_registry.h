@@ -1700,9 +1700,10 @@ namespace MatMul {
         body.push_back(al, b.While(iLtE(i, size_i), {
             b.Assignment(j, i32(1)),
             b.While(iLtE(j, size_j), {
-                b.Assignment(res_ref, i32(0)), b.Assignment(k, i32(1)),
+                b.Assign_Constant(res_ref, 0),
+                b.Assignment(k, i32(1)),
                 b.While(iLtE(k, size_k), {
-                    b.Assignment(res_ref, iAdd(res_ref, iMul(a_ref, b_ref))),
+                    b.Assignment(res_ref, b.Add(res_ref, b.Mul(a_ref, b_ref))),
                     b.Assignment(k, iAdd(k, i32(1)))
                 }),
                 b.Assignment(j, iAdd(j, i32(1)))
