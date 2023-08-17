@@ -279,158 +279,186 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     }
 }
 
-LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, ...)
+LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* format, ...)
 {
     va_list args;
     va_start(args, format);
-
-    char* modified_input_string = substring(format, 1, strlen(format) - 1);
+    int len = strlen(format);
+    char* modified_input_string = (char*)malloc(len * sizeof(char));
+    strcpy(modified_input_string,format);
+    if (format[0] == '(' && format[len-1] == ')') {
+        modified_input_string = substring(format, 1, len - 1);
+    }
     char** format_values = NULL;
     int format_values_count = 0;
     char* token = strtok(modified_input_string, ",");
     while (token != NULL) {
         format_values = (char**)realloc(format_values, (format_values_count + 1) * sizeof(char*));
+        // Remove unnecessary whitespaces
+        if(token[0]!='"' && token[0]!='\''){
+            char *src = token;
+            char* dest = token;
+            while (*src) {
+                if (!isspace((unsigned char)*src)) {
+                    *dest = *src;
+                    dest++;
+                }
+                src++;
+            }
+            *dest = '\0';
+        }
         format_values[format_values_count++] = token;
         token = strtok(NULL, ",");
     }
     char* result = (char*)malloc(sizeof(char));
     result[0] = '\0';
-    int arguments = 0;
-    for (int i = 0; i < format_values_count; i++) {
-        char* value = format_values[i];
+    while (count > 0) {
+        for (int i = 0; i < format_values_count; i++) {
+            char* value = format_values[i];
 
-        if (value[0] == '/') {
-            // Slash Editing (newlines)
-            int j = 0;
-            while (value[j] == '/') {
-                result = append_to_string(result, "\n");
-                j++;
-            }
-            value = substring(value, j, strlen(value));
-        }
-
-        int newline = 0;
-        if (value[strlen(value) - 1] == '/') {
-            // Newlines at the end of the argument
-            int j = strlen(value) - 1;
-            while (value[j] == '/') {
-                newline++;
-                j--;
-            }
-            value = substring(value, 0, strlen(value) - newline);
-        }
-
-        int scale = 0;
-        if (isdigit(value[0]) && tolower(value[1]) == 'p') {
-            // Scale Factor (nP)
-            scale = atoi(&value[0]);
-            value = substring(value, 2, strlen(value));
-        } else if (value[0] == '-' && isdigit(value[1]) && tolower(value[2]) == 'p') {
-            scale = atoi(substring(value, 0, 2));
-            value = substring(value, 3, strlen(value));
-        }
-
-        if (isdigit(value[0])) {
-            // Repeat Count
-            int j = 0;
-            while (isdigit(value[j])) {
-                j++;
-            }
-            int repeat = atoi(substring(value, 0, j));
-            if (value[j] == '(') {
+            if (value[0] == '/') {
+                // Slash Editing (newlines)
+                int j = 0;
+                while (value[j] == '/') {
+                    result = append_to_string(result, "\n");
+                    j++;
+                }
                 value = substring(value, j, strlen(value));
-                format_values[i] = substring(format_values[i], 1, strlen(format_values[i]));
-                char* new_input_string = (char*)malloc(sizeof(char));
-                new_input_string[0] = '\0';
-                for (int k = i; k < format_values_count; k++) {
-                    new_input_string = append_to_string(new_input_string, format_values[k]);
-                    new_input_string = append_to_string(new_input_string, ",");
+            }
+
+            int newline = 0;
+            if (value[strlen(value) - 1] == '/') {
+                // Newlines at the end of the argument
+                int j = strlen(value) - 1;
+                while (value[j] == '/') {
+                    newline++;
+                    j--;
                 }
-                new_input_string = substring(new_input_string, 1, strchr(new_input_string, ')') - new_input_string);
-                char** new_fmt_val = NULL;
-                int new_fmt_val_count = 0;
-                char* new_token = strtok(new_input_string, ",");
-                while (new_token != NULL) {
-                    new_fmt_val = (char**)realloc(new_fmt_val, (new_fmt_val_count + 1) * sizeof(char*));
-                    new_fmt_val[new_fmt_val_count++] = new_token;
-                    new_token = strtok(NULL, ",");
+                value = substring(value, 0, strlen(value) - newline);
+            }
+
+            int scale = 0;
+            if (isdigit(value[0]) && tolower(value[1]) == 'p') {
+                // Scale Factor (nP)
+                scale = atoi(&value[0]);
+                value = substring(value, 2, strlen(value));
+            } else if (value[0] == '-' && isdigit(value[1]) && tolower(value[2]) == 'p') {
+                scale = atoi(substring(value, 0, 2));
+                value = substring(value, 3, strlen(value));
+            }
+
+            if (isdigit(value[0])) {
+                // Repeat Count
+                int j = 0;
+                while (isdigit(value[j])) {
+                    j++;
                 }
-                for (int p = 0; p < repeat - 1; p++) {
-                    for (int k = 0; k < new_fmt_val_count; k++) {
-                        int f = i + new_fmt_val_count + k;
+                int repeat = atoi(substring(value, 0, j));
+                if (value[j] == '(') {
+                    value = substring(value, j, strlen(value));
+                    format_values[i] = substring(format_values[i], 1, strlen(format_values[i]));
+                    char* new_input_string = (char*)malloc(sizeof(char));
+                    new_input_string[0] = '\0';
+                    for (int k = i; k < format_values_count; k++) {
+                        new_input_string = append_to_string(new_input_string, format_values[k]);
+                        new_input_string = append_to_string(new_input_string, ",");
+                    }
+                    new_input_string = substring(new_input_string, 1, strchr(new_input_string, ')') - new_input_string);
+                    char** new_fmt_val = NULL;
+                    int new_fmt_val_count = 0;
+                    char* new_token = strtok(new_input_string, ",");
+                    while (new_token != NULL) {
+                        new_fmt_val = (char**)realloc(new_fmt_val, (new_fmt_val_count + 1) * sizeof(char*));
+                        new_fmt_val[new_fmt_val_count++] = new_token;
+                        new_token = strtok(NULL, ",");
+                    }
+                    for (int p = 0; p < repeat - 1; p++) {
+                        for (int k = 0; k < new_fmt_val_count; k++) {
+                            int f = i + new_fmt_val_count + k;
+                            format_values = (char**)realloc(format_values, (format_values_count + 1) * sizeof(char*));
+                            memmove(format_values + f + 1, format_values + f, (format_values_count - f) * sizeof(char*));
+                            format_values[f] = new_fmt_val[k];
+                            format_values_count++;
+                        }
+                    }
+                } else if (tolower(value[j]) != 'x') {
+                    value = substring(value, j, strlen(value));
+                    for (int k = 0; k < repeat - 1; k++) {
                         format_values = (char**)realloc(format_values, (format_values_count + 1) * sizeof(char*));
-                        memmove(format_values + f + 1, format_values + f, (format_values_count - f) * sizeof(char*));
-                        format_values[f] = new_fmt_val[k];
+                        memmove(format_values + i + 2, format_values + i + 1, (format_values_count - i - 1) * sizeof(char*));
+                        format_values[i + 1] = value;
                         format_values_count++;
                     }
                 }
-            } else if (tolower(value[j]) != 'x') {
-                value = substring(value, j, strlen(value));
-                for (int k = 0; k < repeat - 1; k++) {
-                    format_values = (char**)realloc(format_values, (format_values_count + 1) * sizeof(char*));
-                    memmove(format_values + i + 2, format_values + i + 1, (format_values_count - i - 1) * sizeof(char*));
-                    format_values[i + 1] = value;
-                    format_values_count++;
+            }
+            if (value[0] == '(') {
+                value = substring(value, 1, strlen(value));
+            } else if (value[strlen(value)-1] == ')') {
+                value = substring(value, 0, strlen(value) - 1);
+            }
+
+            if ((value[0] == '\"' && value[strlen(value) - 1] == '\"') || 
+                (value[0] == '\'' && value[strlen(value) - 1] == '\'')) {
+                // String
+                value = substring(value, 1, strlen(value) - 1);
+                result = append_to_string(result, value);
+            } else if (tolower(value[0]) == 'a') {
+                // Character Editing (A[n])
+                char* str = substring(value, 1, strlen(value));
+                if ( count == 0 ) break;
+                count--;
+                char* arg = va_arg(args, char*);
+                if (strlen(str) == 0) {
+                    sprintf(str, "%lu", strlen(arg));
                 }
+                char* s = (char*)malloc((strlen(str) + 4) * sizeof(char));
+                sprintf(s, "%%%s.%ss", str, str);
+                char* string = (char*)malloc((strlen(arg)) * sizeof(char));
+                sprintf(string, s, arg);
+                result = append_to_string(result, string);
+                free(s);
+                free(string);
+            } else if (tolower(value[strlen(value) - 1]) == 'x') {
+                // Positional Editing (nX)
+                int t = atoi(substring(value, 0, strlen(value) - 1));
+                for (int i = 0; i < t; i++) {
+                    result = append_to_string(result, " ");
+                }
+            } else if (tolower(value[0]) == 'i') {
+                // Integer Editing ( I[w[.m]] )
+                if ( count == 0 ) break;
+                count--;
+                int val = va_arg(args, int);
+                handle_integer(value, val, &result);
+            } else if (tolower(value[0]) == 'd') {
+                // D Editing (D[w[.d]])
+                if ( count == 0 ) break;
+                count--;
+                double val = va_arg(args, double);
+                handle_decimal(value, val, scale, &result, "D");
+            } else if (tolower(value[0]) == 'e') {
+                // E Editing E[w[.d][Ee]]
+                // Only (E[w[.d]]) has been implemented yet
+                if ( count == 0 ) break;
+                count--;
+                double val = va_arg(args, double);
+                handle_decimal(value, val, scale, &result, "E");
+            } else if (tolower(value[0]) == 'f') {
+                if ( count == 0 ) break;
+                count--;
+                double val = va_arg(args, double);
+                handle_decimal(value, val, scale, &result, "E");
+            } else if (strlen(value) != 0) {
+                printf("Printing support is not available for %s format.\n",value);
             }
-        }
-        if (value[0] == '(') {
-            value = substring(value, 1, strlen(value));
-        } else if (value[strlen(value)-1] == ')') {
-            value = substring(value, 0, strlen(value) - 1);
-        }
 
-        if (value[0] == '\"' && value[strlen(value) - 1] == '\"') {
-            // String
-            value = substring(value, 1, strlen(value) - 1);
-            result = append_to_string(result, value);
-        } else if (tolower(value[0]) == 'a') {
-            // Character Editing (A[n])
-            char* str = substring(value, 1, strlen(value));
-            char* arg = va_arg(args, char*);
-            if (strlen(str) == 0) {
-                sprintf(str, "%lu", strlen(arg));
-            }
-            char* s = (char*)malloc((strlen(str) + 4) * sizeof(char));
-            sprintf(s, "%%%s.%ss", str, str);
-            char* string = (char*)malloc((strlen(arg)) * sizeof(char));
-            sprintf(string, s, arg);
-            result = append_to_string(result, string);
-            free(s);
-            free(string);
-        } else if (tolower(value[strlen(value) - 1]) == 'x') {
-            // Positional Editing (nX)
-            int t = atoi(substring(value, 0, strlen(value) - 1));
-            for (int i = 0; i < t; i++) {
+            while (newline != 0) {
                 result = append_to_string(result, " ");
+                newline--;
             }
-        } else if (tolower(value[0]) == 'i') {
-            // Integer Editing ( I[w[.m]] )
-            int val = va_arg(args, int);
-            handle_integer(value, val, &result);
-            arguments++;
-        } else if (tolower(value[0]) == 'd') {
-            // D Editing (D[w[.d]])
-            double val = va_arg(args, double);
-            handle_decimal(value, val, scale, &result, "D");
-            arguments++;
-        } else if (tolower(value[0]) == 'e') {
-            // E Editing E[w[.d][Ee]]
-            // Only (E[w[.d]]) has been implemented yet
-            double val = va_arg(args, double);
-            handle_decimal(value, val, scale, &result, "E");
-            arguments++;
-        } else if (tolower(value[0]) == 'f') {
-            double val = va_arg(args, double);
-            handle_decimal(value, val, scale, &result, "E");
-            arguments++;
-        } else if (strlen(value) != 0) {
-            printf("Printing support is not available for %s format.\n",value);
         }
-
-        while (newline != 0) {
-            result = append_to_string(result, " ");
-            newline--;
+        if ( count > 0 ) {
+            result = append_to_string(result, "\n");
         }
     }
 
