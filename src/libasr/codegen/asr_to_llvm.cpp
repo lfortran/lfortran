@@ -5596,7 +5596,7 @@ public:
             throw CodeGenError("RealUnaryMinus: kind not supported yet");
         }
 
-        tmp = builder->CreateFSub(zero, tmp);
+        tmp = builder->CreateFNeg(tmp);
     }
 
     void visit_ComplexUnaryMinus(const ASR::ComplexUnaryMinus_t &x) {
@@ -5605,35 +5605,12 @@ public:
             return;
         }
         this->visit_expr_wrapper(x.m_arg, true);
-        llvm::Value *c = tmp;
-        double re = 0.0;
-        double im = 0.0;
-        llvm::Value *re2, *im2;
-        llvm::Type *type;
-        int a_kind = down_cast<ASR::Complex_t>(x.m_type)->m_kind;
-        std::string f_name;
-        switch (a_kind) {
-            case 4: {
-                re2 = llvm::ConstantFP::get(context, llvm::APFloat((float)re));
-                im2 = llvm::ConstantFP::get(context, llvm::APFloat((float)im));
-                type = complex_type_4;
-                f_name = "_lfortran_complex_sub_32";
-                break;
-            }
-            case 8: {
-                re2 = llvm::ConstantFP::get(context, llvm::APFloat(re));
-                im2 = llvm::ConstantFP::get(context, llvm::APFloat(im));
-                type = complex_type_8;
-                f_name = "_lfortran_complex_sub_64";
-                break;
-            }
-            default: {
-                throw CodeGenError("kind type is not supported");
-            }
-        }
-        tmp = complex_from_floats(re2, im2, type);
-        llvm::Value *zero_c = tmp;
-        tmp = lfortran_complex_bin_op(zero_c, c, f_name, type);
+        llvm::Type *type = tmp->getType();
+        llvm::Value *re = complex_re(tmp, tmp->getType());
+        llvm::Value *im = complex_im(tmp, tmp->getType());
+        re = builder->CreateFNeg(re);
+        im = builder->CreateFNeg(im);
+        tmp = complex_from_floats(re, im, type);
     }
 
     template <typename T>
