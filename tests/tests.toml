@@ -3416,3 +3416,7 @@ asr_implicit_argument_casting = true
 [[test]]
 filename = "errors/end_sub_name.f90"
 asr = true
+
+[[test]]
+filename = "errors/end_program_name.f90"
+asr = true
