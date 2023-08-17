@@ -63,6 +63,23 @@ static inline char* name2char(const ast_t *n)
     return down_cast2<Name_t>(n)->m_id;
 }
 
+static inline void check_subroutine_names(char* n1, char* n2, Location &loc) {
+    if (strcmp(n1, n2) != 0) {
+        throw LCompilers::LFortran::parser_local::ParserError(
+            "End subroutine name does not match subroutine name", loc);
+    }
+}
+
+static inline char* name2char_check(const ast_t *n1, const ast_t *n2,
+        Location &loc) {
+    char* n1c = down_cast2<Name_t>(n1)->m_id;
+    if(n2) {
+        char* n2c = down_cast2<Name_t>(n2)->m_id;
+        check_subroutine_names(n1c, n2c, loc);
+    }
+    return n1c;
+}
+
 template <typename T, astType type>
 static inline T** vec_cast(const Vec<ast_t*> &x) {
     T **s = (T**)x.p;
@@ -1192,9 +1209,9 @@ Vec<ast_t*> empty_sync(Allocator &al) {
 #define EVENT_WAIT_KW_ARG(id, e, l) make_AttrEventWaitKwArg_t(p.m_a, l, \
         name2char(id), EXPR(e))
 
-#define SUBROUTINE(name, args, bind, trivia, use, import, implicit, decl, stmts, contains, l) \
+#define SUBROUTINE(name, args, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) \
     make_Subroutine_t(p.m_a, l, \
-        /*name*/ name2char(name), \
+        /*name*/ name2char_check(name, name_opt, l), \
         /*args*/ ARGS(p.m_a, l, args), \
         /*n_args*/ args.size(), \
         /*m_attributes*/ nullptr, \
@@ -1214,8 +1231,8 @@ Vec<ast_t*> empty_sync(Allocator &al) {
         /*contains*/ CONTAINS(contains), \
         /*n_contains*/ contains.size())
 #define SUBROUTINE1(fn_mod, name, args, bind, trivia, use, import, implicit, \
-        decl, stmts, contains, l) make_Subroutine_t(p.m_a, l, \
-        /*name*/ name2char(name), \
+        decl, stmts, contains, name_opt, l) make_Subroutine_t(p.m_a, l, \
+        /*name*/ name2char_check(name, name_opt, l), \
         /*args*/ ARGS(p.m_a, l, args), \
         /*n_args*/ args.size(), \
         /*m_attributes*/ VEC_CAST(fn_mod, decl_attribute), \
