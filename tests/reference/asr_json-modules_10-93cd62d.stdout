@@ -51,13 +51,13 @@
                                                     },
                                                     "loc": {
                                                         "first": 65,
-                                                        "last": 135,
+                                                        "last": 134,
                                                         "first_filename": "tests/modules_10.f90",
                                                         "first_line": 4,
                                                         "first_column": 5,
                                                         "last_filename": "tests/modules_10.f90",
                                                         "last_line": 6,
-                                                        "last_column": 19
+                                                        "last_column": 18
                                                     }
                                                 }
                                             }
@@ -81,13 +81,13 @@
                                             },
                                             "loc": {
                                                 "first": 220,
-                                                "last": 334,
+                                                "last": 333,
                                                 "first_filename": "tests/modules_10.f90",
                                                 "first_line": 12,
                                                 "first_column": 5,
                                                 "last_filename": "tests/modules_10.f90",
                                                 "last_line": 16,
-                                                "last_column": 19
+                                                "last_column": 18
                                             }
                                         },
                                         "dependencies": [
@@ -123,13 +123,13 @@
                                     },
                                     "loc": {
                                         "first": 220,
-                                        "last": 334,
+                                        "last": 333,
                                         "first_filename": "tests/modules_10.f90",
                                         "first_line": 12,
                                         "first_column": 5,
                                         "last_filename": "tests/modules_10.f90",
                                         "last_line": 16,
-                                        "last_column": 19
+                                        "last_column": 18
                                     }
                                 }
                             }
@@ -289,13 +289,13 @@
                                             },
                                             "loc": {
                                                 "first": 65,
-                                                "last": 135,
+                                                "last": 134,
                                                 "first_filename": "tests/modules_10.f90",
                                                 "first_line": 4,
                                                 "first_column": 5,
                                                 "last_filename": "tests/modules_10.f90",
                                                 "last_line": 6,
-                                                "last_column": 19
+                                                "last_column": 18
                                             }
                                         },
                                         "dependencies": [],
@@ -346,13 +346,13 @@
                                     },
                                     "loc": {
                                         "first": 65,
-                                        "last": 135,
+                                        "last": 134,
                                         "first_filename": "tests/modules_10.f90",
                                         "first_line": 4,
                                         "first_column": 5,
                                         "last_filename": "tests/modules_10.f90",
                                         "last_line": 6,
-                                        "last_column": 19
+                                        "last_column": 18
                                     }
                                 }
                             }
