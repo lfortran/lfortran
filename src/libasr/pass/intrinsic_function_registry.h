@@ -1181,7 +1181,7 @@ namespace Sign {
         if (ASRUtils::is_real(*t1)) {
             double rv1 = std::abs(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
             double rv2 = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
-            if (rv2 < 0) rv1 = -rv1;
+            rv1 = copysign(rv1, rv2);
             return make_ConstantWithType(make_RealConstant_t, rv1, t1, loc);
         } else {
             int64_t iv1 = std::abs(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n);
