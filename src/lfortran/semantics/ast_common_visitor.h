@@ -1137,6 +1137,204 @@ public:
         return true;
     }
 
+    void handle_array_data_stmt(const AST::DataStmt_t &x, AST::DataStmtSet_t* a, ASR::ttype_t* obj_type, ASR::expr_t* object, size_t &curr_value) {
+        ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(obj_type);
+        if (check_equal_value(a->m_value, a->n_value)) {
+            /*
+                Case:
+                integer :: x(5)
+                data x / 5*1 /
+
+
+                Here the data statement gets expanded to:
+                integer :: x(5)
+                x = 1
+
+
+                Because for arrays of larger size, the current implementation
+                of data statement is not efficient.
+            */
+            this->visit_expr(*a->m_value[curr_value++]);
+            ASR::expr_t* value = ASRUtils::EXPR(tmp);
+            if (!ASRUtils::types_equal(ASRUtils::expr_type(value), array_type->m_type)) {
+                throw SemanticError("Type mismatch during data initialization",
+                    x.base.base.loc);
+            }
+            ASR::expr_t* expression_value = ASRUtils::expr_value(value);
+            if (expression_value) {
+                ASR::stmt_t* assignment_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc,
+                                            object, expression_value, nullptr));
+                current_body->push_back(al, assignment_stmt);
+            } else {
+                throw SemanticError("The value in data must be a constant",
+                    x.base.base.loc);
+            }
+        } else {
+            Vec<ASR::expr_t*> body;
+            body.reserve(al, a->n_value);
+            size_t size_of_array = ASRUtils::get_fixed_size_of_array(array_type->m_dims, array_type->n_dims);
+            curr_value += size_of_array;
+            for (size_t j=0; j < size_of_array; j++) {
+                this->visit_expr(*a->m_value[j]);
+                ASR::expr_t* value = ASRUtils::EXPR(tmp);
+                if (!ASRUtils::types_equal(ASRUtils::expr_type(value), array_type->m_type)) {
+                    throw SemanticError("Type mismatch during data initialization",
+                        x.base.base.loc);
+                }
+                ASR::expr_t* expression_value = ASRUtils::expr_value(value);
+                if (expression_value) {
+                    body.push_back(al, expression_value);
+                } else {
+                    throw SemanticError("The value in data must be a constant",
+                        x.base.base.loc);
+                }
+
+            }
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, 1);
+            ASR::dimension_t dim;
+            dim.loc = x.base.base.loc;
+            ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+            ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
+            ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
+                                a->n_value, int32_type));
+            dim.m_start = one;
+            dim.m_length = x_n_args;
+            dims.push_back(al, dim);
+            obj_type = ASRUtils::duplicate_type(al, obj_type, &dims);
+            tmp = ASRUtils::make_ArrayConstant_t_util(al, x.base.base.loc, body.p,
+                body.size(), obj_type, ASR::arraystorageType::ColMajor);
+            ASR::Variable_t* v2 = nullptr;
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*object)) {
+                ASR::StructInstanceMember_t *mem = ASR::down_cast<ASR::StructInstanceMember_t>(object);
+                v2 = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(mem->m_m));
+            } else {
+                ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
+                v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
+            }
+            v2->m_value = ASRUtils::EXPR(tmp);
+            v2->m_symbolic_value = ASRUtils::EXPR(tmp);
+            SetChar var_deps_vec;
+            var_deps_vec.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
+                v2->m_symbolic_value, v2->m_value);
+            v2->m_dependencies = var_deps_vec.p;
+            v2->n_dependencies = var_deps_vec.size();
+        }
+    }
+
+    void handle_implied_do_loop_data_stmt(const AST::DataStmt_t &x, AST::DataStmtSet_t *a, ASR::expr_t* object, size_t &j) {
+        ASR::ImpliedDoLoop_t *idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(object);
+
+        ASR::expr_t* idl_start = idl->m_start;
+        ASR::expr_t* idl_end = idl->m_end;
+        ASR::expr_t* idl_increment = idl->m_increment;
+
+        ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+
+        if (!idl_increment) {
+            idl_increment = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
+        }
+
+        ASR::IntegerConstant_t* idl_start_int = ASR::down_cast<ASR::IntegerConstant_t>(idl_start);
+        ASR::IntegerConstant_t* idl_end_int = ASR::down_cast<ASR::IntegerConstant_t>(idl_end);
+        ASR::IntegerConstant_t* idl_increment_int = ASR::down_cast<ASR::IntegerConstant_t>(idl_increment);
+
+        int64_t start = idl_start_int->m_n;
+        int64_t end = idl_end_int->m_n;
+        int64_t increment = idl_increment_int->m_n;
+
+        // Ideally idl->n_values should be 1, as it will be an implied do loop
+        LCOMPILERS_ASSERT(idl->n_values == 1)
+        ASRUtils::ExprStmtDuplicator expr_duplicator(al);
+        for (int64_t i = start; i <= end; i += increment) {
+            ASR::expr_t* array_item_expr = expr_duplicator.duplicate_expr(idl->m_values[0]);
+            ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(array_item_expr);
+            for (size_t j = 0; j < array_item->n_args; j++) {
+                ASR::array_index_t arg = array_item->m_args[j];
+                ASR::expr_t* arg_right = arg.m_right;
+                if (ASR::is_a<ASR::Var_t>(*arg_right)) {
+                    array_item->m_args[j].m_right = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, idl->base.base.loc, i, int32_type));
+                }
+            }
+            ASR::expr_t* target = ASRUtils::EXPR((ASR::asr_t*) array_item);
+            this->visit_expr(*a->m_value[j++]);
+            ASR::expr_t* value = ASRUtils::EXPR(tmp);
+            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
+                    x.base.base.loc, target, value, nullptr));
+            LCOMPILERS_ASSERT(current_body != nullptr)
+            current_body->push_back(al, assign_stmt);
+        }
+    }
+
+    void handle_scalar_data_stmt(const AST::DataStmt_t &x, AST::DataStmtSet_t *a, size_t i, size_t &j) {
+        this->visit_expr(*a->m_object[i]);
+        ASR::expr_t* object = ASRUtils::EXPR(tmp);
+        this->visit_expr(*a->m_value[j++]);
+        ASR::expr_t* value = ASRUtils::EXPR(tmp);
+        // The parser ensures object is a TK_NAME
+        // The `visit_expr` ensures it resolves as an expression
+        // which must be a `Var_t` pointing to a `Variable_t`,
+        // so no checks are needed:
+        ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
+                                ASRUtils::expr_type(value), ASRUtils::expr_type(object));
+        ASR::expr_t* expression_value = ASRUtils::expr_value(value);
+        if (!expression_value) {
+            throw SemanticError("The value in data must be a constant",
+                x.base.base.loc);
+        }
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*object)) {
+            ASR::StructInstanceMember_t *mem = ASR::down_cast<ASR::StructInstanceMember_t>(object);
+            ASR::Variable_t* v2 = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(mem->m_m));
+            v2->m_value = expression_value;
+            v2->m_symbolic_value = expression_value;
+            SetChar var_deps_vec;
+            var_deps_vec.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
+                v2->m_symbolic_value, v2->m_value);
+            v2->m_dependencies = var_deps_vec.p;
+            v2->n_dependencies = var_deps_vec.size();
+            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
+                        object->base.loc, object, expression_value, nullptr));
+            LCOMPILERS_ASSERT(current_body != nullptr)
+            current_body->push_back(al, assign_stmt);
+        } else if (ASR::is_a<ASR::Var_t>(*object)) {
+            // This is the following case:
+            // y / 2 /
+            ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
+            ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
+            v2->m_value = expression_value;
+            v2->m_symbolic_value = expression_value;
+            SetChar var_deps_vec;
+            var_deps_vec.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
+                v2->m_symbolic_value, v2->m_value);
+            v2->m_dependencies = var_deps_vec.p;
+            v2->n_dependencies = var_deps_vec.size();
+            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
+                        object->base.loc, object, expression_value, nullptr));
+            LCOMPILERS_ASSERT(current_body != nullptr)
+            current_body->push_back(al, assign_stmt);
+        } else if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
+            // This is the following case:
+            // x(2) / 2 /
+            // We create an assignment node and insert into the current body.
+            // i.e., x(2) = 2.
+            // Note: this will only work if the data statement is
+            // above the place where it is being used, otherwise it
+            // won't work correctly
+            // To fix that, we would have to iterate over data statements first
+            // but we can fix that later.
+            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
+                        object->base.loc, object, expression_value, nullptr));
+            LCOMPILERS_ASSERT(current_body != nullptr)
+            current_body->push_back(al, assign_stmt);
+        } else {
+            throw SemanticError("The variable (object) type is not supported (only variables and array items are supported so far)",
+                x.base.base.loc);
+        }
+    }
+
 
     void visit_DataStmt(const AST::DataStmt_t &x) {
         // The DataStmt is a statement, so it occurs in the BodyVisitor.
@@ -1148,10 +1346,11 @@ public:
         //   data x / 1.0, 2.0 /, a, b / 1.0, 2.0 /, c / 1.0 /
         for (size_t i=0; i < x.n_items; i++) {
             AST::DataStmtSet_t *a = AST::down_cast<AST::DataStmtSet_t>(x.m_items[i]);
-            // Now we are dealing with just one item, there are three cases possible:
+            // Now we are dealing with just one item, there are four cases possible:
             // data x / 1, 2, 3 /       ! x must be an array
             // data x / 1 /             ! x must be a scalar (integer)
             // data x, y, z / 1, 2, 3 / ! x, y, z must be a scalar (integer)
+            // data x, (y(i),i = 1,3) /1, 2, 3, 4/ ! x must be a scalar (integer) and y must be an array
             if (a->n_object != a->n_value) {
                 // This is the first case:
                 // data x / 1, 2, 3 /       ! x must be an array
@@ -1160,141 +1359,38 @@ public:
                     ASR::expr_t* object = ASRUtils::EXPR(tmp);
                     ASR::ttype_t* obj_type = ASRUtils::expr_type(object);
                     if (ASRUtils::is_array(obj_type)) { // it is an array
-                        ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(obj_type);
-                        if (check_equal_value(a->m_value, a->n_value)) {
-                           /*
-                               Case:
-                               integer :: x(5)
-                               data x / 5*1 /
-
-
-                               Here the data statement gets expanded to:
-                               integer :: x(5)
-                               x = 1
-
-
-                               Because for arrays of larger size, the current implementation
-                               of data statement is not efficient.
-                           */
-                           this->visit_expr(*a->m_value[0]);
-                           ASR::expr_t* value = ASRUtils::EXPR(tmp);
-                           if (!ASRUtils::types_equal(ASRUtils::expr_type(value), array_type->m_type)) {
-                               throw SemanticError("Type mismatch during data initialization",
-                                   x.base.base.loc);
-                           }
-                           ASR::expr_t* expression_value = ASRUtils::expr_value(value);
-                           if (expression_value) {
-                               ASR::stmt_t* assignment_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc,
-                                                           object, expression_value, nullptr));
-                               current_body->push_back(al, assignment_stmt);
-                           } else {
-                               throw SemanticError("The value in data must be a constant",
-                                   x.base.base.loc);
-                           }
-                        } else {
-                            Vec<ASR::expr_t*> body;
-                            body.reserve(al, a->n_value);
-                            for (size_t j=0; j < a->n_value; j++) {
-                                this->visit_expr(*a->m_value[j]);
-                                ASR::expr_t* value = ASRUtils::EXPR(tmp);
-                                if (!ASRUtils::types_equal(ASRUtils::expr_type(value), array_type->m_type)) {
-                                    throw SemanticError("Type mismatch during data initialization",
-                                        x.base.base.loc);
-                                }
-                                ASR::expr_t* expression_value = ASRUtils::expr_value(value);
-                                if (expression_value) {
-                                    body.push_back(al, expression_value);
-                                } else {
-                                    throw SemanticError("The value in data must be a constant",
-                                        x.base.base.loc);
-                                }
-
-                            }
-                            Vec<ASR::dimension_t> dims;
-                            dims.reserve(al, 1);
-                            ASR::dimension_t dim;
-                            dim.loc = x.base.base.loc;
-                            ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-                            ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
-                            ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
-                                                a->n_value, int32_type));
-                            dim.m_start = one;
-                            dim.m_length = x_n_args;
-                            dims.push_back(al, dim);
-                            obj_type = ASRUtils::duplicate_type(al, obj_type, &dims);
-                            tmp = ASRUtils::make_ArrayConstant_t_util(al, x.base.base.loc, body.p,
-                                body.size(), obj_type, ASR::arraystorageType::ColMajor);
-                            ASR::Variable_t* v2 = nullptr;
-                            if (ASR::is_a<ASR::StructInstanceMember_t>(*object)) {
-                                ASR::StructInstanceMember_t *mem = ASR::down_cast<ASR::StructInstanceMember_t>(object);
-                                v2 = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(mem->m_m));
-                            } else {
-                                ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
-                                v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
-                            }
-                            v2->m_value = ASRUtils::EXPR(tmp);
-                            v2->m_symbolic_value = ASRUtils::EXPR(tmp);
-                            SetChar var_deps_vec;
-                            var_deps_vec.reserve(al, 1);
-                            ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
-                                v2->m_symbolic_value, v2->m_value);
-                            v2->m_dependencies = var_deps_vec.p;
-                            v2->n_dependencies = var_deps_vec.size();
-                        }
+                        size_t curr_value = 0;
+                        handle_array_data_stmt(x, a, obj_type, object, curr_value);
                     } else if (ASR::is_a<ASR::ImpliedDoLoop_t>(*object)) {
                         /*
                             case: DATA (a(i),i=1,5) /1.0, 2.0, 3*0.0/
                             Here the implied do loop gets expanded to:
                             DATA a(1), a(2), a(3), a(4), a(5) /1.0, 2.0, 0.0, 0.0, 0.0/
                         */
-                        ASR::ImpliedDoLoop_t *idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(object);
-
-                        ASR::expr_t* idl_start = idl->m_start;
-                        ASR::expr_t* idl_end = idl->m_end;
-                        ASR::expr_t* idl_increment = idl->m_increment;
-
-                        ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-
-                        if (!idl_increment) {
-                            idl_increment = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
-                        }
-
-                        ASR::IntegerConstant_t* idl_start_int = ASR::down_cast<ASR::IntegerConstant_t>(idl_start);
-                        ASR::IntegerConstant_t* idl_end_int = ASR::down_cast<ASR::IntegerConstant_t>(idl_end);
-                        ASR::IntegerConstant_t* idl_increment_int = ASR::down_cast<ASR::IntegerConstant_t>(idl_increment);
-
-                        int64_t start = idl_start_int->m_n;
-                        int64_t end = idl_end_int->m_n;
-                        int64_t increment = idl_increment_int->m_n;
-
-                        // Ideally idl->n_values should be 1, as it will be an implied do loop
-                        LCOMPILERS_ASSERT(idl->n_values == 1)
-                        ASRUtils::ExprStmtDuplicator expr_duplicator(al);
-                        for (int64_t i = start; i <= end; i += increment) {
-                            ASR::expr_t* array_item_expr = expr_duplicator.duplicate_expr(idl->m_values[0]);
-                            ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(array_item_expr);
-                            for (size_t j = 0; j < array_item->n_args; j++) {
-                                ASR::array_index_t arg = array_item->m_args[j];
-                                ASR::expr_t* arg_right = arg.m_right;
-                                if (ASR::is_a<ASR::Var_t>(*arg_right)) {
-                                    array_item->m_args[j].m_right = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, idl->base.base.loc, i, int32_type));
-                                }
-                            }
-                            ASR::expr_t* target = ASRUtils::EXPR((ASR::asr_t*) array_item);
-                            this->visit_expr(*a->m_value[i-1]);
-                            ASR::expr_t* value = ASRUtils::EXPR(tmp);
-                            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
-                                    x.base.base.loc, target, value, nullptr));
-                            LCOMPILERS_ASSERT(current_body != nullptr)
-                            current_body->push_back(al, assign_stmt);
-                        }
+                        handle_implied_do_loop_data_stmt(x, a, object, i);
                     } else {
                         throw SemanticError("There is one variable and multiple values, but the variable is not an array",
                             x.base.base.loc);
                     }
                 } else {
-                    throw SemanticError("The number of values and variables do not match, and there is more than one variable",
-                        x.base.base.loc);
+                    // This is fourth case:
+                    // data x, (y(i),i = 1,3) /1, 2, 3, 4/ ! x can be array or scalar and y must be an array
+                    // TODO: check if n_objects == n_values after unrolling implied do loops and length of arrays
+
+                    size_t curr_value = 0;
+
+                    for (size_t j = 0; j < a->n_object; j++) {
+                        this->visit_expr(*a->m_object[j]);
+                        ASR::expr_t* object = ASRUtils::EXPR(tmp);
+                        ASR::ttype_t* obj_type = ASRUtils::expr_type(object);
+                        if (ASRUtils::is_array(obj_type)) { // it is an array
+                            handle_array_data_stmt(x, a, obj_type, object, curr_value);
+                        } else if (ASR::is_a<ASR::ImpliedDoLoop_t>(*object)) {
+                            handle_implied_do_loop_data_stmt(x, a, object, curr_value);
+                        } else {
+                            handle_scalar_data_stmt(x, a, j, curr_value);
+                        }
+                    }
                 }
             } else {
                 // This is the second and third case:
@@ -1310,71 +1406,8 @@ public:
                     // or
                     // x(2) / 2 /
                     //
-                    this->visit_expr(*a->m_object[i]);
-                    ASR::expr_t* object = ASRUtils::EXPR(tmp);
-                    this->visit_expr(*a->m_value[i]);
-                    ASR::expr_t* value = ASRUtils::EXPR(tmp);
-                    // The parser ensures object is a TK_NAME
-                    // The `visit_expr` ensures it resolves as an expression
-                    // which must be a `Var_t` pointing to a `Variable_t`,
-                    // so no checks are needed:
-                    ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
-                                            ASRUtils::expr_type(value), ASRUtils::expr_type(object));
-                    ASR::expr_t* expression_value = ASRUtils::expr_value(value);
-                    if (!expression_value) {
-                        throw SemanticError("The value in data must be a constant",
-                            x.base.base.loc);
-                    }
-                    if (ASR::is_a<ASR::StructInstanceMember_t>(*object)) {
-                        ASR::StructInstanceMember_t *mem = ASR::down_cast<ASR::StructInstanceMember_t>(object);
-                        ASR::Variable_t* v2 = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(mem->m_m));
-                        v2->m_value = expression_value;
-                        v2->m_symbolic_value = expression_value;
-                        SetChar var_deps_vec;
-                        var_deps_vec.reserve(al, 1);
-                        ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
-                            v2->m_symbolic_value, v2->m_value);
-                        v2->m_dependencies = var_deps_vec.p;
-                        v2->n_dependencies = var_deps_vec.size();
-                        ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
-                                    object->base.loc, object, expression_value, nullptr));
-                        LCOMPILERS_ASSERT(current_body != nullptr)
-                        current_body->push_back(al, assign_stmt);
-                    } else if (ASR::is_a<ASR::Var_t>(*object)) {
-                        // This is the following case:
-                        // y / 2 /
-                        ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
-                        ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
-                        v2->m_value = expression_value;
-                        v2->m_symbolic_value = expression_value;
-                        SetChar var_deps_vec;
-                        var_deps_vec.reserve(al, 1);
-                        ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
-                            v2->m_symbolic_value, v2->m_value);
-                        v2->m_dependencies = var_deps_vec.p;
-                        v2->n_dependencies = var_deps_vec.size();
-                        ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
-                                    object->base.loc, object, expression_value, nullptr));
-                        LCOMPILERS_ASSERT(current_body != nullptr)
-                        current_body->push_back(al, assign_stmt);
-                    } else if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
-                        // This is the following case:
-                        // x(2) / 2 /
-                        // We create an assignment node and insert into the current body.
-                        // i.e., x(2) = 2.
-                        // Note: this will only work if the data statement is
-                        // above the place where it is being used, otherwise it
-                        // won't work correctly
-                        // To fix that, we would have to iterate over data statements first
-                        // but we can fix that later.
-                        ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
-                                    object->base.loc, object, expression_value, nullptr));
-                        LCOMPILERS_ASSERT(current_body != nullptr)
-                        current_body->push_back(al, assign_stmt);
-                    } else {
-                        throw SemanticError("The variable (object) type is not supported (only variables and array items are supported so far)",
-                            x.base.base.loc);
-                    }
+                    size_t j = i;
+                    handle_scalar_data_stmt(x, a, i, j);
                 }
             }
         }
