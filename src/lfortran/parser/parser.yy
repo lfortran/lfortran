@@ -379,9 +379,10 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> requires_decl
 %type <ast> enum_decl
 %type <ast> program
+%type <ast> end_program
+%type <ast> id_opt
 %type <ast> subroutine
 %type <ast> end_subroutine
-%type <ast> id_opt
 %type <ast> procedure
 %type <ast> sub_or_func
 %type <vec_ast> sub_args
@@ -836,13 +837,13 @@ proc_modifier
 program
     : KW_PROGRAM id sep use_statement_star implicit_statement_star decl_statements
         contains_block_opt end_program sep {
-      LLOC(@$, @9); $$ = PROGRAM($2, TRIVIA($3, $9, @$), $4, $5, $6, $7, @$); }
+      LLOC(@$, @8); $$ = PROGRAM($2, TRIVIA($3, $9, @$), $4, $5, $6, $7, $8, @$); }
     ;
 
 end_program
-    : KW_END_PROGRAM id_opt
-    | KW_ENDPROGRAM id_opt
-    | KW_END
+    : KW_END_PROGRAM id_opt { $$ = $2; }
+    | KW_ENDPROGRAM id_opt { $$ = $2; }
+    | KW_END { $$ = nullptr; }
     ;
 
 end_module
