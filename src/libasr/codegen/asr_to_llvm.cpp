@@ -5584,18 +5584,6 @@ public:
             return;
         }
         this->visit_expr_wrapper(x.m_arg, true);
-        llvm::Value *zero;
-        int a_kind = down_cast<ASR::Real_t>(x.m_type)->m_kind;
-        if (a_kind == 4) {
-            zero = llvm::ConstantFP::get(context,
-                llvm::APFloat((float)0.0));
-        } else if (a_kind == 8) {
-            zero = llvm::ConstantFP::get(context,
-                llvm::APFloat((double)0.0));
-        } else {
-            throw CodeGenError("RealUnaryMinus: kind not supported yet");
-        }
-
         tmp = builder->CreateFNeg(tmp);
     }
 
@@ -5606,8 +5594,8 @@ public:
         }
         this->visit_expr_wrapper(x.m_arg, true);
         llvm::Type *type = tmp->getType();
-        llvm::Value *re = complex_re(tmp, tmp->getType());
-        llvm::Value *im = complex_im(tmp, tmp->getType());
+        llvm::Value *re = complex_re(tmp, type);
+        llvm::Value *im = complex_im(tmp, type);
         re = builder->CreateFNeg(re);
         im = builder->CreateFNeg(im);
         tmp = complex_from_floats(re, im, type);
