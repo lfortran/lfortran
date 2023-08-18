@@ -217,6 +217,7 @@ RUN(NAME data_06 LABELS gfortran llvm c)
 RUN(NAME data_07 LABELS gfortran) # TODO: Fix this test
 RUN(NAME data_08 LABELS gfortran llvmImplicit NOFAST)
 RUN(NAME data_09 LABELS gfortran llvm c)
+RUN(NAME data_10 LABELS gfortran llvm)
 RUN(NAME minmax_01 LABELS gfortran llvm wasm c)
 RUN(NAME arithmetic_if_01 LABELS gfortran llvm c) # arithmetic tests use goto
 RUN(NAME arithmetic_if_02 LABELS gfortran llvm c)
