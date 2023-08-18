@@ -481,6 +481,8 @@ RUN(NAME intrinsics_60 LABELS gfortran llvm COPY_TO_BIN intrinsics_60_data.txt) 
 RUN(NAME intrinsics_61 LABELS gfortran llvm) # char
 RUN(NAME intrinsics_62 LABELS gfortran llvm) # shape
 RUN(NAME intrinsics_63 LABELS gfortran llvm)
+RUN(NAME intrinsics_64 LABELS gfortran llvm wasm) # sign
+
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
