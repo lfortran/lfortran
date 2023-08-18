@@ -823,7 +823,7 @@ public:
 
     ASR::symbol_t* resolve_symbol(const Location &loc, const std::string &sub_name) {
         SymbolTable *scope = current_scope;
-        ASR::symbol_t *sub = scope->resolve_symbol(sub_name);
+        ASR::symbol_t *sub = scope->resolve_symbol(to_lower(sub_name));
         if (!sub) {
             throw SemanticError("Symbol '" + sub_name + "' not declared", loc);
         }
