@@ -1830,7 +1830,12 @@ public:
     bool is_statement_function( const AST::Assignment_t &x ) {
         if (AST::is_a<AST::FuncCallOrArray_t>(*x.m_target)) {
             // Look for the type of *x.m_target in symbol table, if it is integer or nullptr then it is a statement function
-            std::string var_name = AST::down_cast<AST::FuncCallOrArray_t>(x.m_target)->m_func;
+            AST::FuncCallOrArray_t *func_call_or_array = AST::down_cast<AST::FuncCallOrArray_t>(x.m_target);
+            if (func_call_or_array->n_member > 0) {
+                // This is part of a derived type, so it is not a statement function
+                return false;
+            }
+            std::string var_name = func_call_or_array->m_func;
             var_name = to_lower(var_name);
             ASR::symbol_t *sym = current_scope->resolve_symbol(var_name);
             if (sym==nullptr) {
