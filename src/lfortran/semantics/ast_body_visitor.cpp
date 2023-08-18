@@ -227,6 +227,22 @@ public:
         unit->n_items = items.size();
     }
 
+    void handle_format(Vec<ASR::stmt_t*> &body) {
+        for(auto it = print_statements.begin(); it != print_statements.end(); it++) {
+            int label = it->first;
+            const AST::Print_t* x = it->second;
+            if (format_statements.find(label) == format_statements.end()) {
+                diag.semantic_error_label("The label " + std::to_string(label) + " does not point to any format statement",
+                 {x->base.base.loc},"error");
+            } else {
+                visit_Print(*x);
+                body.push_back(al, ASR::down_cast<ASR::stmt_t>(tmp));
+            }
+        }
+        format_statements.clear();
+        print_statements.clear();
+    }
+
     void visit_Open(const AST::Open_t& x) {
         ASR::expr_t *a_newunit = nullptr, *a_filename = nullptr, *a_status = nullptr, *a_form = nullptr;
         if( x.n_args > 1 ) {
@@ -1429,8 +1445,8 @@ public:
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
-        format_statements.clear();
         transform_stmts(body, x.n_body, x.m_body);
+        handle_format(body);
         ASR::stmt_t* impl_del = create_implicit_deallocate(x.base.base.loc);
         if( impl_del != nullptr ) {
             body.push_back(al, impl_del);
@@ -1702,8 +1718,8 @@ public:
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
         body.reserve(al, x.n_body);
-        format_statements.clear();
         transform_stmts(body, x.n_body, x.m_body);
+        handle_format(body);
         if (active_entry_points.size() > 0) {
             SetChar current_function_dependencies_copy2 = current_function_dependencies;
             current_function_dependencies.clear(al);
@@ -1755,8 +1771,8 @@ public:
         body.reserve(al, x.n_body);
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
-        format_statements.clear();
         transform_stmts(body, x.n_body, x.m_body);
+        handle_format(body);
         if (active_entry_points.size() > 0) {
             SetChar current_function_dependencies_copy2 = current_function_dependencies;
             current_function_dependencies.clear(al);
@@ -2569,15 +2585,8 @@ public:
             ASR::IntegerConstant_t *f = ASR::down_cast<ASR::IntegerConstant_t>(fmt);
             int64_t label = f->m_n;
             if (format_statements.find(label) == format_statements.end()) {
-                // TODO: make this an error once we can find labels
-                // below us
-                diag.semantic_warning_label(
-                    "The label " + std::to_string(label) + " does not point to any format statement",
-                    {fmt->base.loc},
-                    "ignored for now"
-                );
-                tmp = ASR::make_Print_t(al, x.base.base.loc, fmt,
-                    body.p, body.size(), nullptr, nullptr);
+                print_statements[label] = &x;
+                tmp = nullptr;
                 return;
             }
             ASR::ttype_t *fmt_type = ASRUtils::TYPE(ASR::make_Character_t(
