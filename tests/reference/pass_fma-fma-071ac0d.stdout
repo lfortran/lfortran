@@ -2,31 +2,353 @@
     (SymbolTable
         1
         {
+            _lcompilers_optimization_fma_f32:
+                (Function
+                    (SymbolTable
+                        3
+                        {
+                            _lcompilers_optimization_fma_f32:
+                                (Variable
+                                    3
+                                    _lcompilers_optimization_fma_f32
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            a:
+                                (Variable
+                                    3
+                                    a
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            b:
+                                (Variable
+                                    3
+                                    b
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            c:
+                                (Variable
+                                    3
+                                    c
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    _lcompilers_optimization_fma_f32
+                    (FunctionType
+                        [(Real 4)
+                        (Real 4)
+                        (Real 4)]
+                        (Real 4)
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    []
+                    [(Var 3 a)
+                    (Var 3 b)
+                    (Var 3 c)]
+                    [(=
+                        (Var 3 _lcompilers_optimization_fma_f32)
+                        (RealBinOp
+                            (Var 3 a)
+                            Add
+                            (RealBinOp
+                                (Var 3 b)
+                                Mul
+                                (Var 3 c)
+                                (Real 4)
+                                ()
+                            )
+                            (Real 4)
+                            ()
+                        )
+                        ()
+                    )]
+                    (Var 3 _lcompilers_optimization_fma_f32)
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            _lcompilers_optimization_fma_f321:
+                (Function
+                    (SymbolTable
+                        4
+                        {
+                            _lcompilers_optimization_fma_f321:
+                                (Variable
+                                    4
+                                    _lcompilers_optimization_fma_f321
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            a:
+                                (Variable
+                                    4
+                                    a
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            b:
+                                (Variable
+                                    4
+                                    b
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            c:
+                                (Variable
+                                    4
+                                    c
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    _lcompilers_optimization_fma_f321
+                    (FunctionType
+                        [(Real 4)
+                        (Real 4)
+                        (Real 4)]
+                        (Real 4)
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    []
+                    [(Var 4 a)
+                    (Var 4 b)
+                    (Var 4 c)]
+                    [(=
+                        (Var 4 _lcompilers_optimization_fma_f321)
+                        (RealBinOp
+                            (Var 4 a)
+                            Add
+                            (RealBinOp
+                                (Var 4 b)
+                                Mul
+                                (Var 4 c)
+                                (Real 4)
+                                ()
+                            )
+                            (Real 4)
+                            ()
+                        )
+                        ()
+                    )]
+                    (Var 4 _lcompilers_optimization_fma_f321)
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            _lcompilers_optimization_fma_f64:
+                (Function
+                    (SymbolTable
+                        5
+                        {
+                            _lcompilers_optimization_fma_f64:
+                                (Variable
+                                    5
+                                    _lcompilers_optimization_fma_f64
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            a:
+                                (Variable
+                                    5
+                                    a
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            b:
+                                (Variable
+                                    5
+                                    b
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            c:
+                                (Variable
+                                    5
+                                    c
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    _lcompilers_optimization_fma_f64
+                    (FunctionType
+                        [(Real 8)
+                        (Real 8)
+                        (Real 8)]
+                        (Real 8)
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    []
+                    [(Var 5 a)
+                    (Var 5 b)
+                    (Var 5 c)]
+                    [(=
+                        (Var 5 _lcompilers_optimization_fma_f64)
+                        (RealBinOp
+                            (Var 5 a)
+                            Add
+                            (RealBinOp
+                                (Var 5 b)
+                                Mul
+                                (Var 5 c)
+                                (Real 8)
+                                ()
+                            )
+                            (Real 8)
+                            ()
+                        )
+                        ()
+                    )]
+                    (Var 5 _lcompilers_optimization_fma_f64)
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
             fma:
                 (Program
                     (SymbolTable
                         2
                         {
-                            fma@IntrinsicOptimization@fmar32:
-                                (ExternalSymbol
-                                    2
-                                    fma@IntrinsicOptimization@fmar32
-                                    4 fmar32
-                                    lfortran_intrinsic_optimization
-                                    []
-                                    fmar32
-                                    Private
-                                ),
-                            fma@IntrinsicOptimization@fmar64:
-                                (ExternalSymbol
-                                    2
-                                    fma@IntrinsicOptimization@fmar64
-                                    4 fmar64
-                                    lfortran_intrinsic_optimization
-                                    []
-                                    fmar64
-                                    Private
-                                ),
                             pi:
                                 (Variable
                                     2
@@ -167,11 +489,11 @@
                     [(=
                         (Var 2 x)
                         (FunctionCall
-                            2 fma@IntrinsicOptimization@fmar32
-                            1 fma@IntrinsicOptimization
+                            1 _lcompilers_optimization_fma_f321
+                            1 _lcompilers_optimization_fma_f321
                             [((FunctionCall
-                                2 fma@IntrinsicOptimization@fmar32
-                                1 fma@IntrinsicOptimization
+                                1 _lcompilers_optimization_fma_f32
+                                1 _lcompilers_optimization_fma_f32
                                 [((RealBinOp
                                     (Var 2 x)
                                     Mul
@@ -221,8 +543,8 @@
                     (=
                         (Var 2 z)
                         (FunctionCall
-                            2 fma@IntrinsicOptimization@fmar64
-                            1 fma@IntrinsicOptimization
+                            1 _lcompilers_optimization_fma_f64
+                            1 _lcompilers_optimization_fma_f64
                             [((Var 2 s1))
                             ((Var 2 z))
                             ((Var 2 s2))]
@@ -310,21 +632,7 @@
                         )]
                         []
                     )]
-                ),
-            fma@IntrinsicOptimization:
-                (ExternalSymbol
-                    1
-                    fma@IntrinsicOptimization
-                    4 fma
-                    lfortran_intrinsic_optimization
-                    []
-                    fma
-                    Private
-                ),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_optimization:
-                (IntrinsicModule lfortran_intrinsic_optimization)
+                )
         })
     []
 )
