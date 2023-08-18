@@ -264,6 +264,7 @@ expr
     | RealUnaryMinus(expr arg, ttype type, expr? value)
     | RealCompare(expr left, cmpop op, expr right, ttype type, expr? value)
     | RealBinOp(expr left, binop op, expr right, ttype type, expr? value)
+    | RealCopySign(expr target, expr source, ttype type, expr? value)
     | ComplexConstant(float re, float im, ttype type)
     | ComplexUnaryMinus(expr arg, ttype type, expr? value)
     | ComplexCompare(expr left, cmpop op, expr right, ttype type, expr? value)
