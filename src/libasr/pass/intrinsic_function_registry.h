@@ -787,6 +787,14 @@ class ASRBuilder {
         fn_body.push_back(al, else_[0]);
     }
 
+    ASR::stmt_t *Print(std::vector<ASR::expr_t *> items) {
+        // Used for debugging
+        Vec<ASR::expr_t *> x_exprs;
+        x_exprs.from_pointer_n_copy(al, &items[0], items.size());
+        return STMT(ASR::make_Print_t(al, loc, nullptr, x_exprs.p, x_exprs.n,
+            nullptr, nullptr));
+    }
+
 };
 
 namespace UnaryIntrinsicFunction {
