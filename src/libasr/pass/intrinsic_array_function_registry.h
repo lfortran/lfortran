@@ -1502,6 +1502,8 @@ namespace MatMul {
         ASR::expr_t *matrix_a = args[0], *matrix_b = args[1];
         bool is_type_allocatable = false;
         if (ASRUtils::is_allocatable(matrix_a) || ASRUtils::is_allocatable(matrix_b)) {
+            // TODO: Use Array type as return type instead of allocatable
+            //  for both Array and Allocatable as input arguments.
             is_type_allocatable = true;
         }
         ASR::ttype_t *type_a = expr_type(matrix_a);
@@ -1541,11 +1543,13 @@ namespace MatMul {
                 ret_type = extract_type(type_a);
             } else if ( is_real(*type_b) ) {
                 ret_type = extract_type(type_b);
+            } else {
+                ret_type = extract_type(type_a);
             }
             // TODO: Handle return_type for following types
             LCOMPILERS_ASSERT(!is_complex(*type_a) && !is_complex(*type_b))
-            LCOMPILERS_ASSERT(!matrix_a_logical && !matrix_b_logical)
         }
+        LCOMPILERS_ASSERT(!matrix_a_logical && !matrix_b_logical)
         ASR::dimension_t* matrix_a_dims = nullptr;
         ASR::dimension_t* matrix_b_dims = nullptr;
         int matrix_a_rank = extract_dimensions_from_ttype(type_a, matrix_a_dims);
@@ -1574,7 +1578,7 @@ namespace MatMul {
                     " in `matrix_b('n', m)`", matrix_b->base.loc);
             } else {
                 result_dims.push_back(al, b.set_dim(matrix_b_dims[1].m_start,
-                    matrix_b_dims[1].m_length, is_type_allocatable));
+                    matrix_b_dims[1].m_length));
             }
         } else if (matrix_a_rank == 2) {
             overload_id = 2;
@@ -1591,11 +1595,11 @@ namespace MatMul {
                     " in matrix_b" + err_dims, matrix_b->base.loc);
             }
             result_dims.push_back(al, b.set_dim(matrix_a_dims[0].m_start,
-                matrix_a_dims[0].m_length, is_type_allocatable));
+                matrix_a_dims[0].m_length));
             if (matrix_b_rank == 2) {
                 overload_id = 3;
                 result_dims.push_back(al, b.set_dim(matrix_b_dims[1].m_start,
-                    matrix_b_dims[1].m_length, is_type_allocatable));
+                    matrix_b_dims[1].m_length));
             }
         } else {
             err("The argument `matrix_b` in `matmul` must be of rank 2, "
@@ -1637,8 +1641,7 @@ namespace MatMul {
         ASR::dimension_t* matrix_b_dims = nullptr;
         extract_dimensions_from_ttype(arg_types[0], matrix_a_dims);
         extract_dimensions_from_ttype(arg_types[1], matrix_b_dims);
-        int n_i = -1, n_j = -1, n_k = -1;
-        ASR::expr_t *res_ref, *a_ref, *b_ref, *size_i, *size_j, *size_k;
+        ASR::expr_t *res_ref, *a_ref, *b_ref;
         ASR::expr_t *dim_mismatch_check;
         std::string assert_msg = "'MatMul' intrinsic dimension mismatch: "
             "please make sure the dimensions are ";
@@ -1648,62 +1651,25 @@ namespace MatMul {
             res_ref = b.ArrayItem_01(result,  {j});
             a_ref   = b.ArrayItem_01(args[0], {k});
             b_ref   = b.ArrayItem_01(args[1], {k, j});
-            size_i = i32(1);
-            if ( extract_value(matrix_b_dims[1].m_length, n_j) ) {
-                size_j = i32(n_j);
-            } else {
-                size_j = ArraySize_1(args[1], i32(2));
-            }
-            if ( extract_value(matrix_b_dims[0].m_length, n_k) ) {
-                size_k = i32(n_k);
-            } else {
-                size_k = ArraySize_1(args[1], i32(1));
-            }
-            alloc_dims.push_back(al, b.set_dim(i32(1), size_j));
-            dim_mismatch_check = iEq(ArraySize_1(args[0], i32(1)), size_k);
+            alloc_dims.push_back(al, b.set_dim(LBound(args[0], 1), UBound(args[0], 1)));
+            dim_mismatch_check = iEq(UBound(args[0], 1), UBound(args[1], 1));
             assert_msg += "`matrix_a(k)` and `matrix_b(k, j)`";
         } else if ( overload_id == 2 ) {
             // r(i) = r(i) + a(i, k) * b(k)
             res_ref = b.ArrayItem_01(result,  {i});
             a_ref   = b.ArrayItem_01(args[0], {i, k});
             b_ref   = b.ArrayItem_01(args[1], {k});
-            size_j = i32(1);
-            if ( extract_value(matrix_a_dims[0].m_length, n_i) ) {
-                size_i = i32(n_i);
-            } else {
-                size_i = ArraySize_1(args[0], i32(1));
-            }
-            if ( extract_value(matrix_b_dims[0].m_length, n_k) ) {
-                size_k = i32(n_k);
-            } else {
-                size_k = ArraySize_1(args[1], i32(1));
-            }
-            alloc_dims.push_back(al, b.set_dim(i32(1), size_i));
-            dim_mismatch_check = iEq(ArraySize_1(args[0], i32(2)), size_k);
+            alloc_dims.push_back(al, b.set_dim(LBound(args[1], 2), UBound(args[1], 2)));
+            dim_mismatch_check = iEq(UBound(args[0], 2), UBound(args[1], 1));
             assert_msg += "`matrix_a(i, k)` and `matrix_b(k)`";
         } else {
             // r(i, j) = r(i, j) + a(i, k) * b(k, j)
             res_ref = b.ArrayItem_01(result,  {i, j});
             a_ref   = b.ArrayItem_01(args[0], {i, k});
             b_ref   = b.ArrayItem_01(args[1], {k, j});
-            if ( extract_value(matrix_a_dims[0].m_length, n_i) ) {
-                size_i = i32(n_i);
-            } else {
-                size_i = ArraySize_1(args[0], i32(1));
-            }
-            if ( extract_value(matrix_b_dims[1].m_length, n_j) ) {
-                size_j = i32(n_j);
-            } else {
-                size_j = ArraySize_1(args[1], i32(2));
-            }
-            if ( extract_value(matrix_b_dims[0].m_length, n_k) ) {
-                size_k = i32(n_k);
-            } else {
-                size_k = ArraySize_1(args[1], i32(1));
-            }
-            alloc_dims.push_back(al, b.set_dim(i32(1), size_i));
-            alloc_dims.push_back(al, b.set_dim(i32(1), size_j));
-            dim_mismatch_check = iEq(ArraySize_1(args[0], i32(2)), size_k);
+            alloc_dims.push_back(al, b.set_dim(LBound(args[0], 1), UBound(args[0], 1)));
+            alloc_dims.push_back(al, b.set_dim(LBound(args[1], 2), UBound(args[1], 2)));
+            dim_mismatch_check = iEq(UBound(args[0], 2), UBound(args[1], 1));
             assert_msg += "`matrix_a(i, k)` and `matrix_b(k, j)`";
         }
         if (is_allocatable(result)) {

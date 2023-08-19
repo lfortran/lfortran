@@ -606,13 +606,9 @@ class ASRBuilder {
         }
     }
 
-    ASR::dimension_t set_dim(ASR::expr_t *start, ASR::expr_t *length,
-        bool is_allocatable=false) {
+    ASR::dimension_t set_dim(ASR::expr_t *start, ASR::expr_t *length) {
         ASR::dimension_t dim;
         dim.loc = loc;
-        if (is_allocatable) {
-            start = length = nullptr;
-        }
         dim.m_start = start;
         dim.m_length = length;
         return dim;
@@ -656,6 +652,9 @@ class ASRBuilder {
         return STMT(ASR::make_Allocate_t(al, loc, alloc_args.p, 1,
             nullptr, nullptr, nullptr));
     }
+
+    #define UBound(arr, dim) PassUtils::get_bound(arr, dim, "ubound", al)
+    #define LBound(arr, dim) PassUtils::get_bound(arr, dim, "lbound", al)
 
     template <typename LOOP_BODY>
     ASR::stmt_t* create_do_loop(
