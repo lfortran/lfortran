@@ -1633,7 +1633,8 @@ namespace MatMul {
         declare_basic_variables("_lcompilers_matmul");
         fill_func_arg("matrix_a", arg_types[0]);
         fill_func_arg("matrix_b", arg_types[1]);
-        ASR::expr_t *result = declare("result", return_type, ReturnVar);
+        ASR::expr_t *result = declare("result", return_type, Out);
+        args.push_back(al, result);
         ASR::expr_t *i = declare("i", int32, Local);
         ASR::expr_t *j = declare("j", int32, Local);
         ASR::expr_t *k = declare("k", int32, Local);
@@ -1696,7 +1697,7 @@ namespace MatMul {
         }));
         body.push_back(al, Return());
         ASR::symbol_t *fn_sym = make_Function_t(fn_name, fn_symtab, dep, args,
-                body, result, Source, Implementation, nullptr);
+                body, nullptr, Source, Implementation, nullptr);
         scope->add_symbol(fn_name, fn_sym);
         return b.Call(fn_sym, m_args, return_type, nullptr);
     }
@@ -1776,8 +1777,10 @@ namespace IntrinsicArrayFunctionRegistry {
             id == IntrinsicArrayFunctions::Sum ||
             id == IntrinsicArrayFunctions::Product ||
             id == IntrinsicArrayFunctions::MaxVal ||
-            id == IntrinsicArrayFunctions::MinVal) {
-            return 1;
+            id == IntrinsicArrayFunctions::MinVal ) {
+            return 1; // dim argument index
+        } else if( id == IntrinsicArrayFunctions::MatMul ) {
+            return 2; // return variable index
         } else {
             LCOMPILERS_ASSERT(false);
         }
@@ -1788,8 +1791,7 @@ namespace IntrinsicArrayFunctionRegistry {
         // Dim argument is already handled for the following
         if( id == IntrinsicArrayFunctions::Shape  ||
             id == IntrinsicArrayFunctions::MaxLoc ||
-            id == IntrinsicArrayFunctions::MinLoc ||
-            id == IntrinsicArrayFunctions:: MatMul ) {
+            id == IntrinsicArrayFunctions::MinLoc ) {
             return false;
         } else {
             return true;
