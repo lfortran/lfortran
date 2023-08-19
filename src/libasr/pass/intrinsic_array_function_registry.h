@@ -1486,8 +1486,14 @@ namespace MinLoc {
 
 namespace MatMul {
 
-    static inline void verify_args(const ASR::IntrinsicArrayFunction_t &/*x*/,
-            diag::Diagnostics& /*diagnostics*/) {
+    static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
+            diag::Diagnostics& diagnostics) {
+        require_impl(x.n_args == 2, "`matmul` intrinsic accepts exactly"
+            "two arguments", x.base.base.loc, diagnostics);
+        require_impl(x.m_args[0], "`matrix_a` argument of `matmul` intrinsic "
+            "cannot be nullptr", x.base.base.loc, diagnostics);
+        require_impl(x.m_args[1], "`matrix_b` argument of `matmul` intrinsic "
+            "cannot be nullptr", x.base.base.loc, diagnostics);
     }
 
     static inline ASR::expr_t *eval_MatMul(Allocator &,
@@ -1508,7 +1514,7 @@ namespace MatMul {
         }
         ASR::ttype_t *type_a = expr_type(matrix_a);
         ASR::ttype_t *type_b = expr_type(matrix_b);
-        ASR::ttype_t *ret_type;
+        ASR::ttype_t *ret_type = nullptr;
         bool matrix_a_numeric = is_integer(*type_a) ||
                                 is_real(*type_a) ||
                                 is_complex(*type_a);

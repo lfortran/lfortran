@@ -1927,7 +1927,6 @@ public:
                 std::string right = std::move(src);
                 int right_precedence = last_expr_precedence;
                 last_expr_precedence = julia_prec::Mul;
-std::cout << left << ":" << right << "\n";
                 src = format_binop(left, "*", right, left_precedence, right_precedence);
                 return;
             }
