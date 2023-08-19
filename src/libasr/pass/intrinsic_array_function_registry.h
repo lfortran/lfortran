@@ -1675,6 +1675,9 @@ namespace MatMul {
         if (is_allocatable(result)) {
             body.push_back(al, b.Allocate(result, alloc_dims));
         }
+        body.push_back(al, STMT(ASR::make_Assert_t(al, loc, dim_mismatch_check,
+            EXPR(ASR::make_StringConstant_t(al, loc, s2c(al, assert_msg),
+            character(assert_msg.size()))))));
         ASR::expr_t *mul_value;
         if (is_real(*expr_type(a_ref)) && is_integer(*expr_type(b_ref))) {
             mul_value = b.Mul(a_ref, i2r(b_ref, expr_type(a_ref)));
@@ -1683,22 +1686,13 @@ namespace MatMul {
         } else {
             mul_value = b.Mul(a_ref, b_ref);
         }
-        body.push_back(al, STMT(ASR::make_Assert_t(al, loc, dim_mismatch_check,
-            EXPR(ASR::make_StringConstant_t(al, loc, s2c(al, assert_msg),
-            character(assert_msg.size()))))));
-        body.push_back(al, b.Assignment(i, i32(1)));
-        body.push_back(al, b.While(iLtE(i, size_i), {
-            b.Assignment(j, i32(1)),
-            b.While(iLtE(j, size_j), {
+        body.push_back(al, b.DoLoop(i, LBound(args[0], 1), UBound(args[0], 1), {
+            b.DoLoop(j, LBound(args[1], 2), UBound(args[1], 2), {
                 b.Assign_Constant(res_ref, 0),
-                b.Assignment(k, i32(1)),
-                b.While(iLtE(k, size_k), {
-                    b.Assignment(res_ref, b.Add(res_ref, mul_value)),
-                    b.Assignment(k, iAdd(k, i32(1)))
+                b.DoLoop(k, LBound(args[0], 2), UBound(args[0], 2), {
+                    b.Assignment(res_ref, b.Add(res_ref, mul_value))
                 }),
-                b.Assignment(j, iAdd(j, i32(1)))
-            }),
-            b.Assignment(i, iAdd(i, i32(1)))
+            })
         }));
         body.push_back(al, Return());
         ASR::symbol_t *fn_sym = make_Function_t(fn_name, fn_symtab, dep, args,

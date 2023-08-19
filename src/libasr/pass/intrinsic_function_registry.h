@@ -656,6 +656,19 @@ class ASRBuilder {
     #define UBound(arr, dim) PassUtils::get_bound(arr, dim, "ubound", al)
     #define LBound(arr, dim) PassUtils::get_bound(arr, dim, "lbound", al)
 
+    ASR::stmt_t *DoLoop(ASR::expr_t *m_v, ASR::expr_t *start, ASR::expr_t *end,
+            std::vector<ASR::stmt_t*> loop_body, ASR::expr_t *step=nullptr) {
+        ASR::do_loop_head_t head;
+        head.loc = m_v->base.loc;
+        head.m_v = m_v;
+        head.m_start = start;
+        head.m_end = end;
+        head.m_increment = step;
+        Vec<ASR::stmt_t *> body;
+        body.from_pointer_n_copy(al, &loop_body[0], loop_body.size());
+        return STMT(ASR::make_DoLoop_t(al, loc, nullptr, head, body.p, body.n));
+    }
+
     template <typename LOOP_BODY>
     ASR::stmt_t* create_do_loop(
         const Location& loc, int rank, ASR::expr_t* array,
