@@ -279,6 +279,8 @@ class ASRBuilder {
         ASR::cast_kindType::RealToReal, real64, nullptr))
     #define r2r(x, t) EXPR(ASR::make_Cast_t(al, loc, x,                         \
         ASR::cast_kindType::RealToReal, t, nullptr))
+    #define i2r(x, t) EXPR(ASR::make_Cast_t(al, loc, x,                         \
+        ASR::cast_kindType::IntegerToReal, t, nullptr))
 
     // Binop -------------------------------------------------------------------
     #define iAdd(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
@@ -296,6 +298,48 @@ class ASRBuilder {
     #define And(x, y) EXPR(ASR::make_LogicalBinOp_t(al, loc, x,                 \
         ASR::logicalbinopType::And, y, logical, nullptr))
     #define Not(x)    EXPR(ASR::make_LogicalNot_t(al, loc, x, logical, nullptr))
+
+    ASR::expr_t *Add(ASR::expr_t *left, ASR::expr_t *right) {
+        LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
+        ASR::ttype_t *type = expr_type(left);
+        switch (type->type) {
+            case ASR::ttypeType::Integer : {
+                return EXPR(ASR::make_IntegerBinOp_t(al, loc, left,
+                    ASR::binopType::Add, right, type, nullptr));
+                break;
+            }
+            case ASR::ttypeType::Real : {
+                return EXPR(ASR::make_RealBinOp_t(al, loc, left,
+                    ASR::binopType::Add, right, type, nullptr));
+                break;
+            }
+            default: {
+                LCOMPILERS_ASSERT(false);
+                return nullptr;
+            }
+        }
+    }
+
+    ASR::expr_t *Mul(ASR::expr_t *left, ASR::expr_t *right) {
+        LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
+        ASR::ttype_t *type = expr_type(left);
+        switch (type->type) {
+            case ASR::ttypeType::Integer : {
+                return EXPR(ASR::make_IntegerBinOp_t(al, loc, left,
+                    ASR::binopType::Mul, right, type, nullptr));
+                break;
+            }
+            case ASR::ttypeType::Real : {
+                return EXPR(ASR::make_RealBinOp_t(al, loc, left,
+                    ASR::binopType::Mul, right, type, nullptr));
+                break;
+            }
+            default: {
+                LCOMPILERS_ASSERT(false);
+                return nullptr;
+            }
+        }
+    }
 
     // Compare -----------------------------------------------------------------
     #define iEq(x, y) EXPR(ASR::make_IntegerCompare_t(al, loc, x,               \
@@ -562,12 +606,67 @@ class ASRBuilder {
         }
     }
 
+    ASR::dimension_t set_dim(ASR::expr_t *start, ASR::expr_t *length) {
+        ASR::dimension_t dim;
+        dim.loc = loc;
+        dim.m_start = start;
+        dim.m_length = length;
+        return dim;
+    }
+
     // Statements --------------------------------------------------------------
     #define Return() STMT(ASR::make_Return_t(al, loc))
 
-    ASR::stmt_t *Assignment(ASR::expr_t *lhs, ASR::expr_t*rhs) {
+    ASR::stmt_t *Assignment(ASR::expr_t *lhs, ASR::expr_t *rhs) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(lhs), expr_type(rhs)));
         return STMT(ASR::make_Assignment_t(al, loc, lhs, rhs, nullptr));
+    }
+
+    template <typename T>
+    ASR::stmt_t *Assign_Constant(ASR::expr_t *lhs, T init_value) {
+        ASR::ttype_t *type = expr_type(lhs);
+        switch(type->type) {
+            case ASR::ttypeType::Integer : {
+                return Assignment(lhs, i(init_value, type));
+            }
+            case ASR::ttypeType::Real : {
+                return Assignment(lhs, f(init_value, type));
+            }
+            default : {
+                LCOMPILERS_ASSERT(false);
+                return nullptr;
+            }
+        }
+    }
+
+    ASR::stmt_t *Allocate(ASR::expr_t *m_a, Vec<ASR::dimension_t> dims) {
+        Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
+        ASR::alloc_arg_t alloc_arg;
+        alloc_arg.loc = loc;
+        alloc_arg.m_a = m_a;
+        alloc_arg.m_dims = dims.p;
+        alloc_arg.n_dims = dims.n;
+        alloc_arg.m_type = nullptr;
+        alloc_arg.m_len_expr = nullptr;
+        alloc_args.push_back(al, alloc_arg);
+        return STMT(ASR::make_Allocate_t(al, loc, alloc_args.p, 1,
+            nullptr, nullptr, nullptr));
+    }
+
+    #define UBound(arr, dim) PassUtils::get_bound(arr, dim, "ubound", al)
+    #define LBound(arr, dim) PassUtils::get_bound(arr, dim, "lbound", al)
+
+    ASR::stmt_t *DoLoop(ASR::expr_t *m_v, ASR::expr_t *start, ASR::expr_t *end,
+            std::vector<ASR::stmt_t*> loop_body, ASR::expr_t *step=nullptr) {
+        ASR::do_loop_head_t head;
+        head.loc = m_v->base.loc;
+        head.m_v = m_v;
+        head.m_start = start;
+        head.m_end = end;
+        head.m_increment = step;
+        Vec<ASR::stmt_t *> body;
+        body.from_pointer_n_copy(al, &loop_body[0], loop_body.size());
+        return STMT(ASR::make_DoLoop_t(al, loc, nullptr, head, body.p, body.n));
     }
 
     template <typename LOOP_BODY>
@@ -686,6 +785,14 @@ class ASRBuilder {
             else_n = if_else_if.size();
         }
         fn_body.push_back(al, else_[0]);
+    }
+
+    ASR::stmt_t *Print(std::vector<ASR::expr_t *> items) {
+        // Used for debugging
+        Vec<ASR::expr_t *> x_exprs;
+        x_exprs.from_pointer_n_copy(al, &items[0], items.size());
+        return STMT(ASR::make_Print_t(al, loc, nullptr, x_exprs.p, x_exprs.n,
+            nullptr, nullptr));
     }
 
 };

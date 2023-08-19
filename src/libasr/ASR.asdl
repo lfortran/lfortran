@@ -315,7 +315,6 @@ expr
     | ArrayBound(expr v, expr? dim, ttype type, arraybound bound,
                  expr? value)
     | ArrayTranspose(expr matrix, ttype type, expr? value)
-    | ArrayMatMul(expr matrix_a, expr matrix_b, ttype type, expr? value)
     | ArrayPack(expr array, expr mask, expr? vector, ttype type, expr? value)
     | ArrayReshape(expr array, expr shape, ttype type, expr? value)
     | ArrayAll(expr mask, expr? dim, ttype type, expr? value)

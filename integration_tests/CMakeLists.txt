@@ -484,6 +484,8 @@ RUN(NAME intrinsics_63 LABELS gfortran llvm)
 RUN(NAME intrinsics_64 LABELS gfortran llvm wasm) # sign
 
 
+RUN(NAME intrinsics_65 LABELS gfortran llvm) # matmul
+
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
 RUN(NAME parameter_03 LABELS gfortran llvm wasm)

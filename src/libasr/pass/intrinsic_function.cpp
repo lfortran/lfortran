@@ -284,7 +284,7 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
         ASR::expr_t* result_var_ = nullptr;
         int dim_index = ASRUtils::IntrinsicArrayFunctionRegistry::
             get_dim_index(func2intrinsicid[x_m_name]);
-        if( dim_index != -1 ) {
+        if( dim_index == 1 ) {
             ASR::expr_t* dim = x->m_args[dim_index].m_value;
             if( !ASRUtils::is_value_constant(ASRUtils::expr_value(dim)) ) {
                 // Possibly can be replaced by calling "get_result_var_for_runtime_dim"
@@ -299,6 +299,12 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
                     throw LCompilersException("Constant dimension cannot be extracted.");
                 }
             }
+        } else if ( dim_index == 2 ) {
+            result_var_ = PassUtils::create_var(result_counter,
+                std::string(ASRUtils::symbol_name(x->m_name)) + "_res",
+                x->base.base.loc, x->m_type, al, current_scope);
+        } else {
+            LCOMPILERS_ASSERT(false);
         }
         result_counter += 1;
         ASR::call_arg_t new_arg;
