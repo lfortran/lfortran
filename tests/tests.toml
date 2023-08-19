@@ -2975,7 +2975,7 @@ filename = "fixed_form/contains1.f"
 ast = true
 
 [[test]]
-filename = "fixed_form/intrinsic_implicit.f"
+filename = "intrinsic_implicit.f90"
 asr_implicit_interface_and_typing = true
 
 [[test]]
@@ -2990,13 +2990,13 @@ asr_implicit_interface = true
 [[test]]
 filename = "fixed_form_implicit_check.f"
 ast = true
-asr = true
+asr_implicit_interface_and_typing = true
 fixed_free_equal_asr = true
 
 [[test]]
 filename = "implicit_check.f90"
 ast = true
-asr = true
+asr_implicit_interface_and_typing = true
 fixed_free_equal_asr = true
 
 [[test]]
@@ -3007,7 +3007,7 @@ asr = true
 [[test]]
 filename = "fixed_form_implicit2.f"
 ast = true
-asr = true
+asr_implicit_interface_and_typing = true
 
 [[test]]
 filename = "fixed_form_call1.f"
