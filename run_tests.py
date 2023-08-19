@@ -212,13 +212,23 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             pass_ = None
 
     if asr_implicit_interface_and_typing:
-        run_test(
-            filename,
-            "asr",
-            "lfortran --show-asr --implicit-typing --implicit-interface --no-color {infile} -o {outfile}",
-            filename,
-            update_reference,
-            extra_args)
+        # run fixed form
+        if filename.endswith(".f"):
+            run_test(
+                filename,
+                "asr",
+                "lfortran --fixed-form --show-asr --implicit-typing --implicit-interface --no-color {infile} -o {outfile}",
+                filename,
+                update_reference,
+                extra_args)
+        else:
+            run_test(
+                filename,
+                "asr",
+                "lfortran --show-asr --implicit-typing --implicit-interface --no-color {infile} -o {outfile}",
+                filename,
+                update_reference,
+                extra_args)
     if asr_use_loop_variable_after_loop:
         run_test(
             filename,
