@@ -1625,6 +1625,7 @@ namespace MatMul {
             return compile_time_value;
         }
         /*
+         *    2 x 3          3 x 2          2 x 2
          *   ------>
          * [ 1, 2, 3 ]  *  [ 1, 2 ] │  =  [ 14, 20 ]
          * [ 2, 3, 4 ]     │ 2, 3 │ │     [ 20, 29 ]
@@ -1642,8 +1643,11 @@ namespace MatMul {
         ASR::dimension_t* matrix_b_dims = nullptr;
         extract_dimensions_from_ttype(arg_types[0], matrix_a_dims);
         extract_dimensions_from_ttype(arg_types[1], matrix_b_dims);
-        ASR::expr_t *res_ref, *a_ref, *b_ref;
-        ASR::expr_t *dim_mismatch_check;
+        ASR::expr_t *res_ref, *a_ref, *b_ref, *a_lbound, *b_lbound;
+        ASR::expr_t *dim_mismatch_check, *a_ubound, *b_ubound;
+        dim_mismatch_check = iEq(UBound(args[0], 2), UBound(args[1], 1));
+        a_lbound = LBound(args[0], 1); a_ubound = UBound(args[0], 1);
+        b_lbound = LBound(args[1], 2); b_ubound = UBound(args[1], 2);
         std::string assert_msg = "'MatMul' intrinsic dimension mismatch: "
             "please make sure the dimensions are ";
         Vec<ASR::dimension_t> alloc_dims; alloc_dims.reserve(al, 1);
@@ -1652,7 +1656,8 @@ namespace MatMul {
             res_ref = b.ArrayItem_01(result,  {j});
             a_ref   = b.ArrayItem_01(args[0], {k});
             b_ref   = b.ArrayItem_01(args[1], {k, j});
-            alloc_dims.push_back(al, b.set_dim(LBound(args[0], 1), UBound(args[0], 1)));
+            a_ubound = a_lbound;
+            alloc_dims.push_back(al, b.set_dim(LBound(args[1], 2), UBound(args[1], 2)));
             dim_mismatch_check = iEq(UBound(args[0], 1), UBound(args[1], 1));
             assert_msg += "`matrix_a(k)` and `matrix_b(k, j)`";
         } else if ( overload_id == 2 ) {
@@ -1660,8 +1665,8 @@ namespace MatMul {
             res_ref = b.ArrayItem_01(result,  {i});
             a_ref   = b.ArrayItem_01(args[0], {i, k});
             b_ref   = b.ArrayItem_01(args[1], {k});
-            alloc_dims.push_back(al, b.set_dim(LBound(args[1], 2), UBound(args[1], 2)));
-            dim_mismatch_check = iEq(UBound(args[0], 2), UBound(args[1], 1));
+            b_ubound = b_lbound = LBound(args[1], 1);
+            alloc_dims.push_back(al, b.set_dim(LBound(args[0], 1), UBound(args[0], 1)));
             assert_msg += "`matrix_a(i, k)` and `matrix_b(k)`";
         } else {
             // r(i, j) = r(i, j) + a(i, k) * b(k, j)
@@ -1670,7 +1675,6 @@ namespace MatMul {
             b_ref   = b.ArrayItem_01(args[1], {k, j});
             alloc_dims.push_back(al, b.set_dim(LBound(args[0], 1), UBound(args[0], 1)));
             alloc_dims.push_back(al, b.set_dim(LBound(args[1], 2), UBound(args[1], 2)));
-            dim_mismatch_check = iEq(UBound(args[0], 2), UBound(args[1], 1));
             assert_msg += "`matrix_a(i, k)` and `matrix_b(k, j)`";
         }
         if (is_allocatable(result)) {
@@ -1687,10 +1691,10 @@ namespace MatMul {
         } else {
             mul_value = b.Mul(a_ref, b_ref);
         }
-        body.push_back(al, b.DoLoop(i, LBound(args[0], 1), UBound(args[0], 1), {
-            b.DoLoop(j, LBound(args[1], 2), UBound(args[1], 2), {
+        body.push_back(al, b.DoLoop(i, a_lbound, a_ubound, {
+            b.DoLoop(j, b_lbound, b_ubound, {
                 b.Assign_Constant(res_ref, 0),
-                b.DoLoop(k, LBound(args[0], 2), UBound(args[0], 2), {
+                b.DoLoop(k, LBound(args[1], 1), UBound(args[1], 1), {
                     b.Assignment(res_ref, b.Add(res_ref, mul_value))
                 }),
             })
