@@ -5326,6 +5326,37 @@ public:
         tmp = lfortran_str_slice(str, left, right, step, left_present, right_present);
     }
 
+    void visit_RealCopySign(const ASR::RealCopySign_t& x) {
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        this->visit_expr(*x.m_target);
+        llvm::Value* target = tmp;
+
+        this->visit_expr(*x.m_source);
+        llvm::Value* source = tmp;
+
+        llvm::Type *type;
+        int a_kind;
+        a_kind = down_cast<ASR::Real_t>(ASRUtils::type_get_past_pointer(x.m_type))->m_kind;
+        type = llvm_utils->getFPType(a_kind);
+        llvm::Value *ftarget = builder->CreateSIToFP(target,
+                type);
+        llvm::Value *fsource = builder->CreateSIToFP(source,
+                type);
+        std::string func_name = a_kind == 4 ? "llvm.copysign.f32" : "llvm.copysign.f64";
+        llvm::Function *fn_copysign = module->getFunction(func_name);
+        if (!fn_copysign) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    type, { type, type}, false);
+            fn_copysign = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, func_name,
+                    module.get());
+        }
+        tmp = builder->CreateCall(fn_copysign, {ftarget, fsource});
+    }
+
     template <typename T>
     void handle_SU_IntegerBinOp(const T &x) {
         if (x.m_value) {

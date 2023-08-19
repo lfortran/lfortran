@@ -1233,23 +1233,18 @@ namespace Sign {
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
-        /*
-         * r = abs(x)
-         * if (y < 0) then
-         *     r = -r
-         * end if
-        */
         if (is_real(*arg_types[0])) {
-            ASR::expr_t *zero = f(0, arg_types[0]);
-            body.push_back(al, b.If(fGtE(args[0], zero), {
-                b.Assignment(result, args[0])
-            }, /* else */ {
-                b.Assignment(result, f32_neg(args[0], arg_types[0]))
-            }));
-            body.push_back(al, b.If(fLt(args[1], zero), {
-                b.Assignment(result, f32_neg(result, arg_types[0]))
-            }, {}));
+            Vec<ASR::expr_t*> args; args.reserve(al, 2);
+            visit_expr_list(al, new_args, args);
+            ASR::expr_t* real_copy_sign = ASRUtils::EXPR(ASR::make_RealCopySign_t(al, loc, args[0], args[1], arg_types[0], nullptr));
+            return real_copy_sign;
         } else {
+            /*
+            * r = abs(x)
+            * if (y < 0) then
+            *     r = -r
+            * end if
+            */
             ASR::expr_t *zero = i(0, arg_types[0]);
             body.push_back(al, b.If(iGtE(args[0], zero), {
                 b.Assignment(result, args[0])
@@ -1259,12 +1254,12 @@ namespace Sign {
             body.push_back(al, b.If(iLt(args[1], zero), {
                 b.Assignment(result, i32_neg(result, arg_types[0]))
             }, {}));
-        }
 
-        ASR::symbol_t *f_sym = make_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, Source, Implementation, nullptr);
-        scope->add_symbol(fn_name, f_sym);
-        return b.Call(f_sym, new_args, return_type, nullptr);
+            ASR::symbol_t *f_sym = make_Function_t(fn_name, fn_symtab, dep, args,
+                body, result, Source, Implementation, nullptr);
+            scope->add_symbol(fn_name, f_sym);
+            return b.Call(f_sym, new_args, return_type, nullptr);
+        }
     }
 
 } // namespace Sign
