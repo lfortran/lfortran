@@ -41,6 +41,7 @@ enum class IntrinsicScalarFunctions : int64_t {
     Exp,
     Exp2,
     Expm1,
+    FMA,
     ListIndex,
     Partition,
     ListReverse,
@@ -88,6 +89,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Exp)
         INTRINSIC_NAME_CASE(Exp2)
         INTRINSIC_NAME_CASE(Expm1)
+        INTRINSIC_NAME_CASE(FMA)
         INTRINSIC_NAME_CASE(ListIndex)
         INTRINSIC_NAME_CASE(Partition)
         INTRINSIC_NAME_CASE(ListReverse)
@@ -1181,7 +1183,7 @@ namespace Sign {
         if (ASRUtils::is_real(*t1)) {
             double rv1 = std::abs(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
             double rv2 = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
-            if (rv2 < 0) rv1 = -rv1;
+            rv1 = copysign(rv1, rv2);
             return make_ConstantWithType(make_RealConstant_t, rv1, t1, loc);
         } else {
             int64_t iv1 = std::abs(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n);
@@ -1231,23 +1233,18 @@ namespace Sign {
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
-        /*
-         * r = abs(x)
-         * if (y < 0) then
-         *     r = -r
-         * end if
-        */
         if (is_real(*arg_types[0])) {
-            ASR::expr_t *zero = f(0, arg_types[0]);
-            body.push_back(al, b.If(fGtE(args[0], zero), {
-                b.Assignment(result, args[0])
-            }, /* else */ {
-                b.Assignment(result, f32_neg(args[0], arg_types[0]))
-            }));
-            body.push_back(al, b.If(fLt(args[1], zero), {
-                b.Assignment(result, f32_neg(result, arg_types[0]))
-            }, {}));
+            Vec<ASR::expr_t*> args; args.reserve(al, 2);
+            visit_expr_list(al, new_args, args);
+            ASR::expr_t* real_copy_sign = ASRUtils::EXPR(ASR::make_RealCopySign_t(al, loc, args[0], args[1], arg_types[0], nullptr));
+            return real_copy_sign;
         } else {
+            /*
+            * r = abs(x)
+            * if (y < 0) then
+            *     r = -r
+            * end if
+            */
             ASR::expr_t *zero = i(0, arg_types[0]);
             body.push_back(al, b.If(iGtE(args[0], zero), {
                 b.Assignment(result, args[0])
@@ -1257,7 +1254,83 @@ namespace Sign {
             body.push_back(al, b.If(iLt(args[1], zero), {
                 b.Assignment(result, i32_neg(result, arg_types[0]))
             }, {}));
+
+            ASR::symbol_t *f_sym = make_Function_t(fn_name, fn_symtab, dep, args,
+                body, result, Source, Implementation, nullptr);
+            scope->add_symbol(fn_name, f_sym);
+            return b.Call(f_sym, new_args, return_type, nullptr);
         }
+    }
+
+} // namespace Sign
+
+namespace FMA {
+
+     static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 3,
+            "ASR Verify: Call to FMA must have exactly 3 arguments",
+            x.base.base.loc, diagnostics);
+        ASR::ttype_t *type1 = ASRUtils::expr_type(x.m_args[0]);
+        ASR::ttype_t *type2 = ASRUtils::expr_type(x.m_args[1]);
+        ASR::ttype_t *type3 = ASRUtils::expr_type(x.m_args[2]);
+        ASRUtils::require_impl((is_real(*type1) && is_real(*type2) && is_real(*type3)),
+            "ASR Verify: Arguments to FMA must be of real type",
+            x.base.base.loc, diagnostics);
+    }
+
+    static ASR::expr_t *eval_FMA(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
+        double a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+        double c = ASR::down_cast<ASR::RealConstant_t>(args[2])->m_r;
+        return make_ConstantWithType(make_RealConstant_t, a + b*c, t1, loc);
+    }
+
+    static inline ASR::asr_t* create_FMA(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args,
+            const std::function<void (const std::string &, const Location &)> err) {
+        if (args.size() != 3) {
+            err("Intrinsic FMA function accepts exactly 3 arguments", loc);
+        }
+        ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
+        ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
+        ASR::ttype_t *type3 = ASRUtils::expr_type(args[2]);
+        if (!ASRUtils::is_real(*type1) || !ASRUtils::is_real(*type2) || !ASRUtils::is_real(*type3)) {
+            err("Argument of the FMA function must be Real",
+                args[0]->base.loc);
+        }
+        ASR::expr_t *m_value = nullptr;
+        if (all_args_evaluated(args)) {
+            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 3);
+            arg_values.push_back(al, expr_value(args[0]));
+            arg_values.push_back(al, expr_value(args[1]));
+            arg_values.push_back(al, expr_value(args[2]));
+            m_value = eval_FMA(al, loc, expr_type(args[0]), arg_values);
+        }
+        return ASR::make_IntrinsicScalarFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicScalarFunctions::FMA),
+            args.p, args.n, 0, ASRUtils::expr_type(args[0]), m_value);
+    }
+
+    static inline ASR::expr_t* instantiate_FMA(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/,
+            ASR::expr_t* compile_time_value) {
+        if (compile_time_value) {
+            return compile_time_value;
+        }
+        declare_basic_variables("_lcompilers_optimization_fma_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("a", arg_types[0]);
+        fill_func_arg("b", arg_types[0]);
+        fill_func_arg("c", arg_types[0]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        /*
+         * result = a + b*c
+        */
+
+        ASR::expr_t *op1 = b.ElementalMul(args[1], args[2], loc);
+        body.push_back(al, b.Assignment(result,
+        b.ElementalAdd(args[0], op1, loc)));
 
         ASR::symbol_t *f_sym = make_Function_t(fn_name, fn_symtab, dep, args,
             body, result, Source, Implementation, nullptr);
@@ -1265,7 +1338,7 @@ namespace Sign {
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
-} // namespace Sign
+} // namespace FMA
 
 #define create_exp_macro(X, stdeval)                                                      \
 namespace X {                                                                             \
@@ -2061,6 +2134,8 @@ namespace IntrinsicScalarFunctionRegistry {
             {nullptr, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Expm1),
             {nullptr, &UnaryIntrinsicFunction::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::FMA),
+            {&FMA::instantiate_FMA, &FMA::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Abs),
             {&Abs::instantiate_Abs, &Abs::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Partition),
@@ -2137,6 +2212,8 @@ namespace IntrinsicScalarFunctionRegistry {
             "exp"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Exp2),
             "exp2"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::FMA),
+            "fma"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Expm1),
             "expm1"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::ListIndex),
@@ -2201,6 +2278,7 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"exp", {&Exp::create_Exp, &Exp::eval_Exp}},
                 {"exp2", {&Exp2::create_Exp2, &Exp2::eval_Exp2}},
                 {"expm1", {&Expm1::create_Expm1, &Expm1::eval_Expm1}},
+                {"fma", {&FMA::create_FMA, &FMA::eval_FMA}},
                 {"list.index", {&ListIndex::create_ListIndex, &ListIndex::eval_list_index}},
                 {"list.reverse", {&ListReverse::create_ListReverse, &ListReverse::eval_list_reverse}},
                 {"list.pop", {&ListPop::create_ListPop, &ListPop::eval_list_pop}},

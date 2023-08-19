@@ -208,20 +208,21 @@ RUN(NAME expr_12 LABELS gfortran llvm c) # it uses string compare
 RUN(NAME expr_13 LABELS gfortran llvm wasm c NOFAST)
 RUN(NAME expr_14 LABELS gfortran llvm wasm c)
 
-RUN(NAME data_01 LABELS gfortran llvm)
+RUN(NAME data_01 LABELS gfortran llvm c)
 RUN(NAME data_02 LABELS gfortran)
-RUN(NAME data_03 LABELS gfortran llvm)
-RUN(NAME data_04 LABELS gfortran llvm)
+RUN(NAME data_03 LABELS gfortran llvm c)
+RUN(NAME data_04 LABELS gfortran llvm c)
 RUN(NAME data_05 LABELS gfortran) # llvmImplicit removed
-RUN(NAME data_06 LABELS gfortran llvm)
+RUN(NAME data_06 LABELS gfortran llvm c)
 RUN(NAME data_07 LABELS gfortran) # TODO: Fix this test
 RUN(NAME data_08 LABELS gfortran llvmImplicit NOFAST)
-RUN(NAME data_09 LABELS gfortran llvm)
-RUN(NAME minmax_01 LABELS gfortran llvm wasm)
-RUN(NAME arithmetic_if_01 LABELS gfortran llvm) # arithmetic tests use goto
-RUN(NAME arithmetic_if_02 LABELS gfortran llvm)
-RUN(NAME arithmetic_if_03 LABELS gfortran llvm)
-RUN(NAME arithmetic_if_04 LABELS gfortran llvm)
+RUN(NAME data_09 LABELS gfortran llvm c)
+RUN(NAME data_10 LABELS gfortran llvm)
+RUN(NAME minmax_01 LABELS gfortran llvm wasm c)
+RUN(NAME arithmetic_if_01 LABELS gfortran llvm c) # arithmetic tests use goto
+RUN(NAME arithmetic_if_02 LABELS gfortran llvm c)
+RUN(NAME arithmetic_if_03 LABELS gfortran llvm c)
+RUN(NAME arithmetic_if_04 LABELS gfortran llvm c)
 
 RUN(NAME variables_01 LABELS gfortran llvm cpp x86 wasm c)
 RUN(NAME variables_02 LABELS gfortran llvm cpp x86 wasm c)
@@ -313,6 +314,8 @@ RUN(NAME arrays_01_complex LABELS gfortran llvm wasm)
 RUN(NAME arrays_01_logical LABELS gfortran llvm wasm)
 RUN(NAME arrays_01_multi_dim LABELS gfortran llvm wasm)
 RUN(NAME array_bound_1 LABELS gfortran llvm wasm)
+RUN(NAME array_bound_2 LABELS gfortran llvm wasm)
+RUN(NAME array_bound_3 LABELS gfortran llvm)
 RUN(NAME arrays_op_1 LABELS gfortran llvm wasm)
 RUN(NAME arrays_op_2 LABELS gfortran llvm wasm)
 RUN(NAME arrays_op_3 LABELS gfortran llvm wasm)
@@ -478,6 +481,8 @@ RUN(NAME intrinsics_60 LABELS gfortran llvm COPY_TO_BIN intrinsics_60_data.txt) 
 RUN(NAME intrinsics_61 LABELS gfortran llvm) # char
 RUN(NAME intrinsics_62 LABELS gfortran llvm) # shape
 RUN(NAME intrinsics_63 LABELS gfortran llvm)
+RUN(NAME intrinsics_64 LABELS gfortran llvm wasm) # sign
+
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
@@ -694,6 +699,7 @@ RUN(NAME derived_types_23 LABELS gfortran llvm)
 RUN(NAME derived_types_24 LABELS gfortran llvm)
 RUN(NAME derived_types_25 LABELS gfortran llvm)
 RUN(NAME derived_types_26 LABELS gfortran llvm)
+RUN(NAME derived_types_27 LABELS gfortran llvm)
 
 RUN(NAME line_continuation_01 LABELS gfortran llvm wasm)
 RUN(NAME line_continuation_02 LABELS gfortran llvm wasm)
@@ -1003,6 +1009,10 @@ RUN(NAME c_ptr_01 LABELS gfortran llvm NOFAST)
 RUN(NAME arrayitem_01 LABELS gfortran llvm)
 
 RUN(NAME implicit_argument_casting_01 LABELS gfortran llvm
+    EXTRA_ARGS --implicit-argument-casting
+    GFORTRAN_ARGS -fallow-argument-mismatch)
+
+RUN(NAME implicit_argument_casting_02 LABELS gfortran llvm
     EXTRA_ARGS --implicit-argument-casting
     GFORTRAN_ARGS -fallow-argument-mismatch)
 

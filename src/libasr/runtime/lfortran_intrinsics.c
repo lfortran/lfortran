@@ -338,7 +338,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, ...)
             }
             int repeat = atoi(substring(value, 0, j));
             if (value[j] == '(') {
-                value = substring(value, 1, strlen(value));
+                value = substring(value, j, strlen(value));
                 format_values[i] = substring(format_values[i], 1, strlen(format_values[i]));
                 char* new_input_string = (char*)malloc(sizeof(char));
                 new_input_string[0] = '\0';

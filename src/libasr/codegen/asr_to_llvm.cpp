@@ -5326,6 +5326,37 @@ public:
         tmp = lfortran_str_slice(str, left, right, step, left_present, right_present);
     }
 
+    void visit_RealCopySign(const ASR::RealCopySign_t& x) {
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        this->visit_expr(*x.m_target);
+        llvm::Value* target = tmp;
+
+        this->visit_expr(*x.m_source);
+        llvm::Value* source = tmp;
+
+        llvm::Type *type;
+        int a_kind;
+        a_kind = down_cast<ASR::Real_t>(ASRUtils::type_get_past_pointer(x.m_type))->m_kind;
+        type = llvm_utils->getFPType(a_kind);
+        llvm::Value *ftarget = builder->CreateSIToFP(target,
+                type);
+        llvm::Value *fsource = builder->CreateSIToFP(source,
+                type);
+        std::string func_name = a_kind == 4 ? "llvm.copysign.f32" : "llvm.copysign.f64";
+        llvm::Function *fn_copysign = module->getFunction(func_name);
+        if (!fn_copysign) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    type, { type, type}, false);
+            fn_copysign = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, func_name,
+                    module.get());
+        }
+        tmp = builder->CreateCall(fn_copysign, {ftarget, fsource});
+    }
+
     template <typename T>
     void handle_SU_IntegerBinOp(const T &x) {
         if (x.m_value) {
@@ -5584,19 +5615,7 @@ public:
             return;
         }
         this->visit_expr_wrapper(x.m_arg, true);
-        llvm::Value *zero;
-        int a_kind = down_cast<ASR::Real_t>(x.m_type)->m_kind;
-        if (a_kind == 4) {
-            zero = llvm::ConstantFP::get(context,
-                llvm::APFloat((float)0.0));
-        } else if (a_kind == 8) {
-            zero = llvm::ConstantFP::get(context,
-                llvm::APFloat((double)0.0));
-        } else {
-            throw CodeGenError("RealUnaryMinus: kind not supported yet");
-        }
-
-        tmp = builder->CreateFSub(zero, tmp);
+        tmp = builder->CreateFNeg(tmp);
     }
 
     void visit_ComplexUnaryMinus(const ASR::ComplexUnaryMinus_t &x) {
@@ -5605,35 +5624,12 @@ public:
             return;
         }
         this->visit_expr_wrapper(x.m_arg, true);
-        llvm::Value *c = tmp;
-        double re = 0.0;
-        double im = 0.0;
-        llvm::Value *re2, *im2;
-        llvm::Type *type;
-        int a_kind = down_cast<ASR::Complex_t>(x.m_type)->m_kind;
-        std::string f_name;
-        switch (a_kind) {
-            case 4: {
-                re2 = llvm::ConstantFP::get(context, llvm::APFloat((float)re));
-                im2 = llvm::ConstantFP::get(context, llvm::APFloat((float)im));
-                type = complex_type_4;
-                f_name = "_lfortran_complex_sub_32";
-                break;
-            }
-            case 8: {
-                re2 = llvm::ConstantFP::get(context, llvm::APFloat(re));
-                im2 = llvm::ConstantFP::get(context, llvm::APFloat(im));
-                type = complex_type_8;
-                f_name = "_lfortran_complex_sub_64";
-                break;
-            }
-            default: {
-                throw CodeGenError("kind type is not supported");
-            }
-        }
-        tmp = complex_from_floats(re2, im2, type);
-        llvm::Value *zero_c = tmp;
-        tmp = lfortran_complex_bin_op(zero_c, c, f_name, type);
+        llvm::Type *type = tmp->getType();
+        llvm::Value *re = complex_re(tmp, type);
+        llvm::Value *im = complex_im(tmp, type);
+        re = builder->CreateFNeg(re);
+        im = builder->CreateFNeg(im);
+        tmp = complex_from_floats(re, im, type);
     }
 
     template <typename T>

@@ -1484,6 +1484,24 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
+    void visit_RealCopySign(const ASR::RealCopySign_t& x) {
+        if (x.m_value) {
+            visit_expr(*x.m_value);
+            return;
+        }
+        this->visit_expr(*x.m_target);
+        this->visit_expr(*x.m_source);
+
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        if (kind == 4) {
+            m_wa.emit_f32_copysign();
+        } else if (kind == 8) {
+            m_wa.emit_f64_copysign();
+        } else {
+            throw CodeGenError("visit_RealCopySign: Only kind 4 and 8 reals supported");
+        }
+    }
+
     void visit_RealBinOp(const ASR::RealBinOp_t &x) {
         if (x.m_value) {
             visit_expr(*x.m_value);
@@ -2946,11 +2964,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_ArrayBound(const ASR::ArrayBound_t& x) {
-        ASR::ttype_t *ttype = ASRUtils::expr_type(x.m_v);
-        uint32_t kind = ASRUtils::extract_kind_from_ttype_t(ttype);
         ASR::dimension_t *m_dims;
-        int n_dims = ASRUtils::extract_dimensions_from_ttype(ttype, m_dims);
-        if (kind != 4) {
+        int n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(x.m_v), m_dims);
+        if (ASRUtils::extract_kind_from_ttype_t(x.m_type) != 4) {
             throw CodeGenError("ArrayBound: Kind 4 only supported currently");
         }
 

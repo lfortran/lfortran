@@ -24,7 +24,7 @@ then:                                             ; preds = %.entry
 
 else:                                             ; preds = %.entry
   %3 = load float, float* %x, align 4
-  %4 = fsub float 0.000000e+00, %3
+  %4 = fneg float %3
   store float %4, float* %_lcompilers_abs_f32, align 4
   br label %ifcont
 
@@ -50,7 +50,7 @@ then:                                             ; preds = %.entry
 
 else:                                             ; preds = %.entry
   %3 = load double, double* %x, align 8
-  %4 = fsub double 0.000000e+00, %3
+  %4 = fneg double %3
   store double %4, double* %_lcompilers_abs_f64, align 8
   br label %ifcont
 
