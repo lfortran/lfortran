@@ -627,6 +627,7 @@ RUN(NAME implicit_interface_12 LABELS gfortran llvmImplicit NOFAST)
 RUN(NAME implicit_interface_13 LABELS gfortran llvmImplicit NOFAST)
 RUN(NAME implicit_interface_14 LABELS gfortran) # ! TODO: fix this test
 
+RUN(NAME implicit_typing_01 LABELS gfortran llvmImplicit)
 
 RUN(NAME generic_name_01 LABELS gfortran llvm)
 
