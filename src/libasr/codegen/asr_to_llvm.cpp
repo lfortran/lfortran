@@ -8321,6 +8321,9 @@ public:
         // if (fmt_value) ...
         if (x.m_kind == ASR::string_format_kindType::FormatFortran) {
             std::vector<llvm::Value *> args;
+            int size = x.n_args;
+            llvm::Value *count = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), size);
+            args.push_back(count);
             visit_expr(*x.m_fmt);
             args.push_back(tmp);
 

@@ -270,7 +270,7 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors);
 LFORTRAN_API char *_lfortran_get_env_variable(char *name);
 LFORTRAN_API int _lfortran_exec_command(char *cmd);
 
-LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, ...);
+LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* format, ...);
 
 #ifdef __cplusplus
 }
