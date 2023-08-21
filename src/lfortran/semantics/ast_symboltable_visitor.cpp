@@ -502,6 +502,17 @@ public:
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         current_module_dependencies.reserve(al, 4);
+        if (compiler_options.implicit_typing) {
+            Location a_loc = x.base.base.loc;
+            populate_implicit_dictionary(a_loc, implicit_dictionary);
+            process_implicit_statements(x, implicit_dictionary);
+        } else {
+            for (size_t i=0;i<x.n_implicit;i++) {
+                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
+                    throw SemanticError("Implicit typing is not allowed, enable it by using --implicit-typing ", x.m_implicit[i]->base.loc);
+                }
+            }
+        }
         for (size_t i=0; i<x.n_use; i++) {
             visit_unit_decl1(*x.m_use[i]);
         }
@@ -529,6 +540,16 @@ public:
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
+
+        // print_implicit_dictionary(implicit_dictionary);
+        // get hash of the function and add it to the implicit_mapping
+        if (compiler_options.implicit_typing) {
+            uint64_t hash = get_hash(tmp);
+
+            implicit_mapping[hash] = implicit_dictionary;
+
+            implicit_dictionary.clear();
+        }
 
         // populate the external_procedures_mapping
         uint64_t hash = get_hash(tmp);

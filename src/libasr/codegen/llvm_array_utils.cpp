@@ -758,7 +758,8 @@ namespace LCompilers {
             llvm::Value* num_elements = this->get_array_size(src, nullptr, 4);
 
             llvm::Value* first_ptr = this->get_pointer_to_data(dest);
-            llvm::Type* llvm_data_type = tkr2array[ASRUtils::get_type_code(asr_data_type, false, false)].second;
+            llvm::Type* llvm_data_type = tkr2array[ASRUtils::get_type_code(ASRUtils::type_get_past_pointer(
+                ASRUtils::type_get_past_allocatable(asr_data_type)), false, false)].second;
             if( reserve_memory ) {
                 llvm::Value* arr_first = builder->CreateAlloca(llvm_data_type, num_elements);
                 builder->CreateStore(arr_first, first_ptr);

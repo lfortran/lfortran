@@ -45,7 +45,7 @@ define i32 @main(i32 %0, i8** %1) {
   %4 = load float, float* %y, align 4
   %5 = fmul float %4, 2.000000e+00
   %6 = fadd float %3, %5
-  %7 = fsub float 0.000000e+00, %6
+  %7 = fneg float %6
   %8 = call float @_lcompilers_cos_f32(float* %theta)
   %9 = fmul float %7, %8
   store float %9, float* %z, align 4

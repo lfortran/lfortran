@@ -98,19 +98,29 @@
                     (Print
                         ()
                         [(StructInstanceMember
-                            (StructInstanceMember
-                                (Var 7 type_1)
-                                7 1_t_2_type_2
-                                (Pointer
-                                    (Array
-                                        (Struct
-                                            7 t_1
+                            (ArrayItem
+                                (StructInstanceMember
+                                    (Var 7 type_1)
+                                    7 1_t_2_type_2
+                                    (Pointer
+                                        (Array
+                                            (Struct
+                                                7 t_1
+                                            )
+                                            [(()
+                                            ())]
+                                            DescriptorArray
                                         )
-                                        [(()
-                                        ())]
-                                        DescriptorArray
                                     )
+                                    ()
                                 )
+                                [(()
+                                (IntegerConstant 0 (Integer 4))
+                                ())]
+                                (Struct
+                                    7 t_1
+                                )
+                                ColMajor
                                 ()
                             )
                             7 1_t_1_i
@@ -177,19 +187,29 @@
                                                     [(=
                                                         (Var 8 target)
                                                         (StructInstanceMember
-                                                            (StructInstanceMember
-                                                                (Var 5 type_1)
-                                                                5 1_t_2_type_2
-                                                                (Pointer
-                                                                    (Array
-                                                                        (Struct
-                                                                            2 t_1
+                                                            (ArrayItem
+                                                                (StructInstanceMember
+                                                                    (Var 5 type_1)
+                                                                    5 1_t_2_type_2
+                                                                    (Pointer
+                                                                        (Array
+                                                                            (Struct
+                                                                                2 t_1
+                                                                            )
+                                                                            [(()
+                                                                            ())]
+                                                                            DescriptorArray
                                                                         )
-                                                                        [(()
-                                                                        ())]
-                                                                        DescriptorArray
                                                                     )
+                                                                    ()
                                                                 )
+                                                                [(()
+                                                                (IntegerConstant 0 (Integer 4))
+                                                                ())]
+                                                                (Struct
+                                                                    2 t_1
+                                                                )
+                                                                ColMajor
                                                                 ()
                                                             )
                                                             5 1_t_1_i
@@ -370,19 +390,29 @@
                                                     )
                                                     (=
                                                         (StructInstanceMember
-                                                            (StructInstanceMember
-                                                                (Var 9 target)
-                                                                9 1_t_2_type_2
-                                                                (Pointer
-                                                                    (Array
-                                                                        (Struct
-                                                                            2 t_1
+                                                            (ArrayItem
+                                                                (StructInstanceMember
+                                                                    (Var 9 target)
+                                                                    9 1_t_2_type_2
+                                                                    (Pointer
+                                                                        (Array
+                                                                            (Struct
+                                                                                2 t_1
+                                                                            )
+                                                                            [(()
+                                                                            ())]
+                                                                            DescriptorArray
                                                                         )
-                                                                        [(()
-                                                                        ())]
-                                                                        DescriptorArray
                                                                     )
+                                                                    ()
                                                                 )
+                                                                [(()
+                                                                (IntegerConstant 0 (Integer 4))
+                                                                ())]
+                                                                (Struct
+                                                                    2 t_1
+                                                                )
+                                                                ColMajor
                                                                 ()
                                                             )
                                                             9 1_t_1_i

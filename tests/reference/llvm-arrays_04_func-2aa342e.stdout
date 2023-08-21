@@ -26,7 +26,7 @@ then:                                             ; preds = %.entry
 
 else:                                             ; preds = %.entry
   %3 = load float, float* %a, align 4
-  %4 = fsub float 0.000000e+00, %3
+  %4 = fneg float %3
   store float %4, float* %r, align 4
   br label %ifcont
 

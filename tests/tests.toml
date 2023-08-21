@@ -789,11 +789,6 @@ cpp = true
 julia = true
 
 [[test]]
-filename = "array2_derived.f90"
-asr = true
-llvm = true
-
-[[test]]
 filename = "array3.f90"
 tokens = true
 ast = true
@@ -2021,6 +2016,11 @@ asr = true
 extrafiles = "../integration_tests/modules_34_module1a.f90, ../integration_tests/modules_34_module1.f90, ../integration_tests/modules_34_module2.f90, ../integration_tests/modules_34_module3.f90"
 
 [[test]]
+filename = "../integration_tests/modules_52.f90"
+asr = true
+extrafiles = "../integration_tests/modules_52_module3.f90, ../integration_tests/modules_52_module2.f90, ../integration_tests/modules_52_module1.f90"
+
+[[test]]
 filename = "../integration_tests/modules_36.f90"
 llvm = true
 
@@ -2975,7 +2975,7 @@ filename = "fixed_form/contains1.f"
 ast = true
 
 [[test]]
-filename = "fixed_form/intrinsic_implicit.f"
+filename = "intrinsic_implicit.f90"
 asr_implicit_interface_and_typing = true
 
 [[test]]
@@ -2990,13 +2990,13 @@ asr_implicit_interface = true
 [[test]]
 filename = "fixed_form_implicit_check.f"
 ast = true
-asr = true
+asr_implicit_interface_and_typing = true
 fixed_free_equal_asr = true
 
 [[test]]
 filename = "implicit_check.f90"
 ast = true
-asr = true
+asr_implicit_interface_and_typing = true
 fixed_free_equal_asr = true
 
 [[test]]
@@ -3007,7 +3007,7 @@ asr = true
 [[test]]
 filename = "fixed_form_implicit2.f"
 ast = true
-asr = true
+asr_implicit_interface_and_typing = true
 
 [[test]]
 filename = "fixed_form_call1.f"
@@ -3412,3 +3412,11 @@ asr = true
 [[test]]
 filename = "../integration_tests/implicit_argument_casting_01.f90"
 asr_implicit_argument_casting = true
+
+[[test]]
+filename = "errors/end_sub_name.f90"
+asr = true
+
+[[test]]
+filename = "errors/end_program_name.f90"
+asr = true

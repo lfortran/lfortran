@@ -1,4 +1,4 @@
-program array2_derived
+program array_32
 implicit none
 
 type :: der_type
@@ -23,5 +23,20 @@ complex, dimension(6:7,8:10,11:13) :: z
 integer, dimension(3:4,4:5,3:4) :: i
 logical, dimension(5:6,2:3,2:4) :: j
 type(der_type), dimension(7:10,9:15,16:18) :: r
+
+if( lbound(p, 1) /= 1 ) error stop
+if( ubound(p, 1) /= 7 ) error stop
+
+if( lbound(q, 1) /= 1 ) error stop
+if( ubound(q, 1) /= 7 ) error stop
+if( lbound(q, 2) /= 1 ) error stop
+if( ubound(q, 2) /= 9 ) error stop
+
+if( lbound(r, 1) /= 7 ) error stop
+if( ubound(r, 1) /= 10 ) error stop
+if( lbound(r, 2) /= 9 ) error stop
+if( ubound(r, 2) /= 15 ) error stop
+if( lbound(r, 3) /= 16 ) error stop
+if( ubound(r, 3) /= 18 ) error stop
 
 end program

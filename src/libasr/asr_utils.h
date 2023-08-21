@@ -645,7 +645,8 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
 
 static inline ASR::symbol_t *get_asr_owner(const ASR::symbol_t *sym) {
     const SymbolTable *s = symbol_parent_symtab(sym);
-    if( !ASR::is_a<ASR::symbol_t>(*s->asr_owner) ) {
+    if( s->asr_owner == nullptr ||
+        !ASR::is_a<ASR::symbol_t>(*s->asr_owner) ) {
         return nullptr;
     }
     return ASR::down_cast<ASR::symbol_t>(s->asr_owner);
@@ -3237,6 +3238,12 @@ class SymbolDuplicator {
                 new_symbol_name = block->m_name;
                 break;
             }
+            case ASR::symbolType::StructType: {
+                ASR::StructType_t* struct_type = ASR::down_cast<ASR::StructType_t>(symbol);
+                new_symbol = duplicate_StructType(struct_type, destination_symtab);
+                new_symbol_name = struct_type->m_name;
+                break;
+            }
             default: {
                 throw LCompilersException("Duplicating ASR::symbolType::" +
                         std::to_string(symbol->type) + " is not supported yet.");
@@ -3390,6 +3397,19 @@ class SymbolDuplicator {
         return ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(al,
                 block_t->base.base.loc, block_symtab, block_t->m_name,
                 new_body.p, new_body.size()));
+    }
+
+    ASR::symbol_t* duplicate_StructType(ASR::StructType_t* struct_type_t,
+        SymbolTable* destination_symtab) {
+        SymbolTable* struct_type_symtab = al.make_new<SymbolTable>(destination_symtab);
+        duplicate_SymbolTable(struct_type_t->m_symtab, struct_type_symtab);
+        return ASR::down_cast<ASR::symbol_t>(ASR::make_StructType_t(
+            al, struct_type_t->base.base.loc, struct_type_symtab,
+            struct_type_t->m_name, struct_type_t->m_dependencies, struct_type_t->n_dependencies,
+            struct_type_t->m_members, struct_type_t->n_members, struct_type_t->m_abi,
+            struct_type_t->m_access, struct_type_t->m_is_packed, struct_type_t->m_is_abstract,
+            struct_type_t->m_initializers, struct_type_t->n_initializers, struct_type_t->m_alignment,
+            struct_type_t->m_parent));
     }
 
 };
@@ -3640,7 +3660,8 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
              argi->m_intent == ASRUtils::intent_inout) &&
             !ASR::is_a<ASR::Allocatable_t>(*argi->m_type) &&
             !ASR::is_a<ASR::Struct_t>(*argi->m_type) &&
-            !ASR::is_a<ASR::Character_t>(*argi->m_type)) {
+            !ASR::is_a<ASR::Character_t>(*argi->m_type) &&
+            argi->m_presence != ASR::presenceType::Optional) {
             v.push_back(i);
         }
     }
@@ -3936,9 +3957,65 @@ static inline bool is_allocatable(ASR::expr_t* expr) {
     return ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(expr));
 }
 
+static inline bool is_allocatable(ASR::ttype_t* type) {
+    return ASR::is_a<ASR::Allocatable_t>(*type);
+}
+
+static inline void import_struct_t(Allocator& al,
+    const Location& loc, ASR::ttype_t*& var_type,
+    ASR::intentType intent, SymbolTable* current_scope) {
+    bool is_pointer = ASRUtils::is_pointer(var_type);
+    bool is_allocatable = ASRUtils::is_allocatable(var_type);
+    bool is_array = ASRUtils::is_array(var_type);
+    ASR::dimension_t* m_dims = nullptr;
+    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(var_type, m_dims);
+    ASR::array_physical_typeType ptype = ASR::array_physical_typeType::DescriptorArray;
+    if( is_array ) {
+        ptype = ASRUtils::extract_physical_type(var_type);
+    }
+    ASR::ttype_t* var_type_unwrapped = ASRUtils::type_get_past_allocatable(
+                 ASRUtils::type_get_past_pointer(var_type));
+    if( ASR::is_a<ASR::Struct_t>(*var_type_unwrapped) ) {
+        ASR::symbol_t* der_sym = ASR::down_cast<ASR::Struct_t>(var_type_unwrapped)->m_derived_type;
+        if( (ASR::asr_t*) ASRUtils::get_asr_owner(der_sym) != current_scope->asr_owner ) {
+            std::string sym_name = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(der_sym));
+            if( current_scope->resolve_symbol(sym_name) == nullptr ) {
+                std::string unique_name = current_scope->get_unique_name(sym_name);
+                der_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                    al, loc, current_scope, s2c(al, unique_name), ASRUtils::symbol_get_past_external(der_sym),
+                    ASRUtils::symbol_name(ASRUtils::get_asr_owner(ASRUtils::symbol_get_past_external(der_sym))), nullptr, 0,
+                    ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(der_sym)), ASR::accessType::Public));
+                current_scope->add_symbol(unique_name, der_sym);
+            } else {
+                der_sym = current_scope->resolve_symbol(sym_name);
+            }
+            var_type = ASRUtils::TYPE(ASR::make_Struct_t(al, loc, der_sym));
+            if( is_array ) {
+                var_type = ASRUtils::make_Array_t_util(al, loc, var_type, m_dims, n_dims,
+                    ASR::abiType::Source, false, ptype, true);
+            }
+            if( is_pointer ) {
+                var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, var_type));
+            } else if( is_allocatable ) {
+                var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, var_type));
+            }
+        }
+    } else if( ASR::is_a<ASR::Character_t>(*var_type_unwrapped) ) {
+        ASR::Character_t* char_t = ASR::down_cast<ASR::Character_t>(var_type_unwrapped);
+        if( char_t->m_len == -1 && intent == ASR::intentType::Local ) {
+            var_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc, char_t->m_kind, 1, nullptr));
+            if( is_pointer ) {
+                var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, var_type));
+            } else if( is_allocatable ) {
+                var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, var_type));
+            }
+        }
+    }
+}
+
 static inline ASR::asr_t* make_ArrayPhysicalCast_t_util(Allocator &al, const Location &a_loc,
     ASR::expr_t* a_arg, ASR::array_physical_typeType a_old, ASR::array_physical_typeType a_new,
-    ASR::ttype_t* a_type, ASR::expr_t* a_value) {
+    ASR::ttype_t* a_type, ASR::expr_t* a_value, SymbolTable* current_scope=nullptr) {
     if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*a_arg) ) {
         ASR::ArrayPhysicalCast_t* a_arg_ = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_arg);
         a_arg = a_arg_->m_arg;
@@ -3955,6 +4032,10 @@ static inline ASR::asr_t* make_ArrayPhysicalCast_t_util(Allocator &al, const Loc
             return (ASR::asr_t*) a_arg;
     }
 
+    if( current_scope ) {
+        import_struct_t(al, a_loc, a_type,
+            ASR::intentType::Unspecified, current_scope);
+    }
     return ASR::make_ArrayPhysicalCast_t(al, a_loc, a_arg, a_old, a_new, a_type, a_value);
 }
 
@@ -4243,16 +4324,32 @@ static inline ASR::asr_t* make_IntrinsicArrayFunction_t_util(
 
 static inline ASR::asr_t* make_Associate_t_util(
     Allocator &al, const Location &a_loc,
-    ASR::expr_t* a_target, ASR::expr_t* a_value) {
+    ASR::expr_t* a_target, ASR::expr_t* a_value,
+    SymbolTable* current_scope=nullptr) {
     ASR::ttype_t* target_type = ASRUtils::expr_type(a_target);
     ASR::ttype_t* value_type = ASRUtils::expr_type(a_value);
     if( ASRUtils::is_array(target_type) && ASRUtils::is_array(value_type) ) {
         ASR::array_physical_typeType target_ptype = ASRUtils::extract_physical_type(target_type);
         ASR::array_physical_typeType value_ptype = ASRUtils::extract_physical_type(value_type);
         if( target_ptype != value_ptype ) {
+            ASR::dimension_t *target_m_dims = nullptr, *value_m_dims = nullptr;
+            size_t target_n_dims = ASRUtils::extract_dimensions_from_ttype(target_type, target_m_dims);
+            size_t value_n_dims = ASRUtils::extract_dimensions_from_ttype(value_type, value_m_dims);
+            Vec<ASR::dimension_t> dim_vec;
+            Vec<ASR::dimension_t>* dim_vec_ptr = nullptr;
+            if( (!ASRUtils::is_dimension_empty(target_m_dims, target_n_dims) ||
+                !ASRUtils::is_dimension_empty(value_m_dims, value_n_dims)) &&
+                target_ptype == ASR::array_physical_typeType::FixedSizeArray ) {
+                if( !ASRUtils::is_dimension_empty(target_m_dims, target_n_dims) ) {
+                    dim_vec.from_pointer_n(target_m_dims, target_n_dims);
+                } else {
+                    dim_vec.from_pointer_n(value_m_dims, value_n_dims);
+                }
+                dim_vec_ptr = &dim_vec;
+            }
             a_value = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al, a_loc, a_value,
                         value_ptype, target_ptype, ASRUtils::duplicate_type(al,
-                        value_type, nullptr, target_ptype, true), nullptr));
+                        value_type, dim_vec_ptr, target_ptype, true), nullptr, current_scope));
         }
     }
     return ASR::make_Associate_t(al, a_loc, a_target, a_value);

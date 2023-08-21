@@ -379,7 +379,10 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> requires_decl
 %type <ast> enum_decl
 %type <ast> program
+%type <ast> end_program
+%type <ast> id_opt
 %type <ast> subroutine
+%type <ast> end_subroutine
 %type <ast> procedure
 %type <ast> sub_or_func
 %type <vec_ast> sub_args
@@ -834,13 +837,13 @@ proc_modifier
 program
     : KW_PROGRAM id sep use_statement_star implicit_statement_star decl_statements
         contains_block_opt end_program sep {
-      LLOC(@$, @9); $$ = PROGRAM($2, TRIVIA($3, $9, @$), $4, $5, $6, $7, @$); }
+      LLOC(@$, @8); $$ = PROGRAM($2, TRIVIA($3, $9, @$), $4, $5, $6, $7, $8, @$); }
     ;
 
 end_program
-    : KW_END_PROGRAM id_opt
-    | KW_ENDPROGRAM id_opt
-    | KW_END
+    : KW_END_PROGRAM id_opt { $$ = $2; }
+    | KW_ENDPROGRAM id_opt { $$ = $2; }
+    | KW_END { $$ = nullptr; }
     ;
 
 end_module
@@ -862,9 +865,9 @@ end_blockdata
     ;
 
 end_subroutine
-    : KW_END_SUBROUTINE id_opt
-    | KW_ENDSUBROUTINE id_opt
-    | KW_END
+    : KW_END_SUBROUTINE id_opt { $$ = $2; }
+    | KW_ENDSUBROUTINE id_opt { $$ = $2; }
+    | KW_END { $$ = nullptr; }
     ;
 
 end_procedure
@@ -909,14 +912,14 @@ subroutine
     import_statement_star implicit_statement_star decl_statements
         contains_block_opt
         end_subroutine sep {
-            LLOC(@$, @12); $$ = SUBROUTINE($2, $3, $4, TRIVIA($5, $12, @$), $6,
-                $7, $8, SPLIT_DECL(p.m_a, $9), SPLIT_STMT(p.m_a, $9), $10, @$); }
+            LLOC(@$, @11); $$ = SUBROUTINE($2, $3, $4, TRIVIA($5, $12, @$), $6,
+                $7, $8, SPLIT_DECL(p.m_a, $9), SPLIT_STMT(p.m_a, $9), $10, $11, @$); }
     | fn_mod_plus KW_SUBROUTINE id sub_args bind_opt sep use_statement_star
     import_statement_star implicit_statement_star decl_statements
         contains_block_opt
         end_subroutine sep {
-            LLOC(@$, @13); $$ = SUBROUTINE1($1, $3, $4, $5, TRIVIA($6, $13, @$),
-                $7, $8, $9, SPLIT_DECL(p.m_a, $10), SPLIT_STMT(p.m_a, $10), $11, @$); }
+            LLOC(@$, @12); $$ = SUBROUTINE1($1, $3, $4, $5, TRIVIA($6, $13, @$),
+                $7, $8, $9, SPLIT_DECL(p.m_a, $10), SPLIT_STMT(p.m_a, $10), $11, $12, @$); }
     ;
 
 procedure
@@ -2350,8 +2353,8 @@ id_list
 
 // id?
 id_opt
-    : id
-    | %empty
+    : id { $$ = $1; }
+    | %empty { $$ = nullptr; }
     ;
 
 

@@ -451,7 +451,21 @@
                                                     []
                                                     [(Var 10 x)
                                                     (Var 10 y)]
-                                                    []
+                                                    [(=
+                                                        (Var 10 tmp)
+                                                        (Var 10 x)
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 10 x)
+                                                        (Var 10 y)
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 10 y)
+                                                        (Var 10 tmp)
+                                                        ()
+                                                    )]
                                                     ()
                                                     Private
                                                     .false.
@@ -687,6 +701,48 @@
                                         [(Var 7 a)]
                                         ()
                                         ()
+                                    )
+                                    (If
+                                        (IntegerCompare
+                                            (ArrayItem
+                                                (Var 7 a)
+                                                [(()
+                                                (IntegerConstant 1 (Integer 4))
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
+                                            )
+                                            NotEq
+                                            (IntegerConstant 5 (Integer 4))
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            ()
+                                        )]
+                                        []
+                                    )
+                                    (If
+                                        (IntegerCompare
+                                            (ArrayItem
+                                                (Var 7 a)
+                                                [(()
+                                                (IntegerConstant 5 (Integer 4))
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
+                                            )
+                                            NotEq
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            ()
+                                        )]
+                                        []
                                     )]
                                     ()
                                     Private
