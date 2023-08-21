@@ -168,19 +168,29 @@
                                         7 1_update_dependency
                                         7 1_update
                                         [((StructInstanceMember
-                                            (StructInstanceMember
-                                                (Var 7 deps)
-                                                7 1_dependency_tree_t_dep
-                                                (Allocatable
-                                                    (Array
-                                                        (Struct
-                                                            7 fpm_dependency_modules_31_dependency_node_t
+                                            (ArrayItem
+                                                (StructInstanceMember
+                                                    (Var 7 deps)
+                                                    7 1_dependency_tree_t_dep
+                                                    (Allocatable
+                                                        (Array
+                                                            (Struct
+                                                                7 fpm_dependency_modules_31_dependency_node_t
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
                                                         )
-                                                        [(()
-                                                        ())]
-                                                        DescriptorArray
                                                     )
+                                                    ()
                                                 )
+                                                [(()
+                                                (Var 7 ii)
+                                                ())]
+                                                (Struct
+                                                    7 fpm_dependency_modules_31_dependency_node_t
+                                                )
+                                                ColMajor
                                                 ()
                                             )
                                             7 1_dependency_config_t_name

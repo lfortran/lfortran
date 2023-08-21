@@ -1029,7 +1029,8 @@ public:
         if( fn && ASR::is_a<ASR::Function_t>(*fn) ) {
             ASR::Function_t* fn_ = ASR::down_cast<ASR::Function_t>(fn);
             require(fn_->m_return_var != nullptr,
-                    "FunctionCall::m_name must be returning a non-void value.");
+                    "FunctionCall::m_name " + std::string(fn_->m_name) +
+                    " must be returning a non-void value.");
         }
         verify_args(x);
         visit_ttype(*x.m_type);
@@ -1104,7 +1105,8 @@ public:
         for( size_t i = 0; i < x.n_args; i++ ) {
             require(ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(x.m_args[i].m_a)) ||
                     ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_args[i].m_a)),
-                "Allocate should only be called with  Allocatable or Pointer type inputs");
+                "Allocate should only be called with  Allocatable or Pointer type inputs, found " +
+                std::string(ASRUtils::get_type_code(ASRUtils::expr_type(x.m_args[i].m_a))));
         }
         BaseWalkVisitor<VerifyVisitor>::visit_Allocate(x);
     }

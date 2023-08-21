@@ -789,11 +789,6 @@ cpp = true
 julia = true
 
 [[test]]
-filename = "array2_derived.f90"
-asr = true
-llvm = true
-
-[[test]]
 filename = "array3.f90"
 tokens = true
 ast = true
@@ -2019,6 +2014,11 @@ extrafiles = "../integration_tests/modules_33_module1.f90, ../integration_tests/
 filename = "../integration_tests/modules_34.f90"
 asr = true
 extrafiles = "../integration_tests/modules_34_module1a.f90, ../integration_tests/modules_34_module1.f90, ../integration_tests/modules_34_module2.f90, ../integration_tests/modules_34_module3.f90"
+
+[[test]]
+filename = "../integration_tests/modules_52.f90"
+asr = true
+extrafiles = "../integration_tests/modules_52_module3.f90, ../integration_tests/modules_52_module2.f90, ../integration_tests/modules_52_module1.f90"
 
 [[test]]
 filename = "../integration_tests/modules_36.f90"

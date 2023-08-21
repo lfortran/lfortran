@@ -267,6 +267,9 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
                             ASRUtils::symbol_get_past_external(it2));
                 new_ext_var = current_scope->get_unique_name(new_ext_var, false);
+                bool is_allocatable = ASRUtils::is_allocatable(var->m_type);
+                bool is_pointer = ASRUtils::is_pointer(var->m_type);
+                LCOMPILERS_ASSERT(!(is_allocatable && is_pointer));
                 ASR::ttype_t* var_type = ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(var->m_type));
                 ASR::ttype_t* var_type_ = ASRUtils::type_get_past_array(var_type);
@@ -305,15 +308,15 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                         }
                     }
                 }
-                if( ASRUtils::is_array(var_type) &&
-                    !ASR::is_a<ASR::Pointer_t>(*var_type) ) {
+                if( (ASRUtils::is_array(var_type) && !is_pointer) ||
+                    is_allocatable ) {
                     var_type = ASRUtils::duplicate_type_with_empty_dims(al, var_type);
                     var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc,
                         ASRUtils::type_get_past_allocatable(var_type)));
                 }
                 ASR::expr_t *sym_expr = PassUtils::create_auxiliary_variable(
-                        it2->base.loc, new_ext_var,
-                        al, current_scope, var_type, ASR::intentType::Unspecified);
+                    it2->base.loc, new_ext_var, al, current_scope, var_type,
+                    ASR::intentType::Unspecified);
                 ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(sym_expr)->m_v;
                 nested_var_to_ext_var[it2] = std::make_pair(module_name, sym);
             }
@@ -505,11 +508,19 @@ public:
                         LCOMPILERS_ASSERT(sym_ != nullptr);
                         ASR::expr_t *target = ASRUtils::EXPR(ASR::make_Var_t(al, t->base.loc, ext_sym));
                         ASR::expr_t *val = ASRUtils::EXPR(ASR::make_Var_t(al, t->base.loc, sym_));
-                        if( ASRUtils::is_array(ASRUtils::symbol_type(sym)) ||
-                            ASR::is_a<ASR::Pointer_t>(*ASRUtils::symbol_type(sym)) ) {
+                        bool is_sym_allocatable_or_pointer = (ASR::is_a<ASR::Pointer_t>(*ASRUtils::symbol_type(sym)) ||
+                            ASR::is_a<ASR::Allocatable_t>(*ASRUtils::symbol_type(sym)));
+                        bool is_ext_sym_allocatable_or_pointer = (ASR::is_a<ASR::Pointer_t>(*ASRUtils::symbol_type(ext_sym)) ||
+                            ASR::is_a<ASR::Allocatable_t>(*ASRUtils::symbol_type(ext_sym)));
+                        if( ASRUtils::is_array(ASRUtils::symbol_type(sym)) || is_sym_allocatable_or_pointer ) {
                             ASR::stmt_t *associate = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, t->base.loc,
-                                                        target, val));
+                                                        target, val, current_scope));
                             body.push_back(al, associate);
+                            if( is_ext_sym_allocatable_or_pointer && is_sym_allocatable_or_pointer ) {
+                                associate = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, t->base.loc,
+                                    val, target, current_scope));
+                                assigns_at_end.push_back(associate);
+                            }
                         } else {
                             ASR::stmt_t *assignment = ASRUtils::STMT(ASR::make_Assignment_t(al, t->base.loc,
                                                         target, val, nullptr));

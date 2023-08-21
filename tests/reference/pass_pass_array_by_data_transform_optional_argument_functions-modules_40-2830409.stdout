@@ -54,6 +54,22 @@
                                                     (SymbolTable
                                                         6
                                                         {
+                                                            __libasr_created_variable__:
+                                                                (Variable
+                                                                    6
+                                                                    __libasr_created_variable__
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
                                                             de:
                                                                 (Variable
                                                                     6
@@ -169,7 +185,7 @@
                                                                 5 resize
                                                                 ()
                                                                 [((Var 6 stack))
-                                                                (())
+                                                                ((Var 6 __libasr_created_variable__))
                                                                 ((LogicalConstant
                                                                     .false.
                                                                     (Logical 4)
@@ -219,7 +235,7 @@
                                                                     ()
                                                                     Source
                                                                     Public
-                                                                    Optional
+                                                                    Required
                                                                     .false.
                                                                 ),
                                                             stack:

@@ -7,6 +7,86 @@
                     (SymbolTable
                         4
                         {
+                            __libasr_created_variable_1:
+                                (Variable
+                                    4
+                                    __libasr_created_variable_1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            __libasr_created_variable_2:
+                                (Variable
+                                    4
+                                    __libasr_created_variable_2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            __libasr_created_variable_3:
+                                (Variable
+                                    4
+                                    __libasr_created_variable_3
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            __libasr_created_variable_4:
+                                (Variable
+                                    4
+                                    __libasr_created_variable_4
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            __libasr_created_variable__:
+                                (Variable
+                                    4
+                                    __libasr_created_variable__
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
                             a:
                                 (Variable
                                     4
@@ -99,7 +179,7 @@
                                                     ()
                                                     Source
                                                     Public
-                                                    Optional
+                                                    Required
                                                     .false.
                                                 )
                                         })
@@ -201,12 +281,12 @@
                             .false.
                             (Logical 4)
                         ))
-                        (())
+                        ((Var 4 __libasr_created_variable_1))
                         ((LogicalConstant
                             .false.
                             (Logical 4)
                         ))
-                        (())
+                        ((Var 4 __libasr_created_variable_2))
                         ((LogicalConstant
                             .false.
                             (Logical 4)
@@ -226,7 +306,7 @@
                             .true.
                             (Logical 4)
                         ))
-                        (())
+                        ((Var 4 __libasr_created_variable_3))
                         ((LogicalConstant
                             .false.
                             (Logical 4)
@@ -259,7 +339,7 @@
                             .true.
                             (Logical 4)
                         ))
-                        (())
+                        ((Var 4 __libasr_created_variable_4))
                         ((LogicalConstant
                             .false.
                             (Logical 4)
@@ -311,7 +391,7 @@
                         [(FunctionCall
                             4 f
                             ()
-                            [(())
+                            [((Var 4 __libasr_created_variable__))
                             ((LogicalConstant
                                 .false.
                                 (Logical 4)
@@ -407,7 +487,7 @@
                                                     ()
                                                     Source
                                                     Public
-                                                    Optional
+                                                    Required
                                                     .false.
                                                 ),
                                             e:
@@ -423,7 +503,7 @@
                                                     ()
                                                     Source
                                                     Public
-                                                    Optional
+                                                    Required
                                                     .false.
                                                 ),
                                             f:

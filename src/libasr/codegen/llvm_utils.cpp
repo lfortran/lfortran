@@ -1067,8 +1067,7 @@ namespace LCompilers {
                     }
                     case ASR::array_physical_typeType::FixedSizeArray: {
                         llvm_type = llvm::ArrayType::get(get_el_type(v_type->m_type, module),
-                                        ASRUtils::get_fixed_size_of_array(
-                                            v_type->m_dims, v_type->n_dims));
+                            ASRUtils::get_fixed_size_of_array(v_type->m_dims, v_type->n_dims));
                         break;
                     }
                     default: {

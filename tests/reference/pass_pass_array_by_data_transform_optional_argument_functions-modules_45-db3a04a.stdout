@@ -232,6 +232,22 @@
                                     (SymbolTable
                                         6
                                         {
+                                            __libasr_created_variable__:
+                                                (Variable
+                                                    6
+                                                    __libasr_created_variable__
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
                                             c_flags:
                                                 (Variable
                                                     6
@@ -608,7 +624,7 @@
                                         []
                                         .false.
                                     )
-                                    [new_profile_file_scope_flags]
+                                    [new_profile]
                                     [(Var 6 profile_name)
                                     (Var 6 compiler_name)
                                     (Var 6 os_type)
@@ -628,8 +644,8 @@
                                             ()
                                         )
                                         (FunctionCall
-                                            2 new_profile_file_scope_flags
-                                            2 new_profile_file_scope_flags
+                                            2 new_profile
+                                            ()
                                             [((Var 6 profile_name))
                                             ((Var 6 compiler_name))
                                             ((Var 6 os_type))
@@ -653,48 +669,12 @@
                                                 .true.
                                                 (Logical 4)
                                             ))
-                                            ((ArrayPhysicalCast
-                                                (Var 6 file_scope_flags)
-                                                DescriptorArray
-                                                PointerToDataArray
-                                                (Allocatable
-                                                    (Array
-                                                        (Struct
-                                                            2 file_scope_flag
-                                                        )
-                                                        [(()
-                                                        ())]
-                                                        PointerToDataArray
-                                                    )
-                                                )
-                                                ()
-                                            ))
+                                            ((Var 6 file_scope_flags))
                                             ((LogicalConstant
                                                 .true.
                                                 (Logical 4)
                                             ))
-                                            ((ArrayBound
-                                                (Var 6 file_scope_flags)
-                                                (IntegerConstant 1 (Integer 4))
-                                                (Integer 4)
-                                                LBound
-                                                ()
-                                            ))
-                                            ((LogicalConstant
-                                                .true.
-                                                (Logical 4)
-                                            ))
-                                            ((ArraySize
-                                                (Var 6 file_scope_flags)
-                                                (IntegerConstant 1 (Integer 4))
-                                                (Integer 4)
-                                                ()
-                                            ))
-                                            ((LogicalConstant
-                                                .true.
-                                                (Logical 4)
-                                            ))
-                                            (())
+                                            ((Var 6 __libasr_created_variable__))
                                             ((LogicalConstant
                                                 .false.
                                                 (Logical 4)
@@ -753,7 +733,7 @@
                                                     ()
                                                     Source
                                                     Public
-                                                    Optional
+                                                    Required
                                                     .false.
                                                 ),
                                             compiler:
@@ -785,7 +765,7 @@
                                                     ()
                                                     Source
                                                     Public
-                                                    Optional
+                                                    Required
                                                     .false.
                                                 ),
                                             file_scope_flags:
@@ -808,7 +788,7 @@
                                                     ()
                                                     Source
                                                     Public
-                                                    Optional
+                                                    Required
                                                     .false.
                                                 ),
                                             flags:
@@ -824,7 +804,7 @@
                                                     ()
                                                     Source
                                                     Public
-                                                    Optional
+                                                    Required
                                                     .false.
                                                 ),
                                             is_built_in:
@@ -840,7 +820,7 @@
                                                     ()
                                                     Source
                                                     Public
-                                                    Optional
+                                                    Required
                                                     .false.
                                                 ),
                                             is_c_flags_present_:
@@ -952,7 +932,7 @@
                                                     ()
                                                     Source
                                                     Public
-                                                    Optional
+                                                    Required
                                                     .false.
                                                 ),
                                             os_type:
@@ -1062,419 +1042,6 @@
                                     (Var 5 is_is_built_in_present_)]
                                     []
                                     (Var 5 profile)
-                                    Public
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
-                            new_profile_file_scope_flags:
-                                (Function
-                                    (SymbolTable
-                                        8
-                                        {
-                                            __1file_scope_flags:
-                                                (Variable
-                                                    8
-                                                    __1file_scope_flags
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Optional
-                                                    .false.
-                                                ),
-                                            __2file_scope_flags:
-                                                (Variable
-                                                    8
-                                                    __2file_scope_flags
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Optional
-                                                    .false.
-                                                ),
-                                            c_flags:
-                                                (Variable
-                                                    8
-                                                    c_flags
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Character 1 -1 ())
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Optional
-                                                    .false.
-                                                ),
-                                            compiler:
-                                                (Variable
-                                                    8
-                                                    compiler
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Character 1 -1 ())
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            cxx_flags:
-                                                (Variable
-                                                    8
-                                                    cxx_flags
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Character 1 -1 ())
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Optional
-                                                    .false.
-                                                ),
-                                            file_scope_flags:
-                                                (Variable
-                                                    8
-                                                    file_scope_flags
-                                                    [__1file_scope_flags
-                                                    __2file_scope_flags]
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Array
-                                                        (Struct
-                                                            2 file_scope_flag
-                                                        )
-                                                        [((Var 8 __1file_scope_flags)
-                                                        (Var 8 __2file_scope_flags))]
-                                                        PointerToDataArray
-                                                    )
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Optional
-                                                    .false.
-                                                ),
-                                            flags:
-                                                (Variable
-                                                    8
-                                                    flags
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Character 1 -1 ())
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Optional
-                                                    .false.
-                                                ),
-                                            is___1file_scope_flags_present_:
-                                                (Variable
-                                                    8
-                                                    is___1file_scope_flags_present_
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            is___2file_scope_flags_present_:
-                                                (Variable
-                                                    8
-                                                    is___2file_scope_flags_present_
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            is_built_in:
-                                                (Variable
-                                                    8
-                                                    is_built_in
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Optional
-                                                    .false.
-                                                ),
-                                            is_c_flags_present_:
-                                                (Variable
-                                                    8
-                                                    is_c_flags_present_
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            is_cxx_flags_present_:
-                                                (Variable
-                                                    8
-                                                    is_cxx_flags_present_
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            is_file_scope_flags_present_:
-                                                (Variable
-                                                    8
-                                                    is_file_scope_flags_present_
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            is_flags_present_:
-                                                (Variable
-                                                    8
-                                                    is_flags_present_
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            is_is_built_in_present_:
-                                                (Variable
-                                                    8
-                                                    is_is_built_in_present_
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            is_link_time_flags_present_:
-                                                (Variable
-                                                    8
-                                                    is_link_time_flags_present_
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            link_time_flags:
-                                                (Variable
-                                                    8
-                                                    link_time_flags
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Character 1 -1 ())
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Optional
-                                                    .false.
-                                                ),
-                                            os_type:
-                                                (Variable
-                                                    8
-                                                    os_type
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            profile:
-                                                (Variable
-                                                    8
-                                                    profile
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Struct
-                                                        2 profile_config_t
-                                                    )
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            profile_name:
-                                                (Variable
-                                                    8
-                                                    profile_name
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Character 1 -1 ())
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    new_profile_file_scope_flags
-                                    (FunctionType
-                                        [(Character 1 -1 ())
-                                        (Character 1 -1 ())
-                                        (Integer 4)
-                                        (Character 1 -1 ())
-                                        (Logical 4)
-                                        (Character 1 -1 ())
-                                        (Logical 4)
-                                        (Character 1 -1 ())
-                                        (Logical 4)
-                                        (Character 1 -1 ())
-                                        (Logical 4)
-                                        (Array
-                                            (Struct
-                                                2 file_scope_flag
-                                            )
-                                            [((FunctionParam
-                                                8
-                                                (Integer 4)
-                                                ()
-                                            )
-                                            (FunctionParam
-                                                9
-                                                (Integer 4)
-                                                ()
-                                            ))]
-                                            PointerToDataArray
-                                        )
-                                        (Logical 4)
-                                        (Integer 4)
-                                        (Logical 4)
-                                        (Integer 4)
-                                        (Logical 4)
-                                        (Logical 4)
-                                        (Logical 4)]
-                                        (Struct
-                                            2 profile_config_t
-                                        )
-                                        Source
-                                        Implementation
-                                        ""
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                    )
-                                    []
-                                    [(Var 8 profile_name)
-                                    (Var 8 compiler)
-                                    (Var 8 os_type)
-                                    (Var 8 flags)
-                                    (Var 8 is_flags_present_)
-                                    (Var 8 c_flags)
-                                    (Var 8 is_c_flags_present_)
-                                    (Var 8 cxx_flags)
-                                    (Var 8 is_cxx_flags_present_)
-                                    (Var 8 link_time_flags)
-                                    (Var 8 is_link_time_flags_present_)
-                                    (Var 8 file_scope_flags)
-                                    (Var 8 is_file_scope_flags_present_)
-                                    (Var 8 __1file_scope_flags)
-                                    (Var 8 is___1file_scope_flags_present_)
-                                    (Var 8 __2file_scope_flags)
-                                    (Var 8 is___2file_scope_flags_present_)
-                                    (Var 8 is_built_in)
-                                    (Var 8 is_is_built_in_present_)]
-                                    []
-                                    (Var 8 profile)
                                     Public
                                     .false.
                                     .false.

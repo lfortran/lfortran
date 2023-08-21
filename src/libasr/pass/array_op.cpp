@@ -258,8 +258,103 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         use_custom_loop_params = false;
     }
 
+    #define allocate_result_var(op_arg, op_dims_arg, op_n_dims_arg) if( ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(result_var)) || \
+        ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(result_var)) ) { \
+        bool is_dimension_empty = false; \
+        for( int i = 0; i < op_n_dims_arg; i++ ) { \
+            if( op_dims_arg->m_length == nullptr ) { \
+                is_dimension_empty = true; \
+                break; \
+            } \
+        } \
+        Vec<ASR::alloc_arg_t> alloc_args; \
+        alloc_args.reserve(al, 1); \
+        if( !is_dimension_empty ) { \
+            ASR::alloc_arg_t alloc_arg; \
+            alloc_arg.loc = loc; \
+            alloc_arg.m_len_expr = nullptr; \
+            alloc_arg.m_type = nullptr; \
+            alloc_arg.m_a = result_var; \
+            alloc_arg.m_dims = op_dims_arg; \
+            alloc_arg.n_dims = op_n_dims_arg; \
+            alloc_args.push_back(al, alloc_arg); \
+            op_dims = op_dims_arg; \
+            op_n_dims = op_n_dims_arg; \
+        } else { \
+            Vec<ASR::dimension_t> alloc_dims; \
+            alloc_dims.reserve(al, op_n_dims_arg); \
+            for( int i = 0; i < op_n_dims_arg; i++ ) { \
+                ASR::dimension_t alloc_dim; \
+                alloc_dim.loc = loc; \
+                alloc_dim.m_start = PassUtils::get_bound(op_arg, i + 1, "lbound", al); \
+                alloc_dim.m_length = ASRUtils::compute_length_from_start_end(al, alloc_dim.m_start, \
+                    PassUtils::get_bound(op_arg, i + 1, "ubound", al)); \
+                alloc_dims.push_back(al, alloc_dim); \
+            } \
+            ASR::alloc_arg_t alloc_arg; \
+            alloc_arg.loc = loc; \
+            alloc_arg.m_len_expr = nullptr; \
+            alloc_arg.m_type = nullptr; \
+            alloc_arg.m_a = result_var; \
+            alloc_arg.m_dims = alloc_dims.p; \
+            alloc_arg.n_dims = alloc_dims.size(); \
+            alloc_args.push_back(al, alloc_arg); \
+            op_dims = alloc_dims.p; \
+            op_n_dims = alloc_dims.size(); \
+        } \
+        pass_result.push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al, \
+            loc, alloc_args.p, alloc_args.size(), nullptr, nullptr, nullptr))); \
+    }
+
     void replace_StructInstanceMember(ASR::StructInstanceMember_t* x) {
-        replace_vars_helper(x);
+        if( ASRUtils::is_array(ASRUtils::expr_type(x->m_v)) &&
+            !ASRUtils::is_array(ASRUtils::symbol_type(x->m_m)) ) {
+            ASR::BaseExprReplacer<ReplaceArrayOp>::replace_StructInstanceMember(x);
+            const Location& loc = x->base.base.loc;
+            ASR::expr_t* arr_expr = x->m_v;
+            ASR::dimension_t* arr_expr_dims = nullptr; int arr_expr_n_dims; int n_dims;
+            arr_expr_n_dims = ASRUtils::extract_dimensions_from_ttype(x->m_type, arr_expr_dims);
+            n_dims = arr_expr_n_dims;
+
+            if( result_var == nullptr ) {
+                bool allocate = false;
+                ASR::ttype_t* result_var_type = get_result_type(x->m_type,
+                    arr_expr_dims, arr_expr_n_dims, loc, x->class_type, allocate);
+                if( allocate ) {
+                    result_var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
+                       ASRUtils::type_get_past_allocatable(result_var_type)));
+                }
+                result_var = PassUtils::create_var(
+                    result_counter, "_array_struct_instance_member", loc,
+                    result_var_type, al, current_scope);
+                result_counter += 1;
+                if( allocate ) {
+                    allocate_result_var(arr_expr, arr_expr_dims, arr_expr_n_dims);
+                }
+            }
+
+            Vec<ASR::expr_t*> idx_vars, idx_vars_value, loop_vars;
+            Vec<ASR::stmt_t*> doloop_body;
+            std::vector<int> loop_var_indices;
+            int result_rank = PassUtils::get_rank(result_var);
+            op_expr = arr_expr;
+            create_do_loop(loc, n_dims, result_rank, idx_vars,
+                loop_vars, idx_vars_value, loop_var_indices, doloop_body,
+                op_expr, 2, [=, &arr_expr, &idx_vars, &idx_vars_value, &doloop_body]() {
+                ASR::expr_t* ref = PassUtils::create_array_ref(arr_expr, idx_vars_value, al);
+                ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al);
+                ASR::expr_t* op_el_wise = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
+                    al, loc, ref, x->m_m, ASRUtils::type_get_past_array(
+                        ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(x->m_type))), nullptr));
+                ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, res, op_el_wise, nullptr));
+                doloop_body.push_back(al, assign);
+            });
+            *current_expr = result_var;
+            result_var = nullptr;
+        } else {
+            replace_vars_helper(x);
+        }
     }
 
     void replace_Var(ASR::Var_t* x) {
@@ -542,54 +637,6 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             }
         }
         BaseExprReplacer<ReplaceArrayOp>::replace_expr(*current_expr);
-    }
-
-    #define allocate_result_var(op_arg, op_dims_arg, op_n_dims_arg) if( ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(result_var)) || \
-        ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(result_var)) ) { \
-        bool is_dimension_empty = false; \
-        for( int i = 0; i < op_n_dims_arg; i++ ) { \
-            if( op_dims_arg->m_length == nullptr ) { \
-                is_dimension_empty = true; \
-                break; \
-            } \
-        } \
-        Vec<ASR::alloc_arg_t> alloc_args; \
-        alloc_args.reserve(al, 1); \
-        if( !is_dimension_empty ) { \
-            ASR::alloc_arg_t alloc_arg; \
-            alloc_arg.loc = loc; \
-            alloc_arg.m_len_expr = nullptr; \
-            alloc_arg.m_type = nullptr; \
-            alloc_arg.m_a = result_var; \
-            alloc_arg.m_dims = op_dims_arg; \
-            alloc_arg.n_dims = op_n_dims_arg; \
-            alloc_args.push_back(al, alloc_arg); \
-            op_dims = op_dims_arg; \
-            op_n_dims = op_n_dims_arg; \
-        } else { \
-            Vec<ASR::dimension_t> alloc_dims; \
-            alloc_dims.reserve(al, op_n_dims_arg); \
-            for( int i = 0; i < op_n_dims_arg; i++ ) { \
-                ASR::dimension_t alloc_dim; \
-                alloc_dim.loc = loc; \
-                alloc_dim.m_start = PassUtils::get_bound(op_arg, i + 1, "lbound", al); \
-                alloc_dim.m_length = ASRUtils::compute_length_from_start_end(al, alloc_dim.m_start, \
-                    PassUtils::get_bound(op_arg, i + 1, "ubound", al)); \
-                alloc_dims.push_back(al, alloc_dim); \
-            } \
-            ASR::alloc_arg_t alloc_arg; \
-            alloc_arg.loc = loc; \
-            alloc_arg.m_len_expr = nullptr; \
-            alloc_arg.m_type = nullptr; \
-            alloc_arg.m_a = result_var; \
-            alloc_arg.m_dims = alloc_dims.p; \
-            alloc_arg.n_dims = alloc_dims.size(); \
-            alloc_args.push_back(al, alloc_arg); \
-            op_dims = alloc_dims.p; \
-            op_n_dims = alloc_dims.size(); \
-        } \
-        pass_result.push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al, \
-            loc, alloc_args.p, alloc_args.size(), nullptr, nullptr, nullptr))); \
     }
 
     template <typename T>
@@ -1107,19 +1154,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             is_return_var_handled = fn->m_return_var == nullptr;
         }
         if (is_return_var_handled) {
-            bool is_dimension_empty = false;
             ASR::ttype_t* result_var_type = x->m_type;
-            ASR::dimension_t* m_dims = nullptr;
-            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(result_var_type, m_dims);
-            for( size_t i = 0; i < n_dims; i++ ) {
-                if( m_dims[i].m_length == nullptr ) {
-                    is_dimension_empty = true;
-                    break;
-                }
-            }
-            if( result_type && is_dimension_empty ) {
-                result_var_type = result_type;
-            }
             bool is_allocatable = false;
             {
                 ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(fn_name);
@@ -1467,7 +1502,8 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                 (ASR::is_a<ASR::ArrayConstant_t>(*x.m_value)) ||
                 (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target) &&
                  ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) &&
-                 ASRUtils::is_array(ASRUtils::expr_type(x.m_target))) ) { // TODO: fix for StructInstanceMember targets
+                 ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) &&
+                 !ASR::is_a<ASR::FunctionCall_t>(*x.m_value)) ) { // TODO: fix for StructInstanceMember targets
                 return ;
             }
 
@@ -1517,7 +1553,6 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
         }
 
         void visit_Associate(const ASR::Associate_t& /*x*/) {
-
         }
 
 };
