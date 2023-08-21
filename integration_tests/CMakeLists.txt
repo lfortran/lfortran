@@ -356,6 +356,7 @@ RUN(NAME arrays_28 LABELS gfortran llvm) # maxloc, minloc
 RUN(NAME arrays_29 LABELS gfortran llvm NOFAST)
 RUN(NAME arrays_30 LABELS gfortran llvm) # maxloc
 RUN(NAME arrays_31 LABELS gfortran llvm wasm) # init expr with fixed size arr as dependency
+RUN(NAME arrays_32 LABELS gfortran llvm)
 
 
 # GFortran
@@ -718,6 +719,10 @@ RUN(NAME allocate_03 LABELS gfortran llvm NOFAST)
 RUN(NAME allocate_04 LABELS gfortran llvm)
 RUN(NAME allocate_05 LABELS gfortran llvm)
 RUN(NAME allocate_06 LABELS gfortran llvm)
+RUN(NAME allocate_10 LABELS gfortran llvm NOFAST)
+RUN(NAME allocate_11 LABELS gfortran llvm)
+RUN(NAME allocate_12 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs)
 RUN(NAME block_01 LABELS gfortran llvm)
 RUN(NAME block_02 LABELS gfortran)
 RUN(NAME block_03 LABELS gfortran llvm)
@@ -1034,3 +1039,6 @@ RUN(NAME dabs_01 LABELS gfortran llvmImplicit)
 RUN(NAME minpack_03 LABELS gfortran llvm NOFAST)
 
 RUN(NAME file_08 LABELS gfortran llvm NOFAST COPY_TO_BIN file_08.txt)
+
+RUN(NAME optional_01 LABELS gfortran llvm)
+RUN(NAME optional_02 LABELS gfortran llvm)
