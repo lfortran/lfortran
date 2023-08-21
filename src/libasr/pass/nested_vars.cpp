@@ -166,9 +166,7 @@ public:
             // "needed global" since we need to be able to access it from the
             // nested procedure.
             if ( current_scope &&
-                 v->m_parent_symtab->get_counter() != current_scope->get_counter() &&
-                 (v->m_storage != ASR::storage_typeType::Parameter ||
-                  ASRUtils::is_array(v->m_type)) ) {
+                 v->m_parent_symtab->get_counter() != current_scope->get_counter()) {
                 nesting_map[par_func_sym].insert(x.m_v);
             }
         }
@@ -503,7 +501,8 @@ public:
                             ASR::stmt_t *associate = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, t->base.loc,
                                                         target, val, current_scope));
                             body.push_back(al, associate);
-                            if( is_ext_sym_allocatable_or_pointer && is_sym_allocatable_or_pointer ) {
+                            if( is_ext_sym_allocatable_or_pointer && is_sym_allocatable_or_pointer
+                                && ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter ) {
                                 associate = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, t->base.loc,
                                     val, target, current_scope));
                                 assigns_at_end.push_back(associate);
@@ -512,9 +511,11 @@ public:
                             ASR::stmt_t *assignment = ASRUtils::STMT(ASR::make_Assignment_t(al, t->base.loc,
                                                         target, val, nullptr));
                             body.push_back(al, assignment);
-                            assignment = ASRUtils::STMT(ASR::make_Assignment_t(al, t->base.loc,
-                                            val, target, nullptr));
-                            assigns_at_end.push_back(assignment);
+                            if (ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter) {
+                                assignment = ASRUtils::STMT(ASR::make_Assignment_t(al, t->base.loc,
+                                                val, target, nullptr));
+                                assigns_at_end.push_back(assignment);
+                            }
                         }
                     }
                 }
