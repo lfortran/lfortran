@@ -408,6 +408,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 if ( count == 0 ) break;
                 count--;
                 char* arg = va_arg(args, char*);
+                if (arg == NULL) continue;
                 if (strlen(str) == 0) {
                     sprintf(str, "%lu", strlen(arg));
                 }
