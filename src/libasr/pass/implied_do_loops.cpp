@@ -271,6 +271,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         bool remove_original_statement;
         ReplaceArrayConstant replacer;
         Vec<ASR::stmt_t*> pass_result;
+        Vec<ASR::stmt_t*>* parent_body;
         std::map<ASR::expr_t*, ASR::expr_t*> resultvar2value;
 
     public:
@@ -278,7 +279,8 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         ArrayConstantVisitor(Allocator& al_, bool realloc_lhs_) :
         al(al_), remove_original_statement(false),
         replacer(al_, pass_result,
-            remove_original_statement, resultvar2value, realloc_lhs_) {
+            remove_original_statement, resultvar2value, realloc_lhs_),
+        parent_body(nullptr) {
             pass_result.n = 0;
             pass_result.reserve(al, 0);
         }
@@ -296,13 +298,21 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
             Vec<ASR::stmt_t*> body;
             body.reserve(al, n_body);
+            if( parent_body ) {
+                for (size_t j=0; j < pass_result.size(); j++) {
+                    parent_body->push_back(al, pass_result[j]);
+                }
+            }
 
             for (size_t i = 0; i < n_body; i++) {
                 pass_result.n = 0;
                 pass_result.reserve(al, 1);
                 remove_original_statement = false;
                 replacer.result_var = nullptr;
+                Vec<ASR::stmt_t*>* parent_body_copy = parent_body;
+                parent_body = &body;
                 visit_stmt(*m_body[i]);
+                parent_body = parent_body_copy;
                 for (size_t j = 0; j < pass_result.size(); j++) {
                     body.push_back(al, pass_result[j]);
                 }
