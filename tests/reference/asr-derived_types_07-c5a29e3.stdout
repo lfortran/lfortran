@@ -182,19 +182,29 @@
                                                 13 allocated
                                                 ()
                                                 [((StructInstanceMember
-                                                    (StructInstanceMember
-                                                        (Var 13 self)
-                                                        13 1_toml_vector_lst
-                                                        (Allocatable
-                                                            (Array
-                                                                (Struct
-                                                                    9 toml_node
+                                                    (ArrayItem
+                                                        (StructInstanceMember
+                                                            (Var 13 self)
+                                                            13 1_toml_vector_lst
+                                                            (Allocatable
+                                                                (Array
+                                                                    (Struct
+                                                                        9 toml_node
+                                                                    )
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
                                                                 )
-                                                                [(()
-                                                                ())]
-                                                                DescriptorArray
                                                             )
+                                                            ()
                                                         )
+                                                        [(()
+                                                        (Var 13 i)
+                                                        ())]
+                                                        (Struct
+                                                            9 toml_node
+                                                        )
+                                                        ColMajor
                                                         ()
                                                     )
                                                     13 1_toml_node_val
@@ -217,19 +227,29 @@
                                                     (Logical 4)
                                                     ()
                                                     (StructInstanceMember
-                                                        (StructInstanceMember
-                                                            (Var 13 self)
-                                                            13 1_toml_vector_lst
-                                                            (Allocatable
-                                                                (Array
-                                                                    (Struct
-                                                                        9 toml_node
+                                                        (ArrayItem
+                                                            (StructInstanceMember
+                                                                (Var 13 self)
+                                                                13 1_toml_vector_lst
+                                                                (Allocatable
+                                                                    (Array
+                                                                        (Struct
+                                                                            9 toml_node
+                                                                        )
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
                                                                     )
-                                                                    [(()
-                                                                    ())]
-                                                                    DescriptorArray
                                                                 )
+                                                                ()
                                                             )
+                                                            [(()
+                                                            (Var 13 i)
+                                                            ())]
+                                                            (Struct
+                                                                9 toml_node
+                                                            )
+                                                            ColMajor
                                                             ()
                                                         )
                                                         13 1_toml_node_val
@@ -244,19 +264,29 @@
                                                 [(=>
                                                     (Var 13 ptr)
                                                     (StructInstanceMember
-                                                        (StructInstanceMember
-                                                            (Var 13 self)
-                                                            13 1_toml_vector_lst
-                                                            (Allocatable
-                                                                (Array
-                                                                    (Struct
-                                                                        9 toml_node
+                                                        (ArrayItem
+                                                            (StructInstanceMember
+                                                                (Var 13 self)
+                                                                13 1_toml_vector_lst
+                                                                (Allocatable
+                                                                    (Array
+                                                                        (Struct
+                                                                            9 toml_node
+                                                                        )
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
                                                                     )
-                                                                    [(()
-                                                                    ())]
-                                                                    DescriptorArray
                                                                 )
+                                                                ()
                                                             )
+                                                            [(()
+                                                            (Var 13 i)
+                                                            ())]
+                                                            (Struct
+                                                                9 toml_node
+                                                            )
+                                                            ColMajor
                                                             ()
                                                         )
                                                         13 1_toml_node_val

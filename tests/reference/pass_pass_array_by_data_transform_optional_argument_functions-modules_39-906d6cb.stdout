@@ -66,7 +66,54 @@
                                     (SymbolTable
                                         7
                                         {
-                                            
+                                            __libasr_created_variable_1:
+                                                (Variable
+                                                    7
+                                                    __libasr_created_variable_1
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 1 ())
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            __libasr_created_variable_2:
+                                                (Variable
+                                                    7
+                                                    __libasr_created_variable_2
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 1 ())
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            __libasr_created_variable__:
+                                                (Variable
+                                                    7
+                                                    __libasr_created_variable__
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 1 ())
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
                                         })
                                     build_model
                                     (FunctionType
@@ -100,17 +147,17 @@
                                                 ".gitignore"
                                                 (Character 1 10 ())
                                             ))
-                                            (())
+                                            ((Var 7 __libasr_created_variable__))
                                             ((LogicalConstant
                                                 .false.
                                                 (Logical 4)
                                             ))
-                                            (())
+                                            ((Var 7 __libasr_created_variable_1))
                                             ((LogicalConstant
                                                 .false.
                                                 (Logical 4)
                                             ))
-                                            (())
+                                            ((Var 7 __libasr_created_variable_2))
                                             ((LogicalConstant
                                                 .false.
                                                 (Logical 4)
@@ -439,7 +486,7 @@
                                                     ()
                                                     Source
                                                     Public
-                                                    Optional
+                                                    Required
                                                     .false.
                                                 ),
                                             a4:
@@ -455,7 +502,7 @@
                                                     ()
                                                     Source
                                                     Public
-                                                    Optional
+                                                    Required
                                                     .false.
                                                 ),
                                             a5:
@@ -471,7 +518,7 @@
                                                     ()
                                                     Source
                                                     Public
-                                                    Optional
+                                                    Required
                                                     .false.
                                                 ),
                                             is_a3_present_:
