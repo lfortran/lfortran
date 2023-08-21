@@ -105,7 +105,6 @@ public:
             ASR::presenceType s_presence = param_var->m_presence;
             bool value_attr = param_var->m_value_attr;
 
-            // TODO: Copying variable can be abstracted into a function
             SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, arg_type);
@@ -485,93 +484,6 @@ public:
             }
             default : return ttype;
         }
-    }
-
-    ASR::asr_t* make_BinOp_helper(ASR::expr_t *left, ASR::expr_t *right,
-            ASR::binopType op, const Location &loc) {
-        ASR::ttype_t *left_type = ASRUtils::expr_type(left);
-        ASR::ttype_t *right_type = ASRUtils::expr_type(right);
-        ASR::ttype_t *dest_type = nullptr;
-        ASR::expr_t *value = nullptr;
-
-        if (op == ASR::binopType::Div) {
-            dest_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 8));
-            if (ASRUtils::is_integer(*left_type)) {
-                left = ASR::down_cast<ASR::expr_t>(ASRUtils::make_Cast_t_value(
-                    al, left->base.loc, left, ASR::cast_kindType::IntegerToReal, dest_type));
-            }
-            if (ASRUtils::is_integer(*right_type)) {
-                if (ASRUtils::expr_value(right) != nullptr) {
-                    int64_t val = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(right))->m_n;
-                    if (val == 0) {
-                        throw SemanticError("division by zero is not allowed", right->base.loc);
-                    }
-                }
-                right = ASR::down_cast<ASR::expr_t>(ASRUtils::make_Cast_t_value(
-                    al, right->base.loc, right, ASR::cast_kindType::IntegerToReal, dest_type));
-            } else if (ASRUtils::is_real(*right_type)) {
-                if (ASRUtils::expr_value(right) != nullptr) {
-                    double val = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(right))->m_r;
-                    if (val == 0.0) {
-                        throw SemanticError("float division by zero is not allowed", right->base.loc);
-                    }
-                }
-            }
-        }
-
-        if ((ASRUtils::is_integer(*left_type) || ASRUtils::is_real(*left_type)) &&
-                (ASRUtils::is_integer(*right_type) || ASRUtils::is_real(*right_type))) {
-            left = cast_helper(ASRUtils::expr_type(right), left);
-            right = cast_helper(ASRUtils::expr_type(left), right);
-            dest_type = substitute_type(ASRUtils::expr_type(left));
-        }
-
-        if (ASRUtils::is_integer(*dest_type)) {
-            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
-                int64_t left_value = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(left))->m_n;
-                int64_t right_value = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(right))->m_n;
-                int64_t result;
-                switch (op) {
-                    case (ASR::binopType::Add): { result = left_value + right_value; break; }
-                    case (ASR::binopType::Div): { result = left_value / right_value; break; }
-                    default: { LCOMPILERS_ASSERT(false); result=0; } // should never happen
-                }
-                value = ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, result, dest_type));
-            }
-            return ASR::make_IntegerBinOp_t(al, loc, left, op, right, dest_type, value);
-        } else if (ASRUtils::is_real(*dest_type)) {
-            right = cast_helper(left_type, right);
-            dest_type = ASRUtils::expr_type(right);
-            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
-                double left_value = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(left))->m_r;
-                double right_value = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(right))->m_r;
-                double result;
-                switch (op) {
-                    case (ASR::binopType::Add): { result = left_value + right_value; break; }
-                    case (ASR::binopType::Div): { result = left_value / right_value; break; }
-                    default: { LCOMPILERS_ASSERT(false); result = 0; }
-                }
-                value = ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, result, dest_type));
-            }
-            return ASR::make_RealBinOp_t(al, loc, left, op, right, dest_type, value);
-        }
-
-        return nullptr;
-    }
-
-    ASR::expr_t *cast_helper(ASR::ttype_t *left_type, ASR::expr_t *right,
-            bool is_assign=false) {
-        ASR::ttype_t *right_type = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(right));
-        if (ASRUtils::is_integer(*left_type) && ASRUtils::is_integer(*right_type)) {
-            int lkind = ASR::down_cast<ASR::Integer_t>(left_type)->m_kind;
-            int rkind = ASR::down_cast<ASR::Integer_t>(right_type)->m_kind;
-            if ((is_assign && (lkind != rkind)) || (lkind > rkind)) {
-                return ASR::down_cast<ASR::expr_t>(ASRUtils::make_Cast_t_value(
-                    al, right->base.loc, right, ASR::cast_kindType::IntegerToInteger,
-                    left_type));
-            }
-        }
-        return right;
     }
 
 };
