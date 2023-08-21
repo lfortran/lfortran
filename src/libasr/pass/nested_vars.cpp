@@ -444,26 +444,13 @@ public:
     AssignNestedVars(Allocator &al_,
     std::map<ASR::symbol_t*, std::pair<std::string, ASR::symbol_t*>> &nv,
     std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &nm) :
-    PassVisitor(al_, nullptr), nested_var_to_ext_var(nv), nesting_map(nm)
-    {
-        pass_result.reserve(al, 1);
-    }
+    PassVisitor(al_, nullptr), nested_var_to_ext_var(nv), nesting_map(nm) { }
 
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
         Vec<ASR::stmt_t*> body;
         body.reserve(al, n_body);
         std::vector<ASR::stmt_t*> assigns_at_end;
-        if (pass_result.size() > 0) {
-            asr_changed = true;
-            for (size_t j=0; j < pass_result.size(); j++) {
-                body.push_back(al, pass_result[j]);
-            }
-            pass_result.n = 0;
-        }
         for (size_t i=0; i<n_body; i++) {
-            pass_result.n = 0;
-            retain_original_stmt = false;
-            remove_original_stmt = false;
             calls_present = false;
             assigns_at_end.clear();
             visit_stmt(*m_body[i]);
@@ -532,23 +519,9 @@ public:
                     }
                 }
             }
-            if (pass_result.size() > 0) {
-                asr_changed = true;
-                for (size_t j=0; j < pass_result.size(); j++) {
-                    body.push_back(al, pass_result[j]);
-                }
-                if( retain_original_stmt ) {
-                    body.push_back(al, m_body[i]);
-                    retain_original_stmt = false;
-                }
-                pass_result.n = 0;
-            } else if(!remove_original_stmt) {
-                body.push_back(al, m_body[i]);
-            }
-            if (!assigns_at_end.empty()) {
-                for (auto &stm: assigns_at_end) {
-                    body.push_back(al, stm);
-                }
+            body.push_back(al, m_body[i]);
+            for (auto &stm: assigns_at_end) {
+                body.push_back(al, stm);
             }
         }
         m_body = body.p;
