@@ -3031,9 +3031,7 @@ public:
         ASR::Template_t* v = ASR::down_cast<ASR::Template_t>(t);
         current_scope = v->m_symtab;
         for (size_t i=0; i<x.n_decl; i++) {
-            if (AST::is_a<AST::Requires_t>(*x.m_decl[i])) {
-                this->visit_unit_decl2(*x.m_decl[i]);
-            }
+            this->visit_unit_decl2(*x.m_decl[i]);
         }
         for (size_t i=0; i<x.n_contains; i++) {
             this->visit_program_unit(*x.m_contains[i]);

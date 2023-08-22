@@ -2198,11 +2198,11 @@ public:
 
         current_scope = parent_scope;
         current_procedure_args.clear();
+        context_map.clear();
         is_requirement = false;
     }
 
     void visit_Requires(const AST::Requires_t &x) {
-        std::map<std::string,std::string> parameter_map;
         std::string require_name = to_lower(x.m_name);
         ASR::symbol_t *req0 = current_scope->resolve_symbol(require_name);
 
@@ -2221,22 +2221,24 @@ public:
         SetChar args;
         args.reserve(al, x.n_namelist);
         for (size_t i=0; i<x.n_namelist; i++) {
-            std::string temp_arg = to_lower(x.m_namelist[i]);
-            args.push_back(al, s2c(al, temp_arg));
+            std::string requires_arg = to_lower(x.m_namelist[i]);
+            std::string requirement_arg = req->m_args[i];
+            args.push_back(al, s2c(al, requires_arg));
             if (std::find(current_procedure_args.begin(),
                           current_procedure_args.end(),
-                          temp_arg) == current_procedure_args.end()) {
+                          requires_arg) == current_procedure_args.end()) {
                 throw SemanticError("Parameter '" + std::string(x.m_namelist[i])
                     + "' was not declared", x.base.base.loc);
             }
-            ASR::symbol_t *temp_arg_sym = current_scope->resolve_symbol(temp_arg);
-            if (!temp_arg_sym) {
-                std::string req_arg = req->m_args[i];
-                parameter_map[req_arg] = temp_arg;
-                ASR::symbol_t *req_arg_sym = (req->m_symtab)->get_symbol(req_arg);
-                temp_arg_sym = replace_symbol(req_arg_sym, temp_arg);
-                current_scope->add_symbol(temp_arg, temp_arg_sym);
+            
+            ASR::symbol_t *requires_arg_sym = current_scope->resolve_symbol(requires_arg);
+            context_map[requirement_arg] = requires_arg;
+            if (!requires_arg_sym) {
+                ASR::symbol_t *requirement_arg_sym = (req->m_symtab)->get_symbol(requirement_arg);
+                requires_arg_sym = replace_symbol(requirement_arg_sym, requires_arg);
+                current_scope->add_symbol(requires_arg, requires_arg_sym);
             }
+
         }
 
         // adding custom operators
@@ -2249,7 +2251,7 @@ public:
                 symbols.reserve(al, c_op->n_procs);
                 for (size_t i=0; i<c_op->n_procs; i++) {
                     ASR::symbol_t *proc = c_op->m_procs[i];
-                    std::string new_proc_name = parameter_map[ASRUtils::symbol_name(proc)];
+                    std::string new_proc_name = context_map[ASRUtils::symbol_name(proc)];
                     proc = current_scope->resolve_symbol(new_proc_name);
                     symbols.push_back(al, proc);
                 }
@@ -2357,9 +2359,15 @@ public:
                         } else if (arg.compare("logical") == 0) {
                             s = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
                         } else {
-                            throw SemanticError(
-                                "The type " + arg + " is not yet handled for template instantiation",
-                                x.base.base.loc);
+                            ASR::symbol_t *arg_t = current_scope->resolve_symbol(arg);
+                            if (ASRUtils::is_type_parameter(*ASRUtils::symbol_type(arg_t))) {
+                                ASR::TypeParameter_t *arg_tp = ASR::down_cast<ASR::TypeParameter_t>(ASRUtils::symbol_type(arg_t));
+                                s = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, x.base.base.loc, arg_tp->m_param));
+                            } else {
+                                throw SemanticError(
+                                    "The type " + arg + " is not yet handled for template instantiation",
+                                    x.base.base.loc);
+                            }
                         }
                         type_subs[tp->m_param] = s;
                     } else {
@@ -2385,7 +2393,7 @@ public:
                         throw SemanticError(
                             "The argument for " + param + " must be a function",
                             x.m_args[i]->base.loc);
-                    }
+                    }      
                     check_restriction(type_subs, symbol_subs, f, f_arg0, x.base.base.loc);
                 } else {
                     throw SemanticError("Unsupported symbol argument", x.m_args[i]->base.loc);
