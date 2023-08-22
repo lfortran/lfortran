@@ -1799,11 +1799,19 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
     void visit_Var(const ASR::Var_t &x) {
         const ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_v);
         ASR::Variable_t* sv = ASR::down_cast<ASR::Variable_t>(s);
-        if( (sv->m_intent == ASRUtils::intent_in ||
-            sv->m_intent == ASRUtils::intent_inout) &&
-            is_c && ASRUtils::is_array(sv->m_type) &&
-            ASRUtils::is_pointer(sv->m_type)) {
-            src = "(*" + std::string(ASR::down_cast<ASR::Variable_t>(s)->m_name) + ")";
+        if (is_c) {
+            if ((sv->m_intent == ASRUtils::intent_in
+                || sv->m_intent == ASRUtils::intent_inout)
+                && ASRUtils::is_array(sv->m_type)
+                && ASRUtils::is_pointer(sv->m_type)) {
+                src = "(*" + std::string(ASR::down_cast<ASR::Variable_t>(s)->m_name) + ")";
+            } else if ((sv->m_intent == ASRUtils::intent_inout
+                || sv->m_intent == ASRUtils::intent_out)
+                && !ASRUtils::is_aggregate_type(sv->m_type)) {
+                src = "(*" + std::string(ASR::down_cast<ASR::Variable_t>(s)->m_name) + ")";
+            } else {
+                src = std::string(ASR::down_cast<ASR::Variable_t>(s)->m_name);
+            }
         } else {
             src = std::string(ASR::down_cast<ASR::Variable_t>(s)->m_name);
         }
