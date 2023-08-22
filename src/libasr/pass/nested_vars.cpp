@@ -166,9 +166,7 @@ public:
             // "needed global" since we need to be able to access it from the
             // nested procedure.
             if ( current_scope &&
-                 v->m_parent_symtab->get_counter() != current_scope->get_counter() &&
-                 (v->m_storage != ASR::storage_typeType::Parameter ||
-                  ASRUtils::is_array(v->m_type)) ) {
+                 v->m_parent_symtab->get_counter() != current_scope->get_counter()) {
                 nesting_map[par_func_sym].insert(x.m_v);
             }
         }
@@ -444,26 +442,13 @@ public:
     AssignNestedVars(Allocator &al_,
     std::map<ASR::symbol_t*, std::pair<std::string, ASR::symbol_t*>> &nv,
     std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &nm) :
-    PassVisitor(al_, nullptr), nested_var_to_ext_var(nv), nesting_map(nm)
-    {
-        pass_result.reserve(al, 1);
-    }
+    PassVisitor(al_, nullptr), nested_var_to_ext_var(nv), nesting_map(nm) { }
 
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
         Vec<ASR::stmt_t*> body;
         body.reserve(al, n_body);
         std::vector<ASR::stmt_t*> assigns_at_end;
-        if (pass_result.size() > 0) {
-            asr_changed = true;
-            for (size_t j=0; j < pass_result.size(); j++) {
-                body.push_back(al, pass_result[j]);
-            }
-            pass_result.n = 0;
-        }
         for (size_t i=0; i<n_body; i++) {
-            pass_result.n = 0;
-            retain_original_stmt = false;
-            remove_original_stmt = false;
             calls_present = false;
             assigns_at_end.clear();
             visit_stmt(*m_body[i]);
@@ -516,7 +501,8 @@ public:
                             ASR::stmt_t *associate = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, t->base.loc,
                                                         target, val, current_scope));
                             body.push_back(al, associate);
-                            if( is_ext_sym_allocatable_or_pointer && is_sym_allocatable_or_pointer ) {
+                            if( is_ext_sym_allocatable_or_pointer && is_sym_allocatable_or_pointer
+                                && ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter ) {
                                 associate = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, t->base.loc,
                                     val, target, current_scope));
                                 assigns_at_end.push_back(associate);
@@ -525,30 +511,18 @@ public:
                             ASR::stmt_t *assignment = ASRUtils::STMT(ASR::make_Assignment_t(al, t->base.loc,
                                                         target, val, nullptr));
                             body.push_back(al, assignment);
-                            assignment = ASRUtils::STMT(ASR::make_Assignment_t(al, t->base.loc,
-                                            val, target, nullptr));
-                            assigns_at_end.push_back(assignment);
+                            if (ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter) {
+                                assignment = ASRUtils::STMT(ASR::make_Assignment_t(al, t->base.loc,
+                                                val, target, nullptr));
+                                assigns_at_end.push_back(assignment);
+                            }
                         }
                     }
                 }
             }
-            if (pass_result.size() > 0) {
-                asr_changed = true;
-                for (size_t j=0; j < pass_result.size(); j++) {
-                    body.push_back(al, pass_result[j]);
-                }
-                if( retain_original_stmt ) {
-                    body.push_back(al, m_body[i]);
-                    retain_original_stmt = false;
-                }
-                pass_result.n = 0;
-            } else if(!remove_original_stmt) {
-                body.push_back(al, m_body[i]);
-            }
-            if (!assigns_at_end.empty()) {
-                for (auto &stm: assigns_at_end) {
-                    body.push_back(al, stm);
-                }
+            body.push_back(al, m_body[i]);
+            for (auto &stm: assigns_at_end) {
+                body.push_back(al, stm);
             }
         }
         m_body = body.p;

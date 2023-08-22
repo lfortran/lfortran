@@ -792,6 +792,7 @@ RUN(NAME nested_11 LABELS gfortran llvm)
 
 RUN(NAME nested_vars1 LABELS gfortran llvm wasm NOFAST)
 RUN(NAME nested_vars2 LABELS gfortran llvm wasm NOFAST)
+RUN(NAME nested_vars3 LABELS gfortran llvm wasm NOFAST)
 
 RUN(NAME nbody LABELS gfortran llvm NOFAST)
 
@@ -874,7 +875,7 @@ RUN(NAME template_add_01 LABELS llvm wasm)
 RUN(NAME template_add_01b LABELS llvm wasm)
 RUN(NAME template_add_02 LABELS llvm wasm)
 RUN(NAME template_add_03 LABELS llvm wasm)
-RUN(NAME template_add_04 LABELS llvm NOFAST)
+RUN(NAME template_add_04 LABELS llvm wasm NOFAST)
 RUN(NAME template_nested LABELS llvm wasm)
 RUN(NAME template_travel LABELS llvm wasm)
 RUN(NAME template_triple LABELS llvm wasm NOFAST)
