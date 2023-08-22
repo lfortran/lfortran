@@ -368,6 +368,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> module
 %type <ast> submodule
 %type <ast> block_data
+%type <ast> temp_decl
+%type <vec_ast> temp_decl_star
 %type <ast> decl
 %type <vec_ast> decl_star
 %type <ast> instantiate
@@ -717,13 +719,13 @@ derived_type_decl
     ;
 
 template_decl
-    : KW_TEMPLATE id "(" id_list ")" sep decl_star
+    : KW_TEMPLATE id "(" id_list ")" sep temp_decl_star
         contains_block_opt KW_END KW_TEMPLATE sep {
             $$ = TEMPLATE($2, $4, $7, $8, @$); }
     ;
 
 requirement_decl
-    : KW_REQUIREMENT id "(" id_list ")" sep decl_star
+    : KW_REQUIREMENT id "(" id_list ")" sep temp_decl_star
         sub_or_func_star KW_END KW_REQUIREMENT sep {
             $$ = REQUIREMENT($2, $4, $7, $8, @$); }
     ;
@@ -994,9 +996,23 @@ fn_mod
     | KW_RECURSIVE {  $$ = SIMPLE_ATTR(Recursive, @$); }
     ;
 
+temp_decl_star
+    : temp_decl_star temp_decl { $$ = $1; LIST_ADD($$, $2); }
+    | %empty { LIST_NEW($$); }
+    ;
+
+temp_decl
+    : var_decl
+    | interface_decl
+    | derived_type_decl
+    | requires_decl
+    | instantiate
+    ;
+
 decl_star
     : decl_star decl { $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
+    ;
 
 decl
     : var_decl
@@ -1004,7 +1020,6 @@ decl
     | derived_type_decl
     | template_decl
     | requirement_decl
-    | requires_decl
     | enum_decl
     ;
 
