@@ -2085,7 +2085,11 @@ ast_t* TYPEPARAMETER0(Allocator &al,
 #define REQUIRES(name, namelist, l) \
         make_Requires_t(p.m_a, l, name2char(name), \
         REDUCE_ARGS(p.m_a, namelist), namelist.size())
-#define INSTANTIATE(name, args, syms, l) \
+#define INSTANTIATE1(name, args, l) \
+        make_Instantiate_t(p.m_a, l, name2char(name), \
+        USE_SYMBOLS(args), args.size(), \
+        nullptr, 0)
+#define INSTANTIATE2(name, args, syms, l) \
         make_Instantiate_t(p.m_a, l, name2char(name), \
         USE_SYMBOLS(args), args.size(), \
         USE_SYMBOLS(syms), syms.size())

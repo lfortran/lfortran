@@ -735,10 +735,18 @@ requires_decl
         $$ = REQUIRES($2, $4, @$); }
     ;
 
+//instantiate
+//    : KW_INSTANTIATE id "(" use_symbol_list ")" "," KW_ONLY ":" use_symbol_list sep {
+//        $$ = INSTANTIATE($2, $4, $9, @$); }
+//    ;
+
 instantiate
-    : KW_INSTANTIATE id "(" use_symbol_list ")" "," KW_ONLY ":" use_symbol_list sep {
-        $$ = INSTANTIATE($2, $4, $9, @$); }
+    : KW_INSTANTIATE id "(" use_symbol_list ")" sep {
+        $$ = INSTANTIATE1($2, $4, @$); }
+    | KW_INSTANTIATE id "(" use_symbol_list ")" "," KW_ONLY ":" use_symbol_list sep {
+        $$ = INSTANTIATE2($2, $4, $9, @$); }
     ;
+
 
 end_type
     : KW_END_TYPE id_opt
