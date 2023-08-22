@@ -77,7 +77,7 @@ module template_travel_travel
 
 end module
 
-module template_travel_m
+module template_travel_01_m
 
     use template_travel_math
     use template_travel_travel
@@ -99,10 +99,10 @@ contains
 
 end module
 
-program template_travel
-use template_travel_m
+program template_travel_01
+use template_travel_01_m
 implicit none
 
 call test_template()
 
-end program template_travel
+end program template_travel_01
