@@ -2565,6 +2565,18 @@ public:
             context_map[generic_name] = new_sym_name;
         }
 
+        if (x.n_symbols == 0) {
+            for (auto const &sym_pair: temp->m_symtab->get_scope()) {
+                ASR::symbol_t *s = sym_pair.second;
+                std::string s_name = ASRUtils::symbol_name(s);
+                if (ASR::is_a<ASR::Function_t>(*s) && !ASRUtils::is_arg(sym, s_name)) {
+                    pass_instantiate_symbol(al, context_map, type_subs, symbol_subs,
+                        current_scope, temp->m_symtab, s_name, s);
+                    context_map[s_name] = s_name;
+                }
+            }
+        }
+
         instantiate_types[x.base.base.loc.first] = type_subs;
         instantiate_symbols[x.base.base.loc.first] = symbol_subs;
     }

@@ -1766,6 +1766,25 @@ static inline bool is_generic_function(ASR::symbol_t *x) {
     }
 }
 
+static inline bool is_arg(ASR::symbol_t *x, std::string arg_name) {
+    switch (x->type) {
+        case ASR::symbolType::Template: {
+            ASR::Template_t *t = ASR::down_cast<ASR::Template_t>(x);
+            for (size_t i=0; i < t->n_args; i++) {
+                std::string arg = t->m_args[i];
+                if (arg.compare(arg_name) == 0) {
+                    return true;
+                }
+            }
+            break;
+        }
+        default: {
+            return false;
+        }
+    }
+    return false;
+}
+
 static inline int get_body_size(ASR::symbol_t* s) {
     int n_body = 0;
     switch (s->type) {
