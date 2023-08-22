@@ -750,24 +750,32 @@ public:
             ASR::storage_typeType tmp_storage = ASR::storage_typeType::Default;
             bool create_associate_stmt = false;
 
-            #define set_storage_and_type(expr) ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(expr); \
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*(tmp_var->m_v))); \
-                ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(tmp_var->m_v); \
-                tmp_storage = variable->m_storage; \
-                tmp_type = variable->m_type; \
-                if( !ASR::is_a<ASR::Pointer_t>(*tmp_type) ) { \
-                    tmp_type = ASRUtils::duplicate_type_with_empty_dims(al, tmp_type); \
-                    tmp_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, tmp_type->base.loc, \
-                        ASRUtils::type_get_past_allocatable(tmp_type))); \
-                } \
-                create_associate_stmt = true; \
-
             if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
-                set_storage_and_type(tmp_expr)
+                create_associate_stmt = true;
+                ASR::Variable_t* variable = ASRUtils::EXPR2VAR(tmp_expr);
+                tmp_storage = variable->m_storage;
+                tmp_type = variable->m_type;
             } else if( ASR::is_a<ASR::ArraySection_t>(*tmp_expr) ) {
+                create_associate_stmt = true;
                 ASR::ArraySection_t* tmp_array_section = ASR::down_cast<ASR::ArraySection_t>(tmp_expr);
-                set_storage_and_type(tmp_array_section->m_v)
+                ASR::Variable_t* variable = ASRUtils::EXPR2VAR(tmp_array_section->m_v);
+                tmp_storage = variable->m_storage;
+                ASR::dimension_t *var_dims;
+                ASRUtils::extract_dimensions_from_ttype(variable->m_type, var_dims);
+                Vec<ASR::dimension_t> tmp_dims; tmp_dims.reserve(al, 1);
+                for ( size_t i = 0; i < tmp_array_section->n_args; i++ ) {
+                    if (tmp_array_section->m_args[i].m_left) {
+                        tmp_dims.push_back(al, var_dims[i]);
+                    }
+                }
+                tmp_type = ASRUtils::duplicate_type(al, variable->m_type, &tmp_dims);
             }
+            if ( create_associate_stmt && !ASR::is_a<ASR::Pointer_t>(*tmp_type) ) {
+                tmp_type = ASRUtils::duplicate_type_with_empty_dims(al, tmp_type);
+                tmp_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, tmp_type->base.loc,
+                    ASRUtils::type_get_past_allocatable(tmp_type)));
+            }
+
             std::string name = to_lower(x.m_syms[i].m_name);
             char *name_c = s2c(al, name);
             SetChar variable_dependencies_vec;
