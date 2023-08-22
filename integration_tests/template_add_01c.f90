@@ -25,14 +25,9 @@ module template_add_01b_m
 
 contains
 
-  integer function func_arg_int(x, y) result(z)
-      integer, intent(in) :: x, y
-      z = x + y
-  end function
-
   subroutine test_template()
       integer :: n
-      instantiate add_t(integer, func_arg_int)
+      instantiate add_t(integer, operator(+))
       n = add_generic(5, 9)
       print*, "The result is", n
   end subroutine

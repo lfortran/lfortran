@@ -47,6 +47,10 @@ ast = true
 asr = true
 
 [[test]]
+filename = "../integration_tests/template_travel_02.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/template_triple.f90"
 asr = true
 
