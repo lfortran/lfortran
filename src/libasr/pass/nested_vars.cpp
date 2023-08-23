@@ -493,10 +493,10 @@ public:
                         LCOMPILERS_ASSERT(sym_ != nullptr);
                         ASR::expr_t *target = ASRUtils::EXPR(ASR::make_Var_t(al, t->base.loc, ext_sym));
                         ASR::expr_t *val = ASRUtils::EXPR(ASR::make_Var_t(al, t->base.loc, sym_));
-                        bool is_sym_allocatable_or_pointer = (ASR::is_a<ASR::Pointer_t>(*ASRUtils::symbol_type(sym)) ||
-                            ASR::is_a<ASR::Allocatable_t>(*ASRUtils::symbol_type(sym)));
-                        bool is_ext_sym_allocatable_or_pointer = (ASR::is_a<ASR::Pointer_t>(*ASRUtils::symbol_type(ext_sym)) ||
-                            ASR::is_a<ASR::Allocatable_t>(*ASRUtils::symbol_type(ext_sym)));
+                        bool is_sym_allocatable_or_pointer = (ASRUtils::is_pointer(ASRUtils::symbol_type(sym)) ||
+                            ASRUtils::is_allocatable(ASRUtils::symbol_type(sym)));
+                        bool is_ext_sym_allocatable_or_pointer = (ASRUtils::is_pointer(ASRUtils::symbol_type(ext_sym)) ||
+                            ASRUtils::is_allocatable(ASRUtils::symbol_type(ext_sym)));
                         if( ASRUtils::is_array(ASRUtils::symbol_type(sym)) || is_sym_allocatable_or_pointer ) {
                             ASR::stmt_t *associate = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, t->base.loc,
                                                         target, val, current_scope));

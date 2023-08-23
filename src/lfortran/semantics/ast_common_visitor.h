@@ -3511,17 +3511,13 @@ public:
                 }
             }
             ASR::ttype_t *array_section_type =
-                ASRUtils::duplicate_type(al, ASRUtils::type_get_past_array(
-                        ASRUtils::type_get_past_pointer(
-                            ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(expr)))),
+                ASRUtils::duplicate_type(al, ASRUtils::extract_type(ASRUtils::expr_type(expr)),
                         &array_section_dims);
             array_item_node = ASR::make_ArraySection_t(al, loc, expr, indices.p,
                 indices.size(), array_section_type, nullptr);
         } else {
             array_item_node = ASRUtils::make_ArrayItem_t_util(al, loc, expr, indices.p,
-                indices.size(), ASRUtils::type_get_past_array(
-                    ASRUtils::type_get_past_pointer(
-                        ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(expr)))),
+                indices.size(), ASRUtils::extract_type(ASRUtils::expr_type(expr)),
                 ASR::arraystorageType::ColMajor, nullptr);
         }
         array_item_node = (ASR::asr_t*) replace_with_common_block_variables(
