@@ -29,6 +29,7 @@ enum class IntrinsicScalarFunctions : int64_t {
     Sin,
     Cos,
     Tan,
+    DTan,
     Asin,
     Acos,
     Atan,
@@ -80,6 +81,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Sin)
         INTRINSIC_NAME_CASE(Cos)
         INTRINSIC_NAME_CASE(Tan)
+        INTRINSIC_NAME_CASE(DTan)
         INTRINSIC_NAME_CASE(Asin)
         INTRINSIC_NAME_CASE(Acos)
         INTRINSIC_NAME_CASE(Atan)
@@ -1074,6 +1076,7 @@ namespace X {                                                                   
 create_trig(Sin, sin, sin)
 create_trig(Cos, cos, cos)
 create_trig(Tan, tan, tan)
+create_trig(DTan, tan, tan)
 create_trig(Asin, asin, asin)
 create_trig(Acos, acos, acos)
 create_trig(Atan, atan, atan)
@@ -2205,6 +2208,8 @@ namespace IntrinsicScalarFunctionRegistry {
             {&Cos::instantiate_Cos, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Tan),
             {&Tan::instantiate_Tan, &UnaryIntrinsicFunction::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::DTan),
+            {&Tan::instantiate_Tan, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Asin),
             {&Asin::instantiate_Asin, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Acos),
@@ -2289,6 +2294,8 @@ namespace IntrinsicScalarFunctionRegistry {
             "cos"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Tan),
             "tan"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::DTan),
+            "tan"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Asin),
             "asin"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Acos),
@@ -2369,6 +2376,7 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"sin", {&Sin::create_Sin, &Sin::eval_Sin}},
                 {"cos", {&Cos::create_Cos, &Cos::eval_Cos}},
                 {"tan", {&Tan::create_Tan, &Tan::eval_Tan}},
+                {"dtan", {&Tan::create_Tan, &Tan::eval_Tan}},
                 {"asin", {&Asin::create_Asin, &Asin::eval_Asin}},
                 {"acos", {&Acos::create_Acos, &Acos::eval_Acos}},
                 {"atan", {&Atan::create_Atan, &Atan::eval_Atan}},
