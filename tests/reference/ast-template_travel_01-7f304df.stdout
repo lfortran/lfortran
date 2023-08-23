@@ -1,6 +1,6 @@
 (TranslationUnit
     [(Module
-        template_travel_math
+        template_travel_01_math
         (TriviaNode
             [(EndOfLine)
             (EndOfLine)]
@@ -179,7 +179,7 @@
         )]
     )
     (Module
-        template_travel_travel
+        template_travel_01_travel
         (TriviaNode
             [(EndOfLine)
             (EndOfLine)]
@@ -188,7 +188,7 @@
         )
         [(Use
             []
-            template_travel_math
+            template_travel_01_math
             []
             .false.
             ()
@@ -859,14 +859,14 @@
         )
         [(Use
             []
-            template_travel_math
+            template_travel_01_math
             []
             .false.
             ()
         )
         (Use
             []
-            template_travel_travel
+            template_travel_01_travel
             []
             .false.
             ()

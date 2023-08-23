@@ -12,7 +12,7 @@
                                     22
                                     add_real
                                     2 add_real
-                                    template_travel_math
+                                    template_travel_01_math
                                     []
                                     add_real
                                     Public
@@ -22,7 +22,7 @@
                                     22
                                     operations
                                     5 operations
-                                    template_travel_travel
+                                    template_travel_01_travel
                                     []
                                     operations
                                     Public
@@ -32,7 +32,7 @@
                                     22
                                     slash_real
                                     2 slash_real
-                                    template_travel_math
+                                    template_travel_01_math
                                     []
                                     slash_real
                                     Public
@@ -52,7 +52,7 @@
                                     22
                                     travel_tmpl
                                     5 travel_tmpl
-                                    template_travel_travel
+                                    template_travel_01_travel
                                     []
                                     travel_tmpl
                                     Public
@@ -77,7 +77,7 @@
                                     18
                                     add_real
                                     2 add_real
-                                    template_travel_math
+                                    template_travel_01_math
                                     []
                                     add_real
                                     Public
@@ -87,7 +87,7 @@
                                     18
                                     operations
                                     5 operations
-                                    template_travel_travel
+                                    template_travel_01_travel
                                     []
                                     operations
                                     Public
@@ -97,7 +97,7 @@
                                     18
                                     slash_real
                                     2 slash_real
-                                    template_travel_math
+                                    template_travel_01_math
                                     []
                                     slash_real
                                     Public
@@ -680,20 +680,20 @@
                                     18
                                     travel_tmpl
                                     5 travel_tmpl
-                                    template_travel_travel
+                                    template_travel_01_travel
                                     []
                                     travel_tmpl
                                     Public
                                 )
                         })
                     template_travel_01_m
-                    [template_travel_math
-                    template_travel_travel
+                    [template_travel_01_math
+                    template_travel_01_travel
                     template_travel_01_m]
                     .false.
                     .false.
                 ),
-            template_travel_math:
+            template_travel_01_math:
                 (Module
                     (SymbolTable
                         2
@@ -879,12 +879,12 @@
                                     ()
                                 )
                         })
-                    template_travel_math
+                    template_travel_01_math
                     []
                     .false.
                     .false.
                 ),
-            template_travel_travel:
+            template_travel_01_travel:
                 (Module
                     (SymbolTable
                         5
@@ -894,7 +894,7 @@
                                     5
                                     add_real
                                     2 add_real
-                                    template_travel_math
+                                    template_travel_01_math
                                     []
                                     add_real
                                     Public
@@ -1342,7 +1342,7 @@
                                     5
                                     slash_real
                                     2 slash_real
-                                    template_travel_math
+                                    template_travel_01_math
                                     []
                                     slash_real
                                     Public
@@ -2140,9 +2140,9 @@
                                     )]
                                 )
                         })
-                    template_travel_travel
-                    [template_travel_math
-                    template_travel_travel]
+                    template_travel_01_travel
+                    [template_travel_01_math
+                    template_travel_01_travel]
                     .false.
                     .false.
                 )
