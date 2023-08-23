@@ -1837,7 +1837,8 @@ public:
     */
     bool is_statement_function( const AST::Assignment_t &x ) {
         if (AST::is_a<AST::FuncCallOrArray_t>(*x.m_target)) {
-            // Look for the type of *x.m_target in symbol table, if it is integer or nullptr then it is a statement function
+            // Look for the type of *x.m_target in symbol table, if it is integer, real, logical, or nullptr then it is a statement function
+            // unless it is being indexed as an array
             AST::FuncCallOrArray_t *func_call_or_array = AST::down_cast<AST::FuncCallOrArray_t>(x.m_target);
             if (func_call_or_array->n_member > 0) {
                 // This is part of a derived type, so it is not a statement function
@@ -1859,7 +1860,18 @@ public:
                         if (ASRUtils::is_array(v->m_type)) {
                             return false;
                         } else {
-                            return true;
+                            bool no_array_sections = true;
+                            for (size_t i = 0; i < func_call_or_array->n_args; i++) {
+                                if (func_call_or_array->m_args[i].m_step != nullptr) {
+                                    no_array_sections = false;
+                                    break;
+                                }
+                            }
+                            if (no_array_sections) {
+                                return true;
+                            } else {
+                                return false;
+                            } 
                         }
                     } else {
                         return false;
