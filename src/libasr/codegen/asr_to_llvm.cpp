@@ -5431,6 +5431,12 @@ public:
         int a_kind;
         a_kind = down_cast<ASR::Real_t>(ASRUtils::type_get_past_pointer(x.m_type))->m_kind;
         type = llvm_utils->getFPType(a_kind);
+        if (ASR::is_a<ASR::ArrayItem_t>(*(x.m_target))) {
+            target = LLVM::CreateLoad(*builder, target);
+        }
+        if (ASR::is_a<ASR::ArrayItem_t>(*(x.m_source))) {
+            source = LLVM::CreateLoad(*builder, source);
+        }
         llvm::Value *ftarget = builder->CreateSIToFP(target,
                 type);
         llvm::Value *fsource = builder->CreateSIToFP(source,
