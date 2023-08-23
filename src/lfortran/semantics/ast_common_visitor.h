@@ -2734,6 +2734,8 @@ public:
                 this->visit_expr(*(m_args[i].m_start));
                 m_start = ASRUtils::EXPR(tmp);
                 ai.loc = m_start->base.loc;
+            } else {
+                throw SemanticError("Array dimension has no lower bound.", loc);  
             }
             if (m_args[i].m_end != nullptr) {
                 this->visit_expr(*(m_args[i].m_end));
