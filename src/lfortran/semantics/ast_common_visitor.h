@@ -731,6 +731,7 @@ public:
         {"min", {IntrinsicSignature({}, 2, 100)}},
         {"merge", {IntrinsicSignature({}, 3, 3)}},
         {"sign", {IntrinsicSignature({}, 2, 2)}},
+        {"dsign", {IntrinsicSignature({}, 2, 2)}},
         {"shape", {IntrinsicSignature({"kind"}, 1, 2)}},
     };
 

@@ -53,6 +53,7 @@ enum class IntrinsicScalarFunctions : int64_t {
     Max,
     Min,
     Sign,
+    DSign,
     SymbolicSymbol,
     SymbolicAdd,
     SymbolicSub,
@@ -105,6 +106,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Max)
         INTRINSIC_NAME_CASE(Min)
         INTRINSIC_NAME_CASE(Sign)
+        INTRINSIC_NAME_CASE(DSign)
         INTRINSIC_NAME_CASE(SymbolicSymbol)
         INTRINSIC_NAME_CASE(SymbolicAdd)
         INTRINSIC_NAME_CASE(SymbolicSub)
@@ -2252,6 +2254,8 @@ namespace IntrinsicScalarFunctionRegistry {
             {&Min::instantiate_Min, &Min::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Sign),
             {&Sign::instantiate_Sign, &Sign::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::DSign),
+            {&Sign::instantiate_Sign, &Sign::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SymbolicSymbol),
             {nullptr, &SymbolicSymbol::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SymbolicAdd),
@@ -2336,6 +2340,8 @@ namespace IntrinsicScalarFunctionRegistry {
             "min"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Sign),
             "sign"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::DSign),
+            "sign"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SymbolicSymbol),
             "Symbol"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SymbolicAdd),
@@ -2398,6 +2404,7 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"min0", {&Min::create_Min, &Min::eval_Min}},
                 {"min", {&Min::create_Min, &Min::eval_Min}},
                 {"sign", {&Sign::create_Sign, &Sign::eval_Sign}},
+                {"dsign", {&Sign::create_Sign, &Sign::eval_Sign}},
                 {"Symbol", {&SymbolicSymbol::create_SymbolicSymbol, &SymbolicSymbol::eval_SymbolicSymbol}},
                 {"SymbolicAdd", {&SymbolicAdd::create_SymbolicAdd, &SymbolicAdd::eval_SymbolicAdd}},
                 {"SymbolicSub", {&SymbolicSub::create_SymbolicSub, &SymbolicSub::eval_SymbolicSub}},
