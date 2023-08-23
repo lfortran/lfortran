@@ -3462,68 +3462,67 @@ public:
         }
     }
 
-    #define make_ArrayItem_from_struct_m_args(struct_m_args, struct_n_args, expr, array_item_node, loc) if( struct_n_args > 0 ) { \
-            ASR::asr_t* tmp_copy = tmp; \
-            Vec<ASR::array_index_t> indices; \
-            indices.reserve(al, struct_n_args); \
-            bool is_array_section = false; \
-            for( size_t j = 0; j < struct_n_args; j++ ) { \
-                is_array_section = is_array_section || (struct_m_args[j].m_step != nullptr); \
-                ASR::array_index_t index; \
-                if( struct_m_args[j].m_step == nullptr ) { \
-                    this->visit_expr(*struct_m_args[j].m_end); \
-                    index.m_right = ASRUtils::EXPR(tmp); \
-                    index.m_left = nullptr; \
-                    index.m_step = nullptr; \
-                } else { \
-                    if( struct_m_args[j].m_start ) { \
-                        this->visit_expr(*struct_m_args[j].m_start); \
-                        index.m_left = ASRUtils::EXPR(tmp); \
-                    } else { \
-                        index.m_left = ASRUtils::get_bound(expr, j + 1, "lbound", al); \
-                    } \
-                    if( struct_m_args[j].m_end ) { \
-                        this->visit_expr(*struct_m_args[j].m_end); \
-                        index.m_right = ASRUtils::EXPR(tmp); \
-                    } else { \
-                        index.m_right = ASRUtils::get_bound(expr, j + 1, "ubound", al); \
-                    } \
-                    this->visit_expr(*struct_m_args[j].m_step); \
-                    index.m_step = ASRUtils::EXPR(tmp); \
-                } \
-                index.loc = struct_m_args->loc; \
-                indices.push_back(al, index); \
-            } \
-            tmp = tmp_copy; \
-            if( is_array_section ) { \
-                Vec<ASR::dimension_t> array_section_dims; \
-                array_section_dims.reserve(al, struct_n_args); \
-                for( size_t j = 0; j < struct_n_args; j++ ) { \
-                    if( struct_m_args[j].m_step != nullptr ) { \
-                        ASR::dimension_t empty_dim; \
-                        empty_dim.loc = loc; \
-                        empty_dim.m_start = nullptr; \
-                        empty_dim.m_length = nullptr; \
-                        array_section_dims.push_back(al, empty_dim); \
-                    } \
-                } \
-                ASR::ttype_t *array_section_type = \
-                    ASRUtils::duplicate_type(al, ASRUtils::type_get_past_array( \
-                            ASRUtils::type_get_past_pointer( \
-                                ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(expr)))), \
-                            &array_section_dims); \
-                array_item_node = ASR::make_ArraySection_t(al, loc, expr, indices.p, \
-                    indices.size(), array_section_type, nullptr); \
-            } else { \
-                array_item_node = ASRUtils::make_ArrayItem_t_util(al, loc, expr, indices.p, \
-                    indices.size(), ASRUtils::type_get_past_array( \
-                        ASRUtils::type_get_past_pointer( \
-                            ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(expr)))), \
-                    ASR::arraystorageType::ColMajor, nullptr); \
-            } \
-            array_item_node = (ASR::asr_t*) replace_with_common_block_variables( \
-                ASRUtils::EXPR(array_item_node)); \
-        } \
+    void make_ArrayItem_from_struct_m_args(AST::fnarg_t* struct_m_args, size_t struct_n_args, ASR::expr_t* expr, ASR::asr_t* &array_item_node, const Location &loc) {
+        if (struct_n_args == 0) {
+            return;
+        }
+        ASR::asr_t* tmp_copy = tmp;
+        Vec<ASR::array_index_t> indices;
+        indices.reserve(al, struct_n_args);
+        bool is_array_section = false;
+        for( size_t j = 0; j < struct_n_args; j++ ) {
+            is_array_section = is_array_section || (struct_m_args[j].m_step != nullptr);
+            ASR::array_index_t index;
+            if( struct_m_args[j].m_step == nullptr ) {
+                this->visit_expr(*struct_m_args[j].m_end);
+                index.m_right = ASRUtils::EXPR(tmp);
+                index.m_left = nullptr;
+                index.m_step = nullptr;
+            } else {
+                if( struct_m_args[j].m_start ) {
+                    this->visit_expr(*struct_m_args[j].m_start);
+                    index.m_left = ASRUtils::EXPR(tmp);
+                } else {
+                    index.m_left = ASRUtils::get_bound(expr, j + 1, "lbound", al);
+                }
+                if( struct_m_args[j].m_end ) {
+                    this->visit_expr(*struct_m_args[j].m_end);
+                    index.m_right = ASRUtils::EXPR(tmp);
+                } else {
+                    index.m_right = ASRUtils::get_bound(expr, j + 1, "ubound", al);
+                }
+                this->visit_expr(*struct_m_args[j].m_step);
+                index.m_step = ASRUtils::EXPR(tmp);
+            }
+            index.loc = struct_m_args->loc;
+            indices.push_back(al, index);
+        }
+        tmp = tmp_copy;
+        if( is_array_section ) {
+            Vec<ASR::dimension_t> array_section_dims;
+            array_section_dims.reserve(al, struct_n_args);
+            for( size_t j = 0; j < struct_n_args; j++ ) {
+                if( struct_m_args[j].m_step != nullptr ) {
+                    ASR::dimension_t empty_dim;
+                    empty_dim.loc = loc;
+                    empty_dim.m_start = nullptr;
+                    empty_dim.m_length = nullptr;
+                    array_section_dims.push_back(al, empty_dim);
+                }
+            }
+            ASR::ttype_t *array_section_type =
+                ASRUtils::duplicate_type(al, ASRUtils::extract_type(ASRUtils::expr_type(expr)),
+                        &array_section_dims);
+            array_item_node = ASR::make_ArraySection_t(al, loc, expr, indices.p,
+                indices.size(), array_section_type, nullptr);
+        } else {
+            array_item_node = ASRUtils::make_ArrayItem_t_util(al, loc, expr, indices.p,
+                indices.size(), ASRUtils::extract_type(ASRUtils::expr_type(expr)),
+                ASR::arraystorageType::ColMajor, nullptr);
+        }
+        array_item_node = (ASR::asr_t*) replace_with_common_block_variables(
+            ASRUtils::EXPR(array_item_node));
+    }
 
     ASR::asr_t* resolve_variable2(const Location &loc, const std::string &var_name,
             const std::string &dt_name, SymbolTable*& scope,

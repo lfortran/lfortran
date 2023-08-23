@@ -344,9 +344,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 ASR::expr_t* ref = PassUtils::create_array_ref(arr_expr, idx_vars_value, al);
                 ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al);
                 ASR::expr_t* op_el_wise = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
-                    al, loc, ref, x->m_m, ASRUtils::type_get_past_array(
-                        ASRUtils::type_get_past_allocatable(
-                    ASRUtils::type_get_past_pointer(x->m_type))), nullptr));
+                    al, loc, ref, x->m_m, ASRUtils::extract_type(x->m_type), nullptr));
                 ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, res, op_el_wise, nullptr));
                 doloop_body.push_back(al, assign);
             });
