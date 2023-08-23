@@ -792,9 +792,9 @@ RUN(NAME nested_09 LABELS gfortran llvm NOFAST)
 RUN(NAME nested_10 LABELS gfortran llvm NOFAST)
 RUN(NAME nested_11 LABELS gfortran llvm)
 
-RUN(NAME nested_vars1 LABELS gfortran llvm wasm NOFAST)
-RUN(NAME nested_vars2 LABELS gfortran llvm wasm NOFAST)
-RUN(NAME nested_vars3 LABELS gfortran llvm wasm NOFAST)
+RUN(NAME nested_vars1 LABELS gfortran llvm wasm c NOFAST)
+RUN(NAME nested_vars2 LABELS gfortran llvm wasm c NOFAST)
+RUN(NAME nested_vars3 LABELS gfortran llvm wasm c NOFAST)
 
 RUN(NAME nbody LABELS gfortran llvm NOFAST)
 
