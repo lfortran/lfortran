@@ -37,6 +37,7 @@ enum class IntrinsicScalarFunctions : int64_t {
     Cosh,
     DCosh,
     Tanh,
+    DTanh,
     Gamma,
     LogGamma,
     Abs,
@@ -87,6 +88,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Cosh)
         INTRINSIC_NAME_CASE(DCosh)
         INTRINSIC_NAME_CASE(Tanh)
+        INTRINSIC_NAME_CASE(DTanh)
         INTRINSIC_NAME_CASE(Gamma)
         INTRINSIC_NAME_CASE(LogGamma)
         INTRINSIC_NAME_CASE(Abs)
@@ -1080,6 +1082,7 @@ create_trig(DSinh, sinh, sinh)
 create_trig(Cosh, cosh, cosh)
 create_trig(DCosh, cosh, cosh)
 create_trig(Tanh, tanh, tanh)
+create_trig(DTanh, tanh, tanh)
 
 namespace Abs {
 
@@ -2218,6 +2221,8 @@ namespace IntrinsicScalarFunctionRegistry {
             {&Cosh::instantiate_Cosh, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Tanh),
             {&Tanh::instantiate_Tanh, &UnaryIntrinsicFunction::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::DTanh),
+            {&Tanh::instantiate_Tanh, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Exp),
             {nullptr, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Exp2),
@@ -2300,6 +2305,8 @@ namespace IntrinsicScalarFunctionRegistry {
             "dcosh"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Tanh),
             "tanh"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::DTanh),
+            "tanh"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Abs),
             "abs"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Exp),
@@ -2370,6 +2377,7 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"cosh", {&Cosh::create_Cosh, &Cosh::eval_Cosh}},
                 {"dcosh", {&Cosh::create_Cosh, &Cosh::eval_Cosh}},
                 {"tanh", {&Tanh::create_Tanh, &Tanh::eval_Tanh}},
+                {"dtanh", {&Tanh::create_Tanh, &Tanh::eval_Tanh}},
                 {"abs", {&Abs::create_Abs, &Abs::eval_Abs}},
                 {"exp", {&Exp::create_Exp, &Exp::eval_Exp}},
                 {"exp2", {&Exp2::create_Exp2, &Exp2::eval_Exp2}},
