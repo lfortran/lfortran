@@ -34,6 +34,7 @@ enum class IntrinsicScalarFunctions : int64_t {
     Atan,
     Sinh,
     Cosh,
+    DCosh,
     Tanh,
     Gamma,
     LogGamma,
@@ -82,6 +83,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Atan)
         INTRINSIC_NAME_CASE(Sinh)
         INTRINSIC_NAME_CASE(Cosh)
+        INTRINSIC_NAME_CASE(DCosh)
         INTRINSIC_NAME_CASE(Tanh)
         INTRINSIC_NAME_CASE(Gamma)
         INTRINSIC_NAME_CASE(LogGamma)
@@ -1073,6 +1075,7 @@ create_trig(Acos, acos, acos)
 create_trig(Atan, atan, atan)
 create_trig(Sinh, sinh, sinh)
 create_trig(Cosh, cosh, cosh)
+create_trig(DCosh, cosh, cosh)
 create_trig(Tanh, tanh, tanh)
 
 namespace Abs {
@@ -2206,6 +2209,8 @@ namespace IntrinsicScalarFunctionRegistry {
             {&Sinh::instantiate_Sinh, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Cosh),
             {&Cosh::instantiate_Cosh, &UnaryIntrinsicFunction::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::DCosh),
+            {&Cosh::instantiate_Cosh, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Tanh),
             {&Tanh::instantiate_Tanh, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Exp),
@@ -2284,6 +2289,8 @@ namespace IntrinsicScalarFunctionRegistry {
             "sinh"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Cosh),
             "cosh"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::DCosh),
+            "dcosh"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Tanh),
             "tanh"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Abs),
@@ -2353,6 +2360,7 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"atan", {&Atan::create_Atan, &Atan::eval_Atan}},
                 {"sinh", {&Sinh::create_Sinh, &Sinh::eval_Sinh}},
                 {"cosh", {&Cosh::create_Cosh, &Cosh::eval_Cosh}},
+                {"dcosh", {&Cosh::create_Cosh, &Cosh::eval_Cosh}},
                 {"tanh", {&Tanh::create_Tanh, &Tanh::eval_Tanh}},
                 {"abs", {&Abs::create_Abs, &Abs::eval_Abs}},
                 {"exp", {&Exp::create_Exp, &Exp::eval_Exp}},
