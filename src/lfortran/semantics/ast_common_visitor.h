@@ -2734,8 +2734,6 @@ public:
                 this->visit_expr(*(m_args[i].m_start));
                 m_start = ASRUtils::EXPR(tmp);
                 ai.loc = m_start->base.loc;
-            } else { 
-                m_start = ASRUtils::get_bound<SemanticError>(v_Var, i + 1, "lbound", al);
             }
             if (m_args[i].m_end != nullptr) {
                 this->visit_expr(*(m_args[i].m_end));

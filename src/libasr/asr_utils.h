@@ -3741,16 +3741,6 @@ static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,
                             al, arr_expr->base.loc,
                             const_lbound + const_length - 1, int32_type));
         }
-    } else {
-        if( arr_dims[dim].m_start == nullptr ) {
-            std::string msg = "Array dimension " + std::to_string(dim+1) + 
-                " has no lower bound.";
-            throw SemanticError(msg, arr_expr->base.loc); 
-        } else {
-            std::string msg = "Array dimension " + std::to_string(dim+1) + 
-                " has no length.";
-            throw SemanticError(msg, arr_expr->base.loc); 
-        }
     }
     return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, arr_expr->base.loc, arr_expr, dim_expr,
                 int32_type, bound_type, bound_value));
