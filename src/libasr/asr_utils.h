@@ -8,6 +8,7 @@
 
 #include <libasr/assert.h>
 #include <libasr/asr.h>
+#include <libasr/semantic_exception.h>
 #include <libasr/string_utils.h>
 #include <libasr/utils.h>
 
@@ -3668,6 +3669,7 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
     return v.size() > 0;
 }
 
+template <typename SemanticError>
 static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,
                                      std::string bound, Allocator& al) {
     ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, arr_expr->base.loc, 4));
@@ -3682,8 +3684,35 @@ static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,
     int arr_n_dims = ASRUtils::extract_dimensions_from_ttype(
         ASRUtils::expr_type(arr_expr), arr_dims);
     if( dim > arr_n_dims || dim < 1) {
-        throw LCompilersException("Dimension " + std::to_string(dim) +
-            " is invalid. Rank of the array, " + std::to_string(arr_n_dims));
+        if ( ASR::is_a<ASR::Var_t>(*arr_expr )) {
+            ASR::Var_t* non_array_var = ASR::down_cast<ASR::Var_t>(arr_expr);
+            ASR::Variable_t* non_array_variable = ASR::down_cast<ASR::Variable_t>(
+                symbol_get_past_external(non_array_var->m_v));
+            std::string msg;
+            if (arr_n_dims == 0) {
+                msg = "Variable " + std::string(non_array_variable->m_name) +
+                            " is not an array so it cannot be indexed.";
+            } else {
+                msg = "Variable " + std::string(non_array_variable->m_name) +
+                            " does not have enough dimensions.";  
+            }
+            throw SemanticError(msg, arr_expr->base.loc);
+        } else if ( ASR::is_a<ASR::StructInstanceMember_t>(*arr_expr )) {
+            ASR::StructInstanceMember_t* non_array_struct_inst_mem = ASR::down_cast<ASR::StructInstanceMember_t>(arr_expr);
+            ASR::Variable_t* non_array_variable = ASR::down_cast<ASR::Variable_t>(
+                symbol_get_past_external(non_array_struct_inst_mem->m_m));
+            std::string msg;
+            if (arr_n_dims == 0) {
+                msg = "Type member " + std::string(non_array_variable->m_name) +
+                            " is not an array so it cannot be indexed.";
+            } else {
+                msg = "Type member " + std::string(non_array_variable->m_name) +
+                            " does not have enough dimensions.";  
+            }
+            throw SemanticError(msg, arr_expr->base.loc); 
+        } else {
+            throw SemanticError("Expression cannot be indexed.", arr_expr->base.loc);       
+        }
     }
     dim = dim - 1;
     if( arr_dims[dim].m_start && arr_dims[dim].m_length ) {
@@ -3748,7 +3777,7 @@ static inline void get_dimensions(ASR::expr_t* array, Vec<ASR::expr_t*>& dims,
     for( int i = 0; i < n_dims; i++ ) {
         ASR::expr_t* start = compile_time_dims[i].m_start;
         if( start == nullptr ) {
-            start = get_bound(array, i + 1, "lbound", al);
+            start = get_bound<SemanticError>(array, i + 1, "lbound", al);
         }
         ASR::expr_t* length = compile_time_dims[i].m_length;
         if( length == nullptr ) {

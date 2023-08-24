@@ -2775,7 +2775,7 @@ public:
                                     nullptr));
                     }
                 } else {
-                    m_end = ASRUtils::get_bound(v_Var, i + 1, "ubound", al);
+                    m_end = ASRUtils::get_bound<SemanticError>(v_Var, i + 1, "ubound", al);
                 }
             }
             if (m_args[i].m_step != nullptr) {
@@ -2937,7 +2937,7 @@ public:
             for( size_t i = 0; i < n_args; i++ ) {
                 if( args.p[i].m_step != nullptr &&
                     args.p[i].m_left == nullptr ) {
-                    args.p[i].m_left = ASRUtils::get_bound(v_Var, i + 1, "lbound", al);
+                    args.p[i].m_left = ASRUtils::get_bound<SemanticError>(v_Var, i + 1, "lbound", al);
                 }
                 if( args.p[i].m_step != nullptr ) {
                     ASR::dimension_t empty_dim;
@@ -3483,13 +3483,13 @@ public:
                     this->visit_expr(*struct_m_args[j].m_start);
                     index.m_left = ASRUtils::EXPR(tmp);
                 } else {
-                    index.m_left = ASRUtils::get_bound(expr, j + 1, "lbound", al);
+                    index.m_left = ASRUtils::get_bound<SemanticError>(expr, j + 1, "lbound", al);
                 }
                 if( struct_m_args[j].m_end ) {
                     this->visit_expr(*struct_m_args[j].m_end);
                     index.m_right = ASRUtils::EXPR(tmp);
                 } else {
-                    index.m_right = ASRUtils::get_bound(expr, j + 1, "ubound", al);
+                    index.m_right = ASRUtils::get_bound<SemanticError>(expr, j + 1, "ubound", al);
                 }
                 this->visit_expr(*struct_m_args[j].m_step);
                 index.m_step = ASRUtils::EXPR(tmp);
@@ -3896,7 +3896,7 @@ public:
                 ASR::array_index_t index;
                 index.loc = x.base.base.loc;
                 index.m_left = nullptr;
-                index.m_right = ASRUtils::get_bound(v_Var, i + 1, "lbound", al);
+                index.m_right = ASRUtils::get_bound<SemanticError>(v_Var, i + 1, "lbound", al);
                 index.m_step = nullptr;
                 lbs.push_back(al, index);
             }

@@ -1,0 +1,5 @@
+semantic error: Variable a does not have enough dimensions.
+ --> tests/errors/array_03.f90:5:1
+  |
+5 | a(:,:) = 1
+  | ^^^^^^ 
