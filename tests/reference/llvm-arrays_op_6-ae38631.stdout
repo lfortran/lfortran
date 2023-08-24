@@ -540,7 +540,7 @@ loop.body4:                                       ; preds = %loop.head3
   %62 = call float @llvm.pow.f32(float %61, float 2.000000e+00)
   %63 = fptosi float %62 to i32
   %64 = sitofp i32 %63 to float
-  %65 = fcmp une float %55, %64
+  %65 = fcmp one float %55, %64
   br i1 %65, label %then, label %else
 
 then:                                             ; preds = %loop.body4

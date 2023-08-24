@@ -1397,7 +1397,7 @@ loop.body48:                                      ; preds = %loop.head47
   %427 = load i32, i32* %j, align 4
   %428 = add i32 %426, %427
   %429 = sitofp i32 %428 to float
-  %430 = fcmp une float %425, %429
+  %430 = fcmp one float %425, %429
   br i1 %430, label %then49, label %else50
 
 then49:                                           ; preds = %loop.body48

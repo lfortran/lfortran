@@ -4889,7 +4889,7 @@ public:
         llvm::Value *right = tmp;
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
-                tmp = builder->CreateFCmpUEQ(left, right);
+                tmp = builder->CreateFCmpOEQ(left, right);
                 break;
             }
             case (ASR::cmpopType::Gt) : {
@@ -4909,7 +4909,7 @@ public:
                 break;
             }
             case (ASR::cmpopType::NotEq) : {
-                tmp = builder->CreateFCmpUNE(left, right);
+                tmp = builder->CreateFCmpONE(left, right);
                 break;
             }
             default : {

@@ -165,7 +165,7 @@ else23:                                           ; preds = %ifcont21
 ifcont24:                                         ; preds = %else23, %then22
   %33 = load float, float* %r, align 4
   %34 = load float, float* %r, align 4
-  %35 = fcmp une float %33, %34
+  %35 = fcmp one float %33, %34
   br i1 %35, label %then25, label %else26
 
 then25:                                           ; preds = %ifcont24
@@ -180,7 +180,7 @@ ifcont27:                                         ; preds = %else26, %then25
   %36 = load float, float* %r, align 4
   %37 = load i32, i32* %i, align 4
   %38 = sitofp i32 %37 to float
-  %39 = fcmp une float %36, %38
+  %39 = fcmp one float %36, %38
   br i1 %39, label %then28, label %else29
 
 then28:                                           ; preds = %ifcont27
@@ -195,7 +195,7 @@ ifcont30:                                         ; preds = %else29, %then28
   %40 = load i32, i32* %i, align 4
   %41 = sitofp i32 %40 to float
   %42 = load float, float* %r, align 4
-  %43 = fcmp une float %41, %42
+  %43 = fcmp one float %41, %42
   br i1 %43, label %then31, label %else32
 
 then31:                                           ; preds = %ifcont30
@@ -349,7 +349,7 @@ ifcont60:                                         ; preds = %else59, %then58
   %84 = load float, float* %r, align 4
   %85 = load float, float* %r, align 4
   %86 = fadd float %85, 1.000000e+00
-  %87 = fcmp ueq float %84, %86
+  %87 = fcmp oeq float %84, %86
   br i1 %87, label %then61, label %else62
 
 then61:                                           ; preds = %ifcont60
@@ -365,7 +365,7 @@ ifcont63:                                         ; preds = %else62, %then61
   %89 = load i32, i32* %i, align 4
   %90 = add i32 %89, 1
   %91 = sitofp i32 %90 to float
-  %92 = fcmp ueq float %88, %91
+  %92 = fcmp oeq float %88, %91
   br i1 %92, label %then64, label %else65
 
 then64:                                           ; preds = %ifcont63
@@ -381,7 +381,7 @@ ifcont66:                                         ; preds = %else65, %then64
   %94 = sitofp i32 %93 to float
   %95 = load float, float* %r, align 4
   %96 = fadd float %95, 1.000000e+00
-  %97 = fcmp ueq float %94, %96
+  %97 = fcmp oeq float %94, %96
   br i1 %97, label %then67, label %else68
 
 then67:                                           ; preds = %ifcont66
