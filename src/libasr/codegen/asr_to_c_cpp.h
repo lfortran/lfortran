@@ -707,8 +707,9 @@ R"(#include <stdio.h>
         for (auto &item : scope.get_scope()) {
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
+                t = declare_all_functions(*s->m_symtab);
                 bool has_typevar = false;
-                t = get_function_declaration(*s, has_typevar);
+                t += get_function_declaration(*s, has_typevar);
                 if (!has_typevar) code += t  + ";\n";
             }
         }
@@ -743,6 +744,15 @@ R"(#include <stdio.h>
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        std::string sub = "";
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(item.second);
+                visit_Function(*f);
+                sub += src + "\n";
+            }
+        }
+
         current_body = "";
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
@@ -788,7 +798,7 @@ R"(#include <stdio.h>
             sym_info[get_hash((ASR::asr_t*)&x)] = s;
         }
         bool has_typevar = false;
-        std::string sub = get_function_declaration(x, has_typevar);
+        sub += get_function_declaration(x, has_typevar);
         if (has_typevar) {
             src = "";
             return;
