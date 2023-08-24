@@ -88,19 +88,6 @@ return:                                           ; preds = %.entry
 
 declare double @_lfortran_dcos(double)
 
-define double @__module_lfortran_intrinsic_math_dcos(double* %x) {
-.entry:
-  %r = alloca double, align 8
-  %0 = load double, double* %x, align 8
-  %1 = call double @_lfortran_dcos(double %0)
-  store double %1, double* %r, align 8
-  br label %return
-
-return:                                           ; preds = %.entry
-  %2 = load double, double* %r, align 8
-  ret double %2
-}
-
 define double @__module_lfortran_intrinsic_math2_dabs(double* %x) {
 .entry:
   %r = alloca double, align 8
@@ -198,7 +185,7 @@ else9:                                            ; preds = %ifcont4
   br label %ifcont10
 
 ifcont10:                                         ; preds = %else9, %then8
-  %20 = call double @__module_lfortran_intrinsic_math_dcos(double* %a)
+  %20 = call double @_lcompilers_cos_f64(double* %a)
   store double %20, double* %r1, align 8
   store double 0xBFDF606EEC8AC71E, double* %r2, align 8
   %21 = load double, double* %r1, align 8
