@@ -1,4 +1,4 @@
-module template_add_01b_m
+module template_add_01c_m
     implicit none
     private
     public :: add_t
@@ -33,8 +33,8 @@ contains
   end subroutine
 end module
 
-program template_add_01b
-use template_add_01b_m
+program template_add_01c
+use template_add_01c_m
 implicit none
 
 call test_template()
