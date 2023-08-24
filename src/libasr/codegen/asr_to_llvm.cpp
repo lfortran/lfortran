@@ -399,6 +399,7 @@ public:
         std::vector<std::pair<llvm::Value*, llvm::Value*>> llvm_dims;
         for( int r = 0; r < n_dims; r++ ) {
             ASR::dimension_t m_dim = m_dims[r];
+            LCOMPILERS_ASSERT(m_dim.m_start != nullptr && m_dim.m_length != nullptr);
             visit_expr(*(m_dim.m_start));
             llvm::Value* start = tmp;
             visit_expr(*(m_dim.m_length));

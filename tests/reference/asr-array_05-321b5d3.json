@@ -1,0 +1,13 @@
+{
+    "basename": "asr-array_05-321b5d3",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/array_05.f90",
+    "infile_hash": "424c79823571d0e5f22210d723fb134cd0583571571af3e12d068f60",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-array_05-321b5d3.stderr",
+    "stderr_hash": "d87544b409ffacffd47d2f010178da2d7433f5c7af14168b3f52c9c0",
+    "returncode": 2
+}
