@@ -63,38 +63,24 @@ static inline char* name2char(const ast_t *n)
     return down_cast2<Name_t>(n)->m_id;
 }
 
-static inline void check_subroutine_names(char* n1, char* n2, Location &loc) 
+static inline bool streql(const char *s1, const char *s2)
 {
-    if (strcmp(n1, n2) != 0) {
-        throw LCompilers::LFortran::parser_local::ParserError(
-            "End subroutine name does not match subroutine name", loc);
-    }
+#if defined(_MSC_VER)
+    return _stricmp(s1, s2) == 0;
+#else
+    return strcasecmp(s1, s2) == 0;
+#endif
 }
 
-static inline void check_program_names(const char* n1, const char* n2, Location &loc)
-{     
-    if (strcmp(n1, n2) != 0) {
-        throw LCompilers::LFortran::parser_local::ParserError(
-            "End program name does not match program name", loc);
-    }
-}
-
-static inline char* name2char_subroutine_check(const ast_t *n1, const ast_t *n2,
-        Location &loc) {
+static inline char* name2char_with_check(const ast_t *n1, const ast_t *n2,
+        Location &loc, std::string unit) {
     char* n1c = name2char(n1);
     if(n2) {
         char* n2c = name2char(n2);
-        check_subroutine_names(n1c, n2c, loc);
-    }
-    return n1c;
-}
-
-static inline char* name2char_program_check(const ast_t *n1, const ast_t *n2,
-        Location &loc) {
-    char* n1c = name2char(n1);
-    if(n2) {
-        char* n2c = name2char(n2);
-        check_program_names(n1c, n2c, loc);
+        if (!streql(n1c, n2c)) {
+            throw LCompilers::LFortran::parser_local::ParserError(
+                "End " + unit + " name does not match " + unit + " name", loc);
+        }
     }
     return n1c;
 }
@@ -1230,7 +1216,7 @@ Vec<ast_t*> empty_sync(Allocator &al) {
 
 #define SUBROUTINE(name, args, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) \
     make_Subroutine_t(p.m_a, l, \
-        /*name*/ name2char_subroutine_check(name, name_opt, l), \
+        /*name*/ name2char_with_check(name, name_opt, l, "subroutine"), \
         /*args*/ ARGS(p.m_a, l, args), \
         /*n_args*/ args.size(), \
         /*m_attributes*/ nullptr, \
@@ -1251,7 +1237,7 @@ Vec<ast_t*> empty_sync(Allocator &al) {
         /*n_contains*/ contains.size())
 #define SUBROUTINE1(fn_mod, name, args, bind, trivia, use, import, implicit, \
         decl, stmts, contains, name_opt, l) make_Subroutine_t(p.m_a, l, \
-        /*name*/ name2char_subroutine_check(name, name_opt, l), \
+        /*name*/ name2char_with_check(name, name_opt, l, "subroutine"), \
         /*args*/ ARGS(p.m_a, l, args), \
         /*n_args*/ args.size(), \
         /*m_attributes*/ VEC_CAST(fn_mod, decl_attribute), \
@@ -1404,7 +1390,7 @@ return make_Program_t(al, a_loc,
 
 #define PROGRAM(name, trivia, use, implicit, decl_stmts, contains, name_opt, l) \
     PROGRAM2(p.m_a, l, \
-        /*name*/ name2char_program_check(name, name_opt, l), \
+        /*name*/ name2char_with_check(name, name_opt, l, "program"), \
         trivia_cast(trivia), \
         /*use*/ USES(use), \
         /*n_use*/ use.size(), \
