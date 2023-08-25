@@ -207,6 +207,7 @@ RUN(NAME expr_10 LABELS gfortran llvm wasm c)
 RUN(NAME expr_12 LABELS gfortran llvm c) # it uses string compare
 RUN(NAME expr_13 LABELS gfortran llvm wasm c NOFAST)
 RUN(NAME expr_14 LABELS gfortran llvm wasm c)
+RUN(NAME expr_15 LABELS gfortran llvm wasm c)
 
 RUN(NAME data_01 LABELS gfortran llvm c)
 RUN(NAME data_02 LABELS gfortran)
@@ -486,6 +487,9 @@ RUN(NAME intrinsics_64 LABELS gfortran llvm wasm) # sign
 
 
 RUN(NAME intrinsics_65 LABELS gfortran llvm) # matmul
+RUN(NAME intrinsics_66 LABELS gfortran llvm) # sign
+RUN(NAME intrinsics_67 LABELS gfortran llvm) # dcosh, dsinh, dtanh, dtan
+RUN(NAME intrinsics_68 LABELS gfortran llvm) # dsign
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
@@ -790,8 +794,9 @@ RUN(NAME nested_09 LABELS gfortran llvm NOFAST)
 RUN(NAME nested_10 LABELS gfortran llvm NOFAST)
 RUN(NAME nested_11 LABELS gfortran llvm)
 
-RUN(NAME nested_vars1 LABELS gfortran llvm wasm NOFAST)
-RUN(NAME nested_vars2 LABELS gfortran llvm wasm NOFAST)
+RUN(NAME nested_vars1 LABELS gfortran llvm wasm c NOFAST)
+RUN(NAME nested_vars2 LABELS gfortran llvm wasm c NOFAST)
+RUN(NAME nested_vars3 LABELS gfortran llvm wasm c NOFAST)
 
 RUN(NAME nbody LABELS gfortran llvm NOFAST)
 
@@ -874,7 +879,7 @@ RUN(NAME template_add_01 LABELS llvm wasm)
 RUN(NAME template_add_01b LABELS llvm wasm)
 RUN(NAME template_add_02 LABELS llvm wasm)
 RUN(NAME template_add_03 LABELS llvm wasm)
-RUN(NAME template_add_04 LABELS llvm NOFAST)
+RUN(NAME template_add_04 LABELS llvm wasm NOFAST)
 RUN(NAME template_nested LABELS llvm wasm)
 RUN(NAME template_travel_01 LABELS llvm wasm)
 RUN(NAME template_travel_02 LABELS llvm wasm)
@@ -1043,3 +1048,5 @@ RUN(NAME file_08 LABELS gfortran llvm NOFAST COPY_TO_BIN file_08.txt)
 
 RUN(NAME optional_01 LABELS gfortran llvm)
 RUN(NAME optional_02 LABELS gfortran llvm)
+
+RUN(NAME end_name_match LABELS gfortran llvm)

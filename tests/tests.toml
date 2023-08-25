@@ -3266,6 +3266,14 @@ filename = "errors/array_02.f90"
 asr = true
 
 [[test]]
+filename = "errors/array_03.f90"
+asr = true
+
+[[test]]
+filename = "errors/array_04.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/where_02.f90"
 asr = true
 pass = "where"

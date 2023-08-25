@@ -638,7 +638,7 @@ loop.end75:                                       ; preds = %ifcont73
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([33 x i8], [33 x i8]* @11, i32 0, i32 0), double %258, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @9, i32 0, i32 0), double %261, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @9, i32 0, i32 0), double %264, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @9, i32 0, i32 0), double %267, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0))
   %268 = getelementptr [4 x float], [4 x float]* %d, i32 0, i32 0
   %269 = load float, float* %268, align 4
-  %270 = fcmp une float %269, 6.000000e+00
+  %270 = fcmp one float %269, 6.000000e+00
   br i1 %270, label %then76, label %else77
 
 then76:                                           ; preds = %loop.end75
@@ -652,7 +652,7 @@ else77:                                           ; preds = %loop.end75
 ifcont78:                                         ; preds = %else77, %then76
   %271 = getelementptr [4 x float], [4 x float]* %d, i32 0, i32 1
   %272 = load float, float* %271, align 4
-  %273 = fcmp une float %272, 6.000000e+00
+  %273 = fcmp one float %272, 6.000000e+00
   br i1 %273, label %then79, label %else80
 
 then79:                                           ; preds = %ifcont78
@@ -666,7 +666,7 @@ else80:                                           ; preds = %ifcont78
 ifcont81:                                         ; preds = %else80, %then79
   %274 = getelementptr [4 x float], [4 x float]* %d, i32 0, i32 2
   %275 = load float, float* %274, align 4
-  %276 = fcmp une float %275, 1.400000e+01
+  %276 = fcmp one float %275, 1.400000e+01
   br i1 %276, label %then82, label %else83
 
 then82:                                           ; preds = %ifcont81
@@ -680,7 +680,7 @@ else83:                                           ; preds = %ifcont81
 ifcont84:                                         ; preds = %else83, %then82
   %277 = getelementptr [4 x float], [4 x float]* %d, i32 0, i32 3
   %278 = load float, float* %277, align 4
-  %279 = fcmp une float %278, 2.400000e+01
+  %279 = fcmp one float %278, 2.400000e+01
   br i1 %279, label %then85, label %else86
 
 then85:                                           ; preds = %ifcont84
@@ -957,7 +957,7 @@ loop.end139:                                      ; preds = %ifcont137
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([33 x i8], [33 x i8]* @18, i32 0, i32 0), double %380, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @16, i32 0, i32 0), double %383, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @16, i32 0, i32 0), double %386, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @16, i32 0, i32 0), double %389, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @17, i32 0, i32 0))
   %390 = getelementptr [4 x float], [4 x float]* %d, i32 0, i32 0
   %391 = load float, float* %390, align 4
-  %392 = fcmp une float %391, -3.000000e+00
+  %392 = fcmp one float %391, -3.000000e+00
   br i1 %392, label %then140, label %else141
 
 then140:                                          ; preds = %loop.end139
@@ -971,7 +971,7 @@ else141:                                          ; preds = %loop.end139
 ifcont142:                                        ; preds = %else141, %then140
   %393 = getelementptr [4 x float], [4 x float]* %d, i32 0, i32 1
   %394 = load float, float* %393, align 4
-  %395 = fcmp une float %394, 1.000000e+00
+  %395 = fcmp one float %394, 1.000000e+00
   br i1 %395, label %then143, label %else144
 
 then143:                                          ; preds = %ifcont142
@@ -985,7 +985,7 @@ else144:                                          ; preds = %ifcont142
 ifcont145:                                        ; preds = %else144, %then143
   %396 = getelementptr [4 x float], [4 x float]* %d, i32 0, i32 2
   %397 = load float, float* %396, align 4
-  %398 = fcmp une float %397, 2.000000e+00
+  %398 = fcmp one float %397, 2.000000e+00
   br i1 %398, label %then146, label %else147
 
 then146:                                          ; preds = %ifcont145
@@ -999,7 +999,7 @@ else147:                                          ; preds = %ifcont145
 ifcont148:                                        ; preds = %else147, %then146
   %399 = getelementptr [4 x float], [4 x float]* %d, i32 0, i32 3
   %400 = load float, float* %399, align 4
-  %401 = fcmp une float %400, 3.000000e+00
+  %401 = fcmp one float %400, 3.000000e+00
   br i1 %401, label %then149, label %else150
 
 then149:                                          ; preds = %ifcont148
@@ -1224,7 +1224,7 @@ loop.end192:                                      ; preds = %ifcont190
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([33 x i8], [33 x i8]* @25, i32 0, i32 0), double %482, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @23, i32 0, i32 0), double %485, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @23, i32 0, i32 0), double %488, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @23, i32 0, i32 0), double %491, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @24, i32 0, i32 0))
   %492 = getelementptr [4 x float], [4 x float]* %d, i32 0, i32 0
   %493 = load float, float* %492, align 4
-  %494 = fcmp une float %493, 4.000000e+00
+  %494 = fcmp one float %493, 4.000000e+00
   br i1 %494, label %then193, label %else194
 
 then193:                                          ; preds = %loop.end192
@@ -1238,7 +1238,7 @@ else194:                                          ; preds = %loop.end192
 ifcont195:                                        ; preds = %else194, %then193
   %495 = getelementptr [4 x float], [4 x float]* %d, i32 0, i32 1
   %496 = load float, float* %495, align 4
-  %497 = fcmp une float %496, 0.000000e+00
+  %497 = fcmp one float %496, 0.000000e+00
   br i1 %497, label %then196, label %else197
 
 then196:                                          ; preds = %ifcont195
@@ -1252,7 +1252,7 @@ else197:                                          ; preds = %ifcont195
 ifcont198:                                        ; preds = %else197, %then196
   %498 = getelementptr [4 x float], [4 x float]* %d, i32 0, i32 2
   %499 = load float, float* %498, align 4
-  %500 = fcmp une float %499, 0.000000e+00
+  %500 = fcmp one float %499, 0.000000e+00
   br i1 %500, label %then199, label %else200
 
 then199:                                          ; preds = %ifcont198
@@ -1266,7 +1266,7 @@ else200:                                          ; preds = %ifcont198
 ifcont201:                                        ; preds = %else200, %then199
   %501 = getelementptr [4 x float], [4 x float]* %d, i32 0, i32 3
   %502 = load float, float* %501, align 4
-  %503 = fcmp une float %502, 0.000000e+00
+  %503 = fcmp one float %502, 0.000000e+00
   br i1 %503, label %then202, label %else203
 
 then202:                                          ; preds = %ifcont201
@@ -1558,7 +1558,7 @@ loop.end260:                                      ; preds = %ifcont258
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([33 x i8], [33 x i8]* @32, i32 0, i32 0), double %607, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @30, i32 0, i32 0), double %610, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @30, i32 0, i32 0), double %613, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @30, i32 0, i32 0), double %616, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @31, i32 0, i32 0))
   %617 = getelementptr [4 x float], [4 x float]* %d, i32 0, i32 0
   %618 = load float, float* %617, align 4
-  %619 = fcmp une float %618, 2.000000e+00
+  %619 = fcmp one float %618, 2.000000e+00
   br i1 %619, label %then261, label %else262
 
 then261:                                          ; preds = %loop.end260
@@ -1572,7 +1572,7 @@ else262:                                          ; preds = %loop.end260
 ifcont263:                                        ; preds = %else262, %then261
   %620 = getelementptr [4 x float], [4 x float]* %d, i32 0, i32 1
   %621 = load float, float* %620, align 4
-  %622 = fcmp une float %621, 5.000000e+00
+  %622 = fcmp one float %621, 5.000000e+00
   br i1 %622, label %then264, label %else265
 
 then264:                                          ; preds = %ifcont263
@@ -1586,7 +1586,7 @@ else265:                                          ; preds = %ifcont263
 ifcont266:                                        ; preds = %else265, %then264
   %623 = getelementptr [4 x float], [4 x float]* %d, i32 0, i32 2
   %624 = load float, float* %623, align 4
-  %625 = fcmp une float %624, 2.400000e+01
+  %625 = fcmp one float %624, 2.400000e+01
   br i1 %625, label %then267, label %else268
 
 then267:                                          ; preds = %ifcont266
@@ -1600,7 +1600,7 @@ else268:                                          ; preds = %ifcont266
 ifcont269:                                        ; preds = %else268, %then267
   %626 = getelementptr [4 x float], [4 x float]* %d, i32 0, i32 3
   %627 = load float, float* %626, align 4
-  %628 = fcmp une float %627, 6.300000e+01
+  %628 = fcmp one float %627, 6.300000e+01
   br i1 %628, label %then270, label %else271
 
 then270:                                          ; preds = %ifcont269

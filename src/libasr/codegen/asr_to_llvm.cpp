@@ -932,9 +932,7 @@ public:
                     curr_arg_m_a_type, curr_arg_m_a_type->base.loc);
                 llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(asr_data_type, module.get());
                 fill_malloc_array_details(x_arr, llvm_data_type, curr_arg.m_dims, curr_arg.n_dims, realloc);
-                if( ASR::is_a<ASR::Struct_t>(*ASRUtils::type_get_past_array(
-                    ASRUtils::type_get_past_allocatable(
-                        ASRUtils::type_get_past_pointer(ASRUtils::expr_type(tmp_expr))))) ) {
+                if( ASR::is_a<ASR::Struct_t>(*ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))) {
                     allocate_array_members_of_struct_arrays(LLVM::CreateLoad(*builder, x_arr),
                         ASRUtils::expr_type(tmp_expr));
                 }
@@ -1972,13 +1970,9 @@ public:
             array = tmp;
         }
 
-        if( ASR::is_a<ASR::Struct_t>(*ASRUtils::type_get_past_array(
-            ASRUtils::type_get_past_allocatable(
-                ASRUtils::type_get_past_pointer(x.m_type)))) ) {
+        if( ASR::is_a<ASR::Struct_t>(*ASRUtils::extract_type(x.m_type)) ) {
             ASR::Struct_t* der_type = ASR::down_cast<ASR::Struct_t>(
-                ASRUtils::type_get_past_array(
-                    ASRUtils::type_get_past_allocatable(
-                        ASRUtils::type_get_past_pointer(x.m_type))));
+                ASRUtils::extract_type(x.m_type));
             current_der_type_name = ASRUtils::symbol_name(
                 ASRUtils::symbol_get_past_external(der_type->m_derived_type));
         }
@@ -2907,10 +2901,7 @@ public:
                     }
                 }
                 allocate_array_members_of_struct(
-                    ptr_i,
-                    ASRUtils::type_get_past_array(
-                        ASRUtils::type_get_past_allocatable(
-                        ASRUtils::type_get_past_pointer(v_m_type))) );
+                    ptr_i, ASRUtils::extract_type(v_m_type));
                 LLVM::CreateStore(*builder,
                     builder->CreateAdd(LLVM::CreateLoad(*builder, llvmi),
                         llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1))),
@@ -4898,7 +4889,7 @@ public:
         llvm::Value *right = tmp;
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
-                tmp = builder->CreateFCmpUEQ(left, right);
+                tmp = builder->CreateFCmpOEQ(left, right);
                 break;
             }
             case (ASR::cmpopType::Gt) : {
@@ -4918,7 +4909,7 @@ public:
                 break;
             }
             case (ASR::cmpopType::NotEq) : {
-                tmp = builder->CreateFCmpUNE(left, right);
+                tmp = builder->CreateFCmpONE(left, right);
                 break;
             }
             default : {
@@ -5431,6 +5422,12 @@ public:
         int a_kind;
         a_kind = down_cast<ASR::Real_t>(ASRUtils::type_get_past_pointer(x.m_type))->m_kind;
         type = llvm_utils->getFPType(a_kind);
+        if (ASR::is_a<ASR::ArrayItem_t>(*(x.m_target))) {
+            target = LLVM::CreateLoad(*builder, target);
+        }
+        if (ASR::is_a<ASR::ArrayItem_t>(*(x.m_source))) {
+            source = LLVM::CreateLoad(*builder, source);
+        }
         llvm::Value *ftarget = builder->CreateSIToFP(target,
                 type);
         llvm::Value *fsource = builder->CreateSIToFP(source,
