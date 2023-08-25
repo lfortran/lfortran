@@ -2393,7 +2393,7 @@ public:
                         throw SemanticError(
                             "The argument for " + param + " must be a function",
                             x.m_args[i]->base.loc);
-                    }      
+                    }
                     check_restriction(type_subs, symbol_subs, f, f_arg0, x.base.base.loc);
                 } else {
                     throw SemanticError("Unsupported symbol argument", x.m_args[i]->base.loc);

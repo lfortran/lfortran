@@ -1719,6 +1719,7 @@ static inline bool is_logical(ASR::ttype_t &x) {
                 type_get_past_pointer(&x))));
 }
 
+// Checking if the ttype 't' is a type parameter
 static inline bool is_type_parameter(ASR::ttype_t &x) {
     switch (x.type) {
         case ASR::ttypeType::List: {
@@ -1733,6 +1734,7 @@ static inline bool is_type_parameter(ASR::ttype_t &x) {
     }
 }
 
+// Checking if the symbol 'x' is a virtual function defined inside a requirement
 static inline bool is_requirement_function(ASR::symbol_t *x) {
     ASR::symbol_t* x2 = symbol_get_past_external(x);
     switch (x2->type) {
@@ -1744,6 +1746,7 @@ static inline bool is_requirement_function(ASR::symbol_t *x) {
     }
 }
 
+// Checking if the symbol 'x' is a generic function defined inside a template
 static inline bool is_generic_function(ASR::symbol_t *x) {
     ASR::symbol_t* x2 = symbol_get_past_external(x);
     switch (x2->type) {
@@ -1766,7 +1769,8 @@ static inline bool is_generic_function(ASR::symbol_t *x) {
     }
 }
 
-static inline bool is_arg(ASR::symbol_t *x, std::string arg_name) {
+// Checking if the string `arg_name` corresponds to one of the arguments of the template `x`
+static inline bool is_template_arg(ASR::symbol_t *x, std::string arg_name) {
     switch (x->type) {
         case ASR::symbolType::Template: {
             ASR::Template_t *t = ASR::down_cast<ASR::Template_t>(x);
