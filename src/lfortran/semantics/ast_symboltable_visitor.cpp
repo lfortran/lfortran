@@ -2577,7 +2577,7 @@ public:
             for (auto const &sym_pair: temp->m_symtab->get_scope()) {
                 ASR::symbol_t *s = sym_pair.second;
                 std::string s_name = ASRUtils::symbol_name(s);
-                if (ASR::is_a<ASR::Function_t>(*s) && !ASRUtils::is_arg(sym, s_name)) {
+                if (ASR::is_a<ASR::Function_t>(*s) && !ASRUtils::is_template_arg(sym, s_name)) {
                     pass_instantiate_symbol(al, context_map, type_subs, symbol_subs,
                         current_scope, temp->m_symtab, s_name, s);
                     context_map[s_name] = s_name;
