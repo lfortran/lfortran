@@ -336,12 +336,17 @@ public:
         if (ASRUtils::is_requirement_function(name)) {
             name = symbol_subs[call_name];
         } else if (ASRUtils::is_generic_function(name)) {
-            std::string nested_func_name = current_scope->get_unique_name("__asr_generic_" + call_name, false);
             ASR::symbol_t* name2 = ASRUtils::symbol_get_past_external(name);
-            SymbolInstantiator nested_t(al, context_map, type_subs, symbol_subs, func_scope, template_scope, nested_func_name);
-            name = nested_t.instantiate_symbol(name2);
-            name = nested_t.instantiate_body(ASR::down_cast<ASR::Function_t>(name),
-                                             ASR::down_cast<ASR::Function_t>(name2));
+            ASR::symbol_t *search_sym = current_scope->resolve_symbol(call_name);
+            if (search_sym != nullptr) {
+                name = search_sym;
+            } else {
+                std::string nested_func_name = current_scope->get_unique_name("__asr_generic_" + call_name, false);
+                SymbolInstantiator nested_t(al, context_map, type_subs, symbol_subs, func_scope, template_scope, nested_func_name);
+                name = nested_t.instantiate_symbol(name2);
+                name = nested_t.instantiate_body(ASR::down_cast<ASR::Function_t>(name),
+                                                ASR::down_cast<ASR::Function_t>(name2));
+            }                            
             context_map[ASRUtils::symbol_name(name2)] = ASRUtils::symbol_name(name);
         }
         dependencies.push_back(al, ASRUtils::symbol_name(name));
@@ -363,6 +368,8 @@ public:
         ASR::expr_t* dt = duplicate_expr(x->m_dt);
         if (ASRUtils::is_requirement_function(name)) {
             name = symbol_subs[call_name];
+        } else if (context_map.find(call_name) != context_map.end()) {
+            name = current_scope->resolve_symbol(context_map[call_name]);
         } else {
             std::string nested_func_name = current_scope->get_unique_name("__asr_generic_" + call_name, false);
             ASR::symbol_t* name2 = ASRUtils::symbol_get_past_external(name);
@@ -370,7 +377,7 @@ public:
             name = nested_t.instantiate_symbol(name2);
             name = nested_t.instantiate_body(ASR::down_cast<ASR::Function_t>(name),
                                              ASR::down_cast<ASR::Function_t>(name2));
-            context_map[ASRUtils::symbol_name(name2)] = ASRUtils::symbol_name(name);
+            context_map[call_name] = nested_func_name;
         }
         dependencies.push_back(al, ASRUtils::symbol_name(name));
         return ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc, name /* change this */,
@@ -439,6 +446,11 @@ public:
                     case ASR::ttypeType::Complex: {
                         ASR::Complex_t* tnew = ASR::down_cast<ASR::Complex_t>(t);
                         t = ASRUtils::TYPE(ASR::make_Complex_t(al, t->base.loc, tnew->m_kind));
+                        break;
+                    }
+                    case ASR::ttypeType::TypeParameter: {
+                        ASR::TypeParameter_t* tnew = ASR::down_cast<ASR::TypeParameter_t>(t);
+                        t = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, t->base.loc, tnew->m_param));
                         break;
                     }
                     default: {

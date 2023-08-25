@@ -1,4 +1,4 @@
-module template_travel_math
+module template_travel_01_math
 
     implicit none
     private
@@ -20,9 +20,9 @@ contains
 
 end module
 
-module template_travel_travel
+module template_travel_01_travel
 
-    use template_travel_math
+    use template_travel_01_math
     implicit none
     private 
     public :: travel_tmpl
@@ -77,10 +77,10 @@ module template_travel_travel
 
 end module
 
-module template_travel_m
+module template_travel_01_m
 
-    use template_travel_math
-    use template_travel_travel
+    use template_travel_01_math
+    use template_travel_01_travel
     implicit none
 
 contains
@@ -99,10 +99,10 @@ contains
 
 end module
 
-program template_travel
-use template_travel_m
+program template_travel_01
+use template_travel_01_m
 implicit none
 
 call test_template()
 
-end program template_travel
+end program template_travel_01

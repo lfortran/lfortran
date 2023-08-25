@@ -669,6 +669,20 @@ public:
             }
             context_map[generic_name] = new_s_name;
         }
+
+        if (x.n_symbols == 0) {
+            for (auto const &sym_pair: temp->m_symtab->get_scope()) {
+                ASR::symbol_t *s = sym_pair.second;
+                std::string s_name = ASRUtils::symbol_name(s);
+                if (ASR::is_a<ASR::Function_t>(*s) && !ASRUtils::is_template_arg(sym, s_name)) {
+                    ASR::Function_t *new_f = ASR::down_cast<ASR::Function_t>(
+                        current_scope->resolve_symbol(s_name));
+                    pass_instantiate_function_body(al, context_map, type_subs, symbol_subs,
+                        current_scope, temp->m_symtab, new_f, ASR::down_cast<ASR::Function_t>(s));
+                    context_map[s_name] = s_name;
+                }
+            }
+        }
     }
 
     void visit_Inquire(const AST::Inquire_t& x) {
@@ -3037,9 +3051,7 @@ public:
         ASR::Template_t* v = ASR::down_cast<ASR::Template_t>(t);
         current_scope = v->m_symtab;
         for (size_t i=0; i<x.n_decl; i++) {
-            if (AST::is_a<AST::Requires_t>(*x.m_decl[i])) {
-                this->visit_unit_decl2(*x.m_decl[i]);
-            }
+            this->visit_unit_decl2(*x.m_decl[i]);
         }
         for (size_t i=0; i<x.n_contains; i++) {
             this->visit_program_unit(*x.m_contains[i]);
