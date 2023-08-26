@@ -103,6 +103,22 @@
                                                     Required
                                                     .false.
                                                 ),
+                                            __1_v:
+                                                (Variable
+                                                    4
+                                                    __1_v
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
                                             __libasr__created__var__0__logicalnot_unary_op_res:
                                                 (Variable
                                                     4
@@ -255,7 +271,18 @@
                                             (Logical 4)
                                             ()
                                         )
-                                        [(DoLoop
+                                        [(=
+                                            (Var 4 __1_v)
+                                            (ArrayBound
+                                                (Var 4 exclude_source)
+                                                (IntegerConstant 1 (Integer 4))
+                                                (Integer 4)
+                                                LBound
+                                                ()
+                                            )
+                                            ()
+                                        )
+                                        (DoLoop
                                             ()
                                             ((Var 4 __1_t)
                                             (ArrayBound
@@ -289,7 +316,7 @@
                                                     (ArrayItem
                                                         (Var 4 exclude_source)
                                                         [(()
-                                                        (Var 4 __1_t)
+                                                        (Var 4 __1_v)
                                                         ())]
                                                         (Logical 4)
                                                         RowMajor
@@ -299,7 +326,29 @@
                                                     ()
                                                 )
                                                 ()
+                                            )
+                                            (=
+                                                (Var 4 __1_v)
+                                                (IntegerBinOp
+                                                    (Var 4 __1_v)
+                                                    Add
+                                                    (IntegerConstant 1 (Integer 4))
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                ()
                                             )]
+                                        )
+                                        (=
+                                            (Var 4 __1_v)
+                                            (ArrayBound
+                                                (Var 4 exclude_source)
+                                                (IntegerConstant 1 (Integer 4))
+                                                (Integer 4)
+                                                LBound
+                                                ()
+                                            )
+                                            ()
                                         )
                                         (DoLoop
                                             ()
@@ -333,13 +382,24 @@
                                                     (ArrayItem
                                                         (Var 4 exclude_source)
                                                         [(()
-                                                        (Var 4 __1_t)
+                                                        (Var 4 __1_v)
                                                         ())]
                                                         (Logical 4)
                                                         RowMajor
                                                         ()
                                                     )
                                                     (Logical 4)
+                                                    ()
+                                                )
+                                                ()
+                                            )
+                                            (=
+                                                (Var 4 __1_v)
+                                                (IntegerBinOp
+                                                    (Var 4 __1_v)
+                                                    Add
+                                                    (IntegerConstant 1 (Integer 4))
+                                                    (Integer 4)
                                                     ()
                                                 )
                                                 ()

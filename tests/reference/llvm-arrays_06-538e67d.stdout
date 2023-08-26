@@ -97,8 +97,10 @@ define i32 @main(i32 %0, i8** %1) {
   %__1_v = alloca i32, align 4
   %__2_k = alloca i32, align 4
   %__2_t = alloca i32, align 4
+  %__2_v = alloca i32, align 4
   %__3_k = alloca i32, align 4
   %__3_t = alloca i32, align 4
+  %__3_v = alloca i32, align 4
   %__libasr__created__var__0__array_constant_ = alloca [6 x i32], align 4
   %__libasr__created__var__1__array_constant_ = alloca [6 x i32], align 4
   %__libasr__created__var__2__array_constant_ = alloca [6 x i32], align 4
