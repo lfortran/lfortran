@@ -914,6 +914,9 @@ public:
                     llvm::Value* m_len = tmp;
                     std::vector<llvm::Value*> args = {x_arr, m_len};
                     builder->CreateCall(fn, args);
+                    builder->CreateMemSet(LLVM::CreateLoad(*builder, x_arr),
+                        llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), llvm::APInt(8, 0)),
+                        m_len, llvm::MaybeAlign());
                 } else if(ASR::is_a<ASR::Struct_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::Class_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::Integer_t>(*curr_arg_m_a_type)) {
