@@ -1926,7 +1926,7 @@ int main(int argc, char *argv[])
         app.add_flag("--interactive-parse", compiler_options.interactive, "Use interactive parse");
         app.add_flag("--verbose", compiler_options.verbose, "Print debugging statements");
         app.add_flag("--cumulative", compiler_options.pass_cumulative, "Apply all the passes cumulatively till the given pass");
-        app.add_flag("--realloc-lhs", compiler_options.realloc_lhs, "Reallocate left hand side if its not of the required size.");
+        app.add_flag("--realloc-lhs", compiler_options.realloc_lhs, "Reallocate left hand side automatically");
 
         /*
         * Subcommands:
