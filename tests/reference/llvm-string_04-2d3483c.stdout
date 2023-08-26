@@ -356,16 +356,15 @@ loop.end:                                         ; preds = %loop.head
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @20, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @19, i32 0, i32 0))
   call void (i8**, i32, ...) @_lfortran_alloc(i8** %str, i32 9)
   %271 = load i8*, i8** %str, align 8
-  %272 = getelementptr i8, i8* %271, i32 8
-  store i8 0, i8* %272, align 1
+  call void @llvm.memset.p0i8.i32(i8* %271, i8 0, i32 9, i1 false)
   call void @_lfortran_strcpy(i8** %str, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @21, i32 0, i32 0), i8 1)
-  %273 = load i8*, i8** %str, align 8
-  %274 = call i8* @_lfortran_str_slice(i8* %273, i32 1, i32 0, i32 1, i1 true, i1 false)
-  %275 = alloca i8*, align 8
-  store i8* %274, i8** %275, align 8
-  %276 = call i32 @_lfortran_str_len(i8** %275)
-  %277 = icmp ne i32 %276, 3
-  br i1 %277, label %then, label %else
+  %272 = load i8*, i8** %str, align 8
+  %273 = call i8* @_lfortran_str_slice(i8* %272, i32 1, i32 0, i32 1, i1 true, i1 false)
+  %274 = alloca i8*, align 8
+  store i8* %273, i8** %274, align 8
+  %275 = call i32 @_lfortran_str_len(i8** %274)
+  %276 = icmp ne i32 %275, 3
+  br i1 %276, label %then, label %else
 
 then:                                             ; preds = %loop.end
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @22, i32 0, i32 0))
@@ -376,36 +375,36 @@ else:                                             ; preds = %loop.end
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  %278 = load %array*, %array** %greetings, align 8
-  %279 = getelementptr %array, %array* %278, i32 0, i32 0
-  %280 = load i8**, i8*** %279, align 8
-  %281 = ptrtoint i8** %280 to i64
-  %282 = icmp ne i64 %281, 0
-  br i1 %282, label %then2, label %else3
+  %277 = load %array*, %array** %greetings, align 8
+  %278 = getelementptr %array, %array* %277, i32 0, i32 0
+  %279 = load i8**, i8*** %278, align 8
+  %280 = ptrtoint i8** %279 to i64
+  %281 = icmp ne i64 %280, 0
+  br i1 %281, label %then2, label %else3
 
 then2:                                            ; preds = %ifcont
-  %283 = getelementptr %array, %array* %278, i32 0, i32 0
-  %284 = load i8**, i8*** %283, align 8
-  %285 = alloca i8*, align 8
-  %286 = bitcast i8** %284 to i8*
-  store i8* %286, i8** %285, align 8
-  %287 = load i8*, i8** %285, align 8
-  call void (i8*, ...) @_lfortran_free(i8* %287)
-  %288 = getelementptr %array, %array* %278, i32 0, i32 0
-  store i8** null, i8*** %288, align 8
+  %282 = getelementptr %array, %array* %277, i32 0, i32 0
+  %283 = load i8**, i8*** %282, align 8
+  %284 = alloca i8*, align 8
+  %285 = bitcast i8** %283 to i8*
+  store i8* %285, i8** %284, align 8
+  %286 = load i8*, i8** %284, align 8
+  call void (i8*, ...) @_lfortran_free(i8* %286)
+  %287 = getelementptr %array, %array* %277, i32 0, i32 0
+  store i8** null, i8*** %287, align 8
   br label %ifcont4
 
 else3:                                            ; preds = %ifcont
   br label %ifcont4
 
 ifcont4:                                          ; preds = %else3, %then2
-  %289 = load i8*, i8** %str, align 8
-  %290 = ptrtoint i8* %289 to i64
-  %291 = icmp ne i64 %290, 0
-  br i1 %291, label %then5, label %else6
+  %288 = load i8*, i8** %str, align 8
+  %289 = ptrtoint i8* %288 to i64
+  %290 = icmp ne i64 %289, 0
+  br i1 %290, label %then5, label %else6
 
 then5:                                            ; preds = %ifcont4
-  call void (i8*, ...) @_lfortran_free(i8* %289)
+  call void (i8*, ...) @_lfortran_free(i8* %288)
   store i8* null, i8** %str, align 8
   br label %ifcont7
 
@@ -413,23 +412,23 @@ else6:                                            ; preds = %ifcont4
   br label %ifcont7
 
 ifcont7:                                          ; preds = %else6, %then5
-  %292 = load %array*, %array** %user_data, align 8
-  %293 = getelementptr %array, %array* %292, i32 0, i32 0
-  %294 = load i8**, i8*** %293, align 8
-  %295 = ptrtoint i8** %294 to i64
-  %296 = icmp ne i64 %295, 0
-  br i1 %296, label %then8, label %else9
+  %291 = load %array*, %array** %user_data, align 8
+  %292 = getelementptr %array, %array* %291, i32 0, i32 0
+  %293 = load i8**, i8*** %292, align 8
+  %294 = ptrtoint i8** %293 to i64
+  %295 = icmp ne i64 %294, 0
+  br i1 %295, label %then8, label %else9
 
 then8:                                            ; preds = %ifcont7
-  %297 = getelementptr %array, %array* %292, i32 0, i32 0
-  %298 = load i8**, i8*** %297, align 8
-  %299 = alloca i8*, align 8
-  %300 = bitcast i8** %298 to i8*
-  store i8* %300, i8** %299, align 8
-  %301 = load i8*, i8** %299, align 8
-  call void (i8*, ...) @_lfortran_free(i8* %301)
-  %302 = getelementptr %array, %array* %292, i32 0, i32 0
-  store i8** null, i8*** %302, align 8
+  %296 = getelementptr %array, %array* %291, i32 0, i32 0
+  %297 = load i8**, i8*** %296, align 8
+  %298 = alloca i8*, align 8
+  %299 = bitcast i8** %297 to i8*
+  store i8* %299, i8** %298, align 8
+  %300 = load i8*, i8** %298, align 8
+  call void (i8*, ...) @_lfortran_free(i8* %300)
+  %301 = getelementptr %array, %array* %291, i32 0, i32 0
+  store i8** null, i8*** %301, align 8
   br label %ifcont10
 
 else9:                                            ; preds = %ifcont7
@@ -447,6 +446,9 @@ declare void @_lfortran_printf(i8*, ...)
 
 declare void @_lfortran_alloc(i8**, i32, ...)
 
+; Function Attrs: argmemonly nounwind willreturn writeonly
+declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #0
+
 declare void @_lfortran_strcpy(i8**, i8*, i8)
 
 declare i8* @_lfortran_str_slice(i8*, i32, i32, i32, i1, i1)
@@ -458,3 +460,5 @@ declare void @_lcompilers_print_error(i8*, ...)
 declare void @exit(i32)
 
 declare void @_lfortran_free(i8*, ...)
+
+attributes #0 = { argmemonly nounwind willreturn writeonly }
