@@ -916,10 +916,9 @@ public:
                     llvm::Value* alloc_size = builder->CreateAdd(m_len, const_one);
                     std::vector<llvm::Value*> args = {x_arr, alloc_size};
                     builder->CreateCall(fn, args);
-                    std::vector<llvm::Value*> idx_vec = {m_len};
-                    tmp = CreateGEP(CreateLoad(x_arr), idx_vec);
-                    llvm::Value* str_end_null = llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), llvm::APInt(8, 0));
-                    builder->CreateStore(str_end_null, tmp);
+                    builder->CreateMemSet(LLVM::CreateLoad(*builder, x_arr),
+                        llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), llvm::APInt(8, 0)),
+                        alloc_size, llvm::MaybeAlign());
                 } else if(ASR::is_a<ASR::Struct_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::Class_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::Integer_t>(*curr_arg_m_a_type)) {
