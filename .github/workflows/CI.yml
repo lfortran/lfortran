@@ -169,8 +169,8 @@ jobs:
             cd scipy
             git remote add ondrej https://github.com/certik/scipy
             git fetch ondrej
-            git checkout -t ondrej/special5
-            git checkout ff0898649c5ed755a2768f26dfc3f677b76fee4e
+            git checkout -t ondrej/special6
+            git checkout 0b7a78c8dddedcc2d5563d21f84927ac1e5a3cb8
             micromamba env create -f environment.yml
             micromamba activate scipy-dev
             git submodule update --init
@@ -182,7 +182,7 @@ jobs:
             python dev.py build
             mkdir -p ./build-install/lib/python3.10/scipy/special/
             cp scipy/special/specfun.so ./build-install/lib/python3.10/scipy/special/
-            python dev.py test -t scipy.special
+            python dev.py test -t scipy.special -v
 
   build_to_wasm_and_upload:
     name: Build LFortran to WASM and Upload
