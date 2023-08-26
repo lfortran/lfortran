@@ -1466,7 +1466,6 @@ namespace FlipSign {
                 args[0]->base.loc);
         }
         ASR::expr_t *m_value = nullptr;
-        ASR::expr_t *m_value = nullptr;
         if (all_args_evaluated(args)) {
             Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 2);
             arg_values.push_back(al, expr_value(args[0]));
@@ -1498,7 +1497,7 @@ namespace FlipSign {
 
         ASR::expr_t *two = i(2, arg_types[0]);
         ASR::expr_t *q = iDiv(args[0], two);
-        ASR::expr_t *cond = iMul(args[0], iMul(two, q));
+        ASR::expr_t *cond = iSub(args[0], iMul(two, q));
         body.push_back(al, b.If(iEq(cond, i(1, arg_types[0])), {
             b.Assignment(result, f32_neg(args[1], arg_types[1]))
         }, {
