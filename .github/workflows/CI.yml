@@ -321,8 +321,8 @@ jobs:
             ./run_tests.py -b llvm
             ./run_tests.py -b llvm -f
 
-  minpack:
-    name: Check Minpack Compilation
+  third_party_code_compile:
+    name: Check Third Party Code Compilation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -431,8 +431,6 @@ jobs:
             make
             curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
             ./gpt2
-
-
 
   fpm:
     name: Check fpm Compilation
