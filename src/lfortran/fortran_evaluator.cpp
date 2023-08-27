@@ -482,6 +482,11 @@ Result<std::string> FortranEvaluator::get_c3(ASR::TranslationUnit_t &asr,
     pass_options.verbose = compiler_options.verbose;
     pass_options.pass_cumulative = compiler_options.pass_cumulative;
     pass_options.realloc_lhs = compiler_options.realloc_lhs;
+    pass_options.all_symbols_mangling = compiler_options.all_symbols_mangling;
+    pass_options.module_name_mangling = compiler_options.module_name_mangling;
+    pass_options.global_symbols_mangling = compiler_options.global_symbols_mangling;
+    pass_options.intrinsic_symbols_mangling = compiler_options.intrinsic_symbols_mangling;
+    pass_options.mangle_underscore = compiler_options.mangle_underscore;
     pass_manager.skip_c_passes();
     pass_manager.apply_passes(al, &asr, pass_options, diagnostics);
     // ASR pass -> C

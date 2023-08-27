@@ -38,6 +38,7 @@
 #include <libasr/pass/inline_function_calls.h>
 #include <libasr/pass/dead_code_removal.h>
 #include <libasr/pass/replace_sign_from_value.h>
+#include <libasr/pass/unique_symbols.h>
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
 #include <libasr/modfile.h>
@@ -669,6 +670,11 @@ int emit_asr(const std::string &infile,
     pass_options.verbose = compiler_options.verbose;
     pass_options.pass_cumulative = compiler_options.pass_cumulative;
     pass_options.realloc_lhs = compiler_options.realloc_lhs;
+    pass_options.all_symbols_mangling = compiler_options.all_symbols_mangling;
+    pass_options.module_name_mangling = compiler_options.module_name_mangling;
+    pass_options.global_symbols_mangling = compiler_options.global_symbols_mangling;
+    pass_options.intrinsic_symbols_mangling = compiler_options.intrinsic_symbols_mangling;
+    pass_options.mangle_underscore = compiler_options.mangle_underscore;
 
     pass_manager.apply_passes(al, asr, pass_options, diagnostics);
     if (compiler_options.tree) {
@@ -1927,6 +1933,11 @@ int main(int argc, char *argv[])
         app.add_flag("--verbose", compiler_options.verbose, "Print debugging statements");
         app.add_flag("--cumulative", compiler_options.pass_cumulative, "Apply all the passes cumulatively till the given pass");
         app.add_flag("--realloc-lhs", compiler_options.realloc_lhs, "Reallocate left hand side automatically");
+        app.add_flag("--module-mangling", compiler_options.module_name_mangling, "Mangles the module name");
+        app.add_flag("--global-mangling", compiler_options.global_symbols_mangling, "Mangles all the global symbols");
+        app.add_flag("--intrinsic-mangling", compiler_options.intrinsic_symbols_mangling, "Mangles all the intrinsic symbols");
+        app.add_flag("--all-mangling", compiler_options.all_symbols_mangling, "Mangles all possible symbols");
+        app.add_flag("--mangle-underscore", compiler_options.mangle_underscore, "Mangles with underscore");
 
         /*
         * Subcommands:

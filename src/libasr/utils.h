@@ -67,6 +67,11 @@ struct CompilerOptions {
     bool enable_symengine = false;
     bool link_numpy = false;
     bool realloc_lhs = false;
+    bool module_name_mangling = false;
+    bool global_symbols_mangling = false;
+    bool intrinsic_symbols_mangling = false;
+    bool all_symbols_mangling = false;
+    bool mangle_underscore = false;
     std::vector<std::string> import_paths;
     Platform platform;
 
@@ -98,6 +103,11 @@ namespace LCompilers {
         bool disable_main = false;
         bool use_loop_variable_after_loop = false;
         bool realloc_lhs = false;
+        bool module_name_mangling = false;
+        bool global_symbols_mangling = false;
+        bool intrinsic_symbols_mangling = false;
+        bool all_symbols_mangling = false;
+        bool mangle_underscore = false;
     };
 
 }
