@@ -1051,3 +1051,5 @@ RUN(NAME optional_01 LABELS gfortran llvm)
 RUN(NAME optional_02 LABELS gfortran llvm)
 
 RUN(NAME end_name_match LABELS gfortran llvm)
+
+RUN(NAME mangle_underscore_01 LABELS gfortran llvm EXTRA_ARGS --mangle-underscore --all-mangling)
