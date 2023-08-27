@@ -230,13 +230,18 @@ public:
     void handle_format(Vec<ASR::stmt_t*> &body) {
         for(auto it = print_statements.begin(); it != print_statements.end(); it++) {
             int label = it->first;
-            const AST::Print_t* x = it->second;
+            const AST::Print_t* x = it->second.first;
+            ASR::asr_t* old_tmp = it->second.second;
             if (format_statements.find(label) == format_statements.end()) {
                 diag.semantic_error_label("The label " + std::to_string(label) + " does not point to any format statement",
                  {x->base.base.loc},"error");
             } else {
                 visit_Print(*x);
-                body.push_back(al, ASR::down_cast<ASR::stmt_t>(tmp));
+                for( size_t i=0;i<body.size();i++){
+                    if(body[i] == ASR::down_cast<ASR::stmt_t>(old_tmp)) {
+                        body[i] = ASR::down_cast<ASR::stmt_t>(tmp);
+                    }
+                }
             }
         }
         format_statements.clear();
@@ -2585,8 +2590,9 @@ public:
             ASR::IntegerConstant_t *f = ASR::down_cast<ASR::IntegerConstant_t>(fmt);
             int64_t label = f->m_n;
             if (format_statements.find(label) == format_statements.end()) {
-                print_statements[label] = &x;
-                tmp = nullptr;
+                tmp = ASR::make_Print_t(al, x.base.base.loc, fmt,
+                    nullptr, 0, nullptr, nullptr);
+                print_statements[label] = std::make_pair(&x, tmp);
                 return;
             }
             ASR::ttype_t *fmt_type = ASRUtils::TYPE(ASR::make_Character_t(
