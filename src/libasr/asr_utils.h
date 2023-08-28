@@ -1911,7 +1911,8 @@ static inline int64_t get_fixed_size_of_array(ASR::dimension_t* m_dims, size_t n
     int64_t array_size = 1;
     for( size_t i = 0; i < n_dims; i++ ) {
         int64_t dim_size = -1;
-        if( !ASRUtils::extract_value(ASRUtils::expr_value(m_dims[i].m_length), dim_size) ) {
+        if( (m_dims[i].m_length == nullptr) ||
+            !ASRUtils::extract_value(ASRUtils::expr_value(m_dims[i].m_length), dim_size) ) {
             return -1;
         }
         array_size *= dim_size;
