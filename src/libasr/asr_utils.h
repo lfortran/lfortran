@@ -21,10 +21,10 @@ namespace LCompilers  {
 ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
         ASR::symbol_t* original_sym, SymbolTable *current_scope);
 
-ASR::asr_t* make_Binop_util(Allocator &al, const Location& loc, ASR::binopType binop, 
+ASR::asr_t* make_Binop_util(Allocator &al, const Location& loc, ASR::binopType binop,
                         ASR::expr_t* lexpr, ASR::expr_t* rexpr, ASR::ttype_t* ttype);
 
-ASR::asr_t* make_Cmpop_util(Allocator &al, const Location& loc, ASR::cmpopType cmpop, 
+ASR::asr_t* make_Cmpop_util(Allocator &al, const Location& loc, ASR::cmpopType cmpop,
                         ASR::expr_t* lexpr, ASR::expr_t* rexpr, ASR::ttype_t* ttype);
 
 static inline  double extract_real(const char *s) {
@@ -3739,7 +3739,7 @@ static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,
                             " is not an array so it cannot be indexed.";
             } else {
                 msg = "Variable " + std::string(non_array_variable->m_name) +
-                            " does not have enough dimensions.";  
+                            " does not have enough dimensions.";
             }
             throw SemanticError(msg, arr_expr->base.loc);
         } else if ( ASR::is_a<ASR::StructInstanceMember_t>(*arr_expr )) {
@@ -3752,11 +3752,11 @@ static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,
                             " is not an array so it cannot be indexed.";
             } else {
                 msg = "Type member " + std::string(non_array_variable->m_name) +
-                            " does not have enough dimensions.";  
+                            " does not have enough dimensions.";
             }
-            throw SemanticError(msg, arr_expr->base.loc); 
+            throw SemanticError(msg, arr_expr->base.loc);
         } else {
-            throw SemanticError("Expression cannot be indexed.", arr_expr->base.loc);       
+            throw SemanticError("Expression cannot be indexed.", arr_expr->base.loc);
         }
     }
     dim = dim - 1;
