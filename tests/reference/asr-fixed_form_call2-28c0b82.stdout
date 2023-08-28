@@ -82,7 +82,7 @@
                                         [(Character 1 6 ())
                                         (Integer 4)]
                                         ()
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.

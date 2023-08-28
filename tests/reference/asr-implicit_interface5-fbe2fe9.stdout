@@ -112,7 +112,7 @@
                                             PointerToDataArray
                                         )]
                                         ()
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.

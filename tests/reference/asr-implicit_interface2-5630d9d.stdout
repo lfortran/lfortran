@@ -49,7 +49,7 @@
                                     (FunctionType
                                         [(Integer 4)]
                                         (Real 8)
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.
@@ -128,7 +128,7 @@
                                         [(Integer 4)
                                         (Real 4)]
                                         (Real 8)
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.
