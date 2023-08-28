@@ -26,4 +26,14 @@ print 80, -a, b, -c, d
 70 format(1pd10.2,2pd15.6,1pd010.2,2x,1pd9.2)
 80 format(-1pe10.2,-2pe15.6,1pe010.2,2x,1pe9.2)
 
+! Checking different scopes
+if ( a > 0) then
+    print 90, "Hello "
+    if ( b > 0) then
+      print 100, "World!"
+    end if
+  100 format(a)
+  end if
+90 format (a)
+
 end program

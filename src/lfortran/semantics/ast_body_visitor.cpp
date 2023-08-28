@@ -227,7 +227,7 @@ public:
         unit->n_items = items.size();
     }
 
-    void handle_format(Vec<ASR::stmt_t*> &body) {
+    void handle_format() {
         for(auto it = print_statements.begin(); it != print_statements.end(); it++) {
             int label = it->first;
             const AST::Print_t* x = it->second.first;
@@ -237,11 +237,10 @@ public:
                  {x->base.base.loc},"error");
             } else {
                 visit_Print(*x);
-                for( size_t i=0;i<body.size();i++){
-                    if(body[i] == ASR::down_cast<ASR::stmt_t>(old_tmp)) {
-                        body[i] = ASR::down_cast<ASR::stmt_t>(tmp);
-                    }
-                }
+                ASR::Print_t* print_old = ASR::down_cast<ASR::Print_t>(ASR::down_cast<ASR::stmt_t>(old_tmp));
+                ASR::Print_t* print_new = ASR::down_cast<ASR::Print_t>(ASR::down_cast<ASR::stmt_t>(tmp));
+                print_old->m_values = print_new->m_values;
+                print_old->n_values = print_new->n_values;
             }
         }
         format_statements.clear();
@@ -1451,7 +1450,7 @@ public:
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
         transform_stmts(body, x.n_body, x.m_body);
-        handle_format(body);
+        handle_format();
         ASR::stmt_t* impl_del = create_implicit_deallocate(x.base.base.loc);
         if( impl_del != nullptr ) {
             body.push_back(al, impl_del);
@@ -1724,7 +1723,7 @@ public:
         current_function_dependencies.clear(al);
         body.reserve(al, x.n_body);
         transform_stmts(body, x.n_body, x.m_body);
-        handle_format(body);
+        handle_format();
         if (active_entry_points.size() > 0) {
             SetChar current_function_dependencies_copy2 = current_function_dependencies;
             current_function_dependencies.clear(al);
@@ -1777,7 +1776,7 @@ public:
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
         transform_stmts(body, x.n_body, x.m_body);
-        handle_format(body);
+        handle_format();
         if (active_entry_points.size() > 0) {
             SetChar current_function_dependencies_copy2 = current_function_dependencies;
             current_function_dependencies.clear(al);

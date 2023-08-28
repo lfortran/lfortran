@@ -145,7 +145,7 @@ struct Vec {
         return p[n - 1];
     }
 
-    T& operator[](size_t pos) const {
+    const T& operator[](size_t pos) const {
         return p[pos];
     }
 
