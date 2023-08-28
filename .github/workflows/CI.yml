@@ -169,12 +169,12 @@ jobs:
             cd scipy
             git remote add ondrej https://github.com/certik/scipy
             git fetch ondrej
-            git checkout -t ondrej/special6
-            git checkout 0b7a78c8dddedcc2d5563d21f84927ac1e5a3cb8
+            git checkout -t ondrej/special7
+            git checkout 13f9061e07fd0006a2af062941d70e4e71341fb5
             micromamba env create -f environment.yml
             micromamba activate scipy-dev
             git submodule update --init
-            ../src/bin/lfortran -c scipy/special/specfun/specfun.f -o scipy/special/specfun.o --use-loop-variable-after-loop --fixed-form --implicit-typing --implicit-interface --generate-object-code --rtlib
+            ../src/bin/lfortran -c scipy/special/specfun/specfun.f -o scipy/special/specfun.o --use-loop-variable-after-loop --fixed-form --implicit-typing --implicit-interface --generate-object-code --all-mangling --mangle-underscore --rtlib
             clang -shared -fPIC -o scipy/special/specfun.so scipy/special/specfun.o -L../src/runtime -llfortran_runtime
             mkdir -p $CONDA_PREFIX/lib/scipy/special/
             cp scipy/special/specfun.so $CONDA_PREFIX/lib/scipy/special/
