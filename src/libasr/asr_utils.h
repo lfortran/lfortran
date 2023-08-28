@@ -21,10 +21,10 @@ namespace LCompilers  {
 ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
         ASR::symbol_t* original_sym, SymbolTable *current_scope);
 
-ASR::asr_t* make_Binop_util(Allocator &al, const Location& loc, ASR::binopType binop, 
+ASR::asr_t* make_Binop_util(Allocator &al, const Location& loc, ASR::binopType binop,
                         ASR::expr_t* lexpr, ASR::expr_t* rexpr, ASR::ttype_t* ttype);
 
-ASR::asr_t* make_Cmpop_util(Allocator &al, const Location& loc, ASR::cmpopType cmpop, 
+ASR::asr_t* make_Cmpop_util(Allocator &al, const Location& loc, ASR::cmpopType cmpop,
                         ASR::expr_t* lexpr, ASR::expr_t* rexpr, ASR::ttype_t* ttype);
 
 static inline  double extract_real(const char *s) {
@@ -816,6 +816,15 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
             }
         }
         return true;
+    } else if(ASR::is_a<ASR::ListConstant_t>(*a_value)) {
+        ASR::ListConstant_t* list_constant = ASR::down_cast<ASR::ListConstant_t>(a_value);
+        for( size_t i = 0; i < list_constant->n_args; i++ ) {
+            if( !ASRUtils::is_value_constant(list_constant->m_args[i]) &&
+                !ASRUtils::is_value_constant(ASRUtils::expr_value(list_constant->m_args[i])) ) {
+                return false;
+            }
+        }
+        return true;
     } else if(ASR::is_a<ASR::FunctionCall_t>(*a_value)) {
         ASR::FunctionCall_t* func_call_t = ASR::down_cast<ASR::FunctionCall_t>(a_value);
         if( !ASRUtils::is_intrinsic_symbol(ASRUtils::symbol_get_past_external(func_call_t->m_name)) ) {
@@ -1089,20 +1098,28 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
     return true;
 }
 
-static inline std::string type_python_1dim_helper(const std::string & res,
-                                                  const ASR::dimension_t* e )
+static inline std::string extract_dim_value(ASR::expr_t* dim) {
+    int64_t length_dim = 0;
+    if( dim == nullptr ||
+        !ASRUtils::extract_value(ASRUtils::expr_value(dim), length_dim)) {
+        return ":";
+    }
+
+    return std::to_string(length_dim);
+}
+
+static inline std::string type_encode_dims(size_t n_dims, ASR::dimension_t* m_dims )
 {
-    if( !e->m_length && !e->m_start ) {
-        return res + "[:]";
+    std::string dims_str = "";
+    for( size_t i = 0; i < n_dims; i++ ) {
+        ASR::dimension_t dim = m_dims[i];
+        dims_str += "[";
+        dims_str += extract_dim_value(dim.m_start);
+        dims_str += ",";
+        dims_str += extract_dim_value(dim.m_length);
+        dims_str += "]";
     }
-
-    if( ASRUtils::expr_value(e->m_length) ) {
-        int64_t length_dim = 0;
-        ASRUtils::extract_value(ASRUtils::expr_value(e->m_length), length_dim);
-        return res + "[" + std::to_string(length_dim) + "]";
-    }
-
-    return res;
+    return dims_str;
 }
 
 static inline std::string get_type_code(const ASR::ttype_t *t, bool use_underscore_sep=false,
@@ -1280,9 +1297,8 @@ static inline std::string type_to_str_python(const ASR::ttype_t *t,
         case ASR::ttypeType::Array: {
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(t);
             std::string res = type_to_str_python(array_t->m_type, for_error_message);
-            if (array_t->n_dims == 1 && for_error_message) {
-                res = type_python_1dim_helper(res, array_t->m_dims);
-            }
+            std::string dim_info = type_encode_dims(array_t->n_dims, array_t->m_dims);
+            res += dim_info;
             return res;
         }
         case ASR::ttypeType::Integer: {
@@ -1895,12 +1911,19 @@ static inline int64_t get_fixed_size_of_array(ASR::dimension_t* m_dims, size_t n
     int64_t array_size = 1;
     for( size_t i = 0; i < n_dims; i++ ) {
         int64_t dim_size = -1;
-        if( !ASRUtils::extract_value(ASRUtils::expr_value(m_dims[i].m_length), dim_size) ) {
+        if( (m_dims[i].m_length == nullptr) ||
+            !ASRUtils::extract_value(ASRUtils::expr_value(m_dims[i].m_length), dim_size) ) {
             return -1;
         }
         array_size *= dim_size;
     }
     return array_size;
+}
+
+static inline int64_t get_fixed_size_of_array(ASR::ttype_t* type) {
+    ASR::dimension_t* m_dims = nullptr;
+    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
+    return ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
 }
 
 inline int extract_n_dims_from_ttype(ASR::ttype_t *x) {
@@ -2472,21 +2495,13 @@ inline bool dimension_expr_equal(ASR::expr_t* dim_a, ASR::expr_t* dim_b) {
     if( !(dim_a && dim_b) ) {
         return true;
     }
-    ASR::expr_t* dim_a_fallback = nullptr;
-    ASR::expr_t* dim_b_fallback = nullptr;
-    if( ASR::is_a<ASR::Var_t>(*dim_a) &&
-        ASR::is_a<ASR::Variable_t>(
-            *ASR::down_cast<ASR::Var_t>(dim_a)->m_v) ) {
-        dim_a_fallback = ASRUtils::EXPR2VAR(dim_a)->m_symbolic_value;
+    int dim_a_int, dim_b_int;
+    if (ASRUtils::extract_value(ASRUtils::expr_value(dim_a), dim_a_int)
+        && ASRUtils::extract_value(ASRUtils::expr_value(dim_b), dim_b_int)) {
+        return dim_a_int == dim_b_int;
     }
-    if( ASR::is_a<ASR::Var_t>(*dim_b) &&
-        ASR::is_a<ASR::Variable_t>(
-            *ASR::down_cast<ASR::Var_t>(dim_b)->m_v) ) {
-        dim_b_fallback = ASRUtils::EXPR2VAR(dim_b)->m_symbolic_value;
-    }
-    if( !ASRUtils::expr_equal(dim_a, dim_b) &&
-        !(dim_a_fallback && ASRUtils::expr_equal(dim_a_fallback, dim_b)) &&
-        !(dim_b_fallback && ASRUtils::expr_equal(dim_a, dim_b_fallback)) ) {
+
+    if( !ASRUtils::expr_equal(dim_a, dim_b) ) {
         return false;
     }
     return true;
@@ -2534,6 +2549,13 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
                 return ASRUtils::dimensions_equal(
                             a2->m_dims, a2->n_dims,
                             b2->m_dims, b2->n_dims);
+            }
+            case (ASR::ttypeType::TypeParameter) : {
+                ASR::TypeParameter_t* left_tp = ASR::down_cast<ASR::TypeParameter_t>(a);
+                ASR::TypeParameter_t* right_tp = ASR::down_cast<ASR::TypeParameter_t>(b);
+                std::string left_param = left_tp->m_param;
+                std::string right_param = right_tp->m_param;
+                return left_param == right_param;
             }
             case (ASR::ttypeType::Integer) : {
                 ASR::Integer_t *a2 = ASR::down_cast<ASR::Integer_t>(a);
@@ -3717,7 +3739,7 @@ static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,
                             " is not an array so it cannot be indexed.";
             } else {
                 msg = "Variable " + std::string(non_array_variable->m_name) +
-                            " does not have enough dimensions.";  
+                            " does not have enough dimensions.";
             }
             throw SemanticError(msg, arr_expr->base.loc);
         } else if ( ASR::is_a<ASR::StructInstanceMember_t>(*arr_expr )) {
@@ -3730,11 +3752,11 @@ static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,
                             " is not an array so it cannot be indexed.";
             } else {
                 msg = "Type member " + std::string(non_array_variable->m_name) +
-                            " does not have enough dimensions.";  
+                            " does not have enough dimensions.";
             }
-            throw SemanticError(msg, arr_expr->base.loc); 
+            throw SemanticError(msg, arr_expr->base.loc);
         } else {
-            throw SemanticError("Expression cannot be indexed.", arr_expr->base.loc);       
+            throw SemanticError("Expression cannot be indexed.", arr_expr->base.loc);
         }
     }
     dim = dim - 1;
