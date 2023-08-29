@@ -13,4 +13,10 @@ program format_07
     print 10, x
     print 20, y
     print 30, z
+    write (*,40) x
+    write (*,50) y
+    write (*,60) z
+  40 format(3d12.5)
+  50 format(4i10)
+  60 format(3d12.5)
 end program

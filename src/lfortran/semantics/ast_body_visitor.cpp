@@ -32,7 +32,7 @@ public:
     size_t starting_n_body = 0;
     AST::stmt_t **starting_m_body = nullptr;
     std::vector<ASR::symbol_t*> do_loop_variables;
-    std::map<int64_t, std::pair<const AST::Print_t*,ASR::asr_t*>> print_statements;
+    std::map<ASR::asr_t*, std::pair<const AST::stmt_t*,int64_t>> print_statements;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
             CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
@@ -230,18 +230,32 @@ public:
 
     void handle_format() {
         for(auto it = print_statements.begin(); it != print_statements.end(); it++) {
-            int label = it->first;
-            const AST::Print_t* x = it->second.first;
-            ASR::asr_t* old_tmp = it->second.second;
+            ASR::asr_t* old_tmp = it->first;
+            const AST::stmt_t* x = it->second.first;
+            int label = it->second.second;
             if (format_statements.find(label) == format_statements.end()) {
                 diag.semantic_error_label("The label " + std::to_string(label) + " does not point to any format statement",
-                 {x->base.base.loc},"error");
+                 {x->base.loc},"Invalid label in this statement");
             } else {
-                visit_Print(*x);
-                ASR::Print_t* print_old = ASR::down_cast<ASR::Print_t>(ASR::down_cast<ASR::stmt_t>(old_tmp));
-                ASR::Print_t* print_new = ASR::down_cast<ASR::Print_t>(ASR::down_cast<ASR::stmt_t>(tmp));
-                print_old->m_values = print_new->m_values;
-                print_old->n_values = print_new->n_values;
+                if (AST::is_a<AST::Print_t>(*x)){
+                    visit_Print(*(AST::down_cast<AST::Print_t>(x)));
+                    ASR::Print_t* print_old = ASR::down_cast<ASR::Print_t>(ASRUtils::STMT(old_tmp));
+                    ASR::Print_t* print_new = ASR::down_cast<ASR::Print_t>(ASRUtils::STMT(tmp));
+                    print_old->m_values = print_new->m_values;
+                    print_old->n_values = print_new->n_values;
+                } else if (AST::is_a<AST::Write_t>(*x)){
+                    visit_Write(*(AST::down_cast<AST::Write_t>(x)));
+                    ASR::FileWrite_t* write_old = ASR::down_cast<ASR::FileWrite_t>(ASRUtils::STMT(old_tmp));
+                    ASR::FileWrite_t* write_new = ASR::down_cast<ASR::FileWrite_t>(ASRUtils::STMT(tmp));
+                    write_old->m_values = write_new->m_values;
+                    write_old->n_values = write_new->n_values;
+                } else if (AST::is_a<AST::Read_t>(*x)){
+                    visit_Read(*(AST::down_cast<AST::Read_t>(x)));
+                    ASR::FileRead_t* read_old = ASR::down_cast<ASR::FileRead_t>(ASRUtils::STMT(old_tmp));
+                    ASR::FileRead_t* read_new = ASR::down_cast<ASR::FileRead_t>(ASRUtils::STMT(tmp));
+                    read_old->m_values = read_new->m_values;
+                    read_old->n_values = read_new->n_values;
+                }
             }
         }
         format_statements.clear();
@@ -465,14 +479,16 @@ public:
         AST::kw_argstar_t* m_kwargs = nullptr; size_t n_kwargs = 0;
         AST::expr_t** m_values = nullptr; size_t n_values = 0;
         const Location& loc = read_write_stmt.base.loc;
+        AST::Write_t* w = nullptr;
+        AST::Read_t* r = nullptr;
         if( _type == AST::stmtType::Write ) {
-            AST::Write_t* w = (AST::Write_t*)(&read_write_stmt);
+            w = (AST::Write_t*)(&read_write_stmt);
             m_label = w->m_label;
             m_args = w->m_args; n_args = w->n_args;
             m_kwargs = w->m_kwargs; n_kwargs = w->n_kwargs;
             m_values = w->m_values; n_values = w->n_values;
         } else if( _type == AST::stmtType::Read ) {
-            AST::Read_t* r = (AST::Read_t*)(&read_write_stmt);
+            r = (AST::Read_t*)(&read_write_stmt);
             m_label = r->m_label;
             m_args = r->m_args; n_args = r->n_args;
             m_kwargs = r->m_kwargs; n_kwargs = r->n_kwargs;
@@ -558,26 +574,28 @@ public:
                         throw SemanticError("?", loc);
                     }
                     a_fmt = ASRUtils::EXPR(tmp);
-                    ASR::ttype_t* a_fmt_type = ASRUtils::expr_type(a_fmt);
-                    if (a_fmt && ASR::is_a<ASR::IntegerConstant_t>(*a_fmt)) {
-                        ASR::IntegerConstant_t* a_fmt_int = ASR::down_cast<ASR::IntegerConstant_t>(a_fmt);
-                        int64_t label = a_fmt_int->m_n;
-                        if (format_statements.find(label) == format_statements.end()) {
-                            // TODO: make this an error once we can find labels
-                            // below us
-                            diag.semantic_warning_label(
-                                "The label " + std::to_string(label) + " does not point to any format statement",
-                                {a_fmt->base.loc},
-                                "ignored for now"
-                            );
-                        }
-                    a_fmt_type = ASRUtils::TYPE(ASR::make_Character_t(
-                        al, a_fmt->base.loc, 1, format_statements[label].size(), nullptr));
-                    a_fmt_constant = ASRUtils::EXPR(ASR::make_StringConstant_t(
-                        al, a_fmt->base.loc, s2c(al, format_statements[label]), a_fmt_type));
-                    }
                 }
             }
+        }
+        if (a_fmt && ASR::is_a<ASR::IntegerConstant_t>(*a_fmt)) {
+            ASR::IntegerConstant_t* a_fmt_int = ASR::down_cast<ASR::IntegerConstant_t>(a_fmt);
+            int64_t label = a_fmt_int->m_n;
+            if (format_statements.find(label) == format_statements.end()) {
+                if( _type == AST::stmtType::Write ) {
+                    tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit, a_fmt,
+                                            a_iomsg, a_iostat, a_id, nullptr, 0, a_separator, a_end);
+                    print_statements[tmp] = std::make_pair(&w->base,label);
+                } else if( _type == AST::stmtType::Read ) {
+                    tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
+                                        a_iomsg, a_iostat, a_id, nullptr, 0);
+                    print_statements[tmp] = std::make_pair(&r->base,label);
+                }
+                return;
+            }
+            ASR::ttype_t* a_fmt_type = ASRUtils::TYPE(ASR::make_Character_t(
+                al, a_fmt->base.loc, 1, format_statements[label].size(), nullptr));
+            a_fmt_constant = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                al, a_fmt->base.loc, s2c(al, format_statements[label]), a_fmt_type));
         }
         if (_type == AST::stmtType::Write && a_fmt == nullptr
                 && compiler_options.print_leading_space) {
@@ -2592,7 +2610,7 @@ public:
             if (format_statements.find(label) == format_statements.end()) {
                 tmp = ASR::make_Print_t(al, x.base.base.loc, fmt,
                     nullptr, 0, nullptr, nullptr);
-                print_statements[label] = std::make_pair(&x, tmp);
+                print_statements[tmp] = std::make_pair(&x.base,label);
                 return;
             }
             ASR::ttype_t *fmt_type = ASRUtils::TYPE(ASR::make_Character_t(
