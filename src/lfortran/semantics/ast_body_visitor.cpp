@@ -577,6 +577,54 @@ public:
                         al, a_fmt->base.loc, s2c(al, format_statements[label]), a_fmt_type));
                     }
                 }
+            } else if( m_arg_str == std::string("advance") ) {
+                if( a_fmt == nullptr ) {
+                    throw SemanticError(R"""(List directed format(*) is not allowed with a ADVANCE= specifier)""",
+                                        loc);
+                }
+                if( a_end != nullptr ) {
+                    throw SemanticError(R"""(Duplicate value of `advance` found, it has already been specified via arguments or keyword arguments)""",
+                                        loc);
+                }
+                this->visit_expr(*kwarg.m_value);
+                ASR::expr_t* adv_val_expr = ASRUtils::EXPR(tmp);
+                ASR::ttype_t *str_type_len_0 = ASRUtils::TYPE(ASR::make_Character_t(
+                    al, loc, 1, 0, nullptr));
+                ASR::expr_t *empty = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                    al, loc, s2c(al, ""), str_type_len_0));
+                ASR::ttype_t *str_type_len_1 = ASRUtils::TYPE(ASR::make_Character_t(
+                    al, loc, 1, 1, nullptr));
+                ASR::expr_t *newline = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                    al, loc, s2c(al, "\n"), str_type_len_1));
+                if (ASR::is_a<ASR::StringConstant_t>(*adv_val_expr)) {
+                    std::string adv_val = ASR::down_cast<ASR::StringConstant_t>(adv_val_expr)->m_s;
+                    if (adv_val == "yes") {
+                        a_end = newline;
+                    } else if (adv_val == "no") {
+                        a_end = empty;
+                    } else {
+                        throw SemanticError("ADVANCE= specifier must have value = YES or NO", kwarg.loc);
+                    }
+                } else {
+                    ASR::ttype_t *str_type_len_3 = ASRUtils::TYPE(ASR::make_Character_t(
+                        al, loc, 1, 3, nullptr));
+                    ASR::expr_t *yes = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                        al, loc, s2c(al, "yes"), str_type_len_3));
+                    // TODO: Support case insensitive compare
+                    ASR::ttype_t *cmp_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+                    ASR::expr_t *test = ASRUtils::EXPR(ASR::make_StringCompare_t(al,
+                        loc, adv_val_expr, ASR::cmpopType::Eq, yes, cmp_type, nullptr));
+                    Vec<ASR::stmt_t*> body;
+                    body.reserve(al, 1);
+                    body.push_back(al, ASRUtils::STMT(
+                        ASR::make_FileWrite_t(al, loc, 0, a_unit, nullptr,
+                        nullptr, nullptr, nullptr, nullptr, 0, nullptr, newline)));
+                    // TODO: Compare with "no" (case-insensitive) in else part
+                    // Throw runtime error if advance expression does not match "no"
+                    tmp_vec.push_back(ASR::make_If_t(al, loc, test, body.p,
+                            body.size(), nullptr, 0));
+                    a_end = empty;
+                }
             }
         }
         if (_type == AST::stmtType::Write && a_fmt == nullptr
@@ -616,6 +664,9 @@ public:
                                     a_iomsg, a_iostat, a_id, a_values_vec.p, a_values_vec.size());
             }
         }
+
+        tmp_vec.insert(tmp_vec.begin(), tmp);
+        tmp = nullptr;
     }
 
     void visit_Write(const AST::Write_t& x) {
@@ -1906,7 +1957,7 @@ public:
                                 return true;
                             } else {
                                 return false;
-                            } 
+                            }
                         }
                     } else {
                         return false;
