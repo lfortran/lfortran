@@ -260,7 +260,7 @@ public:
         Vec<ASR::expr_t*> body;
         body.from_pointer_n_copy(al, write_body.data(), write_body.size());
         ASR::stmt_t* write_stmt = ASRUtils::STMT(ASR::make_FileWrite_t(
-            al, x.base.base.loc, x.m_label, nullptr, nullptr, nullptr, nullptr, nullptr, body.p, body.size(), nullptr, nullptr));
+            al, x.base.base.loc, x.m_label, x.m_unit, x.m_fmt, x.m_iomsg, x.m_iostat, x.m_id, body.p, body.size(), x.m_separator, x.m_end));
         pass_result.push_back(al, write_stmt);
         write_body.clear();
     }
