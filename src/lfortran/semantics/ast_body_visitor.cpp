@@ -32,6 +32,7 @@ public:
     size_t starting_n_body = 0;
     AST::stmt_t **starting_m_body = nullptr;
     std::vector<ASR::symbol_t*> do_loop_variables;
+    std::map<int64_t, std::pair<const AST::Print_t*,ASR::asr_t*>> print_statements;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
             CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
@@ -225,6 +226,26 @@ public:
         }
         unit->m_items = items.p;
         unit->n_items = items.size();
+    }
+
+    void handle_format() {
+        for(auto it = print_statements.begin(); it != print_statements.end(); it++) {
+            int label = it->first;
+            const AST::Print_t* x = it->second.first;
+            ASR::asr_t* old_tmp = it->second.second;
+            if (format_statements.find(label) == format_statements.end()) {
+                diag.semantic_error_label("The label " + std::to_string(label) + " does not point to any format statement",
+                 {x->base.base.loc},"error");
+            } else {
+                visit_Print(*x);
+                ASR::Print_t* print_old = ASR::down_cast<ASR::Print_t>(ASR::down_cast<ASR::stmt_t>(old_tmp));
+                ASR::Print_t* print_new = ASR::down_cast<ASR::Print_t>(ASR::down_cast<ASR::stmt_t>(tmp));
+                print_old->m_values = print_new->m_values;
+                print_old->n_values = print_new->n_values;
+            }
+        }
+        format_statements.clear();
+        print_statements.clear();
     }
 
     void visit_Open(const AST::Open_t& x) {
@@ -1429,8 +1450,8 @@ public:
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
-        format_statements.clear();
         transform_stmts(body, x.n_body, x.m_body);
+        handle_format();
         ASR::stmt_t* impl_del = create_implicit_deallocate(x.base.base.loc);
         if( impl_del != nullptr ) {
             body.push_back(al, impl_del);
@@ -1702,8 +1723,8 @@ public:
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
         body.reserve(al, x.n_body);
-        format_statements.clear();
         transform_stmts(body, x.n_body, x.m_body);
+        handle_format();
         if (active_entry_points.size() > 0) {
             SetChar current_function_dependencies_copy2 = current_function_dependencies;
             current_function_dependencies.clear(al);
@@ -1755,8 +1776,8 @@ public:
         body.reserve(al, x.n_body);
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
-        format_statements.clear();
         transform_stmts(body, x.n_body, x.m_body);
+        handle_format();
         if (active_entry_points.size() > 0) {
             SetChar current_function_dependencies_copy2 = current_function_dependencies;
             current_function_dependencies.clear(al);
@@ -2569,15 +2590,9 @@ public:
             ASR::IntegerConstant_t *f = ASR::down_cast<ASR::IntegerConstant_t>(fmt);
             int64_t label = f->m_n;
             if (format_statements.find(label) == format_statements.end()) {
-                // TODO: make this an error once we can find labels
-                // below us
-                diag.semantic_warning_label(
-                    "The label " + std::to_string(label) + " does not point to any format statement",
-                    {fmt->base.loc},
-                    "ignored for now"
-                );
                 tmp = ASR::make_Print_t(al, x.base.base.loc, fmt,
-                    body.p, body.size(), nullptr, nullptr);
+                    nullptr, 0, nullptr, nullptr);
+                print_statements[label] = std::make_pair(&x, tmp);
                 return;
             }
             ASR::ttype_t *fmt_type = ASRUtils::TYPE(ASR::make_Character_t(
