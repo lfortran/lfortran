@@ -1384,6 +1384,18 @@ filename = "write2.f90"
 asr = true
 
 [[test]]
+filename = "write3.f90"
+llvm = true
+
+[[test]]
+filename = "write4.f90"
+run = true
+
+[[test]]
+filename = "write5.f90"
+run = true
+
+[[test]]
 filename = "read1.f90"
 ast = true
 ast_f90 = true
@@ -3160,10 +3172,6 @@ asr_implicit_typing = true
 [[test]]
 filename = "character1.f90"
 asr_implicit_interface = true
-
-[[test]]
-filename = "write3.f90"
-llvm = true
 
 [[test]]
 filename = "../integration_tests/interface_12.f90"
