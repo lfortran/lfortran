@@ -53,6 +53,36 @@ public:
     ASR::symbol_t* instantiate_body(ASR::Function_t *new_f, ASR::Function_t *f) {
         current_scope = new_f->m_symtab;
 
+        for (auto const &sym_pair: f->m_symtab->get_scope()) {
+            if (new_f->m_symtab->resolve_symbol(sym_pair.first) == nullptr) {
+                ASR::symbol_t *sym = sym_pair.second;
+                if (ASR::is_a<ASR::ExternalSymbol_t>(*sym)) {
+                    ASR::ExternalSymbol_t *ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(sym);
+                    std::string m_name = ext_sym->m_module_name;
+                    if (context_map.find(m_name) != context_map.end()) {
+                        std::string new_m_name = context_map[m_name];
+                        std::string member_name = ext_sym->m_original_name;
+                        std::string new_x_name = "1_" + new_m_name + "_" + member_name;
+
+                        ASR::symbol_t* new_x = current_scope->get_symbol(new_x_name);
+                        if (new_x) { return new_x; }
+
+                        ASR::symbol_t* new_sym = current_scope->resolve_symbol(new_m_name);
+                        ASR::symbol_t* member_sym = ASRUtils::symbol_symtab(new_sym)->resolve_symbol(member_name);
+    
+                        new_x = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                            al, ext_sym->base.base.loc, current_scope, s2c(al, new_x_name), member_sym,
+                        s2c(al, new_m_name), nullptr, 0, s2c(al, member_name), ext_sym->m_access));
+                        current_scope->add_symbol(new_x_name, new_x);
+                        context_map[ext_sym->m_name] = new_x_name;
+                    } else {
+                        ASRUtils::SymbolDuplicator dupl(al);
+                        dupl.duplicate_symbol(sym, current_scope);
+                    }
+                }
+            }
+        }
+
         Vec<ASR::stmt_t*> body;
         body.reserve(al, f->n_body);
         for (size_t i=0; i<f->n_body; i++) {
@@ -159,7 +189,10 @@ public:
                         var_sym->m_storage, new_sym_type, var_sym->m_type_declaration, var_sym->m_abi, var_sym->m_access,
                         var_sym->m_presence, var_sym->m_value_attr);
                     current_scope->add_symbol(var_sym_name, ASR::down_cast<ASR::symbol_t>(new_var));
+                } else {
+                    throw LCompilersException("Not supported by function symtab instantiation");
                 }
+                // TODO: handle other symbols
             }
         }
 
@@ -332,7 +365,7 @@ public:
 
     ASR::asr_t* duplicate_FunctionCall(ASR::FunctionCall_t *x) {
         std::string call_name = ASRUtils::symbol_name(x->m_name);
-        ASR::symbol_t *name = template_scope->get_symbol(call_name);
+
         Vec<ASR::call_arg_t> args;
         args.reserve(al, x->n_args);
         for (size_t i=0; i<x->n_args; i++) {
@@ -344,22 +377,28 @@ public:
         ASR::ttype_t* type = substitute_type(x->m_type);
         ASR::expr_t* value = duplicate_expr(x->m_value);
         ASR::expr_t* dt = duplicate_expr(x->m_dt);
-        if (ASRUtils::is_requirement_function(name)) {
-            name = symbol_subs[call_name];
-        } else if (ASRUtils::is_generic_function(name)) {
-            ASR::symbol_t* name2 = ASRUtils::symbol_get_past_external(name);
-            ASR::symbol_t *search_sym = current_scope->resolve_symbol(call_name);
-            if (search_sym != nullptr) {
-                name = search_sym;
-            } else {
-                std::string nested_func_name = current_scope->get_unique_name("__asr_generic_" + call_name, false);
-                SymbolInstantiator nested_t(al, context_map, type_subs, symbol_subs, func_scope, template_scope, nested_func_name);
-                name = nested_t.instantiate_symbol(name2);
-                name = nested_t.instantiate_body(ASR::down_cast<ASR::Function_t>(name),
-                                                ASR::down_cast<ASR::Function_t>(name2));
-            }                            
-            context_map[ASRUtils::symbol_name(name2)] = ASRUtils::symbol_name(name);
+
+        ASR::symbol_t *name = current_scope->get_symbol(call_name);
+        if (!name) {
+            name = template_scope->resolve_symbol(call_name);
+            if (ASRUtils::is_requirement_function(name)) {
+                name = symbol_subs[call_name];
+            } else if (ASRUtils::is_generic_function(name)) {
+                ASR::symbol_t* name2 = ASRUtils::symbol_get_past_external(name);
+                ASR::symbol_t *search_sym = current_scope->resolve_symbol(call_name);
+                if (search_sym != nullptr) {
+                    name = search_sym;
+                } else {
+                    std::string nested_func_name = current_scope->get_unique_name("__asr_" + call_name, false);
+                    SymbolInstantiator nested_t(al, context_map, type_subs, symbol_subs, func_scope, template_scope, nested_func_name);
+                    name = nested_t.instantiate_symbol(name2);
+                    name = nested_t.instantiate_body(ASR::down_cast<ASR::Function_t>(name),
+                                                    ASR::down_cast<ASR::Function_t>(name2));
+                }                            
+                context_map[ASRUtils::symbol_name(name2)] = ASRUtils::symbol_name(name);
+            }
         }
+
         dependencies.push_back(al, ASRUtils::symbol_name(name));
         return ASRUtils::make_FunctionCall_t_util(al, x->base.base.loc, name, x->m_original_name,
             args.p, args.size(), type, value, dt);
@@ -382,7 +421,7 @@ public:
         } else if (context_map.find(call_name) != context_map.end()) {
             name = current_scope->resolve_symbol(context_map[call_name]);
         } else {
-            std::string nested_func_name = current_scope->get_unique_name("__asr_generic_" + call_name, false);
+            std::string nested_func_name = current_scope->get_unique_name("__asr_" + call_name, false);
             ASR::symbol_t* name2 = ASRUtils::symbol_get_past_external(name);
             SymbolInstantiator nested_t(al, context_map, type_subs, symbol_subs, func_scope, template_scope, nested_func_name);
             name = nested_t.instantiate_symbol(name2);
@@ -400,9 +439,18 @@ public:
         ASR::ttype_t *t = substitute_type(x->m_type);
         ASR::expr_t *value = duplicate_expr(x->m_value);
 
+        /*
         ASR::symbol_t *s = x->m_m;
         if (ASR::is_a<ASR::ExternalSymbol_t>(*s)) {
             s = duplicate_ExternalSymbol(s);
+        }
+        */
+        ASR::symbol_t *s = x->m_m;
+        std::string sym_name = ASRUtils::symbol_name(x->m_m);
+        if (context_map.find(sym_name) != context_map.end()) {
+            s = current_scope->resolve_symbol(context_map[sym_name]);
+        } else if (current_scope->resolve_symbol(sym_name) != nullptr) {
+            s = current_scope->resolve_symbol(sym_name);
         }
 
         return ASR::make_StructInstanceMember_t(al, x->base.base.loc,
@@ -435,7 +483,7 @@ public:
     ASR::symbol_t* duplicate_ClassProcedure(ASR::symbol_t *s) {
         ASR::ClassProcedure_t *x = ASR::down_cast<ASR::ClassProcedure_t>(s);
 
-        std::string new_cp_name = func_scope->get_unique_name(new_sym_name + "_" + x->m_name, false);
+        std::string new_cp_name = func_scope->get_unique_name("__asr_" + new_sym_name + "_" + x->m_name, false);
         ASR::symbol_t *cp_proc = template_scope->get_symbol(x->m_name);
         SymbolInstantiator cp_t(al, context_map, type_subs, symbol_subs,
             func_scope, template_scope, new_cp_name);
@@ -525,16 +573,13 @@ public:
                     substitute_type(a->m_type)));
             }
             case (ASR::ttypeType::Class): {
-                /*
                 ASR::Class_t *c = ASR::down_cast<ASR::Class_t>(ttype);
                 std::string c_name = ASRUtils::symbol_name(c->m_class_type);
                 if (context_map.find(c_name) != context_map.end()) {
-                    ASR::symbol_t *new_c = func_scope->get_symbol(c_name);
-                    return ASRUtils::TYPE(ASR::make_Class_t(al, ttype->base.loc,
-                        new_c));
+                    std::string new_c_name = context_map[c_name];
+                    return ASRUtils::TYPE(ASR::make_Class_t(al,
+                        ttype->base.loc, func_scope->get_symbol(new_c_name)));
                 }
-                */
-                std::cout << "are we here" << std::endl;
                 return ttype;
             }
             default : return ttype;

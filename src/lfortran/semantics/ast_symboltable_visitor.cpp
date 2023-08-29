@@ -2564,20 +2564,6 @@ public:
             }
         }
 
-        for (size_t i = 0; i < x.n_symbols; i++){
-            AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
-            std::string generic_name = to_lower(use_symbol->m_remote_sym);
-            ASR::symbol_t *s = temp->m_symtab->resolve_symbol(generic_name);
-            if (!s) {
-                throw SemanticError("Symbol " + generic_name + " was not found",
-                                    x.base.base.loc);
-            }
-            std::string new_sym_name = to_lower(use_symbol->m_local_rename);
-            pass_instantiate_symbol(al, context_map, type_subs, symbol_subs,
-                current_scope, temp->m_symtab, new_sym_name, s);
-            context_map[generic_name] = new_sym_name;
-        }
-
         if (x.n_symbols == 0) {
             for (auto const &sym_pair: temp->m_symtab->get_scope()) {
                 ASR::symbol_t *s = sym_pair.second;
@@ -2587,6 +2573,20 @@ public:
                         current_scope, temp->m_symtab, s_name, s);
                     context_map[s_name] = s_name;
                 }
+            }
+        } else {
+            for (size_t i = 0; i < x.n_symbols; i++){
+                AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
+                std::string generic_name = to_lower(use_symbol->m_remote_sym);
+                ASR::symbol_t *s = temp->m_symtab->resolve_symbol(generic_name);
+                if (!s) {
+                    throw SemanticError("Symbol " + generic_name + " was not found",
+                                        x.base.base.loc);
+                }
+                std::string new_sym_name = to_lower(use_symbol->m_local_rename);
+                pass_instantiate_symbol(al, context_map, type_subs, symbol_subs,
+                    current_scope, temp->m_symtab, new_sym_name, s);
+                context_map[generic_name] = new_sym_name;
             }
         }
 

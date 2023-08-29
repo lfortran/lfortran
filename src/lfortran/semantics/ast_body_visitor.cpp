@@ -656,30 +656,44 @@ public:
         std::map<std::string, ASR::ttype_t*> type_subs = instantiate_types[x.base.base.loc.first];
         std::map<std::string, ASR::symbol_t*> symbol_subs = instantiate_symbols[x.base.base.loc.first];
 
-        for (size_t i = 0; i < x.n_symbols; i++){
-            AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
-            std::string generic_name = to_lower(use_symbol->m_remote_sym);
-            ASR::symbol_t *s = temp->m_symtab->resolve_symbol(generic_name);
-            std::string new_s_name = to_lower(use_symbol->m_local_rename);
-            if (ASR::is_a<ASR::Function_t>(*s)) {
-                ASR::Function_t *new_f = ASR::down_cast<ASR::Function_t>(
-                    current_scope->resolve_symbol(new_s_name));
-                pass_instantiate_function_body(al, context_map, type_subs, symbol_subs, current_scope,
-                    temp->m_symtab, new_f, ASR::down_cast<ASR::Function_t>(s));
-            }
-            context_map[generic_name] = new_s_name;
-        }
-
         if (x.n_symbols == 0) {
             for (auto const &sym_pair: temp->m_symtab->get_scope()) {
                 ASR::symbol_t *s = sym_pair.second;
                 std::string s_name = ASRUtils::symbol_name(s);
+                context_map[s_name] = s_name;
                 if (ASR::is_a<ASR::Function_t>(*s) && !ASRUtils::is_template_arg(sym, s_name)) {
                     ASR::Function_t *new_f = ASR::down_cast<ASR::Function_t>(
                         current_scope->resolve_symbol(s_name));
                     pass_instantiate_function_body(al, context_map, type_subs, symbol_subs,
                         current_scope, temp->m_symtab, new_f, ASR::down_cast<ASR::Function_t>(s));
-                    context_map[s_name] = s_name;
+                }
+            }
+        } else {
+            for (size_t i = 0; i < x.n_symbols; i++){
+                AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
+                std::string generic_name = to_lower(use_symbol->m_remote_sym);
+                ASR::symbol_t *s = temp->m_symtab->resolve_symbol(generic_name);
+                std::string new_s_name = to_lower(use_symbol->m_local_rename);
+                context_map[generic_name] = new_s_name;
+                if (ASR::is_a<ASR::Function_t>(*s)) {
+                    ASR::Function_t *new_f = ASR::down_cast<ASR::Function_t>(
+                        current_scope->resolve_symbol(new_s_name));
+                    pass_instantiate_function_body(al, context_map, type_subs, symbol_subs, current_scope,
+                        temp->m_symtab, new_f, ASR::down_cast<ASR::Function_t>(s));
+                } else if (ASR::is_a<ASR::StructType_t>(*s)) {
+                    ASR::StructType_t *new_st = ASR::down_cast<ASR::StructType_t>(
+                        current_scope->resolve_symbol(new_s_name));
+                    for (auto const &sym_pair: new_st->m_symtab->get_scope()) {
+                        ASR::symbol_t *sym = sym_pair.second;
+                        if (ASR::is_a<ASR::ClassProcedure_t>(*sym)) {
+                            ASR::ClassProcedure_t *proc = ASR::down_cast<ASR::ClassProcedure_t>(sym);
+                            ASR::Function_t *temp_f = ASR::down_cast<ASR::Function_t>(
+                                temp->m_symtab->resolve_symbol(proc->m_name));
+                            ASR::Function_t *new_f = ASR::down_cast<ASR::Function_t>(proc->m_proc);
+                            pass_instantiate_function_body(al, context_map, type_subs, symbol_subs, current_scope,
+                                temp_f->m_symtab, new_f, temp_f);
+                        }
+                    }
                 }
             }
         }
