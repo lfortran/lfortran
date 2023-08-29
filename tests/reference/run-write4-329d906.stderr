@@ -1,0 +1,35 @@
+warning: format string in write() is not implemented yet and it is currently treated as '*'
+ --> tests/write4.f90:4:15
+  |
+4 |     write (*, "(a)", advance="no") "hi, "
+  |               ^^^^^ treated as '*'
+
+warning: format string in write() is not implemented yet and it is currently treated as '*'
+ --> tests/write4.f90:5:15
+  |
+5 |     write (*, "(a)") "how are you?"
+  |               ^^^^^ treated as '*'
+
+warning: format string in write() is not implemented yet and it is currently treated as '*'
+ --> tests/write4.f90:7:15
+  |
+7 |     write (*, "(a)", advance="yes") "I "
+  |               ^^^^^ treated as '*'
+
+warning: format string in write() is not implemented yet and it is currently treated as '*'
+ --> tests/write4.f90:8:15
+  |
+8 |     write (*, "(a)", advance="yes") "am"
+  |               ^^^^^ treated as '*'
+
+warning: format string in write() is not implemented yet and it is currently treated as '*'
+ --> tests/write4.f90:9:15
+  |
+9 |     write (*, "(a)", advance="no") "doing "
+  |               ^^^^^ treated as '*'
+
+warning: format string in write() is not implemented yet and it is currently treated as '*'
+  --> tests/write4.f90:10:15
+   |
+10 |     write (*, "(a)", advance="yes") "good"
+   |               ^^^^^ treated as '*'
