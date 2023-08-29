@@ -186,20 +186,20 @@ class ASRBuilder {
         auto arg = declare(arg_name, type, In);                                 \
         args.push_back(al, arg); }
 
-    #define make_Function_t(name, symtab, dep, args, body, return_var, abi,     \
+    #define make_ASR_Function_t(name, symtab, dep, args, body, return_var, abi,     \
             deftype, bindc_name)                                                \
         ASR::down_cast<ASR::symbol_t>( ASRUtils::make_Function_t_util(al, loc,  \
         symtab, s2c(al, name), dep.p, dep.n, args.p, args.n, body.p, body.n,    \
-        return_var, ASR::abiType::abi, ASR::accessType::Public,                 \
-        ASR::deftypeType::deftype, bindc_name, false, false, false, false,      \
+        return_var, abi, ASR::accessType::Public,                 \
+        deftype, bindc_name, false, false, false, false,      \
         false, nullptr, 0, false, false, false));
 
     #define make_Function_Without_ReturnVar_t(name, symtab, dep, args, body,    \
             abi, deftype, bindc_name)                                           \
         ASR::down_cast<ASR::symbol_t>( ASRUtils::make_Function_t_util(al, loc,  \
         symtab, s2c(al, name), dep.p, dep.n, args.p, args.n, body.p, body.n,    \
-        nullptr, ASR::abiType::abi, ASR::accessType::Public,                    \
-        ASR::deftypeType::deftype, bindc_name, false, false, false, false,      \
+        nullptr, abi, ASR::accessType::Public,                    \
+        deftype, bindc_name, false, false, false, false,      \
         false, nullptr, 0, false, false, false));
 
     // Types -------------------------------------------------------------------
@@ -849,15 +849,15 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
 
         SetChar dep_1; dep_1.reserve(al, 1);
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
-        ASR::symbol_t *s = make_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
-            body_1, return_var_1, BindC, Interface, s2c(al, c_func_name));
+        ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
+            body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
         fn_symtab->add_symbol(c_func_name, s);
         dep.push_back(al, s2c(al, c_func_name));
         body.push_back(al, b.Assignment(result, b.Call(s, args, arg_type)));
     }
 
-    ASR::symbol_t *new_symbol = make_Function_t(fn_name, fn_symtab, dep, args,
-        body, result, Source, Implementation, nullptr);
+    ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+        body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
     scope->add_symbol(fn_name, new_symbol);
     return b.Call(new_symbol, new_args, return_type);
 }
@@ -958,8 +958,8 @@ static inline ASR::symbol_t *create_KMP_function(Allocator &al,
         })
     }));
     body.push_back(al, Return());
-    ASR::symbol_t *fn_sym = make_Function_t(fn_name, fn_symtab, dep, args,
-        body, result, Source, Implementation, nullptr);
+    ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+        body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
     scope->add_symbol(fn_name, fn_sym);
     return fn_sym;
 }
@@ -1226,8 +1226,8 @@ namespace Abs {
 
                 SetChar dep_1; dep_1.reserve(al, 1);
                 Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
-                ASR::symbol_t *s = make_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
-                    body_1, return_var_1, BindC, Interface, s2c(al, c_func_name));
+                ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
+                    body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
                 fn_symtab->add_symbol(c_func_name, s);
                 dep.push_back(al, s2c(al, c_func_name));
                 Vec<ASR::call_arg_t> call_args;
@@ -1254,8 +1254,8 @@ namespace Abs {
                 b.ElementalPow(bin_op_1, constant_point_five, loc)));
         }
 
-        ASR::symbol_t *f_sym = make_Function_t(func_name, fn_symtab, dep, args,
-            body, result, Source, Implementation, nullptr);
+        ASR::symbol_t *f_sym = make_ASR_Function_t(func_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(func_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
@@ -1351,8 +1351,8 @@ namespace Sign {
                 b.Assignment(result, i32_neg(result, arg_types[0]))
             }, {}));
 
-            ASR::symbol_t *f_sym = make_Function_t(fn_name, fn_symtab, dep, args,
-                body, result, Source, Implementation, nullptr);
+            ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+                body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
             scope->add_symbol(fn_name, f_sym);
             return b.Call(f_sym, new_args, return_type, nullptr);
         }
@@ -1424,8 +1424,8 @@ namespace FMA {
         body.push_back(al, b.Assignment(result,
         b.ElementalAdd(args[0], op1, loc)));
 
-        ASR::symbol_t *f_sym = make_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, Source, Implementation, nullptr);
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
@@ -1504,8 +1504,8 @@ namespace FlipSign {
             b.Assignment(result, args[1])
         }));
 
-        ASR::symbol_t *f_sym = make_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, Source, Implementation, nullptr);
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
@@ -1823,8 +1823,8 @@ namespace Max {
             body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
                 if_body.p, if_body.n, nullptr, 0)));
         }
-        ASR::symbol_t *f_sym = make_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, Source, Implementation, nullptr);
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
@@ -1947,8 +1947,8 @@ namespace Min {
         } else {
             throw LCompilersException("Arguments to min0 must be of real or integer type");
         }
-        ASR::symbol_t *f_sym = make_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, Source, Implementation, nullptr);
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
@@ -2060,8 +2060,8 @@ namespace Partition {
                         StringLen(args[0]))}, return_type))
             }));
         body.push_back(al, Return());
-        ASR::symbol_t *fn_sym = make_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, Source, Implementation, nullptr);
+        ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, fn_sym);
         return b.Call(fn_sym, new_args, return_type, nullptr);
     }
