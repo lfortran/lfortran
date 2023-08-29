@@ -214,6 +214,10 @@ public:
                     var_sym->m_storage, new_sym_type, var_sym->m_type_declaration, var_sym->m_abi, var_sym->m_access,
                     var_sym->m_presence, var_sym->m_value_attr);
                 current_scope->add_symbol(var_sym_name, ASR::down_cast<ASR::symbol_t>(new_var));
+            } else if (ASR::is_a<ASR::ClassProcedure_t>(*sym)) {
+
+            } else {
+                throw LCompilersException("Unsupported symbol for template instantiation");
             }
         }
 
@@ -234,11 +238,18 @@ public:
 
         ASR::symbol_t *t = ASR::down_cast<ASR::symbol_t>(result);
         func_scope->add_symbol(new_sym_name, t);
+        context_map[x->m_name] = new_sym_name;
+
+        for (auto const &sym_pair: x->m_symtab->get_scope()) {
+            ASR::symbol_t *sym = sym_pair.second;
+            if (ASR::is_a<ASR::ClassProcedure_t>(*sym)) {
+                ASR::symbol_t *new_sym = duplicate_ClassProcedure(sym);
+                current_scope->add_symbol(ASRUtils::symbol_name(new_sym), new_sym);
+            }
+        }
 
         return t;
     }
-
-
 
     ASR::asr_t* duplicate_Var(ASR::Var_t *x) {
         std::string sym_name = ASRUtils::symbol_name(x->m_v);
@@ -421,6 +432,20 @@ public:
         return s;
     }
 
+    ASR::symbol_t* duplicate_ClassProcedure(ASR::symbol_t *s) {
+        ASR::ClassProcedure_t *x = ASR::down_cast<ASR::ClassProcedure_t>(s);
+
+        std::string new_cp_name = func_scope->get_unique_name(new_sym_name + "_" + x->m_name, false);
+        ASR::symbol_t *cp_proc = template_scope->get_symbol(x->m_name);
+        SymbolInstantiator cp_t(al, context_map, type_subs, symbol_subs,
+            func_scope, template_scope, new_cp_name);
+        ASR::symbol_t *new_cp_proc = cp_t.instantiate_symbol(cp_proc);
+
+        return ASR::down_cast<ASR::symbol_t>(ASR::make_ClassProcedure_t(
+            al, x->base.base.loc, current_scope, x->m_name, x->m_self_argument,
+            s2c(al, new_cp_name), new_cp_proc, x->m_abi, x->m_is_deferred));
+    }
+
     ASR::ttype_t* substitute_type(ASR::ttype_t *ttype) {
         switch (ttype->type) {
             case (ASR::ttypeType::TypeParameter) : {
@@ -459,12 +484,12 @@ public:
                 }
                 return t;
             }
-            case (ASR::ttypeType::List) : {
+            case (ASR::ttypeType::List): {
                 ASR::List_t *tlist = ASR::down_cast<ASR::List_t>(ttype);
                 return ASRUtils::TYPE(ASR::make_List_t(al, ttype->base.loc,
                     substitute_type(tlist->m_type)));
             }
-            case (ASR::ttypeType::Struct) : {
+            case (ASR::ttypeType::Struct): {
                 ASR::Struct_t *s = ASR::down_cast<ASR::Struct_t>(ttype);
                 std::string struct_name = ASRUtils::symbol_name(s->m_derived_type);
                 if (context_map.find(struct_name) != context_map.end()) {
@@ -476,7 +501,7 @@ public:
                     return ttype;
                 }
             }
-            case (ASR::ttypeType::Array) : {
+            case (ASR::ttypeType::Array): {
                 ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(ttype);
                 ASR::ttype_t *t = substitute_type(a->m_type);
                 ASR::dimension_t* m_dims = nullptr;
@@ -493,6 +518,24 @@ public:
                 }
                 return ASRUtils::make_Array_t_util(al, t->base.loc,
                     t, new_dims.p, new_dims.size());
+            }
+            case (ASR::ttypeType::Allocatable): {
+                ASR::Allocatable_t *a = ASR::down_cast<ASR::Allocatable_t>(ttype);
+                return ASRUtils::TYPE(ASR::make_Allocatable_t(al, ttype->base.loc,
+                    substitute_type(a->m_type)));
+            }
+            case (ASR::ttypeType::Class): {
+                /*
+                ASR::Class_t *c = ASR::down_cast<ASR::Class_t>(ttype);
+                std::string c_name = ASRUtils::symbol_name(c->m_class_type);
+                if (context_map.find(c_name) != context_map.end()) {
+                    ASR::symbol_t *new_c = func_scope->get_symbol(c_name);
+                    return ASRUtils::TYPE(ASR::make_Class_t(al, ttype->base.loc,
+                        new_c));
+                }
+                */
+                std::cout << "are we here" << std::endl;
+                return ttype;
             }
             default : return ttype;
         }

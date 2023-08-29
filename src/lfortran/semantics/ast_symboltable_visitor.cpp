@@ -1053,23 +1053,8 @@ public:
     }
 
     void visit_DerivedType(const AST::DerivedType_t &x) {
-        if (is_requirement) {
-            ASR::asr_t *tp = ASR::make_TypeParameter_t(
-                al, x.base.base.loc, s2c(al, to_lower(x.m_name)));
-            tmp = ASR::make_Variable_t(al, x.base.base.loc, current_scope,
-                s2c(al, to_lower(x.m_name)), nullptr, 0, ASRUtils::intent_in,
-                nullptr, nullptr, ASR::storage_typeType::Default,
-                ASRUtils::TYPE(tp), nullptr, ASR::abiType::Source,
-                dflt_access, ASR::presenceType::Required, false);
-            current_scope->add_symbol(to_lower(x.m_name), ASR::down_cast<ASR::symbol_t>(tmp));
-            return;
-        }
-        SymbolTable *parent_scope = current_scope;
-        current_scope = al.make_new<SymbolTable>(parent_scope);
-        data_member_names.reserve(al, 0);
-        is_derived_type = true;
         bool is_abstract = false;
-        dt_name = to_lower(x.m_name);
+        bool is_deferred = false;
         AST::AttrExtends_t *attr_extend = nullptr;
         for( size_t i = 0; i < x.n_attrtype; i++ ) {
             switch( x.m_attrtype[i]->type ) {
@@ -1085,11 +1070,25 @@ public:
                     AST::SimpleAttribute_t* simple_attr =
                         AST::down_cast<AST::SimpleAttribute_t>(x.m_attrtype[i]);
                     is_abstract = simple_attr->m_attr == AST::simple_attributeType::AttrAbstract;
+                    is_deferred = simple_attr->m_attr == AST::simple_attributeType::AttrDeferred;
                 }
                 default:
                     break;
             }
         }
+        if ((is_requirement || is_template) && is_deferred) {
+            ASR::asr_t *tp = ASR::make_TypeParameter_t(al, x.base.base.loc, s2c(al, to_lower(x.m_name)));
+            tmp = ASR::make_Variable_t(al, x.base.base.loc, current_scope, s2c(al, to_lower(x.m_name)), 
+                nullptr, 0, ASRUtils::intent_in, nullptr, nullptr, ASR::storage_typeType::Default,
+                ASRUtils::TYPE(tp), nullptr, ASR::abiType::Source, dflt_access, ASR::presenceType::Required, false);
+            current_scope->add_symbol(to_lower(x.m_name), ASR::down_cast<ASR::symbol_t>(tmp));      
+            return;      
+        }
+        SymbolTable *parent_scope = current_scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+        data_member_names.reserve(al, 0);
+        is_derived_type = true;
+        dt_name = to_lower(x.m_name);
         for (size_t i=0; i<x.n_items; i++) {
             this->visit_unit_decl2(*x.m_items[i]);
         }
@@ -1136,7 +1135,7 @@ public:
             s2c(al, to_lower(x.m_name)), struct_dependencies.p, struct_dependencies.size(),
             data_member_names.p, data_member_names.size(),
             ASR::abiType::Source, dflt_access, false, is_abstract, nullptr, 0, nullptr, parent_sym);
-            parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         is_derived_type = false;
     }
@@ -2299,6 +2298,8 @@ public:
             args.push_back(al, s2c(al, arg));
         }
 
+        add_class_procedures();
+
         ASR::asr_t *temp = ASR::make_Template_t(al, x.base.base.loc,
             current_scope, x.m_name, args.p, args.size(), reqs.p, reqs.size());
 
@@ -2307,6 +2308,10 @@ public:
         current_scope = parent_scope;
         current_procedure_args.clear();
         context_map.clear();
+
+        // needs to rebuild the context prior to visiting template
+        class_procedures.clear();
+        
         is_template = false;
     }
 
@@ -2587,6 +2592,7 @@ public:
 
         instantiate_types[x.base.base.loc.first] = type_subs;
         instantiate_symbols[x.base.base.loc.first] = symbol_subs;
+        context_map.clear();
     }
 
     void check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,

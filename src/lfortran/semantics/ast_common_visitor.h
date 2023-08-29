@@ -802,7 +802,7 @@ public:
     std::map<int64_t, std::string> format_statements;
 
     // fields for generics
-    std::map<std::string, std::string> context_map;
+    std::map<std::string, std::string> context_map;     // TODO: refactor treatment of context map
     std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types;
     std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols;
 
