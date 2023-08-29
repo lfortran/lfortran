@@ -60,6 +60,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     interactive = is_included("interactive")
     pass_ = test.get("pass", None)
     extrafiles = test.get("extrafiles", "").split(",")
+    run = test.get("run")
     optimization_passes = ["flip_sign", "div_to_mul", "fma", "sign_from_value",
                            "inline_function_calls", "loop_unroll",
                            "dead_code_removal"]
@@ -382,6 +383,14 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     if bin_:
         run_test(filename, "bin", "lfortran --no-color {infile} -o {outfile}",
                  filename, update_reference, extra_args)
+
+    if run:
+        if no_llvm:
+            log.info(f"{filename} * obj    SKIPPED as requested")
+        else:
+            run_test(filename, "run", "lfortran --no-color --run {infile} -o " + filename + ".out",
+                 filename, update_reference, extra_args)
+
 
 
 if __name__ == "__main__":
