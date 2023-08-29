@@ -1210,14 +1210,20 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         if (is_return_var_handled) {
             ASR::ttype_t* result_var_type = x->m_type;
             bool is_allocatable = false;
+            bool is_func_call_allocatable = false;
+            bool is_result_var_allocatable = false;
+            ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(fn_name);
             {
-                ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(fn_name);
                 // Assuming the `m_return_var` is appended to the `args`.
                 ASR::symbol_t *v_sym = ASR::down_cast<ASR::Var_t>(
                     fn->m_args[fn->n_args-1])->m_v;
                 if (ASR::is_a<ASR::Variable_t>(*v_sym)) {
                     ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(v_sym);
-                    is_allocatable = ASR::is_a<ASR::Allocatable_t>(*v->m_type);
+                    is_func_call_allocatable = ASR::is_a<ASR::Allocatable_t>(*v->m_type);
+                    if( result_var != nullptr ) {
+                        is_result_var_allocatable = ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(result_var));
+                        is_allocatable = is_func_call_allocatable || is_result_var_allocatable;
+                    }
                     if( is_allocatable ) {
                         result_var_type = ASRUtils::duplicate_type_with_empty_dims(al, result_var_type);
                         result_var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(
@@ -1238,6 +1244,42 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 op_dims = nullptr;
                 op_n_dims = ASRUtils::extract_dimensions_from_ttype(
                     ASRUtils::expr_type(*current_expr), op_dims);
+            }
+
+            if( !is_func_call_allocatable && is_result_var_allocatable ) {
+                Vec<ASR::alloc_arg_t> vec_alloc;
+                vec_alloc.reserve(al, 1);
+                ASR::alloc_arg_t alloc_arg;
+                alloc_arg.m_len_expr = nullptr;
+                alloc_arg.m_type = nullptr;
+                alloc_arg.loc = loc;
+                alloc_arg.m_a = *current_expr;
+
+                ASR::FunctionType_t* fn_type = ASRUtils::get_FunctionType(fn);
+                ASR::ttype_t* output_type = fn_type->m_arg_types[fn_type->n_arg_types - 1];
+                ASR::dimension_t* m_dims = nullptr;
+                size_t n_dims = ASRUtils::extract_dimensions_from_ttype(output_type, m_dims);
+                Vec<ASR::dimension_t> vec_dims;
+                vec_dims.reserve(al, n_dims);
+                ASRUtils::ReplaceFunctionParamVisitor replace_function_param_visitor(x->m_args);
+                ASRUtils::ExprStmtDuplicator expr_duplicator(al);
+                for( size_t i = 0; i < n_dims; i++ ) {
+                    ASR::dimension_t dim;
+                    dim.loc = loc;
+                    dim.m_start = expr_duplicator.duplicate_expr(m_dims[i].m_start);
+                    dim.m_length = expr_duplicator.duplicate_expr(m_dims[i].m_length);
+                    replace_function_param_visitor.current_expr = &dim.m_start;
+                    replace_function_param_visitor.replace_expr(dim.m_start);
+                    replace_function_param_visitor.current_expr = &dim.m_length;
+                    replace_function_param_visitor.replace_expr(dim.m_length);
+                    vec_dims.push_back(al, dim);
+                }
+
+                alloc_arg.m_dims = vec_dims.p;
+                alloc_arg.n_dims = vec_dims.n;
+                vec_alloc.push_back(al, alloc_arg);
+                pass_result.push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(
+                    al, loc, vec_alloc.p, 1, nullptr, nullptr, nullptr)));
             }
 
             Vec<ASR::call_arg_t> s_args;
@@ -1264,14 +1306,18 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 alloc_arg.loc = loc;
                 alloc_arg.m_a = result_var;
 
+                ASR::dimension_t* m_dims = nullptr;
+                size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+                    ASRUtils::expr_type(*current_expr), m_dims);
                 Vec<ASR::dimension_t> vec_dims;
-                vec_dims.reserve(al, 1);
-                ASR::dimension_t dim;
-                dim.loc = loc;
-                dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
-                dim.m_length = PassUtils::get_bound(*current_expr, 1, "ubound", al);
-                vec_dims.push_back(al, dim);
+                vec_dims.reserve(al, n_dims);
+                for( size_t i = 0; i < n_dims; i++ ) {
+                    ASR::dimension_t dim;
+                    dim.loc = loc;
+                    dim.m_start = PassUtils::get_bound(*current_expr, i + 1, "lbound", al);
+                    dim.m_length = ASRUtils::get_size(*current_expr, i + 1, al);
+                    vec_dims.push_back(al, dim);
+                }
 
                 alloc_arg.m_dims = vec_dims.p;
                 alloc_arg.n_dims = vec_dims.n;

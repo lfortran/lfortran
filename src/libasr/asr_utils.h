@@ -3172,6 +3172,23 @@ class ReplaceWithFunctionParamVisitor: public ASR::BaseExprReplacer<ReplaceWithF
 
 };
 
+class ReplaceFunctionParamVisitor: public ASR::BaseExprReplacer<ReplaceFunctionParamVisitor> {
+
+    private:
+
+    ASR::call_arg_t* m_args;
+
+    public:
+
+    ReplaceFunctionParamVisitor(ASR::call_arg_t* m_args_) :
+        m_args(m_args_) {}
+
+    void replace_FunctionParam(ASR::FunctionParam_t* x) {
+        *current_expr = m_args[x->m_param_number].m_value;
+    }
+
+};
+
 inline ASR::asr_t* make_FunctionType_t_util(Allocator &al,
     const Location &a_loc, ASR::expr_t** a_args, size_t n_args,
     ASR::expr_t* a_return_var, ASR::abiType a_abi, ASR::deftypeType a_deftype,
