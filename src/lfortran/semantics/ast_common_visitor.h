@@ -800,7 +800,6 @@ public:
 
     // Stores the strings for format statements inside a function
     std::map<int64_t, std::string> format_statements;
-    std::map<int64_t, std::pair<const AST::Print_t*,ASR::asr_t*>> print_statements;
 
     // fields for generics
     std::map<std::string, std::string> context_map;

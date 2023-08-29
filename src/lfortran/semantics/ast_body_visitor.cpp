@@ -32,6 +32,7 @@ public:
     size_t starting_n_body = 0;
     AST::stmt_t **starting_m_body = nullptr;
     std::vector<ASR::symbol_t*> do_loop_variables;
+    std::map<int64_t, std::pair<const AST::Print_t*,ASR::asr_t*>> print_statements;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
             CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
