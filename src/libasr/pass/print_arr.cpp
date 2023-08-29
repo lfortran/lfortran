@@ -256,6 +256,15 @@ public:
         return doloop;
     }
 
+    void print_args_apart_from_arrays(std::vector<ASR::expr_t*> &write_body, const ASR::FileWrite_t& x) {
+        Vec<ASR::expr_t*> body;
+        body.from_pointer_n_copy(al, write_body.data(), write_body.size());
+        ASR::stmt_t* write_stmt = ASRUtils::STMT(ASR::make_FileWrite_t(
+            al, x.base.base.loc, x.m_label, nullptr, nullptr, nullptr, nullptr, nullptr, body.p, body.size(), nullptr, nullptr));
+        pass_result.push_back(al, write_stmt);
+        write_body.clear();
+    }
+
     void visit_FileWrite(const ASR::FileWrite_t& x) {
         std::vector<ASR::expr_t*> write_body;
         ASR::stmt_t* empty_file_write_endl = ASRUtils::STMT(ASR::make_FileWrite_t(al, x.base.base.loc,
@@ -267,16 +276,8 @@ public:
             // then it will be printed as a normal array.
             if (PassUtils::is_array(x.m_values[i])) {
                 if (write_body.size() > 0) {
-                    Vec<ASR::expr_t*> body;
-                    body.reserve(al, write_body.size());
-                    for (size_t j=0; j<write_body.size(); j++) {
-                        body.push_back(al, write_body[j]);
-                    }
-                    write_stmt = ASRUtils::STMT(ASR::make_FileWrite_t(
-                        al, x.base.base.loc, x.m_label, nullptr, nullptr, nullptr, nullptr, nullptr, body.p, body.size(), nullptr, nullptr));
-                    pass_result.push_back(al, write_stmt);
+                    print_args_apart_from_arrays(write_body, x);
                     pass_result.push_back(al, empty_file_write_endl);
-                    write_body.clear();
                 }
                 write_stmt = write_array_using_doloop(x.m_values[i], x.base.base.loc);
                 pass_result.push_back(al, write_stmt);
@@ -286,15 +287,7 @@ public:
             }
         }
         if (write_body.size() > 0) {
-            Vec<ASR::expr_t*> body;
-            body.reserve(al, write_body.size());
-            for (size_t j=0; j<write_body.size(); j++) {
-                body.push_back(al, write_body[j]);
-            }
-            write_stmt = ASRUtils::STMT(ASR::make_FileWrite_t(
-                al, x.base.base.loc, x.m_label, nullptr, nullptr, nullptr, nullptr, nullptr, body.p, body.size(), nullptr, nullptr));
-            pass_result.push_back(al, write_stmt);
-            write_body.clear();
+            print_args_apart_from_arrays(write_body, x);
         }
     }
 
