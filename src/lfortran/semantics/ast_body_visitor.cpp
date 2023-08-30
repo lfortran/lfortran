@@ -228,6 +228,25 @@ public:
         unit->n_items = items.size();
     }
 
+    template <typename T>
+    void process_format_statement(ASR::asr_t *old_tmp, int &label, Allocator &al, std::map<int64_t, std::string> &format_statements) {
+        T *old_stmt = ASR::down_cast<T>(ASRUtils::STMT(old_tmp));
+        ASR::ttype_t *fmt_type = ASRUtils::TYPE(ASR::make_Character_t(
+            al, old_stmt->m_fmt->base.loc, 1, format_statements[label].size(), nullptr));
+        ASR::expr_t *fmt_constant = ASRUtils::EXPR(ASR::make_StringConstant_t(
+            al, old_stmt->m_fmt->base.loc, s2c(al, format_statements[label]), fmt_type));
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(
+            al, old_stmt->base.base.loc, -1, 0, nullptr));
+        ASR::expr_t *string_format = ASRUtils::EXPR(ASR::make_StringFormat_t(al, old_stmt->m_fmt->base.loc,
+            fmt_constant, old_stmt->m_values, old_stmt->n_values, ASR::string_format_kindType::FormatFortran,
+            type, nullptr));
+        Vec<ASR::expr_t *> print_args;
+        print_args.reserve(al, 1);
+        print_args.push_back(al, string_format);
+        old_stmt->m_values = print_args.p;
+        old_stmt->n_values = print_args.size();
+    }
+
     void handle_format() {
         for(auto it = print_statements.begin(); it != print_statements.end(); it++) {
             ASR::asr_t* old_tmp = it->first;
@@ -237,24 +256,12 @@ public:
                 diag.semantic_error_label("The label " + std::to_string(label) + " does not point to any format statement",
                  {x->base.loc},"Invalid label in this statement");
             } else {
-                if (AST::is_a<AST::Print_t>(*x)){
-                    visit_Print(*(AST::down_cast<AST::Print_t>(x)));
-                    ASR::Print_t* print_old = ASR::down_cast<ASR::Print_t>(ASRUtils::STMT(old_tmp));
-                    ASR::Print_t* print_new = ASR::down_cast<ASR::Print_t>(ASRUtils::STMT(tmp));
-                    print_old->m_values = print_new->m_values;
-                    print_old->n_values = print_new->n_values;
-                } else if (AST::is_a<AST::Write_t>(*x)){
-                    visit_Write(*(AST::down_cast<AST::Write_t>(x)));
-                    ASR::FileWrite_t* write_old = ASR::down_cast<ASR::FileWrite_t>(ASRUtils::STMT(old_tmp));
-                    ASR::FileWrite_t* write_new = ASR::down_cast<ASR::FileWrite_t>(ASRUtils::STMT(tmp));
-                    write_old->m_values = write_new->m_values;
-                    write_old->n_values = write_new->n_values;
-                } else if (AST::is_a<AST::Read_t>(*x)){
-                    visit_Read(*(AST::down_cast<AST::Read_t>(x)));
-                    ASR::FileRead_t* read_old = ASR::down_cast<ASR::FileRead_t>(ASRUtils::STMT(old_tmp));
-                    ASR::FileRead_t* read_new = ASR::down_cast<ASR::FileRead_t>(ASRUtils::STMT(tmp));
-                    read_old->m_values = read_new->m_values;
-                    read_old->n_values = read_new->n_values;
+                if (AST::is_a<AST::Print_t>(*x)) {
+                    process_format_statement<ASR::Print_t>(old_tmp, label, al, format_statements);
+                } else if (AST::is_a<AST::Write_t>(*x)) {
+                    process_format_statement<ASR::FileWrite_t>(old_tmp, label, al, format_statements);
+                } else if (AST::is_a<AST::Read_t>(*x)) {
+                    process_format_statement<ASR::FileRead_t>(old_tmp, label, al, format_statements);
                 }
             }
         }
@@ -577,26 +584,6 @@ public:
                 }
             }
         }
-        if (a_fmt && ASR::is_a<ASR::IntegerConstant_t>(*a_fmt)) {
-            ASR::IntegerConstant_t* a_fmt_int = ASR::down_cast<ASR::IntegerConstant_t>(a_fmt);
-            int64_t label = a_fmt_int->m_n;
-            if (format_statements.find(label) == format_statements.end()) {
-                if( _type == AST::stmtType::Write ) {
-                    tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit, a_fmt,
-                                            a_iomsg, a_iostat, a_id, nullptr, 0, a_separator, a_end);
-                    print_statements[tmp] = std::make_pair(&w->base,label);
-                } else if( _type == AST::stmtType::Read ) {
-                    tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
-                                        a_iomsg, a_iostat, a_id, nullptr, 0);
-                    print_statements[tmp] = std::make_pair(&r->base,label);
-                }
-                return;
-            }
-            ASR::ttype_t* a_fmt_type = ASRUtils::TYPE(ASR::make_Character_t(
-                al, a_fmt->base.loc, 1, format_statements[label].size(), nullptr));
-            a_fmt_constant = ASRUtils::EXPR(ASR::make_StringConstant_t(
-                al, a_fmt->base.loc, s2c(al, format_statements[label]), a_fmt_type));
-        }
         if (_type == AST::stmtType::Write && a_fmt == nullptr
                 && compiler_options.print_leading_space) {
             ASR::ttype_t *str_type_len_0 = ASRUtils::TYPE(ASR::make_Character_t(
@@ -608,6 +595,26 @@ public:
         for( std::uint32_t i = 0; i < n_values; i++ ) {
             this->visit_expr(*m_values[i]);
             a_values_vec.push_back(al, ASRUtils::EXPR(tmp));
+        }
+        if (a_fmt && ASR::is_a<ASR::IntegerConstant_t>(*a_fmt)) {
+            ASR::IntegerConstant_t* a_fmt_int = ASR::down_cast<ASR::IntegerConstant_t>(a_fmt);
+            int64_t label = a_fmt_int->m_n;
+            if (format_statements.find(label) == format_statements.end()) {
+                if( _type == AST::stmtType::Write ) {
+                    tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit, a_fmt,
+                                            a_iomsg, a_iostat, a_id, a_values_vec.p, a_values_vec.size(), a_separator, a_end);
+                    print_statements[tmp] = std::make_pair(&w->base,label);
+                } else if( _type == AST::stmtType::Read ) {
+                    tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
+                                        a_iomsg, a_iostat, a_id, a_values_vec.p, a_values_vec.size());
+                    print_statements[tmp] = std::make_pair(&r->base,label);
+                }
+                return;
+            }
+            ASR::ttype_t* a_fmt_type = ASRUtils::TYPE(ASR::make_Character_t(
+                al, a_fmt->base.loc, 1, format_statements[label].size(), nullptr));
+            a_fmt_constant = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                al, a_fmt->base.loc, s2c(al, format_statements[label]), a_fmt_type));
         }
         if (a_fmt_constant) {
             ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(
@@ -2609,7 +2616,7 @@ public:
             int64_t label = f->m_n;
             if (format_statements.find(label) == format_statements.end()) {
                 tmp = ASR::make_Print_t(al, x.base.base.loc, fmt,
-                    nullptr, 0, nullptr, nullptr);
+                    body.p, body.size(), nullptr, nullptr);
                 print_statements[tmp] = std::make_pair(&x.base,label);
                 return;
             }
