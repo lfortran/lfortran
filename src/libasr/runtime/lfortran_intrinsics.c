@@ -141,6 +141,8 @@ char* append_to_string(char* str, const char* append) {
 void handle_integer(char* format, int val, char** result) {
     int width = 0, min_width = 0;
     char* dot_pos = strchr(format, '.');
+    int len = (val == 0) ? 1 : (int)log10(abs(val)) + 1;
+    int sign_width = (val < 0) ? 1 : 0;
     if (dot_pos != NULL) {
         dot_pos++;
         width = atoi(format + 1);
@@ -150,26 +152,33 @@ void handle_integer(char* format, int val, char** result) {
         }
     } else {
         width = atoi(format + 1);
+        if (width == 0) {
+            width = len + sign_width;
+        }
     }
-
-    int len = (val == 0) ? 1 : (int)log10(abs(val)) + 1;
-    if (width >= len) {
+    if (width >= len + sign_width) {
         if (min_width > len) {
-            for (int i = 0; i < (width - min_width); i++) {
+            for (int i = 0; i < (width - min_width - sign_width); i++) {
                 *result = append_to_string(*result, " ");
+            }
+            if (val < 0) {
+                *result = append_to_string(*result, "-");
             }
             for (int i = 0; i < (min_width - len); i++) {
                 *result = append_to_string(*result, "0");
             }
         } else {
-            for (int i = 0; i < (width - len); i++) {
+            for (int i = 0; i < (width - len - sign_width); i++) {
                 *result = append_to_string(*result, " ");
+            }
+            if (val < 0) {
+                *result = append_to_string(*result, "-");
             }
         }
         char str[20];
-        sprintf(str, "%d", val);
+        sprintf(str, "%d", abs(val));
         *result = append_to_string(*result, str);
-    } else if (width < len) {
+    } else {
         for (int i = 0; i < width; i++) {
             *result = append_to_string(*result, "*");
         }
@@ -179,10 +188,11 @@ void handle_integer(char* format, int val, char** result) {
 void handle_decimal(char* format, double val, int scale, char** result, char* c) {
     int width = 0, decimal_digits = 0;
     int64_t integer_part = (int64_t)val;
+    int sign_width = (val < 0) ? 1 : 0;
     int integer_length = (integer_part == 0) ? 0 : (int)log10(llabs(integer_part)) + 1;
 
     char val_str[64];
-    sprintf(val_str, "%lf", val);
+    sprintf(val_str, "%f", val);
 
     int i = strlen(val_str) - 1;
     while (val_str[i] == '0') {
@@ -210,8 +220,16 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
         dot_pos++;
         width = atoi(format + 1);
         decimal_digits = atoi(dot_pos);
+        if (width == 0) {
+            if (decimal_digits == 0) {
+                width = 14 + sign_width;
+                decimal_digits = 9;
+            } else {
+                width = decimal_digits + 5 + sign_width;
+            }
+        }
         if (decimal_digits > width - 3) {
-            perror("Specified width is not enough for the specified number of decimal digits\n");
+            perror("Specified width is not enough for the specified number of decimal digits.\n");
         }
     } else {
         width = atoi(format + 1);
@@ -223,7 +241,6 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     }
 
     char formatted_value[64] = "";
-    int sign_width = (val < 0) ? 1 : 0;
     int spaces = width - sign_width - decimal_digits - 6;
     if (scale > 1){
         decimal_digits -= scale - 1;
@@ -241,8 +258,8 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
             strcat(formatted_value, "0");
         }
         if (decimal_digits + scale < strlen(val_str)) {
-            int t = round((float)atoi(val_str) / pow(10, (strlen(val_str) - decimal_digits - scale)));
-            sprintf(val_str, "%d", t);
+            long long t = (long long)round((double)atoll(val_str) / (long long)pow(10, (strlen(val_str) - decimal_digits - scale)));
+            sprintf(val_str, "%lld", t);
         }
         strncat(formatted_value, val_str, decimal_digits + scale);
     } else {
@@ -250,8 +267,8 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
         strcat(formatted_value, ".");
         char* new_str = substring(val_str, scale, strlen(val_str));
         if (decimal_digits < strlen(new_str)) {
-            int t = round((float)atoi(new_str) / pow(10, (strlen(new_str) - decimal_digits)));
-            sprintf(new_str, "%d", t);
+            long long t = (long long)round((double)atoll(new_str) / (long long) pow(10, (strlen(new_str) - decimal_digits)));
+            sprintf(new_str, "%lld", t);
         }
         strcat(formatted_value, substring(new_str, 0, decimal_digits));
     }
@@ -259,7 +276,11 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     strcat(formatted_value, c);
 
     char exponent[12];
-    sprintf(exponent, "%+03d", (integer_length > 0 ? integer_length : decimal) - scale);
+    if (atoi(format + 1) == 0){
+        sprintf(exponent, "%+02d", (integer_length > 0 ? integer_length : decimal) - scale);
+    } else {
+        sprintf(exponent, "%+03d", (integer_length > 0 ? integer_length : decimal) - scale);
+    }
 
     strcat(formatted_value, exponent);
 
@@ -312,7 +333,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
     }
     char* result = (char*)malloc(sizeof(char));
     result[0] = '\0';
-    while (count > 0) {
+    while (1) {
         for (int i = 0; i < format_values_count; i++) {
             char* value = format_values[i];
 
@@ -460,6 +481,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
         }
         if ( count > 0 ) {
             result = append_to_string(result, "\n");
+        } else {
+            break;
         }
     }
 
