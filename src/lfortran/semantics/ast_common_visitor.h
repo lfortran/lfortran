@@ -1840,12 +1840,12 @@ public:
                                     } else {
                                         sym_ = ASRUtils::symbol_get_past_external(sym_);
                                         if (ASR::is_a<ASR::Variable_t>(*sym_)) {
-                                                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
-                                                v->m_access = ASR::accessType::Public;
-                                            } else if (ASR::is_a<ASR::Function_t>(*sym_)) {
-                                                ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym_);
-                                                f->m_access = ASR::accessType::Public;
-                                            }
+                                            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
+                                            v->m_access = ASR::accessType::Public;
+                                        } else if (ASR::is_a<ASR::Function_t>(*sym_)) {
+                                            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym_);
+                                            f->m_access = ASR::accessType::Public;
+                                        }
                                     }
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrOptional) {
@@ -4340,7 +4340,7 @@ public:
             intrinsic_procedures_as_asr_nodes.is_kind_based_selection_required(var_name) ||
             ASRUtils::IntrinsicScalarFunctionRegistry::is_intrinsic_function(var_name) ||
             ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ||
-            ASRUtils::IntrinsicImpureFunctionRegistry::is_intrinsic_function(var_name) || 
+            ASRUtils::IntrinsicImpureFunctionRegistry::is_intrinsic_function(var_name) ||
             is_double_precision_intrinsic) {
             is_function = false;
             if (is_double_precision_intrinsic) {
