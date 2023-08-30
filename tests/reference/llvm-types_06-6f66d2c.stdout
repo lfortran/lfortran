@@ -49,7 +49,7 @@ else:                                             ; preds = %.entry
 ifcont:                                           ; preds = %else, %then
   %5 = load float, float* %r, align 4
   %6 = load float, float* %r, align 4
-  %7 = fcmp ult float %5, %6
+  %7 = fcmp olt float %5, %6
   br i1 %7, label %then1, label %else2
 
 then1:                                            ; preds = %ifcont
@@ -64,7 +64,7 @@ ifcont3:                                          ; preds = %else2, %then1
   %8 = load float, float* %r, align 4
   %9 = load i32, i32* %i, align 4
   %10 = sitofp i32 %9 to float
-  %11 = fcmp ult float %8, %10
+  %11 = fcmp olt float %8, %10
   br i1 %11, label %then4, label %else5
 
 then4:                                            ; preds = %ifcont3
@@ -79,7 +79,7 @@ ifcont6:                                          ; preds = %else5, %then4
   %12 = load i32, i32* %i, align 4
   %13 = sitofp i32 %12 to float
   %14 = load float, float* %r, align 4
-  %15 = fcmp ult float %13, %14
+  %15 = fcmp olt float %13, %14
   br i1 %15, label %then7, label %else8
 
 then7:                                            ; preds = %ifcont6
@@ -107,7 +107,7 @@ else11:                                           ; preds = %ifcont9
 ifcont12:                                         ; preds = %else11, %then10
   %19 = load float, float* %r, align 4
   %20 = load float, float* %r, align 4
-  %21 = fcmp ugt float %19, %20
+  %21 = fcmp ogt float %19, %20
   br i1 %21, label %then13, label %else14
 
 then13:                                           ; preds = %ifcont12
@@ -122,7 +122,7 @@ ifcont15:                                         ; preds = %else14, %then13
   %22 = load float, float* %r, align 4
   %23 = load i32, i32* %i, align 4
   %24 = sitofp i32 %23 to float
-  %25 = fcmp ugt float %22, %24
+  %25 = fcmp ogt float %22, %24
   br i1 %25, label %then16, label %else17
 
 then16:                                           ; preds = %ifcont15
@@ -137,7 +137,7 @@ ifcont18:                                         ; preds = %else17, %then16
   %26 = load i32, i32* %i, align 4
   %27 = sitofp i32 %26 to float
   %28 = load float, float* %r, align 4
-  %29 = fcmp ugt float %27, %28
+  %29 = fcmp ogt float %27, %28
   br i1 %29, label %then19, label %else20
 
 then19:                                           ; preds = %ifcont18
@@ -225,7 +225,7 @@ ifcont36:                                         ; preds = %else35, %then34
   %48 = load float, float* %r, align 4
   %49 = fadd float %48, 1.000000e+00
   %50 = load float, float* %r, align 4
-  %51 = fcmp ule float %49, %50
+  %51 = fcmp ole float %49, %50
   br i1 %51, label %then37, label %else38
 
 then37:                                           ; preds = %ifcont36
@@ -241,7 +241,7 @@ ifcont39:                                         ; preds = %else38, %then37
   %53 = fadd float %52, 1.000000e+00
   %54 = load i32, i32* %i, align 4
   %55 = sitofp i32 %54 to float
-  %56 = fcmp ule float %53, %55
+  %56 = fcmp ole float %53, %55
   br i1 %56, label %then40, label %else41
 
 then40:                                           ; preds = %ifcont39
@@ -257,7 +257,7 @@ ifcont42:                                         ; preds = %else41, %then40
   %58 = add i32 %57, 1
   %59 = sitofp i32 %58 to float
   %60 = load float, float* %r, align 4
-  %61 = fcmp ule float %59, %60
+  %61 = fcmp ole float %59, %60
   br i1 %61, label %then43, label %else44
 
 then43:                                           ; preds = %ifcont42
@@ -287,7 +287,7 @@ ifcont48:                                         ; preds = %else47, %then46
   %66 = load float, float* %r, align 4
   %67 = load float, float* %r, align 4
   %68 = fadd float %67, 1.000000e+00
-  %69 = fcmp uge float %66, %68
+  %69 = fcmp oge float %66, %68
   br i1 %69, label %then49, label %else50
 
 then49:                                           ; preds = %ifcont48
@@ -303,7 +303,7 @@ ifcont51:                                         ; preds = %else50, %then49
   %71 = load i32, i32* %i, align 4
   %72 = add i32 %71, 1
   %73 = sitofp i32 %72 to float
-  %74 = fcmp uge float %70, %73
+  %74 = fcmp oge float %70, %73
   br i1 %74, label %then52, label %else53
 
 then52:                                           ; preds = %ifcont51
@@ -319,7 +319,7 @@ ifcont54:                                         ; preds = %else53, %then52
   %76 = sitofp i32 %75 to float
   %77 = load float, float* %r, align 4
   %78 = fadd float %77, 1.000000e+00
-  %79 = fcmp uge float %76, %78
+  %79 = fcmp oge float %76, %78
   br i1 %79, label %then55, label %else56
 
 then55:                                           ; preds = %ifcont54

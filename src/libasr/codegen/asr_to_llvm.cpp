@@ -4898,19 +4898,19 @@ public:
                 break;
             }
             case (ASR::cmpopType::Gt) : {
-                tmp = builder->CreateFCmpUGT(left, right);
+                tmp = builder->CreateFCmpOGT(left, right);
                 break;
             }
             case (ASR::cmpopType::GtE) : {
-                tmp = builder->CreateFCmpUGE(left, right);
+                tmp = builder->CreateFCmpOGE(left, right);
                 break;
             }
             case (ASR::cmpopType::Lt) : {
-                tmp = builder->CreateFCmpULT(left, right);
+                tmp = builder->CreateFCmpOLT(left, right);
                 break;
             }
             case (ASR::cmpopType::LtE) : {
-                tmp = builder->CreateFCmpULE(left, right);
+                tmp = builder->CreateFCmpOLE(left, right);
                 break;
             }
             case (ASR::cmpopType::NotEq) : {
