@@ -7694,7 +7694,7 @@ public:
                 llvm::Value* dt_1 = llvm_utils->create_gep(
                     CreateLoad(llvm_utils->create_gep(dt, 1)), dt_idx);
                 llvm::Value* class_ptr = llvm_utils->create_gep(dt_polymorphic, 1);
-                if (dt_1->getType()->isPointerTy()) {
+                if (is_nested_pointer(dt_1)) {
                     dt_1 = CreateLoad(dt_1);
                 }
                 builder->CreateStore(dt_1, class_ptr);
@@ -8175,7 +8175,7 @@ public:
                     dt, dt_idx);
                 dt_1 = llvm_utils->create_gep(dt_1, 1);
                 llvm::Value* class_ptr = llvm_utils->create_gep(dt_polymorphic, 1);
-                if (dt_1->getType()->isPointerTy()) {
+                if (is_nested_pointer(dt_1)) {
                     dt_1 = CreateLoad(dt_1);
                 }
                 builder->CreateStore(dt_1, class_ptr);
