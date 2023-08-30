@@ -1070,18 +1070,18 @@ public:
                 ASR::symbol_t *struct_sym = nullptr;
                 if (ASR::is_a<ASR::Struct_t>(*caller_type)) {
                     struct_sym = ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::Struct_t>(caller_type)->m_derived_type);
+                        ASR::down_cast<ASR::Struct_t>(caller_type)->m_derived_type);
                 } else if (ASR::is_a<ASR::Class_t>(*caller_type)) {
-                     struct_sym = ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::Class_t>(caller_type)->m_class_type);
+                    struct_sym = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Class_t>(caller_type)->m_class_type);
+                    dt = LLVM::CreateLoad(*builder, llvm_utils->create_gep(dt, 1));
                 } else {
                     LCOMPILERS_ASSERT(false);
                 }
 
                 int dt_idx = name2memidx[ASRUtils::symbol_name(struct_sym)]
                     [ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(sm->m_m))];
-                llvm::Value* dt_1 = llvm_utils->create_gep(
-                    dt, dt_idx);
+                llvm::Value* dt_1 = llvm_utils->create_gep(dt, dt_idx);
                 tmp = dt_1;
             } else {
                 throw CodeGenError("Cannot deallocate variables in expression " +
@@ -3929,7 +3929,8 @@ public:
             bool is_target_class = ASR::is_a<ASR::Class_t>(
                 *ASRUtils::type_get_past_pointer(target_type));
             bool is_value_class = ASR::is_a<ASR::Class_t>(
-                *ASRUtils::type_get_past_pointer(value_type));
+                *ASRUtils::type_get_past_pointer(
+                    ASRUtils::type_get_past_allocatable(value_type)));
             if( is_target_class && !is_value_class ) {
                 llvm::Value* vtab_address_ptr = llvm_utils->create_gep(llvm_target, 0);
                 llvm_target = llvm_utils->create_gep(llvm_target, 1);
@@ -3954,7 +3955,7 @@ public:
                 [[maybe_unused]] ASR::Class_t* target_class_t = ASR::down_cast<ASR::Class_t>(
                     ASRUtils::type_get_past_pointer(target_type));
                 [[maybe_unused]] ASR::Class_t* value_class_t = ASR::down_cast<ASR::Class_t>(
-                    ASRUtils::type_get_past_pointer(target_type));
+                    ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(value_type)));
                 LCOMPILERS_ASSERT(target_class_t->m_class_type == value_class_t->m_class_type);
                 llvm::Value* value_vtabid = CreateLoad(llvm_utils->create_gep(llvm_value, 0));
                 llvm::Value* value_class = CreateLoad(llvm_utils->create_gep(llvm_value, 1));
