@@ -6534,17 +6534,24 @@ public:
         llvm::Function *fn = nullptr;
         switch (type->type) {
             case (ASR::ttypeType::Integer): {
+                std::string runtime_func_name;
+                llvm::Type *type_arg;
                 int a_kind = ASRUtils::extract_kind_from_ttype_t(type);
-                if (a_kind != 4) {
-                    throw CodeGenError("Read Integer function not implemented for integer kind: "
-                                        + std::to_string(a_kind));
+                if (a_kind == 4) {
+                    runtime_func_name = "_lfortran_read_int32";
+                    type_arg = llvm::Type::getInt32Ty(context);
+                } else if (a_kind == 8) {
+                    runtime_func_name = "_lfortran_read_int64";
+                    type_arg = llvm::Type::getInt64Ty(context);
+                } else {
+                    throw CodeGenError("Read Integer function not implemented "
+                        "for integer kind: " + std::to_string(a_kind));
                 }
-                std::string runtime_func_name = "_lfortran_read_int32";
                 fn = module->getFunction(runtime_func_name);
                 if (!fn) {
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
                             llvm::Type::getVoidTy(context), {
-                                llvm::Type::getInt32Ty(context)->getPointerTo(),
+                                type_arg->getPointerTo(),
                                 llvm::Type::getInt32Ty(context)
                             }, false);
                     fn = llvm::Function::Create(function_type,
