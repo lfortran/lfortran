@@ -2736,6 +2736,16 @@ public:
                     ASR::expr_t* v_expr,
                     ASR::symbol_t *v,
                     ASR::symbol_t *f2) {
+        ASR::ttype_t* root_v_type = ASRUtils::type_get_past_pointer(
+            ASRUtils::symbol_type(v));
+        size_t n_dims = ASRUtils::extract_n_dims_from_ttype(root_v_type);
+        if (ASRUtils::is_array(root_v_type) && n_dims != n_args) {
+            std::string var_name = ASRUtils::symbol_name(v);
+            throw SemanticError("Rank mismatch in array reference: the array `"
+                + var_name + "` has rank `" + std::to_string(n_dims) +
+                "`, but is referenced as rank `" + std::to_string(n_args) + "`",
+                loc);
+        }
         bool is_item = true;
         Vec<ASR::array_index_t> args;
         args.reserve(al, n_args);
@@ -2749,7 +2759,6 @@ public:
         } else {
             v_Var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
         }
-        ASR::ttype_t* root_v_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(v));
         for (size_t i=0; i<n_args; i++) {
             ASR::array_index_t ai;
             ai.loc = loc;
