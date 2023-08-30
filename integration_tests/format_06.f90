@@ -11,15 +11,15 @@ d = 123.45
 30 format(4a4)
 40 format(A2,4(2X,A),I3)
 
-print *, "ok", "b"
-print 10, "ok", "b"
+print *, "a", "b"
+print 10, "c", "d"
 print 20, "Hello 123"
-print 30, "dancing","in","the","moonlight"
-print 40, "ab", "cdef", "ghi", "jkl","qwerty",12
+write (*,30) "dancing","in","the","moonlight"
+write (*,40) "ab", "cdef", "ghi", "jkl","qwerty",12
 print 50 , 123,456,12345,6789
 print 60, 123.456, -123.45678, 12.34, -123.45
-print 70, -a, b, -c, d
-print 80, -a, b, -c, d
+write (*,70) -a, b, -c, d
+write (*,80) -a, b, -c, d
 
 50 format(i3,i10.5,/i6.6,2x,i3)
 60 format(d10.2,d15.6,d010.2,2x,d7.2)
@@ -30,7 +30,7 @@ print 80, -a, b, -c, d
 if ( a > 0) then
     print 90, "Hello "
     if ( b > 0) then
-      print 100, "World!"
+      write (*,100) "World!"
     end if
   100 format(a)
   end if
