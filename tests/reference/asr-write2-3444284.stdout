@@ -41,7 +41,10 @@
                             (Character 1 11 ())
                         )]
                         ()
-                        ()
+                        (StringConstant
+                            ""
+                            (Character 1 0 ())
+                        )
                     )
                     (FileRead
                         0
