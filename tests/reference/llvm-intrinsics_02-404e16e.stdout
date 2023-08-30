@@ -14,7 +14,7 @@ define float @_lcompilers_abs_f32(float* %x) {
 .entry:
   %_lcompilers_abs_f32 = alloca float, align 4
   %0 = load float, float* %x, align 4
-  %1 = fcmp uge float %0, 0.000000e+00
+  %1 = fcmp oge float %0, 0.000000e+00
   br i1 %1, label %then, label %else
 
 then:                                             ; preds = %.entry
@@ -40,7 +40,7 @@ define double @_lcompilers_abs_f64(double* %x) {
 .entry:
   %_lcompilers_abs_f64 = alloca double, align 8
   %0 = load double, double* %x, align 8
-  %1 = fcmp uge double %0, 0.000000e+00
+  %1 = fcmp oge double %0, 0.000000e+00
   br i1 %1, label %then, label %else
 
 then:                                             ; preds = %.entry
@@ -113,7 +113,7 @@ define i32 @main(i32 %0, i8** %1) {
   %6 = fsub float %5, 0x3FEFEB7AA0000000
   store float %6, float* %call_arg_value, align 4
   %7 = call float @_lcompilers_abs_f32(float* %call_arg_value)
-  %8 = fcmp ugt float %7, 0x3EB0C6F7A0000000
+  %8 = fcmp ogt float %7, 0x3EB0C6F7A0000000
   br i1 %8, label %then, label %else
 
 then:                                             ; preds = %.entry
@@ -129,7 +129,7 @@ ifcont:                                           ; preds = %else, %then
   %10 = fsub float %9, 0x3FEAE238A0000000
   store float %10, float* %call_arg_value1, align 4
   %11 = call float @_lcompilers_abs_f32(float* %call_arg_value1)
-  %12 = fcmp ugt float %11, 0x3EB0C6F7A0000000
+  %12 = fcmp ogt float %11, 0x3EB0C6F7A0000000
   br i1 %12, label %then2, label %else3
 
 then2:                                            ; preds = %ifcont
@@ -145,7 +145,7 @@ ifcont4:                                          ; preds = %else3, %then2
   %14 = fsub double %13, 0x3FEFEB7A9FAE5B9E
   store double %14, double* %call_arg_value5, align 8
   %15 = call double @_lcompilers_abs_f64(double* %call_arg_value5)
-  %16 = fcmp ugt double %15, 0x3E7AD7F29ABCAF48
+  %16 = fcmp ogt double %15, 0x3E7AD7F29ABCAF48
   br i1 %16, label %then6, label %else7
 
 then6:                                            ; preds = %ifcont4
@@ -181,7 +181,7 @@ ifcont11:                                         ; preds = %else10, %then9
   %25 = fsub double %24, 0x3FEF20DD85ACA7BE
   store double %25, double* %call_arg_value14, align 8
   %26 = call double @_lcompilers_abs_f64(double* %call_arg_value14)
-  %27 = fcmp ugt double %26, 0x3E7AD7F29ABCAF48
+  %27 = fcmp ogt double %26, 0x3E7AD7F29ABCAF48
   br i1 %27, label %then15, label %else16
 
 then15:                                           ; preds = %ifcont11
