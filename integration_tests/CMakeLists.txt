@@ -1061,3 +1061,6 @@ RUN(NAME end_name_match LABELS gfortran llvm)
 RUN(NAME mangle_underscore_01 LABELS gfortran llvm EXTRA_ARGS --mangle-underscore --all-mangling)
 
 RUN(NAME nan_handling_01 LABELS gfortran llvm)
+
+RUN(NAME precision_01 LABELS gfortran llvm)
+RUN(NAME precision_02 LABELS gfortran) # TODO fix this test

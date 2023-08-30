@@ -709,31 +709,29 @@
                             (RealBinOp
                                 (Var 2 fsource)
                                 Mul
-                                (Cast
-                                    (RealBinOp
+                                (RealBinOp
+                                    (Cast
                                         (RealConstant
                                             1.000000
                                             (Real 4)
                                         )
-                                        Sub
-                                        (Cast
-                                            (Var 2 real_mask)
-                                            RealToReal
-                                            (Array
-                                                (Real 4)
-                                                [((IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 2 (Integer 4)))
-                                                ((IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 3 (Integer 4)))]
-                                                FixedSizeArray
-                                            )
-                                            ()
+                                        RealToReal
+                                        (Real 8)
+                                        (RealConstant
+                                            1.000000
+                                            (Real 8)
                                         )
-                                        (Real 4)
-                                        ()
                                     )
-                                    RealToReal
-                                    (Real 8)
+                                    Sub
+                                    (Var 2 real_mask)
+                                    (Array
+                                        (Real 8)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
                                     ()
                                 )
                                 (Array
