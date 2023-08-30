@@ -169,8 +169,8 @@ jobs:
             cd scipy
             git remote add ondrej https://github.com/certik/scipy
             git fetch ondrej
-            git checkout -t ondrej/special7
-            git checkout 13f9061e07fd0006a2af062941d70e4e71341fb5
+            git checkout -t ondrej/special8
+            git checkout b8ee2a865500263d17d366d7b286ee3a60abe6ec
             micromamba env create -f environment.yml
             micromamba activate scipy-dev
             git submodule update --init
