@@ -290,7 +290,7 @@ public:
         ASR::stmt_t* write_stmt;
         ASR::stmt_t* empty_file_write_endl = ASRUtils::STMT(ASR::make_FileWrite_t(al, x.base.base.loc,
                                             x.m_label, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, nullptr, nullptr));
-        if(x.m_values[0] != nullptr && ASR::is_a<ASR::StringFormat_t>(*x.m_values[0])){
+        if(x.m_values && x.m_values[0] != nullptr && ASR::is_a<ASR::StringFormat_t>(*x.m_values[0])){
             ASR::StringFormat_t* format = ASR::down_cast<ASR::StringFormat_t>(x.m_values[0]);
             for (size_t i=0; i<format->n_args; i++) {
                 if (PassUtils::is_array(format->m_args[i])) {
