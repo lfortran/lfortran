@@ -211,67 +211,86 @@
                                     (IntrinsicScalarFunction
                                         Cos
                                         [(RealBinOp
-                                            (IntrinsicScalarFunction
-                                                Cos
-                                                [(RealConstant
-                                                    1.500000
-                                                    (Real 4)
-                                                )]
-                                                0
-                                                (Real 4)
-                                                (RealConstant
-                                                    0.070737
-                                                    (Real 4)
-                                                )
-                                            )
-                                            Add
                                             (Cast
                                                 (IntrinsicScalarFunction
                                                     Cos
-                                                    [(RealBinOp
-                                                        (Var 2 a)
-                                                        Add
-                                                        (IntrinsicScalarFunction
-                                                            Cos
-                                                            [(Var 2 a)]
-                                                            0
-                                                            (Real 8)
-                                                            ()
-                                                        )
-                                                        (Real 8)
-                                                        ()
+                                                    [(RealConstant
+                                                        1.500000
+                                                        (Real 4)
                                                     )]
                                                     0
-                                                    (Real 8)
-                                                    ()
+                                                    (Real 4)
+                                                    (RealConstant
+                                                        0.070737
+                                                        (Real 4)
+                                                    )
                                                 )
                                                 RealToReal
-                                                (Real 4)
+                                                (Real 8)
+                                                (RealConstant
+                                                    0.070737
+                                                    (Real 8)
+                                                )
+                                            )
+                                            Add
+                                            (IntrinsicScalarFunction
+                                                Cos
+                                                [(RealBinOp
+                                                    (Var 2 a)
+                                                    Add
+                                                    (IntrinsicScalarFunction
+                                                        Cos
+                                                        [(Var 2 a)]
+                                                        0
+                                                        (Real 8)
+                                                        ()
+                                                    )
+                                                    (Real 8)
+                                                    ()
+                                                )]
+                                                0
+                                                (Real 8)
                                                 ()
                                             )
-                                            (Real 4)
+                                            (Real 8)
                                             ()
                                         )]
                                         0
-                                        (Real 4)
+                                        (Real 8)
                                         ()
                                     )
                                     Sub
-                                    (RealConstant
-                                        0.716404
-                                        (Real 4)
+                                    (Cast
+                                        (RealConstant
+                                            0.716404
+                                            (Real 4)
+                                        )
+                                        RealToReal
+                                        (Real 8)
+                                        (RealConstant
+                                            0.716404
+                                            (Real 8)
+                                        )
                                     )
-                                    (Real 4)
+                                    (Real 8)
                                     ()
                                 )]
                                 0
-                                (Real 4)
+                                (Real 8)
                                 ()
                             )
                             Gt
-                            (RealConstant
-                                0.000000
-                                (Real 4)
+                            (Cast
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                RealToReal
+                                (Real 8)
+                                (RealConstant
+                                    0.000000
+                                    (Real 8)
+                                )
                             )
                             (Logical 4)
                             ()
