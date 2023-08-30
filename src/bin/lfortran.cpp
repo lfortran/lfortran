@@ -1526,7 +1526,7 @@ int link_executable(const std::vector<std::string> &infiles,
             std::cout << "The command '" + compile_cmd + "' failed." << std::endl;
             return 10;
         }
-        if (outfile == "a.out" && compiler_options.arg_o == "") {
+        if (compiler_options.run || (outfile == "a.out" && compiler_options.arg_o == "")) {
             int err = system(run_cmd.c_str());
             if (err != 0) {
                 if (0 < err && err < 256) {
@@ -1926,6 +1926,7 @@ int main(int argc, char *argv[])
         app.add_flag("--intrinsic-mangling", compiler_options.intrinsic_symbols_mangling, "Mangles all the intrinsic symbols");
         app.add_flag("--all-mangling", compiler_options.all_symbols_mangling, "Mangles all possible symbols");
         app.add_flag("--mangle-underscore", compiler_options.mangle_underscore, "Mangles with underscore");
+        app.add_flag("--run", compiler_options.run, "Executes the generated binary");
 
         /*
         * Subcommands:
