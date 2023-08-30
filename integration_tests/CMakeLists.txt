@@ -208,6 +208,7 @@ RUN(NAME expr_12 LABELS gfortran llvm c) # it uses string compare
 RUN(NAME expr_13 LABELS gfortran llvm wasm c NOFAST)
 RUN(NAME expr_14 LABELS gfortran llvm wasm c)
 RUN(NAME expr_15 LABELS gfortran llvm wasm c)
+RUN(NAME expr_16 LABELS gfortran llvm wasm c)
 
 RUN(NAME data_01 LABELS gfortran llvm c)
 RUN(NAME data_02 LABELS gfortran)
