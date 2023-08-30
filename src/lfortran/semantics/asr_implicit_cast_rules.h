@@ -290,11 +290,25 @@ public:
     LCOMPILERS_ASSERT(right_type2->type < num_types);
     int left_type_p = type_priority[left_type2->type];
     int right_type_p = type_priority[right_type2->type];
+    int left_kind = 0, right_kind = 1;
+    left_kind = ASRUtils::extract_kind_from_ttype_t(left_type2);
+    right_kind = ASRUtils::extract_kind_from_ttype_t(right_type2);
 
-    if (left_type_p >= right_type_p) {
+    if (left_type_p > right_type_p) {
       conversion_cand = right;
       *source_type = right_type;
       *dest_type = left_type;
+    } else if (left_type_p == right_type_p) {
+      // both are of same priority, then the one with lower kind is chosen
+      if (left_kind >= right_kind) {
+        conversion_cand = right;
+        *source_type = right_type;
+        *dest_type = left_type;
+      } else if (left_kind < right_kind) {
+        conversion_cand = left;
+        *source_type = left_type;
+        *dest_type = right_type;
+      }
     } else {
       conversion_cand = left;
       *source_type = left_type;
