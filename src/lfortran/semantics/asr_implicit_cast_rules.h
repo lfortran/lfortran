@@ -299,7 +299,7 @@ public:
       *source_type = right_type;
       *dest_type = left_type;
     } else if (left_type_p == right_type_p) {
-      // both are of same priority, then the one with lower kind is chosen
+      // both are of same priority, then the one with lower kind is chosen to be cast to the higher kind
       if (left_kind >= right_kind) {
         conversion_cand = right;
         *source_type = right_type;
