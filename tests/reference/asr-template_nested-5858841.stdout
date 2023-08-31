@@ -615,7 +615,7 @@
                                     (SymbolTable
                                         10
                                         {
-                                            __asr_generic_add_generic:
+                                            __asr_add_generic:
                                                 (Function
                                                     (SymbolTable
                                                         13
@@ -669,7 +669,7 @@
                                                                     .false.
                                                                 )
                                                         })
-                                                    __asr_generic_add_generic
+                                                    __asr_add_generic
                                                     (FunctionType
                                                         [(Real 4)
                                                         (Real 4)]
@@ -793,13 +793,13 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [__asr_generic_add_generic]
+                                                    [__asr_add_generic]
                                                     [(Var 11 x)
                                                     (Var 11 y)]
                                                     [(=
                                                         (Var 11 z)
                                                         (FunctionCall
-                                                            10 __asr_generic_add_generic
+                                                            10 __asr_add_generic
                                                             ()
                                                             [((Var 11 x))
                                                             ((Var 11 y))]

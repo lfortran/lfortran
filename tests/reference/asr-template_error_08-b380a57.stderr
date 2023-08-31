@@ -1,43 +1,5 @@
-Internal Compiler Error: Unhandled exception
-Traceback (most recent call last):
-[2m  Binary file "[0m[1m[35m$DIR/src/bin/lfortran[39m[0m[2m", in _start()[0m
-[2m  Binary file "[0m[1m[35m/lib/x86_64-linux-gnu/libc.so.6[39m[0m[2m", in __libc_start_main()[0m
-[2m  File "[0m[1m[35m$DIR/src/bin/lfortran.cpp[39m[0m[2m", line 2128, in ??[0m
-    return emit_asr(arg_file, lfortran_pass_manager,
-[2m  File "[0m[1m[35m$DIR/src/bin/lfortran.cpp[39m[0m[2m", line 654, in ??[0m
-    r = fe.get_asr2(input, lm, diagnostics);
-[2m  File "[0m[1m[35m$DIR/src/lfortran/fortran_evaluator.cpp[39m[0m[2m", line 251, in LCompilers::FortranEvaluator::get_asr2(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, LCompilers::LocationManager&, LCompilers::diag::Diagnostics&)[0m
-    Result<ASR::TranslationUnit_t*> res2 = get_asr3(*ast, diagnostics);
-[2m  File "[0m[1m[35m$DIR/src/lfortran/fortran_evaluator.cpp[39m[0m[2m", line 273, in LCompilers::FortranEvaluator::get_asr3(LCompilers::LFortran::AST::TranslationUnit_t&, LCompilers::diag::Diagnostics&)[0m
-    compiler_options.symtab_only, compiler_options);
-[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_to_asr.cpp[39m[0m[2m", line 92, in LCompilers::LFortran::ast_to_asr(Allocator&, LCompilers::LFortran::AST::TranslationUnit_t&, LCompilers::diag::Diagnostics&, LCompilers::SymbolTable*, bool, LCompilers::CompilerOptions&)[0m
-    instantiate_types, instantiate_symbols);
-[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_symboltable_visitor.cpp[39m[0m[2m", line 2881, in LCompilers::LFortran::symbol_table_visitor(Allocator&, LCompilers::LFortran::AST::TranslationUnit_t&, LCompilers::diag::Diagnostics&, LCompilers::SymbolTable*, LCompilers::CompilerOptions&, std::map<unsigned long, std::map<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, LCompilers::ASR::ttype_t*, std::less<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, LCompilers::ASR::ttype_t*> > >, std::less<unsigned long>, std::allocator<std::pair<unsigned long const, std::map<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, LCompilers::ASR::ttype_t*, std::less<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, LCompilers::ASR::ttype_t*> > > > > >&, std::map<unsigned long, LCompilers::ASR::symbol_t*, std::less<unsigned long>, std::allocator<std::pair<unsigned long const, LCompilers::ASR::symbol_t*> > >&, std::map<unsigned long, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > >, std::less<unsigned long>, std::allocator<std::pair<unsigned long const, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > > > >&, std::map<unsigned int, std::map<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, LCompilers::ASR::ttype_t*, std::less<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, LCompilers::ASR::ttype_t*> > >, std::less<unsigned int>, std::allocator<std::pair<unsigned int const, std::map<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, LCompilers::ASR::ttype_t*, std::less<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, LCompilers::ASR::ttype_t*> > > > > >&, std::map<unsigned int, std::map<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, LCompilers::ASR::symbol_t*, std::less<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, LCompilers::ASR::symbol_t*> > >, std::less<unsigned int>, std::allocator<std::pair<unsigned int const, std::map<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, LCompilers::ASR::symbol_t*, std::less<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, LCompilers::ASR::symbol_t*> > > > > >&)[0m
-    v.visit_TranslationUnit(ast);
-[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_symboltable_visitor.cpp[39m[0m[2m", line 126, in LCompilers::LFortran::SymbolTableVisitor::visit_TranslationUnit(LCompilers::LFortran::AST::TranslationUnit_t const&)[0m
-    visit_ast(*x.m_items[i]);
-[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4768, in LCompilers::LFortran::AST::BaseVisitor<LCompilers::LFortran::SymbolTableVisitor>::visit_ast(LCompilers::LFortran::AST::ast_t const&)[0m
-    void visit_ast(const ast_t &b) { visit_ast_t(b, self()); }
-[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4726, in ??[0m
-    case astType::mod: { v.visit_mod((const mod_t &)x); return; }
-[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4771, in LCompilers::LFortran::AST::BaseVisitor<LCompilers::LFortran::SymbolTableVisitor>::visit_mod(LCompilers::LFortran::AST::mod_t const&)[0m
-    void visit_mod(const mod_t &b) { visit_mod_t(b, self()); }
-[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4366, in ??[0m
-    case modType::Module: { v.visit_Module((const Module_t &)x); return; }
-[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_symboltable_visitor.cpp[39m[0m[2m", line 471, in LCompilers::LFortran::SymbolTableVisitor::visit_Module(LCompilers::LFortran::AST::Module_t const&)[0m
-    visit_ModuleSubmoduleCommon<AST::Module_t, ASR::Module_t>(x);
-[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_symboltable_visitor.cpp[39m[0m[2m", line 427, in void LCompilers::LFortran::SymbolTableVisitor::visit_ModuleSubmoduleCommon<LCompilers::LFortran::AST::Module_t, LCompilers::ASR::Module_t>(LCompilers::LFortran::AST::Module_t const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >)[0m
-    visit_unit_decl2(*x.m_decl[i]);
-[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4782, in LCompilers::LFortran::AST::BaseVisitor<LCompilers::LFortran::SymbolTableVisitor>::visit_unit_decl2(LCompilers::LFortran::AST::unit_decl2_t const&)[0m
-    void visit_unit_decl2(const unit_decl2_t &b) { visit_unit_decl2_t(b, self()); }
-[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4398, in ??[0m
-    case unit_decl2Type::Template: { v.visit_Template((const Template_t &)x); return; }
-[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_symboltable_visitor.cpp[39m[0m[2m", line 2283, in LCompilers::LFortran::SymbolTableVisitor::visit_Template(LCompilers::LFortran::AST::Template_t const&)[0m
-    this->visit_unit_decl2(*x.m_decl[i]);
-[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4782, in LCompilers::LFortran::AST::BaseVisitor<LCompilers::LFortran::SymbolTableVisitor>::visit_unit_decl2(LCompilers::LFortran::AST::unit_decl2_t const&)[0m
-    void visit_unit_decl2(const unit_decl2_t &b) { visit_unit_decl2_t(b, self()); }
-[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4402, in ??[0m
-    case unit_decl2Type::Requires: { v.visit_Requires((const Requires_t &)x); return; }
-[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_symboltable_visitor.cpp[39m[0m[2m", line 2237, in LCompilers::LFortran::SymbolTableVisitor::visit_Requires(LCompilers::LFortran::AST::Requires_t const&)[0m
-    requires_arg_sym = replace_symbol(requirement_arg_sym, requires_arg);
-LCompilersException: Not implemented 6
+semantic error: Operator undefined for t + t
+  --> tests/errors/template_error_08.f90:22:17
+   |
+22 |             z = x + y
+   |                 ^^^^^ 
