@@ -110,7 +110,6 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
         } else {
             return res.error;
         }
-        // std::cout << pickle(*tu, 0, 1) << std::endl;
         if (compiler_options.rtlib) load_rtlib(al, *tu, compiler_options);
 #if defined(WITH_LFORTRAN_ASSERT)
         if (!asr_verify(*tu, true, diagnostics)) {

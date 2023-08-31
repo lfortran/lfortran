@@ -680,6 +680,7 @@ public:
                         ASR::Function_t *new_f = ASR::down_cast<ASR::Function_t>(current_scope->resolve_symbol(new_s_name));
                         pass_instantiate_function_body(al, context_map, type_subs, symbol_subs, current_scope,
                             temp->m_symtab, new_f, ASR::down_cast<ASR::Function_t>(s));
+                        break;
                     }
                     case ASR::symbolType::StructType: {
                         ASR::StructType_t *new_st = ASR::down_cast<ASR::StructType_t>(current_scope->resolve_symbol(new_s_name));
@@ -694,6 +695,7 @@ public:
                                     temp_f->m_symtab, new_f, temp_f);
                             }
                         }
+                        break;
                     }
                     default: {
                         throw LCompilersException("Unsupported symbol to instantiate");

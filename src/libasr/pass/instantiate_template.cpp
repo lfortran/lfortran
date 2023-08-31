@@ -270,7 +270,6 @@ public:
         ASR::symbol_t *new_f = nested.instantiate_Function(x);
                        new_f = nested.instantiate_body(ASR::down_cast<ASR::Function_t>(new_f), x);
 
-        std::cout << new_f_name << std::endl;
         context_map[f_name] = new_f_name;
 
         return new_f;
