@@ -2149,7 +2149,7 @@ public:
             this->visit_unit_decl2(*x.m_decl[i]);
             if (tmp && ASR::is_a<ASR::require_instantiation_t>(*tmp)) {
                 reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
-                tmp = nullptr;    
+                tmp = nullptr;
             }
         }
         for (size_t i=0; i<x.n_funcs; i++) {
@@ -2290,6 +2290,7 @@ public:
             this->visit_unit_decl2(*x.m_decl[i]);
             if (tmp && ASR::is_a<ASR::require_instantiation_t>(*tmp)) {
                 reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
+                tmp = nullptr;
             }
         }
 
