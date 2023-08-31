@@ -1475,27 +1475,14 @@ int link_executable(const std::vector<std::string> &infiles,
         }
     }
     if (backend == Backend::llvm) {
+        std::string run_cmd = "", compile_cmd = "";
         if (t == "x86_64-pc-windows-msvc") {
-            std::string cmd = "link /NOLOGO /OUT:" + outfile + " ";
+            compile_cmd = "link /NOLOGO /OUT:" + outfile + " ";
             for (auto &s : infiles) {
-                cmd += s + " ";
+                compile_cmd += s + " ";
             }
-            cmd += runtime_library_dir + "\\lfortran_runtime_static.lib";
-            int err = system(cmd.c_str());
-            if (err) {
-                std::cout << "The command '" + cmd + "' failed." << std::endl;
-                return 10;
-            }
-            if (outfile == "a.out" && compiler_options.arg_o == "") {
-                err = system("a.out");
-                if (err != 0) {
-                    if (0 < err && err < 256) {
-                        return err;
-                    } else {
-                        return 1;
-                    }
-                }
-            }
+            compile_cmd += runtime_library_dir + "\\lfortran_runtime_static.lib";
+            run_cmd = outfile;
         } else {
             std::string CC;
             std::string base_path = "\"" + runtime_library_dir + "\"";
@@ -1522,29 +1509,30 @@ int link_executable(const std::vector<std::string> &infiles,
                 }
                 runtime_lib = "lfortran_runtime_static";
             }
-            std::string cmd = CC + options + " -o " + outfile + " ";
+            compile_cmd = CC + options + " -o " + outfile + " ";
             for (auto &s : infiles) {
-                cmd += s + " ";
+                compile_cmd += s + " ";
             }
-            cmd += + " -L"
+            compile_cmd += + " -L"
                 + base_path + " -Wl,-rpath," + base_path;
             if (!extra_runtime_linker_path.empty()) {
-                cmd += extra_runtime_linker_path;
+                compile_cmd += extra_runtime_linker_path;
             }
-            cmd += " -l" + runtime_lib + " -lm";
-            int err = system(cmd.c_str());
-            if (err) {
-                std::cout << "The command '" + cmd + "' failed." << std::endl;
-                return 10;
-            }
-            if (outfile == "a.out" && compiler_options.arg_o == "") {
-                err = system("./a.out");
-                if (err != 0) {
-                    if (0 < err && err < 256) {
-                        return err;
-                    } else {
-                        return 1;
-                    }
+            compile_cmd += " -l" + runtime_lib + " -lm";
+            run_cmd = "./" + outfile;
+        }
+        int err = system(compile_cmd.c_str());
+        if (err) {
+            std::cout << "The command '" + compile_cmd + "' failed." << std::endl;
+            return 10;
+        }
+        if (compiler_options.run || (outfile == "a.out" && compiler_options.arg_o == "")) {
+            int err = system(run_cmd.c_str());
+            if (err != 0) {
+                if (0 < err && err < 256) {
+                    return err;
+                } else {
+                    return 1;
                 }
             }
         }
@@ -1938,6 +1926,7 @@ int main(int argc, char *argv[])
         app.add_flag("--intrinsic-mangling", compiler_options.intrinsic_symbols_mangling, "Mangles all the intrinsic symbols");
         app.add_flag("--all-mangling", compiler_options.all_symbols_mangling, "Mangles all possible symbols");
         app.add_flag("--mangle-underscore", compiler_options.mangle_underscore, "Mangles with underscore");
+        app.add_flag("--run", compiler_options.run, "Executes the generated binary");
 
         /*
         * Subcommands:
@@ -2080,7 +2069,7 @@ int main(int argc, char *argv[])
         if (fixed_form_infer && endswith(arg_file, ".f")) {
             compiler_options.fixed_form = true;
         }
-        
+
         std::string outfile;
         std::filesystem::path basename = std::filesystem::path(arg_file).filename();
         if (compiler_options.arg_o.size() > 0) {

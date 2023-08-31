@@ -32,6 +32,7 @@ public:
     size_t starting_n_body = 0;
     AST::stmt_t **starting_m_body = nullptr;
     std::vector<ASR::symbol_t*> do_loop_variables;
+    std::map<ASR::asr_t*, std::pair<const AST::stmt_t*,int64_t>> print_statements;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
             CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
@@ -225,6 +226,47 @@ public:
         }
         unit->m_items = items.p;
         unit->n_items = items.size();
+    }
+
+    template <typename T>
+    void process_format_statement(ASR::asr_t *old_tmp, int &label, Allocator &al, std::map<int64_t, std::string> &format_statements) {
+        T *old_stmt = ASR::down_cast<T>(ASRUtils::STMT(old_tmp));
+        ASR::ttype_t *fmt_type = ASRUtils::TYPE(ASR::make_Character_t(
+            al, old_stmt->m_fmt->base.loc, 1, format_statements[label].size(), nullptr));
+        ASR::expr_t *fmt_constant = ASRUtils::EXPR(ASR::make_StringConstant_t(
+            al, old_stmt->m_fmt->base.loc, s2c(al, format_statements[label]), fmt_type));
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(
+            al, old_stmt->base.base.loc, -1, 0, nullptr));
+        ASR::expr_t *string_format = ASRUtils::EXPR(ASR::make_StringFormat_t(al, old_stmt->m_fmt->base.loc,
+            fmt_constant, old_stmt->m_values, old_stmt->n_values, ASR::string_format_kindType::FormatFortran,
+            type, nullptr));
+        Vec<ASR::expr_t *> print_args;
+        print_args.reserve(al, 1);
+        print_args.push_back(al, string_format);
+        old_stmt->m_values = print_args.p;
+        old_stmt->n_values = print_args.size();
+    }
+
+    void handle_format() {
+        for(auto it = print_statements.begin(); it != print_statements.end(); it++) {
+            ASR::asr_t* old_tmp = it->first;
+            const AST::stmt_t* x = it->second.first;
+            int label = it->second.second;
+            if (format_statements.find(label) == format_statements.end()) {
+                diag.semantic_error_label("The label " + std::to_string(label) + " does not point to any format statement",
+                 {x->base.loc},"Invalid label in this statement");
+            } else {
+                if (AST::is_a<AST::Print_t>(*x)) {
+                    process_format_statement<ASR::Print_t>(old_tmp, label, al, format_statements);
+                } else if (AST::is_a<AST::Write_t>(*x)) {
+                    process_format_statement<ASR::FileWrite_t>(old_tmp, label, al, format_statements);
+                } else if (AST::is_a<AST::Read_t>(*x)) {
+                    process_format_statement<ASR::FileRead_t>(old_tmp, label, al, format_statements);
+                }
+            }
+        }
+        format_statements.clear();
+        print_statements.clear();
     }
 
     void visit_Open(const AST::Open_t& x) {
@@ -444,14 +486,16 @@ public:
         AST::kw_argstar_t* m_kwargs = nullptr; size_t n_kwargs = 0;
         AST::expr_t** m_values = nullptr; size_t n_values = 0;
         const Location& loc = read_write_stmt.base.loc;
+        AST::Write_t* w = nullptr;
+        AST::Read_t* r = nullptr;
         if( _type == AST::stmtType::Write ) {
-            AST::Write_t* w = (AST::Write_t*)(&read_write_stmt);
+            w = (AST::Write_t*)(&read_write_stmt);
             m_label = w->m_label;
             m_args = w->m_args; n_args = w->n_args;
             m_kwargs = w->m_kwargs; n_kwargs = w->n_kwargs;
             m_values = w->m_values; n_values = w->n_values;
         } else if( _type == AST::stmtType::Read ) {
-            AST::Read_t* r = (AST::Read_t*)(&read_write_stmt);
+            r = (AST::Read_t*)(&read_write_stmt);
             m_label = r->m_label;
             m_args = r->m_args; n_args = r->n_args;
             m_kwargs = r->m_kwargs; n_kwargs = r->n_kwargs;
@@ -537,24 +581,54 @@ public:
                         throw SemanticError("?", loc);
                     }
                     a_fmt = ASRUtils::EXPR(tmp);
-                    ASR::ttype_t* a_fmt_type = ASRUtils::expr_type(a_fmt);
-                    if (a_fmt && ASR::is_a<ASR::IntegerConstant_t>(*a_fmt)) {
-                        ASR::IntegerConstant_t* a_fmt_int = ASR::down_cast<ASR::IntegerConstant_t>(a_fmt);
-                        int64_t label = a_fmt_int->m_n;
-                        if (format_statements.find(label) == format_statements.end()) {
-                            // TODO: make this an error once we can find labels
-                            // below us
-                            diag.semantic_warning_label(
-                                "The label " + std::to_string(label) + " does not point to any format statement",
-                                {a_fmt->base.loc},
-                                "ignored for now"
-                            );
-                        }
-                    a_fmt_type = ASRUtils::TYPE(ASR::make_Character_t(
-                        al, a_fmt->base.loc, 1, format_statements[label].size(), nullptr));
-                    a_fmt_constant = ASRUtils::EXPR(ASR::make_StringConstant_t(
-                        al, a_fmt->base.loc, s2c(al, format_statements[label]), a_fmt_type));
+                }
+            } else if( m_arg_str == std::string("advance") ) {
+                if( a_fmt == nullptr ) {
+                    throw SemanticError(R"""(List directed format(*) is not allowed with a ADVANCE= specifier)""",
+                                        loc);
+                }
+                if( a_end != nullptr ) {
+                    throw SemanticError(R"""(Duplicate value of `advance` found, it has already been specified via arguments or keyword arguments)""",
+                                        loc);
+                }
+                this->visit_expr(*kwarg.m_value);
+                ASR::expr_t* adv_val_expr = ASRUtils::EXPR(tmp);
+                ASR::ttype_t *str_type_len_0 = ASRUtils::TYPE(ASR::make_Character_t(
+                    al, loc, 1, 0, nullptr));
+                ASR::expr_t *empty = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                    al, loc, s2c(al, ""), str_type_len_0));
+                ASR::ttype_t *str_type_len_1 = ASRUtils::TYPE(ASR::make_Character_t(
+                    al, loc, 1, 1, nullptr));
+                ASR::expr_t *newline = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                    al, loc, s2c(al, "\n"), str_type_len_1));
+                if (ASR::is_a<ASR::StringConstant_t>(*adv_val_expr)) {
+                    std::string adv_val = ASR::down_cast<ASR::StringConstant_t>(adv_val_expr)->m_s;
+                    if (adv_val == "yes") {
+                        a_end = newline;
+                    } else if (adv_val == "no") {
+                        a_end = empty;
+                    } else {
+                        throw SemanticError("ADVANCE= specifier must have value = YES or NO", kwarg.loc);
                     }
+                } else {
+                    ASR::ttype_t *str_type_len_3 = ASRUtils::TYPE(ASR::make_Character_t(
+                        al, loc, 1, 3, nullptr));
+                    ASR::expr_t *yes = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                        al, loc, s2c(al, "yes"), str_type_len_3));
+                    // TODO: Support case insensitive compare
+                    ASR::ttype_t *cmp_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+                    ASR::expr_t *test = ASRUtils::EXPR(ASR::make_StringCompare_t(al,
+                        loc, adv_val_expr, ASR::cmpopType::Eq, yes, cmp_type, nullptr));
+                    Vec<ASR::stmt_t*> body;
+                    body.reserve(al, 1);
+                    body.push_back(al, ASRUtils::STMT(
+                        ASR::make_FileWrite_t(al, loc, 0, a_unit, nullptr,
+                        nullptr, nullptr, nullptr, nullptr, 0, nullptr, newline)));
+                    // TODO: Compare with "no" (case-insensitive) in else part
+                    // Throw runtime error if advance expression does not match "no"
+                    tmp_vec.push_back(ASR::make_If_t(al, loc, test, body.p,
+                            body.size(), nullptr, 0));
+                    a_end = empty;
                 }
             }
         }
@@ -569,6 +643,26 @@ public:
         for( std::uint32_t i = 0; i < n_values; i++ ) {
             this->visit_expr(*m_values[i]);
             a_values_vec.push_back(al, ASRUtils::EXPR(tmp));
+        }
+        if (a_fmt && ASR::is_a<ASR::IntegerConstant_t>(*a_fmt)) {
+            ASR::IntegerConstant_t* a_fmt_int = ASR::down_cast<ASR::IntegerConstant_t>(a_fmt);
+            int64_t label = a_fmt_int->m_n;
+            if (format_statements.find(label) == format_statements.end()) {
+                if( _type == AST::stmtType::Write ) {
+                    tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit, a_fmt,
+                                            a_iomsg, a_iostat, a_id, a_values_vec.p, a_values_vec.size(), a_separator, a_end);
+                    print_statements[tmp] = std::make_pair(&w->base,label);
+                } else if( _type == AST::stmtType::Read ) {
+                    tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
+                                        a_iomsg, a_iostat, a_id, a_values_vec.p, a_values_vec.size());
+                    print_statements[tmp] = std::make_pair(&r->base,label);
+                }
+                return;
+            }
+            ASR::ttype_t* a_fmt_type = ASRUtils::TYPE(ASR::make_Character_t(
+                al, a_fmt->base.loc, 1, format_statements[label].size(), nullptr));
+            a_fmt_constant = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                al, a_fmt->base.loc, s2c(al, format_statements[label]), a_fmt_type));
         }
         if (a_fmt_constant) {
             ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(
@@ -595,6 +689,9 @@ public:
                                     a_iomsg, a_iostat, a_id, a_values_vec.p, a_values_vec.size());
             }
         }
+
+        tmp_vec.insert(tmp_vec.begin(), tmp);
+        tmp = nullptr;
     }
 
     void visit_Write(const AST::Write_t& x) {
@@ -1443,8 +1540,8 @@ public:
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
-        format_statements.clear();
         transform_stmts(body, x.n_body, x.m_body);
+        handle_format();
         ASR::stmt_t* impl_del = create_implicit_deallocate(x.base.base.loc);
         if( impl_del != nullptr ) {
             body.push_back(al, impl_del);
@@ -1716,8 +1813,8 @@ public:
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
         body.reserve(al, x.n_body);
-        format_statements.clear();
         transform_stmts(body, x.n_body, x.m_body);
+        handle_format();
         if (active_entry_points.size() > 0) {
             SetChar current_function_dependencies_copy2 = current_function_dependencies;
             current_function_dependencies.clear(al);
@@ -1769,8 +1866,8 @@ public:
         body.reserve(al, x.n_body);
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
-        format_statements.clear();
         transform_stmts(body, x.n_body, x.m_body);
+        handle_format();
         if (active_entry_points.size() > 0) {
             SetChar current_function_dependencies_copy2 = current_function_dependencies;
             current_function_dependencies.clear(al);
@@ -1899,7 +1996,7 @@ public:
                                 return true;
                             } else {
                                 return false;
-                            } 
+                            }
                         }
                     } else {
                         return false;
@@ -2583,15 +2680,9 @@ public:
             ASR::IntegerConstant_t *f = ASR::down_cast<ASR::IntegerConstant_t>(fmt);
             int64_t label = f->m_n;
             if (format_statements.find(label) == format_statements.end()) {
-                // TODO: make this an error once we can find labels
-                // below us
-                diag.semantic_warning_label(
-                    "The label " + std::to_string(label) + " does not point to any format statement",
-                    {fmt->base.loc},
-                    "ignored for now"
-                );
                 tmp = ASR::make_Print_t(al, x.base.base.loc, fmt,
                     body.p, body.size(), nullptr, nullptr);
+                print_statements[tmp] = std::make_pair(&x.base,label);
                 return;
             }
             ASR::ttype_t *fmt_type = ASRUtils::TYPE(ASR::make_Character_t(

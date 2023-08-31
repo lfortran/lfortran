@@ -172,29 +172,47 @@
                                 Abs
                                 [(RealBinOp
                                     (RealBinOp
-                                        (Var 2 x)
+                                        (Cast
+                                            (Var 2 x)
+                                            RealToReal
+                                            (Real 8)
+                                            ()
+                                        )
                                         Mul
                                         (RealConstant
                                             0.500000
-                                            (Real 4)
+                                            (Real 8)
                                         )
-                                        (Real 4)
+                                        (Real 8)
                                         ()
                                     )
                                     Sub
-                                    (RealConstant
-                                        1.570000
-                                        (Real 4)
+                                    (Cast
+                                        (RealConstant
+                                            1.570000
+                                            (Real 4)
+                                        )
+                                        RealToReal
+                                        (Real 8)
+                                        (RealConstant
+                                            1.570000
+                                            (Real 8)
+                                        )
                                     )
-                                    (Real 4)
+                                    (Real 8)
                                     ()
                                 )]
                                 0
-                                (Real 4)
+                                (Real 8)
                                 ()
                             )
                             Gt
-                            (Var 2 eps)
+                            (Cast
+                                (Var 2 eps)
+                                RealToReal
+                                (Real 8)
+                                ()
+                            )
                             (Logical 4)
                             ()
                         )

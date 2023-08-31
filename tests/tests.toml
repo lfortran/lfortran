@@ -1384,6 +1384,18 @@ filename = "write2.f90"
 asr = true
 
 [[test]]
+filename = "write3.f90"
+llvm = true
+
+[[test]]
+filename = "write4.f90"
+run = true
+
+[[test]]
+filename = "write5.f90"
+run = true
+
+[[test]]
 filename = "read1.f90"
 ast = true
 ast_f90 = true
@@ -3162,10 +3174,6 @@ filename = "character1.f90"
 asr_implicit_interface = true
 
 [[test]]
-filename = "write3.f90"
-llvm = true
-
-[[test]]
 filename = "../integration_tests/interface_12.f90"
 llvm = true
 
@@ -3271,6 +3279,14 @@ asr = true
 
 [[test]]
 filename = "errors/array_04.f90"
+asr = true
+
+[[test]]
+filename = "errors/array_05.f90"
+asr = true
+
+[[test]]
+filename = "errors/array_06.f90"
 asr = true
 
 [[test]]

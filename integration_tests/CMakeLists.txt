@@ -82,10 +82,10 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             execute_process(COMMAND "${WASM_EXEC_RUNTIME}" --version
                             OUTPUT_VARIABLE WASM_EXEC_VERSION
                             OUTPUT_STRIP_TRAILING_WHITESPACE)
-            string(COMPARE GREATER_EQUAL "${WASM_EXEC_VERSION}"
-                                    "v16.0.0" IS_NODE_ABOVE_16)
 
-            if (NOT IS_NODE_ABOVE_16)
+            string(REGEX REPLACE "v([0-9]+)\\.([0-9]+)\\.([0-9]+)" "\\1" NODE_MAJOR_VERSION "${WASM_EXEC_VERSION}")
+
+            if (NODE_MAJOR_VERSION LESS 16)
                 message(STATUS "${WASM_EXEC_RUNTIME} version: ${WASM_EXEC_VERSION}")
                 set(WASM_EXEC_FLAGS "--experimental-wasm-bigint")
             endif()
@@ -208,6 +208,7 @@ RUN(NAME expr_12 LABELS gfortran llvm c) # it uses string compare
 RUN(NAME expr_13 LABELS gfortran llvm wasm c NOFAST)
 RUN(NAME expr_14 LABELS gfortran llvm wasm c)
 RUN(NAME expr_15 LABELS gfortran llvm wasm c)
+RUN(NAME expr_16 LABELS gfortran llvm wasm c)
 
 RUN(NAME data_01 LABELS gfortran llvm c)
 RUN(NAME data_02 LABELS gfortran)
@@ -729,6 +730,7 @@ RUN(NAME allocate_10 LABELS gfortran llvm NOFAST)
 RUN(NAME allocate_11 LABELS gfortran llvm)
 RUN(NAME allocate_12 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs)
+RUN(NAME allocate_13 LABELS gfortran llvm)
 RUN(NAME block_01 LABELS gfortran llvm)
 RUN(NAME block_02 LABELS gfortran)
 RUN(NAME block_03 LABELS gfortran llvm)
@@ -835,6 +837,9 @@ RUN(NAME class_04 LABELS gfortran)
 RUN(NAME class_05 LABELS gfortran llvm)
 RUN(NAME class_06 LABELS gfortran llvm)
 RUN(NAME class_07 LABELS gfortran llvm)
+RUN(NAME class_08 LABELS gfortran llvm)
+RUN(NAME class_09 LABELS gfortran llvm)
+RUN(NAME class_10 LABELS gfortran llvm)
 
 RUN(NAME kwargs_01 LABELS gfortran llvm wasm)
 RUN(NAME kwargs_02 LABELS gfortran)
@@ -1054,3 +1059,8 @@ RUN(NAME optional_02 LABELS gfortran llvm)
 RUN(NAME end_name_match LABELS gfortran llvm)
 
 RUN(NAME mangle_underscore_01 LABELS gfortran llvm EXTRA_ARGS --mangle-underscore --all-mangling)
+
+RUN(NAME nan_handling_01 LABELS gfortran llvm)
+
+RUN(NAME precision_01 LABELS gfortran llvm)
+RUN(NAME precision_02 LABELS gfortran) # TODO fix this test

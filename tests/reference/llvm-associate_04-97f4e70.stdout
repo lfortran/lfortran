@@ -72,10 +72,10 @@ define i32 @main(i32 %0, i8** %1) {
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @5, i32 0, i32 0), double %26, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0))
   %27 = load float, float* %myreal, align 4
   %28 = fsub float %27, 0x4044EE1480000000
-  %29 = fcmp ugt float %28, 0x3EE4F8B580000000
+  %29 = fcmp ogt float %28, 0x3EE4F8B580000000
   %30 = load float, float* %myreal, align 4
   %31 = fsub float %30, 0x4044EE1480000000
-  %32 = fcmp ult float %31, 0xBEE4F8B580000000
+  %32 = fcmp olt float %31, 0xBEE4F8B580000000
   %33 = icmp eq i1 %29, false
   %34 = alloca i1, align 1
   br i1 %33, label %then, label %else

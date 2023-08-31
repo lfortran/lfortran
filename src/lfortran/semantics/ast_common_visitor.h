@@ -754,6 +754,8 @@ public:
     std::map<SymbolTable*, std::map<AST::decl_attribute_t*, AST::simple_attributeType>> overloaded_ops;
     std::map<SymbolTable*, ASR::accessType> assgn;
     std::map<std::string, ASR::accessType> assgnd_access;
+    std::map<std::string, std::pair<ASR::storage_typeType, AST::expr_t*>> assgnd_storage;
+    ASR::storage_typeType dflt_storage = ASR::Default;
     ASR::presenceType dflt_presence = ASR::presenceType::Required;
     std::map<std::string, ASR::presenceType> assgnd_presence;
     // Current procedure arguments. Only non-empty for SymbolTableVisitor,
@@ -1832,20 +1834,40 @@ public:
                                         }
                                     }
                                 } else if (sa->m_attr == AST::simple_attributeType
-                                        ::AttrPublic || sa->m_attr == AST::simple_attributeType
-                                                ::AttrParameter) {
+                                        ::AttrPublic) {
                                     ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
                                     if (!sym_) {
                                         assgnd_access[sym] = ASR::accessType::Public;
                                     } else {
                                         sym_ = ASRUtils::symbol_get_past_external(sym_);
                                         if (ASR::is_a<ASR::Variable_t>(*sym_)) {
-                                                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
-                                                v->m_access = ASR::accessType::Public;
-                                            } else if (ASR::is_a<ASR::Function_t>(*sym_)) {
-                                                ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym_);
-                                                f->m_access = ASR::accessType::Public;
-                                            }
+                                            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
+                                            v->m_access = ASR::accessType::Public;
+                                        } else if (ASR::is_a<ASR::Function_t>(*sym_)) {
+                                            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym_);
+                                            f->m_access = ASR::accessType::Public;
+                                        }
+                                    }
+                                } else if (sa->m_attr == AST::simple_attributeType
+                                                ::AttrParameter) {
+                                    ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
+                                    if (!sym_) {
+                                        assgnd_storage[sym] = std::make_pair(ASR::storage_typeType::Parameter, s.m_initializer);
+                                    } else {
+                                        this->visit_expr(*s.m_initializer);
+                                        ASR::expr_t* init_val = ASRUtils::EXPR(tmp);
+                                        sym_ = ASRUtils::symbol_get_past_external(sym_);
+                                        if (ASR::is_a<ASR::Variable_t>(*sym_)) {
+                                            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
+                                            v->m_storage = ASR::storage_typeType::Parameter;
+                                            v->m_symbolic_value = init_val;
+                                            v->m_value = ASRUtils::expr_value(init_val);
+                                            SetChar variable_dependencies_vec;
+                                            variable_dependencies_vec.reserve(al, 1);
+                                            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, v->m_type, v->m_symbolic_value, v->m_value);
+                                            v->m_dependencies = variable_dependencies_vec.p;
+                                            v->n_dependencies = variable_dependencies_vec.size();
+                                        }
                                     }
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrOptional) {
@@ -2007,6 +2029,7 @@ public:
                 bool is_external = check_is_external(sym);
                 ASR::accessType s_access = dflt_access;
                 ASR::presenceType s_presence = dflt_presence;
+                ASR::storage_typeType storage_type = dflt_storage;
                 bool value_attr = false;
                 AST::AttrType_t *sym_type =
                     AST::down_cast<AST::AttrType_t>(x.m_vartype);
@@ -2017,8 +2040,10 @@ public:
                 if (assgnd_presence.count(sym)) {
                     s_presence = assgnd_presence[sym];
                 }
-                ASR::storage_typeType storage_type =
-                        ASR::storage_typeType::Default;
+                if (assgnd_storage.count(sym)) {
+                    storage_type = assgnd_storage[sym].first;
+                    s.m_initializer = assgnd_storage[sym].second;
+                }
                 bool is_pointer = false;
                 if (current_scope->get_symbol(sym) !=
                         nullptr) {
@@ -2711,6 +2736,16 @@ public:
                     ASR::expr_t* v_expr,
                     ASR::symbol_t *v,
                     ASR::symbol_t *f2) {
+        ASR::ttype_t* root_v_type = ASRUtils::type_get_past_pointer(
+            ASRUtils::symbol_type(v));
+        size_t n_dims = ASRUtils::extract_n_dims_from_ttype(root_v_type);
+        if (ASRUtils::is_array(root_v_type) && n_dims != n_args) {
+            std::string var_name = ASRUtils::symbol_name(v);
+            throw SemanticError("Rank mismatch in array reference: the array `"
+                + var_name + "` has rank `" + std::to_string(n_dims) +
+                "`, but is referenced as rank `" + std::to_string(n_args) + "`",
+                loc);
+        }
         bool is_item = true;
         Vec<ASR::array_index_t> args;
         args.reserve(al, n_args);
@@ -2724,7 +2759,6 @@ public:
         } else {
             v_Var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
         }
-        ASR::ttype_t* root_v_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(v));
         for (size_t i=0; i<n_args; i++) {
             ASR::array_index_t ai;
             ai.loc = loc;
@@ -4340,7 +4374,7 @@ public:
             intrinsic_procedures_as_asr_nodes.is_kind_based_selection_required(var_name) ||
             ASRUtils::IntrinsicScalarFunctionRegistry::is_intrinsic_function(var_name) ||
             ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ||
-            ASRUtils::IntrinsicImpureFunctionRegistry::is_intrinsic_function(var_name) || 
+            ASRUtils::IntrinsicImpureFunctionRegistry::is_intrinsic_function(var_name) ||
             is_double_precision_intrinsic) {
             is_function = false;
             if (is_double_precision_intrinsic) {
