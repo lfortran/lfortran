@@ -570,14 +570,36 @@ namespace LCompilers {
                         int32_type, bound_type, nullptr));
         }
 
+        bool skip_flipsign(PassOptions pass_options) {
+            if (!pass_options.skip_optimization_func_instantiation.empty()) {
+                int64_t fp_s = static_cast<int64_t>(
+                                ASRUtils::IntrinsicScalarFunctions::FlipSign);
+                for (size_t i=0; i<pass_options.skip_optimization_func_instantiation.size(); i++) {
+                    if (pass_options.skip_optimization_func_instantiation[i] == fp_s) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
 
         ASR::expr_t* get_flipsign(ASR::expr_t* arg0, ASR::expr_t* arg1,
-            Allocator& al, ASR::TranslationUnit_t& unit, const Location& loc){
+            Allocator& al, ASR::TranslationUnit_t& unit, const Location& loc,
+            PassOptions pass_options) {
+            ASR::ttype_t* type = ASRUtils::expr_type(arg1);
+            if (skip_flipsign(pass_options)) {
+                int64_t fp_s = static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::FlipSign);
+                Vec<ASR::expr_t*> args;
+                args.reserve(al, 2);
+                args.push_back(al, arg0);
+                args.push_back(al, arg1);
+                return ASRUtils::EXPR(ASRUtils::make_IntrinsicScalarFunction_t_util(al, loc, fp_s,
+                    args.p, args.n, 0, type, nullptr));
+            }
             ASRUtils::impl_function instantiate_function =
             ASRUtils::IntrinsicScalarFunctionRegistry::get_instantiate_function(
                     static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::FlipSign));
             Vec<ASR::ttype_t*> arg_types;
-            ASR::ttype_t* type = ASRUtils::expr_type(arg1);
             arg_types.reserve(al, 2);
             arg_types.push_back(al, ASRUtils::expr_type(arg0));
             arg_types.push_back(al, ASRUtils::expr_type(arg1));
