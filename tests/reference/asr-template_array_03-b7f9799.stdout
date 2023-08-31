@@ -822,20 +822,6 @@
                                         plus_t
                                         zero_t
                                         mult_t]
-                                    )
-                                    (Require
-                                        operations
-                                        [t
-                                        plus_t
-                                        zero_t
-                                        mult_t]
-                                    )
-                                    (Require
-                                        operations
-                                        [t
-                                        plus_t
-                                        zero_t
-                                        mult_t]
                                     )]
                                 ),
                             mult_integer:

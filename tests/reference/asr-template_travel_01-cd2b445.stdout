@@ -2137,26 +2137,6 @@
                                         plus_t
                                         d_divided_by_t
                                         d_divided_by_s]
-                                    )
-                                    (Require
-                                        operations
-                                        [d
-                                        t
-                                        s
-                                        plus_d
-                                        plus_t
-                                        d_divided_by_t
-                                        d_divided_by_s]
-                                    )
-                                    (Require
-                                        operations
-                                        [d
-                                        t
-                                        s
-                                        plus_d
-                                        plus_t
-                                        d_divided_by_t
-                                        d_divided_by_s]
                                     )]
                                 )
                         })

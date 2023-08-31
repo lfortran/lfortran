@@ -1958,26 +1958,6 @@
                                         plus_t
                                         d_divided_by_t
                                         d_divided_by_s]
-                                    )
-                                    (Require
-                                        operations
-                                        [d
-                                        t
-                                        s
-                                        plus_d
-                                        plus_t
-                                        d_divided_by_t
-                                        d_divided_by_s]
-                                    )
-                                    (Require
-                                        operations
-                                        [d
-                                        t
-                                        s
-                                        plus_d
-                                        plus_t
-                                        d_divided_by_t
-                                        d_divided_by_s]
                                     )]
                                 ),
                             travel_tmpl2:
@@ -2708,12 +2688,6 @@
                                     plus
                                     div]
                                     [(Require
-                                        operations
-                                        [t
-                                        plus
-                                        div]
-                                    )
-                                    (Require
                                         operations
                                         [t
                                         plus

@@ -465,18 +465,6 @@
                                         [t
                                         plus_t
                                         zero_t]
-                                    )
-                                    (Require
-                                        operations
-                                        [t
-                                        plus_t
-                                        zero_t]
-                                    )
-                                    (Require
-                                        operations
-                                        [t
-                                        plus_t
-                                        zero_t]
                                     )]
                                 ),
                             operations:

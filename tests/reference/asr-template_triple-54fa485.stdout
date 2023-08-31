@@ -1738,16 +1738,6 @@
                                         magma_r
                                         [t
                                         plus_t]
-                                    )
-                                    (Require
-                                        magma_r
-                                        [t
-                                        plus_t]
-                                    )
-                                    (Require
-                                        magma_r
-                                        [t
-                                        plus_t]
                                     )]
                                 )
                         })

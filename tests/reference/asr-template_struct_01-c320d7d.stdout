@@ -345,14 +345,6 @@
                                     [(Require
                                         r
                                         [t]
-                                    )
-                                    (Require
-                                        r
-                                        [t]
-                                    )
-                                    (Require
-                                        r
-                                        [t]
                                     )]
                                 ),
                             test_template:

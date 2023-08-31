@@ -371,14 +371,6 @@
                                     [(Require
                                         default_behavior
                                         [t]
-                                    )
-                                    (Require
-                                        default_behavior
-                                        [t]
-                                    )
-                                    (Require
-                                        default_behavior
-                                        [t]
                                     )]
                                 ),
                             test_reverse:
