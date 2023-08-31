@@ -1,3 +1,5 @@
+__asr_avg_s_from_t
+__asr___asr_avg_s_from_t
 (TranslationUnit
     (SymbolTable
         1
@@ -117,14 +119,14 @@
                                     (SymbolTable
                                         24
                                         {
-                                            __asr_generic_avg_s_from_t:
+                                            __asr___asr_avg_s_from_t:
                                                 (Function
                                                     (SymbolTable
-                                                        27
+                                                        28
                                                         {
                                                             avg:
                                                                 (Variable
-                                                                    27
+                                                                    28
                                                                     avg
                                                                     []
                                                                     ReturnVar
@@ -140,7 +142,7 @@
                                                                 ),
                                                             d1:
                                                                 (Variable
-                                                                    27
+                                                                    28
                                                                     d1
                                                                     []
                                                                     In
@@ -156,7 +158,7 @@
                                                                 ),
                                                             d2:
                                                                 (Variable
-                                                                    27
+                                                                    28
                                                                     d2
                                                                     []
                                                                     In
@@ -172,7 +174,7 @@
                                                                 ),
                                                             t1:
                                                                 (Variable
-                                                                    27
+                                                                    28
                                                                     t1
                                                                     []
                                                                     In
@@ -188,7 +190,7 @@
                                                                 ),
                                                             t2:
                                                                 (Variable
-                                                                    27
+                                                                    28
                                                                     t2
                                                                     []
                                                                     In
@@ -203,7 +205,7 @@
                                                                     .false.
                                                                 )
                                                         })
-                                                    __asr_generic_avg_s_from_t
+                                                    __asr___asr_avg_s_from_t
                                                     (FunctionType
                                                         [(Real 4)
                                                         (Real 4)
@@ -223,20 +225,20 @@
                                                     )
                                                     [add_real
                                                     slash_real]
-                                                    [(Var 27 d1)
-                                                    (Var 27 t1)
-                                                    (Var 27 d2)
-                                                    (Var 27 t2)]
+                                                    [(Var 28 d1)
+                                                    (Var 28 t1)
+                                                    (Var 28 d2)
+                                                    (Var 28 t2)]
                                                     [(=
-                                                        (Var 27 avg)
+                                                        (Var 28 avg)
                                                         (FunctionCall
                                                             23 slash_real
                                                             ()
                                                             [((FunctionCall
                                                                 23 add_real
                                                                 ()
-                                                                [((Var 27 d1))
-                                                                ((Var 27 d2))]
+                                                                [((Var 28 d1))
+                                                                ((Var 28 d2))]
                                                                 (Real 4)
                                                                 ()
                                                                 ()
@@ -244,8 +246,8 @@
                                                             ((FunctionCall
                                                                 23 add_real
                                                                 ()
-                                                                [((Var 27 t1))
-                                                                ((Var 27 t2))]
+                                                                [((Var 28 t1))
+                                                                ((Var 28 t2))]
                                                                 (Real 4)
                                                                 ()
                                                                 ()
@@ -256,7 +258,7 @@
                                                         )
                                                         ()
                                                     )]
-                                                    (Var 27 avg)
+                                                    (Var 28 avg)
                                                     Public
                                                     .false.
                                                     .false.
@@ -367,7 +369,7 @@
                                                         .false.
                                                     )
                                                     [slash_real
-                                                    __asr_generic_avg_s_from_t]
+                                                    __asr___asr_avg_s_from_t]
                                                     [(Var 25 d1)
                                                     (Var 25 s1)
                                                     (Var 25 d2)
@@ -375,7 +377,7 @@
                                                     [(=
                                                         (Var 25 avg)
                                                         (FunctionCall
-                                                            24 __asr_generic_avg_s_from_t
+                                                            24 __asr___asr_avg_s_from_t
                                                             ()
                                                             [((Var 25 d1))
                                                             ((FunctionCall
@@ -1958,6 +1960,26 @@
                                         plus_t
                                         d_divided_by_t
                                         d_divided_by_s]
+                                    )
+                                    (Require
+                                        operations
+                                        [d
+                                        t
+                                        s
+                                        plus_d
+                                        plus_t
+                                        d_divided_by_t
+                                        d_divided_by_s]
+                                    )
+                                    (Require
+                                        operations
+                                        [d
+                                        t
+                                        s
+                                        plus_d
+                                        plus_t
+                                        d_divided_by_t
+                                        d_divided_by_s]
                                     )]
                                 ),
                             travel_tmpl2:
@@ -1965,6 +1987,177 @@
                                     (SymbolTable
                                         18
                                         {
+                                            __asr_avg_s_from_t:
+                                                (Function
+                                                    (SymbolTable
+                                                        27
+                                                        {
+                                                            avg:
+                                                                (Variable
+                                                                    27
+                                                                    avg
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            d1:
+                                                                (Variable
+                                                                    27
+                                                                    d1
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            d2:
+                                                                (Variable
+                                                                    27
+                                                                    d2
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            t1:
+                                                                (Variable
+                                                                    27
+                                                                    t1
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            t2:
+                                                                (Variable
+                                                                    27
+                                                                    t2
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    __asr_avg_s_from_t
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            t
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                        )]
+                                                        (TypeParameter
+                                                            t
+                                                        )
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    [plus
+                                                    div]
+                                                    [(Var 27 d1)
+                                                    (Var 27 t1)
+                                                    (Var 27 d2)
+                                                    (Var 27 t2)]
+                                                    [(=
+                                                        (Var 27 avg)
+                                                        (FunctionCall
+                                                            18 div
+                                                            ()
+                                                            [((FunctionCall
+                                                                18 plus
+                                                                ()
+                                                                [((Var 27 d1))
+                                                                ((Var 27 d2))]
+                                                                (TypeParameter
+                                                                    t
+                                                                )
+                                                                ()
+                                                                ()
+                                                            ))
+                                                            ((FunctionCall
+                                                                18 plus
+                                                                ()
+                                                                [((Var 27 t1))
+                                                                ((Var 27 t2))]
+                                                                (TypeParameter
+                                                                    t
+                                                                )
+                                                                ()
+                                                                ()
+                                                            ))]
+                                                            (TypeParameter
+                                                                t
+                                                            )
+                                                            ()
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )]
+                                                    (Var 27 avg)
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
                                             avg_s_from_s:
                                                 (Function
                                                     (SymbolTable
@@ -2090,7 +2283,7 @@
                                                         .false.
                                                     )
                                                     [div
-                                                    avg_s_from_t]
+                                                    __asr_avg_s_from_t]
                                                     [(Var 21 d1)
                                                     (Var 21 s1)
                                                     (Var 21 d2)
@@ -2098,7 +2291,7 @@
                                                     [(=
                                                         (Var 21 avg)
                                                         (FunctionCall
-                                                            18 avg_s_from_t
+                                                            18 __asr_avg_s_from_t
                                                             ()
                                                             [((Var 21 d1))
                                                             ((FunctionCall
@@ -2517,6 +2710,12 @@
                                     plus
                                     div]
                                     [(Require
+                                        operations
+                                        [t
+                                        plus
+                                        div]
+                                    )
+                                    (Require
                                         operations
                                         [t
                                         plus

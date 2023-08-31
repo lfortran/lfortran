@@ -1,3 +1,5 @@
+0
+i
 (TranslationUnit
     (SymbolTable
         1
@@ -369,6 +371,21 @@
                                     f
                                     mult]
                                     [(Require
+                                        r
+                                        [t
+                                        f]
+                                    )
+                                    (Require
+                                        r
+                                        [t
+                                        f]
+                                    )
+                                    (Require
+                                        r
+                                        [t
+                                        f]
+                                    )
+                                    (Require
                                         r
                                         [t
                                         f]

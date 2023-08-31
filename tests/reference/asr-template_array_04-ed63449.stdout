@@ -1,3 +1,10 @@
+0
+i
+0
+j
+0
+tmp
+__asr_swap
 (TranslationUnit
     (SymbolTable
         1
@@ -371,6 +378,14 @@
                                     [(Require
                                         default_behavior
                                         [t]
+                                    )
+                                    (Require
+                                        default_behavior
+                                        [t]
+                                    )
+                                    (Require
+                                        default_behavior
+                                        [t]
                                     )]
                                 ),
                             test_reverse:
@@ -378,7 +393,7 @@
                                     (SymbolTable
                                         7
                                         {
-                                            __asr_generic_swap:
+                                            __asr_swap:
                                                 (Function
                                                     (SymbolTable
                                                         10
@@ -432,7 +447,7 @@
                                                                     .false.
                                                                 )
                                                         })
-                                                    __asr_generic_swap
+                                                    __asr_swap
                                                     (FunctionType
                                                         [(Integer 4)
                                                         (Integer 4)]
@@ -572,7 +587,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [__asr_generic_swap]
+                                                    [__asr_swap]
                                                     [(Var 8 arr)]
                                                     [(DoLoop
                                                         ()
@@ -614,7 +629,7 @@
                                                             ()
                                                         )
                                                         (SubroutineCall
-                                                            7 __asr_generic_swap
+                                                            7 __asr_swap
                                                             ()
                                                             [((ArrayItem
                                                                 (Var 8 arr)

@@ -1,0 +1,1346 @@
+0
+1_resize
+0
+1_vector_elements
+0
+1_vector_sz
+0
+new_size
+0
+1_vector_elements
+0
+1_vector_sz
+0
+allocated
+0
+tmp
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin),
+            template_vector:
+                (Program
+                    (SymbolTable
+                        11
+                        {
+                            main:
+                                (ExternalSymbol
+                                    11
+                                    main
+                                    2 main
+                                    template_vector_m
+                                    []
+                                    main
+                                    Public
+                                ),
+                            vector_t:
+                                (ExternalSymbol
+                                    11
+                                    vector_t
+                                    2 vector_t
+                                    template_vector_m
+                                    []
+                                    vector_t
+                                    Public
+                                )
+                        })
+                    template_vector
+                    [template_vector_m]
+                    [(SubroutineCall
+                        11 main
+                        ()
+                        []
+                        ()
+                    )]
+                ),
+            template_vector_m:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            main:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            __asr_intvector_push_back:
+                                                (Function
+                                                    (SymbolTable
+                                                        9
+                                                        {
+                                                            1_intvector_elements:
+                                                                (ExternalSymbol
+                                                                    9
+                                                                    1_intvector_elements
+                                                                    8 elements
+                                                                    intvector
+                                                                    []
+                                                                    elements
+                                                                    Public
+                                                                ),
+                                                            1_intvector_resize:
+                                                                (ExternalSymbol
+                                                                    9
+                                                                    1_intvector_resize
+                                                                    8 resize
+                                                                    intvector
+                                                                    []
+                                                                    resize
+                                                                    Public
+                                                                ),
+                                                            1_intvector_sz:
+                                                                (ExternalSymbol
+                                                                    9
+                                                                    1_intvector_sz
+                                                                    8 sz
+                                                                    intvector
+                                                                    []
+                                                                    sz
+                                                                    Public
+                                                                ),
+                                                            item:
+                                                                (Variable
+                                                                    9
+                                                                    item
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            new_size:
+                                                                (Variable
+                                                                    9
+                                                                    new_size
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            this:
+                                                                (Variable
+                                                                    9
+                                                                    this
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Class
+                                                                        7 intvector
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    __asr_intvector_push_back
+                                                    (FunctionType
+                                                        [(Class
+                                                            7 intvector
+                                                        )
+                                                        (Integer 4)]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    [1_intvector_resize]
+                                                    [(Var 9 this)
+                                                    (Var 9 item)]
+                                                    [(=
+                                                        (Var 9 new_size)
+                                                        (IntegerBinOp
+                                                            (StructInstanceMember
+                                                                (Var 9 this)
+                                                                9 1_intvector_sz
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            Add
+                                                            (IntegerConstant 1 (Integer 4))
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )
+                                                    (SubroutineCall
+                                                        9 1_intvector_resize
+                                                        ()
+                                                        [((Var 9 new_size))]
+                                                        (Var 9 this)
+                                                    )
+                                                    (=
+                                                        (ArrayItem
+                                                            (StructInstanceMember
+                                                                (Var 9 this)
+                                                                9 1_intvector_elements
+                                                                (Allocatable
+                                                                    (Array
+                                                                        (Integer 4)
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                )
+                                                                ()
+                                                            )
+                                                            [(()
+                                                            (Var 9 new_size)
+                                                            ())]
+                                                            (Integer 4)
+                                                            ColMajor
+                                                            ()
+                                                        )
+                                                        (Var 9 item)
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (StructInstanceMember
+                                                            (Var 9 this)
+                                                            9 1_intvector_sz
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        (Var 9 new_size)
+                                                        ()
+                                                    )]
+                                                    ()
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            __asr_intvector_resize:
+                                                (Function
+                                                    (SymbolTable
+                                                        10
+                                                        {
+                                                            1_intvector_elements:
+                                                                (ExternalSymbol
+                                                                    10
+                                                                    1_intvector_elements
+                                                                    8 elements
+                                                                    intvector
+                                                                    []
+                                                                    elements
+                                                                    Public
+                                                                ),
+                                                            1_intvector_sz:
+                                                                (ExternalSymbol
+                                                                    10
+                                                                    1_intvector_sz
+                                                                    8 sz
+                                                                    intvector
+                                                                    []
+                                                                    sz
+                                                                    Public
+                                                                ),
+                                                            allocated:
+                                                                (ExternalSymbol
+                                                                    10
+                                                                    allocated
+                                                                    13 allocated
+                                                                    lfortran_intrinsic_builtin
+                                                                    []
+                                                                    allocated
+                                                                    Private
+                                                                ),
+                                                            i:
+                                                                (Variable
+                                                                    10
+                                                                    i
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            n:
+                                                                (Variable
+                                                                    10
+                                                                    n
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            this:
+                                                                (Variable
+                                                                    10
+                                                                    this
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Class
+                                                                        7 intvector
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            tmp:
+                                                                (Variable
+                                                                    10
+                                                                    tmp
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Allocatable
+                                                                        (Array
+                                                                            (Integer 4)
+                                                                            [(()
+                                                                            ())]
+                                                                            DescriptorArray
+                                                                        )
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    __asr_intvector_resize
+                                                    (FunctionType
+                                                        [(Class
+                                                            7 intvector
+                                                        )
+                                                        (Integer 4)]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    [allocated]
+                                                    [(Var 10 this)
+                                                    (Var 10 n)]
+                                                    [(If
+                                                        (LogicalNot
+                                                            (FunctionCall
+                                                                10 allocated
+                                                                ()
+                                                                [((StructInstanceMember
+                                                                    (Var 10 this)
+                                                                    10 1_intvector_elements
+                                                                    (Allocatable
+                                                                        (Array
+                                                                            (Integer 4)
+                                                                            [(()
+                                                                            ())]
+                                                                            DescriptorArray
+                                                                        )
+                                                                    )
+                                                                    ()
+                                                                ))]
+                                                                (Logical 4)
+                                                                ()
+                                                                ()
+                                                            )
+                                                            (Logical 4)
+                                                            ()
+                                                        )
+                                                        [(Allocate
+                                                            [((StructInstanceMember
+                                                                (Var 10 this)
+                                                                10 1_intvector_elements
+                                                                (Allocatable
+                                                                    (Array
+                                                                        (Integer 4)
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                )
+                                                                ()
+                                                            )
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (Var 10 n))]
+                                                            ()
+                                                            ())]
+                                                            ()
+                                                            ()
+                                                            ()
+                                                        )
+                                                        (Return)]
+                                                        []
+                                                    )
+                                                    (If
+                                                        (IntegerCompare
+                                                            (StructInstanceMember
+                                                                (Var 10 this)
+                                                                10 1_intvector_sz
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            GtE
+                                                            (Var 10 n)
+                                                            (Logical 4)
+                                                            ()
+                                                        )
+                                                        [(Return)]
+                                                        []
+                                                    )
+                                                    (Allocate
+                                                        [((Var 10 tmp)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (StructInstanceMember
+                                                            (Var 10 this)
+                                                            10 1_intvector_sz
+                                                            (Integer 4)
+                                                            ()
+                                                        ))]
+                                                        ()
+                                                        ())]
+                                                        ()
+                                                        ()
+                                                        ()
+                                                    )
+                                                    (DoLoop
+                                                        ()
+                                                        ((Var 10 i)
+                                                        (IntegerConstant 1 (Integer 4))
+                                                        (StructInstanceMember
+                                                            (Var 10 this)
+                                                            10 1_intvector_sz
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ())
+                                                        [(=
+                                                            (ArrayItem
+                                                                (Var 10 tmp)
+                                                                [(()
+                                                                (Var 10 i)
+                                                                ())]
+                                                                (Integer 4)
+                                                                ColMajor
+                                                                ()
+                                                            )
+                                                            (ArrayItem
+                                                                (StructInstanceMember
+                                                                    (Var 10 this)
+                                                                    10 1_intvector_elements
+                                                                    (Allocatable
+                                                                        (Array
+                                                                            (Integer 4)
+                                                                            [(()
+                                                                            ())]
+                                                                            DescriptorArray
+                                                                        )
+                                                                    )
+                                                                    ()
+                                                                )
+                                                                [(()
+                                                                (Var 10 i)
+                                                                ())]
+                                                                (Integer 4)
+                                                                ColMajor
+                                                                ()
+                                                            )
+                                                            ()
+                                                        )]
+                                                    )
+                                                    (Allocate
+                                                        [((StructInstanceMember
+                                                            (Var 10 this)
+                                                            10 1_intvector_elements
+                                                            (Allocatable
+                                                                (Array
+                                                                    (Integer 4)
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
+                                                                )
+                                                            )
+                                                            ()
+                                                        )
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (Var 10 n))]
+                                                        ()
+                                                        ())]
+                                                        ()
+                                                        ()
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (ArraySection
+                                                            (StructInstanceMember
+                                                                (Var 10 this)
+                                                                10 1_intvector_elements
+                                                                (Allocatable
+                                                                    (Array
+                                                                        (Integer 4)
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                )
+                                                                ()
+                                                            )
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (StructInstanceMember
+                                                                (Var 10 this)
+                                                                10 1_intvector_sz
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            (IntegerConstant 1 (Integer 4)))]
+                                                            (Allocatable
+                                                                (Array
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
+                                                                )
+                                                            )
+                                                            ()
+                                                        )
+                                                        (Var 10 tmp)
+                                                        ()
+                                                    )
+                                                    (ImplicitDeallocate
+                                                        [(Var 10 tmp)]
+                                                    )]
+                                                    ()
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            i:
+                                                (Variable
+                                                    7
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            intvector:
+                                                (StructType
+                                                    (SymbolTable
+                                                        8
+                                                        {
+                                                            elements:
+                                                                (Variable
+                                                                    8
+                                                                    elements
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Allocatable
+                                                                        (Array
+                                                                            (Integer 4)
+                                                                            [(()
+                                                                            ())]
+                                                                            DescriptorArray
+                                                                        )
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            push_back:
+                                                                (ClassProcedure
+                                                                    8
+                                                                    push_back
+                                                                    ()
+                                                                    __asr_intvector_push_back
+                                                                    7 __asr_intvector_push_back
+                                                                    Source
+                                                                    .false.
+                                                                ),
+                                                            resize:
+                                                                (ClassProcedure
+                                                                    8
+                                                                    resize
+                                                                    ()
+                                                                    __asr_intvector_resize
+                                                                    7 __asr_intvector_resize
+                                                                    Source
+                                                                    .false.
+                                                                ),
+                                                            sz:
+                                                                (Variable
+                                                                    8
+                                                                    sz
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Save
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    intvector
+                                                    []
+                                                    [elements
+                                                    sz]
+                                                    Source
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    []
+                                                    ()
+                                                    ()
+                                                ),
+                                            v:
+                                                (Variable
+                                                    7
+                                                    v
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        7 intvector
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    main
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    [(=
+                                        (Var 7 v)
+                                        (StructTypeConstructor
+                                            7 intvector
+                                            [(())
+                                            (())]
+                                            (Struct
+                                                7 intvector
+                                            )
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            vector_t:
+                                (Template
+                                    (SymbolTable
+                                        3
+                                        {
+                                            push_back:
+                                                (Function
+                                                    (SymbolTable
+                                                        5
+                                                        {
+                                                            1_resize:
+                                                                (ExternalSymbol
+                                                                    5
+                                                                    1_resize
+                                                                    4 resize
+                                                                    vector
+                                                                    []
+                                                                    resize
+                                                                    Public
+                                                                ),
+                                                            1_vector_elements:
+                                                                (ExternalSymbol
+                                                                    5
+                                                                    1_vector_elements
+                                                                    4 elements
+                                                                    vector
+                                                                    []
+                                                                    elements
+                                                                    Public
+                                                                ),
+                                                            1_vector_sz:
+                                                                (ExternalSymbol
+                                                                    5
+                                                                    1_vector_sz
+                                                                    4 sz
+                                                                    vector
+                                                                    []
+                                                                    sz
+                                                                    Public
+                                                                ),
+                                                            item:
+                                                                (Variable
+                                                                    5
+                                                                    item
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            new_size:
+                                                                (Variable
+                                                                    5
+                                                                    new_size
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            this:
+                                                                (Variable
+                                                                    5
+                                                                    this
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Class
+                                                                        3 vector
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    push_back
+                                                    (FunctionType
+                                                        [(Class
+                                                            3 vector
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                        )]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    [1_resize]
+                                                    [(Var 5 this)
+                                                    (Var 5 item)]
+                                                    [(=
+                                                        (Var 5 new_size)
+                                                        (IntegerBinOp
+                                                            (StructInstanceMember
+                                                                (Var 5 this)
+                                                                5 1_vector_sz
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            Add
+                                                            (IntegerConstant 1 (Integer 4))
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )
+                                                    (SubroutineCall
+                                                        5 1_resize
+                                                        ()
+                                                        [((Var 5 new_size))]
+                                                        (Var 5 this)
+                                                    )
+                                                    (=
+                                                        (ArrayItem
+                                                            (StructInstanceMember
+                                                                (Var 5 this)
+                                                                5 1_vector_elements
+                                                                (Allocatable
+                                                                    (Array
+                                                                        (TypeParameter
+                                                                            t
+                                                                        )
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                )
+                                                                ()
+                                                            )
+                                                            [(()
+                                                            (Var 5 new_size)
+                                                            ())]
+                                                            (TypeParameter
+                                                                t
+                                                            )
+                                                            ColMajor
+                                                            ()
+                                                        )
+                                                        (Var 5 item)
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (StructInstanceMember
+                                                            (Var 5 this)
+                                                            5 1_vector_sz
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        (Var 5 new_size)
+                                                        ()
+                                                    )]
+                                                    ()
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            resize:
+                                                (Function
+                                                    (SymbolTable
+                                                        6
+                                                        {
+                                                            1_vector_elements:
+                                                                (ExternalSymbol
+                                                                    6
+                                                                    1_vector_elements
+                                                                    4 elements
+                                                                    vector
+                                                                    []
+                                                                    elements
+                                                                    Public
+                                                                ),
+                                                            1_vector_sz:
+                                                                (ExternalSymbol
+                                                                    6
+                                                                    1_vector_sz
+                                                                    4 sz
+                                                                    vector
+                                                                    []
+                                                                    sz
+                                                                    Public
+                                                                ),
+                                                            allocated:
+                                                                (ExternalSymbol
+                                                                    6
+                                                                    allocated
+                                                                    13 allocated
+                                                                    lfortran_intrinsic_builtin
+                                                                    []
+                                                                    allocated
+                                                                    Private
+                                                                ),
+                                                            i:
+                                                                (Variable
+                                                                    6
+                                                                    i
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            n:
+                                                                (Variable
+                                                                    6
+                                                                    n
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            this:
+                                                                (Variable
+                                                                    6
+                                                                    this
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Class
+                                                                        3 vector
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            tmp:
+                                                                (Variable
+                                                                    6
+                                                                    tmp
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Allocatable
+                                                                        (Array
+                                                                            (TypeParameter
+                                                                                t
+                                                                            )
+                                                                            [(()
+                                                                            ())]
+                                                                            DescriptorArray
+                                                                        )
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    resize
+                                                    (FunctionType
+                                                        [(Class
+                                                            3 vector
+                                                        )
+                                                        (Integer 4)]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    [allocated]
+                                                    [(Var 6 this)
+                                                    (Var 6 n)]
+                                                    [(If
+                                                        (LogicalNot
+                                                            (FunctionCall
+                                                                6 allocated
+                                                                ()
+                                                                [((StructInstanceMember
+                                                                    (Var 6 this)
+                                                                    6 1_vector_elements
+                                                                    (Allocatable
+                                                                        (Array
+                                                                            (TypeParameter
+                                                                                t
+                                                                            )
+                                                                            [(()
+                                                                            ())]
+                                                                            DescriptorArray
+                                                                        )
+                                                                    )
+                                                                    ()
+                                                                ))]
+                                                                (Logical 4)
+                                                                ()
+                                                                ()
+                                                            )
+                                                            (Logical 4)
+                                                            ()
+                                                        )
+                                                        [(Allocate
+                                                            [((StructInstanceMember
+                                                                (Var 6 this)
+                                                                6 1_vector_elements
+                                                                (Allocatable
+                                                                    (Array
+                                                                        (TypeParameter
+                                                                            t
+                                                                        )
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                )
+                                                                ()
+                                                            )
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (Var 6 n))]
+                                                            ()
+                                                            ())]
+                                                            ()
+                                                            ()
+                                                            ()
+                                                        )
+                                                        (Return)]
+                                                        []
+                                                    )
+                                                    (If
+                                                        (IntegerCompare
+                                                            (StructInstanceMember
+                                                                (Var 6 this)
+                                                                6 1_vector_sz
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            GtE
+                                                            (Var 6 n)
+                                                            (Logical 4)
+                                                            ()
+                                                        )
+                                                        [(Return)]
+                                                        []
+                                                    )
+                                                    (Allocate
+                                                        [((Var 6 tmp)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (StructInstanceMember
+                                                            (Var 6 this)
+                                                            6 1_vector_sz
+                                                            (Integer 4)
+                                                            ()
+                                                        ))]
+                                                        ()
+                                                        ())]
+                                                        ()
+                                                        ()
+                                                        ()
+                                                    )
+                                                    (DoLoop
+                                                        ()
+                                                        ((Var 6 i)
+                                                        (IntegerConstant 1 (Integer 4))
+                                                        (StructInstanceMember
+                                                            (Var 6 this)
+                                                            6 1_vector_sz
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ())
+                                                        [(=
+                                                            (ArrayItem
+                                                                (Var 6 tmp)
+                                                                [(()
+                                                                (Var 6 i)
+                                                                ())]
+                                                                (TypeParameter
+                                                                    t
+                                                                )
+                                                                ColMajor
+                                                                ()
+                                                            )
+                                                            (ArrayItem
+                                                                (StructInstanceMember
+                                                                    (Var 6 this)
+                                                                    6 1_vector_elements
+                                                                    (Allocatable
+                                                                        (Array
+                                                                            (TypeParameter
+                                                                                t
+                                                                            )
+                                                                            [(()
+                                                                            ())]
+                                                                            DescriptorArray
+                                                                        )
+                                                                    )
+                                                                    ()
+                                                                )
+                                                                [(()
+                                                                (Var 6 i)
+                                                                ())]
+                                                                (TypeParameter
+                                                                    t
+                                                                )
+                                                                ColMajor
+                                                                ()
+                                                            )
+                                                            ()
+                                                        )]
+                                                    )
+                                                    (Allocate
+                                                        [((StructInstanceMember
+                                                            (Var 6 this)
+                                                            6 1_vector_elements
+                                                            (Allocatable
+                                                                (Array
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
+                                                                )
+                                                            )
+                                                            ()
+                                                        )
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (Var 6 n))]
+                                                        ()
+                                                        ())]
+                                                        ()
+                                                        ()
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (ArraySection
+                                                            (StructInstanceMember
+                                                                (Var 6 this)
+                                                                6 1_vector_elements
+                                                                (Allocatable
+                                                                    (Array
+                                                                        (TypeParameter
+                                                                            t
+                                                                        )
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                )
+                                                                ()
+                                                            )
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (StructInstanceMember
+                                                                (Var 6 this)
+                                                                6 1_vector_sz
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            (IntegerConstant 1 (Integer 4)))]
+                                                            (Allocatable
+                                                                (Array
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
+                                                                )
+                                                            )
+                                                            ()
+                                                        )
+                                                        (Var 6 tmp)
+                                                        ()
+                                                    )
+                                                    (ImplicitDeallocate
+                                                        [(Var 6 tmp)]
+                                                    )]
+                                                    ()
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            t:
+                                                (Variable
+                                                    3
+                                                    t
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        t
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            vector:
+                                                (StructType
+                                                    (SymbolTable
+                                                        4
+                                                        {
+                                                            elements:
+                                                                (Variable
+                                                                    4
+                                                                    elements
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Allocatable
+                                                                        (Array
+                                                                            (TypeParameter
+                                                                                t
+                                                                            )
+                                                                            [(()
+                                                                            ())]
+                                                                            DescriptorArray
+                                                                        )
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            push_back:
+                                                                (ClassProcedure
+                                                                    4
+                                                                    push_back
+                                                                    ()
+                                                                    push_back
+                                                                    3 push_back
+                                                                    Source
+                                                                    .false.
+                                                                ),
+                                                            resize:
+                                                                (ClassProcedure
+                                                                    4
+                                                                    resize
+                                                                    ()
+                                                                    resize
+                                                                    3 resize
+                                                                    Source
+                                                                    .false.
+                                                                ),
+                                                            sz:
+                                                                (Variable
+                                                                    4
+                                                                    sz
+                                                                    []
+                                                                    Local
+                                                                    (IntegerConstant 0 (Integer 4))
+                                                                    (IntegerConstant 0 (Integer 4))
+                                                                    Save
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    vector
+                                                    []
+                                                    [elements
+                                                    sz]
+                                                    Source
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    []
+                                                    ()
+                                                    ()
+                                                )
+                                        })
+                                    vector_t
+                                    [t]
+                                    []
+                                )
+                        })
+                    template_vector_m
+                    [lfortran_intrinsic_builtin
+                    template_vector_m]
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

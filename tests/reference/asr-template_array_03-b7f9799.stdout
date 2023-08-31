@@ -1,3 +1,11 @@
+0
+elem
+0
+x
+0
+y
+0
+z
 (TranslationUnit
     (SymbolTable
         1
@@ -817,6 +825,20 @@
                                     zero_t
                                     mult_t]
                                     [(Require
+                                        operations
+                                        [t
+                                        plus_t
+                                        zero_t
+                                        mult_t]
+                                    )
+                                    (Require
+                                        operations
+                                        [t
+                                        plus_t
+                                        zero_t
+                                        mult_t]
+                                    )
+                                    (Require
                                         operations
                                         [t
                                         plus_t

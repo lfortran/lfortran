@@ -1,3 +1,19 @@
+0
+i
+0
+j
+0
+n
+0
+pos
+0
+i
+0
+j
+0
+n
+0
+pos
 (TranslationUnit
     (SymbolTable
         1
@@ -1401,6 +1417,16 @@
                                     [t
                                     ne]
                                     [(Require
+                                        eq
+                                        [t
+                                        ne]
+                                    )
+                                    (Require
+                                        eq
+                                        [t
+                                        ne]
+                                    )
+                                    (Require
                                         eq
                                         [t
                                         ne]

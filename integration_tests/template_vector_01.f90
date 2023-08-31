@@ -17,7 +17,7 @@ module template_vector_m
     
     contains
 
-        subroutine push_back(this)
+        subroutine push_back(this, item)
             class(Vector), intent(in) :: this
             type(T), intent(in) :: item
 
@@ -49,7 +49,7 @@ module template_vector_m
             end do
     
             allocate(this%elements(n))
-    
+
             this%elements(1:this%sz) = tmp 
         end subroutine
 
@@ -59,10 +59,10 @@ contains
 
     subroutine main()
         instantiate vector_t(integer), only: IntVector => Vector
-        type(IntVector) :: v
+        class(IntVector) :: v
         integer :: i
         v = IntVector()
-        !call __asr_intvector_push_back(v, 1)
+        ! call v%push_back(1)
     end subroutine
 
 end module
