@@ -1808,6 +1808,17 @@ public:
                 }
                 break ;
             }
+            case ASRUtils::IntrinsicScalarFunctions::FlipSign: {
+                Vec<ASR::call_arg_t> args;
+                args.reserve(al, 2);
+                ASR::call_arg_t arg0_, arg1_;
+                arg0_.loc = x.m_args[0]->base.loc, arg0_.m_value = x.m_args[0];
+                args.push_back(al, arg0_);
+                arg1_.loc = x.m_args[1]->base.loc, arg1_.m_value = x.m_args[1];
+                args.push_back(al, arg1_);
+                generate_flip_sign(args.p);
+                break;
+            }
             default: {
                 throw CodeGenError("Either the '" + ASRUtils::IntrinsicScalarFunctionRegistry::
                         get_intrinsic_function_name(x.m_intrinsic_id) +
@@ -7516,7 +7527,7 @@ public:
         llvm::Value* int_var = builder->CreateBitCast(CreateLoad(variable), shifted_signal->getType());
         tmp = builder->CreateXor(shifted_signal, int_var);
         llvm::Type* variable_type = llvm_utils->get_type_from_ttype_t_util(asr_variable->m_type, module.get());
-        builder->CreateStore(builder->CreateBitCast(tmp, variable_type->getPointerTo()), variable);
+        tmp = builder->CreateBitCast(tmp, variable_type);
     }
 
     void generate_fma(ASR::call_arg_t* m_args) {
@@ -8622,6 +8633,11 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
 #endif
     ASRToLLVMVisitor v(al, context, infile, co, diagnostics);
     LCompilers::PassOptions pass_options;
+
+    std::vector<int64_t> skip_optimization_func_instantiation;
+    skip_optimization_func_instantiation.push_back(static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::FlipSign));
+    skip_optimization_func_instantiation.push_back(static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::FMA));
+
     pass_options.runtime_library_dir = co.runtime_library_dir;
     pass_options.mod_files_dir = co.mod_files_dir;
     pass_options.include_dirs = co.include_dirs;
@@ -8630,7 +8646,9 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     pass_options.verbose = co.verbose;
     pass_options.use_loop_variable_after_loop = co.use_loop_variable_after_loop;
     pass_options.realloc_lhs = co.realloc_lhs;
+    pass_options.skip_optimization_func_instantiation = skip_optimization_func_instantiation;
     pass_manager.rtlib = co.rtlib;
+
     pass_options.all_symbols_mangling = co.all_symbols_mangling;
     pass_options.module_name_mangling = co.module_name_mangling;
     pass_options.global_symbols_mangling = co.global_symbols_mangling;
