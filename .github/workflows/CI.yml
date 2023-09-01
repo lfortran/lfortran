@@ -169,8 +169,8 @@ jobs:
             cd scipy
             git remote add ondrej https://github.com/certik/scipy
             git fetch ondrej
-            git checkout -t ondrej/special8
-            git checkout b8ee2a865500263d17d366d7b286ee3a60abe6ec
+            git checkout -t ondrej/special9
+            git checkout 5244ee49fd36b7c29e13079d69ecdd7561787de8
             micromamba env create -f environment.yml
             micromamba activate scipy-dev
             git submodule update --init
@@ -180,8 +180,8 @@ jobs:
             cp scipy/special/specfun.so $CONDA_PREFIX/lib/scipy/special/
             cp ../src/runtime/liblfortran_runtime.so $CONDA_PREFIX/lib/
             python dev.py build
-            mkdir -p ./build-install/lib/python3.10/scipy/special/
-            cp scipy/special/specfun.so ./build-install/lib/python3.10/scipy/special/
+            mkdir -p ./build-install/lib/python3.11/scipy/special/
+            cp scipy/special/specfun.so ./build-install/lib/python3.11/scipy/special/
             python dev.py test -t scipy.special -v
 
   build_to_wasm_and_upload:
