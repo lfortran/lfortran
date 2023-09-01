@@ -2569,7 +2569,6 @@ public:
             std::string new_sym_name = to_lower(use_symbol->m_local_rename);
             pass_instantiate_symbol(al, context_map, type_subs, symbol_subs,
                 current_scope, temp->m_symtab, new_sym_name, s);
-            context_map[generic_name] = new_sym_name;
         }
 
         if (x.n_symbols == 0) {
@@ -2579,7 +2578,6 @@ public:
                 if (ASR::is_a<ASR::Function_t>(*s) && !ASRUtils::is_template_arg(sym, s_name)) {
                     pass_instantiate_symbol(al, context_map, type_subs, symbol_subs,
                         current_scope, temp->m_symtab, s_name, s);
-                    context_map[s_name] = s_name;
                 }
             }
         }

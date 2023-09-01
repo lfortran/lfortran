@@ -13,13 +13,13 @@ public:
     SymbolTable *func_scope;            // the instantiate scope
     SymbolTable *current_scope;         // the new function scope
     SymbolTable *template_scope;        // the template scope, where the environment is
-    std::map<std::string, std::string> context_map;
+    std::map<std::string, std::string>& context_map;
     std::map<std::string, ASR::ttype_t*> type_subs;
     std::map<std::string, ASR::symbol_t*> symbol_subs;
     std::string new_sym_name;
     SetChar dependencies;
 
-    SymbolInstantiator(Allocator &al, std::map<std::string, std::string> context_map,
+    SymbolInstantiator(Allocator &al, std::map<std::string, std::string>& context_map,
             std::map<std::string, ASR::ttype_t*> type_subs,
             std::map<std::string, ASR::symbol_t*> symbol_subs, SymbolTable *func_scope,
             SymbolTable *template_scope, std::string new_sym_name):
@@ -193,6 +193,7 @@ public:
 
         ASR::symbol_t *t = ASR::down_cast<ASR::symbol_t>(result);
         func_scope->add_symbol(new_sym_name, t);
+        context_map[x->m_name] = new_sym_name;
 
         return t;
     }
@@ -234,7 +235,8 @@ public:
 
         ASR::symbol_t *t = ASR::down_cast<ASR::symbol_t>(result);
         func_scope->add_symbol(new_sym_name, t);
-
+        context_map[x->m_name] = new_sym_name;
+        
         return t;
     }
 
@@ -501,7 +503,7 @@ public:
 };
 
 ASR::symbol_t* pass_instantiate_symbol(Allocator &al,
-        std::map<std::string, std::string> context_map,
+        std::map<std::string, std::string>& context_map,
         std::map<std::string, ASR::ttype_t*> type_subs,
         std::map<std::string, ASR::symbol_t*> symbol_subs,
         SymbolTable *current_scope, SymbolTable* template_scope,
@@ -513,7 +515,7 @@ ASR::symbol_t* pass_instantiate_symbol(Allocator &al,
 }
 
 ASR::symbol_t* pass_instantiate_function_body(Allocator &al,
-        std::map<std::string, std::string> context_map,
+        std::map<std::string, std::string>& context_map,
         std::map<std::string, ASR::ttype_t*> type_subs,
         std::map<std::string, ASR::symbol_t*> symbol_subs,
         SymbolTable *current_scope, SymbolTable *template_scope,
