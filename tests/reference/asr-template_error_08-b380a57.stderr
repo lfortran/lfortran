@@ -1,5 +1,5 @@
-semantic error: Operator undefined for t + t
-  --> tests/errors/template_error_08.f90:22:17
-   |
-22 |             z = x + y
-   |                 ^^^^^ 
+semantic error: Symbol not found t
+ --> tests/errors/template_error_08.f90:7:9
+  |
+7 |         type :: T; end type
+  |         ^^^^^^^^^^^^^^^^^^^^ 

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-template_matrix-69b3f11",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/template_matrix.f90",
+    "infile_hash": "32f5179482e33be6e1a6704c26c1c00058e0f3eacdd903c68e053bf5",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-template_matrix-69b3f11.stdout",
+    "stdout_hash": "693ae138fb695b940f26d22195402d5f8c3c14c4e47efe36dc102cbb",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
