@@ -25,6 +25,11 @@ namespace LCompilers {
         SymbolTable *current_scope, SymbolTable *template_scope,
         ASR::Function_t *new_f, ASR::Function_t *f);
 
+    void check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
+        std::map<std::string, ASR::symbol_t*> &symbol_subs,
+        ASR::Function_t *f, ASR::symbol_t *sym_arg, const Location& loc,
+        diag::Diagnostics &diagnostics);
+
 } // namespace LCompilers
 
 #endif // LIBASR_PASS_INSTANTIATE_TEMPLATE_H
