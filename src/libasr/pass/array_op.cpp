@@ -1230,6 +1230,8 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                             al, loc, ASRUtils::type_get_past_allocatable(result_var_type)));
                     }
                 }
+
+                // Don't always create this temporary variable
                 ASR::expr_t* result_var_ = PassUtils::create_var(result_counter,
                     "_func_call_res", loc, result_var_type, al, current_scope);
                 result_counter += 1;
@@ -1297,7 +1299,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             pass_result.push_back(al, subrout_call);
 
             if (is_allocatable && result_var != *current_expr &&
-                ASRUtils::is_allocatable(result_var) && realloc_lhs) {
+                ASRUtils::is_allocatable(result_var)) { // Add realloc-lhs later
                 Vec<ASR::alloc_arg_t> vec_alloc;
                 vec_alloc.reserve(al, 1);
                 ASR::alloc_arg_t alloc_arg;
