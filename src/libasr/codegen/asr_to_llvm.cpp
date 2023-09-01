@@ -8630,6 +8630,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     pass_options.module_name_mangling = co.module_name_mangling;
     pass_options.global_symbols_mangling = co.global_symbols_mangling;
     pass_options.intrinsic_symbols_mangling = co.intrinsic_symbols_mangling;
+    pass_options.bindc_mangling = co.bindc_mangling;
     pass_options.mangle_underscore = co.mangle_underscore;
     pass_manager.apply_passes(al, &asr, pass_options, diagnostics);
 
