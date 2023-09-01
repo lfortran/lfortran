@@ -338,7 +338,9 @@ RUN(NAME arrays_op_17 LABELS gfortran llvm)
 RUN(NAME arrays_op_18 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs)
 RUN(NAME arrays_op_19 LABELS gfortran llvm NOFAST)
-RUN(NAME arrays_op_20 LABELS gfortran llvm)
+RUN(NAME arrays_op_20 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs)
+RUN(NAME arrays_op_21 LABELS gfortran llvm)
 RUN(NAME arrays_reshape_14 LABELS gfortran llvm)
 RUN(NAME arrays_elemental_15 LABELS gfortran llvm)
 RUN(NAME arrays_03_func LABELS gfortran cpp llvm wasm  NOFAST)
@@ -728,7 +730,8 @@ RUN(NAME allocate_04 LABELS gfortran llvm)
 RUN(NAME allocate_05 LABELS gfortran llvm)
 RUN(NAME allocate_06 LABELS gfortran llvm)
 RUN(NAME allocate_10 LABELS gfortran llvm NOFAST)
-RUN(NAME allocate_11 LABELS gfortran llvm)
+RUN(NAME allocate_11 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs)
 RUN(NAME allocate_12 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs)
 RUN(NAME allocate_13 LABELS gfortran llvm)

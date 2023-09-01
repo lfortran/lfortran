@@ -241,7 +241,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         Vec<ASR::stmt_t*> doloop_body;
         create_do_loop(loc, var_rank, result_rank, idx_vars,
         loop_vars, idx_vars_value, loop_var_indices, doloop_body,
-        *current_expr, 1,
+        *current_expr, 2,
         [=, &idx_vars_value, &idx_vars, &doloop_body]() {
             ASR::expr_t* ref = nullptr;
             if( var_rank > 0 ) {
@@ -1297,7 +1297,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             pass_result.push_back(al, subrout_call);
 
             if (is_allocatable && result_var != *current_expr &&
-                ASRUtils::is_allocatable(result_var)) {
+                ASRUtils::is_allocatable(result_var) && realloc_lhs) {
                 Vec<ASR::alloc_arg_t> vec_alloc;
                 vec_alloc.reserve(al, 1);
                 ASR::alloc_arg_t alloc_arg;
