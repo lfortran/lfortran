@@ -240,16 +240,48 @@ public:
         return t;
     }
 
+    ASR::symbol_t* duplicate_symbol(ASR::symbol_t* x) {
+        std::string sym_name = ASRUtils::symbol_name(x);
 
+        if (symbol_subs.find(sym_name) != symbol_subs.end()) {
+            return symbol_subs[sym_name];
+        }
+
+        if (current_scope->get_symbol(sym_name) != nullptr) {
+            return current_scope->get_symbol(sym_name);
+        }
+
+        ASR::symbol_t* new_symbol = nullptr;
+        switch (x->type) {
+            case ASR::symbolType::Variable: {
+                new_symbol = duplicate_Variable(ASR::down_cast<ASR::Variable_t>(x));
+                current_scope->add_symbol(ASRUtils::symbol_name(new_symbol), new_symbol);
+                break;
+            }
+            default: {
+                throw LCompilersException("Unsupported symbol for template instantiation");
+            }
+        }
+
+        return new_symbol;
+    }
+
+    ASR::symbol_t* duplicate_Variable(ASR::Variable_t *x) {
+        ASR::ttype_t *new_type = substitute_type(x->m_type);
+
+        SetChar variable_dependencies_vec;
+        variable_dependencies_vec.reserve(al, 1);
+        ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, new_type);
+
+        return ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, 
+            x->base.base.loc, current_scope, s2c(al, x->m_name), variable_dependencies_vec.p, 
+            variable_dependencies_vec.size(), x->m_intent, nullptr, nullptr, x->m_storage, 
+            new_type, nullptr, x->m_abi, x->m_access, x->m_presence, x->m_value_attr));
+    }
 
     ASR::asr_t* duplicate_Var(ASR::Var_t *x) {
         std::string sym_name = ASRUtils::symbol_name(x->m_v);
-        ASR::symbol_t *sym;
-        if (symbol_subs.find(sym_name) != symbol_subs.end()) {
-            sym = symbol_subs[sym_name];
-        } else {
-            sym = current_scope->get_symbol(sym_name);
-        }
+        ASR::symbol_t* sym = duplicate_symbol(x->m_v);
         return ASR::make_Var_t(al, x->base.base.loc, sym);
     }
 
