@@ -203,10 +203,10 @@ jobs:
             all=$(find ./scipy/optimize/minpack/ -name "*.f" | wc -l)
             for src in $(find ./scipy/optimize/minpack/ -name "*.f"); do
                 echo "Compiling $src"
-                ../src/bin/lfortran -c $src -o ${src%.f}.o --fixed-form --implicit-typing --implicit-interface --generate-object-code --use-loop-variable-after-loop --all-mangling --mangle-underscore
+                ../src/bin/lfortran -c $src -o ${src%.f}.o --fixed-form --implicit-typing --implicit-interface --generate-object-code --use-loop-variable-after-loop --all-mangling --bindc-mangling --mangle-underscore
                 cp ${src%.f}.o ./
             done
-            ../src/bin/lfortran -c ./scipy/optimize/minpack/chkder.f -o chkder.o --fixed-form --implicit-typing --implicit-interface --generate-object-code --use-loop-variable-after-loop --rtlib --all-mangling --mangle-underscore
+            ../src/bin/lfortran -c ./scipy/optimize/minpack/chkder.f -o chkder.o --fixed-form --implicit-typing --implicit-interface --generate-object-code --use-loop-variable-after-loop --rtlib --all-mangling --bindc-mangling --mangle-underscore
             clang -shared -fPIC -o ./scipy/optimize/minpack.so *.o -L../src/runtime -llfortran_runtime
             mkdir -p $CONDA_PREFIX/lib/scipy/optimize/
             cp scipy/optimize/minpack.so $CONDA_PREFIX/lib/scipy/optimize/
