@@ -39,13 +39,14 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
     bool global_symbols_mangling;
     bool intrinsic_symbols_mangling;
     bool all_symbols_mangling;
+    bool bindc_mangling = false;
     bool should_mangle = false;
     std::string module_name = "";
 
     SymbolRenameVisitor(
-    bool mm, bool gm, bool im, bool am) : module_name_mangling(mm),
+    bool mm, bool gm, bool im, bool am, bool bcm) : module_name_mangling(mm),
     global_symbols_mangling(gm), intrinsic_symbols_mangling(im),
-    all_symbols_mangling(am){}
+    all_symbols_mangling(am), bindc_mangling(bcm){}
 
 
     std::string update_name(std::string curr_name) {
@@ -90,7 +91,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
 
     void visit_Function(const ASR::Function_t &x) {
         ASR::FunctionType_t *f_type = ASRUtils::get_FunctionType(x);
-        if (f_type->m_abi != ASR::abiType::BindC) {
+        if (bindc_mangling || f_type->m_abi != ASR::abiType::BindC) {
             ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x);
             if (all_symbols_mangling || should_mangle) {
                 sym_to_renamed[sym] = update_name(x.m_name);
@@ -127,7 +128,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
 
     template <typename T>
     void visit_symbols_2(T &x) {
-        if (x.m_abi != ASR::abiType::BindC) {
+        if (bindc_mangling || x.m_abi != ASR::abiType::BindC) {
             if (all_symbols_mangling || should_mangle) {
                 ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x);
                 sym_to_renamed[sym] = update_name(x.m_name);
@@ -155,7 +156,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
     }
 
     void visit_ClassProcedure(const ASR::ClassProcedure_t &x) {
-        if (x.m_abi != ASR::abiType::BindC) {
+        if (bindc_mangling || x.m_abi != ASR::abiType::BindC) {
             if (all_symbols_mangling || should_mangle) {
                 ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x);
                 sym_to_renamed[sym] = update_name(x.m_name);
@@ -431,7 +432,7 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
 void pass_unique_symbols(Allocator &al, ASR::TranslationUnit_t &unit,
     const LCompilers::PassOptions& pass_options) {
     bool any_present = (pass_options.module_name_mangling || pass_options.global_symbols_mangling ||
-                    pass_options.intrinsic_symbols_mangling || pass_options.all_symbols_mangling);
+                    pass_options.intrinsic_symbols_mangling || pass_options.all_symbols_mangling || pass_options.bindc_mangling);
     if (pass_options.mangle_underscore) {
         lcompilers_unique_ID = "";
     }
@@ -441,7 +442,8 @@ void pass_unique_symbols(Allocator &al, ASR::TranslationUnit_t &unit,
     SymbolRenameVisitor v(pass_options.module_name_mangling,
                 pass_options.global_symbols_mangling,
                 pass_options.intrinsic_symbols_mangling,
-                pass_options.all_symbols_mangling);
+                pass_options.all_symbols_mangling,
+                pass_options.bindc_mangling);
     v.visit_TranslationUnit(unit);
     UniqueSymbolVisitor u(al, v.sym_to_renamed);
     u.visit_TranslationUnit(unit);

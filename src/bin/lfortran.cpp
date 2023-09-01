@@ -674,6 +674,7 @@ int emit_asr(const std::string &infile,
     pass_options.module_name_mangling = compiler_options.module_name_mangling;
     pass_options.global_symbols_mangling = compiler_options.global_symbols_mangling;
     pass_options.intrinsic_symbols_mangling = compiler_options.intrinsic_symbols_mangling;
+    pass_options.bindc_mangling = compiler_options.bindc_mangling;
     pass_options.mangle_underscore = compiler_options.mangle_underscore;
 
     pass_manager.apply_passes(al, asr, pass_options, diagnostics);
@@ -1925,6 +1926,7 @@ int main(int argc, char *argv[])
         app.add_flag("--global-mangling", compiler_options.global_symbols_mangling, "Mangles all the global symbols");
         app.add_flag("--intrinsic-mangling", compiler_options.intrinsic_symbols_mangling, "Mangles all the intrinsic symbols");
         app.add_flag("--all-mangling", compiler_options.all_symbols_mangling, "Mangles all possible symbols");
+        app.add_flag("--bindc-mangling", compiler_options.bindc_mangling, "Mangles functions with abi bind(c)");
         app.add_flag("--mangle-underscore", compiler_options.mangle_underscore, "Mangles with underscore");
         app.add_flag("--run", compiler_options.run, "Executes the generated binary");
 

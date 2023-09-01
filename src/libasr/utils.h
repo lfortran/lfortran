@@ -71,6 +71,7 @@ struct CompilerOptions {
     bool global_symbols_mangling = false;
     bool intrinsic_symbols_mangling = false;
     bool all_symbols_mangling = false;
+    bool bindc_mangling = false;
     bool mangle_underscore = false;
     bool run = false;
     std::vector<std::string> import_paths;
@@ -108,6 +109,7 @@ namespace LCompilers {
         bool global_symbols_mangling = false;
         bool intrinsic_symbols_mangling = false;
         bool all_symbols_mangling = false;
+        bool bindc_mangling = false;
         bool mangle_underscore = false;
     };
 
