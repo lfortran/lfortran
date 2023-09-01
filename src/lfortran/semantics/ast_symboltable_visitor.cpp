@@ -1053,23 +1053,9 @@ public:
     }
 
     void visit_DerivedType(const AST::DerivedType_t &x) {
-        if (is_requirement) {
-            ASR::asr_t *tp = ASR::make_TypeParameter_t(
-                al, x.base.base.loc, s2c(al, to_lower(x.m_name)));
-            tmp = ASR::make_Variable_t(al, x.base.base.loc, current_scope,
-                s2c(al, to_lower(x.m_name)), nullptr, 0, ASRUtils::intent_in,
-                nullptr, nullptr, ASR::storage_typeType::Default,
-                ASRUtils::TYPE(tp), nullptr, ASR::abiType::Source,
-                dflt_access, ASR::presenceType::Required, false);
-            current_scope->add_symbol(to_lower(x.m_name), ASR::down_cast<ASR::symbol_t>(tmp));
-            return;
-        }
-        SymbolTable *parent_scope = current_scope;
-        current_scope = al.make_new<SymbolTable>(parent_scope);
-        data_member_names.reserve(al, 0);
-        is_derived_type = true;
-        bool is_abstract = false;
         dt_name = to_lower(x.m_name);
+        bool is_abstract = false;
+        bool is_deferred = false;
         AST::AttrExtends_t *attr_extend = nullptr;
         for( size_t i = 0; i < x.n_attrtype; i++ ) {
             switch( x.m_attrtype[i]->type ) {
@@ -1085,11 +1071,24 @@ public:
                     AST::SimpleAttribute_t* simple_attr =
                         AST::down_cast<AST::SimpleAttribute_t>(x.m_attrtype[i]);
                     is_abstract = simple_attr->m_attr == AST::simple_attributeType::AttrAbstract;
+                    is_deferred = simple_attr->m_attr == AST::simple_attributeType::AttrDeferred;
                 }
                 default:
                     break;
             }
         }
+        if ((is_requirement || is_template) && is_deferred) {
+            ASR::asr_t *tp = ASR::make_TypeParameter_t(al, x.base.base.loc, s2c(al, dt_name));
+            tmp = ASR::make_Variable_t(al, x.base.base.loc, current_scope, s2c(al, dt_name),
+                nullptr, 0, ASRUtils::intent_in, nullptr, nullptr, ASR::storage_typeType::Default,
+                ASRUtils::TYPE(tp), nullptr, ASR::abiType::Source, dflt_access, ASR::presenceType::Required, false);
+            current_scope->add_symbol(dt_name, ASR::down_cast<ASR::symbol_t>(tmp));
+            return;
+        }
+        SymbolTable *parent_scope = current_scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+        data_member_names.reserve(al, 0);
+        is_derived_type = true;
         for (size_t i=0; i<x.n_items; i++) {
             this->visit_unit_decl2(*x.m_items[i]);
         }
@@ -2713,7 +2712,10 @@ public:
                     ftype->m_is_restriction, f->m_deterministic, f->m_side_effect_free);
                 return ASR::down_cast<ASR::symbol_t>(new_f);
             }
-            default : throw LCompilersException("Not implemented " + std::to_string(s->type));
+            default : {
+                std::string sym_name = ASRUtils::symbol_name(s);
+                throw SemanticError("Symbol not found " + sym_name, s->base.loc);
+            }
         }
     }
 
