@@ -192,6 +192,7 @@ jobs:
             cd ..
             rm -rf scipy/
             micromamba deactivate
+            micromamba env remove -n scipy-dev
 
       - name: Test SciPy Specfun
         shell: bash -e -x -l {0}
