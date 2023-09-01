@@ -181,7 +181,10 @@ public:
         switch (x->type) {
             case ASR::symbolType::Variable: {
                 new_symbol = duplicate_Variable(ASR::down_cast<ASR::Variable_t>(x));
-                current_scope->add_symbol(ASRUtils::symbol_name(new_symbol), new_symbol);
+                break;
+            }
+            case ASR::symbolType::ExternalSymbol: {
+                new_symbol = duplicate_ExternalSymbol(ASR::down_cast<ASR::ExternalSymbol_t>(x));
                 break;
             }
             default: {
@@ -199,10 +202,39 @@ public:
         variable_dependencies_vec.reserve(al, 1);
         ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, new_type);
 
-        return ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, 
+        ASR::symbol_t* s = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, 
             x->base.base.loc, current_scope, s2c(al, x->m_name), variable_dependencies_vec.p, 
             variable_dependencies_vec.size(), x->m_intent, nullptr, nullptr, x->m_storage, 
             new_type, nullptr, x->m_abi, x->m_access, x->m_presence, x->m_value_attr));
+        current_scope->add_symbol(x->m_name, s);
+
+        return s;
+    }
+
+    ASR::symbol_t* duplicate_ExternalSymbol(ASR::ExternalSymbol_t *x) {
+        std::string m_name = x->m_module_name;
+        if (context_map.find(m_name) != context_map.end()) {
+            std::string new_m_name = context_map[m_name];
+            std::string member_name = x->m_original_name;
+            std::string new_x_name = "1_" + new_m_name + "_" + member_name;
+
+            ASR::symbol_t* new_x = current_scope->get_symbol(new_x_name);
+            if (new_x) { return new_x; }
+
+            ASR::symbol_t* new_sym = current_scope->resolve_symbol(new_m_name);
+            ASR::symbol_t* member_sym = ASRUtils::symbol_symtab(new_sym)->resolve_symbol(member_name);
+
+            new_x = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                al, x->base.base.loc, current_scope, s2c(al, new_x_name), member_sym,
+                s2c(al, new_m_name), nullptr, 0, s2c(al, member_name), x->m_access));
+            current_scope->add_symbol(new_x_name, new_x);
+
+            return new_x;
+        }
+
+        return ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+            al, x->base.base.loc, x->m_parent_symtab, x->m_name, x->m_external,
+            x->m_module_name, x->m_scope_names, x->n_scope_names, x->m_original_name, x->m_access));
     }
 
     ASR::asr_t* duplicate_Var(ASR::Var_t *x) {
@@ -280,8 +312,6 @@ public:
     }
 
     ASR::asr_t* duplicate_FunctionCall(ASR::FunctionCall_t *x) {
-        std::string call_name = ASRUtils::symbol_name(x->m_name);
-        ASR::symbol_t *name = template_scope->get_symbol(call_name);
         Vec<ASR::call_arg_t> args;
         args.reserve(al, x->n_args);
         for (size_t i=0; i<x->n_args; i++) {
@@ -290,33 +320,40 @@ public:
             new_arg.m_value = duplicate_expr(x->m_args[i].m_value);
             args.push_back(al, new_arg);
         }
+
         ASR::ttype_t* type = substitute_type(x->m_type);
         ASR::expr_t* value = duplicate_expr(x->m_value);
         ASR::expr_t* dt = duplicate_expr(x->m_dt);
+
+        std::string call_name = ASRUtils::symbol_name(x->m_name);
+        ASR::symbol_t *name = template_scope->get_symbol(call_name);
+
         if (ASRUtils::is_requirement_function(name)) {
             name = symbol_subs[call_name];
+        } else if (context_map.find(call_name) != context_map.end()) {
+            name = func_scope->get_symbol(context_map[call_name]);
         } else if (ASRUtils::is_generic_function(name)) {
-            ASR::symbol_t* name2 = ASRUtils::symbol_get_past_external(name);
             ASR::symbol_t *search_sym = current_scope->resolve_symbol(call_name);
             if (search_sym != nullptr) {
                 name = search_sym;
             } else {
+                ASR::symbol_t* name2 = ASRUtils::symbol_get_past_external(name);
                 std::string nested_func_name = current_scope->get_unique_name("__asr_generic_" + call_name, false);
-                SymbolInstantiator nested_t(al, context_map, type_subs, symbol_subs, func_scope, template_scope, nested_func_name);
-                name = nested_t.instantiate_symbol(name2);
-                name = nested_t.instantiate_body(ASR::down_cast<ASR::Function_t>(name),
-                                                ASR::down_cast<ASR::Function_t>(name2));
+                SymbolInstantiator nested(al, context_map, type_subs, symbol_subs, func_scope, template_scope, nested_func_name);
+                name = nested.instantiate_symbol(name2);
+                name = nested.instantiate_body(ASR::down_cast<ASR::Function_t>(name), ASR::down_cast<ASR::Function_t>(name2));
+                context_map[call_name] = nested_func_name;
             }                            
-            context_map[ASRUtils::symbol_name(name2)] = ASRUtils::symbol_name(name);
+        } else {
+            throw LCompilersException("Cannot handle instantiation for the function call " + call_name);
         }
         dependencies.push_back(al, ASRUtils::symbol_name(name));
+
         return ASRUtils::make_FunctionCall_t_util(al, x->base.base.loc, name, x->m_original_name,
             args.p, args.size(), type, value, dt);
     }
 
     ASR::asr_t* duplicate_SubroutineCall(ASR::SubroutineCall_t *x) {
-        std::string call_name = ASRUtils::symbol_name(x->m_name);
-        ASR::symbol_t *name = template_scope->get_symbol(call_name);
         Vec<ASR::call_arg_t> args;
         args.reserve(al, x->n_args);
         for (size_t i=0; i<x->n_args; i++) {
@@ -325,22 +362,33 @@ public:
             new_arg.m_value = duplicate_expr(x->m_args[i].m_value);
             args.push_back(al, new_arg);
         }
+
         ASR::expr_t* dt = duplicate_expr(x->m_dt);
+
+        std::string call_name = ASRUtils::symbol_name(x->m_name);
+        ASR::symbol_t *name = template_scope->get_symbol(call_name);
         if (ASRUtils::is_requirement_function(name)) {
             name = symbol_subs[call_name];
         } else if (context_map.find(call_name) != context_map.end()) {
-            name = current_scope->resolve_symbol(context_map[call_name]);
+            name = func_scope->get_symbol(context_map[call_name]);
+        } else if (ASRUtils::is_generic_function(name)) {
+            ASR::symbol_t *search_sym = current_scope->resolve_symbol(call_name);
+            if (search_sym != nullptr) {
+                name = search_sym;
+            } else {
+                ASR::symbol_t* name2 = ASRUtils::symbol_get_past_external(name);
+                std::string nested_func_name = current_scope->get_unique_name("__asr_generic_" + call_name, false);
+                SymbolInstantiator nested(al, context_map, type_subs, symbol_subs, func_scope, template_scope, nested_func_name);
+                name = nested.instantiate_symbol(name2);
+                name = nested.instantiate_body(ASR::down_cast<ASR::Function_t>(name), ASR::down_cast<ASR::Function_t>(name2));
+                context_map[call_name] = nested_func_name;
+            }
         } else {
-            std::string nested_func_name = current_scope->get_unique_name("__asr_generic_" + call_name, false);
-            ASR::symbol_t* name2 = ASRUtils::symbol_get_past_external(name);
-            SymbolInstantiator nested_t(al, context_map, type_subs, symbol_subs, func_scope, template_scope, nested_func_name);
-            name = nested_t.instantiate_symbol(name2);
-            name = nested_t.instantiate_body(ASR::down_cast<ASR::Function_t>(name),
-                                             ASR::down_cast<ASR::Function_t>(name2));
-            context_map[call_name] = nested_func_name;
+            throw LCompilersException("Cannot handle instantiation for the function call " + call_name);
         }
         dependencies.push_back(al, ASRUtils::symbol_name(name));
-        return ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc, name /* change this */,
+
+        return ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc, name,
             x->m_original_name, args.p, args.size(), dt, nullptr, false);
     }
 
@@ -348,37 +396,9 @@ public:
         ASR::expr_t *v = duplicate_expr(x->m_v);
         ASR::ttype_t *t = substitute_type(x->m_type);
         ASR::expr_t *value = duplicate_expr(x->m_value);
-
-        ASR::symbol_t *s = x->m_m;
-        if (ASR::is_a<ASR::ExternalSymbol_t>(*s)) {
-            s = duplicate_ExternalSymbol(s);
-        }
-
+        ASR::symbol_t *s = duplicate_symbol(x->m_m);
         return ASR::make_StructInstanceMember_t(al, x->base.base.loc,
             v, s, t, value);
-    }
-
-    ASR::symbol_t* duplicate_ExternalSymbol(ASR::symbol_t *s) {
-        ASR::ExternalSymbol_t* x = ASR::down_cast<ASR::ExternalSymbol_t>(s);
-        std::string m_name = x->m_module_name;
-        if (context_map.find(m_name) != context_map.end()) {
-            std::string new_m_name = context_map[m_name];
-            std::string member_name = x->m_original_name;
-            std::string new_x_name = "1_" + new_m_name + "_" + member_name;
-
-            ASR::symbol_t* new_x = current_scope->get_symbol(new_x_name);
-            if (new_x) { return new_x; }
-
-            ASR::symbol_t* new_sym = current_scope->resolve_symbol(new_m_name);
-            ASR::symbol_t* member_sym = ASRUtils::symbol_symtab(new_sym)->resolve_symbol(member_name);
-
-            new_x = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-                al, x->base.base.loc, current_scope, s2c(al, new_x_name), member_sym,
-                s2c(al, new_m_name), nullptr, 0, s2c(al, member_name), x->m_access));
-            current_scope->add_symbol(new_x_name, new_x);
-            return new_x;
-        }
-        return s;
     }
 
     ASR::ttype_t* substitute_type(ASR::ttype_t *ttype) {
