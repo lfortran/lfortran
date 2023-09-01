@@ -2584,6 +2584,8 @@ public:
 
         instantiate_types[x.base.base.loc.first] = type_subs;
         instantiate_symbols[x.base.base.loc.first] = symbol_subs;
+
+        context_map.clear();
     }
 
     // TODO: give proper location to each symbol

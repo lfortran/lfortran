@@ -89,78 +89,18 @@ public:
         Vec<ASR::expr_t*> args;
         args.reserve(al, x->n_args);
         for (size_t i=0; i<x->n_args; i++) {
-            ASR::Variable_t *param_var = ASR::down_cast<ASR::Variable_t>(
-                (ASR::down_cast<ASR::Var_t>(x->m_args[i]))->m_v);
-            ASR::ttype_t *param_type = ASRUtils::expr_type(x->m_args[i]);
-            ASR::ttype_t *arg_type = substitute_type(param_type);
-
-            Location loc = param_var->base.base.loc;
-            std::string var_name = param_var->m_name;
-            ASR::intentType s_intent = param_var->m_intent;
-            ASR::expr_t *init_expr = nullptr;
-            ASR::expr_t *value = nullptr;
-            ASR::storage_typeType storage_type = param_var->m_storage;
-            ASR::abiType abi_type = param_var->m_abi;
-            ASR::accessType s_access = param_var->m_access;
-            ASR::presenceType s_presence = param_var->m_presence;
-            bool value_attr = param_var->m_value_attr;
-
-            SetChar variable_dependencies_vec;
-            variable_dependencies_vec.reserve(al, 1);
-            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, arg_type);
-            ASR::asr_t *v = ASR::make_Variable_t(al, loc, current_scope,
-                s2c(al, var_name), variable_dependencies_vec.p, variable_dependencies_vec.size(),
-                s_intent, init_expr, value, storage_type, arg_type, nullptr,
-                abi_type, s_access, s_presence, value_attr);
-
-            current_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(v));
-
-            ASR::symbol_t *var = current_scope->get_symbol(var_name);
-            args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc, var)));
+            ASR::expr_t *new_arg = duplicate_expr(x->m_args[i]);
+            args.push_back(al, new_arg);
         }
 
         ASR::expr_t *new_return_var_ref = nullptr;
         if (x->m_return_var != nullptr) {
-            ASR::Variable_t *return_var = ASR::down_cast<ASR::Variable_t>(
-                (ASR::down_cast<ASR::Var_t>(x->m_return_var))->m_v);
-            std::string return_var_name = return_var->m_name;
-            ASR::ttype_t *return_param_type = ASRUtils::expr_type(x->m_return_var);
-            ASR::ttype_t *return_type = substitute_type(return_param_type);
-            SetChar variable_dependencies_vec;
-            variable_dependencies_vec.reserve(al, 1);
-            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, return_type);
-            ASR::asr_t *new_return_var = ASR::make_Variable_t(al, return_var->base.base.loc,
-                current_scope, s2c(al, return_var_name),
-                variable_dependencies_vec.p,
-                variable_dependencies_vec.size(),
-                return_var->m_intent, nullptr, nullptr,
-                return_var->m_storage, return_type, return_var->m_type_declaration,
-                return_var->m_abi, return_var->m_access,
-                return_var->m_presence, return_var->m_value_attr);
-            current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(new_return_var));
-            new_return_var_ref = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc,
-                current_scope->get_symbol(return_var_name)));
+            new_return_var_ref = duplicate_expr(x->m_return_var);
         }
 
         // Rebuild the symbol table
         for (auto const &sym_pair: x->m_symtab->get_scope()) {
-            if (current_scope->resolve_symbol(sym_pair.first) == nullptr) {
-                ASR::symbol_t *sym = sym_pair.second;
-                if (ASR::is_a<ASR::Variable_t>(*sym)) {
-                    ASR::ttype_t *new_sym_type = substitute_type(ASRUtils::symbol_type(sym));
-                    ASR::Variable_t *var_sym = ASR::down_cast<ASR::Variable_t>(sym);
-                    std::string var_sym_name = var_sym->m_name;
-                    SetChar variable_dependencies_vec;
-                    variable_dependencies_vec.reserve(al, 1);
-                    ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, new_sym_type);
-                    ASR::asr_t *new_var = ASR::make_Variable_t(al, var_sym->base.base.loc,
-                        current_scope, s2c(al, var_sym_name), variable_dependencies_vec.p,
-                        variable_dependencies_vec.size(), var_sym->m_intent, nullptr, nullptr,
-                        var_sym->m_storage, new_sym_type, var_sym->m_type_declaration, var_sym->m_abi, var_sym->m_access,
-                        var_sym->m_presence, var_sym->m_value_attr);
-                    current_scope->add_symbol(var_sym_name, ASR::down_cast<ASR::symbol_t>(new_var));
-                }
-            }
+            duplicate_symbol(sym_pair.second);
         }
 
         ASR::abiType func_abi = ASRUtils::get_FunctionType(x)->m_abi;
@@ -201,21 +141,7 @@ public:
     ASR::symbol_t* instantiate_StructType(ASR::StructType_t *x) {
         current_scope = al.make_new<SymbolTable>(func_scope);
         for (auto const &sym_pair: x->m_symtab->get_scope()) {
-            ASR::symbol_t *sym = sym_pair.second;
-            if (ASR::is_a<ASR::Variable_t>(*sym)) {
-                ASR::ttype_t *new_sym_type = substitute_type(ASRUtils::symbol_type(sym));
-                ASR::Variable_t *var_sym = ASR::down_cast<ASR::Variable_t>(sym);
-                std::string var_sym_name = var_sym->m_name;
-                SetChar variable_dependencies_vec;
-                variable_dependencies_vec.reserve(al, 1);
-                ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, new_sym_type);
-                ASR::asr_t *new_var = ASR::make_Variable_t(al, var_sym->base.base.loc,
-                    current_scope, s2c(al, var_sym_name), variable_dependencies_vec.p,
-                    variable_dependencies_vec.size(), var_sym->m_intent, nullptr, nullptr,
-                    var_sym->m_storage, new_sym_type, var_sym->m_type_declaration, var_sym->m_abi, var_sym->m_access,
-                    var_sym->m_presence, var_sym->m_value_attr);
-                current_scope->add_symbol(var_sym_name, ASR::down_cast<ASR::symbol_t>(new_var));
-            }
+            duplicate_symbol(sym_pair.second);
         }
 
         Vec<char*> data_member_names;
@@ -457,7 +383,7 @@ public:
 
     ASR::ttype_t* substitute_type(ASR::ttype_t *ttype) {
         switch (ttype->type) {
-            case (ASR::ttypeType::TypeParameter) : {
+            case (ASR::ttypeType::TypeParameter): {
                 ASR::TypeParameter_t *param = ASR::down_cast<ASR::TypeParameter_t>(ttype);
                 ASR::ttype_t *t = type_subs[param->m_param];
                 switch (t->type) {
@@ -493,12 +419,12 @@ public:
                 }
                 return t;
             }
-            case (ASR::ttypeType::List) : {
+            case (ASR::ttypeType::List): {
                 ASR::List_t *tlist = ASR::down_cast<ASR::List_t>(ttype);
                 return ASRUtils::TYPE(ASR::make_List_t(al, ttype->base.loc,
                     substitute_type(tlist->m_type)));
             }
-            case (ASR::ttypeType::Struct) : {
+            case (ASR::ttypeType::Struct): {
                 ASR::Struct_t *s = ASR::down_cast<ASR::Struct_t>(ttype);
                 std::string struct_name = ASRUtils::symbol_name(s->m_derived_type);
                 if (context_map.find(struct_name) != context_map.end()) {
@@ -510,7 +436,7 @@ public:
                     return ttype;
                 }
             }
-            case (ASR::ttypeType::Array) : {
+            case (ASR::ttypeType::Array): {
                 ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(ttype);
                 ASR::ttype_t *t = substitute_type(a->m_type);
                 ASR::dimension_t* m_dims = nullptr;

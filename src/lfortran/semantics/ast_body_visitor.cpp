@@ -780,6 +780,8 @@ public:
                 }
             }
         }
+
+        context_map.clear();
     }
 
     void visit_Inquire(const AST::Inquire_t& x) {
