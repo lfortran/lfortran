@@ -900,7 +900,7 @@ RUN(NAME template_array_04 LABELS llvm wasm)
 RUN(NAME template_01 LABELS llvm wasm)
 RUN(NAME template_02 LABELS llvm)
 RUN(NAME template_struct_01 LABELS llvm)
-RUN(NAME template_vector LABELS gfortran)
+RUN(NAME template_vector LABELS llvm)
 
 RUN(NAME statement1 LABELS gfortran llvm)
 
