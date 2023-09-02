@@ -213,7 +213,6 @@ namespace LCompilers {
                 "do_loops",
                 "forall",
                 "select_case",
-                "inline_function_calls",
                 "unused_functions",
                 "transform_optional_argument_functions",
                 "unique_symbols"
@@ -247,7 +246,6 @@ namespace LCompilers {
                 "div_to_mul",
                 "fma",
                 "transform_optional_argument_functions",
-                "inline_function_calls",
                 "unique_symbols"
             };
 
@@ -257,7 +255,6 @@ namespace LCompilers {
                 "pass_list_expr",
                 "print_list_tuple",
                 "do_loops",
-                "inline_function_calls",
                 "select_case"
             };
             _user_defined_passes.clear();
