@@ -1270,6 +1270,10 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
         case ASR::ttypeType::SymbolicExpression: {
             return "S";
         }
+        case ASR::ttypeType::TypeParameter: {
+            ASR::TypeParameter_t *tp = ASR::down_cast<ASR::TypeParameter_t>(t);
+            return tp->m_param;
+        }
         default: {
             throw LCompilersException("Type encoding not implemented for "
                                       + std::to_string(t->type));
