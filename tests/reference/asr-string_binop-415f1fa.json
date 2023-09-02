@@ -1,0 +1,13 @@
+{
+    "basename": "asr-string_binop-415f1fa",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/string_binop.f90",
+    "infile_hash": "4e6301859ddd78b04a2a25c7024ec1a91d427fe1e12477c3d337dc6f",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-string_binop-415f1fa.stderr",
+    "stderr_hash": "b5d483b65a65764781e8af477c3eecc912b46d8ad9eb26cdb8d29319",
+    "returncode": 2
+}

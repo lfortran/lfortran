@@ -1,0 +1,5 @@
+semantic error: Binary numeric operators cannot be used on strings
+ --> tests/errors/string_binop.f90:1:10
+  |
+1 | print *, "a" + "b"
+  |          ^^^^^^^^^ help: use '//' for string concatenation
