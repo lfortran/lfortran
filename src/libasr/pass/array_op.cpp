@@ -544,7 +544,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
         Vec<ASR::dimension_t> result_dims;
         bool is_fixed_size_array = ASRUtils::is_fixed_size_array(dims, n_dims);
-        if( is_fixed_size_array ) {
+        if( is_fixed_size_array || ASRUtils::is_dimension_dependent_only_on_arguments(dims, n_dims) ) {
             result_dims.from_pointer_n(dims, n_dims);
         } else {
             allocate = true;
@@ -1286,9 +1286,16 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
             Vec<ASR::call_arg_t> s_args;
             s_args.reserve(al, x->n_args + 1);
+            ASR::expr_t* result_var_copy = result_var;
+            result_var = nullptr;
             for( size_t i = 0; i < x->n_args; i++ ) {
+                ASR::expr_t** current_expr_copy_9 = current_expr;
+                current_expr = &(x->m_args[i].m_value);
+                self().replace_expr(x->m_args[i].m_value);
+                current_expr = current_expr_copy_9;
                 s_args.push_back(al, x->m_args[i]);
             }
+            result_var = result_var_copy;
             ASR::call_arg_t result_arg;
             result_arg.loc = result_var->base.loc;
             result_arg.m_value = *current_expr;
