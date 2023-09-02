@@ -139,7 +139,8 @@
                                                     (FunctionType
                                                         [(Class
                                                             7 intvector
-                                                        )]
+                                                        )
+                                                        (Integer 4)]
                                                         ()
                                                         Source
                                                         Implementation
@@ -153,7 +154,8 @@
                                                         .false.
                                                     )
                                                     [1_intvector_resize]
-                                                    [(Var 9 this)]
+                                                    [(Var 9 this)
+                                                    (Var 9 item)]
                                                     [(=
                                                         (Var 9 new_size)
                                                         (IntegerBinOp
@@ -644,7 +646,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (Class
                                                         7 intvector
                                                     )
                                                     ()
@@ -787,6 +789,9 @@
                                                     (FunctionType
                                                         [(Class
                                                             3 vector
+                                                        )
+                                                        (TypeParameter
+                                                            t
                                                         )]
                                                         ()
                                                         Source
@@ -801,7 +806,8 @@
                                                         .false.
                                                     )
                                                     [1_resize]
-                                                    [(Var 5 this)]
+                                                    [(Var 5 this)
+                                                    (Var 5 item)]
                                                     [(=
                                                         (Var 5 new_size)
                                                         (IntegerBinOp
