@@ -204,12 +204,14 @@ jobs:
         shell: bash -e -x -l {0}
         run: |
             cd scipy/
+            micromamba activate scipy-dev
             python dev.py test -t scipy.special -v
 
       - name: Test SciPy Minpack
         shell: bash -e -x -l {0}
         run: |
             cd scipy/
+            micromamba activate scipy-dev
             python dev.py test -t scipy.optimize -v
 
   build_to_wasm_and_upload:
