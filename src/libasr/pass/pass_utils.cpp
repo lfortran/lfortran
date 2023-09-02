@@ -225,7 +225,8 @@ namespace LCompilers {
             ASR::dimension_t* m_dims;
             int ndims;
             PassUtils::get_dim_rank(sibling_type, m_dims, ndims);
-            if( !ASRUtils::is_fixed_size_array(m_dims, ndims) ) {
+            if( !ASRUtils::is_fixed_size_array(m_dims, ndims) &&
+                !ASRUtils::is_dimension_dependent_only_on_arguments(m_dims, ndims) ) {
                 return ASRUtils::TYPE(ASR::make_Allocatable_t(al, sibling_type->base.loc,
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::duplicate_type_with_empty_dims(al, sibling_type))));

@@ -459,7 +459,7 @@ jobs:
 
             git clean -dfx
             git checkout -t origin/lf24run
-            git checkout 5346a2ebeae381250c1e4721ca2d4bd1ce028e4a
+            git checkout 479e6d614cbeccd73a3d76e43ae569f1cc4d6872
             FC=$(pwd)/../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
             make
             curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
