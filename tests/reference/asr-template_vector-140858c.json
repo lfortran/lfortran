@@ -1,0 +1,13 @@
+{
+    "basename": "asr-template_vector-140858c",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/template_vector.f90",
+    "infile_hash": "743869d873943fdcf0c26eb47c9db12fcb9208bdebdb435873f8aaa1",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-template_vector-140858c.stdout",
+    "stdout_hash": "4209247967ea4fc1943d81e89dd677e89c699defeca06272589f72c8",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
