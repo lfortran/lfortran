@@ -196,7 +196,7 @@ void handle_float(char* format, double val, char** result) {
     sprintf(int_str, "%ld", integer_part);
     char dec_str[64];
     sprintf(dec_str, "%f", decimal_part);
-    strcpy(dec_str,dec_str+2);
+    memmove(dec_str,dec_str+2,strlen(dec_str));
 
     char* dot_pos = strchr(format, '.');
     width = atoi(format + 1);
