@@ -503,7 +503,7 @@ jobs:
             mkdir lf-fast
             cd lf-fast
             FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
-            make VERBOSE=1 gpt2
+            make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
             cd ..

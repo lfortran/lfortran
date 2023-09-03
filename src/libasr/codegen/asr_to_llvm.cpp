@@ -1341,8 +1341,13 @@ public:
                  mask = llvm_utils->create_gep(mask, 0);
                  break;
              }
+             case ASR::array_physical_typeType::PointerToDataArray: {
+                 // do nothing
+                 break;
+             }
              default: {
-                 LCOMPILERS_ASSERT(false);
+                 throw CodeGenError("Array physical type not supported",
+                                    x.base.base.loc);
              }
         }
         std::string runtime_func_name = "_lfortran_all";
