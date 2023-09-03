@@ -488,8 +488,8 @@ jobs:
             ldd ./test_more_inputs
 
             git clean -dfx
-            git checkout -t origin/lf26run
-            git checkout 61134efcefb189b3a99940fd4156b5e363d9c773
+            git checkout -t origin/lf29run
+            git checkout c0def2d5e6fe90ddf2ec196be843d74dd104478c
             curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
 
             mkdir lf
@@ -498,6 +498,7 @@ jobs:
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
+            ./test_more_inputs
             cd ..
 
             mkdir lf-fast
@@ -506,6 +507,7 @@ jobs:
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
+            ./test_more_inputs
             cd ..
 
 
