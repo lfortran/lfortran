@@ -377,7 +377,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 int repeat = atoi(substring(value, 0, j));
                 if (value[j] == '(') {
                     value = substring(value, j, strlen(value));
-                    format_values[i] = substring(format_values[i], 1, strlen(format_values[i]));
+                    format_values[i] = substring(format_values[i], j, strlen(format_values[i]));
                     char* new_input_string = (char*)malloc(sizeof(char));
                     new_input_string[0] = '\0';
                     for (int k = i; k < format_values_count; k++) {
@@ -475,7 +475,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
             }
 
             while (newline != 0) {
-                result = append_to_string(result, " ");
+                result = append_to_string(result, "\n");
                 newline--;
             }
         }
