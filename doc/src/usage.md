@@ -26,6 +26,7 @@ to support ISO Fortran 2018, ISO/IEC 1539:2018.
 
 The extensions are currently in development and are planned to include:
 
+* Global Scope (statements outside of a program block).
 * Interactive Fortran (in beta).
 * Jupyter integration.
 * Support for FPUs.
@@ -115,7 +116,7 @@ end program hello_world
 
 ```
 
-Here is a simple example showing use of a module:
+Here is a simple example with a module:
 
 ```
 lfortran -c varray.f90
@@ -178,3 +179,23 @@ module varray
 end module varray
 ```
 
+# Selecting the C Compiler
+
+By default LFortran uses the `clang` compiler.  On some systems
+the compiler has a version number or spelling difference.  The compiler
+can be changed with the `LFORTRAN_CC` symbol:
+
+```
+unset LFORTRAN_CC
+lfortran hw.f90
+Hello World!
+
+export LFORTRAN_CC=gcc
+lfortran hw.f90
+Hello World!
+
+export LFORTRAN_CC=clang-14
+lfortran hw.f90
+sh: clang-14: not found
+...(further error messages)...
+```
