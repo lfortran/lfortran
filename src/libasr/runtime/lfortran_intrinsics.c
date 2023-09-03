@@ -185,6 +185,68 @@ void handle_integer(char* format, int val, char** result) {
     }
 }
 
+void handle_float(char* format, double val, char** result) {
+    int width = 0, decimal_digits = 0;
+    long integer_part = (long)fabs(val);
+    double decimal_part = fabs(val) - labs(integer_part);
+
+    int sign_width = (val < 0) ? 1 : 0;
+    int integer_length = (integer_part == 0) ? 1 : (int)log10(llabs(integer_part)) + 1;
+    char int_str[64];
+    sprintf(int_str, "%ld", integer_part);
+    char dec_str[64];
+    sprintf(dec_str, "%f", decimal_part);
+    memmove(dec_str,dec_str+2,strlen(dec_str));
+
+    char* dot_pos = strchr(format, '.');
+    width = atoi(format + 1);
+    if (dot_pos != NULL) {
+        dot_pos++;
+        decimal_digits = atoi(dot_pos);
+        if (width == 0) {
+            if (decimal_digits == 0) {
+                width = integer_length + sign_width + 1;
+            } else {
+                width = integer_length + sign_width + decimal_digits + 1;
+            }
+        }
+    }
+    char formatted_value[64] = "";
+    int spaces = width - decimal_digits - sign_width - integer_length - 1;
+    for (int i = 0; i < spaces; i++) {
+        strcat(formatted_value, " ");
+    }
+    if (val < 0) {
+        strcat(formatted_value,"-");
+    }
+    if ((integer_part != 0 || (atoi(format + 1) != 0 || atoi(dot_pos) == 0))) {
+        strcat(formatted_value,int_str);
+    }
+    strcat(formatted_value,".");
+    if (decimal_part == 0) {
+        for(int i=0;i<decimal_digits;i++){
+            strcat(formatted_value, "0");
+        }
+    } else if (decimal_digits < strlen(dec_str)) {
+        long long t = (long long)round((double)atoll(dec_str) / (long long)pow(10, (strlen(dec_str) - decimal_digits)));
+        sprintf(dec_str, "%lld", t);
+        strncat(formatted_value, dec_str, decimal_digits);
+    } else {
+        strncat(formatted_value, dec_str, strlen(dec_str));
+        for(int i=0;i<decimal_digits - strlen(dec_str);i++){
+            strcat(formatted_value, "0");
+        }
+    }
+
+    if (strlen(formatted_value) > width) {
+        for(int i=0; i<width; i++){
+            *result = append_to_string(*result,"*");
+        }
+    } else {
+        *result = append_to_string(*result, formatted_value);
+    }
+}
+
 void handle_decimal(char* format, double val, int scale, char** result, char* c) {
     int width = 0, decimal_digits = 0;
     int64_t integer_part = (int64_t)val;
@@ -469,7 +531,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 if ( count == 0 ) break;
                 count--;
                 double val = va_arg(args, double);
-                handle_decimal(value, val, scale, &result, "E");
+                handle_float(value, val, &result);
             } else if (strlen(value) != 0) {
                 printf("Printing support is not available for %s format.\n",value);
             }
