@@ -6623,6 +6623,13 @@ public:
                         throw CodeGenError("Real arrays of kind 4 or 8 only supported for now. Found kind: "
                                             + std::to_string(a_kind));
                     }
+                } else if (ASR::is_a<ASR::Character_t>(*type)) {
+                    if (ASR::down_cast<ASR::Character_t>(type)->m_len != 1) {
+                        throw CodeGenError("Only `character(len=1)` array "
+                            "is supported for now");
+                    }
+                    runtime_func_name = "_lfortran_read_array_char";
+                    type_arg = character_type;
                 } else {
                     throw CodeGenError("Type not supported.");
                 }
