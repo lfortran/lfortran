@@ -1,0 +1,180 @@
+# LFortran User Guide
+
+## About LFortran
+
+LFortran is an implementation of the Fortran 2018 standard with
+some added extensions.  It works on Linux, most BSDs and on Windows.
+
+The LFortran compiler consists of the following components:
+
+* The LFortran compiler itself.
+* A runtime library supporting language elements and intrinsic functions.
+* Several module definitions which define the external environment and
+  supply particular details about the computer running the program.
+* The capability to read additional module definitions which define
+  the interfaces to external libraries such as OpenMPI.
+* Generation of executable code with the LLVM compiler infrastructure.
+* Generation of C++, WebAssembly or Julia code.
+* Source file formatting (`lfortran fmt`).
+
+## Standards
+
+The LFortran compiler is currently (mid-2023) incomplete but is intended
+to support ISO Fortran 2018, ISO/IEC 1539:2018.
+
+## Extensions
+
+The extensions are currently in development and are planned to include:
+
+* Interactive Fortran (in beta).
+* Jupyter integration.
+* Support for FPUs.
+
+## Interactive Compiler
+
+LFortran supports an interactive mode; just run the `lfortran` command
+to start it.
+
+# Invoking LFortran
+
+The LFortran compiler supports numerous command-line flags to select
+compilation options, output options, link options and so on.
+
+### Compiler information
+
+* --version, Show the current version
+* --print-targets, Print the registered CPU targets
+
+### Source code format
+
+* --fixed-form, Parse the file assuming Fortran 66 format (6 spaces)
+* --fixed-form-infer, Use heuristics to infer if a file is in fixed form
+
+### Source code processing
+
+* -E, Preprocess only; do not compile, assemble or link
+* --cpp, Enable C preprocessing
+
+### Other inputs
+
+* -I <value>, Include path for `include` statements
+* -L <value>, Library path for shared libraries
+* -l <value>, Link library naming a linkable shared library
+* -D, Define <macro>=<value> (or 1 if <value> omitted)
+
+### Compiler feature selections
+
+* --fast, Best performance (disable strict standard compliance)
+* --target <value>, Generate code for the given target
+* --implicit-typing, Allow implicit typing
+* --implicit-interface, Allow implicit interface
+* --implicit-argument-casting, Allow implicit argument casting
+* --realloc-lhs, Reallocate left hand side automatically
+* --openmp, Enable OpenMP
+
+### Compiler text outputs
+
+* -S, Emit assembly, do not assemble or link
+* -v, Be more verbose
+* --time-report, Show compilation time report
+* --no-warnings, Turn off all warnings
+* --no-error-banner, Turn off error banner
+* --error-format <value>, Control how errors are produced (human, short)
+
+### Compiler binary outputs
+
+* -c, Compile and assemble, do not link
+* -o <value>, Specify the file to place the output into
+* -J <value>, Where to save mod files
+* -S, Emit assembly, do not assemble or link
+* --static, Create a static executable
+* --generate-object-code, Generate object code into .o files
+
+### Compiler debugging
+
+A number of command-line options select various text outputs useful
+for debugging the compiler.  See `lfortran --help` for a list.
+
+## Examples
+
+The following commands and code demonstrate basic operation of the compiler.
+
+```
+lfortran helloworld.f90
+Hello World!
+
+lfortran -o hw helloworld.f90
+./hw
+Hello World!
+
+cat helloworld.f90
+program hello_world
+    implicit none
+    write (*, *) 'Hello World!'
+end program hello_world
+
+```
+
+Here is a simple example showing use of a module:
+
+```
+lfortran -c varray.f90
+lfortran usev.f90 varray.o
+  sum is    72.0000000
+
+cat varray.f90
+module varray
+    integer :: nsize
+    real, allocatable, dimension(:) :: A
+end module varray
+
+cat usev.f90
+program usev
+    use varray
+    integer :: i
+
+    nsize = 8
+    allocate(A(nsize))
+
+    do i = 1, nsize
+        A(i) = 2.0*i
+    end do
+
+    print *, " sum is ", (A(1)+A(nsize))*nsize/2.0
+    deallocate(A)
+end program usev
+
+```
+
+(Note that as of lfortran version 0.19.0 this does not yet work.)
+
+The compile command for the module requires `-c` to avoid automatic running
+of the code.
+
+The compile command for the program requires to add the `.o` object file
+for linking.
+
+# Formatting Fortran source files
+
+The `lfortran` compiler will automatically format source files with the `fmt`
+option.  You can select auto-indent for modules, and in-place update of
+the Fortran source file with the `-i` option (use with caution!).
+
+```
+lfortran fmt varray.f90
+module varray
+integer :: nsize
+real, allocatable, dimension(:) :: A
+end module varray
+```
+
+Or add spaces and indentation as follows:
+
+```
+lfortran fmt --spaces 4 --indent-unit varray.f90
+module varray
+    integer :: nsize
+    real, allocatable, dimension(:) :: A
+end module varray
+```
+
