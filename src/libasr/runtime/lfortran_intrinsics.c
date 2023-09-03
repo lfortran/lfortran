@@ -187,7 +187,7 @@ void handle_integer(char* format, int val, char** result) {
 
 void handle_float(char* format, double val, char** result) {
     int width = 0, decimal_digits = 0;
-    int64_t integer_part = (int64_t)fabs(val);
+    long integer_part = (long)fabs(val);
     double decimal_part = fabs(val) - labs(integer_part);
 
     int sign_width = (val < 0) ? 1 : 0;
