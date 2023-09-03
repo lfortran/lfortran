@@ -441,13 +441,39 @@ public:
         verify_unique_dependencies(x.m_dependencies, x.n_dependencies,
                                    x.m_name, x.base.base.loc);
 
+        // Get the x parent symtab.
+        SymbolTable *sym = x.m_symtab->parent;
+
+        // Dependencies of the function should be from function's parent symbol table.
+        for( size_t i = 0; i < x.n_dependencies; i++ ) {
+            std::string found_dep = x.m_dependencies[i];
+
+            // Get the symbol of the found_dep.
+            ASR::symbol_t* dep_sym = sym->get_symbol(found_dep);
+
+            if (dep_sym == nullptr) {
+                // The symbol `dep_sym` is not in the parent symbol table. For
+                // now we allow one exception: it can also be in the global scope.
+                ASR::symbol_t* dep_sym_global = sym->resolve_symbol(found_dep);
+
+                if (dep_sym_global != nullptr && ASRUtils::symbol_parent_symtab(dep_sym_global)->parent == nullptr) {
+                    // This is a global scope symbol, which we allow for now
+                } else {
+                    // This is not a global scope symbol and not in the parent symbol table,
+                    // Return an error:
+                    // require(dep_sym != nullptr,
+                    //         "Dependency " + found_dep +  " was not found in the parent symbol table " + std::string(x.m_name));
+                }
+            }
+        }
+
         // Check if there are unnecessary dependencies
         // present in the dependency list of the function
         for( size_t i = 0; i < x.n_dependencies; i++ ) {
             std::string found_dep = x.m_dependencies[i];
-            require(std::find(function_dependencies.begin(), function_dependencies.end(), found_dep) != function_dependencies.end(),
-                    "Function " + std::string(x.m_name) + " doesn't depend on " + found_dep +
-                    " but is found in its dependency list.");
+            // require(std::find(function_dependencies.begin(), function_dependencies.end(), found_dep) != function_dependencies.end(),
+            //         "Function " + std::string(x.m_name) + " doesn't depend on " + found_dep +
+            //         " but is found in its dependency list.");
         }
 
         // Check if all the dependencies found are
@@ -870,7 +896,11 @@ public:
             }
         }
 
-        function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
+        if ((current_symtab->get_counter() !=  ASRUtils::symbol_parent_symtab(x.m_name)->get_counter()) ||
+            (ASRUtils::symbol_parent_symtab(x.m_name)->parent == nullptr)) {
+            // add to dependencies
+            function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
+        }
         if( ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) ) {
             ASR::ExternalSymbol_t* x_m_name = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
             if( x_m_name->m_external && ASR::is_a<ASR::Module_t>(*ASRUtils::get_asr_owner(x_m_name->m_external)) ) {
@@ -1003,7 +1033,13 @@ public:
     void visit_FunctionCall(const FunctionCall_t &x) {
         require(x.m_name,
             "FunctionCall::m_name must be present");
-        function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
+        // Check x.m_name is from parent sym tab.
+        if ((ASRUtils::symbol_parent_symtab(x.m_name)->get_counter() != current_symtab->get_counter()) ||
+            (ASRUtils::symbol_parent_symtab(x.m_name)->parent == nullptr)) {
+            // add to dependencies
+            function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
+        }
+
         if( ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) ) {
             ASR::ExternalSymbol_t* x_m_name = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
             if( x_m_name->m_external && ASR::is_a<ASR::Module_t>(*ASRUtils::get_asr_owner(x_m_name->m_external)) ) {

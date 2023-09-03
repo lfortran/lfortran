@@ -262,6 +262,7 @@ namespace LCompilers {
                 bool fill_function_dependencies;
                 bool fill_module_dependencies;
                 bool fill_variable_dependencies;
+                SymbolTable* current_scope;
 
             public:
 
@@ -273,10 +274,13 @@ namespace LCompilers {
                     function_dependencies.n = 0;
                     module_dependencies.n = 0;
                     variable_dependencies.n = 0;
+                    current_scope = nullptr;
                 }
 
                 void visit_Function(const ASR::Function_t& x) {
                     ASR::Function_t& xx = const_cast<ASR::Function_t&>(x);
+                    SymbolTable* current_scope_copy = current_scope;
+                    current_scope = xx.m_symtab;
                     SetChar function_dependencies_copy;
                     function_dependencies_copy.from_pointer_n_copy(al, function_dependencies.p, function_dependencies.size());
                     function_dependencies.n = 0;
@@ -291,6 +295,7 @@ namespace LCompilers {
                         function_dependencies_copy.p,
                         function_dependencies_copy.size()
                     );
+                    current_scope = current_scope_copy;
                 }
 
                 void visit_Module(const ASR::Module_t& x) {
@@ -327,8 +332,15 @@ namespace LCompilers {
                 }
 
                 void visit_FunctionCall(const ASR::FunctionCall_t& x) {
-                    if( fill_function_dependencies ) {
-                        function_dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
+                    if (fill_function_dependencies) { 
+                        if (ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name)) {
+                            ASR::ExternalSymbol_t* external_symbol = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
+                            if (!ASRUtils::is_present_in_current_scope(external_symbol, current_scope)) {
+                                function_dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
+                            }
+                        } else if (ASR::is_a<ASR::Function_t>(*x.m_name)) {
+                            process_dependency(x.m_name, function_dependencies, current_scope);
+                        }
                     }
                     if( ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) &&
                         fill_module_dependencies ) {
@@ -341,9 +353,17 @@ namespace LCompilers {
                 }
 
                 void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
-                    if( fill_function_dependencies ) {
-                        function_dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
+                    if (fill_function_dependencies) {
+                        if (ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name)) {
+                            ASR::ExternalSymbol_t* external_symbol = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
+                            if (!ASRUtils::is_present_in_current_scope(external_symbol, current_scope)) {
+                                function_dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
+                            }
+                        } else if (ASR::is_a<ASR::Function_t>(*x.m_name)) {
+                            process_dependency(x.m_name, function_dependencies, current_scope);
+                        }
                     }
+
                     if( ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) &&
                         fill_module_dependencies ) {
                         ASR::ExternalSymbol_t* x_m_name = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
@@ -358,6 +378,31 @@ namespace LCompilers {
                     ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
                     for (size_t i=0; i<block->n_body; i++) {
                         visit_stmt(*(block->m_body[i]));
+                    }
+                }
+
+                void process_dependency(const ASR::symbol_t *x, SetChar& function_dependencies, SymbolTable* current_scope) {
+                    if (ASRUtils::symbol_symtab(x) != nullptr &&
+                        ASRUtils::symbol_parent_symtab(x)->get_counter() !=
+                        current_scope->get_counter()) {
+
+                        ASR::Function_t *f = ASR::down_cast2<ASR::Function_t>(current_scope->asr_owner);
+
+                        // Check is x.m_name is not an argument.
+                        bool is_arg = false;
+
+                        for (size_t i=0; i<f->n_args; i++) {
+                            ASR::Var_t *arg = ASR::down_cast<ASR::Var_t>(f->m_args[i]);
+
+                            if (arg->m_v == x) {
+                                is_arg = true;
+                                break;
+                            }
+                        }
+
+                        if (!is_arg) {
+                            function_dependencies.push_back(al, ASRUtils::symbol_name(x));
+                        }
                     }
                 }
         };

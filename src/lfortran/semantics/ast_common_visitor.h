@@ -3302,7 +3302,9 @@ public:
                 }
             }
         }
-        current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym));
+        if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->get_counter()) {
+            current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym));
+        }
         ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
         return ASRUtils::make_FunctionCall_t_util(al, loc,
@@ -3359,7 +3361,9 @@ public:
         } else {
             type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
         }
-        current_function_dependencies.push_back(al, ASRUtils::symbol_name(v));
+        if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter()) {
+            current_function_dependencies.push_back(al, ASRUtils::symbol_name(v));
+        }
         ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al, v_expr);
         return ASRUtils::make_FunctionCall_t_util(al, loc,
@@ -3398,7 +3402,9 @@ public:
                 type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
                 type = handle_return_type(type, loc, args, func);
             }
-            current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym));
+            if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->get_counter()) {
+                current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym));
+            }
             ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
             ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
             return ASRUtils::make_FunctionCall_t_util(al, loc,
@@ -3446,14 +3452,18 @@ public:
                 type = handle_return_type(type, loc, args, func);
             }
             if (cp_s != nullptr) {
-                current_function_dependencies.push_back(al, ASRUtils::symbol_name(cp_s));
+                if (ASRUtils::symbol_parent_symtab(cp_s)->get_counter() != current_scope->get_counter()) {
+                    current_function_dependencies.push_back(al, ASRUtils::symbol_name(cp_s));
+                }
                 ASRUtils::insert_module_dependency(cp_s, al, current_module_dependencies);
                 ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
                 return ASRUtils::make_FunctionCall_t_util(al, loc,
                     cp_s, v, args.p, args.size(), type,
                     nullptr, nullptr);
             } else {
-                current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym));
+                if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->get_counter()) {
+                    current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym));
+                }
                 ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
                 ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
                 return ASRUtils::make_FunctionCall_t_util(al, loc,
@@ -3499,8 +3509,9 @@ public:
                 }
             }
         }
-
-        current_function_dependencies.push_back(al, ASRUtils::symbol_name(v));
+        if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter()) {
+            current_function_dependencies.push_back(al, ASRUtils::symbol_name(v));
+        }
         ASR::Module_t* v_module = ASRUtils::get_sym_module0(f2);
         if( v_module ) {
             current_module_dependencies.push_back(al, v_module->m_name);
@@ -3515,7 +3526,9 @@ public:
                 Vec<ASR::call_arg_t>& args, ASR::symbol_t *v) {
         ASR::FunctionType_t* func = ASR::down_cast<ASR::FunctionType_t>(ASRUtils::symbol_type(v));
         ASR::ttype_t *return_type = func->m_return_var_type;
-        current_function_dependencies.push_back(al, ASRUtils::symbol_name(v));
+        if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter()) {
+            current_function_dependencies.push_back(al, ASRUtils::symbol_name(v));
+        }
         // TODO: Uncomment later
         // ASRUtils::set_absent_optional_arguments_to_null(args, ASR::down_cast<ASR::Function_t>(v), al);
         return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
@@ -4364,8 +4377,9 @@ public:
                 current_module_dependencies.push_back(al, module_name);
             }
         }
-
-        current_function_dependencies.push_back(al, s2c(al, function_name));
+        if (ASRUtils::symbol_parent_symtab(function)->get_counter() != current_scope->get_counter()) {
+            current_function_dependencies.push_back(al, s2c(al, function_name));
+        }
         ASRUtils::insert_module_dependency(function, al, current_module_dependencies);
         return ASRUtils::make_FunctionCall_t_util(al, x.base.base.loc, function, nullptr, func_args.p,
             func_args.size(), type, nullptr, nullptr);
@@ -5851,7 +5865,9 @@ public:
                         } else {
                             return_type = ASRUtils::expr_type(func->m_return_var);
                         }
-                        current_function_dependencies.push_back(al, s2c(al, matched_func_name));
+                        if (ASRUtils::symbol_parent_symtab(sym)->get_counter() != current_scope->get_counter()) {
+                            current_function_dependencies.push_back(al, s2c(al, matched_func_name));
+                        }
                         ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
                         ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al);
                         tmp = ASRUtils::make_FunctionCall_t_util(al, x.base.base.loc,

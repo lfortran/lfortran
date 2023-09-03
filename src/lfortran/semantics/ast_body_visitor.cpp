@@ -2732,7 +2732,9 @@ public:
                 throw SemanticError("Symbol type not supported", x.base.base.loc);
             }
         }
-        current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym));
+        if (ASRUtils::symbol_parent_symtab(final_sym) == current_scope->parent) {
+            current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym));
+        }
         ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
         if( f ) {
             ASRUtils::set_absent_optional_arguments_to_null(args, f, al, v_expr);
