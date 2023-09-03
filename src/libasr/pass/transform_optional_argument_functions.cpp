@@ -286,8 +286,21 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
             ASR::Variable_t* func_arg_j = ASRUtils::EXPR2VAR(func->m_args[j]);
             if( x.m_args[i].m_value == nullptr ) {
                 std::string m_arg_i_name = scope->get_unique_name("__libasr_created_variable_");
+                ASR::ttype_t *arg_type = func_arg_j->m_type;
+                if (ASRUtils::is_array(arg_type)) {
+                    ASR::dimension_t* m_dims = nullptr;
+                    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(arg_type, m_dims);
+                    for (size_t i = 0; i < n_dims; i++) {
+                        // Creating an array with size `0`
+                        ASR::ttype_t *int32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.m_args[i].loc, 4));
+                        m_dims[i].m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.m_args[i].loc, 0, int32));
+                        m_dims[i].m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.m_args[i].loc, 1, int32));
+                    }
+                    Vec<ASR::dimension_t> dims; dims.from_pointer_n_copy(al, m_dims, n_dims);
+                    arg_type = ASRUtils::duplicate_type(al, arg_type, &dims);
+                }
                 ASR::expr_t* m_arg_i = PassUtils::create_auxiliary_variable(
-                    x.m_args[i].loc, m_arg_i_name, al, scope, func_arg_j->m_type);
+                    x.m_args[i].loc, m_arg_i_name, al, scope, arg_type);
                 ASR::call_arg_t m_call_arg_i;
                 m_call_arg_i.loc = x.m_args[i].loc;
                 m_call_arg_i.m_value = m_arg_i;
