@@ -418,7 +418,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 value = substring(value, 0, strlen(value) - 1);
             }
 
-            if ((value[0] == '\"' && value[strlen(value) - 1] == '\"') || 
+            if ((value[0] == '\"' && value[strlen(value) - 1] == '\"') ||
                 (value[0] == '\'' && value[strlen(value) - 1] == '\'')) {
                 // String
                 value = substring(value, 1, strlen(value) - 1);
@@ -2032,6 +2032,36 @@ LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t
     } else {
         for (int i = 0; i < array_size; i++) {
             fscanf(filep, "%lf", &p[i]);
+        }
+    }
+}
+
+LFORTRAN_API void _lfortran_read_array_char(char **p, int array_size, int32_t unit_num)
+{
+    if (unit_num == -1) {
+        // Read from stdin
+        for (int i = 0; i < array_size; i++) {
+            int n = 1; // TODO: Support character length > 1
+            p[i] = (char*) malloc(n * sizeof(char));
+            scanf("%s", p[i]);
+        }
+        return;
+    }
+
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+    if (!filep) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    for (int i = 0; i < array_size; i++) {
+        int n = 1; // TODO: Support character length > 1
+        p[i] = (char*) malloc(n * sizeof(char));
+        if (unit_file_bin) {
+            fread(p[i], sizeof(char), n, filep);
+        } else {
+            fscanf(filep, "%s", p[i]);
         }
     }
 }
