@@ -1659,6 +1659,8 @@ LFORTRAN_API double _lfortran_time()
     uli.LowPart = ft.dwLowDateTime;
     uli.HighPart = ft.dwHighDateTime;
     return (double)uli.QuadPart / 10000000.0 - 11644473600.0;
+#elif defined(__APPLE__) && !defined(__aarch64__)
+    return 0.0;
 #else
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
