@@ -79,6 +79,7 @@ struct IntrinsicProcedures {
             // in intrinsic_function_transformation()
             // So we shouldn't even encounter them here
             {"int", {m_builtin, &eval_int, false}},
+            {"aint", {m_builtin, &eval_aint, false}},
             {"real", {m_builtin, &not_implemented, false}},
             {"any", {m_builtin, &not_implemented, false}},
             {"is_iostat_eor", {m_builtin, &not_implemented, false}},
@@ -798,6 +799,43 @@ TRIG2(sqrt, dsqrt)
             }
         } else {
             throw SemanticError("int must have only one argument", loc);
+        }
+    }
+
+    static ASR::expr_t *eval_aint(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
+        std::cout<<"eval_aint"<<std::endl;
+        ASR::expr_t* real_expr = args[0];
+        ASR::ttype_t* real_type = ASRUtils::expr_type(real_expr);
+        int real_kind = ASRUtils::extract_kind_from_ttype_t(real_type);
+
+        if (ASR::is_a<ASR::Integer_t>(*real_type)) {
+            if (real_kind == 4) {
+                int64_t ival = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(real_expr))->m_n;
+                float fval = static_cast<float>(ival);
+                return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, fval, real_type));
+            } else {
+                int64_t ival = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(real_expr))->m_n;
+                float fval = static_cast<float>(ival);
+                return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, fval, real_type));
+            }
+        } else if (ASR::is_a<ASR::Real_t>(*real_type)) {
+            std::cout<<"real_kind: "<<real_kind<<std::endl;
+            if (real_kind == 4) {
+                float rv = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(real_expr))->m_r;
+                std::cout<<"rv: "<<rv<<std::endl;
+                int64_t ival = static_cast<int64_t>(rv);
+                std::cout<<"ival: "<<ival<<std::endl;
+                float fval = static_cast<float>(ival);
+                std::cout<<"fval: "<<fval<<std::endl;
+                return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, fval, real_type));
+            } else {
+                double rv = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(real_expr))->m_r;
+                int64_t ival = static_cast<int64_t>(rv);
+                float fval = static_cast<float>(ival);
+                return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, fval, real_type));
+            }
+        } else {
+            throw SemanticError("aint must have only one argument", loc);
         }
     }
 
