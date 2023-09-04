@@ -105,10 +105,9 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
     template <typename LOOP_BODY>
     void create_do_loop(const Location& loc, int var_rank, int result_rank,
         Vec<ASR::expr_t*>& idx_vars, Vec<ASR::expr_t*>& loop_vars,
-        Vec<ASR::expr_t*>& idx_vars_value,
-        std::vector<int>& loop_var_indices,
-        Vec<ASR::stmt_t*>& doloop_body,
-        ASR::expr_t* op_expr, int op_expr_dim_offset, LOOP_BODY loop_body) {
+        Vec<ASR::expr_t*>& idx_vars_value, std::vector<int>& loop_var_indices,
+        Vec<ASR::stmt_t*>& doloop_body, ASR::expr_t* op_expr, int op_expr_dim_offset,
+        LOOP_BODY loop_body) {
         PassUtils::create_idx_vars(idx_vars_value, var_rank, loc, al, current_scope, "_v");
         if( use_custom_loop_params ) {
             PassUtils::create_idx_vars(idx_vars, loop_vars, loop_var_indices,
@@ -1665,6 +1664,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
             }
 
             visit_AssignmentUtil(x);
+            use_custom_loop_params = false;
         }
 
         void visit_Associate(const ASR::Associate_t& /*x*/) {
