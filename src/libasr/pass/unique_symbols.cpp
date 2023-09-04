@@ -58,14 +58,10 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
     std::string update_name(std::string curr_name) {
         if (startswith(curr_name, "_lpython") || startswith(curr_name, "_lfortran") ) {
             return curr_name;
-        } else if (startswith(curr_name, "_lcompilers_")) {
+        } else if (startswith(curr_name, "_lcompilers_") && current_scope) {
             // mangle intrinsic functions
-            if (current_scope) {
-                uint64_t hash = get_hash(current_scope->asr_owner);
-                return module_name + curr_name + "_" + std::to_string(hash) + "_" + lcompilers_unique_ID;
-            } else {
-                return module_name + curr_name + "_" + lcompilers_unique_ID;
-            }
+            uint64_t hash = get_hash(current_scope->asr_owner);
+            return module_name + curr_name + "_" + std::to_string(hash) + "_" + lcompilers_unique_ID;
         }
         return module_name + curr_name + "_" + lcompilers_unique_ID;
     }
