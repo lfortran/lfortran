@@ -1341,8 +1341,13 @@ public:
                  mask = llvm_utils->create_gep(mask, 0);
                  break;
              }
+             case ASR::array_physical_typeType::PointerToDataArray: {
+                 // do nothing
+                 break;
+             }
              default: {
-                 LCOMPILERS_ASSERT(false);
+                 throw CodeGenError("Array physical type not supported",
+                                    x.base.base.loc);
              }
         }
         std::string runtime_func_name = "_lfortran_all";
@@ -6623,6 +6628,13 @@ public:
                         throw CodeGenError("Real arrays of kind 4 or 8 only supported for now. Found kind: "
                                             + std::to_string(a_kind));
                     }
+                } else if (ASR::is_a<ASR::Character_t>(*type)) {
+                    if (ASR::down_cast<ASR::Character_t>(type)->m_len != 1) {
+                        throw CodeGenError("Only `character(len=1)` array "
+                            "is supported for now");
+                    }
+                    runtime_func_name = "_lfortran_read_array_char";
+                    type_arg = character_type;
                 } else {
                     throw CodeGenError("Type not supported.");
                 }
@@ -8563,37 +8575,9 @@ public:
             args.push_back(tmp);
 
             for (size_t i=0; i<x.n_args; i++) {
-                visit_expr_wrapper(x.m_args[i], true);
-                ASR::expr_t *v = x.m_args[i];
-                ASR::ttype_t *t = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(v));
-                t = ASRUtils::type_get_past_allocatable(t);
-                int a_kind = ASRUtils::extract_kind_from_ttype_t(t);
-                if (ASRUtils::is_real(*t)) {
-                    llvm::Value *d;
-                    switch( a_kind ) {
-                        case 4 : {
-                            // Cast float to double as a workaround for the fact that
-                            // vprintf() seems to cast to double even for %f, which
-                            // causes it to print 0.000000.
-                            d = builder->CreateFPExt(tmp,
-                            llvm::Type::getDoubleTy(context));
-                            break;
-                        }
-                        case 8 : {
-                            d = builder->CreateFPExt(tmp,
-                            llvm::Type::getDoubleTy(context));
-                            break;
-                        }
-                        default: {
-                        throw CodeGenError(R"""(Printing support is available only
-                                            for 32, and 64 bit real kinds.)""",
-                                            x.base.base.loc);
-                        }
-                    }
-                    args.push_back(d);
-                } else {
-                    args.push_back(tmp);
-                }
+                std::vector<std::string>fmt;
+                //  Use the function to compute the args, but ignore the format
+                compute_fmt_specifier_and_arg(fmt, args, x.m_args[i], x.base.base.loc);
             }
             tmp = string_format_fortran(context, *module, *builder, args);
         } else {
