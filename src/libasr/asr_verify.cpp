@@ -461,8 +461,8 @@ public:
                 } else {
                     // This is not a global scope symbol and not in the parent symbol table,
                     // Return an error:
-                    // require(dep_sym != nullptr,
-                    //         "Dependency " + found_dep +  " was not found in the parent symbol table " + std::string(x.m_name));
+                    require(dep_sym != nullptr,
+                            "Dependency " + found_dep +  " was not found in the parent symbol table " + std::string(x.m_name));
                 }
             }
         }
@@ -471,9 +471,9 @@ public:
         // present in the dependency list of the function
         for( size_t i = 0; i < x.n_dependencies; i++ ) {
             std::string found_dep = x.m_dependencies[i];
-            // require(std::find(function_dependencies.begin(), function_dependencies.end(), found_dep) != function_dependencies.end(),
-            //         "Function " + std::string(x.m_name) + " doesn't depend on " + found_dep +
-            //         " but is found in its dependency list.");
+            require(std::find(function_dependencies.begin(), function_dependencies.end(), found_dep) != function_dependencies.end(),
+                    "Function " + std::string(x.m_name) + " doesn't depend on " + found_dep +
+                    " but is found in its dependency list.");
         }
 
         // Check if all the dependencies found are
