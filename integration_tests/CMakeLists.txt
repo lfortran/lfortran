@@ -1062,6 +1062,7 @@ RUN(NAME file_08 LABELS gfortran llvm NOFAST COPY_TO_BIN file_08.txt)
 
 RUN(NAME optional_01 LABELS gfortran llvm)
 RUN(NAME optional_02 LABELS gfortran llvm)
+RUN(NAME optional_03 LABELS gfortran llvm)
 
 RUN(NAME end_name_match LABELS gfortran llvm)
 
