@@ -1881,14 +1881,28 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num)
     fflush(filep);
 }
 
-LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists) {
-    FILE *fp = fopen(f_name, "r");
-    if (fp != NULL) {
-        *exists = true;
-        fclose(fp); // close the file
-        return;
+LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists, int32_t unit_num, bool *opened) {
+    if (f_name && unit_num != -1) {
+        printf("File name and file unit number cannot be specifed together.\n");
+        exit(1);
     }
-    *exists = false;
+    if (f_name != NULL) {
+        FILE *fp = fopen(f_name, "r");
+        if (fp != NULL) {
+            *exists = true;
+            fclose(fp); // close the file
+            return;
+        }
+        *exists = false;
+    }
+    if (unit_num != -1) {
+        bool unit_file_bin;
+        if (get_file_pointer_from_unit(unit_num, &unit_file_bin) != NULL) {
+            *opened = true;
+        } else {
+            *opened = false;
+        }
+    }
 }
 
 LFORTRAN_API void _lfortran_rewind(int32_t unit_num)

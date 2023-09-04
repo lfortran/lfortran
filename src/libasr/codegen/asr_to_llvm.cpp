@@ -6738,7 +6738,7 @@ public:
     }
 
     void visit_FileInquire(const ASR::FileInquire_t &x) {
-        llvm::Value *exist_val = nullptr, *f_name = nullptr;
+        llvm::Value *exist_val = nullptr, *f_name = nullptr, *unit = nullptr, *opened_val = nullptr;
 
         if (x.m_file) {
             this->visit_expr_wrapper(x.m_file, true);
@@ -6756,18 +6756,39 @@ public:
             exist_val = builder->CreateAlloca(
                             llvm::Type::getInt1Ty(context), nullptr);
         }
+
+        if (x.m_unit) {
+            this->visit_expr_wrapper(x.m_unit, true);
+            unit = tmp;
+        } else {
+            unit = llvm::ConstantInt::get(
+                    llvm::Type::getInt32Ty(context), llvm::APInt(32, -1));
+        }
+        if (x.m_opened) {
+            int ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(x.m_opened, true);
+            opened_val = tmp;
+            ptr_loads = ptr_loads_copy;
+        } else {
+            opened_val = builder->CreateAlloca(
+                            llvm::Type::getInt1Ty(context), nullptr);
+        }
+
         std::string runtime_func_name = "_lfortran_inquire";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     llvm::Type::getVoidTy(context), {
                         character_type,
-                        llvm::Type::getInt1Ty(context)->getPointerTo()
+                        llvm::Type::getInt1Ty(context)->getPointerTo(),
+                        llvm::Type::getInt32Ty(context),
+                        llvm::Type::getInt1Ty(context)->getPointerTo(),
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, *module);
         }
-        tmp = builder->CreateCall(fn, {f_name, exist_val});
+        tmp = builder->CreateCall(fn, {f_name, exist_val, unit, opened_val});
     }
 
     void visit_Flush(const ASR::Flush_t& x) {

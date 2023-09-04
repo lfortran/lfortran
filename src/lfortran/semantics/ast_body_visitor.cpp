@@ -297,6 +297,22 @@ public:
                     ) ) {
                         throw SemanticError("`newunit`/`unit` must be a variable of type, Integer or IntegerPointer", x.base.base.loc);
                 }
+
+                if ( m_arg_str == std::string("newunit") ) {
+                    Vec<AST::fnarg_t> args;
+                    args.reserve(al, 0);
+                    AST::fnarg_t arg;
+                    arg.loc = x.base.base.loc;
+                    arg.m_label = 0;
+                    arg.m_start = nullptr;
+                    arg.m_step = nullptr;
+                    arg.m_end = kwarg.m_value;
+                    args.push_back(al, arg);
+                    AST::SubroutineCall_t* subrout_call = AST::down_cast2<AST::SubroutineCall_t>(
+                        AST::make_SubroutineCall_t(al, x.base.base.loc, 0, s2c(al, "newunit"), nullptr, 0, args.p, args.size(), nullptr, 0, nullptr));
+                    visit_SubroutineCall(*subrout_call);
+                    tmp_vec.push_back(tmp);
+                }
             } else if( m_arg_str == std::string("file") ) {
                 if( a_filename != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `file` found, unit has already been specified via arguments or keyword arguments)""",
@@ -338,6 +354,8 @@ public:
         }
         tmp = ASR::make_FileOpen_t(al, x.base.base.loc, x.m_label,
                                a_newunit, a_filename, a_status, a_form);
+        tmp_vec.push_back(tmp);
+        tmp = nullptr;
     }
 
     void visit_Close(const AST::Close_t& x) {
