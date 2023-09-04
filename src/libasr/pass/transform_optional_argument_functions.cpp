@@ -290,13 +290,13 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 if (ASRUtils::is_array(arg_type)) {
                     ASR::dimension_t* m_dims = nullptr;
                     size_t n_dims = ASRUtils::extract_dimensions_from_ttype(arg_type, m_dims);
+                    Vec<ASR::dimension_t> dims; dims.from_pointer_n_copy(al, m_dims, n_dims);
                     for (size_t i = 0; i < n_dims; i++) {
                         // Creating an array with size `0`
                         ASR::ttype_t *int32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.m_args[i].loc, 4));
-                        m_dims[i].m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.m_args[i].loc, 0, int32));
-                        m_dims[i].m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.m_args[i].loc, 1, int32));
+                        dims.p[i].m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.m_args[i].loc, 0, int32));
+                        dims.p[i].m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.m_args[i].loc, 1, int32));
                     }
-                    Vec<ASR::dimension_t> dims; dims.from_pointer_n_copy(al, m_dims, n_dims);
                     arg_type = ASRUtils::duplicate_type(al, arg_type, &dims);
                 }
                 ASR::expr_t* m_arg_i = PassUtils::create_auxiliary_variable(

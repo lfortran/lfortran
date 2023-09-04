@@ -1227,12 +1227,12 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
         }
         case ASR::ttypeType::Struct: {
             ASR::Struct_t* d = ASR::down_cast<ASR::Struct_t>(t);
-            res = symbol_name(d->m_derived_type);
+            res = symbol_name(symbol_get_past_external(d->m_derived_type));
             break;
         }
         case ASR::ttypeType::Class: {
             ASR::Class_t* d = ASR::down_cast<ASR::Class_t>(t);
-            res = symbol_name(d->m_class_type);
+            res = symbol_name(symbol_get_past_external(d->m_class_type));
             break;
         }
         case ASR::ttypeType::Union: {
@@ -4102,8 +4102,7 @@ static inline void import_struct_t(Allocator& al,
     if( is_array ) {
         ptype = ASRUtils::extract_physical_type(var_type);
     }
-    ASR::ttype_t* var_type_unwrapped = ASRUtils::type_get_past_allocatable(
-                 ASRUtils::type_get_past_pointer(var_type));
+    ASR::ttype_t* var_type_unwrapped = extract_type(var_type);
     if( ASR::is_a<ASR::Struct_t>(*var_type_unwrapped) ) {
         ASR::symbol_t* der_sym = ASR::down_cast<ASR::Struct_t>(var_type_unwrapped)->m_derived_type;
         if( (ASR::asr_t*) ASRUtils::get_asr_owner(der_sym) != current_scope->asr_owner ) {
