@@ -4102,9 +4102,10 @@ static inline void import_struct_t(Allocator& al,
     if( is_array ) {
         ptype = ASRUtils::extract_physical_type(var_type);
     }
-    ASR::ttype_t* var_type_unwrapped = extract_type(var_type);
-    if( ASR::is_a<ASR::Struct_t>(*var_type_unwrapped) ) {
-        ASR::symbol_t* der_sym = ASR::down_cast<ASR::Struct_t>(var_type_unwrapped)->m_derived_type;
+    ASR::ttype_t* var_type_unwrapped = ASRUtils::type_get_past_allocatable(
+                 ASRUtils::type_get_past_pointer(var_type));
+    if( ASR::is_a<ASR::Struct_t>(*type_get_past_array(var_type_unwrapped)) ) {
+        ASR::symbol_t* der_sym = ASR::down_cast<ASR::Struct_t>(type_get_past_array(var_type_unwrapped))->m_derived_type;
         if( (ASR::asr_t*) ASRUtils::get_asr_owner(der_sym) != current_scope->asr_owner ) {
             std::string sym_name = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(der_sym));
             if( current_scope->resolve_symbol(sym_name) == nullptr ) {
