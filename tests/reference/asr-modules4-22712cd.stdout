@@ -13,7 +13,7 @@
                                 (ExternalSymbol
                                     13
                                     toml_ordered
-                                    40 toml_ordered
+                                    41 toml_ordered
                                     tomlf_structure_base
                                     []
                                     toml_ordered
@@ -28,16 +28,16 @@
             tomlf_structure_base:
                 (Module
                     (SymbolTable
-                        40
+                        41
                         {
                             destroy:
                                 (Function
                                     (SymbolTable
-                                        43
+                                        44
                                         {
                                             self:
                                                 (Variable
-                                                    43
+                                                    44
                                                     self
                                                     []
                                                     InOut
@@ -45,7 +45,7 @@
                                                     ()
                                                     Default
                                                     (Class
-                                                        40 toml_structure
+                                                        41 toml_structure
                                                     )
                                                     ()
                                                     Source
@@ -55,7 +55,7 @@
                                                 ),
                                             toml_value:
                                                 (ExternalSymbol
-                                                    43
+                                                    44
                                                     toml_value
                                                     9 toml_value
                                                     tomlf_type_value
@@ -67,7 +67,7 @@
                                     destroy
                                     (FunctionType
                                         [(Class
-                                            40 toml_structure
+                                            41 toml_structure
                                         )]
                                         ()
                                         Source
@@ -82,7 +82,7 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 43 self)]
+                                    [(Var 44 self)]
                                     []
                                     ()
                                     Public
@@ -93,7 +93,7 @@
                             toml_ordered:
                                 (StructType
                                     (SymbolTable
-                                        41
+                                        42
                                         {
                                             
                                         })
@@ -106,20 +106,20 @@
                                     .true.
                                     []
                                     ()
-                                    40 toml_structure
+                                    41 toml_structure
                                 ),
                             toml_structure:
                                 (StructType
                                     (SymbolTable
-                                        42
+                                        43
                                         {
                                             destroy:
                                                 (ClassProcedure
-                                                    42
+                                                    43
                                                     destroy
                                                     ()
                                                     destroy
-                                                    40 destroy
+                                                    41 destroy
                                                     Source
                                                     .true.
                                                 )
@@ -169,7 +169,7 @@
                                 (ExternalSymbol
                                     2
                                     new_keyval
-                                    45 new_keyval
+                                    46 new_keyval
                                     tomlf_type_keyval
                                     []
                                     new_keyval
@@ -189,7 +189,7 @@
                                 (ExternalSymbol
                                     2
                                     toml_keyval
-                                    45 toml_keyval
+                                    46 toml_keyval
                                     tomlf_type_keyval
                                     []
                                     toml_keyval
@@ -216,7 +216,7 @@
                                                 (ExternalSymbol
                                                     6
                                                     1_destroy
-                                                    42 destroy
+                                                    43 destroy
                                                     1_toml_structure
                                                     []
                                                     destroy
@@ -236,7 +236,7 @@
                                                 (ExternalSymbol
                                                     6
                                                     1_toml_structure
-                                                    40 toml_structure
+                                                    41 toml_structure
                                                     tomlf_structure_base
                                                     []
                                                     toml_structure
@@ -490,7 +490,7 @@
                                 (ExternalSymbol
                                     4
                                     toml_ordered
-                                    40 toml_ordered
+                                    41 toml_ordered
                                     tomlf_structure_base
                                     []
                                     toml_ordered
@@ -518,18 +518,18 @@
             tomlf_type_keyval:
                 (Module
                     (SymbolTable
-                        45
+                        46
                         {
                             destroy:
                                 (Function
                                     (SymbolTable
-                                        48
+                                        49
                                         {
                                             1_toml_keyval_raw:
                                                 (ExternalSymbol
-                                                    48
+                                                    49
                                                     1_toml_keyval_raw
-                                                    46 raw
+                                                    47 raw
                                                     toml_keyval
                                                     []
                                                     raw
@@ -537,9 +537,9 @@
                                                 ),
                                             1_toml_value_key:
                                                 (ExternalSymbol
-                                                    48
+                                                    49
                                                     1_toml_value_key
-                                                    47 key
+                                                    48 key
                                                     toml_value
                                                     []
                                                     key
@@ -547,7 +547,7 @@
                                                 ),
                                             allocated:
                                                 (ExternalSymbol
-                                                    48
+                                                    49
                                                     allocated
                                                     15 allocated
                                                     lfortran_intrinsic_builtin
@@ -557,7 +557,7 @@
                                                 ),
                                             self:
                                                 (Variable
-                                                    48
+                                                    49
                                                     self
                                                     []
                                                     InOut
@@ -565,7 +565,7 @@
                                                     ()
                                                     Default
                                                     (Class
-                                                        45 toml_keyval
+                                                        46 toml_keyval
                                                     )
                                                     ()
                                                     Source
@@ -577,7 +577,7 @@
                                     destroy
                                     (FunctionType
                                         [(Class
-                                            45 toml_keyval
+                                            46 toml_keyval
                                         )]
                                         ()
                                         Source
@@ -592,14 +592,14 @@
                                         .false.
                                     )
                                     [allocated]
-                                    [(Var 48 self)]
+                                    [(Var 49 self)]
                                     [(If
                                         (FunctionCall
-                                            48 allocated
+                                            49 allocated
                                             ()
                                             [((StructInstanceMember
-                                                (Var 48 self)
-                                                48 1_toml_value_key
+                                                (Var 49 self)
+                                                49 1_toml_value_key
                                                 (Allocatable
                                                     (Character 1 -2 ())
                                                 )
@@ -611,8 +611,8 @@
                                         )
                                         [(ExplicitDeallocate
                                             [(StructInstanceMember
-                                                (Var 48 self)
-                                                48 1_toml_value_key
+                                                (Var 49 self)
+                                                49 1_toml_value_key
                                                 (Allocatable
                                                     (Character 1 -2 ())
                                                 )
@@ -623,11 +623,11 @@
                                     )
                                     (If
                                         (FunctionCall
-                                            48 allocated
+                                            49 allocated
                                             ()
                                             [((StructInstanceMember
-                                                (Var 48 self)
-                                                48 1_toml_keyval_raw
+                                                (Var 49 self)
+                                                49 1_toml_keyval_raw
                                                 (Allocatable
                                                     (Character 1 -2 ())
                                                 )
@@ -639,8 +639,8 @@
                                         )
                                         [(ExplicitDeallocate
                                             [(StructInstanceMember
-                                                (Var 48 self)
-                                                48 1_toml_keyval_raw
+                                                (Var 49 self)
+                                                49 1_toml_keyval_raw
                                                 (Allocatable
                                                     (Character 1 -2 ())
                                                 )
@@ -657,19 +657,19 @@
                                 ),
                             new:
                                 (GenericProcedure
-                                    45
+                                    46
                                     new
-                                    [45 new_keyval]
+                                    [46 new_keyval]
                                     Public
                                 ),
                             new_keyval:
                                 (Function
                                     (SymbolTable
-                                        49
+                                        50
                                         {
                                             self:
                                                 (Variable
-                                                    49
+                                                    50
                                                     self
                                                     []
                                                     Out
@@ -677,7 +677,7 @@
                                                     ()
                                                     Default
                                                     (Struct
-                                                        45 toml_keyval
+                                                        46 toml_keyval
                                                     )
                                                     ()
                                                     Source
@@ -689,7 +689,7 @@
                                     new_keyval
                                     (FunctionType
                                         [(Struct
-                                            45 toml_keyval
+                                            46 toml_keyval
                                         )]
                                         ()
                                         Source
@@ -704,7 +704,7 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 49 self)]
+                                    [(Var 50 self)]
                                     []
                                     ()
                                     Public
@@ -715,21 +715,21 @@
                             toml_keyval:
                                 (StructType
                                     (SymbolTable
-                                        46
+                                        47
                                         {
                                             destroy:
                                                 (ClassProcedure
-                                                    46
+                                                    47
                                                     destroy
                                                     ()
                                                     destroy
-                                                    45 destroy
+                                                    46 destroy
                                                     Source
                                                     .false.
                                                 ),
                                             raw:
                                                 (Variable
-                                                    46
+                                                    47
                                                     raw
                                                     []
                                                     Local
@@ -755,26 +755,26 @@
                                     .false.
                                     []
                                     ()
-                                    45 toml_value
+                                    46 toml_value
                                 ),
                             toml_value:
                                 (StructType
                                     (SymbolTable
-                                        47
+                                        48
                                         {
                                             destroy:
                                                 (ClassProcedure
-                                                    47
+                                                    48
                                                     destroy
                                                     ()
                                                     destroy
-                                                    45 destroy
+                                                    46 destroy
                                                     Source
                                                     .true.
                                                 ),
                                             key:
                                                 (Variable
-                                                    47
+                                                    48
                                                     key
                                                     []
                                                     Local
