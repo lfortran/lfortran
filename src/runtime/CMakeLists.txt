@@ -31,6 +31,8 @@ lfortran_compile_runtime(lfortran_intrinsic_builtin builtin)
 lfortran_compile_runtime(lfortran_intrinsic_kind pure)
 lfortran_compile_runtime(lfortran_intrinsic_iso_fortran_env pure)
 
+lfortran_compile_runtime(lfortran_intrinsic_custom custom)
+
 lfortran_compile_runtime(lfortran_intrinsic_optimization builtin)
 add_dependencies(lfortran_intrinsic_optimization lfortran_intrinsic_iso_fortran_env)
 
