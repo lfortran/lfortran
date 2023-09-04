@@ -10,6 +10,7 @@
 #include <lfortran/parser/parser.h>
 #include <lfortran/parser/preprocessor.h>
 #include <lfortran/pickle.h>
+#include <libasr/pickle.h>
 #include <lfortran/semantics/ast_to_asr.h>
 #include <lfortran/mod_to_asr.h>
 #include <libasr/codegen/asr_to_llvm.h>
@@ -679,15 +680,15 @@ int emit_asr(const std::string &infile,
 
     pass_manager.apply_passes(al, asr, pass_options, diagnostics);
     if (compiler_options.tree) {
-        std::cout << LCompilers::LFortran::pickle_tree(*asr,
+        std::cout << LCompilers::pickle_tree(*asr,
             compiler_options.use_colors) << std::endl;
     } else if (compiler_options.json) {
-        std::cout << LCompilers::LFortran::pickle_json(*asr, lm, with_intrinsic_modules) << std::endl;
+        std::cout << LCompilers::pickle_json(*asr, lm, with_intrinsic_modules) << std::endl;
     } else if (compiler_options.visualize) {
-        std::string astr_data_json = LCompilers::LFortran::pickle_json(*asr, lm, with_intrinsic_modules);
+        std::string astr_data_json = LCompilers::pickle_json(*asr, lm, with_intrinsic_modules);
         return visualize_json(astr_data_json, compiler_options.platform);
     } else {
-        std::cout << LCompilers::LFortran::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
+        std::cout << LCompilers::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
                 with_intrinsic_modules) << std::endl;
     }
     return 0;

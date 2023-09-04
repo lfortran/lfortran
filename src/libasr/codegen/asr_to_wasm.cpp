@@ -22,7 +22,7 @@
 // #define SHOW_ASR
 
 #ifdef SHOW_ASR
-#include <lfortran/pickle.h>
+#include <libasr/pickle.h>
 #endif
 
 namespace LCompilers {
@@ -3083,7 +3083,7 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr,
 
 
 #ifdef SHOW_ASR
-    std::cout << LCompilers::LFortran::pickle(asr, false /* use colors */, true /* indent */,
+    std::cout << LCompilers::pickle(asr, false /* use colors */, true /* indent */,
                         true /* with_intrinsic_modules */)
               << std::endl;
 #endif

@@ -15,6 +15,7 @@
 #include <lfortran/parser/parser.h>
 #include <lfortran/parser/preprocessor.h>
 #include <lfortran/pickle.h>
+#include <libasr/pickle.h>
 #include <libasr/utils.h>
 
 #ifdef HAVE_LFORTRAN_LLVM
@@ -101,7 +102,7 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     }
 
     if (verbose) {
-        result.asr = LFortran::pickle(*asr, true);
+        result.asr = pickle(*asr, true);
     }
 
     // ASR -> LLVM
@@ -220,11 +221,11 @@ Result<std::string> FortranEvaluator::get_asr(const std::string &code,
     Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
     if (asr.ok) {
         if (compiler_options.tree) {
-            return LFortran::pickle_tree(*asr.result, compiler_options.use_colors);
+            return pickle_tree(*asr.result, compiler_options.use_colors);
         } else if (compiler_options.json) {
-            return LFortran::pickle_json(*asr.result, lm);
+            return pickle_json(*asr.result, lm);
         }
-        return LFortran::pickle(*asr.result,
+        return pickle(*asr.result,
             compiler_options.use_colors, compiler_options.indent);
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
