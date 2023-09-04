@@ -669,6 +669,7 @@ int emit_asr(const std::string &infile,
     pass_options.always_run = true;
     pass_options.run_fun = "f";
     pass_options.verbose = compiler_options.verbose;
+    pass_options.dumb_all_passes = compiler_options.dumb_all_passes;
     pass_options.pass_cumulative = compiler_options.pass_cumulative;
     pass_options.realloc_lhs = compiler_options.realloc_lhs;
     pass_options.all_symbols_mangling = compiler_options.all_symbols_mangling;
@@ -1921,6 +1922,7 @@ int main(int argc, char *argv[])
         app.add_flag("--print-leading-space", compiler_options.print_leading_space, "Print leading white space if format is unspecified");
         app.add_flag("--interactive-parse", compiler_options.interactive, "Use interactive parse");
         app.add_flag("--verbose", compiler_options.verbose, "Print debugging statements");
+        app.add_flag("--dump-all-passes", compiler_options.dumb_all_passes, "Apply all the passes and dump the ASR into a file");
         app.add_flag("--cumulative", compiler_options.pass_cumulative, "Apply all the passes cumulatively till the given pass");
         app.add_flag("--realloc-lhs", compiler_options.realloc_lhs, "Reallocate left hand side automatically");
         app.add_flag("--module-mangling", compiler_options.module_name_mangling, "Mangles the module name");
@@ -2021,7 +2023,7 @@ int main(int argc, char *argv[])
                 Allocator al(1024*1024);
                 LCompilers::ASR::TranslationUnit_t *asr;
                 asr = LCompilers::LFortran::mod_to_asr(al, arg_mod_file);
-                std::cout << LCompilers::LFortran::pickle(*asr, !arg_mod_no_color) << std::endl;
+                std::cout << LCompilers::pickle(*asr, !arg_mod_no_color) << std::endl;
                 return 0;
             }
             return 0;
