@@ -672,6 +672,42 @@ static ASR::asr_t* comptime_intrinsic_int(ASR::expr_t *A,
     return (ASR::asr_t*)result;
 }
 
+static ASR::asr_t* comptime_intrinsic_aint(ASR::expr_t *A,
+        ASR::expr_t * kind,
+        Allocator &al, const Location &loc) {
+    int kind_int = 4;
+    if (kind) {
+        ASR::expr_t* kind_value = ASRUtils::expr_value(kind);
+        if (kind_value) {
+            if (ASR::is_a<ASR::IntegerConstant_t>(*kind_value)) {
+                kind_int = ASR::down_cast<ASR::IntegerConstant_t>(kind_value)->m_n;
+            } else {
+                throw SemanticError("kind argument to aint(a, kind) is not a constant integer", loc);
+            }
+        } else {
+            throw SemanticError("kind argument to aint(a, kind) is not constant", loc);
+        }
+    }
+    // Cast: Real -> Integer
+    ASR::expr_t *result = A;
+    ASR::ttype_t *dest_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind_int));
+    ASR::ttype_t *source_type = ASRUtils::expr_type(A);
+
+    // TODO: this is implicit cast, use ExplicitCast
+    ImplicitCastRules::set_converted_value(al, loc, &result,
+                                           source_type, dest_type);
+
+
+    // Now, cast: Integer -> Real
+    ASR::ttype_t *dest_type2 = ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind_int));
+    ASR::ttype_t *source_type2 = ASRUtils::expr_type(result);
+
+    // TODO: this is implicit cast, use ExplicitCast
+    ImplicitCastRules::set_converted_value(al, loc, &result,
+                                           source_type2, dest_type2);
+    return (ASR::asr_t*)result;
+}
+
 }; // class CommonVisitorMethods
 
 
@@ -3180,6 +3216,16 @@ public:
                 return nullptr;
             }
             return LFortran::CommonVisitorMethods::comptime_intrinsic_int(args[0].m_value, arg1, al, loc);
+        } else if (fn_name == "aint") {
+            ASR::expr_t *arg1;
+            if (args.size() == 1) {
+                arg1 = nullptr;
+            } else if (args.size() == 2) {
+                arg1 = args[1].m_value;
+            } else {
+                throw SemanticError("aint(...) must have 1 or 2 arguments", loc);
+            }
+            return LFortran::CommonVisitorMethods::comptime_intrinsic_aint(args[0].m_value, arg1, al, loc);
         } else {
             return nullptr;
         }
