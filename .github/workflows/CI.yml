@@ -488,8 +488,8 @@ jobs:
             ldd ./test_more_inputs
 
             git clean -dfx
-            git checkout -t origin/lf30run
-            git checkout e98ef35cbdc868a05df6c62a2cfe1296bca62237
+            git checkout -t origin/lf32run
+            git checkout dbf8349dd71103381ce295b04d39c40b7d59e5dd
             curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
 
             mkdir lf
