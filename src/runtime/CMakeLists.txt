@@ -83,6 +83,7 @@ install(
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_builtin.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_optimization.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_kind.mod
+  ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_custom.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_iso_fortran_env.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_ieee_arithmetic.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_iso_c_binding.mod
@@ -95,4 +96,3 @@ install(
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_bit.mod
   DESTINATION share/lfortran/lib
   )
-
