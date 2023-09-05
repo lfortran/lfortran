@@ -6684,7 +6684,7 @@ public:
     }
 
     void visit_FileRead(const ASR::FileRead_t &x) {
-        llvm::Value *unit_val;
+        llvm::Value *unit_val, *iostat;
         if (x.m_unit == nullptr) {
             // Read from stdin
             unit_val = llvm::ConstantInt::get(
@@ -6694,9 +6694,21 @@ public:
             unit_val = tmp;
         }
 
+        if (x.m_iostat) {
+            int ptr_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(x.m_iostat, false);
+            ptr_loads = ptr_copy;
+            iostat = tmp;
+        } else {
+            iostat = builder->CreateAlloca(
+                        llvm::Type::getInt32Ty(context), nullptr);
+        }
+
         if (x.m_fmt) {
             std::vector<llvm::Value*> args;
             args.push_back(unit_val);
+            args.push_back(iostat);
             this->visit_expr_wrapper(x.m_fmt, true);
             args.push_back(tmp);
             args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, x.n_values)));
@@ -6713,6 +6725,7 @@ public:
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
                         llvm::Type::getVoidTy(context), {
                             llvm::Type::getInt32Ty(context),
+                            llvm::Type::getInt32Ty(context)->getPointerTo(),
                             character_type,
                             llvm::Type::getInt32Ty(context)
                         }, true);

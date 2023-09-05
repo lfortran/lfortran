@@ -31,7 +31,7 @@ program file_10
         integer, intent(in) :: fp
         character(:), allocatable :: input
         character(1024) :: tmp
-        integer ::ios = 0
+        integer ::ios
         read(fp, "(a)", iostat=ios) tmp
         if (ios == 0) then
             input = trim(tmp)

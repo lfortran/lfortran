@@ -2164,7 +2164,7 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num)
     }
 }
 
-LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, char* fmt, int32_t no_of_args, ...)
+LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, char* fmt, int32_t no_of_args, ...)
 {
     if (!streql(fmt, "(a)")) {
         printf("Only (a) supported as fmt currently");
@@ -2183,7 +2183,7 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, char* fmt, int32_t 
 
     if (unit_num == -1) {
         // Read from stdin
-        fgets(*arg, n, stdin);
+        *iostat = !(fgets(*arg, n, stdin) == *arg);
         (*arg)[strcspn(*arg, "\n")] = 0;
         va_end(args);
         return;
@@ -2196,7 +2196,7 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, char* fmt, int32_t 
         exit(1);
     }
 
-    fgets(*arg, n, filep);
+    *iostat = !(fgets(*arg, n, filep) == *arg);
     (*arg)[strcspn(*arg, "\n")] = 0;
     va_end(args);
 }
