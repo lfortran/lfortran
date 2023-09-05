@@ -497,7 +497,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 }
                 char* s = (char*)malloc((strlen(str) + 4) * sizeof(char));
                 sprintf(s, "%%%s.%ss", str, str);
-                char* string = (char*)malloc((strlen(arg)) * sizeof(char));
+                char* string = (char*)malloc((strlen(arg) + 4) * sizeof(char));
                 sprintf(string, s, arg);
                 result = append_to_string(result, string);
                 free(s);
