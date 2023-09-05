@@ -515,8 +515,8 @@ jobs:
             cd ..
 
             git clean -dfx
-            git checkout main
-            git checkout c2148fbd909c82ec72eaccc00d8ddc51e9106144
+            git checkout -t origin/namelist
+            git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
             curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
 
             mkdir lf
@@ -525,6 +525,7 @@ jobs:
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
+            ./test_basic_input
             ./test_more_inputs
             cd ..
 
@@ -534,6 +535,7 @@ jobs:
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
+            ./test_basic_input
             ./test_more_inputs
             cd ..
 
