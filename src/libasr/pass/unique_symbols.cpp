@@ -32,6 +32,11 @@ namespace LCompilers {
 
 using ASR::down_cast;
 
+uint64_t static inline get_hash(ASR::asr_t *node)
+{
+    return (uint64_t)node;
+}
+
 class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
     public:
     std::unordered_map<ASR::symbol_t*, std::string> sym_to_renamed;
@@ -42,6 +47,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
     bool bindc_mangling = false;
     bool should_mangle = false;
     std::string module_name = "";
+    SymbolTable* current_scope = nullptr;
 
     SymbolRenameVisitor(
     bool mm, bool gm, bool im, bool am, bool bcm) : module_name_mangling(mm),
@@ -52,12 +58,17 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
     std::string update_name(std::string curr_name) {
         if (startswith(curr_name, "_lpython") || startswith(curr_name, "_lfortran") ) {
             return curr_name;
+        } else if (startswith(curr_name, "_lcompilers_") && current_scope) {
+            // mangle intrinsic functions
+            uint64_t hash = get_hash(current_scope->asr_owner);
+            return module_name + curr_name + "_" + std::to_string(hash) + "_" + lcompilers_unique_ID;
         }
         return module_name + curr_name + "_" + lcompilers_unique_ID;
     }
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         ASR::TranslationUnit_t& xx = const_cast<ASR::TranslationUnit_t&>(x);
+        current_scope = xx.m_global_scope;
         std::unordered_map<ASR::symbol_t*, std::string> tmp_scope;
         for (auto &a : xx.m_global_scope->get_scope()) {
             visit_symbol(*a.second);
