@@ -154,9 +154,9 @@ namespace LCompilers {
                 _passes_db[passes[i]](al, *asr, pass_options);
                 if (pass_options.dumb_all_passes) {
                     std::string str_i = std::to_string(i+1);
-                    if ( i+1 < 10 )  str_i = "0" + str_i;
-                    std::ofstream outfile (str_i + "_" + passes[i] + ".clj");
-                    outfile << "ASR after applying the pass: " << passes[i]
+                    if ( i < 9 )  str_i = "0" + str_i;
+                    std::ofstream outfile ("pass_" + str_i + "_" + passes[i] + ".clj");
+                    outfile << ";; ASR after applying the pass: " << passes[i]
                         << "\n" << pickle(*asr, false, true) << "\n";
                     outfile.close();
                 }

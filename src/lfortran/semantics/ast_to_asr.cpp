@@ -17,6 +17,7 @@
 #include <libasr/string_utils.h>
 #include <lfortran/utils.h>
 #include <libasr/pass/pass_utils.h>
+#include <libasr/pickle.h>
 
 namespace LCompilers::LFortran {
 
@@ -94,10 +95,19 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
         return res.error;
     }
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(unit);
+    if (compiler_options.dumb_all_passes) {
+#if !defined(_WIN32)
+        if (system("rm pass_*"))
+            std::cerr << "Warning: old `pass_*` files are not removed!\n";
+#endif
+        std::ofstream outfile ("pass_00_initial_asr.clj");
+        outfile << ";; Initial ASR\n" << pickle(*tu, false, true) << "\n";
+        outfile.close();
+    }
 #if defined(WITH_LFORTRAN_ASSERT)
-        if (!asr_verify(*tu, true, diagnostics)) {
-            return Error();
-        };
+    if (!asr_verify(*tu, true, diagnostics)) {
+        return Error();
+    };
 #endif
     if (!symtab_only) {
         auto res = body_visitor(al, ast, diagnostics, unit, compiler_options,
@@ -109,6 +119,11 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
             return res.error;
         }
         if (compiler_options.rtlib) load_rtlib(al, *tu, compiler_options);
+        if (compiler_options.dumb_all_passes) {
+            std::ofstream outfile ("pass_00_initial_asr.clj");
+            outfile << ";; Initial ASR\n" << pickle(*tu, false, true) << "\n";
+            outfile.close();
+        }
 #if defined(WITH_LFORTRAN_ASSERT)
         if (!asr_verify(*tu, true, diagnostics)) {
             return Error();
