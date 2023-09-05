@@ -514,6 +514,29 @@ jobs:
             ctest -V
             cd ..
 
+            git clean -dfx
+            git checkout main
+            git checkout c2148fbd909c82ec72eaccc00d8ddc51e9106144
+            curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
+
+            mkdir lf
+            cd lf
+            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+            make VERBOSE=1
+            ln -s ../model.dat .
+            ./gpt2
+            ./test_more_inputs
+            cd ..
+
+            mkdir lf-fast
+            cd lf-fast
+            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
+            make VERBOSE=1
+            ln -s ../model.dat .
+            ./gpt2
+            ./test_more_inputs
+            cd ..
+
 
       - name: Test fpm
         shell: bash -e -x -l {0}
