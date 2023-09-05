@@ -2164,6 +2164,43 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num)
     }
 }
 
+LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, char* fmt, int32_t no_of_args, ...)
+{
+    if (!streql(fmt, "(a)")) {
+        printf("Only (a) supported as fmt currently");
+        exit(1);
+    }
+
+    // For now, this supports reading a single argument of type string
+    // TODO: Support more arguments and other types
+
+    va_list args;
+    va_start(args, no_of_args);
+    char** arg = va_arg(args, char**);
+
+    int n = strlen(*arg);
+    *arg = (char*)malloc(n * sizeof(char));
+
+    if (unit_num == -1) {
+        // Read from stdin
+        fgets(*arg, n, stdin);
+        (*arg)[strcspn(*arg, "\n")] = 0;
+        va_end(args);
+        return;
+    }
+
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+    if (!filep) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    fgets(*arg, n, filep);
+    (*arg)[strcspn(*arg, "\n")] = 0;
+    va_end(args);
+}
+
 LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n)
 {
     char *c = (char *) calloc(n, sizeof(char));
