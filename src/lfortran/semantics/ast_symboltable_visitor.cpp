@@ -103,9 +103,10 @@ public:
         diag::Diagnostics &diagnostics, CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash, std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
         std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
-        std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols)
+        std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
+        std::map<SymbolTable*, std::vector<ASR::alloc_arg_t>> &alloc_local_arr)
       : CommonVisitor(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                      instantiate_types, instantiate_symbols) {}
+                      instantiate_types, instantiate_symbols, alloc_local_arr) {}
 
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
         if (!current_scope) {
@@ -1078,11 +1079,11 @@ public:
         }
         if ((is_requirement || is_template) && is_deferred) {
             ASR::asr_t *tp = ASR::make_TypeParameter_t(al, x.base.base.loc, s2c(al, to_lower(x.m_name)));
-            tmp = ASR::make_Variable_t(al, x.base.base.loc, current_scope, s2c(al, to_lower(x.m_name)), 
+            tmp = ASR::make_Variable_t(al, x.base.base.loc, current_scope, s2c(al, to_lower(x.m_name)),
                 nullptr, 0, ASRUtils::intent_in, nullptr, nullptr, ASR::storage_typeType::Default,
                 ASRUtils::TYPE(tp), nullptr, ASR::abiType::Source, dflt_access, ASR::presenceType::Required, false);
-            current_scope->add_symbol(to_lower(x.m_name), ASR::down_cast<ASR::symbol_t>(tmp));      
-            return;      
+            current_scope->add_symbol(to_lower(x.m_name), ASR::down_cast<ASR::symbol_t>(tmp));
+            return;
         }
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -2149,7 +2150,7 @@ public:
             this->visit_unit_decl2(*x.m_decl[i]);
             if (tmp && ASR::is_a<ASR::require_instantiation_t>(*tmp)) {
                 reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
-                tmp = nullptr;    
+                tmp = nullptr;
             }
         }
         for (size_t i=0; i<x.n_funcs; i++) {
@@ -2229,7 +2230,7 @@ public:
                 throw SemanticError("Parameter '" + std::string(x.m_namelist[i])
                     + "' was not declared", x.base.base.loc);
             }
-            
+
             ASR::symbol_t *requires_arg_sym = current_scope->resolve_symbol(requires_arg);
             context_map[requirement_arg] = requires_arg;
             if (!requires_arg_sym) {
@@ -2244,7 +2245,7 @@ public:
         for (auto &item: req->m_symtab->get_scope()) {
             if (ASR::is_a<ASR::CustomOperator_t>(*item.second)) {
                 ASR::CustomOperator_t *c_op = ASR::down_cast<ASR::CustomOperator_t>(item.second);
-                
+
                 // may not need to add new custom operators if another requires already got an interface
                 Vec<ASR::symbol_t*> symbols;
                 symbols.reserve(al, c_op->n_procs);
@@ -2311,7 +2312,7 @@ public:
 
         // needs to rebuild the context prior to visiting template
         class_procedures.clear();
-        
+
         is_template = false;
     }
 
@@ -2492,7 +2493,7 @@ public:
                         }
                     } else if (is_cmpop) {
                         if (!ASRUtils::check_equal_type(ltype, rtype) || !ASRUtils::is_logical(*ftype)) {
-                            throw SemanticError("Intrinsic operator " + op_name + 
+                            throw SemanticError("Intrinsic operator " + op_name +
                                 " requires same-typed arguments and a logical return type", x.base.base.loc);
                         }
                     }
@@ -2521,7 +2522,7 @@ public:
                         current_scope->get_symbol("arg0")));
                     ASR::expr_t *rexpr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                         current_scope->get_symbol("arg1")));
-                        
+
                     if (is_binop) {
                         value = ASRUtils::EXPR(ASRUtils::make_Binop_util(al, x.base.base.loc, binop, lexpr, rexpr, ltype));
                         return_type = ASRUtils::duplicate_type(al, ltype);
@@ -2880,10 +2881,11 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
         std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
-        std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols)
+        std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
+        std::map<SymbolTable*, std::vector<ASR::alloc_arg_t>> &alloc_local_arr)
 {
     SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                         instantiate_types, instantiate_symbols);
+                         instantiate_types, instantiate_symbols, alloc_local_arr);
     try {
         v.visit_TranslationUnit(ast);
     } catch (const SemanticError &e) {

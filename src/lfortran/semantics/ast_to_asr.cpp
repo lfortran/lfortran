@@ -29,7 +29,8 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
         std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
-        std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols);
+        std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
+        std::map<SymbolTable*, std::vector<ASR::alloc_arg_t>> &alloc_local_arr);
 
 Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         AST::TranslationUnit_t &ast,
@@ -40,7 +41,8 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
         std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
-        std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols);
+        std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
+        std::map<SymbolTable*, std::vector<ASR::alloc_arg_t>> &alloc_local_arr);
 
 void load_rtlib(Allocator &al, ASR::TranslationUnit_t &tu, CompilerOptions &compiler_options) {
     SymbolTable *tu_symtab = tu.m_global_scope;
@@ -85,10 +87,11 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     std::map<uint64_t, std::vector<std::string>> external_procedures_mapping;
     std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> instantiate_types;
     std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> instantiate_symbols;
+    std::map<SymbolTable*, std::vector<ASR::alloc_arg_t>> alloc_local_arr;
     ASR::asr_t *unit;
     auto res = symbol_table_visitor(al, ast, diagnostics, symbol_table,
         compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-        instantiate_types, instantiate_symbols);
+        instantiate_types, instantiate_symbols, alloc_local_arr);
     if (res.ok) {
         unit = res.result;
     } else {
@@ -112,7 +115,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     if (!symtab_only) {
         auto res = body_visitor(al, ast, diagnostics, unit, compiler_options,
             implicit_mapping, common_variables_hash, external_procedures_mapping,
-            instantiate_types, instantiate_symbols);
+            instantiate_types, instantiate_symbols, alloc_local_arr);
         if (res.ok) {
             tu = res.result;
         } else {

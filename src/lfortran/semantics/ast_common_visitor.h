@@ -807,6 +807,7 @@ public:
     std::map<std::string, std::string> context_map;     // TODO: refactor treatment of context map
     std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types;
     std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols;
+    std::map<SymbolTable*, std::vector<ASR::alloc_arg_t>> &alloc_local_arr;
 
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
             diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
@@ -814,12 +815,14 @@ public:
             std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
             std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
             std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
-            std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols)
+            std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
+            std::map<SymbolTable*, std::vector<ASR::alloc_arg_t>> &alloc_local_arr)
         : diag{diagnostics}, al{al}, compiler_options{compiler_options},
           current_scope{symbol_table}, implicit_mapping{implicit_mapping},
           common_variables_hash{common_variables_hash}, external_procedures_mapping{external_procedures_mapping},
           current_variable_type_{nullptr},
-          instantiate_types{instantiate_types}, instantiate_symbols{instantiate_symbols} {
+          instantiate_types{instantiate_types}, instantiate_symbols{instantiate_symbols},
+          alloc_local_arr{alloc_local_arr} {
         current_module_dependencies.reserve(al, 4);
         enum_init_val = 0;
     }
@@ -1141,6 +1144,7 @@ public:
     }
 
     void handle_array_data_stmt(const AST::DataStmt_t &x, AST::DataStmtSet_t* a, ASR::ttype_t* obj_type, ASR::expr_t* object, size_t &curr_value) {
+        obj_type = ASRUtils::type_get_past_allocatable(obj_type);
         ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(obj_type);
         if (check_equal_value(a->m_value, a->n_value)) {
             /*
@@ -2431,6 +2435,27 @@ public:
                         current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
                         if( is_derived_type ) {
                             data_member_names.push_back(al, s2c(al, to_lower(s.m_name)));
+                        }
+
+                        if (storage_type != ASR::storage_typeType::Parameter && ASRUtils::is_array(type)
+                            && ASRUtils::extract_physical_type(type) == ASR::array_physical_typeType::FixedSizeArray) {
+                            ASR::Variable_t* variable = ASR::down_cast2<ASR::Variable_t>(v);
+                            ASR::alloc_arg_t alloc_arg;
+                            alloc_arg.m_type = nullptr;
+                            alloc_arg.loc = x.base.base.loc;
+                            alloc_arg.n_dims = ASRUtils::extract_dimensions_from_ttype(type, alloc_arg.m_dims);
+                            alloc_arg.m_a = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, ASR::down_cast<ASR::symbol_t>(v)));
+                            alloc_arg.m_len_expr = nullptr;
+                            alloc_local_arr[current_scope].push_back(alloc_arg);
+
+                            ASR::ttype_t* new_type = ASRUtils::duplicate_type_with_empty_dims(al, type, ASR::array_physical_typeType::DescriptorArray, true);
+                            variable->m_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc, new_type));
+                            SetChar var_deps_vec;
+                            var_deps_vec.reserve(al, 1);
+                            ASRUtils::collect_variable_dependencies(al, var_deps_vec, variable->m_type,
+                                variable->m_symbolic_value, variable->m_value);
+                            variable->m_dependencies = var_deps_vec.p;
+                            variable->n_dependencies = var_deps_vec.size();
                         }
                     }
                 }

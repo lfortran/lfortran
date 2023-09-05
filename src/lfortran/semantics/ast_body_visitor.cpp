@@ -38,9 +38,10 @@ public:
             CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
             std::map<uint64_t, ASR::symbol_t*>& common_variables_hash, std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
             std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
-            std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols)
+            std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
+            std::map<SymbolTable*, std::vector<ASR::alloc_arg_t>> &alloc_local_arr)
         : CommonVisitor(al, nullptr, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                        instantiate_types, instantiate_symbols),
+                        instantiate_types, instantiate_symbols, alloc_local_arr),
         asr{unit}, from_block{false} {}
 
     void visit_Declaration(const AST::Declaration_t& x) {
@@ -175,6 +176,15 @@ public:
         tmp = nullptr;
         Vec<ASR::stmt_t*>* current_body_copy = current_body;
         current_body = &body;
+
+        if (alloc_local_arr[current_scope].size() > 0) {
+            Vec<ASR::alloc_arg_t> alloc_args;
+            alloc_args.from_pointer_n_copy(al, alloc_local_arr[current_scope].data(), alloc_local_arr[current_scope].size());
+            ASR::asr_t* alloc_stmt = ASR::make_Allocate_t(al, alloc_args[0].loc, alloc_args.p, alloc_args.size(),
+                nullptr, nullptr, nullptr);
+            body.push_back(al, ASR::down_cast<ASR::stmt_t>(alloc_stmt));
+        }
+
         for (size_t i=0; i<n_body; i++) {
             // If there is a label, create a GoToTarget node first
             int64_t label = stmt_label(m_body[i]);
@@ -3194,10 +3204,11 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
         std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
-        std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols)
+        std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
+        std::map<SymbolTable*, std::vector<ASR::alloc_arg_t>> &alloc_local_arr)
 {
     BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                  instantiate_types, instantiate_symbols);
+                  instantiate_types, instantiate_symbols, alloc_local_arr);
     try {
         b.is_body_visitor = true;
         b.visit_TranslationUnit(ast);
