@@ -838,7 +838,9 @@ RUN(NAME file_04       LABELS gfortran llvm COPY_TO_BIN file_04_data.dat)
 RUN(NAME file_05       LABELS gfortran llvm COPY_TO_BIN file_05_data.dat)
 RUN(NAME file_06       LABELS gfortran llvm COPY_TO_BIN file_06_data.dat)
 RUN(NAME file_07       LABELS gfortran llvm COPY_TO_BIN file_07_data.dat)
+RUN(NAME file_08       LABELS gfortran llvm COPY_TO_BIN file_08.txt NOFAST)
 RUN(NAME file_09       LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
+RUN(NAME file_10       LABELS gfortran llvm COPY_TO_BIN file_10_data.txt)
 RUN(NAME file_11       LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
 RUN(NAME inquire_01    LABELS gfortran llvm)
 
@@ -1063,8 +1065,6 @@ RUN(NAME cpp_pre_02 LABELS gfortran llvm c wasm
 RUN(NAME dabs_01 LABELS gfortran llvmImplicit)
 
 RUN(NAME minpack_03 LABELS gfortran llvm NOFAST)
-
-RUN(NAME file_08 LABELS gfortran llvm NOFAST COPY_TO_BIN file_08.txt)
 
 RUN(NAME optional_01 LABELS gfortran llvm)
 RUN(NAME optional_02 LABELS gfortran llvm)

@@ -1,0 +1,4 @@
+hello hi bye.
+1234\nhi hello \n abcd!?
+\n ajdfsalfj;as\n \r jdalfk\14
+dsfjlkf\r\tjkdlfas\n\r\t\n

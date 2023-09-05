@@ -6660,10 +6660,6 @@ public:
     }
 
     void visit_FileRead(const ASR::FileRead_t &x) {
-        if (x.m_fmt != nullptr) {
-            diag.codegen_warning_label("format string in read() is not implemented yet and it is currently treated as '*'",
-                {x.m_fmt->base.loc}, "treated as '*'");
-        }
         llvm::Value *unit_val;
         if (x.m_unit == nullptr) {
             // Read from stdin
@@ -6673,29 +6669,58 @@ public:
             this->visit_expr_wrapper(x.m_unit, true);
             unit_val = tmp;
         }
-        for (size_t i=0; i<x.n_values; i++) {
-            int ptr_copy = ptr_loads;
-            ptr_loads = 0;
-            this->visit_expr(*x.m_values[i]);
-            ptr_loads = ptr_copy;
-            ASR::ttype_t* type = ASRUtils::expr_type(x.m_values[i]);
-            llvm::Function *fn = get_read_function(type);
-            if (ASRUtils::is_array(type)) {
-                if (ASR::is_a<ASR::Allocatable_t>(*type)) {
-                    tmp = CreateLoad(tmp);
+
+        if (x.m_fmt) {
+            std::vector<llvm::Value*> args;
+            args.push_back(unit_val);
+            this->visit_expr_wrapper(x.m_fmt, true);
+            args.push_back(tmp);
+            args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, x.n_values)));
+            for (size_t i=0; i<x.n_values; i++) {
+                int ptr_copy = ptr_loads;
+                ptr_loads = 0;
+                this->visit_expr(*x.m_values[i]);
+                ptr_loads = ptr_copy;
+                args.push_back(tmp);
+            }
+            std::string runtime_func_name = "_lfortran_formatted_read";
+            llvm::Function *fn = module->getFunction(runtime_func_name);
+            if (!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context), {
+                            llvm::Type::getInt32Ty(context),
+                            character_type,
+                            llvm::Type::getInt32Ty(context)
+                        }, true);
+                fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, runtime_func_name, *module);
+            }
+            builder->CreateCall(fn, args);
+        } else {
+            for (size_t i=0; i<x.n_values; i++) {
+                int ptr_copy = ptr_loads;
+                ptr_loads = 0;
+                this->visit_expr(*x.m_values[i]);
+                ptr_loads = ptr_copy;
+                ASR::ttype_t* type = ASRUtils::expr_type(x.m_values[i]);
+                llvm::Function *fn = get_read_function(type);
+                if (ASRUtils::is_array(type)) {
+                    if (ASR::is_a<ASR::Allocatable_t>(*type)) {
+                        tmp = CreateLoad(tmp);
+                    }
+                    tmp = arr_descr->get_pointer_to_data(tmp);
+                    if (ASR::is_a<ASR::Allocatable_t>(*type)) {
+                        tmp = CreateLoad(tmp);
+                    }
+                    llvm::Value *arr = tmp;
+                    ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                    ASR::ArraySize_t* array_size = ASR::down_cast2<ASR::ArraySize_t>(ASR::make_ArraySize_t(al, x.base.base.loc,
+                        x.m_values[i], nullptr, type32, nullptr));
+                    visit_ArraySize(*array_size);
+                    builder->CreateCall(fn, {arr, tmp, unit_val});
+                } else {
+                    builder->CreateCall(fn, {tmp, unit_val});
                 }
-                tmp = arr_descr->get_pointer_to_data(tmp);
-                if (ASR::is_a<ASR::Allocatable_t>(*type)) {
-                    tmp = CreateLoad(tmp);
-                }
-                llvm::Value *arr = tmp;
-                ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-                ASR::ArraySize_t* array_size = ASR::down_cast2<ASR::ArraySize_t>(ASR::make_ArraySize_t(al, x.base.base.loc,
-                    x.m_values[i], nullptr, type32, nullptr));
-                visit_ArraySize(*array_size);
-                builder->CreateCall(fn, {arr, tmp, unit_val});
-            } else {
-                builder->CreateCall(fn, {tmp, unit_val});
             }
         }
     }
