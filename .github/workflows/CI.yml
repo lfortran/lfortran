@@ -489,7 +489,7 @@ jobs:
 
             git clean -dfx
             git checkout -t origin/lf35run
-            git checkout c9dae3d64da3d6f3fa23cbb75eebef50f6d46fcd
+            git checkout 9de55b77576ea57c70c0651f233971d1e2bd0cae
             curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
 
             mkdir lf
