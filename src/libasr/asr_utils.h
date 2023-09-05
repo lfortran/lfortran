@@ -1227,12 +1227,20 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
         }
         case ASR::ttypeType::Struct: {
             ASR::Struct_t* d = ASR::down_cast<ASR::Struct_t>(t);
-            res = symbol_name(d->m_derived_type);
+            if( ASRUtils::symbol_get_past_external(d->m_derived_type) ) {
+                res = symbol_name(ASRUtils::symbol_get_past_external(d->m_derived_type));
+            } else {
+                res = symbol_name(d->m_derived_type);
+            }
             break;
         }
         case ASR::ttypeType::Class: {
             ASR::Class_t* d = ASR::down_cast<ASR::Class_t>(t);
-            res = symbol_name(d->m_class_type);
+            if( ASRUtils::symbol_get_past_external(d->m_class_type) ) {
+                res = symbol_name(ASRUtils::symbol_get_past_external(d->m_class_type));
+            } else {
+                res = symbol_name(d->m_class_type);
+            }
             break;
         }
         case ASR::ttypeType::Union: {
@@ -4103,7 +4111,7 @@ static inline void import_struct_t(Allocator& al,
         ptype = ASRUtils::extract_physical_type(var_type);
     }
     ASR::ttype_t* var_type_unwrapped = ASRUtils::type_get_past_allocatable(
-                 ASRUtils::type_get_past_pointer(var_type));
+        ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_array(var_type)));
     if( ASR::is_a<ASR::Struct_t>(*var_type_unwrapped) ) {
         ASR::symbol_t* der_sym = ASR::down_cast<ASR::Struct_t>(var_type_unwrapped)->m_derived_type;
         if( (ASR::asr_t*) ASRUtils::get_asr_owner(der_sym) != current_scope->asr_owner ) {
@@ -4133,6 +4141,10 @@ static inline void import_struct_t(Allocator& al,
         ASR::Character_t* char_t = ASR::down_cast<ASR::Character_t>(var_type_unwrapped);
         if( char_t->m_len == -1 && intent == ASR::intentType::Local ) {
             var_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc, char_t->m_kind, 1, nullptr));
+            if( is_array ) {
+                var_type = ASRUtils::make_Array_t_util(al, loc, var_type, m_dims, n_dims,
+                    ASR::abiType::Source, false, ptype, true);
+            }
             if( is_pointer ) {
                 var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, var_type));
             } else if( is_allocatable ) {
