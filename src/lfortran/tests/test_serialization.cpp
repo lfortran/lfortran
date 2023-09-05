@@ -6,6 +6,7 @@
 #include <lfortran/ast_serialization.h>
 #include <libasr/modfile.h>
 #include <lfortran/pickle.h>
+#include <libasr/pickle.h>
 #include <lfortran/parser/parser.h>
 #include <lfortran/semantics/ast_to_asr.h>
 #include <libasr/asr_utils.h>
@@ -83,7 +84,7 @@ void asr_ser(const std::string &src) {
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *ast0,
         diagnostics, nullptr, false, compiler_options));
 
-    std::string asr_orig = LCompilers::LFortran::pickle(*asr);
+    std::string asr_orig = LCompilers::pickle(*asr);
     std::string binary = LCompilers::serialize(*asr);
 
     LCompilers::ASR::asr_t *asr_new0;
@@ -95,7 +96,7 @@ void asr_ser(const std::string &src) {
     fix_external_symbols(*tu, symtab);
     LCOMPILERS_ASSERT(LCompilers::asr_verify(*tu, true, diagnostics));
 
-    std::string asr_new = LCompilers::LFortran::pickle(*asr_new0);
+    std::string asr_new = LCompilers::pickle(*asr_new0);
 
     CHECK(asr_orig == asr_new);
 }
@@ -117,7 +118,7 @@ void asr_mod(const std::string &src) {
     fix_external_symbols(*asr2, symtab);
     LCOMPILERS_ASSERT(LCompilers::asr_verify(*asr2, true, diagnostics));
 
-    CHECK(LCompilers::LFortran::pickle(*asr) == LCompilers::LFortran::pickle(*asr2));
+    CHECK(LCompilers::pickle(*asr) == LCompilers::pickle(*asr2));
 }
 
 TEST_CASE("AST Tests") {
