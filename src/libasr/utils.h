@@ -107,6 +107,7 @@ namespace LCompilers {
         bool disable_main = false;
         bool use_loop_variable_after_loop = false;
         bool realloc_lhs = false;
+        std::vector<int64_t> skip_optimization_func_instantiation;
         bool module_name_mangling = false;
         bool global_symbols_mangling = false;
         bool intrinsic_symbols_mangling = false;
