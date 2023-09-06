@@ -51,6 +51,7 @@ enum class IntrinsicScalarFunctions : int64_t {
     Min,
     Radix,
     Sign,
+    Aint,
     SymbolicSymbol,
     SymbolicAdd,
     SymbolicSub,
@@ -100,6 +101,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Max)
         INTRINSIC_NAME_CASE(Min)
         INTRINSIC_NAME_CASE(Sign)
+        INTRINSIC_NAME_CASE(Aint)
         INTRINSIC_NAME_CASE(SymbolicSymbol)
         INTRINSIC_NAME_CASE(SymbolicAdd)
         INTRINSIC_NAME_CASE(SymbolicSub)
@@ -1029,7 +1031,7 @@ namespace X {                                                                   
     static inline ASR::expr_t *eval_##X(Allocator &al, const Location &loc,     \
             ASR::ttype_t *t, Vec<ASR::expr_t*>& args) {                         \
         LCOMPILERS_ASSERT(args.size() == 1);                                    \
-        double rv;                                                              \
+        double rv = -1;                                                         \
         if( ASRUtils::extract_value(args[0], rv) ) {                            \
             double val = std::stdeval(rv);                                      \
             return make_ConstantWithType(make_RealConstant_t, val, t, loc);     \
@@ -1388,6 +1390,91 @@ namespace Sign {
 
 } // namespace Sign
 
+namespace Aint {
+
+    static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x,
+            diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args > 0 && x.n_args < 3,
+            "ASR Verify: Call to aint must have one or two arguments",
+            x.base.base.loc, diagnostics);
+        ASR::ttype_t *type = ASRUtils::expr_type(x.m_args[0]);
+        ASRUtils::require_impl(ASRUtils::is_real(*type),
+            "ASR Verify: Arguments to aint must be of real type",
+            x.base.base.loc, diagnostics);
+        if (x.n_args == 2) {
+            ASR::ttype_t *type2 = ASRUtils::expr_type(x.m_args[1]);
+            ASRUtils::require_impl(ASRUtils::is_integer(*type2),
+                "ASR Verify: Second Argument to aint must be of integer type",
+                x.base.base.loc, diagnostics);
+        }
+    }
+
+    static ASR::expr_t *eval_Aint(Allocator &al, const Location &loc,
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args) {
+        double rv = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
+        return f(std::trunc(rv), arg_type);
+    }
+
+    static inline ASR::asr_t* create_Aint(
+            Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
+            const std::function<void (const std::string &, const Location &)> err) {
+        ASR::ttype_t* return_type = expr_type(args[0]);
+        if (!(args.size() == 1 || args.size() == 2)) {
+            err("Intrinsic `aint` function accepts exactly 1 or 2 arguments", loc);
+        } else if (!ASRUtils::is_real(*return_type)) {
+            err("Argument of the `aint` function must be Real", args[0]->base.loc);
+        }
+        Vec<ASR::expr_t *> m_args; m_args.reserve(al, 1);
+        m_args.push_back(al, args[0]);
+        if ( args[1] ) {
+            int kind = -1;
+            if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1])) ||
+                    !extract_value(args[1], kind)) {
+                err("`kind` argument of the `aint` function must be an "
+                    "scalar Integer constant", args[1]->base.loc);
+            }
+            return_type = TYPE(ASR::make_Real_t(al, return_type->base.loc, kind));
+        }
+        ASR::expr_t *m_value = nullptr;
+        if (all_args_evaluated(m_args)) {
+            m_value = eval_Aint(al, loc, return_type, m_args);
+        }
+        return ASR::make_IntrinsicScalarFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicScalarFunctions::Aint),
+            m_args.p, m_args.n, 0, return_type, m_value);
+    }
+
+    static inline ASR::expr_t* instantiate_Aint(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        std::string func_name = "_lcompilers_aint_" + type_to_str_python(arg_types[0]);
+        std::string fn_name = scope->get_unique_name(func_name);
+        SymbolTable *fn_symtab = al.make_new<SymbolTable>(scope);
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, new_args.size());
+        ASRBuilder b(al, loc);
+        Vec<ASR::stmt_t*> body; body.reserve(al, 1);
+        SetChar dep; dep.reserve(al, 1);
+        if (scope->get_symbol(fn_name)) {
+            ASR::symbol_t *s = scope->get_symbol(fn_name);
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
+            return b.Call(s, new_args, expr_type(f->m_return_var), nullptr);
+        }
+        fill_func_arg("a", arg_types[0]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+
+        // Cast: Real -> Integer -> Real
+        // TODO: this approach doesn't work for numbers > i64_max
+        body.push_back(al, b.Assignment(result, i2r(r2i64(args[0]), return_type)));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+}  // namespace Aint
+
 namespace FMA {
 
      static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
@@ -1545,7 +1632,7 @@ namespace X {                                                                   
     static inline ASR::expr_t* eval_##X(Allocator &al, const Location &loc,               \
             ASR::ttype_t *t, Vec<ASR::expr_t*> &args) {                                   \
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));                            \
-        double rv;                                                                        \
+        double rv = -1;                                                                    \
         if( ASRUtils::extract_value(args[0], rv) ) {                                      \
             double val = std::stdeval(rv);                                                \
             return ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, val, t));             \
@@ -2346,6 +2433,8 @@ namespace IntrinsicScalarFunctionRegistry {
             {&Sign::instantiate_Sign, &Sign::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Radix),
             {nullptr, &Radix::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Aint),
+            {&Aint::instantiate_Aint, &Aint::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SymbolicSymbol),
             {nullptr, &SymbolicSymbol::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SymbolicAdd),
@@ -2426,6 +2515,8 @@ namespace IntrinsicScalarFunctionRegistry {
             "radix"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Sign),
             "sign"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Aint),
+            "aint"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SymbolicSymbol),
             "Symbol"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SymbolicAdd),
@@ -2485,6 +2576,7 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"min", {&Min::create_Min, &Min::eval_Min}},
                 {"radix", {&Radix::create_Radix, nullptr}},
                 {"sign", {&Sign::create_Sign, &Sign::eval_Sign}},
+                {"aint", {&Aint::create_Aint, &Aint::eval_Aint}},
                 {"Symbol", {&SymbolicSymbol::create_SymbolicSymbol, &SymbolicSymbol::eval_SymbolicSymbol}},
                 {"SymbolicAdd", {&SymbolicAdd::create_SymbolicAdd, &SymbolicAdd::eval_SymbolicAdd}},
                 {"SymbolicSub", {&SymbolicSub::create_SymbolicSub, &SymbolicSub::eval_SymbolicSub}},

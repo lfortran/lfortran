@@ -1092,6 +1092,14 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
             value = (T) const_logical->m_value;
             break;
         }
+        case ASR::exprType::Var: {
+            ASR::Variable_t* var = EXPR2VAR(value_expr);
+            if (var->m_storage == ASR::storage_typeType::Parameter
+                    && !extract_value(var->m_value, value)) {
+                return false;
+            }
+            break;
+        }
         default:
             return false;
     }
@@ -2507,7 +2515,7 @@ inline bool dimension_expr_equal(ASR::expr_t* dim_a, ASR::expr_t* dim_b) {
     if( !(dim_a && dim_b) ) {
         return true;
     }
-    int dim_a_int, dim_b_int;
+    int dim_a_int = -1, dim_b_int = -1;
     if (ASRUtils::extract_value(ASRUtils::expr_value(dim_a), dim_a_int)
         && ASRUtils::extract_value(ASRUtils::expr_value(dim_b), dim_b_int)) {
         return dim_a_int == dim_b_int;

@@ -731,6 +731,7 @@ public:
         {"min", {IntrinsicSignature({}, 2, 100)}},
         {"merge", {IntrinsicSignature({}, 3, 3)}},
         {"sign", {IntrinsicSignature({}, 2, 2)}},
+        {"aint", {IntrinsicSignature({}, 1, 2)}},
         {"shape", {IntrinsicSignature({"kind"}, 1, 2)}},
     };
 
@@ -2167,6 +2168,12 @@ public:
                             throw SemanticError("Attribute type not implemented yet",
                                     x.base.base.loc);
                         }
+                    }
+                    if (!s.m_initializer && s_intent == ASRUtils::intent_local
+                            && storage_type == ASR::storage_typeType::Parameter) {
+                        throw SemanticError("Variable `" + std::string(s.m_name) +
+                        "` with parameter attribute is not initialised",
+                        x.base.base.loc);
                     }
                 }
                 if (s.n_dim > 0) {

@@ -494,13 +494,13 @@ RUN(NAME intrinsics_61 LABELS gfortran llvm) # char
 RUN(NAME intrinsics_62 LABELS gfortran llvm) # shape
 RUN(NAME intrinsics_63 LABELS gfortran llvm)
 RUN(NAME intrinsics_64 LABELS gfortran llvm wasm) # sign
-
-
 RUN(NAME intrinsics_65 LABELS gfortran llvm) # matmul
 RUN(NAME intrinsics_66 LABELS gfortran llvm) # sign
 RUN(NAME intrinsics_67 LABELS gfortran llvm) # dcosh, dsinh, dtanh, dtan
 RUN(NAME intrinsics_68 LABELS gfortran llvm) # dsign
 RUN(NAME intrinsics_69 LABELS gfortran llvm) # radix
+
+RUN(NAME intrinsics_70 LABELS gfortran llvm) # aint
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
