@@ -48,6 +48,7 @@ enum class IntrinsicScalarFunctions : int64_t {
     ListPop,
     Max,
     Min,
+    Radix,
     Sign,
     SymbolicSymbol,
     SymbolicAdd,
@@ -1260,6 +1261,33 @@ namespace Abs {
 
 } // namespace Abs
 
+namespace Radix {
+
+    // Helper function to verify arguments
+    static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x,
+            diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.m_args[0], "Argument of the `radix` "
+            "can be a nullptr", x.base.base.loc, diagnostics);
+    }
+
+    // Function to create an instance of the 'radix' intrinsic function
+    static inline ASR::asr_t* create_Radix(Allocator& al, const Location& loc,
+        Vec<ASR::expr_t*>& args,
+        const std::function<void (const std::string &, const Location &)> err) {
+        if ( args.n != 1 ) {
+            err("Intrinsic `radix` accepts exactly one argument", loc);
+        } else if ( !is_real(*expr_type(args[0]))
+                 && !is_integer(*expr_type(args[0])) ) {
+            err("Argument of the `radix` must be Integer or Real", loc);
+        }
+
+        return ASR::make_IntrinsicScalarFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicScalarFunctions::Radix),
+            args.p, args.n, 0, int32, i32(2));
+    }
+
+}  // namespace Radix
+
 namespace Sign {
 
      static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
@@ -2232,6 +2260,8 @@ namespace IntrinsicScalarFunctionRegistry {
             {&Min::instantiate_Min, &Min::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Sign),
             {&Sign::instantiate_Sign, &Sign::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Radix),
+            {nullptr, &Radix::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SymbolicSymbol),
             {nullptr, &SymbolicSymbol::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SymbolicAdd),
@@ -2306,6 +2336,8 @@ namespace IntrinsicScalarFunctionRegistry {
             "max"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Min),
             "min"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Radix),
+            "radix"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Sign),
             "sign"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SymbolicSymbol),
@@ -2365,6 +2397,7 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"max0", {&Max::create_Max, &Max::eval_Max}},
                 {"min0", {&Min::create_Min, &Min::eval_Min}},
                 {"min", {&Min::create_Min, &Min::eval_Min}},
+                {"radix", {&Radix::create_Radix, nullptr}},
                 {"sign", {&Sign::create_Sign, &Sign::eval_Sign}},
                 {"Symbol", {&SymbolicSymbol::create_SymbolicSymbol, &SymbolicSymbol::eval_SymbolicSymbol}},
                 {"SymbolicAdd", {&SymbolicAdd::create_SymbolicAdd, &SymbolicAdd::eval_SymbolicAdd}},
