@@ -2507,7 +2507,7 @@ inline bool dimension_expr_equal(ASR::expr_t* dim_a, ASR::expr_t* dim_b) {
     if( !(dim_a && dim_b) ) {
         return true;
     }
-    int dim_a_int, dim_b_int;
+    int dim_a_int = -1, dim_b_int = -1;
     if (ASRUtils::extract_value(ASRUtils::expr_value(dim_a), dim_a_int)
         && ASRUtils::extract_value(ASRUtils::expr_value(dim_b), dim_b_int)) {
         return dim_a_int == dim_b_int;
