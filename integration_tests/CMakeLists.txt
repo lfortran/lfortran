@@ -844,6 +844,7 @@ RUN(NAME file_09       LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
 RUN(NAME file_10       LABELS gfortran llvm COPY_TO_BIN file_10_data.txt)
 RUN(NAME file_11       LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
 RUN(NAME file_12       LABELS gfortran llvm COPY_TO_BIN file_12_data.txt)
+RUN(NAME file_13       LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
 RUN(NAME inquire_01    LABELS gfortran llvm)
 
 RUN(NAME class_01 LABELS gfortran)

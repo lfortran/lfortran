@@ -282,6 +282,7 @@ public:
         for( std::uint32_t i = 0; i < x.n_kwargs; i++ ) {
             AST::keyword_t kwarg = x.m_kwargs[i];
             std::string m_arg_str(kwarg.m_arg);
+            m_arg_str = to_lower(m_arg_str);
             if( m_arg_str == std::string("newunit") ||
                 m_arg_str == std::string("unit") ) {
                 if( a_newunit != nullptr ) {
