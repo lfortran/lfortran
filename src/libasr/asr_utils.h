@@ -1092,6 +1092,14 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
             value = (T) const_logical->m_value;
             break;
         }
+        case ASR::exprType::Var: {
+            ASR::Variable_t* var = EXPR2VAR(value_expr);
+            if (var->m_storage == ASR::storage_typeType::Parameter
+                    && !extract_value(var->m_value, value)) {
+                return false;
+            }
+            break;
+        }
         default:
             return false;
     }
