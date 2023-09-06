@@ -825,7 +825,7 @@ namespace LCompilers {
 
             Vec<ASR::call_arg_t> args;
             args.reserve(al, 3);
-            ASR::call_arg_t arg0_, arg1_, arg2_;
+            ASR::call_arg_t arg0_, arg1_;
             arg0_.loc = arg0->base.loc, arg0_.m_value = arg0;
             args.push_back(al, arg0_);
             arg1_.loc = arg1->base.loc, arg1_.m_value = arg1;
