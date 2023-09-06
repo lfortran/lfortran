@@ -107,7 +107,7 @@
                                     (SymbolTable
                                         19
                                         {
-                                            __asr_generic_avg_s_from_t:
+                                            __asr_avg_s_from_t:
                                                 (Function
                                                     (SymbolTable
                                                         23
@@ -193,7 +193,7 @@
                                                                     .false.
                                                                 )
                                                         })
-                                                    __asr_generic_avg_s_from_t
+                                                    __asr_avg_s_from_t
                                                     (FunctionType
                                                         [(Real 4)
                                                         (Real 4)
@@ -357,7 +357,7 @@
                                                         .false.
                                                     )
                                                     [slash_real
-                                                    __asr_generic_avg_s_from_t]
+                                                    __asr_avg_s_from_t]
                                                     [(Var 21 d1)
                                                     (Var 21 s1)
                                                     (Var 21 d2)
@@ -365,7 +365,7 @@
                                                     [(=
                                                         (Var 21 avg)
                                                         (FunctionCall
-                                                            19 __asr_generic_avg_s_from_t
+                                                            19 __asr_avg_s_from_t
                                                             ()
                                                             [((Var 21 d1))
                                                             ((FunctionCall

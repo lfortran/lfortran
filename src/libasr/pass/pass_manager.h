@@ -49,10 +49,12 @@
 #include <libasr/pass/unique_symbols.h>
 #include <libasr/pass/replace_print_struct_type.h>
 #include <libasr/asr_verify.h>
+#include <libasr/pickle.h>
 
 #include <map>
 #include <vector>
 #include <algorithm>
+#include <fstream>
 
 namespace LCompilers {
 
@@ -150,13 +152,21 @@ namespace LCompilers {
                     std::cerr << "ASR Pass starts: '" << passes[i] << "'\n";
                 }
                 _passes_db[passes[i]](al, *asr, pass_options);
-            #if defined(WITH_LFORTRAN_ASSERT)
+                if (pass_options.dumb_all_passes) {
+                    std::string str_i = std::to_string(i+1);
+                    if ( i < 9 )  str_i = "0" + str_i;
+                    std::ofstream outfile ("pass_" + str_i + "_" + passes[i] + ".clj");
+                    outfile << ";; ASR after applying the pass: " << passes[i]
+                        << "\n" << pickle(*asr, false, true) << "\n";
+                    outfile.close();
+                }
+#if defined(WITH_LFORTRAN_ASSERT)
                 if (!asr_verify(*asr, true, diagnostics)) {
                     std::cerr << diagnostics.render2();
                     throw LCompilersException("Verify failed in the pass: "
                         + passes[i]);
                 };
-            #endif
+#endif
                 if (pass_options.verbose) {
                     std::cerr << "ASR Pass ends: '" << passes[i] << "'\n";
                 }
@@ -213,7 +223,6 @@ namespace LCompilers {
                 "do_loops",
                 "forall",
                 "select_case",
-                "inline_function_calls",
                 "unused_functions",
                 "transform_optional_argument_functions",
                 "unique_symbols"
@@ -247,7 +256,6 @@ namespace LCompilers {
                 "div_to_mul",
                 "fma",
                 "transform_optional_argument_functions",
-                "inline_function_calls",
                 "unique_symbols"
             };
 
@@ -257,7 +265,6 @@ namespace LCompilers {
                 "pass_list_expr",
                 "print_list_tuple",
                 "do_loops",
-                "inline_function_calls",
                 "select_case"
             };
             _user_defined_passes.clear();

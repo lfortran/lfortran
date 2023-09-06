@@ -804,7 +804,7 @@ public:
     std::map<int64_t, std::string> format_statements;
 
     // fields for generics
-    std::map<std::string, std::string> context_map;
+    std::map<std::string, std::string> context_map;     // TODO: refactor treatment of context map
     std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types;
     std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols;
 
@@ -5332,6 +5332,13 @@ public:
 
             asr = ASR::make_ComplexBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
 
+        } else if (ASRUtils::is_character(*dest_type)) {
+            diag.semantic_error_label(
+                            "Binary numeric operators cannot be used on strings",
+                            {x.base.base.loc},
+                            "help: use '//' for string concatenation"
+                        );
+            throw SemanticAbort();
         } else if (ASRUtils::is_type_parameter(*left_type) || ASRUtils::is_type_parameter(*right_type)) {
             // if overloaded is not found, then reject
             if (overloaded == nullptr) {

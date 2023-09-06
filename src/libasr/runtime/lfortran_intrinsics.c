@@ -185,6 +185,68 @@ void handle_integer(char* format, int val, char** result) {
     }
 }
 
+void handle_float(char* format, double val, char** result) {
+    int width = 0, decimal_digits = 0;
+    long integer_part = (long)fabs(val);
+    double decimal_part = fabs(val) - labs(integer_part);
+
+    int sign_width = (val < 0) ? 1 : 0;
+    int integer_length = (integer_part == 0) ? 1 : (int)log10(llabs(integer_part)) + 1;
+    char int_str[64];
+    sprintf(int_str, "%ld", integer_part);
+    char dec_str[64];
+    sprintf(dec_str, "%f", decimal_part);
+    memmove(dec_str,dec_str+2,strlen(dec_str));
+
+    char* dot_pos = strchr(format, '.');
+    width = atoi(format + 1);
+    if (dot_pos != NULL) {
+        dot_pos++;
+        decimal_digits = atoi(dot_pos);
+        if (width == 0) {
+            if (decimal_digits == 0) {
+                width = integer_length + sign_width + 1;
+            } else {
+                width = integer_length + sign_width + decimal_digits + 1;
+            }
+        }
+    }
+    char formatted_value[64] = "";
+    int spaces = width - decimal_digits - sign_width - integer_length - 1;
+    for (int i = 0; i < spaces; i++) {
+        strcat(formatted_value, " ");
+    }
+    if (val < 0) {
+        strcat(formatted_value,"-");
+    }
+    if ((integer_part != 0 || (atoi(format + 1) != 0 || atoi(dot_pos) == 0))) {
+        strcat(formatted_value,int_str);
+    }
+    strcat(formatted_value,".");
+    if (decimal_part == 0) {
+        for(int i=0;i<decimal_digits;i++){
+            strcat(formatted_value, "0");
+        }
+    } else if (decimal_digits < strlen(dec_str)) {
+        long long t = (long long)round((double)atoll(dec_str) / (long long)pow(10, (strlen(dec_str) - decimal_digits)));
+        sprintf(dec_str, "%lld", t);
+        strncat(formatted_value, dec_str, decimal_digits);
+    } else {
+        strncat(formatted_value, dec_str, strlen(dec_str));
+        for(int i=0;i<decimal_digits - strlen(dec_str);i++){
+            strcat(formatted_value, "0");
+        }
+    }
+
+    if (strlen(formatted_value) > width) {
+        for(int i=0; i<width; i++){
+            *result = append_to_string(*result,"*");
+        }
+    } else {
+        *result = append_to_string(*result, formatted_value);
+    }
+}
+
 void handle_decimal(char* format, double val, int scale, char** result, char* c) {
     int width = 0, decimal_digits = 0;
     int64_t integer_part = (int64_t)val;
@@ -377,7 +439,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 int repeat = atoi(substring(value, 0, j));
                 if (value[j] == '(') {
                     value = substring(value, j, strlen(value));
-                    format_values[i] = substring(format_values[i], 1, strlen(format_values[i]));
+                    format_values[i] = substring(format_values[i], j, strlen(format_values[i]));
                     char* new_input_string = (char*)malloc(sizeof(char));
                     new_input_string[0] = '\0';
                     for (int k = i; k < format_values_count; k++) {
@@ -418,7 +480,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 value = substring(value, 0, strlen(value) - 1);
             }
 
-            if ((value[0] == '\"' && value[strlen(value) - 1] == '\"') || 
+            if ((value[0] == '\"' && value[strlen(value) - 1] == '\"') ||
                 (value[0] == '\'' && value[strlen(value) - 1] == '\'')) {
                 // String
                 value = substring(value, 1, strlen(value) - 1);
@@ -435,7 +497,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 }
                 char* s = (char*)malloc((strlen(str) + 4) * sizeof(char));
                 sprintf(s, "%%%s.%ss", str, str);
-                char* string = (char*)malloc((strlen(arg)) * sizeof(char));
+                char* string = (char*)malloc((strlen(arg) + 4) * sizeof(char));
                 sprintf(string, s, arg);
                 result = append_to_string(result, string);
                 free(s);
@@ -469,13 +531,13 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 if ( count == 0 ) break;
                 count--;
                 double val = va_arg(args, double);
-                handle_decimal(value, val, scale, &result, "E");
+                handle_float(value, val, &result);
             } else if (strlen(value) != 0) {
                 printf("Printing support is not available for %s format.\n",value);
             }
 
             while (newline != 0) {
-                result = append_to_string(result, " ");
+                result = append_to_string(result, "\n");
                 newline--;
             }
         }
@@ -1659,6 +1721,8 @@ LFORTRAN_API double _lfortran_time()
     uli.LowPart = ft.dwLowDateTime;
     uli.HighPart = ft.dwHighDateTime;
     return (double)uli.QuadPart / 10000000.0 - 11644473600.0;
+#elif defined(__APPLE__) && !defined(__aarch64__)
+    return 0.0;
 #else
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
@@ -1817,14 +1881,28 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num)
     fflush(filep);
 }
 
-LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists) {
-    FILE *fp = fopen(f_name, "r");
-    if (fp != NULL) {
-        *exists = true;
-        fclose(fp); // close the file
-        return;
+LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists, int32_t unit_num, bool *opened) {
+    if (f_name && unit_num != -1) {
+        printf("File name and file unit number cannot be specifed together.\n");
+        exit(1);
     }
-    *exists = false;
+    if (f_name != NULL) {
+        FILE *fp = fopen(f_name, "r");
+        if (fp != NULL) {
+            *exists = true;
+            fclose(fp); // close the file
+            return;
+        }
+        *exists = false;
+    }
+    if (unit_num != -1) {
+        bool unit_file_bin;
+        if (get_file_pointer_from_unit(unit_num, &unit_file_bin) != NULL) {
+            *opened = true;
+        } else {
+            *opened = false;
+        }
+    }
 }
 
 LFORTRAN_API void _lfortran_rewind(int32_t unit_num)
@@ -2034,6 +2112,36 @@ LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t
     }
 }
 
+LFORTRAN_API void _lfortran_read_array_char(char **p, int array_size, int32_t unit_num)
+{
+    if (unit_num == -1) {
+        // Read from stdin
+        for (int i = 0; i < array_size; i++) {
+            int n = 1; // TODO: Support character length > 1
+            p[i] = (char*) malloc(n * sizeof(char));
+            scanf("%s", p[i]);
+        }
+        return;
+    }
+
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+    if (!filep) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    for (int i = 0; i < array_size; i++) {
+        int n = 1; // TODO: Support character length > 1
+        p[i] = (char*) malloc(n * sizeof(char));
+        if (unit_file_bin) {
+            fread(p[i], sizeof(char), n, filep);
+        } else {
+            fscanf(filep, "%s", p[i]);
+        }
+    }
+}
+
 LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num)
 {
     if (unit_num == -1) {
@@ -2054,6 +2162,43 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num)
     } else {
         fscanf(filep, "%lf", p);
     }
+}
+
+LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, char* fmt, int32_t no_of_args, ...)
+{
+    if (!streql(fmt, "(a)")) {
+        printf("Only (a) supported as fmt currently");
+        exit(1);
+    }
+
+    // For now, this supports reading a single argument of type string
+    // TODO: Support more arguments and other types
+
+    va_list args;
+    va_start(args, no_of_args);
+    char** arg = va_arg(args, char**);
+
+    int n = strlen(*arg);
+    *arg = (char*)malloc(n * sizeof(char));
+
+    if (unit_num == -1) {
+        // Read from stdin
+        *iostat = !(fgets(*arg, n, stdin) == *arg);
+        (*arg)[strcspn(*arg, "\n")] = 0;
+        va_end(args);
+        return;
+    }
+
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+    if (!filep) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    *iostat = !(fgets(*arg, n, filep) == *arg);
+    (*arg)[strcspn(*arg, "\n")] = 0;
+    va_end(args);
 }
 
 LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n)

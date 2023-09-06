@@ -17,8 +17,7 @@
 #include <libasr/string_utils.h>
 #include <lfortran/utils.h>
 #include <libasr/pass/pass_utils.h>
-
-#include <lfortran/pickle.h>
+#include <libasr/pickle.h>
 
 namespace LCompilers::LFortran {
 
@@ -27,7 +26,7 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         SymbolTable *symbol_table,
         CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
-        std::map<uint64_t, ASR::symbol_t*>& common_variables_hash, 
+        std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
         std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols);
@@ -96,10 +95,19 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
         return res.error;
     }
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(unit);
+    if (compiler_options.dumb_all_passes) {
+#if !defined(_WIN32)
+        if (system("rm pass_*"))
+            std::cerr << "Warning: old `pass_*` files are not removed!\n";
+#endif
+        std::ofstream outfile ("pass_00_initial_asr.clj");
+        outfile << ";; Initial ASR\n" << pickle(*tu, false, true) << "\n";
+        outfile.close();
+    }
 #if defined(WITH_LFORTRAN_ASSERT)
-        if (!asr_verify(*tu, true, diagnostics)) {
-            return Error();
-        };
+    if (!asr_verify(*tu, true, diagnostics)) {
+        return Error();
+    };
 #endif
     if (!symtab_only) {
         auto res = body_visitor(al, ast, diagnostics, unit, compiler_options,
@@ -111,6 +119,11 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
             return res.error;
         }
         if (compiler_options.rtlib) load_rtlib(al, *tu, compiler_options);
+        if (compiler_options.dumb_all_passes) {
+            std::ofstream outfile ("pass_00_initial_asr.clj");
+            outfile << ";; Initial ASR\n" << pickle(*tu, false, true) << "\n";
+            outfile.close();
+        }
 #if defined(WITH_LFORTRAN_ASSERT)
         if (!asr_verify(*tu, true, diagnostics)) {
             return Error();

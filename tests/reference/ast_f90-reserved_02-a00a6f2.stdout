@@ -9,6 +9,7 @@ contains
 
 integer function integer()
 integer :: function
+function = 5
 function = function/function
 integer = function
 end function integer

@@ -22,7 +22,7 @@
 // #define SHOW_ASR
 
 #ifdef SHOW_ASR
-#include <lfortran/pickle.h>
+#include <libasr/pickle.h>
 #endif
 
 namespace LCompilers {
@@ -3075,6 +3075,7 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr,
     LCompilers::PassOptions pass_options;
     pass_options.always_run = true;
     pass_options.verbose = co.verbose;
+    pass_options.dumb_all_passes = co.dumb_all_passes;
     std::vector<std::string> passes = {"pass_array_by_data", "array_op",
                 "implied_do_loops", "print_arr", "do_loops", "select_case",
                 "intrinsic_function", "nested_vars", "unused_functions"};
@@ -3083,7 +3084,7 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr,
 
 
 #ifdef SHOW_ASR
-    std::cout << LCompilers::LFortran::pickle(asr, false /* use colors */, true /* indent */,
+    std::cout << LCompilers::pickle(asr, false /* use colors */, true /* indent */,
                         true /* with_intrinsic_modules */)
               << std::endl;
 #endif

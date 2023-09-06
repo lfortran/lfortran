@@ -10,6 +10,7 @@
 #include <lfortran/parser/parser.h>
 #include <lfortran/parser/preprocessor.h>
 #include <lfortran/pickle.h>
+#include <libasr/pickle.h>
 #include <lfortran/semantics/ast_to_asr.h>
 #include <lfortran/mod_to_asr.h>
 #include <libasr/codegen/asr_to_llvm.h>
@@ -668,25 +669,27 @@ int emit_asr(const std::string &infile,
     pass_options.always_run = true;
     pass_options.run_fun = "f";
     pass_options.verbose = compiler_options.verbose;
+    pass_options.dumb_all_passes = compiler_options.dumb_all_passes;
     pass_options.pass_cumulative = compiler_options.pass_cumulative;
     pass_options.realloc_lhs = compiler_options.realloc_lhs;
     pass_options.all_symbols_mangling = compiler_options.all_symbols_mangling;
     pass_options.module_name_mangling = compiler_options.module_name_mangling;
     pass_options.global_symbols_mangling = compiler_options.global_symbols_mangling;
     pass_options.intrinsic_symbols_mangling = compiler_options.intrinsic_symbols_mangling;
+    pass_options.bindc_mangling = compiler_options.bindc_mangling;
     pass_options.mangle_underscore = compiler_options.mangle_underscore;
 
     pass_manager.apply_passes(al, asr, pass_options, diagnostics);
     if (compiler_options.tree) {
-        std::cout << LCompilers::LFortran::pickle_tree(*asr,
+        std::cout << LCompilers::pickle_tree(*asr,
             compiler_options.use_colors) << std::endl;
     } else if (compiler_options.json) {
-        std::cout << LCompilers::LFortran::pickle_json(*asr, lm, with_intrinsic_modules) << std::endl;
+        std::cout << LCompilers::pickle_json(*asr, lm, with_intrinsic_modules) << std::endl;
     } else if (compiler_options.visualize) {
-        std::string astr_data_json = LCompilers::LFortran::pickle_json(*asr, lm, with_intrinsic_modules);
+        std::string astr_data_json = LCompilers::pickle_json(*asr, lm, with_intrinsic_modules);
         return visualize_json(astr_data_json, compiler_options.platform);
     } else {
-        std::cout << LCompilers::LFortran::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
+        std::cout << LCompilers::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
                 with_intrinsic_modules) << std::endl;
     }
     return 0;
@@ -1919,12 +1922,14 @@ int main(int argc, char *argv[])
         app.add_flag("--print-leading-space", compiler_options.print_leading_space, "Print leading white space if format is unspecified");
         app.add_flag("--interactive-parse", compiler_options.interactive, "Use interactive parse");
         app.add_flag("--verbose", compiler_options.verbose, "Print debugging statements");
+        app.add_flag("--dump-all-passes", compiler_options.dumb_all_passes, "Apply all the passes and dump the ASR into a file");
         app.add_flag("--cumulative", compiler_options.pass_cumulative, "Apply all the passes cumulatively till the given pass");
         app.add_flag("--realloc-lhs", compiler_options.realloc_lhs, "Reallocate left hand side automatically");
         app.add_flag("--module-mangling", compiler_options.module_name_mangling, "Mangles the module name");
         app.add_flag("--global-mangling", compiler_options.global_symbols_mangling, "Mangles all the global symbols");
         app.add_flag("--intrinsic-mangling", compiler_options.intrinsic_symbols_mangling, "Mangles all the intrinsic symbols");
         app.add_flag("--all-mangling", compiler_options.all_symbols_mangling, "Mangles all possible symbols");
+        app.add_flag("--bindc-mangling", compiler_options.bindc_mangling, "Mangles functions with abi bind(c)");
         app.add_flag("--mangle-underscore", compiler_options.mangle_underscore, "Mangles with underscore");
         app.add_flag("--run", compiler_options.run, "Executes the generated binary");
 
@@ -2018,7 +2023,7 @@ int main(int argc, char *argv[])
                 Allocator al(1024*1024);
                 LCompilers::ASR::TranslationUnit_t *asr;
                 asr = LCompilers::LFortran::mod_to_asr(al, arg_mod_file);
-                std::cout << LCompilers::LFortran::pickle(*asr, !arg_mod_no_color) << std::endl;
+                std::cout << LCompilers::pickle(*asr, !arg_mod_no_color) << std::endl;
                 return 0;
             }
             return 0;

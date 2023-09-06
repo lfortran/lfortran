@@ -378,7 +378,7 @@
                                     (SymbolTable
                                         7
                                         {
-                                            __asr_generic_swap:
+                                            __asr_swap:
                                                 (Function
                                                     (SymbolTable
                                                         10
@@ -432,7 +432,7 @@
                                                                     .false.
                                                                 )
                                                         })
-                                                    __asr_generic_swap
+                                                    __asr_swap
                                                     (FunctionType
                                                         [(Integer 4)
                                                         (Integer 4)]
@@ -572,7 +572,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [__asr_generic_swap]
+                                                    [__asr_swap]
                                                     [(Var 8 arr)]
                                                     [(DoLoop
                                                         ()
@@ -614,7 +614,7 @@
                                                             ()
                                                         )
                                                         (SubroutineCall
-                                                            7 __asr_generic_swap
+                                                            7 __asr_swap
                                                             ()
                                                             [((ArrayItem
                                                                 (Var 8 arr)

@@ -853,14 +853,14 @@ loop.body45:                                      ; preds = %ifcont44
   %91 = load i32, i32* %__1_t, align 4
   %92 = add i32 %91, 1
   store i32 %92, i32* %__1_t, align 4
-  br i1 true, label %then47, label %else48
+  br i1 false, label %then47, label %else48
 
 then47:                                           ; preds = %loop.body45
   store i32 1, i32* %array_bound46, align 4
   br label %ifcont53
 
 else48:                                           ; preds = %loop.body45
-  br i1 false, label %then49, label %else50
+  br i1 true, label %then49, label %else50
 
 then49:                                           ; preds = %else48
   store i32 1, i32* %array_bound46, align 4
@@ -950,14 +950,14 @@ then73:                                           ; preds = %loop.body71
   br label %ifcont79
 
 else74:                                           ; preds = %loop.body71
-  br i1 true, label %then75, label %else76
+  br i1 false, label %then75, label %else76
 
 then75:                                           ; preds = %else74
   store i32 1, i32* %array_bound72, align 4
   br label %ifcont79
 
 else76:                                           ; preds = %else74
-  br i1 false, label %then77, label %else78
+  br i1 true, label %then77, label %else78
 
 then77:                                           ; preds = %else76
   store i32 1, i32* %array_bound72, align 4

@@ -1227,12 +1227,20 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
         }
         case ASR::ttypeType::Struct: {
             ASR::Struct_t* d = ASR::down_cast<ASR::Struct_t>(t);
-            res = symbol_name(d->m_derived_type);
+            if( ASRUtils::symbol_get_past_external(d->m_derived_type) ) {
+                res = symbol_name(ASRUtils::symbol_get_past_external(d->m_derived_type));
+            } else {
+                res = symbol_name(d->m_derived_type);
+            }
             break;
         }
         case ASR::ttypeType::Class: {
             ASR::Class_t* d = ASR::down_cast<ASR::Class_t>(t);
-            res = symbol_name(d->m_class_type);
+            if( ASRUtils::symbol_get_past_external(d->m_class_type) ) {
+                res = symbol_name(ASRUtils::symbol_get_past_external(d->m_class_type));
+            } else {
+                res = symbol_name(d->m_class_type);
+            }
             break;
         }
         case ASR::ttypeType::Union: {
@@ -1269,6 +1277,10 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
         }
         case ASR::ttypeType::SymbolicExpression: {
             return "S";
+        }
+        case ASR::ttypeType::TypeParameter: {
+            ASR::TypeParameter_t *tp = ASR::down_cast<ASR::TypeParameter_t>(t);
+            return tp->m_param;
         }
         default: {
             throw LCompilersException("Type encoding not implemented for "
@@ -3172,6 +3184,57 @@ class ReplaceWithFunctionParamVisitor: public ASR::BaseExprReplacer<ReplaceWithF
 
 };
 
+class ReplaceFunctionParamVisitor: public ASR::BaseExprReplacer<ReplaceFunctionParamVisitor> {
+
+    private:
+
+    ASR::call_arg_t* m_args;
+
+    public:
+
+    ReplaceFunctionParamVisitor(ASR::call_arg_t* m_args_) :
+        m_args(m_args_) {}
+
+    void replace_FunctionParam(ASR::FunctionParam_t* x) {
+        *current_expr = m_args[x->m_param_number].m_value;
+    }
+
+};
+
+class ExprDependentOnlyOnArguments: public ASR::BaseWalkVisitor<ExprDependentOnlyOnArguments> {
+
+    public:
+
+        bool is_dependent_only_on_argument;
+
+        ExprDependentOnlyOnArguments(): is_dependent_only_on_argument(false)
+        {}
+
+        void visit_Var(const ASR::Var_t& x) {
+            if( ASR::is_a<ASR::Variable_t>(*x.m_v) ) {
+                ASR::Variable_t* x_m_v = ASR::down_cast<ASR::Variable_t>(x.m_v);
+                is_dependent_only_on_argument = is_dependent_only_on_argument && ASRUtils::is_arg_dummy(x_m_v->m_intent);
+            } else {
+                is_dependent_only_on_argument = false;
+            }
+        }
+};
+
+static inline bool is_dimension_dependent_only_on_arguments(ASR::dimension_t* m_dims, size_t n_dims) {
+    ExprDependentOnlyOnArguments visitor;
+    for( size_t i = 0; i < n_dims; i++ ) {
+        visitor.is_dependent_only_on_argument = true;
+        if( m_dims[i].m_length == nullptr ) {
+            return false;
+        }
+        visitor.visit_expr(*m_dims[i].m_length);
+        if( !visitor.is_dependent_only_on_argument ) {
+            return false;
+        }
+    }
+    return true;
+}
+
 inline ASR::asr_t* make_FunctionType_t_util(Allocator &al,
     const Location &a_loc, ASR::expr_t** a_args, size_t n_args,
     ASR::expr_t* a_return_var, ASR::abiType a_abi, ASR::deftypeType a_deftype,
@@ -4048,7 +4111,7 @@ static inline void import_struct_t(Allocator& al,
         ptype = ASRUtils::extract_physical_type(var_type);
     }
     ASR::ttype_t* var_type_unwrapped = ASRUtils::type_get_past_allocatable(
-                 ASRUtils::type_get_past_pointer(var_type));
+        ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_array(var_type)));
     if( ASR::is_a<ASR::Struct_t>(*var_type_unwrapped) ) {
         ASR::symbol_t* der_sym = ASR::down_cast<ASR::Struct_t>(var_type_unwrapped)->m_derived_type;
         if( (ASR::asr_t*) ASRUtils::get_asr_owner(der_sym) != current_scope->asr_owner ) {
@@ -4078,6 +4141,10 @@ static inline void import_struct_t(Allocator& al,
         ASR::Character_t* char_t = ASR::down_cast<ASR::Character_t>(var_type_unwrapped);
         if( char_t->m_len == -1 && intent == ASR::intentType::Local ) {
             var_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc, char_t->m_kind, 1, nullptr));
+            if( is_array ) {
+                var_type = ASRUtils::make_Array_t_util(al, loc, var_type, m_dims, n_dims,
+                    ASR::abiType::Source, false, ptype, true);
+            }
             if( is_pointer ) {
                 var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, var_type));
             } else if( is_allocatable ) {

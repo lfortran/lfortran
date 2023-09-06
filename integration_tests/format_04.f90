@@ -1,12 +1,16 @@
 program format_04
 
 real :: a,b,c,d
+double precision :: r,s,t
 integer :: f
 a = 123.456
 b = 123.45678
 c = 12.34
 d = 123.45
 f = 12345
+r = 12345678
+s = 23.5678
+t = 0.345678
 
 print *, "ok", "b"
 print '(a,a)', "ok", "b"
@@ -23,4 +27,6 @@ print '(i0)', f, -f
 print '(d0.0,1x,d0.1,1x,d0.2)',a,b,c
 print '(d0.0,1x,d0.1,1x,d0.2)',-a,-b,-c
 print '("Hello")'
+print '( F13.3,1X,F9.6,1X, F0.2 )', r, s, t
+print '( F13.3,1X,F9.6,1X, F0.2 )', -r, -s, -t
 end program

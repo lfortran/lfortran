@@ -42,6 +42,7 @@ enum class IntrinsicScalarFunctions : int64_t {
     Exp2,
     Expm1,
     FMA,
+    FlipSign,
     ListIndex,
     Partition,
     ListReverse,
@@ -90,6 +91,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Exp2)
         INTRINSIC_NAME_CASE(Expm1)
         INTRINSIC_NAME_CASE(FMA)
+        INTRINSIC_NAME_CASE(FlipSign)
         INTRINSIC_NAME_CASE(ListIndex)
         INTRINSIC_NAME_CASE(Partition)
         INTRINSIC_NAME_CASE(ListReverse)
@@ -184,20 +186,20 @@ class ASRBuilder {
         auto arg = declare(arg_name, type, In);                                 \
         args.push_back(al, arg); }
 
-    #define make_Function_t(name, symtab, dep, args, body, return_var, abi,     \
+    #define make_ASR_Function_t(name, symtab, dep, args, body, return_var, abi,     \
             deftype, bindc_name)                                                \
         ASR::down_cast<ASR::symbol_t>( ASRUtils::make_Function_t_util(al, loc,  \
         symtab, s2c(al, name), dep.p, dep.n, args.p, args.n, body.p, body.n,    \
-        return_var, ASR::abiType::abi, ASR::accessType::Public,                 \
-        ASR::deftypeType::deftype, bindc_name, false, false, false, false,      \
+        return_var, abi, ASR::accessType::Public,                 \
+        deftype, bindc_name, false, false, false, false,      \
         false, nullptr, 0, false, false, false));
 
     #define make_Function_Without_ReturnVar_t(name, symtab, dep, args, body,    \
             abi, deftype, bindc_name)                                           \
         ASR::down_cast<ASR::symbol_t>( ASRUtils::make_Function_t_util(al, loc,  \
         symtab, s2c(al, name), dep.p, dep.n, args.p, args.n, body.p, body.n,    \
-        nullptr, ASR::abiType::abi, ASR::accessType::Public,                    \
-        ASR::deftypeType::deftype, bindc_name, false, false, false, false,      \
+        nullptr, abi, ASR::accessType::Public,                    \
+        deftype, bindc_name, false, false, false, false,      \
         false, nullptr, 0, false, false, false));
 
     // Types -------------------------------------------------------------------
@@ -847,15 +849,15 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
 
         SetChar dep_1; dep_1.reserve(al, 1);
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
-        ASR::symbol_t *s = make_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
-            body_1, return_var_1, BindC, Interface, s2c(al, c_func_name));
+        ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
+            body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
         fn_symtab->add_symbol(c_func_name, s);
         dep.push_back(al, s2c(al, c_func_name));
         body.push_back(al, b.Assignment(result, b.Call(s, args, arg_type)));
     }
 
-    ASR::symbol_t *new_symbol = make_Function_t(fn_name, fn_symtab, dep, args,
-        body, result, Source, Implementation, nullptr);
+    ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+        body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
     scope->add_symbol(fn_name, new_symbol);
     return b.Call(new_symbol, new_args, return_type);
 }
@@ -956,8 +958,8 @@ static inline ASR::symbol_t *create_KMP_function(Allocator &al,
         })
     }));
     body.push_back(al, Return());
-    ASR::symbol_t *fn_sym = make_Function_t(fn_name, fn_symtab, dep, args,
-        body, result, Source, Implementation, nullptr);
+    ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+        body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
     scope->add_symbol(fn_name, fn_sym);
     return fn_sym;
 }
@@ -1224,8 +1226,8 @@ namespace Abs {
 
                 SetChar dep_1; dep_1.reserve(al, 1);
                 Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
-                ASR::symbol_t *s = make_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
-                    body_1, return_var_1, BindC, Interface, s2c(al, c_func_name));
+                ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
+                    body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
                 fn_symtab->add_symbol(c_func_name, s);
                 dep.push_back(al, s2c(al, c_func_name));
                 Vec<ASR::call_arg_t> call_args;
@@ -1252,8 +1254,8 @@ namespace Abs {
                 b.ElementalPow(bin_op_1, constant_point_five, loc)));
         }
 
-        ASR::symbol_t *f_sym = make_Function_t(func_name, fn_symtab, dep, args,
-            body, result, Source, Implementation, nullptr);
+        ASR::symbol_t *f_sym = make_ASR_Function_t(func_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(func_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
@@ -1349,8 +1351,8 @@ namespace Sign {
                 b.Assignment(result, i32_neg(result, arg_types[0]))
             }, {}));
 
-            ASR::symbol_t *f_sym = make_Function_t(fn_name, fn_symtab, dep, args,
-                body, result, Source, Implementation, nullptr);
+            ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+                body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
             scope->add_symbol(fn_name, f_sym);
             return b.Call(f_sym, new_args, return_type, nullptr);
         }
@@ -1422,13 +1424,93 @@ namespace FMA {
         body.push_back(al, b.Assignment(result,
         b.ElementalAdd(args[0], op1, loc)));
 
-        ASR::symbol_t *f_sym = make_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, Source, Implementation, nullptr);
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
 } // namespace FMA
+
+namespace FlipSign {
+
+     static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 2,
+            "ASR Verify: Call to FlipSign must have exactly 2 arguments",
+            x.base.base.loc, diagnostics);
+        ASR::ttype_t *type1 = ASRUtils::expr_type(x.m_args[0]);
+        ASR::ttype_t *type2 = ASRUtils::expr_type(x.m_args[1]);
+        ASRUtils::require_impl((is_integer(*type1) && is_real(*type2)),
+            "ASR Verify: Arguments to FlipSign must be of int and real type respectively",
+            x.base.base.loc, diagnostics);
+    }
+
+    static ASR::expr_t *eval_FlipSign(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
+        int a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+        if (a % 2 == 1) b = -b;
+        return make_ConstantWithType(make_RealConstant_t, b, t1, loc);
+    }
+
+    static inline ASR::asr_t* create_FlipSign(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args,
+            const std::function<void (const std::string &, const Location &)> err) {
+        if (args.size() != 2) {
+            err("Intrinsic FlipSign function accepts exactly 2 arguments", loc);
+        }
+        ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
+        ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
+        if (!ASRUtils::is_integer(*type1) || !ASRUtils::is_real(*type2)) {
+            err("Argument of the FlipSign function must be int and real respectively",
+                args[0]->base.loc);
+        }
+        ASR::expr_t *m_value = nullptr;
+        if (all_args_evaluated(args)) {
+            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 2);
+            arg_values.push_back(al, expr_value(args[0]));
+            arg_values.push_back(al, expr_value(args[1]));
+            m_value = eval_FlipSign(al, loc, expr_type(args[1]), arg_values);
+        }
+        return ASR::make_IntrinsicScalarFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicScalarFunctions::FlipSign),
+            args.p, args.n, 0, ASRUtils::expr_type(args[1]), m_value);
+    }
+
+    static inline ASR::expr_t* instantiate_FlipSign(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_optimization_flipsign_" + type_to_str_python(arg_types[1]));
+        fill_func_arg("signal", arg_types[0]);
+        fill_func_arg("variable", arg_types[1]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        /*
+        real(real32) function flipsigni32r32(signal, variable)
+            integer(int32), intent(in) :: signal
+            real(real32), intent(out) :: variable
+            integer(int32) :: q
+            q = signal/2
+            flipsigni32r32 = variable
+            if (signal - 2*q == 1 ) flipsigni32r32 = -variable
+        end subroutine
+        */
+
+        ASR::expr_t *two = i(2, arg_types[0]);
+        ASR::expr_t *q = iDiv(args[0], two);
+        ASR::expr_t *cond = iSub(args[0], iMul(two, q));
+        body.push_back(al, b.If(iEq(cond, i(1, arg_types[0])), {
+            b.Assignment(result, f32_neg(args[1], arg_types[1]))
+        }, {
+            b.Assignment(result, args[1])
+        }));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace FlipSign
 
 #define create_exp_macro(X, stdeval)                                                      \
 namespace X {                                                                             \
@@ -1741,8 +1823,8 @@ namespace Max {
             body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
                 if_body.p, if_body.n, nullptr, 0)));
         }
-        ASR::symbol_t *f_sym = make_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, Source, Implementation, nullptr);
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
@@ -1865,8 +1947,8 @@ namespace Min {
         } else {
             throw LCompilersException("Arguments to min0 must be of real or integer type");
         }
-        ASR::symbol_t *f_sym = make_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, Source, Implementation, nullptr);
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
@@ -1978,8 +2060,8 @@ namespace Partition {
                         StringLen(args[0]))}, return_type))
             }));
         body.push_back(al, Return());
-        ASR::symbol_t *fn_sym = make_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, Source, Implementation, nullptr);
+        ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, fn_sym);
         return b.Call(fn_sym, new_args, return_type, nullptr);
     }
@@ -2216,6 +2298,8 @@ namespace IntrinsicScalarFunctionRegistry {
             {nullptr, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::FMA),
             {&FMA::instantiate_FMA, &FMA::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::FlipSign),
+            {&FlipSign::instantiate_FlipSign, &FlipSign::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Abs),
             {&Abs::instantiate_Abs, &Abs::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Partition),
@@ -2294,6 +2378,8 @@ namespace IntrinsicScalarFunctionRegistry {
             "exp2"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::FMA),
             "fma"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::FlipSign),
+            "flipsign"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Expm1),
             "expm1"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::ListIndex),
