@@ -4,6 +4,6 @@ program format_08
     integer :: b(10)
     a = "xx"
     b = 1
-    print "(a)", a
+    print "(aai6)", a,"hi",15
     print "(1000(i6))", b
 end program

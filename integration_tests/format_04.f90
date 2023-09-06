@@ -3,6 +3,7 @@ program format_04
 real :: a,b,c,d
 double precision :: r,s,t
 integer :: f
+real(8) :: p,q
 a = 123.456
 b = 123.45678
 c = 12.34
@@ -11,6 +12,8 @@ f = 12345
 r = 12345678
 s = 23.5678
 t = 0.345678
+p = 2.0d0
+q = 0.0d0
 
 print *, "ok", "b"
 print '(a,a)', "ok", "b"
@@ -29,4 +32,5 @@ print '(d0.0,1x,d0.1,1x,d0.2)',-a,-b,-c
 print '("Hello")'
 print '( F13.3,1X,F9.6,1X, F0.2 )', r, s, t
 print '( F13.3,1X,F9.6,1X, F0.2 )', -r, -s, -t
+print '(1PE13.6)', p, q
 end program
