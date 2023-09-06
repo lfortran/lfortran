@@ -2169,6 +2169,12 @@ public:
                                     x.base.base.loc);
                         }
                     }
+                    if (!s.m_initializer && s_intent == ASRUtils::intent_local
+                            && storage_type == ASR::storage_typeType::Parameter) {
+                        throw SemanticError("Variable `" + std::string(s.m_name) +
+                        "` with parameter attribute is not initialised",
+                        x.base.base.loc);
+                    }
                 }
                 if (s.n_dim > 0) {
                     if (dims.size() > 0) {
