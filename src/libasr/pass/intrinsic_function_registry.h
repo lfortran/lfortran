@@ -35,6 +35,7 @@ enum class IntrinsicScalarFunctions : int64_t {
     Sinh,
     Cosh,
     Tanh,
+    Atan2,
     Gamma,
     LogGamma,
     Abs,
@@ -87,6 +88,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Sinh)
         INTRINSIC_NAME_CASE(Cosh)
         INTRINSIC_NAME_CASE(Tanh)
+        INTRINSIC_NAME_CASE(Atan2)
         INTRINSIC_NAME_CASE(Gamma)
         INTRINSIC_NAME_CASE(LogGamma)
         INTRINSIC_NAME_CASE(Abs)
@@ -986,6 +988,113 @@ static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x,
 
 } // namespace UnaryIntrinsicFunction
 
+namespace BinaryIntrinsicFunction {
+
+static inline ASR::expr_t* instantiate_functions(Allocator &al,
+        const Location &loc, SymbolTable *scope, std::string new_name,
+        ASR::ttype_t *arg_type, ASR::ttype_t *return_type,
+        Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+    std::string c_func_name;
+    switch (arg_type->type) {
+        case ASR::ttypeType::Complex : {
+            if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {
+                c_func_name = "_lfortran_c" + new_name;
+            } else {
+                c_func_name = "_lfortran_z" + new_name;
+            }
+            break;
+        }
+        default : {
+            if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {
+                c_func_name = "_lfortran_s" + new_name;
+            } else {
+                c_func_name = "_lfortran_d" + new_name;
+            }
+        }
+    }
+    new_name = "_lcompilers_" + new_name + "_" + type_to_str_python(arg_type);
+
+    declare_basic_variables(new_name);
+    if (scope->get_symbol(new_name)) {
+        ASR::symbol_t *s = scope->get_symbol(new_name);
+        ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
+        return b.Call(s, new_args, expr_type(f->m_return_var));
+    }
+    fill_func_arg("x", arg_type);
+    fill_func_arg("y", arg_type)
+    auto result = declare(new_name, return_type, ReturnVar);
+
+    {
+        SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
+        Vec<ASR::expr_t*> args_1;
+        {
+            args_1.reserve(al, 2);
+            ASR::expr_t *arg_1 = b.Variable(fn_symtab_1, "x", arg_type,
+                ASR::intentType::In, ASR::abiType::BindC, true);
+            ASR::expr_t *arg_2 = b.Variable(fn_symtab_1, "y", arg_type,
+                ASR::intentType::In, ASR::abiType::BindC, true);
+            args_1.push_back(al, arg_1);
+            args_1.push_back(al, arg_2);
+        }
+
+        ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
+            arg_type, ASRUtils::intent_return_var, ASR::abiType::BindC, false);
+
+        SetChar dep_1; dep_1.reserve(al, 1);
+        Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
+        ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
+            body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
+        fn_symtab->add_symbol(c_func_name, s);
+        dep.push_back(al, s2c(al, c_func_name));
+        body.push_back(al, b.Assignment(result, b.Call(s, args, arg_type)));
+    }
+
+    ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+        body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+    scope->add_symbol(fn_name, new_symbol);
+    return b.Call(new_symbol, new_args, return_type);
+}
+
+static inline ASR::asr_t* create_BinaryFunction(Allocator& al, const Location& loc,
+    Vec<ASR::expr_t*>& args, eval_intrinsic_function eval_function,
+    int64_t intrinsic_id, int64_t overload_id, ASR::ttype_t* type) {
+    ASR::expr_t *value = nullptr;
+    ASR::expr_t *arg_value_1 = ASRUtils::expr_value(args[0]);
+    ASR::expr_t *arg_value_2 = ASRUtils::expr_value(args[1]);
+    if (arg_value_1 && arg_value_2) {
+        Vec<ASR::expr_t*> arg_values;
+        arg_values.reserve(al, 2);
+        arg_values.push_back(al, arg_value_1);
+        arg_values.push_back(al, arg_value_2);
+        value = eval_function(al, loc, type, arg_values);
+    }
+
+    return ASRUtils::make_IntrinsicScalarFunction_t_util(al, loc, intrinsic_id,
+        args.p, args.n, overload_id, type, value);
+}
+
+static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x,
+        diag::Diagnostics& diagnostics) {
+    const Location& loc = x.base.base.loc;
+    ASRUtils::require_impl(x.n_args == 2,
+        "Binary intrinsics must have only 2 input arguments",
+        loc, diagnostics);
+
+    ASR::ttype_t* input_type = ASRUtils::expr_type(x.m_args[0]);
+    ASR::ttype_t* input_type_2 = ASRUtils::expr_type(x.m_args[1]);
+    ASR::ttype_t* output_type = x.m_type;
+    ASRUtils::require_impl(ASRUtils::check_equal_type(input_type, input_type_2, true),
+        "The types of both the arguments of binary intrinsics must exactly match, argument 1 type: " +
+        ASRUtils::get_type_code(input_type) + " argument 2 type: " + ASRUtils::get_type_code(input_type_2),
+        loc, diagnostics);
+    ASRUtils::require_impl(ASRUtils::check_equal_type(input_type, output_type, true),
+        "The input and output type of elemental intrinsics must exactly match, input type: " +
+        ASRUtils::get_type_code(input_type) + " output type: " + ASRUtils::get_type_code(output_type),
+        loc, diagnostics);
+}
+
+} // namespace BinaryIntrinsicFunction
+
 namespace LogGamma {
 
 static inline ASR::expr_t *eval_log_gamma(Allocator &al, const Location &loc,
@@ -1081,6 +1190,42 @@ create_trig(Atan, atan, atan)
 create_trig(Sinh, sinh, sinh)
 create_trig(Cosh, cosh, cosh)
 create_trig(Tanh, tanh, tanh)
+
+namespace Atan2 {
+    static inline ASR::expr_t *eval_Atan2(Allocator &al, const Location &loc,
+            ASR::ttype_t *t, Vec<ASR::expr_t*>& args) {
+        LCOMPILERS_ASSERT(args.size() == 2);
+        double rv = -1, rv2 = -1;
+        if( ASRUtils::extract_value(args[0], rv) && ASRUtils::extract_value(args[1], rv2) ) {
+            double val = std::atan2(rv,rv2);
+            return make_ConstantWithType(make_RealConstant_t, val, t, loc);
+        }
+        return nullptr;
+    }
+    static inline ASR::asr_t* create_Atan2(Allocator& al, const Location& loc,
+        Vec<ASR::expr_t*>& args,
+        const std::function<void (const std::string &, const Location &)> err)
+    {
+        ASR::ttype_t *type_1 = ASRUtils::expr_type(args[0]);
+        ASR::ttype_t *type_2 = ASRUtils::expr_type(args[1]);
+        if (!ASRUtils::is_real(*type_1)) {
+            err("`x` argument of \"atan2\" must be real",args[0]->base.loc);
+        } else if (!ASRUtils::is_real(*type_2)) {
+            err("`y` argument of \"atan2\" must be real",args[1]->base.loc);
+        }
+        return BinaryIntrinsicFunction::create_BinaryFunction(al, loc, args,
+                eval_Atan2, static_cast<int64_t>(IntrinsicScalarFunctions::Atan2),
+                0, type_1);
+    }
+    static inline ASR::expr_t* instantiate_Atan2 (Allocator &al,
+            const Location &loc, SymbolTable *scope,
+            Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args,int64_t overload_id) {
+        ASR::ttype_t* arg_type = arg_types[0];
+        return BinaryIntrinsicFunction::instantiate_functions(al, loc, scope,
+            "atan2", arg_type, return_type, new_args, overload_id);
+    }
+}
 
 namespace Abs {
 
@@ -2503,6 +2648,8 @@ namespace IntrinsicScalarFunctionRegistry {
             {&Cosh::instantiate_Cosh, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Tanh),
             {&Tanh::instantiate_Tanh, &UnaryIntrinsicFunction::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Atan2),
+            {&Atan2::instantiate_Atan2, &BinaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Exp),
             {nullptr, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Exp2),
@@ -2589,6 +2736,8 @@ namespace IntrinsicScalarFunctionRegistry {
             "cosh"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Tanh),
             "tanh"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Atan2),
+            "atan2"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Abs),
             "abs"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Exp),
@@ -2665,6 +2814,7 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"sinh", {&Sinh::create_Sinh, &Sinh::eval_Sinh}},
                 {"cosh", {&Cosh::create_Cosh, &Cosh::eval_Cosh}},
                 {"tanh", {&Tanh::create_Tanh, &Tanh::eval_Tanh}},
+                {"atan2", {&Atan2::create_Atan2, &Atan2::eval_Atan2}},
                 {"abs", {&Abs::create_Abs, &Abs::eval_Abs}},
                 {"exp", {&Exp::create_Exp, &Exp::eval_Exp}},
                 {"exp2", {&Exp2::create_Exp2, &Exp2::eval_Exp2}},

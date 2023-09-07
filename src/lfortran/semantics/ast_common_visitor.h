@@ -732,6 +732,7 @@ public:
         {"merge", {IntrinsicSignature({}, 3, 3)}},
         {"sign", {IntrinsicSignature({}, 2, 2)}},
         {"aint", {IntrinsicSignature({}, 1, 2)}},
+        {"atan2", {IntrinsicSignature({}, 2, 2)}},
         {"shape", {IntrinsicSignature({"kind"}, 1, 2)}},
     };
 
@@ -4367,6 +4368,7 @@ public:
         double_precision_intrinsics["dsin"] = "sin";
         double_precision_intrinsics["dcos"] = "cos";
         double_precision_intrinsics["dtan"] = "tan";
+        double_precision_intrinsics["datan2"] = "atan2";
 
         double_precision_intrinsics["dsign"] = "sign";
     }
