@@ -75,12 +75,7 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         }
         ASR::expr_t* current_expr_ = instantiate_function(al, x->base.base.loc,
             global_scope, arg_types, x->m_type, new_args, x->m_overload_id);
-        if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*(*current_expr)) ) {
-            ASR::ArrayPhysicalCast_t* array_physical_cast_t = ASR::down_cast<ASR::ArrayPhysicalCast_t>(*current_expr);
-            array_physical_cast_t->m_arg = current_expr_;
-        } else {
-            *current_expr = current_expr_;
-        }
+        *current_expr = current_expr_;
     }
 
     void replace_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t* x) {
@@ -120,12 +115,7 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         ASR::expr_t* current_expr_ = instantiate_function(al, x->base.base.loc,
             global_scope, arg_types, x->m_type, new_args, x->m_overload_id);
         ASR::expr_t* func_call = current_expr_;
-        if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*(*current_expr)) ) {
-            ASR::ArrayPhysicalCast_t* array_physical_cast_t = ASR::down_cast<ASR::ArrayPhysicalCast_t>(*current_expr);
-            array_physical_cast_t->m_arg = current_expr_;
-        } else {
-            *current_expr = current_expr_;
-        }
+        *current_expr = current_expr_;
         if (ASR::is_a<ASR::FunctionCall_t>(*func_call)) {
             ASR::symbol_t *call_sym = ASRUtils::symbol_get_past_external(
                 ASR::down_cast<ASR::FunctionCall_t>(func_call)->m_name);
@@ -370,15 +360,6 @@ class ReplaceFunctionCallReturningArrayVisitor : public ASR::CallReplacerOnExpre
             m_body = body.p;
             n_body = body.size();
             pass_result.n = 0;
-        }
-
-        void visit_Assignment(const ASR::Assignment_t& x) {
-            ASR::CallReplacerOnExpressionsVisitor<
-                ReplaceFunctionCallReturningArrayVisitor>::visit_Assignment(x);
-            ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
-            if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_value) ) {
-                xx.m_value = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_value)->m_arg;
-            }
         }
 
 };
