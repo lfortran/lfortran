@@ -1602,8 +1602,8 @@ namespace MatMul {
          *                 [ 3, 4 ] ▼
          */
         declare_basic_variables("_lcompilers_matmul");
-        fill_func_arg("matrix_a", arg_types[0]);
-        fill_func_arg("matrix_b", arg_types[1]);
+        fill_func_arg("matrix_a", duplicate_type_with_empty_dims(al, arg_types[0]));
+        fill_func_arg("matrix_b", duplicate_type_with_empty_dims(al, arg_types[1]));
         ASR::expr_t *result = declare("result", return_type, Out);
         args.push_back(al, result);
         ASR::expr_t *i = declare("i", int32, Local);
