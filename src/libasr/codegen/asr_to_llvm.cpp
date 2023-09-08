@@ -87,8 +87,10 @@ private:
   //! To be used by visit_StructInstanceMember.
   std::string current_der_type_name;
 
-  //! Helpful for debugging while testing LLVM code
-  void print_util(llvm::Value* v, std::string fmt_chars, std::string endline="\t") {
+    //! Helpful for debugging while testing LLVM code
+    void print_util(llvm::Value* v, std::string fmt_chars, std::string endline="\t") {
+        // Usage:
+        // print_util(tmp, "%d") // `tmp` to be an integer type
         std::vector<llvm::Value *> args;
         std::vector<std::string> fmt;
         args.push_back(v);
@@ -104,6 +106,26 @@ private:
         printf_args.push_back(fmt_ptr);
         printf_args.insert(printf_args.end(), args.begin(), args.end());
         printf(context, *module, *builder, printf_args);
+    }
+
+    //! Helpful for debugging while testing LLVM code
+    void print_util(llvm::Value* v, std::string endline="\n") {
+        // Usage:
+        // print_util(tmp)
+        std::string buf;
+        llvm::raw_string_ostream os(buf);
+        v->print(os);
+        std::cout << os.str() << endline;
+    }
+
+    //! Helpful for debugging while testing LLVM code
+    void print_util(llvm::Type* v, std::string endline="\n") {
+        // Usage:
+        // print_util(tmp->getType())
+        std::string buf;
+        llvm::raw_string_ostream os(buf);
+        v->print(os);
+        std::cout << os.str() << endline;
     }
 
 public:
