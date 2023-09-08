@@ -2491,8 +2491,13 @@ public:
         }
         this->visit_expr(*x.m_v);
         ptr_loads = ptr_loads_copy;
-        if( ASR::is_a<ASR::Class_t>(*ASRUtils::type_get_past_pointer(x_m_v_type)) ) {
-            tmp = CreateLoad(llvm_utils->create_gep(tmp, 1));
+        if( ASR::is_a<ASR::Class_t>(*ASRUtils::type_get_past_pointer(
+                ASRUtils::type_get_past_allocatable(x_m_v_type))) ) {
+            if (ASRUtils::is_allocatable(x_m_v_type)) {
+                tmp = llvm_utils->create_gep(CreateLoad(tmp), 1);
+            } else {
+                tmp = CreateLoad(llvm_utils->create_gep(tmp, 1));
+            }
             if( current_select_type_block_type ) {
                 tmp = builder->CreateBitCast(tmp, current_select_type_block_type);
                 current_der_type_name = current_select_type_block_der_type;
@@ -8496,13 +8501,9 @@ public:
 
                 int dt_idx = name2memidx[ASRUtils::symbol_name(struct_sym)]
                     [ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(struct_mem->m_m))];
-                llvm::Value* dt_1 = llvm_utils->create_gep(
-                    dt, dt_idx);
-                dt_1 = llvm_utils->create_gep(dt_1, 1);
+                llvm::Value* dt_1 = llvm_utils->create_gep(dt, dt_idx);
+                dt_1 = CreateLoad(llvm_utils->create_gep(CreateLoad(dt_1), 1));
                 llvm::Value* class_ptr = llvm_utils->create_gep(dt_polymorphic, 1);
-                if (is_nested_pointer(dt_1)) {
-                    dt_1 = CreateLoad(dt_1);
-                }
                 builder->CreateStore(dt_1, class_ptr);
                 if (self_argument.length() == 0) {
                     args.push_back(dt_polymorphic);
