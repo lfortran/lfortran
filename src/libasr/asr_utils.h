@@ -2004,7 +2004,7 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
 inline bool ttype_set_dimensions(ASR::ttype_t** x,
             ASR::dimension_t *m_dims, int64_t n_dims,
             Allocator& al, ASR::abiType abi=ASR::abiType::Source,
-            bool is_argument=false) {
+            bool is_argument=false, bool is_dimension_star=false) {
     switch ((*x)->type) {
         case ASR::ttypeType::Array: {
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(*x);
@@ -2031,7 +2031,7 @@ inline bool ttype_set_dimensions(ASR::ttype_t** x,
         case ASR::ttypeType::Union:
         case ASR::ttypeType::TypeParameter: {
             *x = ASRUtils::make_Array_t_util(al,
-                (*x)->base.loc, *x, m_dims, n_dims, abi, is_argument);
+                (*x)->base.loc, *x, m_dims, n_dims, abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
             return true;
         }
         default:

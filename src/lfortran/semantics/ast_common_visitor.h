@@ -1995,7 +1995,13 @@ public:
                             bool is_char_type = ASR::is_a<ASR::Character_t>(*v->m_type);
                             process_dims(al, dims, x.m_syms[i].m_dim, x.m_syms[i].n_dim, is_compile_time, is_char_type);
 
-                            if (!ASRUtils::ttype_set_dimensions(&(v->m_type), dims.data(), dims.size(), al)) {
+                            bool is_star_dimension = false;
+
+                            if (x.m_syms[i].n_dim > 0) {
+                                is_star_dimension = (x.m_syms[i].m_dim[0].m_end_star == AST::dimension_typeType::DimensionStar);
+                            }
+
+                            if (!ASRUtils::ttype_set_dimensions(&(v->m_type), dims.data(), dims.size(), al, ASR::abiType::Source, false, is_star_dimension)) {
                                 throw SemanticError("Cannot set dimension for variable of non-numerical type", x.base.base.loc);
                             }
                             SetChar variable_dependencies_vec;
