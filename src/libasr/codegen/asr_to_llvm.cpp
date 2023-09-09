@@ -2115,13 +2115,30 @@ public:
                     llvm_diminfo.push_back(al, dim_size);
                 }
                 ptr_loads = ptr_loads_copy;
+            } else if( array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerToDataArray ) {
+                int ptr_loads_copy = ptr_loads;
+                for( size_t idim = 0; idim < x.n_args; idim++ ) {
+                    ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
+                    this->visit_expr_wrapper(m_dims[idim].m_start, true);
+                    llvm::Value* dim_start = tmp;
+                    llvm_diminfo.push_back(al, dim_start);
+                }
+                ptr_loads = ptr_loads_copy;
             }
             LCOMPILERS_ASSERT(ASRUtils::extract_n_dims_from_ttype(x_mv_type) > 0);
             bool is_polymorphic = current_select_type_block_type != nullptr;
-            tmp = arr_descr->get_single_element(array, indices, x.n_args,
-                                                array_t->m_physical_type == ASR::array_physical_typeType::PointerToDataArray,
-                                                array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray,
-                                                llvm_diminfo.p, is_polymorphic, current_select_type_block_type);
+            if (array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerToDataArray) {
+                tmp = arr_descr->get_single_element(array, indices, x.n_args,
+                                                    true,
+                                                    false,
+                                                    llvm_diminfo.p, is_polymorphic, current_select_type_block_type,
+                                                    true);
+            } else {
+                tmp = arr_descr->get_single_element(array, indices, x.n_args,
+                                                    array_t->m_physical_type == ASR::array_physical_typeType::PointerToDataArray,
+                                                    array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray,
+                                                    llvm_diminfo.p, is_polymorphic, current_select_type_block_type);
+            }
         }
     }
 
@@ -4555,6 +4572,14 @@ public:
             tmp = llvm_utils->create_ptr_gep(tmp, arr_descr->get_offset(arg));
         } else if(
             m_new == ASR::array_physical_typeType::PointerToDataArray &&
+            m_old == ASR::array_physical_typeType::FixedSizeArray) {
+            if( (ASRUtils::expr_value(m_arg) &&
+                !ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(m_arg))) ||
+                ASRUtils::expr_value(m_arg) == nullptr ) {
+                tmp = llvm_utils->create_gep(tmp, 0);
+            }
+        } else if(
+            m_new == ASR::array_physical_typeType::UnboundedPointerToDataArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {
             if( (ASRUtils::expr_value(m_arg) &&
                 !ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(m_arg))) ||
