@@ -578,7 +578,7 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::cmo_convertor_single_element_data_only(
             llvm::Value** llvm_diminfo, std::vector<llvm::Value*>& m_args,
-            int n_args, bool check_for_bounds) {
+            int n_args, bool check_for_bounds, bool is_unbounded_pointer_to_data) {
             llvm::Value* prod = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
             llvm::Value* idx = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
             for( int r = 0, r1 = 0; r < n_args; r++ ) {
@@ -589,9 +589,13 @@ namespace LCompilers {
                     // check_single_element(curr_llvm_idx, arr); TODO: To be implemented
                 }
                 idx = builder->CreateAdd(idx, builder->CreateMul(prod, curr_llvm_idx));
-                llvm::Value* dim_size = llvm_diminfo[r1 + 1];
-                r1 += 2;
-                prod = builder->CreateMul(prod, dim_size);
+                if (is_unbounded_pointer_to_data) {
+                    r1 += 1;
+                } else {
+                    llvm::Value* dim_size = llvm_diminfo[r1 + 1];
+                    r1 += 2;
+                    prod = builder->CreateMul(prod, dim_size);
+                }
             }
             return idx;
         }
@@ -599,7 +603,7 @@ namespace LCompilers {
         llvm::Value* SimpleCMODescriptor::get_single_element(llvm::Value* array,
             std::vector<llvm::Value*>& m_args, int n_args, bool data_only,
             bool is_fixed_size, llvm::Value** llvm_diminfo, bool polymorphic,
-            llvm::Type* polymorphic_type) {
+            llvm::Type* polymorphic_type, bool is_unbounded_pointer_to_data) {
             llvm::Value* tmp = nullptr;
             // TODO: Uncomment later
             // bool check_for_bounds = is_explicit_shape(v);
@@ -607,7 +611,7 @@ namespace LCompilers {
             llvm::Value* idx = nullptr;
             if( data_only || is_fixed_size ) {
                 LCOMPILERS_ASSERT(llvm_diminfo);
-                idx = cmo_convertor_single_element_data_only(llvm_diminfo, m_args, n_args, check_for_bounds);
+                idx = cmo_convertor_single_element_data_only(llvm_diminfo, m_args, n_args, check_for_bounds, is_unbounded_pointer_to_data);
                 if( is_fixed_size ) {
                     tmp = llvm_utils->create_gep(array, idx);
                 } else {
