@@ -43,7 +43,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols);
 
 void load_rtlib(Allocator &al, ASR::TranslationUnit_t &tu, CompilerOptions &compiler_options) {
-    SymbolTable *tu_symtab = tu.m_global_scope;
+    SymbolTable *tu_symtab = tu.m_symtab;
     LCompilers::PassOptions pass_options;
     pass_options.runtime_library_dir = compiler_options.runtime_library_dir;
     pass_options.mod_files_dir = compiler_options.mod_files_dir;

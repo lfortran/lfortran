@@ -782,7 +782,7 @@ int emit_julia(const std::string &infile, CompilerOptions &compiler_options)
 int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
     const LCompilers::CompilerOptions &compiler_options)
 {
-    for (auto &item : u.m_global_scope->get_scope()) {
+    for (auto &item : u.m_symtab->get_scope()) {
         if (LCompilers::ASR::is_a<LCompilers::ASR::Module_t>(*item.second)) {
             LCompilers::ASR::Module_t *m = LCompilers::ASR::down_cast<LCompilers::ASR::Module_t>(item.second);
 

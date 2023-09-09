@@ -278,7 +278,7 @@ Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr3(
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return res.error;
     }
-    if (!symbol_table) symbol_table = asr->m_global_scope;
+    if (!symbol_table) symbol_table = asr->m_symtab;
 
     return asr;
 }
