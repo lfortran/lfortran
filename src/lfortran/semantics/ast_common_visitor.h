@@ -2026,6 +2026,7 @@ public:
                 bool implicit_save = false;
                 bool is_compile_time = false;
                 bool is_implicitly_declared = false;
+                bool is_dimension_star = false;
                 AST::var_sym_t &s = x.m_syms[i];
                 std::string sym = to_lower(s.m_name);
                 bool is_external = check_is_external(sym);
@@ -2188,12 +2189,15 @@ public:
                         );
                         dims.n = 0;
                     }
+                    if (s.m_dim[0].m_end_star == AST::dimension_typeType::DimensionStar) {
+                        is_dimension_star = true;
+                    }
                     process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type);
                 }
                 ASR::symbol_t *type_declaration;
                 ASR::ttype_t *type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer,
                     is_allocatable, dims, type_declaration, current_procedure_abi_type,
-                    s_intent != ASRUtils::intent_local);
+                    s_intent != ASRUtils::intent_local, is_dimension_star);
                 current_variable_type_ = type;
 
                 ASR::expr_t* init_expr = nullptr;
@@ -2461,7 +2465,7 @@ public:
     ASR::ttype_t* determine_type(const Location &loc, std::string& sym,
         AST::decl_attribute_t* decl_attribute, bool is_pointer,
         bool is_allocatable, Vec<ASR::dimension_t>& dims,
-        ASR::symbol_t *&type_declaration, ASR::abiType abi, bool is_argument=false) {
+        ASR::symbol_t *&type_declaration, ASR::abiType abi, bool is_argument=false, bool is_dimension_star=false) {
         AST::AttrType_t *sym_type = AST::down_cast<AST::AttrType_t>(decl_attribute);
         ASR::ttype_t *type;
         type_declaration = nullptr;
@@ -2485,7 +2489,7 @@ public:
                 }
             }
             type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, a_kind));
-            type = ASRUtils::make_Array_t_util(al, loc, type, dims.p, dims.size(), abi, is_argument);
+            type = ASRUtils::make_Array_t_util(al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
             if (is_pointer) {
                 type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                     ASRUtils::type_get_past_allocatable(type)));

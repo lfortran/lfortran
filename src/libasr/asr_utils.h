@@ -1973,7 +1973,7 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
     ASR::ttype_t* type, ASR::dimension_t* m_dims, size_t n_dims,
     ASR::abiType abi=ASR::abiType::Source, bool is_argument=false,
     ASR::array_physical_typeType physical_type=ASR::array_physical_typeType::DescriptorArray,
-    bool override_physical_type=false) {
+    bool override_physical_type=false, bool is_dimension_star=false) {
     if( n_dims == 0 ) {
         return type;
     }
@@ -1990,7 +1990,7 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
                 }
             } else if( !ASRUtils::is_dimension_empty(m_dims, n_dims) ) {
                 physical_type = ASR::array_physical_typeType::PointerToDataArray;
-            } else if ( ASRUtils::is_only_upper_bound_empty(m_dims[n_dims-1]) ) {
+            } else if ( is_dimension_star && ASRUtils::is_only_upper_bound_empty(m_dims[n_dims-1]) ) {
                 physical_type = ASR::array_physical_typeType::UnboundedPointerToDataArray;
             }
         }
