@@ -419,6 +419,7 @@ ttype
 array_physical_type
     = DescriptorArray
     | PointerToDataArray
+    | UnboundedPointerToDataArray
     | FixedSizeArray
     | NumPyArray
     | ISODescriptorArray
