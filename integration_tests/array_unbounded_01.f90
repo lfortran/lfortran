@@ -4,7 +4,7 @@ subroutine sub(x, z)
     print *, x(1)
 end subroutine
     
-program main
+program array_unbounded_01
     real :: y(10), w(10)
     call sub(y, w)
     print *, y(1)

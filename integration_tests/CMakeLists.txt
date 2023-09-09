@@ -1085,3 +1085,4 @@ RUN(NAME precision_01 LABELS gfortran llvm)
 RUN(NAME precision_02 LABELS gfortran) # TODO fix this test
 
 RUN(NAME array_unbounded_01 LABELS gfortran llvm)
+RUN(NAME array_unbounded_02 LABELS gfortran llvm)
