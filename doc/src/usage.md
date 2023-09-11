@@ -20,7 +20,7 @@ The LFortran compiler consists of the following components:
 
 ## Standards
 
-The LFortran compiler is currently (mid-2023) incomplete but is intended
+The LFortran compiler is currently (mid-2023) incomplete (alpha stage) but is intended
 to support ISO Fortran 2018, ISO/IEC 1539:2018.
 
 ## Extensions
