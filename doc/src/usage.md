@@ -30,7 +30,7 @@ The extensions are currently in development and are planned to include:
 * Global Scope (statements outside of a program block).
 * Interactive Fortran (in alpha).
 * Jupyter integration.
-* Support for FPUs.
+* Support for GPUs and other accelerators
 
 ## Interactive Compiler
 
