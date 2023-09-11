@@ -194,3 +194,20 @@ lfortran hw.f90
 sh: clang-14: not found
 ...(further error messages)...
 ```
+
+## Differences from other compilers
+
+GNU, Intel and LLVM Fortran use "standard" Fortran carriage control where the
+first character of each output line controls a conceptual "line printer".  A
+space " " means
+single-space, a zero "0" means double-space and one "1" means form-feed
+before printing.  This is obsolete and LFortran omits this unless
+`--print-leading-space` is selected at compile-time.
+
+There is currently no way to specify detailed compiler options to
+Clang such as `-O3` or `-flto` (optimization and link-time optimization).
+
+GNU extension declarations `real*8 xvalue` are accepted but deprecated.  This
+is valid Fortran-77 but not Fortran-2018.
+
+
