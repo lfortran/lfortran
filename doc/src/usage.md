@@ -2,8 +2,8 @@
 
 ## About LFortran
 
-LFortran is an implementation of the Fortran 2018 standard with
-some added extensions.  It works on Linux, most BSDs and on Windows.
+LFortran's goal is an implementation of the latest Fortran standard (currently F2018) with
+some added extensions.  It works on Linux, macOS, most BSDs and on Windows.
 
 The LFortran compiler consists of the following components:
 
