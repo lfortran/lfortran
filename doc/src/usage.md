@@ -28,7 +28,7 @@ to support ISO Fortran 2018, ISO/IEC 1539:2018.
 The extensions are currently in development and are planned to include:
 
 * Global Scope (statements outside of a program block).
-* Interactive Fortran (in beta).
+* Interactive Fortran (in alpha).
 * Jupyter integration.
 * Support for FPUs.
 
