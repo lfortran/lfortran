@@ -169,8 +169,8 @@ jobs:
             cd scipy
             git remote add ondrej https://github.com/certik/scipy
             git fetch ondrej
-            git checkout -t ondrej/merge_special_minpack_fitpack1
-            git checkout f6bc2836131625479260c249e8c6eece0e9eeba0
+            git checkout -t ondrej/merge_specfun_minpack_fitpack2
+            git checkout b996d330471a36fc0ed592dbaee1ede02b8e4bd4
             micromamba env create -f environment.yml
             micromamba activate scipy-dev
             git submodule update --init
@@ -178,17 +178,25 @@ jobs:
                 ../src/bin/lfortran -c $src -o ${src%.f}.o --fixed-form --implicit-typing --implicit-interface --generate-object-code --use-loop-variable-after-loop --all-mangling --bindc-mangling --mangle-underscore
                 cp ${src%.f}.o ./
             done
+            ../src/bin/lfortran -c ./scipy/optimize/minpack/chkder.f -o chkder.o --fixed-form --implicit-typing --implicit-interface --generate-object-code --use-loop-variable-after-loop --rtlib --all-mangling --bindc-mangling --mangle-underscore
+
+            clang -shared -fPIC -o ./scipy/optimize/minpack.so *.o -L../src/runtime -llfortran_runtime
+
+            rm *.o
+
             for src in $(find ./scipy/interpolate/fitpack/ -name "*.f"); do
                 echo "Compiling $src"
                 ../src/bin/lfortran -c $src -o ${src%.f}.o --fixed-form --implicit-typing --implicit-interface --generate-object-code --use-loop-variable-after-loop --all-mangling --bindc-mangling --mangle-underscore
                 cp ${src%.f}.o ./
             done
-            ../src/bin/lfortran -c ./scipy/optimize/minpack/chkder.f -o chkder.o --fixed-form --implicit-typing --implicit-interface --generate-object-code --use-loop-variable-after-loop --rtlib --all-mangling --bindc-mangling --mangle-underscore
             ../src/bin/lfortran -c ./scipy/interpolate/fitpack/evapol.f -o evapol.o --fixed-form --implicit-typing --implicit-interface --generate-object-code --use-loop-variable-after-loop --rtlib --all-mangling --bindc-mangling --mangle-underscore
+            
+            clang -shared -fPIC -o ./scipy/interpolate/fitpack.so *.o -L../src/runtime -llfortran_runtime
+            
+            rm *.o
+
             ../src/bin/lfortran -c ./scipy/special/specfun/specfun.f -o scipy/special/specfun.o --fixed-form --implicit-typing --implicit-interface --generate-object-code --use-loop-variable-after-loop --all-mangling --mangle-underscore --bindc-mangling --rtlib
 
-            clang -shared -fPIC -o ./scipy/optimize/minpack.so *.o -L../src/runtime -llfortran_runtime
-            clang -shared -fPIC -o ./scipy/interpolate/fitpack.so *.o -L../src/runtime -llfortran_runtime
             clang -shared -fPIC -o ./scipy/special/specfun.so scipy/special/specfun.o -L../src/runtime -llfortran_runtime
 
             mkdir -p $CONDA_PREFIX/lib/scipy/optimize/
@@ -207,8 +215,8 @@ jobs:
             mkdir -p ./build-install/lib/python3.11/scipy/optimize/
             cp scipy/optimize/minpack.so ./build-install/lib/python3.11/scipy/optimize/
 
-            mkdir -p ./build-install/lib/python3.10/scipy/interpolate/
-            cp scipy/interpolate/fitpack.so ./build-install/lib/python3.10/scipy/interpolate/
+            mkdir -p ./build-install/lib/python3.11/scipy/interpolate/
+            cp scipy/interpolate/fitpack.so ./build-install/lib/python3.11/scipy/interpolate/
 
             mkdir -p ./build-install/lib/python3.11/scipy/special/
             cp scipy/special/specfun.so ./build-install/lib/python3.11/scipy/special/
