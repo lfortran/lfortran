@@ -4383,18 +4383,28 @@ public:
         double_precision_intrinsics["dsign"] = "sign";
     }
 
+    bool is_intrinsic_registry_function(std::string var_name) {
+        std::map<std::string, std::string> double_precision_intrinsics;
+        populate_double_precision_intrinsics(double_precision_intrinsics);
+        bool is_double_precision_intrinsic = double_precision_intrinsics.find(var_name) != double_precision_intrinsics.end();
+        if (intrinsic_procedures_as_asr_nodes.is_intrinsic_present_in_ASR(var_name) ||
+            intrinsic_procedures_as_asr_nodes.is_kind_based_selection_required(var_name) ||
+            ASRUtils::IntrinsicScalarFunctionRegistry::is_intrinsic_function(var_name) ||
+            ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ||
+            ASRUtils::IntrinsicImpureFunctionRegistry::is_intrinsic_function(var_name) ||
+            is_double_precision_intrinsic) {
+            return true;
+        }
+        return false;
+    }
+
     ASR::symbol_t* intrinsic_as_node(const AST::FuncCallOrArray_t &x,
                                      bool& is_function) {
         std::string var_name = to_lower(x.m_func);
         std::map<std::string, std::string> double_precision_intrinsics;
         populate_double_precision_intrinsics(double_precision_intrinsics);
         bool is_double_precision_intrinsic = double_precision_intrinsics.find(var_name) != double_precision_intrinsics.end();
-        if( intrinsic_procedures_as_asr_nodes.is_intrinsic_present_in_ASR(var_name) ||
-            intrinsic_procedures_as_asr_nodes.is_kind_based_selection_required(var_name) ||
-            ASRUtils::IntrinsicScalarFunctionRegistry::is_intrinsic_function(var_name) ||
-            ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ||
-            ASRUtils::IntrinsicImpureFunctionRegistry::is_intrinsic_function(var_name) ||
-            is_double_precision_intrinsic) {
+        if( is_intrinsic_registry_function(var_name)) {
             is_function = false;
             if (is_double_precision_intrinsic) {
                 var_name = double_precision_intrinsics[var_name];
@@ -4802,24 +4812,32 @@ public:
                 throw SemanticError("Subroutine `" + var_name + "` called as a function ", x.base.base.loc);
             }
         }
-        if (compiler_options.implicit_interface
-                && !is_common_variable
-                && ( ASR::is_a<ASR::Variable_t>(*v) || is_external_procedure )
-                && (!ASRUtils::is_array(ASRUtils::symbol_type(v)))
-                && (!ASRUtils::is_character(*ASRUtils::symbol_type(v)))) {
-            if (var_name == "float" || var_name == "dble") {
-                Vec<ASR::call_arg_t> args;
-                visit_expr_list(x.m_args, x.n_args, args);
-                tmp = handle_intrinsic_float(al, args, x.base.base.loc);
-                return;
-            }
-            if (intrinsic_procedures.is_intrinsic(var_name)) {
-                bool is_function = true;
-                v = intrinsic_as_node(x, is_function);
-                if( !is_function ) {
+        if (!is_common_variable
+            && ( ASR::is_a<ASR::Variable_t>(*v) || is_external_procedure )
+            && (!ASRUtils::is_array(ASRUtils::symbol_type(v)))
+            && (!ASRUtils::is_character(*ASRUtils::symbol_type(v)))) {
+            if (intrinsic_procedures.is_intrinsic(var_name) || is_intrinsic_registry_function(var_name)) {
+                if (compiler_options.implicit_interface) {
+                    bool is_function = true;
+                    v = intrinsic_as_node(x, is_function);
+                    if( !is_function ) {
+                        return;
+                    }
+                } else {
+                    diag.semantic_error_label(
+                            var_name + " was declared as a variable, it can't be called as a function",
+                            {x.base.base.loc},
+                            "help: use the compiler option \"--implicit-interface\" to use intrinsic functions"
+                        );
+                    throw SemanticAbort();
+                }
+            } else if (compiler_options.implicit_interface) {
+                if (var_name == "float" || var_name == "dble") {
+                    Vec<ASR::call_arg_t> args;
+                    visit_expr_list(x.m_args, x.n_args, args);
+                    tmp = handle_intrinsic_float(al, args, x.base.base.loc);
                     return;
                 }
-            } else {
                 // If implicit interface is allowed, we have to handle the
                 // following case here:
                 // real :: x
