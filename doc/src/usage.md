@@ -145,7 +145,6 @@ end program usev
 
 ```
 
-(Note that as of lfortran version 0.19.0 this does not yet work.)
 
 The compile command for the module requires `-c` to avoid automatic running
 of the code.
