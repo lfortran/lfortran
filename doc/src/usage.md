@@ -121,7 +121,7 @@ Here is a simple example with a module:
 
 ```
 lfortran -c varray.f90
-lfortran usev.f90 varray.o
+lfortran usev.f90
   sum is    72.0000000
 
 cat varray.f90
