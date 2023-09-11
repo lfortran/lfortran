@@ -150,8 +150,6 @@ end program usev
 The compile command for the module requires `-c` to avoid automatic running
 of the code.
 
-The compile command for the program requires to add the `.o` object file
-for linking.
 
 # Formatting Fortran source files
 
