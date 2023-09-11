@@ -127,7 +127,6 @@ lfortran usev.f90 varray.o
 cat varray.f90
 module varray
     integer :: nsize
-    real, allocatable, dimension(:) :: A
 end module varray
 
 cat usev.f90
