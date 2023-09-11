@@ -15,6 +15,7 @@
 #include <lfortran/parser/parser.h>
 #include <lfortran/parser/preprocessor.h>
 #include <lfortran/pickle.h>
+#include <libasr/pickle.h>
 #include <libasr/utils.h>
 
 #ifdef HAVE_LFORTRAN_LLVM
@@ -101,7 +102,7 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     }
 
     if (verbose) {
-        result.asr = LFortran::pickle(*asr, true);
+        result.asr = pickle(*asr, true);
     }
 
     // ASR -> LLVM
@@ -220,11 +221,11 @@ Result<std::string> FortranEvaluator::get_asr(const std::string &code,
     Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
     if (asr.ok) {
         if (compiler_options.tree) {
-            return LFortran::pickle_tree(*asr.result, compiler_options.use_colors);
+            return pickle_tree(*asr.result, compiler_options.use_colors);
         } else if (compiler_options.json) {
-            return LFortran::pickle_json(*asr.result, lm);
+            return pickle_json(*asr.result, lm);
         }
-        return LFortran::pickle(*asr.result,
+        return pickle(*asr.result,
             compiler_options.use_colors, compiler_options.indent);
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -480,6 +481,7 @@ Result<std::string> FortranEvaluator::get_c3(ASR::TranslationUnit_t &asr,
     pass_options.always_run = false;
     pass_options.run_fun = "f";
     pass_options.verbose = compiler_options.verbose;
+    pass_options.dumb_all_passes = compiler_options.dumb_all_passes;
     pass_options.pass_cumulative = compiler_options.pass_cumulative;
     pass_options.realloc_lhs = compiler_options.realloc_lhs;
     pass_options.all_symbols_mangling = compiler_options.all_symbols_mangling;

@@ -32,6 +32,11 @@ namespace LCompilers {
 
 using ASR::down_cast;
 
+uint64_t static inline get_hash(ASR::asr_t *node)
+{
+    return (uint64_t)node;
+}
+
 class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
     public:
     std::unordered_map<ASR::symbol_t*, std::string> sym_to_renamed;
@@ -41,7 +46,9 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
     bool all_symbols_mangling;
     bool bindc_mangling = false;
     bool should_mangle = false;
+    std::vector<std::string> parent_function_name;
     std::string module_name = "";
+    SymbolTable* current_scope = nullptr;
 
     SymbolRenameVisitor(
     bool mm, bool gm, bool im, bool am, bool bcm) : module_name_mangling(mm),
@@ -52,12 +59,24 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
     std::string update_name(std::string curr_name) {
         if (startswith(curr_name, "_lpython") || startswith(curr_name, "_lfortran") ) {
             return curr_name;
+        } else if (startswith(curr_name, "_lcompilers_") && current_scope) {
+            // mangle intrinsic functions
+            uint64_t hash = get_hash(current_scope->asr_owner);
+            return module_name + curr_name + "_" + std::to_string(hash) + "_" + lcompilers_unique_ID;
+        } else if (parent_function_name.size() > 0) {
+            // add parent function name to suffix
+            std::string name = module_name + curr_name + "_";
+            for (auto &a: parent_function_name) {
+                name += a + "_";
+            }
+            return name + lcompilers_unique_ID;
         }
         return module_name + curr_name + "_" + lcompilers_unique_ID;
     }
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         ASR::TranslationUnit_t& xx = const_cast<ASR::TranslationUnit_t&>(x);
+        current_scope = xx.m_global_scope;
         std::unordered_map<ASR::symbol_t*, std::string> tmp_scope;
         for (auto &a : xx.m_global_scope->get_scope()) {
             visit_symbol(*a.second);
@@ -89,6 +108,21 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         module_name = mod_name_copy;
     }
 
+    bool is_nested_function(ASR::symbol_t *sym) {
+        if (ASR::is_a<ASR::Function_t>(*sym)) {
+            ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(sym);
+            ASR::ttype_t* f_signature= f->m_function_signature;
+            ASR::FunctionType_t *f_type = ASR::down_cast<ASR::FunctionType_t>(f_signature);
+            if (f_type->m_abi == ASR::abiType::BindC && f_type->m_deftype == ASR::deftypeType::Interface) {
+                // this is an interface function
+                return false;
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     void visit_Function(const ASR::Function_t &x) {
         ASR::FunctionType_t *f_type = ASRUtils::get_FunctionType(x);
         if (bindc_mangling || f_type->m_abi != ASR::abiType::BindC) {
@@ -98,7 +132,14 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
             }
         }
         for (auto &a : x.m_symtab->get_scope()) {
+            bool nested_function = is_nested_function(a.second);
+            if (nested_function) {
+                parent_function_name.push_back(x.m_name);
+            }
             visit_symbol(*a.second);
+            if (nested_function) {
+                parent_function_name.pop_back();
+            }
         }
     }
 

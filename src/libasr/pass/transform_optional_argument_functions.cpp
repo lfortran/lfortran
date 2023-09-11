@@ -286,8 +286,35 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
             ASR::Variable_t* func_arg_j = ASRUtils::EXPR2VAR(func->m_args[j]);
             if( x.m_args[i].m_value == nullptr ) {
                 std::string m_arg_i_name = scope->get_unique_name("__libasr_created_variable_");
+                ASR::ttype_t* arg_type = func_arg_j->m_type;
+                if( ASR::is_a<ASR::Array_t>(*arg_type) ) {
+                    ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(arg_type);
+                    Vec<ASR::dimension_t> dims;
+                    dims.reserve(al, array_t->n_dims);
+                    for( size_t i = 0; i < array_t->n_dims; i++ ) {
+                        ASR::dimension_t dim;
+                        dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arg_type->base.loc, 1,
+                                            ASRUtils::TYPE(ASR::make_Integer_t(al, arg_type->base.loc, 4))));
+                        dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arg_type->base.loc, 1,
+                                            ASRUtils::TYPE(ASR::make_Integer_t(al, arg_type->base.loc, 4))));
+                        dim.loc = arg_type->base.loc;
+                        dims.push_back(al, dim);
+                    }
+                    arg_type = ASRUtils::TYPE(ASR::make_Array_t(al, arg_type->base.loc,
+                                array_t->m_type, dims.p, dims.size(), ASR::array_physical_typeType::FixedSizeArray));
+                }
                 ASR::expr_t* m_arg_i = PassUtils::create_auxiliary_variable(
-                    x.m_args[i].loc, m_arg_i_name, al, scope, func_arg_j->m_type);
+                    x.m_args[i].loc, m_arg_i_name, al, scope, arg_type);
+                arg_type = ASRUtils::expr_type(m_arg_i);
+                if( ASRUtils::is_array(arg_type) &&
+                    ASRUtils::extract_physical_type(arg_type) !=
+                    ASRUtils::extract_physical_type(func_arg_j->m_type)) {
+                    ASR::ttype_t* m_type = ASRUtils::duplicate_type(al, arg_type, nullptr,
+                        ASRUtils::extract_physical_type(func_arg_j->m_type), true);
+                    m_arg_i = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+                        al, m_arg_i->base.loc, m_arg_i, ASRUtils::extract_physical_type(arg_type),
+                        ASRUtils::extract_physical_type(func_arg_j->m_type), m_type, nullptr));
+                }
                 ASR::call_arg_t m_call_arg_i;
                 m_call_arg_i.loc = x.m_args[i].loc;
                 m_call_arg_i.m_value = m_arg_i;

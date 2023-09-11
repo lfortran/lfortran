@@ -23,7 +23,7 @@ jobs:
         os: ["windows-2019", "macos-latest", "ubuntu-latest"]
         python-version: ["3.10"]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -98,7 +98,7 @@ jobs:
     name: Check SciPy Build and Test Run
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -162,33 +162,91 @@ jobs:
             cd ..
             rm -rf scipy/
 
-      - name: Test SciPy Specfun
+      - name: Build SciPy
         shell: bash -e -x -l {0}
         run: |
             git clone https://github.com/scipy/scipy
             cd scipy
             git remote add ondrej https://github.com/certik/scipy
             git fetch ondrej
-            git checkout -t ondrej/special9
-            git checkout 5244ee49fd36b7c29e13079d69ecdd7561787de8
+            git checkout -t ondrej/merge_specfun_minpack_fitpack2
+            git checkout b996d330471a36fc0ed592dbaee1ede02b8e4bd4
             micromamba env create -f environment.yml
             micromamba activate scipy-dev
             git submodule update --init
-            ../src/bin/lfortran -c scipy/special/specfun/specfun.f -o scipy/special/specfun.o --use-loop-variable-after-loop --fixed-form --implicit-typing --implicit-interface --generate-object-code --all-mangling --mangle-underscore --rtlib
-            clang -shared -fPIC -o scipy/special/specfun.so scipy/special/specfun.o -L../src/runtime -llfortran_runtime
+            for src in $(find ./scipy/optimize/minpack/ -name "*.f"); do
+                ../src/bin/lfortran -c $src -o ${src%.f}.o --fixed-form --implicit-typing --implicit-interface --generate-object-code --use-loop-variable-after-loop --all-mangling --bindc-mangling --mangle-underscore
+                cp ${src%.f}.o ./
+            done
+            ../src/bin/lfortran -c ./scipy/optimize/minpack/chkder.f -o chkder.o --fixed-form --implicit-typing --implicit-interface --generate-object-code --use-loop-variable-after-loop --rtlib --all-mangling --bindc-mangling --mangle-underscore
+
+            clang -shared -fPIC -o ./scipy/optimize/minpack.so *.o -L../src/runtime -llfortran_runtime
+
+            rm *.o
+
+            for src in $(find ./scipy/interpolate/fitpack/ -name "*.f"); do
+                echo "Compiling $src"
+                ../src/bin/lfortran -c $src -o ${src%.f}.o --fixed-form --implicit-typing --implicit-interface --generate-object-code --use-loop-variable-after-loop --all-mangling --bindc-mangling --mangle-underscore
+                cp ${src%.f}.o ./
+            done
+            ../src/bin/lfortran -c ./scipy/interpolate/fitpack/evapol.f -o evapol.o --fixed-form --implicit-typing --implicit-interface --generate-object-code --use-loop-variable-after-loop --rtlib --all-mangling --bindc-mangling --mangle-underscore
+            
+            clang -shared -fPIC -o ./scipy/interpolate/fitpack.so *.o -L../src/runtime -llfortran_runtime
+            
+            rm *.o
+
+            ../src/bin/lfortran -c ./scipy/special/specfun/specfun.f -o scipy/special/specfun.o --fixed-form --implicit-typing --implicit-interface --generate-object-code --use-loop-variable-after-loop --all-mangling --mangle-underscore --bindc-mangling --rtlib
+
+            clang -shared -fPIC -o ./scipy/special/specfun.so scipy/special/specfun.o -L../src/runtime -llfortran_runtime
+
+            mkdir -p $CONDA_PREFIX/lib/scipy/optimize/
+            cp scipy/optimize/minpack.so $CONDA_PREFIX/lib/scipy/optimize/
+
+            mkdir -p $CONDA_PREFIX/lib/scipy/interpolate/
+            cp scipy/interpolate/fitpack.so $CONDA_PREFIX/lib/scipy/interpolate/
+
             mkdir -p $CONDA_PREFIX/lib/scipy/special/
             cp scipy/special/specfun.so $CONDA_PREFIX/lib/scipy/special/
+
             cp ../src/runtime/liblfortran_runtime.so $CONDA_PREFIX/lib/
+
             python dev.py build
+
+            mkdir -p ./build-install/lib/python3.11/scipy/optimize/
+            cp scipy/optimize/minpack.so ./build-install/lib/python3.11/scipy/optimize/
+
+            mkdir -p ./build-install/lib/python3.11/scipy/interpolate/
+            cp scipy/interpolate/fitpack.so ./build-install/lib/python3.11/scipy/interpolate/
+
             mkdir -p ./build-install/lib/python3.11/scipy/special/
             cp scipy/special/specfun.so ./build-install/lib/python3.11/scipy/special/
+
+      - name: Test SciPy Specfun
+        shell: bash -e -x -l {0}
+        run: |
+            cd scipy/
+            micromamba activate scipy-dev
             python dev.py test -t scipy.special -v
+
+      - name: Test SciPy Minpack
+        shell: bash -e -x -l {0}
+        run: |
+            cd scipy/
+            micromamba activate scipy-dev
+            python dev.py test -t scipy.optimize -v
+      
+      - name: Test SciPy Fitpack
+        shell: bash -e -x -l {0}
+        run: |
+            cd scipy/
+            micromamba activate scipy-dev
+            python dev.py test -t scipy.interpolate -v
 
   build_to_wasm_and_upload:
     name: Build LFortran to WASM and Upload
     runs-on: "ubuntu-latest"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -266,7 +324,7 @@ jobs:
     name: Check Debug build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -312,7 +370,7 @@ jobs:
     name: Check Release build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -358,7 +416,7 @@ jobs:
     name: Check Third Party Code Compilation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -458,12 +516,57 @@ jobs:
             ldd ./test_more_inputs
 
             git clean -dfx
-            git checkout -t origin/lf21run
-            git checkout 71fc5a89233873e5606fff8d6e16d3905f36ee42
-            FC=$(pwd)/../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
-            make
+            git checkout -t origin/lf35run
+            git checkout 9de55b77576ea57c70c0651f233971d1e2bd0cae
             curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
+
+            mkdir lf
+            cd lf
+            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+            make VERBOSE=1
+            ln -s ../model.dat .
             ./gpt2
+            ./test_more_inputs
+            ./test_chat
+            ctest -V
+            cd ..
+
+            mkdir lf-fast
+            cd lf-fast
+            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
+            make VERBOSE=1
+            ln -s ../model.dat .
+            ./gpt2
+            ./test_more_inputs
+            ./test_chat
+            ctest -V
+            cd ..
+
+            git clean -dfx
+            git checkout -t origin/namelist
+            git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
+            curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
+
+            mkdir lf
+            cd lf
+            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+            make VERBOSE=1
+            ln -s ../model.dat .
+            ./gpt2
+            ./test_basic_input
+            ./test_more_inputs
+            cd ..
+
+            mkdir lf-fast
+            cd lf-fast
+            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
+            make VERBOSE=1
+            ln -s ../model.dat .
+            ./gpt2
+            ./test_basic_input
+            ./test_more_inputs
+            cd ..
+
 
       - name: Test fpm
         shell: bash -e -x -l {0}
@@ -479,7 +582,7 @@ jobs:
     name: Test LLVM 10
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -521,7 +624,7 @@ jobs:
     name: Test LLVM 14
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -563,7 +666,7 @@ jobs:
     name: Test LLVM 15
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -605,7 +708,7 @@ jobs:
     name: Test integration_tests with GFortran
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -619,7 +722,7 @@ jobs:
     name: Test without LLVM Backend
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -638,7 +741,7 @@ jobs:
     name: Test CPP
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -657,7 +760,7 @@ jobs:
     name: Test WASM
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -707,7 +810,7 @@ jobs:
     name: Test C/C++ backend
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -762,7 +865,7 @@ jobs:
     name: Upload Tarball
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -786,7 +889,7 @@ jobs:
     name: Documentation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 

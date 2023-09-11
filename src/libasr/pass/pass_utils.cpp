@@ -225,7 +225,8 @@ namespace LCompilers {
             ASR::dimension_t* m_dims;
             int ndims;
             PassUtils::get_dim_rank(sibling_type, m_dims, ndims);
-            if( !ASRUtils::is_fixed_size_array(m_dims, ndims) ) {
+            if( !ASRUtils::is_fixed_size_array(m_dims, ndims) &&
+                !ASRUtils::is_dimension_dependent_only_on_arguments(m_dims, ndims) ) {
                 return ASRUtils::TYPE(ASR::make_Allocatable_t(al, sibling_type->base.loc,
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::duplicate_type_with_empty_dims(al, sibling_type))));
@@ -569,14 +570,37 @@ namespace LCompilers {
                         int32_type, bound_type, nullptr));
         }
 
+        bool skip_instantiation(PassOptions pass_options, int64_t id) {
+            if (!pass_options.skip_optimization_func_instantiation.empty()) {
+                for (size_t i=0; i<pass_options.skip_optimization_func_instantiation.size(); i++) {
+                    if (pass_options.skip_optimization_func_instantiation[i] == id) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
 
-        ASR::stmt_t* get_flipsign(ASR::expr_t* arg0, ASR::expr_t* arg1,
-                              Allocator& al, ASR::TranslationUnit_t& unit,
-                              LCompilers::PassOptions& pass_options,
-                              SymbolTable*& current_scope,
-                              const std::function<void (const std::string &, const Location &)> err) {
-            ASR::symbol_t *v = import_generic_procedure("flipsign", "lfortran_intrinsic_optimization",
-                                                        al, unit, pass_options, current_scope, arg0->base.loc);
+        ASR::expr_t* get_flipsign(ASR::expr_t* arg0, ASR::expr_t* arg1,
+            Allocator& al, ASR::TranslationUnit_t& unit, const Location& loc,
+            PassOptions& pass_options) {
+            ASR::ttype_t* type = ASRUtils::expr_type(arg1);
+            int64_t fp_s = static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::FlipSign);
+            if (skip_instantiation(pass_options, fp_s)) {
+                Vec<ASR::expr_t*> args;
+                args.reserve(al, 2);
+                args.push_back(al, arg0);
+                args.push_back(al, arg1);
+                return ASRUtils::EXPR(ASRUtils::make_IntrinsicScalarFunction_t_util(al, loc, fp_s,
+                    args.p, args.n, 0, type, nullptr));
+            }
+            ASRUtils::impl_function instantiate_function =
+            ASRUtils::IntrinsicScalarFunctionRegistry::get_instantiate_function(
+                    static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::FlipSign));
+            Vec<ASR::ttype_t*> arg_types;
+            arg_types.reserve(al, 2);
+            arg_types.push_back(al, ASRUtils::expr_type(arg0));
+            arg_types.push_back(al, ASRUtils::expr_type(arg1));
             Vec<ASR::call_arg_t> args;
             args.reserve(al, 2);
             ASR::call_arg_t arg0_, arg1_;
@@ -584,10 +608,8 @@ namespace LCompilers {
             args.push_back(al, arg0_);
             arg1_.loc = arg1->base.loc, arg1_.m_value = arg1;
             args.push_back(al, arg1_);
-            return ASRUtils::STMT(
-                    ASRUtils::symbol_resolve_external_generic_procedure_without_eval(
-                        arg0->base.loc, v, args, current_scope, al,
-                        err));
+            return instantiate_function(al, loc,
+                unit.m_global_scope, arg_types, type, args, 0);
         }
 
         ASR::expr_t* to_int32(ASR::expr_t* x, ASR::ttype_t* int64type, Allocator& al) {
@@ -649,12 +671,23 @@ namespace LCompilers {
         }
 
         ASR::expr_t* get_fma(ASR::expr_t* arg0, ASR::expr_t* arg1, ASR::expr_t* arg2,
-            Allocator& al, ASR::TranslationUnit_t& unit, Location& loc){
+            Allocator& al, ASR::TranslationUnit_t& unit, Location& loc,
+            PassOptions& pass_options) {
+            int64_t fma_id = static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::FMA);
+            ASR::ttype_t* type = ASRUtils::expr_type(arg0);
+            if (skip_instantiation(pass_options, fma_id)) {
+                Vec<ASR::expr_t*> args;
+                args.reserve(al, 3);
+                args.push_back(al, arg0);
+                args.push_back(al, arg1);
+                args.push_back(al, arg2);
+                return ASRUtils::EXPR(ASRUtils::make_IntrinsicScalarFunction_t_util(al, loc, fma_id,
+                    args.p, args.n, 0, type, nullptr));
+            }
             ASRUtils::impl_function instantiate_function =
             ASRUtils::IntrinsicScalarFunctionRegistry::get_instantiate_function(
                     static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::FMA));
             Vec<ASR::ttype_t*> arg_types;
-            ASR::ttype_t* type = ASRUtils::expr_type(arg0);
             arg_types.reserve(al, 3);
             arg_types.push_back(al, ASRUtils::expr_type(arg0));
             arg_types.push_back(al, ASRUtils::expr_type(arg1));
@@ -770,21 +803,35 @@ namespace LCompilers {
         }
 
         ASR::expr_t* get_sign_from_value(ASR::expr_t* arg0, ASR::expr_t* arg1,
-            Allocator& al, ASR::TranslationUnit_t& unit, LCompilers::PassOptions& pass_options,
-            SymbolTable*& current_scope, Location& loc,
-            const std::function<void (const std::string &, const Location &)> err) {
-            ASR::symbol_t *v = import_generic_procedure("sign_from_value", "lfortran_intrinsic_optimization",
-                                                        al, unit, pass_options, current_scope, arg0->base.loc);
+            Allocator& al, ASR::TranslationUnit_t& unit, Location& loc,
+            PassOptions& pass_options) {
+            int64_t sfv_id = static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SignFromValue);
+            ASR::ttype_t* type = ASRUtils::expr_type(arg0);
+            if (skip_instantiation(pass_options, sfv_id)) {
+                Vec<ASR::expr_t*> args;
+                args.reserve(al, 2);
+                args.push_back(al, arg0);
+                args.push_back(al, arg1);
+                return ASRUtils::EXPR(ASRUtils::make_IntrinsicScalarFunction_t_util(al, loc, sfv_id,
+                    args.p, args.n, 0, type, nullptr));
+            }
+            ASRUtils::impl_function instantiate_function =
+            ASRUtils::IntrinsicScalarFunctionRegistry::get_instantiate_function(
+                    static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::FMA));
+            Vec<ASR::ttype_t*> arg_types;
+            arg_types.reserve(al, 2);
+            arg_types.push_back(al, ASRUtils::expr_type(arg0));
+            arg_types.push_back(al, ASRUtils::expr_type(arg1));
+
             Vec<ASR::call_arg_t> args;
-            args.reserve(al, 2);
+            args.reserve(al, 3);
             ASR::call_arg_t arg0_, arg1_;
             arg0_.loc = arg0->base.loc, arg0_.m_value = arg0;
             args.push_back(al, arg0_);
             arg1_.loc = arg1->base.loc, arg1_.m_value = arg1;
             args.push_back(al, arg1_);
-            return ASRUtils::EXPR(
-                        ASRUtils::symbol_resolve_external_generic_procedure_without_eval(
-                        loc, v, args, current_scope, al, err));
+            return instantiate_function(al, loc,
+                unit.m_global_scope, arg_types, type, args, 0);
         }
 
         Vec<ASR::stmt_t*> replace_doloop(Allocator &al, const ASR::DoLoop_t &loop,

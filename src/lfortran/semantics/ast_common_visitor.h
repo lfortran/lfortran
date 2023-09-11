@@ -731,6 +731,8 @@ public:
         {"min", {IntrinsicSignature({}, 2, 100)}},
         {"merge", {IntrinsicSignature({}, 3, 3)}},
         {"sign", {IntrinsicSignature({}, 2, 2)}},
+        {"aint", {IntrinsicSignature({}, 1, 2)}},
+        {"atan2", {IntrinsicSignature({}, 2, 2)}},
         {"shape", {IntrinsicSignature({"kind"}, 1, 2)}},
     };
 
@@ -804,7 +806,7 @@ public:
     std::map<int64_t, std::string> format_statements;
 
     // fields for generics
-    std::map<std::string, std::string> context_map;
+    std::map<std::string, std::string> context_map;     // TODO: refactor treatment of context map
     std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types;
     std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols;
 
@@ -1993,7 +1995,13 @@ public:
                             bool is_char_type = ASR::is_a<ASR::Character_t>(*v->m_type);
                             process_dims(al, dims, x.m_syms[i].m_dim, x.m_syms[i].n_dim, is_compile_time, is_char_type);
 
-                            if (!ASRUtils::ttype_set_dimensions(&(v->m_type), dims.data(), dims.size(), al)) {
+                            bool is_star_dimension = false;
+
+                            if (x.m_syms[i].n_dim > 0) {
+                                is_star_dimension = (x.m_syms[i].m_dim[0].m_end_star == AST::dimension_typeType::DimensionStar);
+                            }
+
+                            if (!ASRUtils::ttype_set_dimensions(&(v->m_type), dims.data(), dims.size(), al, ASR::abiType::Source, false, is_star_dimension)) {
                                 throw SemanticError("Cannot set dimension for variable of non-numerical type", x.base.base.loc);
                             }
                             SetChar variable_dependencies_vec;
@@ -2024,6 +2032,7 @@ public:
                 bool implicit_save = false;
                 bool is_compile_time = false;
                 bool is_implicitly_declared = false;
+                bool is_dimension_star = false;
                 AST::var_sym_t &s = x.m_syms[i];
                 std::string sym = to_lower(s.m_name);
                 bool is_external = check_is_external(sym);
@@ -2168,6 +2177,12 @@ public:
                                     x.base.base.loc);
                         }
                     }
+                    if (!s.m_initializer && s_intent == ASRUtils::intent_local
+                            && storage_type == ASR::storage_typeType::Parameter) {
+                        throw SemanticError("Variable `" + std::string(s.m_name) +
+                        "` with parameter attribute is not initialised",
+                        x.base.base.loc);
+                    }
                 }
                 if (s.n_dim > 0) {
                     if (dims.size() > 0) {
@@ -2180,12 +2195,15 @@ public:
                         );
                         dims.n = 0;
                     }
+                    if (s.m_dim[0].m_end_star == AST::dimension_typeType::DimensionStar) {
+                        is_dimension_star = true;
+                    }
                     process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type);
                 }
                 ASR::symbol_t *type_declaration;
                 ASR::ttype_t *type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer,
                     is_allocatable, dims, type_declaration, current_procedure_abi_type,
-                    s_intent != ASRUtils::intent_local);
+                    s_intent != ASRUtils::intent_local, is_dimension_star);
                 current_variable_type_ = type;
 
                 ASR::expr_t* init_expr = nullptr;
@@ -2453,7 +2471,7 @@ public:
     ASR::ttype_t* determine_type(const Location &loc, std::string& sym,
         AST::decl_attribute_t* decl_attribute, bool is_pointer,
         bool is_allocatable, Vec<ASR::dimension_t>& dims,
-        ASR::symbol_t *&type_declaration, ASR::abiType abi, bool is_argument=false) {
+        ASR::symbol_t *&type_declaration, ASR::abiType abi, bool is_argument=false, bool is_dimension_star=false) {
         AST::AttrType_t *sym_type = AST::down_cast<AST::AttrType_t>(decl_attribute);
         ASR::ttype_t *type;
         type_declaration = nullptr;
@@ -2477,7 +2495,7 @@ public:
                 }
             }
             type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, a_kind));
-            type = ASRUtils::make_Array_t_util(al, loc, type, dims.p, dims.size(), abi, is_argument);
+            type = ASRUtils::make_Array_t_util(al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
             if (is_pointer) {
                 type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                     ASRUtils::type_get_past_allocatable(type)));
@@ -2485,7 +2503,7 @@ public:
         } else if (sym_type->m_type == AST::decl_typeType::TypeDoublePrecision) {
             a_kind = 8;
             type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, a_kind));
-            type = ASRUtils::make_Array_t_util(al, loc, type, dims.p, dims.size(), abi, is_argument);
+            type = ASRUtils::make_Array_t_util(al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
             if (is_pointer) {
                 type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                     ASRUtils::type_get_past_allocatable(type)));
@@ -2493,7 +2511,7 @@ public:
         } else if (sym_type->m_type == AST::decl_typeType::TypeInteger) {
             type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind));
             type = ASRUtils::make_Array_t_util(
-                al, loc, type, dims.p, dims.size(), abi, is_argument);
+                al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
             if (is_pointer) {
                 type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                     ASRUtils::type_get_past_allocatable(type)));
@@ -2501,7 +2519,7 @@ public:
         } else if (sym_type->m_type == AST::decl_typeType::TypeLogical) {
             type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
             type = ASRUtils::make_Array_t_util(
-                al, loc, type, dims.p, dims.size(), abi, is_argument);
+                al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
             if (is_pointer) {
                 type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                     ASRUtils::type_get_past_allocatable(type)));
@@ -2509,7 +2527,7 @@ public:
         } else if (sym_type->m_type == AST::decl_typeType::TypeComplex) {
             type = ASRUtils::TYPE(ASR::make_Complex_t(al, loc, a_kind));
             type = ASRUtils::make_Array_t_util(
-                al, loc, type, dims.p, dims.size(), abi, is_argument);
+                al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
             if (is_pointer) {
                 type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                     ASRUtils::type_get_past_allocatable(type)));
@@ -2518,7 +2536,7 @@ public:
             a_kind = 8;
             type = ASRUtils::TYPE(ASR::make_Complex_t(al, loc, a_kind));
             type = ASRUtils::make_Array_t_util(
-                al, loc, type, dims.p, dims.size(), abi, is_argument);
+                al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
             if (is_pointer) {
                 type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                     ASRUtils::type_get_past_allocatable(type)));
@@ -4360,6 +4378,7 @@ public:
         double_precision_intrinsics["dsin"] = "sin";
         double_precision_intrinsics["dcos"] = "cos";
         double_precision_intrinsics["dtan"] = "tan";
+        double_precision_intrinsics["datan2"] = "atan2";
 
         double_precision_intrinsics["dsign"] = "sign";
     }
@@ -5332,6 +5351,13 @@ public:
 
             asr = ASR::make_ComplexBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
 
+        } else if (ASRUtils::is_character(*dest_type)) {
+            diag.semantic_error_label(
+                            "Binary numeric operators cannot be used on strings",
+                            {x.base.base.loc},
+                            "help: use '//' for string concatenation"
+                        );
+            throw SemanticAbort();
         } else if (ASRUtils::is_type_parameter(*left_type) || ASRUtils::is_type_parameter(*right_type)) {
             // if overloaded is not found, then reject
             if (overloaded == nullptr) {

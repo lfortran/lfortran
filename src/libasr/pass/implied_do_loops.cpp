@@ -27,16 +27,17 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
     ASR::expr_t* result_var;
     int result_counter;
     std::map<ASR::expr_t*, ASR::expr_t*>& resultvar2value;
-    bool realloc_lhs;
+    bool realloc_lhs, allocate_target;
 
     ReplaceArrayConstant(Allocator& al_, Vec<ASR::stmt_t*>& pass_result_,
         bool& remove_original_statement_,
         std::map<ASR::expr_t*, ASR::expr_t*>& resultvar2value_,
-        bool realloc_lhs_) :
+        bool realloc_lhs_, bool allocate_target_) :
     al(al_), pass_result(pass_result_),
     remove_original_statement(remove_original_statement_),
     current_scope(nullptr), result_var(nullptr), result_counter(0),
-    resultvar2value(resultvar2value_), realloc_lhs(realloc_lhs_) {}
+    resultvar2value(resultvar2value_), realloc_lhs(realloc_lhs_),
+    allocate_target(allocate_target_) {}
 
     ASR::expr_t* get_ImpliedDoLoop_size(ASR::ImpliedDoLoop_t* implied_doloop) {
         const Location& loc = implied_doloop->base.base.loc;
@@ -226,16 +227,25 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         result_counter += 1;
         *current_expr = result_var;
 
+        Vec<ASR::alloc_arg_t> alloc_args;
+        alloc_args.reserve(al, 1);
+        ASR::alloc_arg_t arg;
+        arg.m_len_expr = nullptr;
+        arg.m_type = nullptr;
+        arg.m_dims = dims.p;
+        arg.n_dims = dims.size();
         if( is_allocatable ) {
-            Vec<ASR::alloc_arg_t> alloc_args;
-            alloc_args.reserve(al, 1);
-            ASR::alloc_arg_t arg;
-            arg.m_len_expr = nullptr;
-            arg.m_type = nullptr;
             arg.loc = result_var->base.loc;
             arg.m_a = result_var;
-            arg.m_dims = dims.p;
-            arg.n_dims = dims.size();
+            alloc_args.push_back(al, arg);
+            ASR::stmt_t* allocate_stmt = ASRUtils::STMT(ASR::make_Allocate_t(
+                al, loc, alloc_args.p, alloc_args.size(), nullptr, nullptr, nullptr));
+            pass_result.push_back(al, allocate_stmt);
+        }
+        if ( allocate_target && realloc_lhs ) {
+            allocate_target = false;
+            arg.loc = result_var_copy->base.loc;
+            arg.m_a = result_var_copy;
             alloc_args.push_back(al, arg);
             ASR::stmt_t* allocate_stmt = ASRUtils::STMT(ASR::make_Allocate_t(
                 al, loc, alloc_args.p, alloc_args.size(), nullptr, nullptr, nullptr));
@@ -271,7 +281,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
     private:
 
         Allocator& al;
-        bool remove_original_statement;
+        bool remove_original_statement, allocate_target = false;
         ReplaceArrayConstant replacer;
         Vec<ASR::stmt_t*> pass_result;
         Vec<ASR::stmt_t*>* parent_body;
@@ -281,8 +291,8 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
 
         ArrayConstantVisitor(Allocator& al_, bool realloc_lhs_) :
         al(al_), remove_original_statement(false),
-        replacer(al_, pass_result,
-            remove_original_statement, resultvar2value, realloc_lhs_),
+        replacer(al_, pass_result, remove_original_statement,
+            resultvar2value, realloc_lhs_, allocate_target),
         parent_body(nullptr) {
             pass_result.n = 0;
             pass_result.reserve(al, 0);
@@ -344,6 +354,10 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 return ;
             }
 
+            if (ASRUtils::is_allocatable(x.m_target) &&
+                    ASR::is_a<ASR::ArrayConstant_t>(*x.m_value)) {
+                allocate_target = true;
+            }
             replacer.result_var = x.m_target;
             resultvar2value[replacer.result_var] = x.m_value;
             ASR::expr_t** current_expr_copy_9 = current_expr;

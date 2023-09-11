@@ -521,12 +521,12 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al,
 
     ASR::symbol_t *new_symbol = nullptr;
     if( return_var ) {
-        new_symbol = make_Function_t(new_name, fn_symtab, dep, args,
-            body, return_var, Source, Implementation, nullptr);
+        new_symbol = make_ASR_Function_t(new_name, fn_symtab, dep, args,
+            body, return_var, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
     } else {
         new_symbol = make_Function_Without_ReturnVar_t(
             new_name, fn_symtab, dep, args,
-            body, Source, Implementation, nullptr);
+            body, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
     }
     scope->add_symbol(new_name, new_symbol);
     return builder.Call(new_symbol, new_args, return_type, nullptr);
@@ -739,8 +739,8 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
             });
     }
     body.push_back(al, Return());
-    ASR::symbol_t *fn_sym = make_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, Source, Implementation, nullptr);
+    ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
     scope->add_symbol(fn_name, fn_sym);
     return b.Call(fn_sym, m_args, return_type, nullptr);
 }
@@ -825,8 +825,8 @@ namespace Shape {
         }));
         body.push_back(al, Return());
 
-        ASR::symbol_t *f_sym = make_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, Source, Implementation, nullptr);
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
@@ -1100,12 +1100,12 @@ namespace Any {
 
         ASR::symbol_t *new_symbol = nullptr;
         if( return_var ) {
-            new_symbol = make_Function_t(new_name, fn_symtab, dep, args,
-                body, return_var, Source, Implementation, nullptr);
+            new_symbol = make_ASR_Function_t(new_name, fn_symtab, dep, args,
+                body, return_var, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         } else {
             new_symbol = make_Function_Without_ReturnVar_t(
                 new_name, fn_symtab, dep, args,
-                body, Source, Implementation, nullptr);
+                body, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         }
         scope->add_symbol(new_name, new_symbol);
         return builder.Call(new_symbol, new_args, logical_return_type, nullptr);
@@ -1388,8 +1388,8 @@ namespace Merge {
                 if_body.p, if_body.n, else_body.p, else_body.n)));
         }
 
-        ASR::symbol_t *new_symbol = make_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, Source, Implementation, nullptr);
+        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, new_symbol);
         return b.Call(new_symbol, new_args, return_type, nullptr);
     }
@@ -1602,8 +1602,8 @@ namespace MatMul {
          *                 [ 3, 4 ] ▼
          */
         declare_basic_variables("_lcompilers_matmul");
-        fill_func_arg("matrix_a", arg_types[0]);
-        fill_func_arg("matrix_b", arg_types[1]);
+        fill_func_arg("matrix_a", duplicate_type_with_empty_dims(al, arg_types[0]));
+        fill_func_arg("matrix_b", duplicate_type_with_empty_dims(al, arg_types[1]));
         ASR::expr_t *result = declare("result", return_type, Out);
         args.push_back(al, result);
         ASR::expr_t *i = declare("i", int32, Local);
@@ -1670,8 +1670,8 @@ namespace MatMul {
             })
         }));
         body.push_back(al, Return());
-        ASR::symbol_t *fn_sym = make_Function_t(fn_name, fn_symtab, dep, args,
-                body, nullptr, Source, Implementation, nullptr);
+        ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+                body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, fn_sym);
         return b.Call(fn_sym, m_args, return_type, nullptr);
     }

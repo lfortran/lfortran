@@ -81,11 +81,9 @@ namespace LCompilers {
                                 Allocator& al);
 
 
-        ASR::stmt_t* get_flipsign(ASR::expr_t* arg0, ASR::expr_t* arg1,
-                                  Allocator& al, ASR::TranslationUnit_t& unit,
-                                  LCompilers::PassOptions& pass_options,
-                                  SymbolTable*& current_scope,
-                                  const std::function<void (const std::string &, const Location &)> err);
+        ASR::expr_t* get_flipsign(ASR::expr_t* arg0, ASR::expr_t* arg1,
+                             Allocator& al, ASR::TranslationUnit_t& unit, const Location& loc,
+                             PassOptions& pass_options);
 
         ASR::expr_t* to_int32(ASR::expr_t* x, ASR::ttype_t* int32type, Allocator& al);
 
@@ -97,13 +95,12 @@ namespace LCompilers {
             ASR::intentType var_intent=ASR::intentType::Local);
 
         ASR::expr_t* get_fma(ASR::expr_t* arg0, ASR::expr_t* arg1, ASR::expr_t* arg2,
-                             Allocator& al, ASR::TranslationUnit_t& unit, Location& loc);
+                             Allocator& al, ASR::TranslationUnit_t& unit, Location& loc,
+                             PassOptions& pass_options);
 
         ASR::expr_t* get_sign_from_value(ASR::expr_t* arg0, ASR::expr_t* arg1,
                                          Allocator& al, ASR::TranslationUnit_t& unit,
-                                         LCompilers::PassOptions& pass_options,
-                                         SymbolTable*& current_scope, Location& loc,
-                                         const std::function<void (const std::string &, const Location &)> err);
+                                         Location& loc, PassOptions& pass_options);
 
         ASR::stmt_t* get_vector_copy(ASR::expr_t* array0, ASR::expr_t* array1, ASR::expr_t* start,
             ASR::expr_t* end, ASR::expr_t* step, ASR::expr_t* vector_length,
