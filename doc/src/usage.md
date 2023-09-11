@@ -14,7 +14,7 @@ The LFortran compiler consists of the following components:
 * The capability to read additional module definitions which define
   the interfaces to external libraries such as OpenMPI.
 * Generation of executable code with the LLVM compiler infrastructure.
-* Generation of C++, WebAssembly or Julia code.
+* Generation of C, C++, WebAssembly or Julia code.
 * Source file formatting (`lfortran fmt`).
 
 ## Standards
