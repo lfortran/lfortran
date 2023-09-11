@@ -37,60 +37,60 @@ The extensions are currently in development and are planned to include:
 LFortran supports an interactive mode; just run the `lfortran` command
 to start it.
 
-# Invoking LFortran
+## Invoking LFortran
 
 The LFortran compiler supports numerous command-line flags to select
 compilation options, output options, link options and so on.
 
 ### Compiler information
 
-* --version, Show the current version
-* --print-targets, Print the registered CPU targets
+* `--print-targets`, Print the registered CPU targets
+* `--version`, Show the current version
 
 ### Source code format
 
-* --fixed-form, Parse the file assuming Fortran 66 format (6 spaces)
-* --fixed-form-infer, Use heuristics to infer if a file is in fixed form
+* `--fixed-form`, Parse the file assuming Fortran 66 format (6 spaces)
+* `--fixed-form-infer`, Use heuristics to infer if a file is in fixed form
 
 ### Source code processing
 
-* -E, Preprocess only; do not compile, assemble or link
-* --cpp, Enable C preprocessing
+* `--cpp`, Enable C preprocessing
+* `-E`, Preprocess only; do not compile, assemble or link
 
 ### Other inputs
 
-* -I <value>, Include path for `include` statements
-* -L <value>, Library path for shared libraries
-* -l <value>, Link library naming a linkable shared library
-* -D, Define <macro>=<value> (or 1 if <value> omitted)
+* `-D <macro>=<value>` Define a macro (or 1 if <value> omitted)
+* `-I <value>`, Include path for `include` statements
+* `-L <value>`, Library path for shared libraries
+* `-l <value>`, Link library naming a linkable shared library
 
 ### Compiler feature selections
 
-* --fast, Best performance (disable strict standard compliance)
-* --target <value>, Generate code for the given target
-* --implicit-typing, Allow implicit typing
-* --implicit-interface, Allow implicit interface
-* --implicit-argument-casting, Allow implicit argument casting
-* --realloc-lhs, Reallocate left hand side automatically
-* --openmp, Enable OpenMP
+* `--fast`, Best performance (disable strict standard compliance)
+* `--implicit-argument-casting`, Allow implicit argument casting
+* `--implicit-interface`, Allow implicit interface
+* `--implicit-typing`, Allow implicit typing
+* `--openmp`, Enable OpenMP
+* `--print-leading-space`, Print leading white space if format is unspecified
+* `--realloc-lhs`, Reallocate left hand side automatically
+* `--target <value>`, Generate code for the given target
 
 ### Compiler text outputs
 
-* -S, Emit assembly, do not assemble or link
-* -v, Be more verbose
-* --time-report, Show compilation time report
-* --no-warnings, Turn off all warnings
-* --no-error-banner, Turn off error banner
-* --error-format <value>, Control how errors are produced (human, short)
+* `--error-format <value>`, Control how errors are produced (human, short)
+* `--no-error-banner`, Turn off error banner
+* `--no-warnings`, Turn off all warnings
+* `-S`, Emit assembly, do not assemble or link
+* `--time-report`, Show compilation time report
+* `-v`, Be more verbose
 
 ### Compiler binary outputs
 
-* -c, Compile and assemble, do not link
-* -o <value>, Specify the file to place the output into
-* -J <value>, Where to save mod files
-* -S, Emit assembly, do not assemble or link
-* --static, Create a static executable
-* --generate-object-code, Generate object code into .o files
+* `-c`, Compile and assemble, do not link
+* `--generate-object-code`, Generate object code into .o files
+* `-J <value>`, Where to save mod files
+* `-o <value>`, Specify the file to place the output into
+* `--static`, Create a static executable
 
 ### Compiler debugging
 
@@ -122,7 +122,7 @@ Here is a simple example with a module:
 ```
 lfortran -c varray.f90
 lfortran usev.f90
-  sum is    72.0000000
+ sum is    7.20000000e+01
 
 cat varray.f90
 module varray
@@ -150,7 +150,7 @@ The compile command for the module requires `-c` to avoid automatic running
 of the code.
 
 
-# Formatting Fortran source files
+## Formatting Fortran source files
 
 The `lfortran` compiler will automatically format source files with the `fmt`
 option.  You can select auto-indent for modules, and in-place update of
@@ -174,7 +174,7 @@ module varray
 end module varray
 ```
 
-# Selecting the C Compiler
+## Selecting the C Compiler
 
 By default LFortran uses the `clang` compiler.  On some systems
 the compiler has a version number or spelling difference.  The compiler
