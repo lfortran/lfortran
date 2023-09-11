@@ -132,15 +132,13 @@ end module varray
 cat usev.f90
 program usev
     use varray
+    real, allocatable, dimension(:) :: A
     integer :: i
-
     nsize = 8
     allocate(A(nsize))
-
     do i = 1, nsize
         A(i) = 2.0*i
     end do
-
     print *, " sum is ", (A(1)+A(nsize))*nsize/2.0
     deallocate(A)
 end program usev
