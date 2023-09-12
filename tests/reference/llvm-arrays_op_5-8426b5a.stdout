@@ -441,8 +441,8 @@ define i32 @main(i32 %0, i8** %1) {
   %__libasr__created__var__5__integer_unary_op_res = alloca [4 x i32], align 4
   %__libasr__created__var__6__implicit_cast_res = alloca [4 x %complex_4], align 8
   %__libasr__created__var__7__complex_bin_op_res = alloca [4 x %complex_4], align 8
+  %__libasr_created_scalar_auxiliary_variable = alloca %complex_4, align 8
   %__libasr_created_scalar_auxiliary_variable1 = alloca %complex_4, align 8
-  %__libasr_created_scalar_auxiliary_variable_ = alloca %complex_4, align 8
   %a = alloca [4 x i32], align 4
   %b = alloca [4 x i32], align 4
   %c = alloca [4 x %complex_4], align 8
@@ -1187,7 +1187,7 @@ loop.end164:                                      ; preds = %ifcont108
   store float 0.000000e+00, float* %184, align 4
   store float 1.000000e+00, float* %185, align 4
   %186 = load %complex_4, %complex_4* %183, align 4
-  store %complex_4 %186, %complex_4* %__libasr_created_scalar_auxiliary_variable_, align 4
+  store %complex_4 %186, %complex_4* %__libasr_created_scalar_auxiliary_variable, align 4
   br i1 true, label %then166, label %else167
 
 then166:                                          ; preds = %loop.end164
@@ -1471,7 +1471,7 @@ loop.body242:                                     ; preds = %ifcont241
   %224 = mul i32 4, %223
   %225 = add i32 %222, %224
   %226 = getelementptr [4 x %complex_4], [4 x %complex_4]* %__libasr__created__var__2__complex_bin_op_res, i32 0, i32 %225
-  %227 = load %complex_4, %complex_4* %__libasr_created_scalar_auxiliary_variable_, align 4
+  %227 = load %complex_4, %complex_4* %__libasr_created_scalar_auxiliary_variable, align 4
   %228 = load i32, i32* %__1_v, align 4
   %229 = load i32, i32* %__2_v, align 4
   %230 = load i32, i32* %__3_v, align 4

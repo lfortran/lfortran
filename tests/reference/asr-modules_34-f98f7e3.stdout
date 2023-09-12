@@ -129,7 +129,7 @@
                                     (SymbolTable
                                         5
                                         {
-                                            associate_block_:
+                                            associate_block:
                                                 (AssociateBlock
                                                     (SymbolTable
                                                         6
@@ -193,7 +193,7 @@
                                                                     .false.
                                                                 )
                                                         })
-                                                    associate_block_
+                                                    associate_block
                                                     [(=>
                                                         (Var 6 ii)
                                                         (Var 5 i)
@@ -291,7 +291,7 @@
                                     [1_to_string]
                                     [(Var 5 package)]
                                     [(AssociateBlockCall
-                                        5 associate_block_
+                                        5 associate_block
                                     )
                                     (ImplicitDeallocate
                                         [(Var 5 version)]

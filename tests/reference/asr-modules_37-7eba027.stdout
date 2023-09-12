@@ -41,7 +41,7 @@
                                                     ptr
                                                     Public
                                                 ),
-                                            associate_block_:
+                                            associate_block:
                                                 (AssociateBlock
                                                     (SymbolTable
                                                         12
@@ -87,7 +87,7 @@
                                                                     .false.
                                                                 )
                                                         })
-                                                    associate_block_
+                                                    associate_block
                                                     [(=
                                                         (Var 12 target)
                                                         (StructInstanceMember
@@ -336,7 +336,7 @@
                                         )
                                         ())
                                         [(AssociateBlockCall
-                                            9 associate_block_
+                                            9 associate_block
                                         )]
                                     )
                                     (ImplicitDeallocate

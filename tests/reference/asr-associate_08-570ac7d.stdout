@@ -161,7 +161,7 @@
                                                     type_2
                                                     Public
                                                 ),
-                                            associate_block_:
+                                            associate_block:
                                                 (AssociateBlock
                                                     (SymbolTable
                                                         8
@@ -183,7 +183,7 @@
                                                                     .false.
                                                                 )
                                                         })
-                                                    associate_block_
+                                                    associate_block
                                                     [(=
                                                         (Var 8 target)
                                                         (StructInstanceMember
@@ -305,7 +305,7 @@
                                         ()
                                     )
                                     (AssociateBlockCall
-                                        5 associate_block_
+                                        5 associate_block
                                     )]
                                     ()
                                     Public
@@ -328,7 +328,7 @@
                                                     type_2
                                                     Public
                                                 ),
-                                            associate_block_:
+                                            associate_block:
                                                 (AssociateBlock
                                                     (SymbolTable
                                                         9
@@ -372,7 +372,7 @@
                                                                     .false.
                                                                 )
                                                         })
-                                                    associate_block_
+                                                    associate_block
                                                     [(=
                                                         (Var 9 target)
                                                         (ArrayItem
@@ -510,7 +510,7 @@
                                         ()
                                     )
                                     (AssociateBlockCall
-                                        6 associate_block_
+                                        6 associate_block
                                     )]
                                     ()
                                     Public

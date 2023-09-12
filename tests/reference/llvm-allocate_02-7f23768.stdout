@@ -91,10 +91,10 @@ define i32 @whole_square(%array** %a, %array** %b, %array** %c) {
   %41 = add i32 %40, 1
   %42 = mul i32 1, %41
   %__libasr__created__var__4__integer_bin_op_res = alloca i32, i32 %42, align 4
+  %__libasr_created_scalar_auxiliary_variable = alloca i32, align 4
   %__libasr_created_scalar_auxiliary_variable1 = alloca i32, align 4
   %__libasr_created_scalar_auxiliary_variable2 = alloca i32, align 4
   %__libasr_created_scalar_auxiliary_variable3 = alloca i32, align 4
-  %__libasr_created_scalar_auxiliary_variable_ = alloca i32, align 4
   %a_2 = alloca %array*, align 8
   store %array* null, %array** %a_2, align 8
   %arr_desc4 = alloca %array, align 8
@@ -684,7 +684,7 @@ loop.body18:                                      ; preds = %loop.head17
   br label %loop.head17
 
 loop.end19:                                       ; preds = %loop.head17
-  store i32 2, i32* %__libasr_created_scalar_auxiliary_variable_, align 4
+  store i32 2, i32* %__libasr_created_scalar_auxiliary_variable, align 4
   %475 = load %array*, %array** %a, align 8
   %476 = getelementptr %array, %array* %475, i32 0, i32 2
   %477 = load %dimension_descriptor*, %dimension_descriptor** %476, align 8
@@ -785,7 +785,7 @@ loop.body21:                                      ; preds = %loop.head20
   %557 = getelementptr %array, %array* %543, i32 0, i32 0
   %558 = load i32*, i32** %557, align 8
   %559 = getelementptr inbounds i32, i32* %558, i32 %556
-  %560 = load i32, i32* %__libasr_created_scalar_auxiliary_variable_, align 4
+  %560 = load i32, i32* %__libasr_created_scalar_auxiliary_variable, align 4
   %561 = load i32, i32* %__1_v, align 4
   %562 = load %array*, %array** %a, align 8
   %563 = getelementptr %array, %array* %562, i32 0, i32 2
