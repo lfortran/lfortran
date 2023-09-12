@@ -1,4 +1,4 @@
-program intrinsics_72
+program intrinsics_02
     real(8) :: x, y, datan2
     x = 2.33D0
     y = 3.41D0
