@@ -1265,6 +1265,14 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
             int64_t int_value = ASR::down_cast<ASR::IntegerConstant_t>(
                                 ASRUtils::expr_value(a_arg))->m_n;
             value = ASR::down_cast<ASR::expr_t>(ASR::make_UnsignedIntegerConstant_t(al, a_loc, int_value, a_type));
+        } else if (a_kind == ASR::cast_kindType::UnsignedIntegerToInteger) {
+            int64_t int_value = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(
+                                ASRUtils::expr_value(a_arg))->m_n;
+            value = ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, a_loc, int_value, a_type));
+        } else if (a_kind == ASR::cast_kindType::UnsignedIntegerToUnsignedInteger) {
+            int64_t int_value = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(
+                                ASRUtils::expr_value(a_arg))->m_n;
+            value = ASR::down_cast<ASR::expr_t>(ASR::make_UnsignedIntegerConstant_t(al, a_loc, int_value, a_type));
         } else if (a_kind == ASR::cast_kindType::IntegerToLogical) {
             // TODO: implement
         } else if (a_kind == ASR::cast_kindType::ComplexToComplex) {
@@ -1337,7 +1345,7 @@ ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
     return original_sym;
 }
 
-ASR::asr_t* make_Binop_util(Allocator &al, const Location& loc, ASR::binopType binop, 
+ASR::asr_t* make_Binop_util(Allocator &al, const Location& loc, ASR::binopType binop,
                         ASR::expr_t* lexpr, ASR::expr_t* rexpr, ASR::ttype_t* ttype) {
     switch (ttype->type) {
         case ASR::ttypeType::Real: {
@@ -1353,11 +1361,11 @@ ASR::asr_t* make_Binop_util(Allocator &al, const Location& loc, ASR::binopType b
                 ASRUtils::duplicate_type(al, ttype), nullptr);
         }
         default:
-            throw LCompilersException("Not implemented " + std::to_string(ttype->type)); 
+            throw LCompilersException("Not implemented " + std::to_string(ttype->type));
     }
 }
 
-ASR::asr_t* make_Cmpop_util(Allocator &al, const Location& loc, ASR::cmpopType cmpop, 
+ASR::asr_t* make_Cmpop_util(Allocator &al, const Location& loc, ASR::cmpopType cmpop,
                         ASR::expr_t* lexpr, ASR::expr_t* rexpr, ASR::ttype_t* ttype) {
     ASR::ttype_t* expr_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
     switch (ttype->type) {
@@ -1374,7 +1382,7 @@ ASR::asr_t* make_Cmpop_util(Allocator &al, const Location& loc, ASR::cmpopType c
             return ASR::make_StringCompare_t(al, loc, lexpr, cmpop, rexpr, expr_type, nullptr);
         }
         default:
-            throw LCompilersException("Not implemented " + std::to_string(ttype->type)); 
+            throw LCompilersException("Not implemented " + std::to_string(ttype->type));
     }
 }
 

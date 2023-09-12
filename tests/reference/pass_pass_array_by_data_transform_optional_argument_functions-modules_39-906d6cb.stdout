@@ -66,6 +66,22 @@
                                     (SymbolTable
                                         7
                                         {
+                                            __libasr_created_variable_:
+                                                (Variable
+                                                    7
+                                                    __libasr_created_variable_
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 1 ())
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
                                             __libasr_created_variable_1:
                                                 (Variable
                                                     7
@@ -86,22 +102,6 @@
                                                 (Variable
                                                     7
                                                     __libasr_created_variable_2
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Character 1 1 ())
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            __libasr_created_variable__:
-                                                (Variable
-                                                    7
-                                                    __libasr_created_variable__
                                                     []
                                                     Local
                                                     ()
@@ -147,7 +147,7 @@
                                                 ".gitignore"
                                                 (Character 1 10 ())
                                             ))
-                                            ((Var 7 __libasr_created_variable__))
+                                            ((Var 7 __libasr_created_variable_))
                                             ((LogicalConstant
                                                 .false.
                                                 (Logical 4)

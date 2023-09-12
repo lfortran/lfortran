@@ -54,10 +54,10 @@
                                                     (SymbolTable
                                                         6
                                                         {
-                                                            __libasr_created_variable__:
+                                                            __libasr_created_variable_:
                                                                 (Variable
                                                                     6
-                                                                    __libasr_created_variable__
+                                                                    __libasr_created_variable_
                                                                     []
                                                                     Local
                                                                     ()
@@ -185,7 +185,7 @@
                                                                 5 resize
                                                                 ()
                                                                 [((Var 6 stack))
-                                                                ((Var 6 __libasr_created_variable__))
+                                                                ((Var 6 __libasr_created_variable_))
                                                                 ((LogicalConstant
                                                                     .false.
                                                                     (Logical 4)

@@ -107,7 +107,7 @@ define i32 @main(i32 %0, i8** %1) {
   %__libasr__created__var__7__integer_bin_op_res = alloca [4 x i32], align 4
   %__libasr__created__var__8__implicit_cast_res = alloca [4 x float], align 4
   %__libasr__created__var__9__real_bin_op_res = alloca [4 x float], align 4
-  %__libasr_created_scalar_auxiliary_variable_ = alloca float, align 4
+  %__libasr_created_scalar_auxiliary_variable = alloca float, align 4
   %a = alloca [4 x i32], align 4
   %b = alloca [4 x i32], align 4
   %c = alloca [4 x float], align 4
@@ -1484,7 +1484,7 @@ loop.body249:                                     ; preds = %ifcont248
   br label %loop.head244
 
 loop.end250:                                      ; preds = %ifcont248
-  store float 1.000000e+00, float* %__libasr_created_scalar_auxiliary_variable_, align 4
+  store float 1.000000e+00, float* %__libasr_created_scalar_auxiliary_variable, align 4
   br i1 true, label %then252, label %else253
 
 then252:                                          ; preds = %loop.end250
@@ -1544,7 +1544,7 @@ loop.body264:                                     ; preds = %ifcont263
   %585 = add i32 0, %584
   %586 = getelementptr [4 x float], [4 x float]* %c, i32 0, i32 %585
   %587 = load float, float* %586, align 4
-  %588 = load float, float* %__libasr_created_scalar_auxiliary_variable_, align 4
+  %588 = load float, float* %__libasr_created_scalar_auxiliary_variable, align 4
   %589 = fadd float %587, %588
   store float %589, float* %581, align 4
   %590 = load i32, i32* %__1_v, align 4

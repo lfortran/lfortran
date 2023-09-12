@@ -14,7 +14,6 @@
 #include <iostream>
 #include <memory>
 #include <set>
-#include <unordered_set>
 
 #include <libasr/asr.h>
 #include <libasr/containers.h>
@@ -86,36 +85,6 @@ struct CPPDeclarationOptions: public DeclarationOptions {
     }
 };
 
-class SymEngineQueue {
-public:
-    std::vector<std::string> queue;
-    int queue_front = -1;
-    std::string& symengine_src;
-    std::unordered_set<std::string> variables_to_free;
-
-    SymEngineQueue(std::string& symengine_src) : symengine_src(symengine_src) {}
-
-    std::string push() {
-        std::string indent(4, ' ');
-        std::string var;
-        if(queue_front == -1 || queue_front >= static_cast<int>(queue.size())) {
-            var = "queue" + std::to_string(queue.size());
-            queue.push_back(var);
-            if(queue_front == -1) queue_front++;
-            symengine_src = indent + "basic " + var + ";\n";
-            symengine_src += indent + "basic_new_stack(" + var + ");\n";
-        }
-        variables_to_free.insert(queue[queue_front]);
-        return queue[queue_front++];
-    }
-
-    void pop() {
-        LCOMPILERS_ASSERT(queue_front != -1 && queue_front < static_cast<int>(queue.size()));
-        variables_to_free.insert(queue[queue_front]);
-        queue_front++;
-    }
-};
-
 template <class Struct>
 class BaseCCPPVisitor : public ASR::BaseVisitor<Struct>
 {
@@ -149,8 +118,6 @@ public:
     bool is_c;
     std::set<std::string> headers, user_headers, user_defines;
     std::vector<std::string> tmp_buffer_src;
-    std::string symengine_src;
-    SymEngineQueue symengine_queue{symengine_src};
 
     SymbolTable* global_scope;
     int64_t lower_bound;
@@ -504,18 +471,16 @@ R"(#include <stdio.h>
                     if (gen_stdcomplex) {
                         sub = "std::complex<float> ";
                     } else {
-                        sub = "float complex ";
+                        sub = "float_complex_t ";
                     }
                 } else {
                     if (gen_stdcomplex) {
                         sub = "std::complex<double> ";
                     } else {
-                        sub = "double complex ";
+                        sub = "double_complex_t ";
                     }
                 }
             }
-        } else if (ASR::is_a<ASR::SymbolicExpression_t>(*return_var->m_type)) {
-            sub = "basic ";
         } else if (ASR::is_a<ASR::CPtr_t>(*return_var->m_type)) {
             sub = "void* ";
         } else if (ASR::is_a<ASR::List_t>(*return_var->m_type)) {
@@ -548,7 +513,7 @@ R"(#include <stdio.h>
     }
 
     // Returns the declaration, no semi colon at the end
-    std::string get_function_declaration(const ASR::Function_t &x, bool &has_typevar) {
+    std::string get_function_declaration(const ASR::Function_t &x, bool &has_typevar, bool is_pointer=false) {
         template_for_Kokkos.clear();
         template_number = 0;
         std::string sub, inl, static_attr;
@@ -556,10 +521,10 @@ R"(#include <stdio.h>
         // This helps to check if the function is generic.
         // If it is generic we skip the codegen for that function.
         has_typevar = false;
-        if (ASRUtils::get_FunctionType(x)->m_inline) {
+        if (ASRUtils::get_FunctionType(x)->m_inline && !is_pointer) {
             inl = "inline __attribute__((always_inline)) ";
         }
-        if( ASRUtils::get_FunctionType(x)->m_static ) {
+        if( ASRUtils::get_FunctionType(x)->m_static && !is_pointer) {
             static_attr = "static ";
         }
         if (x.m_return_var) {
@@ -581,25 +546,39 @@ R"(#include <stdio.h>
                 f_type->m_deftype == ASR::deftypeType::Implementation) {
             sym_name = "_xx_internal_" + sym_name + "_xx";
         }
-        std::string func = static_attr + inl + sub + sym_name + "(";
+        std::string func = static_attr + inl + sub;
+        if (is_pointer) {
+            func += "(*" + sym_name + ")(";
+        } else {
+            func += sym_name + "(";
+        }
         bracket_open++;
         for (size_t i=0; i<x.n_args; i++) {
-            ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
-            LCOMPILERS_ASSERT(ASRUtils::is_arg_dummy(arg->m_intent));
-            if (ASR::is_a<ASR::TypeParameter_t>(*arg->m_type)) {
-                has_typevar = true;
-                bracket_open--;
-                return "";
-            }
-            if( is_c ) {
-                CDeclarationOptions c_decl_options;
-                c_decl_options.pre_initialise_derived_type = false;
-                func += self().convert_variable_decl(*arg, &c_decl_options);
+            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v);
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                ASR::Variable_t *arg = ASR::down_cast<ASR::Variable_t>(sym);
+                LCOMPILERS_ASSERT(ASRUtils::is_arg_dummy(arg->m_intent));
+                if( is_c ) {
+                    CDeclarationOptions c_decl_options;
+                    c_decl_options.pre_initialise_derived_type = false;
+                    func += self().convert_variable_decl(*arg, &c_decl_options);
+                } else {
+                    CPPDeclarationOptions cpp_decl_options;
+                    cpp_decl_options.use_static = false;
+                    cpp_decl_options.use_templates_for_arrays = true;
+                    func += self().convert_variable_decl(*arg, &cpp_decl_options);
+                }
+                if (ASR::is_a<ASR::TypeParameter_t>(*arg->m_type)) {
+                    has_typevar = true;
+                    bracket_open--;
+                    return "";
+                }
+            } else if (ASR::is_a<ASR::Function_t>(*sym)) {
+                ASR::Function_t *fun = ASR::down_cast<ASR::Function_t>(sym);
+                func += get_function_declaration(*fun, has_typevar, true);
             } else {
-                CPPDeclarationOptions cpp_decl_options;
-                cpp_decl_options.use_static = false;
-                cpp_decl_options.use_templates_for_arrays = true;
-                func += self().convert_variable_decl(*arg, &cpp_decl_options);
+                throw CodeGenError("Unsupported function argument");
             }
             if (i < x.n_args-1) func += ", ";
         }
@@ -735,6 +714,8 @@ R"(#include <stdio.h>
                 }
             } case ASR::ttypeType::Logical : {
                 return "p";
+            } case ASR::ttypeType::Const : {
+                return get_type_format(ASR::down_cast<ASR::Const_t>(type)->m_type);
             } case ASR::ttypeType::Array : {
                 return "O";
             } default: {
@@ -837,10 +818,6 @@ R"(#include <stdio.h>
                     if (v->m_intent == ASRUtils::intent_local ||
                         v->m_intent == ASRUtils::intent_return_var) {
                         std::string d = indent + self().convert_variable_decl(*v) + ";\n";
-                        if (ASR::is_a<ASR::SymbolicExpression_t>(*v->m_type)) {
-                            std::string v_m_name = v->m_name;
-                            d += indent + "basic_new_stack(" + v_m_name + ");\n";
-                        }
                         decl += check_tmp_buffer() + d;
                     }
                     if (ASR::is_a<ASR::TypeParameter_t>(*v->m_type)) {
@@ -875,10 +852,6 @@ R"(#include <stdio.h>
                     + ";\n";
             }
 
-            for (const auto& var : symengine_queue.variables_to_free) {
-                current_body += indent + "basic_free_stack(" + var + ");\n";
-            }
-            symengine_queue.variables_to_free.clear();
             if (decl.size() > 0 || current_body.size() > 0) {
                 sub += "{\n" + decl + current_body + "}\n";
             } else {
@@ -1339,17 +1312,6 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                  target = "&" + target;
              }
         }
-        if( ASR::is_a<ASR::SymbolicExpression_t>(*value_type) ) {
-            if(ASR::is_a<ASR::Var_t>(*x.m_value)){
-                src = indent + "basic_assign(" + target + ", " + value + ");\n";
-                symengine_queue.pop();
-                symengine_queue.pop();
-                return;
-            }
-            src = symengine_src;
-            symengine_src = "";
-            return;
-        }
         if( !from_std_vector_helper.empty() ) {
             src = from_std_vector_helper;
         } else {
@@ -1359,11 +1321,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         if( is_target_list && is_value_list ) {
             ASR::List_t* list_target = ASR::down_cast<ASR::List_t>(ASRUtils::expr_type(x.m_target));
             std::string list_dc_func = c_ds_api->get_list_deepcopy_func(list_target);
-            if (ASR::is_a<ASR::ListConcat_t>(*x.m_value)) {
-                src += indent + list_dc_func + "(" + value + ", &" + target + ");\n\n";
-            } else {
-                src += indent + list_dc_func + "(&" + value + ", &" + target + ");\n\n";
-            }
+            src += indent + list_dc_func + "(&" + value + ", &" + target + ");\n\n";
         } else if ( is_target_tup && is_value_tup ) {
             ASR::Tuple_t* tup_target = ASR::down_cast<ASR::Tuple_t>(ASRUtils::expr_type(x.m_target));
             std::string dc_func = c_ds_api->get_tuple_deepcopy_func(tup_target);
@@ -1616,16 +1574,11 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         bracket_open++;
         self().visit_expr(*x.m_left);
         std::string left = std::move(src);
-        if (!ASR::is_a<ASR::ListConcat_t>(*x.m_left)) {
-            left = "&" + left;
-        }
         self().visit_expr(*x.m_right);
         bracket_open--;
         std::string rig = std::move(src);
-        if (!ASR::is_a<ASR::ListConcat_t>(*x.m_right)) {
-            rig = "&" + rig;
-        }
-        src = check_tmp_buffer() + list_concat_func + "(" + left + ", " + rig + ")";
+        tmp_buffer_src.push_back(check_tmp_buffer());
+        src = "(*" + list_concat_func + "(&" + left + ", &" + rig + "))";
     }
 
     void visit_ListSection(const ASR::ListSection_t& x) {
@@ -1671,7 +1624,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             right + ", " + step + ", " + l_present + ", " + r_present + ");\n";
         const_var_names[get_hash((ASR::asr_t*)&x)] = var_name;
         tmp_buffer_src.push_back(tmp_src_gen);
-        src = "* " + var_name;
+        src = "(* " + var_name + ")";
     }
 
     void visit_ListClear(const ASR::ListClear_t& x) {
@@ -1684,6 +1637,20 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         std::string list_var = std::move(src);
         std::string indent(indentation_level * indentation_spaces, ' ');
         src = check_tmp_buffer() + indent + list_clear_func + "(&" + list_var + ");\n";
+    }
+
+    void visit_ListRepeat(const ASR::ListRepeat_t& x) {
+        CHECK_FAST_C_CPP(compiler_options, x)
+        ASR::List_t* t = ASR::down_cast<ASR::List_t>(x.m_type);
+        std::string list_repeat_func = c_ds_api->get_list_repeat_func(t);
+        bracket_open++;
+        self().visit_expr(*x.m_left);
+        std::string list_var = std::move(src);
+        self().visit_expr(*x.m_right);
+        std::string freq = std::move(src);
+        bracket_open--;
+        tmp_buffer_src.push_back(check_tmp_buffer());
+        src = "(*" + list_repeat_func + "(&" + list_var + ", " + freq + "))";
     }
 
     void visit_ListCompare(const ASR::ListCompare_t& x) {
@@ -1808,6 +1775,10 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
 
     void visit_Var(const ASR::Var_t &x) {
         const ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_v);
+        if (ASR::is_a<ASR::Function_t>(*s)) {
+            src = ASRUtils::symbol_name(s);
+            return;
+        }
         ASR::Variable_t* sv = ASR::down_cast<ASR::Variable_t>(s);
         if (is_c) {
             if ((sv->m_intent == ASRUtils::intent_in
@@ -1826,15 +1797,6 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             src = std::string(ASR::down_cast<ASR::Variable_t>(s)->m_name);
         }
         last_expr_precedence = 2;
-        ASR::ttype_t* var_type = sv->m_type;
-        if( ASR::is_a<ASR::SymbolicExpression_t>(*var_type)) {
-            std::string var_name = std::string(ASR::down_cast<ASR::Variable_t>(s)->m_name);
-            symengine_queue.queue.push_back(var_name);
-            if (symengine_queue.queue_front == -1) {
-                symengine_queue.queue_front = 0;
-            }
-            symengine_src = "";
-        }
     }
 
     void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
@@ -2049,11 +2011,6 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 last_expr_precedence = 2;
                 break;
             }
-            case (ASR::cast_kindType::IntegerToSymbolicExpression): {
-                self().visit_expr(*x.m_value);
-                last_expr_precedence = 2;
-                break;
-            }
             default : throw CodeGenError("Cast kind " + std::to_string(x.m_kind) + " not implemented",
                 x.base.base.loc);
         }
@@ -2099,40 +2056,6 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
 
     void visit_CPtrCompare(const ASR::CPtrCompare_t &x) {
         handle_Compare(x);
-    }
-
-    void visit_SymbolicCompare(const ASR::SymbolicCompare_t &x) {
-        CHECK_FAST_C_CPP(compiler_options, x)
-        self().visit_expr(*x.m_left);
-        std::string left_src = symengine_src;
-        if(ASR::is_a<ASR::Var_t>(*x.m_left)){
-            symengine_queue.pop();
-        }
-        std::string left = std::move(src);
-
-        self().visit_expr(*x.m_right);
-        std::string right_src = symengine_src;
-        if(ASR::is_a<ASR::Var_t>(*x.m_right)){
-            symengine_queue.pop();
-        }
-        std::string right = std::move(src);
-        std::string op_str = ASRUtils::cmpop_to_str(x.m_op);
-        switch (x.m_op) {
-            case (ASR::cmpopType::Eq) : {
-                src = "basic_eq(" + left + ", " + right + ") " + op_str + " 1";
-                break;
-            }
-            case (ASR::cmpopType::NotEq) : {
-                src = "basic_neq(" + left + ", " + right + ") " + op_str + " 0";
-                break;
-            }
-            default : {
-                throw LCompilersException("Symbolic comparison operator: '"
-                    + op_str
-                    + "' is not implemented");
-            }
-        }
-        symengine_src = left_src + right_src;
     }
 
     template<typename T>
@@ -2290,6 +2213,8 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
 
     void visit_UnsignedIntegerBinOp(const ASR::UnsignedIntegerBinOp_t &x) {
         handle_BinOp(x);
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        src = "(uint" + std::to_string(kind * 8) + "_t)(" + src + ")";
     }
 
     void visit_RealBinOp(const ASR::RealBinOp_t &x) {
@@ -2847,50 +2772,6 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             out += func_name; break;                                            \
         }
 
-    std::string performBinarySymbolicOperation(const std::string& functionName,
-            const ASR::IntrinsicScalarFunction_t& x) {
-        headers.insert("symengine/cwrapper.h");
-        std::string indent(4, ' ');
-        LCOMPILERS_ASSERT(x.n_args == 2);
-        std::string target = symengine_queue.push();
-        std::string target_src = symengine_src;
-        this->visit_expr(*x.m_args[0]);
-        std::string arg1 = src;
-        std::string arg1_src = symengine_src;
-        // Check if x.m_args[0] is a Var
-        if (ASR::is_a<ASR::Var_t>(*x.m_args[0])) {
-            symengine_queue.pop();
-        }
-        this->visit_expr(*x.m_args[1]);
-        std::string arg2 = src;
-        std::string arg2_src = symengine_src;
-        // Check if x.m_args[0] is a Var
-        if (ASR::is_a<ASR::Var_t>(*x.m_args[1])) {
-            symengine_queue.pop();
-        }
-        symengine_src = target_src + arg1_src + arg2_src;
-        symengine_src += indent + functionName + "(" + target + ", " + arg1 + ", " + arg2 + ");\n";
-        return target;
-    }
-
-    std::string performUnarySymbolicOperation(const std::string& functionName,
-            const ASR::IntrinsicScalarFunction_t& x) {
-        headers.insert("symengine/cwrapper.h");
-        std::string indent(4, ' ');
-        LCOMPILERS_ASSERT(x.n_args == 1);
-        std::string target = symengine_queue.push();
-        std::string target_src = symengine_src;
-        this->visit_expr(*x.m_args[0]);
-        std::string arg1 = src;
-        std::string arg1_src = symengine_src;
-        if (ASR::is_a<ASR::Var_t>(*x.m_args[0])) {
-            symengine_queue.pop();
-        }
-        symengine_src = target_src + arg1_src;
-        symengine_src += indent + functionName + "(" + target + ", " + arg1 + ");\n";
-        return target;
-    }
-
     void visit_IntrinsicScalarFunction(const ASR::IntrinsicScalarFunction_t &x) {
         CHECK_FAST_C_CPP(compiler_options, x);
         std::string out;
@@ -2909,80 +2790,6 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             SET_INTRINSIC_NAME(Exp, "exp");
             SET_INTRINSIC_NAME(Exp2, "exp2");
             SET_INTRINSIC_NAME(Expm1, "expm1");
-            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicAdd)): {
-                src = performBinarySymbolicOperation("basic_add", x);
-                return;
-            }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicSub)): {
-                src = performBinarySymbolicOperation("basic_sub", x);
-                return;
-            }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicMul)): {
-                src = performBinarySymbolicOperation("basic_mul", x);
-                return;
-            }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicDiv)): {
-                src = performBinarySymbolicOperation("basic_div", x);
-                return;
-            }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicPow)): {
-                src = performBinarySymbolicOperation("basic_pow", x);
-                return;
-            }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicDiff)): {
-                src = performBinarySymbolicOperation("basic_diff", x);
-                return;
-            }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicSin)): {
-                src = performUnarySymbolicOperation("basic_sin", x);
-                return;
-            }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicCos)): {
-                src = performUnarySymbolicOperation("basic_cos", x);
-                return;
-            }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicLog)): {
-                src = performUnarySymbolicOperation("basic_log", x);
-                return;
-            }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicExp)): {
-                src = performUnarySymbolicOperation("basic_exp", x);
-                return;
-            }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicAbs)): {
-                src = performUnarySymbolicOperation("basic_abs", x);
-                return;
-            }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicExpand)): {
-                src = performUnarySymbolicOperation("basic_expand", x);
-                return;
-            }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicPi)): {
-                headers.insert("symengine/cwrapper.h");
-                LCOMPILERS_ASSERT(x.n_args == 0);
-                std::string target = symengine_queue.push();
-                symengine_src += indent + "basic_const_pi(" + target + ");\n";
-                src = target;
-                return;
-            }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicSymbol)): {
-                headers.insert("symengine/cwrapper.h");
-                LCOMPILERS_ASSERT(x.n_args == 1);
-                this->visit_expr(*x.m_args[0]);
-                std::string target = symengine_queue.push();
-                symengine_src += indent + "symbol_set(" + target + ", " + src + ");\n";
-                src = target;
-                return;
-            }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicInteger)): {
-                headers.insert("symengine/cwrapper.h");
-                LCOMPILERS_ASSERT(x.n_args == 1);
-                this->visit_expr(*x.m_args[0]);
-                std::string target = symengine_queue.push();
-                symengine_src += indent + "integer_set_si(" + target + ", " + src + ");\n";
-                src = target;
-                return;
-            }
             default : {
                 throw LCompilersException("IntrinsicScalarFunction: `"
                     + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)
