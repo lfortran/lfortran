@@ -95,7 +95,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
         return res.error;
     }
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(unit);
-    if (compiler_options.dumb_all_passes) {
+    if (compiler_options.dump_all_passes) {
 #if !defined(_WIN32)
         if (system("rm pass_*"))
             std::cerr << "Warning: old `pass_*` files are not removed!\n";
@@ -119,7 +119,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
             return res.error;
         }
         if (compiler_options.rtlib) load_rtlib(al, *tu, compiler_options);
-        if (compiler_options.dumb_all_passes) {
+        if (compiler_options.dump_all_passes) {
             std::ofstream outfile ("pass_00_initial_asr.clj");
             outfile << ";; Initial ASR\n" << pickle(*tu, false, true) << "\n";
             outfile.close();
