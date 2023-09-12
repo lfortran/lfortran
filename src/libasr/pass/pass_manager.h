@@ -28,6 +28,7 @@
 #include <libasr/pass/replace_arr_slice.h>
 #include <libasr/pass/replace_flip_sign.h>
 #include <libasr/pass/replace_div_to_mul.h>
+#include <libasr/pass/replace_symbolic.h>
 #include <libasr/pass/replace_intrinsic_function.h>
 #include <libasr/pass/replace_fma.h>
 #include <libasr/pass/loop_unroll.h>
@@ -73,6 +74,7 @@ namespace LCompilers {
             {"global_stmts", &pass_wrap_global_stmts},
             {"implied_do_loops", &pass_replace_implied_do_loops},
             {"array_op", &pass_replace_array_op},
+            {"symbolic", &pass_replace_symbolic},
             {"intrinsic_function", &pass_replace_intrinsic_function},
             {"arr_slice", &pass_replace_arr_slice},
             {"print_arr", &pass_replace_print_arr},
@@ -213,16 +215,19 @@ namespace LCompilers {
                 "subroutine_from_function",
                 "where",
                 "array_op",
+                "symbolic",
                 "intrinsic_function",
                 "array_op",
                 "pass_array_by_data",
-                "print_arr",
                 "print_struct_type",
+                "print_arr",
                 "print_list_tuple",
+                "print_struct_type",
                 "array_dim_intrinsics_update",
                 "do_loops",
                 "forall",
                 "select_case",
+                "inline_function_calls",
                 "unused_functions",
                 "transform_optional_argument_functions",
                 "unique_symbols"
@@ -239,9 +244,10 @@ namespace LCompilers {
                 "array_op",
                 "intrinsic_function",
                 "array_op",
-                "print_arr",
                 "print_struct_type",
+                "print_arr",
                 "print_list_tuple",
+                "print_struct_type",
                 "loop_vectorise",
                 "loop_unroll",
                 "array_dim_intrinsics_update",
@@ -256,6 +262,7 @@ namespace LCompilers {
                 "div_to_mul",
                 "fma",
                 "transform_optional_argument_functions",
+                // "inline_function_calls", TODO: Uncomment later
                 "unique_symbols"
             };
 
@@ -265,7 +272,8 @@ namespace LCompilers {
                 "pass_list_expr",
                 "print_list_tuple",
                 "do_loops",
-                "select_case"
+                "select_case",
+                "inline_function_calls"
             };
             _user_defined_passes.clear();
         }

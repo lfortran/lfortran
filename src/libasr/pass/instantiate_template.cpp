@@ -194,7 +194,7 @@ public:
         ASR::symbol_t *t = ASR::down_cast<ASR::symbol_t>(result);
         func_scope->add_symbol(new_sym_name, t);
         context_map[x->m_name] = new_sym_name;
-        
+
         /*
         for (auto const &sym_pair: x->m_symtab->get_scope()) {
             ASR::symbol_t *sym = sym_pair.second;
@@ -253,9 +253,9 @@ public:
         variable_dependencies_vec.reserve(al, 1);
         ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, new_type);
 
-        ASR::symbol_t* s = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, 
-            x->base.base.loc, current_scope, s2c(al, x->m_name), variable_dependencies_vec.p, 
-            variable_dependencies_vec.size(), x->m_intent, nullptr, nullptr, x->m_storage, 
+        ASR::symbol_t* s = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al,
+            x->base.base.loc, current_scope, s2c(al, x->m_name), variable_dependencies_vec.p,
+            variable_dependencies_vec.size(), x->m_intent, nullptr, nullptr, x->m_storage,
             new_type, nullptr, x->m_abi, x->m_access, x->m_presence, x->m_value_attr));
         current_scope->add_symbol(x->m_name, s);
 
@@ -327,6 +327,16 @@ public:
 
         return ASRUtils::make_ArrayItem_t_util(al, x->base.base.loc, m_v, args.p, x->n_args,
             ASRUtils::type_get_past_allocatable(type), x->m_storage_format, m_value);
+    }
+
+    ASR::asr_t* duplicate_ArrayConstant(ASR::ArrayConstant_t *x) {
+        Vec<ASR::expr_t*> m_args;
+        m_args.reserve(al, x->n_args);
+        for (size_t i = 0; i < x->n_args; i++) {
+            m_args.push_back(al, self().duplicate_expr(x->m_args[i]));
+        }
+        ASR::ttype_t* m_type = substitute_type(x->m_type);
+        return make_ArrayConstant_t(al, x->base.base.loc, m_args.p, x->n_args, m_type, x->m_storage_format);
     }
 
     ASR::asr_t* duplicate_ListItem(ASR::ListItem_t *x) {
@@ -413,7 +423,7 @@ public:
                 name = nested.instantiate_symbol(name2);
                 name = nested.instantiate_body(ASR::down_cast<ASR::Function_t>(name), ASR::down_cast<ASR::Function_t>(name2));
                 context_map[call_name] = nested_func_name;
-            }                            
+            }
         } else {
             name = current_scope->get_symbol(call_name);
             if (!name) {
@@ -482,7 +492,7 @@ public:
 
     ASR::ttype_t* substitute_type(ASR::ttype_t *ttype) {
         switch (ttype->type) {
-            case (ASR::ttypeType::TypeParameter): {
+            case (ASR::ttypeType::TypeParameter) : {
                 ASR::TypeParameter_t *param = ASR::down_cast<ASR::TypeParameter_t>(ttype);
                 ASR::ttype_t *t = type_subs[param->m_param];
                 switch (t->type) {
@@ -518,12 +528,12 @@ public:
                 }
                 return t;
             }
-            case (ASR::ttypeType::List): {
+            case (ASR::ttypeType::List) : {
                 ASR::List_t *tlist = ASR::down_cast<ASR::List_t>(ttype);
                 return ASRUtils::TYPE(ASR::make_List_t(al, ttype->base.loc,
                     substitute_type(tlist->m_type)));
             }
-            case (ASR::ttypeType::Struct): {
+            case (ASR::ttypeType::Struct) : {
                 ASR::Struct_t *s = ASR::down_cast<ASR::Struct_t>(ttype);
                 std::string struct_name = ASRUtils::symbol_name(s->m_derived_type);
                 if (context_map.find(struct_name) != context_map.end()) {
@@ -535,7 +545,7 @@ public:
                     return ttype;
                 }
             }
-            case (ASR::ttypeType::Array): {
+            case (ASR::ttypeType::Array) : {
                 ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(ttype);
                 ASR::ttype_t *t = substitute_type(a->m_type);
                 ASR::dimension_t* m_dims = nullptr;

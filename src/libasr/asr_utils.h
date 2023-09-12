@@ -245,13 +245,23 @@ static inline ASR::abiType symbol_abi(const ASR::symbol_t *f)
     return ASR::abiType::Source;
 }
 
-static inline ASR::ttype_t* get_contained_type(ASR::ttype_t* asr_type) {
+static inline ASR::ttype_t* get_contained_type(ASR::ttype_t* asr_type, int overload=0) {
     switch( asr_type->type ) {
         case ASR::ttypeType::List: {
             return ASR::down_cast<ASR::List_t>(asr_type)->m_type;
         }
         case ASR::ttypeType::Set: {
             return ASR::down_cast<ASR::Set_t>(asr_type)->m_type;
+        }
+        case ASR::ttypeType::Dict: {
+            switch( overload ) {
+                case 0:
+                    return ASR::down_cast<ASR::Dict_t>(asr_type)->m_key_type;
+                case 1:
+                    return ASR::down_cast<ASR::Dict_t>(asr_type)->m_value_type;
+                default:
+                    return asr_type;
+            }
         }
         case ASR::ttypeType::Enum: {
             ASR::Enum_t* enum_asr = ASR::down_cast<ASR::Enum_t>(asr_type);
@@ -404,6 +414,9 @@ static inline std::string type_to_str(const ASR::ttype_t *t)
     switch (t->type) {
         case ASR::ttypeType::Integer: {
             return "integer";
+        }
+        case ASR::ttypeType::UnsignedInteger: {
+            return "unsigned integer";
         }
         case ASR::ttypeType::Real: {
             return "real";
@@ -1118,15 +1131,15 @@ static inline std::string extract_dim_value(ASR::expr_t* dim) {
 
 static inline std::string type_encode_dims(size_t n_dims, ASR::dimension_t* m_dims )
 {
-    std::string dims_str = "";
+    std::string dims_str = "[";
     for( size_t i = 0; i < n_dims; i++ ) {
         ASR::dimension_t dim = m_dims[i];
-        dims_str += "[";
-        dims_str += extract_dim_value(dim.m_start);
-        dims_str += ",";
         dims_str += extract_dim_value(dim.m_length);
-        dims_str += "]";
+        if (i + 1 < n_dims) {
+            dims_str += ",";
+        }
     }
+    dims_str += "]";
     return dims_str;
 }
 

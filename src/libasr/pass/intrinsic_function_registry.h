@@ -48,6 +48,11 @@ enum class IntrinsicScalarFunctions : int64_t {
     Partition,
     ListReverse,
     ListPop,
+    Reserve,
+    DictKeys,
+    DictValues,
+    SetAdd,
+    SetRemove,
     Max,
     Min,
     Radix,
@@ -101,6 +106,11 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Partition)
         INTRINSIC_NAME_CASE(ListReverse)
         INTRINSIC_NAME_CASE(ListPop)
+        INTRINSIC_NAME_CASE(Reserve)
+        INTRINSIC_NAME_CASE(DictKeys)
+        INTRINSIC_NAME_CASE(DictValues)
+        INTRINSIC_NAME_CASE(SetAdd)
+        INTRINSIC_NAME_CASE(SetRemove)
         INTRINSIC_NAME_CASE(Max)
         INTRINSIC_NAME_CASE(Min)
         INTRINSIC_NAME_CASE(Sign)
@@ -2077,6 +2087,245 @@ static inline ASR::asr_t* create_ListPop(Allocator& al, const Location& loc,
 
 } // namespace ListPop
 
+namespace Reserve {
+
+static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
+    ASRUtils::require_impl(x.n_args == 2, "Call to reserve must have exactly one argument",
+        x.base.base.loc, diagnostics);
+    ASRUtils::require_impl(ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(x.m_args[0])),
+        "First argument to reserve must be of list type",
+        x.base.base.loc, diagnostics);
+    ASRUtils::require_impl(ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[1])),
+        "Second argument to reserve must be an integer",
+        x.base.base.loc, diagnostics);
+    ASRUtils::require_impl(x.m_type == nullptr,
+        "Return type of reserve must be empty",
+        x.base.base.loc, diagnostics);
+}
+
+static inline ASR::expr_t *eval_reserve(Allocator &/*al*/,
+    const Location &/*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/) {
+    // TODO: To be implemented for ListConstant expression
+    return nullptr;
+}
+
+static inline ASR::asr_t* create_Reserve(Allocator& al, const Location& loc,
+    Vec<ASR::expr_t*>& args,
+    const std::function<void (const std::string &, const Location &)> err) {
+    if (args.size() != 2) {
+        err("Call to reserve must have exactly two argument", loc);
+    }
+    if (!ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(args[0]))) {
+        err("First argument to reserve must be of list type", loc);
+    }
+    if (!ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(args[1]))) {
+        err("Second argument to reserve must be an integer", loc);
+    }
+
+    Vec<ASR::expr_t*> arg_values;
+    arg_values.reserve(al, args.size());
+    for( size_t i = 0; i < args.size(); i++ ) {
+        arg_values.push_back(al, ASRUtils::expr_value(args[i]));
+    }
+    ASR::expr_t* compile_time_value = eval_reserve(al, loc, nullptr, arg_values);
+    return ASR::make_Expr_t(al, loc,
+            ASRUtils::EXPR(ASRUtils::make_IntrinsicScalarFunction_t_util(al, loc,
+            static_cast<int64_t>(IntrinsicScalarFunctions::Reserve),
+            args.p, args.size(), 0, nullptr, compile_time_value)));
+}
+
+} // namespace Reserve
+
+namespace DictKeys {
+
+static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
+    ASRUtils::require_impl(x.n_args == 1, "Call to dict.keys must have no argument",
+        x.base.base.loc, diagnostics);
+    ASRUtils::require_impl(ASR::is_a<ASR::Dict_t>(*ASRUtils::expr_type(x.m_args[0])),
+        "Argument to dict.keys must be of dict type",
+        x.base.base.loc, diagnostics);
+    ASRUtils::require_impl(ASR::is_a<ASR::List_t>(*x.m_type) &&
+        ASRUtils::check_equal_type(ASRUtils::get_contained_type(x.m_type),
+        ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_args[0]), 0)),
+        "Return type of dict.keys must be of list of dict key element type",
+        x.base.base.loc, diagnostics);
+}
+
+static inline ASR::expr_t *eval_dict_keys(Allocator &/*al*/,
+    const Location &/*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/) {
+    // TODO: To be implemented for DictConstant expression
+    return nullptr;
+}
+
+static inline ASR::asr_t* create_DictKeys(Allocator& al, const Location& loc,
+    Vec<ASR::expr_t*>& args,
+    const std::function<void (const std::string &, const Location &)> err) {
+    if (args.size() != 1) {
+        err("Call to dict.keys must have no argument", loc);
+    }
+
+    ASR::expr_t* dict_expr = args[0];
+    ASR::ttype_t *type = ASRUtils::expr_type(dict_expr);
+    ASR::ttype_t *dict_keys_type = ASR::down_cast<ASR::Dict_t>(type)->m_key_type;
+
+    Vec<ASR::expr_t*> arg_values;
+    arg_values.reserve(al, args.size());
+    for( size_t i = 0; i < args.size(); i++ ) {
+        arg_values.push_back(al, ASRUtils::expr_value(args[i]));
+    }
+    ASR::ttype_t *to_type = List(dict_keys_type);
+    ASR::expr_t* compile_time_value = eval_dict_keys(al, loc, to_type, arg_values);
+    return ASR::make_IntrinsicScalarFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicScalarFunctions::DictKeys),
+            args.p, args.size(), 0, to_type, compile_time_value);
+}
+
+} // namespace DictKeys
+
+namespace DictValues {
+
+static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
+    ASRUtils::require_impl(x.n_args == 1, "Call to dict.values must have no argument",
+        x.base.base.loc, diagnostics);
+    ASRUtils::require_impl(ASR::is_a<ASR::Dict_t>(*ASRUtils::expr_type(x.m_args[0])),
+        "Argument to dict.values must be of dict type",
+        x.base.base.loc, diagnostics);
+    ASRUtils::require_impl(ASR::is_a<ASR::List_t>(*x.m_type) &&
+        ASRUtils::check_equal_type(ASRUtils::get_contained_type(x.m_type),
+        ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_args[0]), 1)),
+        "Return type of dict.values must be of list of dict value element type",
+        x.base.base.loc, diagnostics);
+}
+
+static inline ASR::expr_t *eval_dict_values(Allocator &/*al*/,
+    const Location &/*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/) {
+    // TODO: To be implemented for DictConstant expression
+    return nullptr;
+}
+
+static inline ASR::asr_t* create_DictValues(Allocator& al, const Location& loc,
+    Vec<ASR::expr_t*>& args,
+    const std::function<void (const std::string &, const Location &)> err) {
+    if (args.size() != 1) {
+        err("Call to dict.values must have no argument", loc);
+    }
+
+    ASR::expr_t* dict_expr = args[0];
+    ASR::ttype_t *type = ASRUtils::expr_type(dict_expr);
+    ASR::ttype_t *dict_values_type = ASR::down_cast<ASR::Dict_t>(type)->m_value_type;
+
+    Vec<ASR::expr_t*> arg_values;
+    arg_values.reserve(al, args.size());
+    for( size_t i = 0; i < args.size(); i++ ) {
+        arg_values.push_back(al, ASRUtils::expr_value(args[i]));
+    }
+    ASR::ttype_t *to_type = List(dict_values_type);
+    ASR::expr_t* compile_time_value = eval_dict_values(al, loc, to_type, arg_values);
+    return ASR::make_IntrinsicScalarFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicScalarFunctions::DictValues),
+            args.p, args.size(), 0, to_type, compile_time_value);
+}
+
+} // namespace DictValues
+
+namespace SetAdd {
+
+static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
+    ASRUtils::require_impl(x.n_args == 2, "Call to set.add must have exactly one argument",
+        x.base.base.loc, diagnostics);
+    ASRUtils::require_impl(ASR::is_a<ASR::Set_t>(*ASRUtils::expr_type(x.m_args[0])),
+        "First argument to set.add must be of set type",
+        x.base.base.loc, diagnostics);
+    ASRUtils::require_impl(ASRUtils::check_equal_type(ASRUtils::expr_type(x.m_args[1]),
+            ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_args[0]))),
+        "Second argument to set.add must be of same type as set's element type",
+        x.base.base.loc, diagnostics);
+    ASRUtils::require_impl(x.m_type == nullptr,
+        "Return type of set.add must be empty",
+        x.base.base.loc, diagnostics);
+}
+
+static inline ASR::expr_t *eval_set_add(Allocator &/*al*/,
+    const Location &/*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/) {
+    // TODO: To be implemented for SetConstant expression
+    return nullptr;
+}
+
+static inline ASR::asr_t* create_SetAdd(Allocator& al, const Location& loc,
+    Vec<ASR::expr_t*>& args,
+    const std::function<void (const std::string &, const Location &)> err) {
+    if (args.size() != 2) {
+        err("Call to set.add must have exactly one argument", loc);
+    }
+    if (!ASRUtils::check_equal_type(ASRUtils::expr_type(args[1]),
+        ASRUtils::get_contained_type(ASRUtils::expr_type(args[0])))) {
+        err("Argument to set.add must be of same type as set's "
+            "element type", loc);
+    }
+
+    Vec<ASR::expr_t*> arg_values;
+    arg_values.reserve(al, args.size());
+    for( size_t i = 0; i < args.size(); i++ ) {
+        arg_values.push_back(al, ASRUtils::expr_value(args[i]));
+    }
+    ASR::expr_t* compile_time_value = eval_set_add(al, loc, nullptr, arg_values);
+    return ASR::make_Expr_t(al, loc,
+            ASRUtils::EXPR(ASR::make_IntrinsicScalarFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicScalarFunctions::SetAdd),
+            args.p, args.size(), 0, nullptr, compile_time_value)));
+}
+
+} // namespace SetAdd
+
+namespace SetRemove {
+
+static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
+    ASRUtils::require_impl(x.n_args == 2, "Call to set.remove must have exactly one argument",
+        x.base.base.loc, diagnostics);
+    ASRUtils::require_impl(ASR::is_a<ASR::Set_t>(*ASRUtils::expr_type(x.m_args[0])),
+        "First argument to set.remove must be of set type",
+        x.base.base.loc, diagnostics);
+    ASRUtils::require_impl(ASRUtils::check_equal_type(ASRUtils::expr_type(x.m_args[1]),
+            ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_args[0]))),
+        "Second argument to set.remove must be of same type as set's element type",
+        x.base.base.loc, diagnostics);
+    ASRUtils::require_impl(x.m_type == nullptr,
+        "Return type of set.remove must be empty",
+        x.base.base.loc, diagnostics);
+}
+
+static inline ASR::expr_t *eval_set_remove(Allocator &/*al*/,
+    const Location &/*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/) {
+    // TODO: To be implemented for SetConstant expression
+    return nullptr;
+}
+
+static inline ASR::asr_t* create_SetRemove(Allocator& al, const Location& loc,
+    Vec<ASR::expr_t*>& args,
+    const std::function<void (const std::string &, const Location &)> err) {
+    if (args.size() != 2) {
+        err("Call to set.remove must have exactly one argument", loc);
+    }
+    if (!ASRUtils::check_equal_type(ASRUtils::expr_type(args[1]),
+        ASRUtils::get_contained_type(ASRUtils::expr_type(args[0])))) {
+        err("Argument to set.remove must be of same type as set's "
+            "element type", loc);
+    }
+
+    Vec<ASR::expr_t*> arg_values;
+    arg_values.reserve(al, args.size());
+    for( size_t i = 0; i < args.size(); i++ ) {
+        arg_values.push_back(al, ASRUtils::expr_value(args[i]));
+    }
+    ASR::expr_t* compile_time_value = eval_set_remove(al, loc, nullptr, arg_values);
+    return ASR::make_Expr_t(al, loc,
+            ASRUtils::EXPR(ASR::make_IntrinsicScalarFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicScalarFunctions::SetRemove),
+            args.p, args.size(), 0, nullptr, compile_time_value)));
+}
+
+} // namespace SetRemove
+
 namespace Max {
 
     static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
@@ -2668,8 +2917,18 @@ namespace IntrinsicScalarFunctionRegistry {
             {nullptr, &ListIndex::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::ListReverse),
             {nullptr, &ListReverse::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::DictKeys),
+            {nullptr, &DictKeys::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::DictValues),
+            {nullptr, &DictValues::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::ListPop),
             {nullptr, &ListPop::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Reserve),
+            {nullptr, &Reserve::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::SetAdd),
+            {nullptr, &SetAdd::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::SetRemove),
+            {nullptr, &SetRemove::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Max),
             {&Max::instantiate_Max, &Max::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Min),
@@ -2756,6 +3015,16 @@ namespace IntrinsicScalarFunctionRegistry {
             "list.reverse"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::ListPop),
             "list.pop"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Reserve),
+            "reserve"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::DictKeys),
+            "dict.keys"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::DictValues),
+            "dict.values"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::SetAdd),
+            "set.add"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::SetRemove),
+            "set.remove"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Max),
             "max"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Min),
@@ -2823,6 +3092,11 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"list.index", {&ListIndex::create_ListIndex, &ListIndex::eval_list_index}},
                 {"list.reverse", {&ListReverse::create_ListReverse, &ListReverse::eval_list_reverse}},
                 {"list.pop", {&ListPop::create_ListPop, &ListPop::eval_list_pop}},
+                {"reserve", {&Reserve::create_Reserve, &Reserve::eval_reserve}},
+                {"dict.keys", {&DictKeys::create_DictKeys, &DictKeys::eval_dict_keys}},
+                {"dict.values", {&DictValues::create_DictValues, &DictValues::eval_dict_values}},
+                {"set.add", {&SetAdd::create_SetAdd, &SetAdd::eval_set_add}},
+                {"set.remove", {&SetRemove::create_SetRemove, &SetRemove::eval_set_remove}},
                 {"max0", {&Max::create_Max, &Max::eval_Max}},
                 {"min0", {&Min::create_Min, &Min::eval_Min}},
                 {"min", {&Min::create_Min, &Min::eval_Min}},
