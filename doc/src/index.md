@@ -138,6 +138,7 @@ for more and more people.
 :hidden:
 installation
 language
+usage
 ```
 
 ```{toctree}
