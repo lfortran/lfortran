@@ -779,6 +779,29 @@ int emit_julia(const std::string &infile, CompilerOptions &compiler_options)
     }
 }
 
+int emit_fortran(const std::string &infile, CompilerOptions &compiler_options) {
+    std::string input = read_file(infile);
+
+    LCompilers::FortranEvaluator fe(compiler_options);
+    LCompilers::LocationManager lm;
+    LCompilers::diag::Diagnostics diagnostics;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
+    LCompilers::Result<std::string> src = fe.get_fortran(input, lm, diagnostics);
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (src.ok) {
+        std::cout << src.result;
+        return 0;
+    } else {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return 1;
+    }
+}
+
 int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
     const LCompilers::CompilerOptions &compiler_options)
 {
@@ -1829,6 +1852,7 @@ int main(int argc, char *argv[])
         bool show_asm = false;
         bool show_wat = false;
         bool show_julia = false;
+        bool show_fortran = false;
         bool time_report = false;
         bool static_link = false;
         std::string skip_pass;
@@ -1900,6 +1924,7 @@ int main(int argc, char *argv[])
         app.add_flag("--show-asm", show_asm, "Show assembly for the given file and exit");
         app.add_flag("--show-wat", show_wat, "Show WAT (WebAssembly Text Format) and exit");
         app.add_flag("--show-julia", show_julia, "Show Julia translation source for the given file and exit");
+        app.add_flag("--show-fortran", show_fortran, "Show Fortran translation source for the given file and exit");
         app.add_flag("--show-stacktrace", compiler_options.show_stacktrace, "Show internal stacktrace on compiler errors");
         app.add_flag("--symtab-only", compiler_options.symtab_only, "Only create symbol tables in ASR (skip executable stmt)");
         app.add_flag("--time-report", time_report, "Show compilation time report");
@@ -2151,6 +2176,9 @@ int main(int argc, char *argv[])
         }
         if (show_julia) {
             return emit_julia(arg_file, compiler_options);
+        }
+        if (show_fortran) {
+            return emit_fortran(arg_file, compiler_options);
         }
         if (arg_S) {
             if (backend == Backend::llvm) {
