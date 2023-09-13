@@ -4571,6 +4571,34 @@ public:
         return nullptr;
     }
 
+    ASR::asr_t* double_precision_real_to_default_real(Allocator &al, Vec<ASR::call_arg_t> args,
+                                        const Location &loc) {
+        ASR::expr_t *arg = nullptr, *value = nullptr;
+        ASR::ttype_t *type = nullptr;
+        if (args.size() > 0) {
+            arg = args[0].m_value;
+            type = ASRUtils::expr_type(arg);
+        }
+        ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 8));
+        if (!arg) {
+            return ASR::make_RealConstant_t(al, loc, 0.0, to_type);
+        }
+        if (ASRUtils::is_real(*type)) {
+            if (ASRUtils::extract_kind_from_ttype_t(type) != 4) {
+                return (ASR::asr_t *)ASR::down_cast<ASR::expr_t>(ASR::make_Cast_t(
+                    al, loc, arg, ASR::cast_kindType::RealToReal,
+                    to_type, value));
+            }
+        return (ASR::asr_t *)arg;
+        } else {
+            std::string stype = ASRUtils::type_to_str(type);
+            throw SemanticError(
+                "Conversion of '" + stype + "' to real is not implemented",
+                loc);
+        }
+        return nullptr;
+    }
+
     template <class Call>
     void create_implicit_interface_function(const Call &x, std::string func_name, bool add_return, ASR::ttype_t* old_type) {
         is_implicit_interface = true;
@@ -4788,7 +4816,13 @@ public:
                 visit_expr_list(x.m_args, x.n_args, args);
                 tmp = handle_intrinsic_float(al, args, x.base.base.loc);
                 return;
+            } else if(var_name == "sngl"){
+                Vec<ASR::call_arg_t> args;
+                visit_expr_list(x.m_args, x.n_args, args);
+                tmp = double_precision_real_to_default_real(al, args, x.base.base.loc);
+                return;
             }
+
             bool is_function = true;
             v = intrinsic_as_node(x, is_function);
             if( !is_function ) {
@@ -4837,7 +4871,13 @@ public:
                     visit_expr_list(x.m_args, x.n_args, args);
                     tmp = handle_intrinsic_float(al, args, x.base.base.loc);
                     return;
+                } else if(var_name == "sngl"){
+                    Vec<ASR::call_arg_t> args;
+                    visit_expr_list(x.m_args, x.n_args, args);
+                    tmp = double_precision_real_to_default_real(al, args, x.base.base.loc);
+                    return;
                 }
+                
                 // If implicit interface is allowed, we have to handle the
                 // following case here:
                 // real :: x
