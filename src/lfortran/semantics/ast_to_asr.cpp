@@ -43,7 +43,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols);
 
 void load_rtlib(Allocator &al, ASR::TranslationUnit_t &tu, CompilerOptions &compiler_options) {
-    SymbolTable *tu_symtab = tu.m_global_scope;
+    SymbolTable *tu_symtab = tu.m_symtab;
     LCompilers::PassOptions pass_options;
     pass_options.runtime_library_dir = compiler_options.runtime_library_dir;
     pass_options.mod_files_dir = compiler_options.mod_files_dir;
@@ -95,7 +95,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
         return res.error;
     }
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(unit);
-    if (compiler_options.dumb_all_passes) {
+    if (compiler_options.dump_all_passes) {
 #if !defined(_WIN32)
         if (system("rm pass_*"))
             std::cerr << "Warning: old `pass_*` files are not removed!\n";
@@ -119,7 +119,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
             return res.error;
         }
         if (compiler_options.rtlib) load_rtlib(al, *tu, compiler_options);
-        if (compiler_options.dumb_all_passes) {
+        if (compiler_options.dump_all_passes) {
             std::ofstream outfile ("pass_00_initial_asr.clj");
             outfile << ";; Initial ASR\n" << pickle(*tu, false, true) << "\n";
             outfile.close();

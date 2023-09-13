@@ -278,7 +278,7 @@ Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr3(
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return res.error;
     }
-    if (!symbol_table) symbol_table = asr->m_global_scope;
+    if (!symbol_table) symbol_table = asr->m_symtab;
 
     return asr;
 }
@@ -481,7 +481,7 @@ Result<std::string> FortranEvaluator::get_c3(ASR::TranslationUnit_t &asr,
     pass_options.always_run = false;
     pass_options.run_fun = "f";
     pass_options.verbose = compiler_options.verbose;
-    pass_options.dumb_all_passes = compiler_options.dumb_all_passes;
+    pass_options.dump_all_passes = compiler_options.dump_all_passes;
     pass_options.pass_cumulative = compiler_options.pass_cumulative;
     pass_options.realloc_lhs = compiler_options.realloc_lhs;
     pass_options.all_symbols_mangling = compiler_options.all_symbols_mangling;

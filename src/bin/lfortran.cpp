@@ -669,7 +669,7 @@ int emit_asr(const std::string &infile,
     pass_options.always_run = true;
     pass_options.run_fun = "f";
     pass_options.verbose = compiler_options.verbose;
-    pass_options.dumb_all_passes = compiler_options.dumb_all_passes;
+    pass_options.dump_all_passes = compiler_options.dump_all_passes;
     pass_options.pass_cumulative = compiler_options.pass_cumulative;
     pass_options.realloc_lhs = compiler_options.realloc_lhs;
     pass_options.all_symbols_mangling = compiler_options.all_symbols_mangling;
@@ -782,7 +782,7 @@ int emit_julia(const std::string &infile, CompilerOptions &compiler_options)
 int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
     const LCompilers::CompilerOptions &compiler_options)
 {
-    for (auto &item : u.m_global_scope->get_scope()) {
+    for (auto &item : u.m_symtab->get_scope()) {
         if (LCompilers::ASR::is_a<LCompilers::ASR::Module_t>(*item.second)) {
             LCompilers::ASR::Module_t *m = LCompilers::ASR::down_cast<LCompilers::ASR::Module_t>(item.second);
 
@@ -1922,7 +1922,7 @@ int main(int argc, char *argv[])
         app.add_flag("--print-leading-space", compiler_options.print_leading_space, "Print leading white space if format is unspecified");
         app.add_flag("--interactive-parse", compiler_options.interactive, "Use interactive parse");
         app.add_flag("--verbose", compiler_options.verbose, "Print debugging statements");
-        app.add_flag("--dump-all-passes", compiler_options.dumb_all_passes, "Apply all the passes and dump the ASR into a file");
+        app.add_flag("--dump-all-passes", compiler_options.dump_all_passes, "Apply all the passes and dump the ASR into a file");
         app.add_flag("--cumulative", compiler_options.pass_cumulative, "Apply all the passes cumulatively till the given pass");
         app.add_flag("--realloc-lhs", compiler_options.realloc_lhs, "Reallocate left hand side automatically");
         app.add_flag("--module-mangling", compiler_options.module_name_mangling, "Mangles the module name");
