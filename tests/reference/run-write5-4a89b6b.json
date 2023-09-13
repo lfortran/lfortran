@@ -2,12 +2,12 @@
     "basename": "run-write5-4a89b6b",
     "cmd": "lfortran --no-color --run {infile} -o write5.f90.out",
     "infile": "tests/write5.f90",
-    "infile_hash": "78a58078463c4bac62b10d2223a2b33f3ce25a44a9ed664cf4d0813a",
+    "infile_hash": "5d5d604b32e128f6ff9c94fd138118f49b7df62bfb1350c28972bdf2",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "run-write5-4a89b6b.stdout",
-    "stdout_hash": "39f81598f2a98f1bb2d641477c471fd1a614f5e2dfca152ad3856b61",
-    "stderr": "run-write5-4a89b6b.stderr",
-    "stderr_hash": "bcb0fa2d870d9b070c2ee7c573e3c721f87a86647f2671976a81e555",
+    "stdout_hash": "f199c73cbfb9af4762f111ddd42db56f47507d629a9130af1ac4a084",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

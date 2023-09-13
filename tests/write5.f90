@@ -11,4 +11,7 @@ program write5
 
     write (*, "(a)", advance="n"//"o") first_name//", "
     write (*, "(a)", advance="y"//"e"//"s") last_name
+
+    write(*,'("Hello ")',advance='NO')
+    write(*,'("world!")')
 end program
