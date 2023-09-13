@@ -537,7 +537,9 @@ public:
                 *args[i] = ASRUtils::EXPR(tmp);
             }
         }
-        a_fmt_constant = a_fmt;
+        if (_type == AST::stmtType::Write){
+            a_fmt_constant = a_fmt;
+        }
         for( std::uint32_t i = 0; i < n_kwargs; i++ ) {
             AST::kw_argstar_t kwarg = m_kwargs[i];
             std::string m_arg_str(kwarg.m_arg);
