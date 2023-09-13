@@ -4584,7 +4584,7 @@ public:
             return ASR::make_RealConstant_t(al, loc, 0.0, to_type);
         }
         if (ASRUtils::is_real(*type)) {
-            if (ASRUtils::extract_kind_from_ttype_t(type) != 4) {
+            if (ASRUtils::extract_kind_from_ttype_t(type) != 8) {
                 return (ASR::asr_t *)ASR::down_cast<ASR::expr_t>(ASR::make_Cast_t(
                     al, loc, arg, ASR::cast_kindType::RealToReal,
                     to_type, value));

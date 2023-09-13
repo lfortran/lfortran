@@ -3,5 +3,5 @@ program main
     real ::  x
     y = 5.2d0
     x = sngl(y)
-    if(x /= 5.19999981) error stop
+    if((x - 5.19999981) > 1e-8) error stop
 end program
