@@ -2083,7 +2083,7 @@ ast_t* TYPEPARAMETER0(Allocator &al,
 #define TEMPLATED_FUNCTION(fn_type, name, temp_args, fn_args, return_var, bind, trivia, decl, stmts, l) \
         make_TemplatedFunction_t(p.m_a, l, \
         /*name*/ name2char(name), \
-        /*temp_args*/ ARGS(p.m_a, l, temp_args), \
+        /*temp_args*/ REDUCE_ARGS(p.m_a, temp_args), \
         /*n_temp_args*/ temp_args.size(), \
         /*args*/ ARGS(p.m_a, l, fn_args), \
         /*n_args*/ fn_args.size(), \
