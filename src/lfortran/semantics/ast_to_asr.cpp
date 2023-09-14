@@ -96,10 +96,6 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     }
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(unit);
     if (compiler_options.dump_all_passes) {
-#if !defined(_WIN32)
-        if (system("rm pass_*"))
-            std::cerr << "Warning: old `pass_*` files are not removed!\n";
-#endif
         std::ofstream outfile ("pass_00_initial_asr.clj");
         outfile << ";; Initial ASR\n" << pickle(*tu, false, true) << "\n";
         outfile.close();
