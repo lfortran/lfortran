@@ -1,4 +1,6 @@
 #include <libasr/asr.h>
+#include <libasr/pass/intrinsic_function_registry.h>
+#include <libasr/codegen/asr_to_c_cpp.h>
 #include <libasr/codegen/asr_to_fortran.h>
 
 using LCompilers::ASR::is_a;
@@ -8,8 +10,7 @@ namespace LCompilers {
 
 namespace {
 
-    std::string binop2str(const ASR::binopType type)
-    {
+    std::string binop2str(const ASR::binopType type) {
         switch (type) {
             case (ASR::binopType::Add) : return " + ";
             case (ASR::binopType::Sub) : return " - ";
@@ -17,6 +18,18 @@ namespace {
             case (ASR::binopType::Div) : return " / ";
             case (ASR::binopType::Pow) : return " ** ";
             default : throw LCompilersException("Binop type not implemented");
+        }
+    }
+
+    std::string cmpop2str(const ASR::cmpopType type) {
+        switch (type) {
+            case (ASR::cmpopType::Eq)    : return " == ";
+            case (ASR::cmpopType::NotEq) : return " /= ";
+            case (ASR::cmpopType::Lt)    : return " < " ;
+            case (ASR::cmpopType::LtE)   : return " <= ";
+            case (ASR::cmpopType::Gt)    : return " > " ;
+            case (ASR::cmpopType::GtE)   : return " >= ";
+            default : throw LCompilersException("Cmpop type not implemented");
         }
     }
 }
@@ -74,7 +87,7 @@ public:
         r += "\n";
         inc_indent();
         r += indent + "implicit none"; // TODO: Handle implicit
-        r += "\n\n";
+        r += "\n";
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Variable_t>(*item.second)) {
                 visit_symbol(*item.second);
@@ -157,9 +170,13 @@ public:
         std::string dims = "(";
         switch (x.m_type->type) {
             case ASR::ttypeType::Integer: {
-                ASR::Integer_t *i = down_cast<ASR::Integer_t>(x.m_type);
                 r += "integer(";
-                r += std::to_string(i->m_kind);
+                r += std::to_string(down_cast<ASR::Integer_t>(x.m_type)->m_kind);
+                r += ")";
+                break;
+            } case ASR::ttypeType::Real: {
+                r += "real(";
+                r += std::to_string(down_cast<ASR::Real_t>(x.m_type)->m_kind);
                 r += ")";
                 break;
             }
@@ -204,6 +221,42 @@ public:
         s = r;
     }
 
+    void visit_ErrorStop(const ASR::ErrorStop_t &/*x*/) {
+        s = indent;
+        s += "error stop";
+        s += "\n";
+    }
+
+    void visit_If(const ASR::If_t &x) {
+        std::string r = indent;
+        r += "if";
+        r += " (";
+        visit_expr(*x.m_test);
+        r += s;
+        r += ") ";
+        r += "then";
+        r += "\n";
+        inc_indent();
+        for (size_t i = 0; i < x.n_body; i++) {
+            visit_stmt(*x.m_body[i]);
+            r += s;
+        }
+        dec_indent();
+        for (size_t i = 0; i < x.n_orelse; i++) {
+            r += indent;
+            r += "else";
+            r += "\n";
+            inc_indent();
+            visit_stmt(*x.m_orelse[i]);
+            r += s;
+            dec_indent();
+        }
+        r += indent;
+        r += "end if";
+        r += "\n";
+        s = r;
+    }
+
     void visit_Print(const ASR::Print_t &x) {
         std::string r = indent;
         r += "print";
@@ -221,9 +274,31 @@ public:
     }
 
     /*********************************** Expr **********************************/
+    void visit_Cast(const ASR::Cast_t &x) {
+        // TODO
+        visit_expr(*x.m_arg);
+    }
+
     void visit_Var(const ASR::Var_t &x) {
         s = ASRUtils::symbol_name(x.m_v);
     }
+
+    void visit_IntrinsicScalarFunction(const ASR::IntrinsicScalarFunction_t &x) {
+        std::string out;
+        switch (x.m_intrinsic_id) {
+            SET_INTRINSIC_NAME(Abs, "abs");
+            default : {
+                throw LCompilersException("IntrinsicScalarFunction: `"
+                    + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)
+                    + "` is not implemented");
+            }
+        }
+        LCOMPILERS_ASSERT(x.n_args == 1);
+        visit_expr(*x.m_args[0]);
+        out += "(" + s + ")";
+        s = out;
+    }
+
 
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
         std::string r;
@@ -237,6 +312,34 @@ public:
 
     void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
         s = std::to_string(x.m_n);
+    }
+
+    void visit_RealCompare(const ASR::RealCompare_t &x) {
+        std::string r;
+        visit_expr(*x.m_left);
+        r = s;
+        r += cmpop2str(x.m_op);
+        visit_expr(*x.m_right);
+        r += s;
+        s = r;
+    }
+
+    void visit_RealConstant(const ASR::RealConstant_t &x) {
+        s = std::to_string(x.m_r);
+    }
+
+    void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t &x) {
+        visit_expr(*x.m_value);
+    }
+
+    void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t &x) {
+        visit_expr(*x.m_value);
+    }
+
+    void visit_StringConstant(const ASR::StringConstant_t &x) {
+        s = "\"";
+        s.append(x.m_s);
+        s += "\"";
     }
 };
 
