@@ -3186,6 +3186,62 @@ public:
 
         is_template = false;
     }
+
+    void visit_TemplatedFunction(const AST::TemplatedFunction_t &x) {
+        starting_m_body = x.m_body;
+        starting_n_body = x.n_body;
+
+        SymbolTable *parent_scope = current_scope;
+        ASR::symbol_t *s = parent_scope->get_symbol(to_lower(x.m_name));
+        
+        if (!ASR::is_a<ASR::Template_t>(*s)) {
+            LCOMPILERS_ASSERT(false);
+        }
+
+        ASR::symbol_t *t = ASRUtils::symbol_symtab(s)->get_symbol(to_lower(x.m_name));
+        ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
+        current_scope = v->m_symtab;
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, x.n_body);
+        SetChar current_function_dependencies_copy = current_function_dependencies;
+        current_function_dependencies.clear(al);
+        transform_stmts(body, x.n_body, x.m_body);
+        handle_format();
+        if (active_entry_points.size() > 0) {
+            SetChar current_function_dependencies_copy2 = current_function_dependencies;
+            current_function_dependencies.clear(al);
+            copy_stmts(x.n_body, x.m_body);
+            handle_active_entry_points();
+            current_function_dependencies = current_function_dependencies_copy2;
+        }
+        active_entry_points.clear();
+        SetChar func_deps;
+        func_deps.from_pointer_n_copy(al, v->m_dependencies, v->n_dependencies);
+        for( auto& itr: current_function_dependencies ) {
+            func_deps.push_back(al, s2c(al, itr));
+        }
+        current_function_dependencies = current_function_dependencies_copy;
+        ASR::stmt_t* impl_del = create_implicit_deallocate(x.base.base.loc);
+        if( impl_del != nullptr ) {
+            body.push_back(al, impl_del);
+        }
+        v->m_body = body.p;
+        v->n_body = body.size();
+        v->m_dependencies = func_deps.p;
+        v->n_dependencies = func_deps.size();
+
+        for (size_t i=0; i<x.n_contains; i++) {
+            visit_program_unit(*x.m_contains[i]);
+        }
+
+        ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface);
+
+        starting_m_body = nullptr;
+        starting_n_body = 0;
+        remove_common_variable_declarations(current_scope);
+        current_scope = parent_scope;
+        tmp = nullptr;
+    }
 };
 
 Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
