@@ -314,6 +314,16 @@ public:
         s = std::to_string(x.m_n);
     }
 
+    void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
+        std::string r;
+        visit_expr(*x.m_left);
+        r = s;
+        r += cmpop2str(x.m_op);
+        visit_expr(*x.m_right);
+        r += s;
+        s = r;
+    }
+
     void visit_RealCompare(const ASR::RealCompare_t &x) {
         std::string r;
         visit_expr(*x.m_left);
