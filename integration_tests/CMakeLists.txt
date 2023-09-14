@@ -921,6 +921,7 @@ RUN(NAME template_array_04 LABELS llvm wasm)
 RUN(NAME template_matrix LABELS llvm)
 RUN(NAME template_struct_01 LABELS llvm)
 RUN(NAME template_vector LABELS llvm)
+RUN(NAME template_simple_01 LABELS llvm)
 
 RUN(NAME statement1 LABELS gfortran llvm)
 
