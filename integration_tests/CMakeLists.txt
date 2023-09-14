@@ -69,7 +69,8 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
     endif()
 
     if (ADD_TEST)
-        if ((LFORTRAN_BACKEND STREQUAL "cpp") OR (LFORTRAN_BACKEND STREQUAL "x86") OR (LFORTRAN_BACKEND STREQUAL "c"))
+        if ((LFORTRAN_BACKEND STREQUAL "cpp") OR (LFORTRAN_BACKEND STREQUAL "x86")
+                OR (LFORTRAN_BACKEND STREQUAL "c") OR (LFORTRAN_BACKEND STREQUAL "fortran"))
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC ${extra_args} --backend=${LFORTRAN_BACKEND})
             target_link_options(${name} PUBLIC --backend=${LFORTRAN_BACKEND})
@@ -160,6 +161,7 @@ endmacro(RUN)
 # The supported test labels are:
 #
 # gfortran      --- compile with GFortran
+# fortran       --- convert to Fortran code and compile with GFortran
 # llvm          --- compile with LFortran, only generate binary code at the very end
 # llvm2         --- compile with LFortran, generate object files
 # llvm_rtlib    --- compile with LFortran loading ASR runtime library, generate object files
@@ -172,7 +174,7 @@ endmacro(RUN)
 
 # GFortran + LFortran LLVM + LFortran C++
 
-RUN(NAME program_cmake_01 LABELS gfortran llvm cpp x86 wasm c)
+RUN(NAME program_cmake_01 LABELS gfortran llvm cpp x86 wasm c fortran)
 RUN(NAME program_cmake_02 LABELS gfortran llvm cpp x86 wasm c)
 
 RUN(NAME error_stop_01 FAIL LABELS gfortran llvm cpp x86 wasm llvm2)
@@ -865,7 +867,7 @@ RUN(NAME kwargs_02 LABELS gfortran)
 RUN(NAME test_iso_c_binding LABELS gfortran llvm wasm)
 RUN(NAME test_iso_fortran_env LABELS gfortran llvm wasm)
 
-RUN(NAME abs_01 LABELS gfortran llvm wasm c)
+RUN(NAME abs_01 LABELS gfortran llvm wasm c fortran)
 RUN(NAME abs_02 LABELS gfortran llvm wasm)
 RUN(NAME abs_03 LABELS gfortran llvm wasm c)
 RUN(NAME sqrt_01 LABELS gfortran llvm)

@@ -64,7 +64,7 @@ using LCompilers::endswith;
 using LCompilers::CompilerOptions;
 
 enum Backend {
-    llvm, c, cpp, x86, wasm
+    llvm, c, cpp, x86, wasm, fortran
 };
 
 std::string get_unique_ID() {
@@ -1426,6 +1426,43 @@ int compile_to_object_file_c(const std::string &infile,
     return 0;
 }
 
+int compile_to_binary_fortran(const std::string &infile,
+        const std::string &outfile,
+        CompilerOptions &compiler_options) {
+    std::string input = read_file(infile);
+
+    LCompilers::FortranEvaluator fe(compiler_options);
+    LCompilers::LocationManager lm;
+    LCompilers::diag::Diagnostics diagnostics;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
+    LCompilers::Result<std::string> src = fe.get_fortran(input, lm, diagnostics);
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (!src.ok) {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return 1;
+    }
+
+    std::string in_file = outfile + ".tmp.f90";
+    {
+        std::ofstream out;
+        out.open(in_file);
+        out << src.result;
+    }
+
+    std::string cmd = "gfortran -o " + outfile + " -c " + in_file;
+    int err = system(cmd.c_str());
+    if (err) {
+        std::cout << "The command '" + cmd + "' failed." << std::endl;
+        return 11;
+    }
+    return 0;
+}
+
 // infile is an object file
 // outfile will become the executable
 int link_executable(const std::vector<std::string> &infiles,
@@ -1619,6 +1656,17 @@ int link_executable(const std::vector<std::string> &infiles,
     } else if (backend == Backend::wasm) {
         std::string cmd = "cp " + infiles[0] + " " + outfile
             + " && " + "cp " + infiles[0] + ".js" + " " + outfile + ".js";
+        int err = system(cmd.c_str());
+        if (err) {
+            std::cout << "The command '" + cmd + "' failed." << std::endl;
+            return 10;
+        }
+        return 0;
+    } else if (backend == Backend::fortran) {
+        std::string cmd = "gfortran -o " + outfile + " ";
+        for (auto &s : infiles) {
+            cmd += s + " ";
+        }
         int err = system(cmd.c_str());
         if (err) {
             std::cout << "The command '" + cmd + "' failed." << std::endl;
@@ -1932,7 +1980,7 @@ int main(int argc, char *argv[])
         app.add_flag("--no-warnings", compiler_options.no_warnings, "Turn off all warnings");
         app.add_flag("--no-error-banner", compiler_options.no_error_banner, "Turn off error banner");
         app.add_option("--error-format", compiler_options.error_format, "Control how errors are produced (human, short)")->capture_default_str();
-        app.add_option("--backend", arg_backend, "Select a backend (llvm, cpp, x86, wasm)")->capture_default_str();
+        app.add_option("--backend", arg_backend, "Select a backend (llvm, cpp, x86, wasm, fortran)")->capture_default_str();
         app.add_flag("--openmp", compiler_options.openmp, "Enable openmp");
         app.add_flag("--generate-object-code", compiler_options.generate_object_code, "Generate object code into .o files");
         app.add_flag("--rtlib", compiler_options.rtlib, "Include the full runtime library in the LLVM output");
@@ -2074,8 +2122,10 @@ int main(int argc, char *argv[])
             backend = Backend::x86;
         } else if (arg_backend == "wasm") {
             backend = Backend::wasm;
+        } else if (arg_backend == "fortran") {
+            backend = Backend::fortran;
         } else {
-            std::cerr << "The backend must be one of: llvm, cpp, x86, wasm." << std::endl;
+            std::cerr << "The backend must be one of: llvm, cpp, x86, wasm, fortran." << std::endl;
             return 1;
         }
 
@@ -2214,6 +2264,8 @@ int main(int argc, char *argv[])
                 return compile_to_binary_x86(arg_file, outfile, time_report, compiler_options);
             } else if (backend == Backend::wasm) {
                 return compile_to_binary_wasm(arg_file, outfile, time_report, compiler_options);
+            } else if (backend == Backend::fortran) {
+                return compile_to_binary_fortran(arg_file, outfile, compiler_options);
             } else {
                 throw LCompilers::LCompilersException("Unsupported backend.");
             }
@@ -2243,6 +2295,8 @@ int main(int argc, char *argv[])
             } else if (backend == Backend::c) {
                 err = compile_to_object_file_c(arg_file, tmp_o,
                         false, rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
+            } else if (backend == Backend::fortran) {
+                err = compile_to_binary_fortran(arg_file, tmp_o, compiler_options);
             } else {
                 throw LCompilers::LCompilersException("Backend not supported");
             }
