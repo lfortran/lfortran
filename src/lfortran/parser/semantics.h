@@ -2080,6 +2080,31 @@ ast_t* TYPEPARAMETER0(Allocator &al,
         USE_SYMBOLS(args), args.size(), \
         USE_SYMBOLS(syms), syms.size())
 
+#define TEMPLATED_FUNCTION(fn_type, name, temp_args, fn_args, return_var, bind, trivia, decl, stmts, l) \
+        make_TemplatedFunction_t(p.m_a, l, \
+        /*name*/ name2char(name), \
+        /*temp_args*/ ARGS(p.m_a, l, temp_args), \
+        /*n_temp_args*/ temp_args.size(), \
+        /*args*/ ARGS(p.m_a, l, fn_args), \
+        /*n_args*/ fn_args.size(), \
+        /*m_attributes*/ VEC_CAST(fn_type, decl_attribute), \
+        /*n_attributes*/ fn_type.size(), \
+        /*return_var*/ EXPR_OPT(return_var), \
+        /*bind*/ bind_opt(bind), \
+        trivia_cast(trivia), \
+        /*use*/ nullptr, \
+        /*n_use*/ 0, \
+        /*m_import*/ nullptr, \
+        /*n_import*/ 0, \
+        /*m_implicit*/ nullptr, \
+        /*n_implicit*/ 0, \
+        /*decl*/ DECLS(decl), \
+        /*n_decl*/ decl.size(), \
+        /*body*/ STMTS(stmts), \
+        /*n_body*/ stmts.size(), \
+        /*contains*/ nullptr, \
+        /*n_contains*/ 0)
+
 #define DERIVED_TYPE_PROC(attr, syms, trivia, l) make_DerivedTypeProc_t(p.m_a, l, \
         nullptr, VEC_CAST(attr, decl_attribute), attr.size(), \
         USE_SYMBOLS(syms), syms.size(), \

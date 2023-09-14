@@ -44,6 +44,8 @@ std::map<std::string, yytokentype> identifiers_map = {
     {"rparen", TK_RPAREN},
     {"lbracket", TK_LBRACKET},
     {"rbracket", TK_RBRACKET},
+    {"lbrace", TK_LBRACE},
+    {"rbace", TK_RBRACE},
     {"rbracket_old", TK_RBRACKET_OLD},
     {"percent", TK_PERCENT},
     {"vbar", TK_VBAR},

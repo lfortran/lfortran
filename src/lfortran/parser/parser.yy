@@ -8,7 +8,7 @@
 %expect-rr 175 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
-//%define parse.error verbose
+%define parse.error verbose
 
 /*
 // Uncomment this to enable parser tracing. Then in the main code, set
@@ -102,6 +102,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token TK_RPAREN ")"
 %token TK_LBRACKET "["
 %token TK_RBRACKET "]"
+%token TK_LBRACE "{"
+%token TK_RBRACE "}"
 %token TK_RBRACKET_OLD "/)"
 %token TK_PERCENT "%"
 %token TK_VBAR "|"
@@ -379,6 +381,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> template_decl
 %type <ast> requirement_decl
 %type <ast> requires_decl
+%type <ast> templated_function
 %type <ast> enum_decl
 %type <ast> program
 %type <ast> end_program
@@ -742,6 +745,16 @@ instantiate
         $$ = INSTANTIATE2($2, $4, $9, @$); }
     ;
 
+templated_function
+    : fn_mod_plus KW_FUNCTION id "{" id_list "}" "(" id_list_opt ")"
+        result_opt
+        sep
+        decl_statements
+        end_function sep {
+            LLOC(@$, @14); $$ = TEMPLATED_FUNCTION($1, $3, $5, $8, $10, nullptr,
+                TRIVIA($11, $14, @$), SPLIT_DECL(p.m_a, $12),
+                SPLIT_STMT(p.m_a, $12), @$); } 
+
 end_type
     : KW_END_TYPE id_opt
     | KW_ENDTYPE id_opt
@@ -1044,6 +1057,7 @@ sub_or_func
     : subroutine
     | function
     | procedure
+    | templated_function 
     ;
 
 sub_args
@@ -1541,6 +1555,7 @@ decl_statement
     | enum_decl
     | statement
     | instantiate
+    | requires_decl
     ;
 
 statement
