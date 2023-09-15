@@ -11,7 +11,7 @@ build0 = "bash ./build0.sh"
 
 [tasks.build]
 cmd = """
-    cmake . \
+    CXXFLAGS="-stdlib=libc++ -isystem ${PWD}/.pixi/env/include" cmake . \
         -GNinja \
         -DCMAKE_BUILD_TYPE=Debug \
         -DLFORTRAN_BUILD_ALL=yes \
