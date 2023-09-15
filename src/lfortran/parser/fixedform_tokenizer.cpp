@@ -949,6 +949,11 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "dowhile(")) {
+            lex_dowhile(cur);
+            return true;
+        }
+
         if (next_is(cur, "selectrank(")) {
             lex_selectrank(cur);
             return true;
@@ -1289,6 +1294,18 @@ struct FixedFormRecursiveDescent {
                 break;
             }
         }
+    }
+
+    void lex_dowhile(unsigned char *&cur) {
+        auto end = cur; next_line(end);
+        push_token_advance(cur, "do");
+        push_token_advance(cur, "while");
+        tokenize_line(cur); // tokenize rest of line where `do while` starts
+        while (!next_is(cur, "enddo\n")) {
+            tokenize_line(cur);
+        }
+        push_token_advance(cur, "enddo");
+        tokenize_line(cur);
     }
 
     void lex_selectrank(unsigned char *&cur) {
