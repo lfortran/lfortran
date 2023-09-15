@@ -1656,7 +1656,7 @@ namespace Sngl {
     static inline ASR::asr_t* create_Sngl(
             Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
             const std::function<void (const std::string &, const Location &)> err) {
-        ASR::ttype_t* return_type = expr_type(args[0]);
+        ASR::ttype_t* return_type = real32;
         if ( args.n != 1 ) {
             err("Intrinsic `sngl` accepts exactly one argument", loc);
         } else if ( !is_real(*expr_type(args[0])) ) {
@@ -1691,7 +1691,7 @@ namespace Sngl {
         }
         fill_func_arg("a", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
-        body.push_back(al, b.Assignment(result, r2r(r2r32(args[0]), return_type)));
+        body.push_back(al, b.Assignment(result, r2r32(args[0])));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -2531,7 +2531,6 @@ namespace Min {
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
         if (ASR::is_a<ASR::Real_t>(*arg_type)) {
             double min_val = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
-            std::cout<<"min_val: "<<min_val<<'\n';
             for (size_t i = 1; i < args.size(); i++) {
                 double val = ASR::down_cast<ASR::RealConstant_t>(args[i])->m_r;
                 min_val = std::fmin(min_val, val);
