@@ -8,7 +8,7 @@
 %expect-rr 175 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
-%define parse.error verbose
+//%define parse.error verbose
 
 /*
 // Uncomment this to enable parser tracing. Then in the main code, set
@@ -754,6 +754,7 @@ templated_function
             LLOC(@$, @14); $$ = TEMPLATED_FUNCTION($1, $3, $5, $8, $10, nullptr,
                 TRIVIA($11, $14, @$), SPLIT_DECL(p.m_a, $12),
                 SPLIT_STMT(p.m_a, $12), @$); } 
+    ;
 
 end_type
     : KW_END_TYPE id_opt
