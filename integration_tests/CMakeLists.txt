@@ -861,6 +861,7 @@ RUN(NAME class_07 LABELS gfortran llvm)
 RUN(NAME class_08 LABELS gfortran llvm)
 RUN(NAME class_09 LABELS gfortran llvm)
 RUN(NAME class_10 LABELS gfortran llvm)
+RUN(NAME class_11 LABELS gfortran llvm)
 
 RUN(NAME kwargs_01 LABELS gfortran llvm wasm)
 RUN(NAME kwargs_02 LABELS gfortran)
