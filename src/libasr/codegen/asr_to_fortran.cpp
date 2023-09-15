@@ -86,7 +86,7 @@ public:
         r.append(x.m_name);
         r += "\n";
         inc_indent();
-        r += indent + "implicit none"; // TODO: Handle implicit
+        r += indent + "implicit none";
         r += "\n";
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Variable_t>(*item.second)) {
@@ -302,11 +302,14 @@ public:
 
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
         std::string r;
+        // TODO: Handle precedence based on the last_operator_precedence
+        r = "(";
         visit_expr(*x.m_left);
-        r = s;
+        r += s;
         r += binop2str(x.m_op);
         visit_expr(*x.m_right);
         r += s;
+        r += ")";
         s = r;
     }
 
@@ -316,21 +319,27 @@ public:
 
     void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
         std::string r;
+        // TODO: Handle precedence based on the last_operator_precedence
+        r = "(";
         visit_expr(*x.m_left);
-        r = s;
+        r += s;
         r += cmpop2str(x.m_op);
         visit_expr(*x.m_right);
         r += s;
+        r += ")";
         s = r;
     }
 
     void visit_RealCompare(const ASR::RealCompare_t &x) {
         std::string r;
+        // TODO: Handle precedence based on the last_operator_precedence
+        r = "(";
         visit_expr(*x.m_left);
-        r = s;
+        r += s;
         r += cmpop2str(x.m_op);
         visit_expr(*x.m_right);
         r += s;
+        r += ")";
         s = r;
     }
 
