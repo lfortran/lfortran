@@ -3011,6 +3011,10 @@ filename = "fixed_form/contains1.f"
 ast = true
 
 [[test]]
+filename = "fixed_form/while_02_fixed_form.f"
+ast = true
+
+[[test]]
 filename = "intrinsic_implicit.f90"
 asr_implicit_interface_and_typing = true
 
