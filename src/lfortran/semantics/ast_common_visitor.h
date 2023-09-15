@@ -3930,7 +3930,7 @@ public:
             }
         }
 
-        return ASRUtils::make_ArraySize_t_util(al, x.base.base.loc, v_Var, dim, type, size_compiletime);
+        return ASRUtils::make_ArraySize_t_util(al, x.base.base.loc, v_Var, dim, type, size_compiletime, false);
     }
 
     ASR::asr_t* create_StringLen(const AST::FuncCallOrArray_t& x) {
