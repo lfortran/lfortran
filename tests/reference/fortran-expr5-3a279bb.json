@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-expr5-3a279bb",
+    "cmd": "lfortran --show-fortran --no-color {infile} -o {outfile}",
+    "infile": "tests/expr5.f90",
+    "infile_hash": "030f3f956944c6d24d536fd1f434f877d95bf12aac6f367d2ad1827e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-expr5-3a279bb.stdout",
+    "stdout_hash": "f0d6cab1b29cedf2aff564d1927c49cd9af9bc95377b8b4eda1b1ce4",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

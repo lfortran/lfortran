@@ -55,6 +55,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     wat = is_included("wat")
     obj = is_included("obj")
     x86 = is_included("x86")
+    fortran = is_included("fortran")
     bin_ = is_included("bin")
     print_leading_space = is_included("print_leading_space")
     interactive = is_included("interactive")
@@ -376,6 +377,15 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             filename,
             "x86",
             "lfortran --no-color --backend=x86 {infile} -o output",
+            filename,
+            update_reference,
+            extra_args)
+
+    if fortran:
+        run_test(
+            filename,
+            "fortran",
+            "lfortran --show-fortran --no-color {infile} -o {outfile}",
             filename,
             update_reference,
             extra_args)

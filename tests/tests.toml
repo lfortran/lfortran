@@ -452,6 +452,7 @@ ast = true
 asr = true
 llvm = true
 obj = true
+fortran = true
 
 [[test]]
 filename = "expr6.f90"

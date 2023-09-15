@@ -190,9 +190,9 @@ jobs:
                 cp ${src%.f}.o ./
             done
             ../src/bin/lfortran -c ./scipy/interpolate/fitpack/evapol.f -o evapol.o --fixed-form --implicit-typing --implicit-interface --generate-object-code --use-loop-variable-after-loop --rtlib --all-mangling --bindc-mangling --mangle-underscore
-            
+
             clang -shared -fPIC -o ./scipy/interpolate/fitpack.so *.o -L../src/runtime -llfortran_runtime
-            
+
             rm *.o
 
             ../src/bin/lfortran -c ./scipy/special/specfun/specfun.f -o scipy/special/specfun.o --fixed-form --implicit-typing --implicit-interface --generate-object-code --use-loop-variable-after-loop --all-mangling --mangle-underscore --bindc-mangling --rtlib
@@ -234,7 +234,7 @@ jobs:
             cd scipy/
             micromamba activate scipy-dev
             python dev.py test -t scipy.optimize -v
-      
+
       - name: Test SciPy Fitpack
         shell: bash -e -x -l {0}
         run: |
@@ -806,6 +806,51 @@ jobs:
             ./run_tests.py -b wasm
             ./run_tests.py -b wasm -f
 
+  test_fortran:
+    name: Test Fortran backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/setup-micromamba@v1
+        with:
+          environment-file: ci/environment_linux.yml
+          create-args: >-
+            python=3.10
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.os }}
+
+      - name: Build Linux
+        shell: bash -e -l {0}
+        run: |
+            ./build0.sh
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+      - name: Test Linux
+        shell: bash -e -l {0}
+        run: |
+            micromamba create -n gf gfortran
+            micromamba activate gf
+
+            cd integration_tests
+            ./run_tests.py -b fortran
+            ./run_tests.py -b fortran -f
+
   test_c_cpp:
     name: Test C/C++ backend
     runs-on: ubuntu-latest
@@ -858,8 +903,8 @@ jobs:
             cd ../../..
 
             cd integration_tests
-            ./run_tests.py -j1 -b cpp c
-            ./run_tests.py -j1 -b cpp c -f
+            ./run_tests.py -b cpp c
+            ./run_tests.py -b cpp c -f
 
   upload_tarball:
     name: Upload Tarball
