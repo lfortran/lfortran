@@ -1,0 +1,61 @@
+[project]
+name = "lfortran"
+version = "0.1.0"
+description = "Add a short description here"
+authors = ["Wolf Vollprecht <w.vollprecht@gmail.com>"]
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "win-64", "linux-64"]
+
+[tasks]
+build0 = "bash ./build0.sh"
+
+[tasks.build]
+cmd = """
+    cmake . \
+        -GNinja \
+        -DCMAKE_BUILD_TYPE=Debug \
+        -DLFORTRAN_BUILD_ALL=yes \
+        -DWITH_LLVM=yes \
+        -DWITH_STACKTRACE=yes \
+        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DCMAKE_INSTALL_PREFIX=$PIXI_PACKAGE_ROOT/inst &&
+    cmake --build . --parallel --target install
+    """
+
+[tasks.test]
+# depends_on = ["build"]
+cmd = """
+    cmake --build . --parallel --target test &&
+    pytest -v
+    """
+
+[dependencies]
+cmake = "*"
+cxx-compiler = "*"
+toml = "*"
+pytest = "*"
+jupyter = "*"
+xeus = "3.0.5"
+xeus-zmq = "1.0.2"
+xtl = "*"
+nlohmann_json = "*"
+cppzmq = "*"
+jupyter_kernel_test = "*"
+xonsh = "*"
+re2c = "*"
+numpy = "*"
+rapidjson = "*"
+ninja = "*"
+zlib = "*"
+
+[target.osx-arm64.dependencies]
+bison = "3.4"
+llvmdev = "15.*"
+
+[target.linux-64.dependencies]
+bison = "3.4"
+llvmdev = "15.*"
+
+[target.win-64.dependencies]
+llvmdev = "11.1.0"
+m2-bison = "3.0.4"
