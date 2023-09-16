@@ -139,7 +139,7 @@ public:
                                                 nullptr, nullptr, 0, nullptr, nullptr));
             ASR::StringFormat_t* format = ASR::down_cast<ASR::StringFormat_t>(x.m_values[0]);
             for (size_t i=0; i<format->n_args; i++) {
-                if (PassUtils::is_array(format->m_args[i])) {
+                if (PassUtils::is_array(format->m_args[i]) && !ASRUtils::is_fixed_size_array(ASRUtils::expr_type(format->m_args[i]))) {
                     if (print_body.size() > 0) {
                         print_stmt = create_formatstmt(print_body, format, x.base.base.loc, ASR::stmtType::Print);
                         pass_result.push_back(al, print_stmt);
@@ -293,7 +293,7 @@ public:
         if(x.m_values && x.m_values[0] != nullptr && ASR::is_a<ASR::StringFormat_t>(*x.m_values[0])){
             ASR::StringFormat_t* format = ASR::down_cast<ASR::StringFormat_t>(x.m_values[0]);
             for (size_t i=0; i<format->n_args; i++) {
-                if (PassUtils::is_array(format->m_args[i])) {
+                if (PassUtils::is_array(format->m_args[i]) && !ASRUtils::is_fixed_size_array(ASRUtils::expr_type(format->m_args[i]))) {
                     if (write_body.size() > 0) {
                         write_stmt = create_formatstmt(write_body, format, x.base.base.loc, ASR::stmtType::FileWrite);
                         pass_result.push_back(al, write_stmt);
