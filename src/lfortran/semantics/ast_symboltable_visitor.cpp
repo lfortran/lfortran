@@ -186,7 +186,7 @@ public:
                                 ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(*func);
                                 if( func_type->m_return_var_type ) {
                                     ASRUtils::ReplaceWithFunctionParamVisitor replacer(al, func->m_args, func->n_args);
-                                    func_type->m_return_var_type = replacer.replace_args_with_FunctionParam(data->type);
+                                    func_type->m_return_var_type = replacer.replace_args_with_FunctionParam(data->type, data->scope);
                                 }
                             }
                         }
