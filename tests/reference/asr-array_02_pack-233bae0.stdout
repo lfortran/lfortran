@@ -101,21 +101,10 @@
                             (Array
                                 (Integer 4)
                                 [((IntegerConstant 1 (Integer 4))
-                                (ArraySize
-                                    (ArrayConstant
-                                        [(IntegerConstant 0 (Integer 4))
-                                        (IntegerConstant 0 (Integer 4))
-                                        (IntegerConstant 3 (Integer 4))
-                                        (IntegerConstant 4 (Integer 4))]
-                                        (Array
-                                            (Integer 4)
-                                            [((IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 4 (Integer 4)))]
-                                            FixedSizeArray
-                                        )
-                                        ColMajor
-                                    )
-                                    ()
+                                (IntegerBinOp
+                                    (IntegerConstant 1 (Integer 4))
+                                    Mul
+                                    (IntegerConstant 4 (Integer 4))
                                     (Integer 4)
                                     ()
                                 ))]

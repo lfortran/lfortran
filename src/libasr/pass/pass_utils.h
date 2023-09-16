@@ -114,6 +114,11 @@ namespace LCompilers {
             return ASR::is_a<ASR::Struct_t>(*ASRUtils::expr_type(var));
         }
 
+        static inline bool is_aggregate_or_array_type(ASR::expr_t* var) {
+            return (ASR::is_a<ASR::Struct_t>(*ASRUtils::expr_type(var)) ||
+                    ASRUtils::is_array(ASRUtils::expr_type(var)));
+        }
+
         template <class Struct>
         class PassVisitor: public ASR::ASRPassBaseWalkVisitor<Struct> {
 
@@ -739,7 +744,7 @@ namespace LCompilers {
                 for(auto &e: a_args) {
                     ASRUtils::ReplaceWithFunctionParamVisitor replacer(al, x->m_args, x->n_args);
                     arg_types.push_back(al, replacer.replace_args_with_FunctionParam(
-                                                ASRUtils::expr_type(e)));
+                                                ASRUtils::expr_type(e), x->m_symtab));
                 }
                 s_func_type->m_arg_types = arg_types.p;
                 s_func_type->n_arg_types = arg_types.n;

@@ -186,7 +186,7 @@ public:
                                 ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(*func);
                                 if( func_type->m_return_var_type ) {
                                     ASRUtils::ReplaceWithFunctionParamVisitor replacer(al, func->m_args, func->n_args);
-                                    func_type->m_return_var_type = replacer.replace_args_with_FunctionParam(data->type);
+                                    func_type->m_return_var_type = replacer.replace_args_with_FunctionParam(data->type, data->scope);
                                 }
                             }
                         }
@@ -2149,7 +2149,7 @@ public:
             this->visit_unit_decl2(*x.m_decl[i]);
             if (tmp && ASR::is_a<ASR::require_instantiation_t>(*tmp)) {
                 reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
-                tmp = nullptr;    
+                tmp = nullptr;
             }
         }
         for (size_t i=0; i<x.n_funcs; i++) {
@@ -2229,7 +2229,7 @@ public:
                 throw SemanticError("Parameter '" + std::string(x.m_namelist[i])
                     + "' was not declared", x.base.base.loc);
             }
-            
+
             ASR::symbol_t *requires_arg_sym = current_scope->resolve_symbol(requires_arg);
             context_map[requirement_arg] = requires_arg;
             if (!requires_arg_sym) {
@@ -2244,7 +2244,7 @@ public:
         for (auto &item: req->m_symtab->get_scope()) {
             if (ASR::is_a<ASR::CustomOperator_t>(*item.second)) {
                 ASR::CustomOperator_t *c_op = ASR::down_cast<ASR::CustomOperator_t>(item.second);
-                
+
                 // may not need to add new custom operators if another requires already got an interface
                 Vec<ASR::symbol_t*> symbols;
                 symbols.reserve(al, c_op->n_procs);
@@ -2492,7 +2492,7 @@ public:
                         }
                     } else if (is_cmpop) {
                         if (!ASRUtils::check_equal_type(ltype, rtype) || !ASRUtils::is_logical(*ftype)) {
-                            throw SemanticError("Intrinsic operator " + op_name + 
+                            throw SemanticError("Intrinsic operator " + op_name +
                                 " requires same-typed arguments and a logical return type", x.base.base.loc);
                         }
                     }
@@ -2521,7 +2521,7 @@ public:
                         current_scope->get_symbol("arg0")));
                     ASR::expr_t *rexpr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                         current_scope->get_symbol("arg1")));
-                        
+
                     if (is_binop) {
                         value = ASRUtils::EXPR(ASRUtils::make_Binop_util(al, x.base.base.loc, binop, lexpr, rexpr, ltype));
                         return_type = ASRUtils::duplicate_type(al, ltype);

@@ -87,8 +87,10 @@ private:
   //! To be used by visit_StructInstanceMember.
   std::string current_der_type_name;
 
-  //! Helpful for debugging while testing LLVM code
-  void print_util(llvm::Value* v, std::string fmt_chars, std::string endline="\t") {
+    //! Helpful for debugging while testing LLVM code
+    void print_util(llvm::Value* v, std::string fmt_chars, std::string endline="\t") {
+        // Usage:
+        // print_util(tmp, "%d") // `tmp` to be an integer type
         std::vector<llvm::Value *> args;
         std::vector<std::string> fmt;
         args.push_back(v);
@@ -104,6 +106,26 @@ private:
         printf_args.push_back(fmt_ptr);
         printf_args.insert(printf_args.end(), args.begin(), args.end());
         printf(context, *module, *builder, printf_args);
+    }
+
+    //! Helpful for debugging while testing LLVM code
+    void print_util(llvm::Value* v, std::string endline="\n") {
+        // Usage:
+        // print_util(tmp)
+        std::string buf;
+        llvm::raw_string_ostream os(buf);
+        v->print(os);
+        std::cout << os.str() << endline;
+    }
+
+    //! Helpful for debugging while testing LLVM code
+    void print_util(llvm::Type* v, std::string endline="\n") {
+        // Usage:
+        // print_util(tmp->getType())
+        std::string buf;
+        llvm::raw_string_ostream os(buf);
+        v->print(os);
+        std::cout << os.str() << endline;
     }
 
 public:
@@ -2500,8 +2522,13 @@ public:
         }
         this->visit_expr(*x.m_v);
         ptr_loads = ptr_loads_copy;
-        if( ASR::is_a<ASR::Class_t>(*ASRUtils::type_get_past_pointer(x_m_v_type)) ) {
-            tmp = CreateLoad(llvm_utils->create_gep(tmp, 1));
+        if( ASR::is_a<ASR::Class_t>(*ASRUtils::type_get_past_pointer(
+                ASRUtils::type_get_past_allocatable(x_m_v_type))) ) {
+            if (ASRUtils::is_allocatable(x_m_v_type)) {
+                tmp = llvm_utils->create_gep(CreateLoad(tmp), 1);
+            } else {
+                tmp = CreateLoad(llvm_utils->create_gep(tmp, 1));
+            }
             if( current_select_type_block_type ) {
                 tmp = builder->CreateBitCast(tmp, current_select_type_block_type);
                 current_der_type_name = current_select_type_block_der_type;
@@ -2537,29 +2564,25 @@ public:
             current_der_type_name = dertype2parent[current_der_type_name];
         }
         int member_idx = name2memidx[current_der_type_name][member_name];
-        // if( (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) ||
-        //      ASR::is_a<ASR::UnionInstanceMember_t>(*x.m_v)) &&
-        //     is_nested_pointer(tmp) ) {
-        //     tmp = CreateLoad(tmp);
-        // }
+
         tmp = llvm_utils->create_gep(tmp, member_idx);
         ASR::ttype_t* member_type = ASRUtils::type_get_past_pointer(
             ASRUtils::type_get_past_allocatable(member->m_type));
         if( ASR::is_a<ASR::Struct_t>(*member_type) ) {
-            ASR::Struct_t* der = ASR::down_cast<ASR::Struct_t>(member_type);
-            ASR::StructType_t* der_type = ASR::down_cast<ASR::StructType_t>(
-                der->m_derived_type);
-            current_der_type_name = std::string(der_type->m_name);
+            ASR::symbol_t *s_sym = ASR::down_cast<ASR::Struct_t>(
+                member_type)->m_derived_type;
+            current_der_type_name = ASRUtils::symbol_name(
+                ASRUtils::symbol_get_past_external(s_sym));
             uint32_t h = get_hash((ASR::asr_t*)member);
             if( llvm_symtab.find(h) != llvm_symtab.end() ) {
                 // This doesn't seems to be used, verify while submitting a PR
                 tmp = llvm_symtab[h];
             }
-        }
-        else if (ASR::is_a<ASR::Class_t>(*member_type)) {
-            ASR::symbol_t *class_type = ASR::down_cast<ASR::Class_t>(
+        } else if ( ASR::is_a<ASR::Class_t>(*member_type) ) {
+            ASR::symbol_t *s_sym = ASR::down_cast<ASR::Class_t>(
                 member_type)->m_class_type;
-            current_der_type_name = ASRUtils::symbol_name(class_type);
+            current_der_type_name = ASRUtils::symbol_name(
+                ASRUtils::symbol_get_past_external(s_sym));
         }
     }
 
@@ -8522,13 +8545,9 @@ public:
 
                 int dt_idx = name2memidx[ASRUtils::symbol_name(struct_sym)]
                     [ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(struct_mem->m_m))];
-                llvm::Value* dt_1 = llvm_utils->create_gep(
-                    dt, dt_idx);
-                dt_1 = llvm_utils->create_gep(dt_1, 1);
+                llvm::Value* dt_1 = llvm_utils->create_gep(dt, dt_idx);
+                dt_1 = CreateLoad(llvm_utils->create_gep(CreateLoad(dt_1), 1));
                 llvm::Value* class_ptr = llvm_utils->create_gep(dt_polymorphic, 1);
-                if (is_nested_pointer(dt_1)) {
-                    dt_1 = CreateLoad(dt_1);
-                }
                 builder->CreateStore(dt_1, class_ptr);
                 if (self_argument.length() == 0) {
                     args.push_back(dt_polymorphic);
