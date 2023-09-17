@@ -3467,6 +3467,15 @@ class SymbolDuplicator {
         if( !node_duplicator.success ) {
             return nullptr;
         }
+        if (ASR::is_a<ASR::Struct_t>(*m_type)) {
+            ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(m_type);
+            std::string derived_type_name = ASRUtils::symbol_name(st->m_derived_type);
+            ASR::symbol_t* derived_type_sym = destination_symtab->resolve_symbol(derived_type_name);
+            LCOMPILERS_ASSERT_MSG( derived_type_sym != nullptr, "derived_type_sym cannot be nullptr");
+            if (derived_type_sym != st->m_derived_type) {
+                st->m_derived_type = derived_type_sym;
+            }
+        }
         return ASR::down_cast<ASR::symbol_t>(
             ASR::make_Variable_t(al, variable->base.base.loc, destination_symtab,
                 variable->m_name, variable->m_dependencies, variable->n_dependencies,

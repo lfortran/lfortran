@@ -93,10 +93,19 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             node_duplicator.allow_procedure_calls = true;
             SymbolTable* new_symtab = al.make_new<SymbolTable>(current_scope);
             ASRUtils::SymbolDuplicator symbol_duplicator(al);
+            // first duplicate the external symbols
+            // so they can be referenced by derived_type
             for( auto& item: x->m_symtab->get_scope() ) {
-                symbol_duplicator.duplicate_symbol(item.second, new_symtab);
+                if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                    symbol_duplicator.duplicate_symbol(item.second, new_symtab);
+                }
             }
-            Vec<ASR::expr_t*> new_args;
+            for( auto& item: x->m_symtab->get_scope() ) {
+                if (!ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                    symbol_duplicator.duplicate_symbol(item.second, new_symtab);
+                }
+            }
+          Vec<ASR::expr_t*> new_args;
             std::string suffix = "";
             new_args.reserve(al, x->n_args);
             ASR::expr_t* return_var = nullptr;
