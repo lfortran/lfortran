@@ -800,8 +800,41 @@ public:
         current_symbol = (int64_t) ASR::symbolType::Function;
         ASR::accessType s_access = dflt_access;
         ASR::deftypeType deftype = ASR::deftypeType::Implementation;
+        std::string sym_name = to_lower(x.m_name);
+
+        SymbolTable *grandparent_scope = current_scope;
         SymbolTable *parent_scope = current_scope;
+
         current_scope = al.make_new<SymbolTable>(parent_scope);
+
+        // Handle templated functions
+        if (x.n_temp_args > 0) {
+            SetChar temp_args;
+            temp_args.reserve(al, x.n_temp_args);
+            for (size_t i=0; i < x.n_temp_args; i++) {
+                current_procedure_args.push_back(to_lower(x.m_temp_args[i]));
+                temp_args.push_back(al, s2c(al, to_lower(x.m_temp_args[i])));
+            }
+
+            Vec<ASR::require_instantiation_t*> reqs;
+            reqs.reserve(al, x.n_decl);
+            for (size_t i=0; i < x.n_decl; i++) {
+                if (AST::is_a<AST::Requires_t>(*x.m_decl[i])) {
+                    this->visit_unit_decl2(*x.m_decl[i]);
+                    reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
+                    tmp = nullptr;
+                }
+            }
+
+            ASR::asr_t *temp = ASR::make_Template_t(al, x.base.base.loc,
+                current_scope, s2c(al, sym_name), temp_args.p, temp_args.size(), reqs.p, reqs.size());
+
+            parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(temp));
+            parent_scope = current_scope;
+            current_scope = al.make_new<SymbolTable>(parent_scope);
+            current_procedure_args.clear();
+        }
+
         for (size_t i=0; i<x.n_args; i++) {
             char *arg=x.m_args[i].m_arg;
             current_procedure_args.push_back(to_lower(arg));
@@ -817,7 +850,9 @@ public:
         }
         for (size_t i=0; i<x.n_decl; i++) {
             is_Function = true;
-            visit_unit_decl2(*x.m_decl[i]);
+            if (!AST::is_a<AST::Requires_t>(*x.m_decl[i])) {
+                visit_unit_decl2(*x.m_decl[i]);
+            }
             is_Function = false;
         }
         for (size_t i=0; i<x.n_contains; i++) {
@@ -968,7 +1003,6 @@ public:
             ASR::down_cast<ASR::symbol_t>(return_var));
 
         // Create and register the function
-        std::string sym_name = to_lower(x.m_name);
         if (assgnd_access.count(sym_name)) {
             s_access = assgnd_access[sym_name];
         }
@@ -1025,7 +1059,11 @@ public:
             nullptr, 0, is_requirement, false, false);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
-        current_scope = parent_scope;
+        if (x.n_temp_args > 0) {
+            current_scope = grandparent_scope;
+        } else {
+            current_scope = parent_scope;
+        }
         current_procedure_args.clear();
         current_procedure_abi_type = ASR::abiType::Source;
         current_symbol = -1;
@@ -2313,274 +2351,6 @@ public:
         class_procedures.clear();
 
         is_template = false;
-    }
-
-    void visit_TemplatedFunction(const AST::TemplatedFunction_t &x) {
-        in_Subroutine = true;
-
-        SymbolTable *parent_scope = current_scope;
-        current_scope = al.make_new<SymbolTable>(parent_scope);
-
-        std::string sym_name = to_lower(x.m_name);
-
-        SetChar temp_args;
-        temp_args.reserve(al, x.n_temp_args);
-        for (size_t i=0; i < x.n_temp_args; i++) {
-            current_procedure_args.push_back(to_lower(x.m_temp_args[i]));
-            temp_args.push_back(al, s2c(al, to_lower(x.m_temp_args[i])));
-        }
-
-        Vec<ASR::require_instantiation_t*> reqs;
-        reqs.reserve(al, x.n_decl);
-        for (size_t i=0; i < x.n_decl; i++) {
-            if (AST::is_a<AST::Requires_t>(*x.m_decl[i])) {
-                this->visit_unit_decl2(*x.m_decl[i]);
-                reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
-                tmp = nullptr;
-            }
-        }
-
-        ASR::asr_t *temp = ASR::make_Template_t(al, x.base.base.loc,
-            current_scope, s2c(al, sym_name), temp_args.p, temp_args.size(), reqs.p, reqs.size());
-        
-        parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(temp));
-        SymbolTable *template_scope = current_scope;
-
-        current_procedure_args.clear();
-
-        current_scope = al.make_new<SymbolTable>(template_scope);
-
-        SetChar current_function_dependencies_copy = current_function_dependencies;
-        current_function_dependencies.clear(al);
-        
-        if (compiler_options.implicit_typing) {
-            Location a_loc = x.base.base.loc;
-            populate_implicit_dictionary(a_loc, implicit_dictionary);
-            process_implicit_statements(x, implicit_dictionary);
-        } else {
-            for (size_t i=0;i<x.n_implicit;i++) {
-                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
-                    throw SemanticError("Implicit typing is not allowed, enable it by using --implicit-typing ", x.m_implicit[i]->base.loc);
-                }
-            }
-        }
-
-        for (size_t i=0; i<x.n_args; i++) {
-            char *arg=x.m_args[i].m_arg;
-            current_procedure_args.push_back(to_lower(arg));    // function args
-        }
-
-        ASR::accessType s_access = dflt_access;
-        ASR::deftypeType deftype = ASR::deftypeType::Implementation;
-
-        current_procedure_abi_type = ASR::abiType::Source;
-        char *bindc_name = nullptr;
-        extract_bind(x, current_procedure_abi_type, bindc_name);
-
-        for (size_t i=0; i<x.n_use; i++) {
-            visit_unit_decl1(*x.m_use[i]);
-        }
-
-        for (size_t i=0; i<x.n_decl; i++) {
-            is_Function = true;
-            if (!AST::is_a<AST::Requires_t>(*x.m_decl[i])) {
-                visit_unit_decl2(*x.m_decl[i]);
-            }
-            is_Function = false;
-        }
-
-        for (size_t i=0; i<x.n_contains; i++) {
-            bool current_storage_save = default_storage_save;
-            default_storage_save = false;
-            visit_program_unit(*x.m_contains[i]);
-            default_storage_save = current_storage_save;
-        }
-
-        // Handle args
-        Vec<ASR::expr_t*> args;
-        args.reserve(al, x.n_args);
-        for (size_t i=0; i<x.n_args; i++) {
-            char *arg=x.m_args[i].m_arg;
-            std::string arg_s = to_lower(arg);
-            if (current_scope->get_symbol(arg_s) == nullptr) {
-                if (compiler_options.implicit_typing) {
-                    ASR::ttype_t *t = implicit_dictionary[std::string(1, arg_s[0])];
-                    declare_implicit_variable2(x.base.base.loc, arg_s,
-                        ASRUtils::intent_unspecified, t);
-                } else {
-                    throw SemanticError("Dummy argument '" + arg_s + "' not defined", x.base.base.loc);
-                }
-            }
-            ASR::symbol_t *var = current_scope->get_symbol(arg_s);
-            args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
-                var)));
-        }
-
-        // Handle return var
-        std::string return_var_name;
-        if (x.m_return_var) {
-            if (x.m_return_var->type == AST::exprType::Name) {
-                return_var_name = to_lower(((AST::Name_t*)(x.m_return_var))->m_id);
-            } else {
-                throw SemanticError("Return variable must be an identifier",
-                    x.m_return_var->base.loc);
-            }
-        } else {
-            return_var_name = to_lower(x.m_name);
-        }
-
-        ASR::asr_t *return_var;
-        AST::AttrType_t *return_type = find_return_type(x.m_attributes,
-            x.n_attributes, x.base.base.loc, return_var_name);
-        if (current_scope->get_symbol(return_var_name) == nullptr) {
-            if (!return_type) {
-                throw SemanticError("Return type not specified", x.base.base.loc);
-            }
-            ASR::ttype_t *type;
-            int a_kind = 4;
-            int a_len = -10;
-            if (return_type->m_kind != nullptr) {
-                if (return_type->n_kind == 1) {
-                    visit_expr(*return_type->m_kind->m_value);
-                    ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
-                    if (return_type->m_type == AST::decl_typeType::TypeCharacter) {
-                        a_len = ASRUtils::extract_len<SemanticError>(kind_expr, x.base.base.loc);
-                    } else {
-                        a_kind = ASRUtils::extract_kind<SemanticError>(kind_expr, x.base.base.loc);
-                    }
-                } else {
-                    throw SemanticError("Only one kind item supported for now", x.base.base.loc);
-                }
-            }
-            switch (return_type->m_type) {
-                case (AST::decl_typeType::TypeInteger) : {
-                    type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, a_kind));
-                    break;
-                }
-                case (AST::decl_typeType::TypeReal) : {
-                    type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, a_kind));
-                    break;
-                }
-                case (AST::decl_typeType::TypeDoublePrecision) : {
-                    type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8));
-                    break;
-                }
-                case (AST::decl_typeType::TypeComplex) : {
-                    type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, a_kind));
-                    break;
-                }
-                case (AST::decl_typeType::TypeDoubleComplex) : {
-                    type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, 8));
-                    break;
-                }
-                case (AST::decl_typeType::TypeLogical) : {
-                    type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
-                    break;
-                }
-                case (AST::decl_typeType::TypeCharacter) : {
-                    type = ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc, 1, a_len, nullptr));
-                    break;
-                }
-                case (AST::decl_typeType::TypeType) : {
-                    LCOMPILERS_ASSERT(return_type->m_name);
-                    std::string derived_type_name = to_lower(return_type->m_name);
-                    ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
-                    if (!v) {
-                        throw SemanticError("Derived type '"
-                            + derived_type_name + "' not declared", x.base.base.loc);
-
-                    }
-                    type = ASRUtils::TYPE(ASR::make_Struct_t(al, x.base.base.loc, v));
-                    break;
-                }
-                default :
-                    throw SemanticError("Return type not supported", x.base.base.loc);
-            }
-            SetChar variable_dependencies_vec;
-            variable_dependencies_vec.reserve(al, 1);
-            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
-            // Add it as a local variable:
-            return_var = ASR::make_Variable_t(al, x.base.base.loc,
-                current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
-                variable_dependencies_vec.size(), ASRUtils::intent_return_var,
-                nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
-                current_procedure_abi_type, ASR::Public, ASR::presenceType::Required,
-                false);
-            current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
-        } else {
-            if (return_type && !(x.n_attributes == 0 && compiler_options.implicit_typing && compiler_options.implicit_interface)) {
-                throw SemanticError("Cannot specify the return type twice",
-                    x.base.base.loc);
-            }
-            // Extract the variable from the local scope
-            return_var = (ASR::asr_t*) current_scope->get_symbol(return_var_name);
-            ASR::Variable_t* return_variable = ASR::down_cast2<ASR::Variable_t>(return_var);
-            return_variable->m_intent = ASRUtils::intent_return_var;
-            SetChar variable_dependencies_vec;
-            variable_dependencies_vec.reserve(al, 1);
-            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, return_variable->m_type,
-                                                    return_variable->m_symbolic_value, return_variable->m_value);
-            return_variable->m_dependencies = variable_dependencies_vec.p;
-            return_variable->n_dependencies = variable_dependencies_vec.size();
-        }
-
-        ASR::asr_t *return_var_ref = ASR::make_Var_t(al, x.base.base.loc,
-            ASR::down_cast<ASR::symbol_t>(return_var));
-
-        if (assgnd_access.count(sym_name)) {
-            s_access = assgnd_access[sym_name];
-        }
-
-        bool is_elemental = false;
-        for(size_t i = 0; i < x.n_attributes && !is_elemental; i++) {
-            AST::decl_attribute_t* func_attr = x.m_attributes[i];
-            if( AST::is_a<AST::SimpleAttribute_t>(*func_attr) ) {
-                AST::SimpleAttribute_t* simple_func_attr = AST::down_cast<AST::SimpleAttribute_t>(func_attr);
-                is_elemental = is_elemental || simple_func_attr->m_attr == AST::simple_attributeType::AttrElemental;
-            }
-        }
-
-        SetChar func_deps;
-        func_deps.reserve(al, current_function_dependencies.size());
-        for( auto& itr: current_function_dependencies ) {
-            func_deps.push_back(al, s2c(al, itr));
-        }
-
-        ASR::asr_t *func = ASRUtils::make_Function_t_util(
-            al, x.base.base.loc,
-            /* a_symtab */ current_scope,
-            /* a_name */ s2c(al, to_lower(sym_name)),
-            /* func_deps */ func_deps.p, func_deps.size(),
-            /* a_args */ args.p,
-            /* n_args */ args.size(),
-            /* a_body */ nullptr,
-            /* n_body */ 0,
-            /* a_return_var */ ASRUtils::EXPR(return_var_ref),
-            current_procedure_abi_type, s_access, deftype,
-            bindc_name, is_elemental, false, false, false, false,
-            nullptr, 0, is_requirement, false, false);
-
-        handle_save();
-        template_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(func));
-        current_scope = parent_scope;
-        current_procedure_args.clear();
-        current_procedure_abi_type = ASR::abiType::Source;
-        current_symbol = -1;
-
-        if (compiler_options.implicit_typing) {
-            uint64_t hash = get_hash(tmp);
-
-            implicit_mapping[hash] = implicit_dictionary;
-
-            implicit_dictionary.clear();
-        }
-
-        uint64_t hash = get_hash(tmp);
-        external_procedures_mapping[hash] = external_procedures;
-
-        current_function_dependencies = current_function_dependencies_copy;
-        in_Subroutine = false;
-        mark_common_blocks_as_declared();
     }
 
     void visit_Instantiate(const AST::Instantiate_t &x) {
