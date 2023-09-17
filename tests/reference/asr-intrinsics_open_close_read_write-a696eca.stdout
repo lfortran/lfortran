@@ -303,22 +303,31 @@
                             ()
                             ()
                             ()
-                            [(ArrayItem
-                                (Var 2 x)
-                                [(()
-                                (Var 2 i)
-                                ())]
-                                (Real 4)
-                                ColMajor
-                                ()
-                            )
-                            (ArrayItem
-                                (Var 2 y)
-                                [(()
-                                (Var 2 i)
-                                ())]
-                                (Real 4)
-                                ColMajor
+                            [(StringFormat
+                                (StringConstant
+                                    "(10F8.2)"
+                                    (Character 1 8 ())
+                                )
+                                [(ArrayItem
+                                    (Var 2 x)
+                                    [(()
+                                    (Var 2 i)
+                                    ())]
+                                    (Real 4)
+                                    ColMajor
+                                    ()
+                                )
+                                (ArrayItem
+                                    (Var 2 y)
+                                    [(()
+                                    (Var 2 i)
+                                    ())]
+                                    (Real 4)
+                                    ColMajor
+                                    ()
+                                )]
+                                FormatFortran
+                                (Character -1 0 ())
                                 ()
                             )]
                             ()

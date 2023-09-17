@@ -127,22 +127,31 @@
                                         ()
                                         ()
                                         ()
-                                        [(StructInstanceMember
-                                            (Var 6 rhs)
-                                            6 1_toml_date_year
-                                            (Integer 4)
-                                            ()
-                                        )
-                                        (StructInstanceMember
-                                            (Var 6 rhs)
-                                            6 1_toml_date_month
-                                            (Integer 4)
-                                            ()
-                                        )
-                                        (StructInstanceMember
-                                            (Var 6 rhs)
-                                            6 1_toml_date_day
-                                            (Integer 4)
+                                        [(StringFormat
+                                            (StringConstant
+                                                "(i4.4,\"-\",i2.2,\"-\",i2.2)"
+                                                (Character 1 24 ())
+                                            )
+                                            [(StructInstanceMember
+                                                (Var 6 rhs)
+                                                6 1_toml_date_year
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (StructInstanceMember
+                                                (Var 6 rhs)
+                                                6 1_toml_date_month
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (StructInstanceMember
+                                                (Var 6 rhs)
+                                                6 1_toml_date_day
+                                                (Integer 4)
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (Character -1 0 ())
                                             ()
                                         )]
                                         ()
@@ -904,30 +913,39 @@
                                             ()
                                             ()
                                             ()
-                                            [(StructInstanceMember
-                                                (Var 7 rhs)
-                                                7 1_toml_time_hour
-                                                (Integer 4)
-                                                ()
-                                            )
-                                            (StructInstanceMember
-                                                (Var 7 rhs)
-                                                7 1_toml_time_minute
-                                                (Integer 4)
-                                                ()
-                                            )
-                                            (StructInstanceMember
-                                                (Var 7 rhs)
-                                                7 1_toml_time_second
-                                                (Integer 4)
-                                                ()
-                                            )
-                                            (StructInstanceMember
-                                                (Var 7 rhs)
-                                                7 1_toml_time_millisec
-                                                (Allocatable
-                                                    (Integer 4)
+                                            [(StringFormat
+                                                (StringConstant
+                                                    "(i2.2,\":\",i2.2,\":\",i2.2,\".\",i3.3)"
+                                                    (Character 1 33 ())
                                                 )
+                                                [(StructInstanceMember
+                                                    (Var 7 rhs)
+                                                    7 1_toml_time_hour
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                (StructInstanceMember
+                                                    (Var 7 rhs)
+                                                    7 1_toml_time_minute
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                (StructInstanceMember
+                                                    (Var 7 rhs)
+                                                    7 1_toml_time_second
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                (StructInstanceMember
+                                                    (Var 7 rhs)
+                                                    7 1_toml_time_millisec
+                                                    (Allocatable
+                                                        (Integer 4)
+                                                    )
+                                                    ()
+                                                )]
+                                                FormatFortran
+                                                (Character -1 0 ())
                                                 ()
                                             )]
                                             ()
@@ -952,22 +970,31 @@
                                             ()
                                             ()
                                             ()
-                                            [(StructInstanceMember
-                                                (Var 7 rhs)
-                                                7 1_toml_time_hour
-                                                (Integer 4)
-                                                ()
-                                            )
-                                            (StructInstanceMember
-                                                (Var 7 rhs)
-                                                7 1_toml_time_minute
-                                                (Integer 4)
-                                                ()
-                                            )
-                                            (StructInstanceMember
-                                                (Var 7 rhs)
-                                                7 1_toml_time_second
-                                                (Integer 4)
+                                            [(StringFormat
+                                                (StringConstant
+                                                    "(i2.2,\":\",i2.2,\":\",i2.2)"
+                                                    (Character 1 24 ())
+                                                )
+                                                [(StructInstanceMember
+                                                    (Var 7 rhs)
+                                                    7 1_toml_time_hour
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                (StructInstanceMember
+                                                    (Var 7 rhs)
+                                                    7 1_toml_time_minute
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                (StructInstanceMember
+                                                    (Var 7 rhs)
+                                                    7 1_toml_time_second
+                                                    (Integer 4)
+                                                    ()
+                                                )]
+                                                FormatFortran
+                                                (Character -1 0 ())
                                                 ()
                                             )]
                                             ()

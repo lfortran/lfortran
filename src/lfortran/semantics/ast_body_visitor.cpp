@@ -537,6 +537,9 @@ public:
                 *args[i] = ASRUtils::EXPR(tmp);
             }
         }
+        if (_type == AST::stmtType::Write){
+            a_fmt_constant = a_fmt;
+        }
         for( std::uint32_t i = 0; i < n_kwargs; i++ ) {
             AST::kw_argstar_t kwarg = m_kwargs[i];
             std::string m_arg_str(kwarg.m_arg);
@@ -621,7 +624,7 @@ public:
                 ASR::expr_t *newline = ASRUtils::EXPR(ASR::make_StringConstant_t(
                     al, loc, s2c(al, "\n"), str_type_len_1));
                 if (ASR::is_a<ASR::StringConstant_t>(*adv_val_expr)) {
-                    std::string adv_val = ASR::down_cast<ASR::StringConstant_t>(adv_val_expr)->m_s;
+                    std::string adv_val = to_lower(ASR::down_cast<ASR::StringConstant_t>(adv_val_expr)->m_s);
                     if (adv_val == "yes") {
                         a_end = newline;
                     } else if (adv_val == "no") {
