@@ -8887,45 +8887,17 @@ public:
         //ASR::expr_t* fmt_value = ASRUtils::expr_value(x.m_fmt);
         // if (fmt_value) ...
         if (x.m_kind == ASR::string_format_kindType::FormatFortran) {
-            std::vector<llvm::Value *> args,values;
+            std::vector<llvm::Value *> args;
             int size = x.n_args;
-
-            for (size_t i=0; i<x.n_args; i++) {
-                std::vector<std::string>fmt;
-                if (PassUtils::is_array(x.m_args[i])) {
-                    ASR::expr_t *arr_expr = x.m_args[i];
-                    ASR::dimension_t* m_dims;
-                    int n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(arr_expr), m_dims);
-                    int m_dim_length = ASR::down_cast<ASR::IntegerConstant_t>(m_dims->m_length)->m_n;
-                    size = size + n_dims*m_dim_length - 1;
-                    Vec<ASR::expr_t*> idx_vars;
-                    PassUtils::create_idx_vars(idx_vars, n_dims, x.base.base.loc, al, current_scope,"_v");
-                    ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-                    ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
-                    for (int n = 0; n < n_dims; n++) {
-                        ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, idx_vars[n], one, nullptr));
-                        this->visit_stmt(*assign);
-                        for (int m = 0; m < m_dim_length; m++) {
-                            ASR::expr_t* ref = PassUtils::create_array_ref(arr_expr, idx_vars, al, current_scope);
-                            compute_fmt_specifier_and_arg(fmt, values, ref, x.base.base.loc);
-                            this->visit_expr_wrapper(ref);
-                            ASR::expr_t* increment = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, x.base.base.loc, idx_vars[n],
-                                ASR::binopType::Add, one, int32_type, nullptr));
-                            ASR::stmt_t* assign_inc = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, idx_vars[n], increment, nullptr));
-                            this->visit_stmt(*assign_inc);
-                        }
-                    }
-                } else {
-                    //  Use the function to compute the args, but ignore the format
-                    compute_fmt_specifier_and_arg(fmt, values, x.m_args[i], x.base.base.loc);
-                }
-            }
             llvm::Value *count = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), size);
             args.push_back(count);
             visit_expr(*x.m_fmt);
             args.push_back(tmp);
-            for (size_t i=0; i<values.size(); i++) {
-                args.push_back(values[i]);
+
+            for (size_t i=0; i<x.n_args; i++) {
+                std::vector<std::string>fmt;
+                //  Use the function to compute the args, but ignore the format
+                compute_fmt_specifier_and_arg(fmt, args, x.m_args[i], x.base.base.loc);
             }
             tmp = string_format_fortran(context, *module, *builder, args);
         } else {
