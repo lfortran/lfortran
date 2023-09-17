@@ -363,7 +363,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     }
 }
 
-char** parse_fortran_format(char* format, int *count) {
+char** parse_fortran_format(char* format, int *count, int *item_start) {
     char** format_values_2 = NULL;
     int format_values_count = *count;
     int index = 0 , start = 0;
@@ -409,18 +409,20 @@ char** parse_fortran_format(char* format, int *count) {
                 format_values_2[format_values_count++] = substring(format, start, index);
                 index--;
                 break;
+            case '(' :
+                start = index++;
+                while (format[index] != ')') index++;
+                format_values_2[format_values_count++] = substring(format, start, index+1);
+                *item_start = format_values_count;
+                break;
             default :
                 if (isdigit(format[index]) && tolower(format[index+1]) == 'p') {
                     start = index;
                     if (format[index-1] == '-') {
                         start = index - 1;
                     }
-                    index = index + 3;
-                    while (isdigit(format[index])) index++;
-                    if (format[index] == '.') index++;
-                    while (isdigit(format[index])) index++;
-                    format_values_2[format_values_count++] = substring(format, start, index);
-                    index--;
+                    index = index + 1;
+                    format_values_2[format_values_count++] = substring(format, start, index + 1);
                 } else if (isdigit(format[index])) {
                     char* fmt;
                     start = index;
@@ -430,6 +432,7 @@ char** parse_fortran_format(char* format, int *count) {
                         start = index++;
                         while (format[index] != ')') index++;
                         fmt = substring(format, start, index+1);
+                        *item_start = format_values_count+1;
                     } else {
                         start = index++;
                         if (isdigit(format[index])) {
@@ -462,12 +465,14 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
         modified_input_string = substring(format, 1, len - 1);
     }
     char** format_values = (char**)malloc(sizeof(char*));
-    int format_values_count = 0;
-    format_values = parse_fortran_format(modified_input_string,&format_values_count);
+    int format_values_count = 0,item_start_idx=0;
+    format_values = parse_fortran_format(modified_input_string,&format_values_count,&item_start_idx);
     char* result = (char*)malloc(sizeof(char));
     result[0] = '\0';
+    int item_start = 0;
     while (1) {
-        for (int i = 0; i < format_values_count; i++) {
+        int scale = 0;
+        for (int i = item_start; i < format_values_count; i++) {
             char* value = format_values[i];
 
             if (value[0] == '/') {
@@ -491,7 +496,6 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 value = substring(value, 0, strlen(value) - newline);
             }
 
-            int scale = 0;
             if (isdigit(value[0]) && tolower(value[1]) == 'p') {
                 // Scale Factor (nP)
                 scale = atoi(&value[0]);
@@ -505,10 +509,9 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 value = substring(value, 1, strlen(value)-1);
                 char** new_fmt_val = (char**)malloc(sizeof(char*));
                 int new_fmt_val_count = 0;
-                new_fmt_val = parse_fortran_format(value,&new_fmt_val_count);
+                new_fmt_val = parse_fortran_format(value,&new_fmt_val_count,&item_start_idx);
 
                 format_values = (char**)realloc(format_values, (format_values_count + new_fmt_val_count + 1) * sizeof(char*));
-                int totalSize = format_values_count + new_fmt_val_count;
                 for (int k = format_values_count - 1; k >= i+1; k--) {
                     format_values[k + new_fmt_val_count] = format_values[k];
                 }
@@ -579,6 +582,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
         }
         if ( count > 0 ) {
             result = append_to_string(result, "\n");
+            item_start = item_start_idx;
         } else {
             break;
         }
