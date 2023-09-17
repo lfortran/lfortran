@@ -528,6 +528,8 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             ")" { RET(TK_RPAREN) }
             "[" | "(/" { RET(TK_LBRACKET) }
             "]" { RET(TK_RBRACKET) }
+            "{" { RET(TK_LBRACE) }
+            "}" { RET(TK_RBRACE) }
             "/)" { RET(TK_RBRACKET_OLD) }
             "+" { RET(TK_PLUS) }
             "-" { RET(TK_MINUS) }

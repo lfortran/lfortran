@@ -102,6 +102,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token TK_RPAREN ")"
 %token TK_LBRACKET "["
 %token TK_RBRACKET "]"
+%token TK_LBRACE "{"
+%token TK_RBRACE "}"
 %token TK_RBRACKET_OLD "/)"
 %token TK_PERCENT "%"
 %token TK_VBAR "|"
@@ -742,6 +744,7 @@ instantiate
         $$ = INSTANTIATE2($2, $4, $9, @$); }
     ;
 
+
 end_type
     : KW_END_TYPE id_opt
     | KW_ENDTYPE id_opt
@@ -982,6 +985,14 @@ function
         end_function sep {
             LLOC(@$, @16); $$ = FUNCTION($1, $3, $5, $7, $8, TRIVIA($9, $16, @$),
                 $10, $11, $12, SPLIT_DECL(p.m_a, $13), SPLIT_STMT(p.m_a, $13), $14, @$); }
+    | fn_mod_plus KW_FUNCTION id "{" id_list "}" "(" id_list_opt ")"
+        result_opt
+        sep
+        decl_statements
+        end_function sep {
+            LLOC(@$, @14); $$ = TEMPLATED_FUNCTION($1, $3, $5, $8, $10, nullptr,
+                TRIVIA($11, $14, @$), SPLIT_DECL(p.m_a, $12),
+                SPLIT_STMT(p.m_a, $12), @$); } 
     ;
 
 fn_mod_plus
@@ -1541,6 +1552,7 @@ decl_statement
     | enum_decl
     | statement
     | instantiate
+    | requires_decl
     ;
 
 statement

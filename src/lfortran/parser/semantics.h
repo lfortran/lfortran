@@ -1305,7 +1305,9 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
         /*body*/ STMTS(stmts), \
         /*n_body*/ stmts.size(), \
         /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size())
+        /*n_contains*/ contains.size(), \
+        /*temp_args*/ nullptr, \
+        /*n_temp_args*/ 0)
 #define FUNCTION0(name, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, l) make_Function_t(p.m_a, l, \
         /*name*/ name2char(name), \
         /*args*/ ARGS(p.m_a, l, args), \
@@ -1326,7 +1328,33 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
         /*body*/ STMTS(stmts), \
         /*n_body*/ stmts.size(), \
         /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size())
+        /*n_contains*/ contains.size(), \
+        /*temp_args*/ nullptr, \
+        /*n_temp_args*/ 0)
+#define TEMPLATED_FUNCTION(fn_type, name, temp_args, fn_args, return_var, bind, trivia, decl, stmts, l) \
+        make_Function_t(p.m_a, l, \
+        /*name*/ name2char(name), \
+        /*args*/ ARGS(p.m_a, l, fn_args), \
+        /*n_args*/ fn_args.size(), \
+        /*m_attributes*/ VEC_CAST(fn_type, decl_attribute), \
+        /*n_attributes*/ fn_type.size(), \
+        /*return_var*/ EXPR_OPT(return_var), \
+        /*bind*/ bind_opt(bind), \
+        trivia_cast(trivia), \
+        /*use*/ nullptr, \
+        /*n_use*/ 0, \
+        /*m_import*/ nullptr, \
+        /*n_import*/ 0, \
+        /*m_implicit*/ nullptr, \
+        /*n_implicit*/ 0, \
+        /*decl*/ DECLS(decl), \
+        /*n_decl*/ decl.size(), \
+        /*body*/ STMTS(stmts), \
+        /*n_body*/ stmts.size(), \
+        /*contains*/ nullptr, \
+        /*n_contains*/ 0, \
+        /*temp_args*/ REDUCE_ARGS(p.m_a, temp_args), \
+        /*n_temp_args*/ temp_args.size())
 
 Vec<ast_t*> SPLIT_DECL(Allocator &al, Vec<ast_t*> ast)
 {

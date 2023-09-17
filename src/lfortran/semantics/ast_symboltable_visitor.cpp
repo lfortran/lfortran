@@ -800,8 +800,41 @@ public:
         current_symbol = (int64_t) ASR::symbolType::Function;
         ASR::accessType s_access = dflt_access;
         ASR::deftypeType deftype = ASR::deftypeType::Implementation;
+        std::string sym_name = to_lower(x.m_name);
+
+        SymbolTable *grandparent_scope = current_scope;
         SymbolTable *parent_scope = current_scope;
+
         current_scope = al.make_new<SymbolTable>(parent_scope);
+
+        // Handle templated functions
+        if (x.n_temp_args > 0) {
+            SetChar temp_args;
+            temp_args.reserve(al, x.n_temp_args);
+            for (size_t i=0; i < x.n_temp_args; i++) {
+                current_procedure_args.push_back(to_lower(x.m_temp_args[i]));
+                temp_args.push_back(al, s2c(al, to_lower(x.m_temp_args[i])));
+            }
+
+            Vec<ASR::require_instantiation_t*> reqs;
+            reqs.reserve(al, x.n_decl);
+            for (size_t i=0; i < x.n_decl; i++) {
+                if (AST::is_a<AST::Requires_t>(*x.m_decl[i])) {
+                    this->visit_unit_decl2(*x.m_decl[i]);
+                    reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
+                    tmp = nullptr;
+                }
+            }
+
+            ASR::asr_t *temp = ASR::make_Template_t(al, x.base.base.loc,
+                current_scope, s2c(al, sym_name), temp_args.p, temp_args.size(), reqs.p, reqs.size());
+
+            parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(temp));
+            parent_scope = current_scope;
+            current_scope = al.make_new<SymbolTable>(parent_scope);
+            current_procedure_args.clear();
+        }
+
         for (size_t i=0; i<x.n_args; i++) {
             char *arg=x.m_args[i].m_arg;
             current_procedure_args.push_back(to_lower(arg));
@@ -817,7 +850,9 @@ public:
         }
         for (size_t i=0; i<x.n_decl; i++) {
             is_Function = true;
-            visit_unit_decl2(*x.m_decl[i]);
+            if (!AST::is_a<AST::Requires_t>(*x.m_decl[i])) {
+                visit_unit_decl2(*x.m_decl[i]);
+            }
             is_Function = false;
         }
         for (size_t i=0; i<x.n_contains; i++) {
@@ -968,7 +1003,6 @@ public:
             ASR::down_cast<ASR::symbol_t>(return_var));
 
         // Create and register the function
-        std::string sym_name = to_lower(x.m_name);
         if (assgnd_access.count(sym_name)) {
             s_access = assgnd_access[sym_name];
         }
@@ -1025,7 +1059,11 @@ public:
             nullptr, 0, is_requirement, false, false);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
-        current_scope = parent_scope;
+        if (x.n_temp_args > 0) {
+            current_scope = grandparent_scope;
+        } else {
+            current_scope = parent_scope;
+        }
         current_procedure_args.clear();
         current_procedure_abi_type = ASR::abiType::Source;
         current_symbol = -1;

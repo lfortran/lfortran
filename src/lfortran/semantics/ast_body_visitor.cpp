@@ -1881,6 +1881,11 @@ public:
         if( t->type == ASR::symbolType::GenericProcedure ) {
             t = current_scope->get_symbol(to_lower(x.m_name) + "~genericprocedure");
         }
+
+        if (x.n_temp_args > 0) {
+            t = ASRUtils::symbol_symtab(t)->get_symbol(to_lower(x.m_name));
+        }
+
         ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
         Vec<ASR::stmt_t*> body;
@@ -3186,6 +3191,7 @@ public:
 
         is_template = false;
     }
+
 };
 
 Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
