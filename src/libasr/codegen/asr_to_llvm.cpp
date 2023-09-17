@@ -5781,7 +5781,7 @@ public:
             case ASR::binopType::Pow: {
                 llvm::Type *type;
                 int a_kind;
-                a_kind = down_cast<ASR::Integer_t>(ASRUtils::type_get_past_pointer(x.m_type))->m_kind;
+                a_kind = down_cast<ASR::Integer_t>(ASRUtils::extract_type(x.m_type))->m_kind;
                 type = llvm_utils->getFPType(a_kind);
                 llvm::Value *fleft = builder->CreateSIToFP(left_val,
                         type);
@@ -5864,7 +5864,7 @@ public:
             case ASR::binopType::Pow: {
                 llvm::Type *type;
                 int a_kind;
-                a_kind = down_cast<ASR::Real_t>(ASRUtils::type_get_past_pointer(x.m_type))->m_kind;
+                a_kind = down_cast<ASR::Real_t>(ASRUtils::extract_type(x.m_type))->m_kind;
                 type = llvm_utils->getFPType(a_kind);
                 std::string func_name = a_kind == 4 ? "llvm.pow.f32" : "llvm.pow.f64";
                 llvm::Function *fn_pow = module->getFunction(func_name);
