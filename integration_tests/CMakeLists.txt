@@ -932,9 +932,11 @@ RUN(NAME template_vector LABELS llvm)
 
 RUN(NAME statement1 LABELS gfortran llvm)
 
-RUN(NAME implied_do_loops1 LABELS gfortran)
+RUN(NAME implied_do_loops1 LABELS gfortran llvm NOFAST)
 RUN(NAME implied_do_loops2 LABELS gfortran)
 RUN(NAME implied_do_loops3 LABELS gfortran)
+RUN(NAME implied_do_loops4 LABELS gfortran llvm)
+
 
 RUN(NAME minpack_01 LABELS gfortran llvm_rtlib EXTRAFILES
         minpack_01_module.f90 minpack_01_func.f90 NOFAST)
