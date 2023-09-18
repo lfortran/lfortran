@@ -2351,7 +2351,8 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         }
     }
 
-    void visit_Allocate(const ASR::Allocate_t &x) {
+    template <typename T>
+    void handle_alloc_realloc(const T &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out = "";
         for (size_t i=0; i<x.n_args; i++) {
@@ -2407,6 +2408,15 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         }
         src = out;
     }
+
+    void visit_Allocate(const ASR::Allocate_t &x) {
+        handle_alloc_realloc(x);
+    }
+
+    void visit_ReAlloc(const ASR::ReAlloc_t &x) {
+        handle_alloc_realloc(x);
+    }
+
 
     void visit_Assert(const ASR::Assert_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
