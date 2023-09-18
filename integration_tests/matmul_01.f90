@@ -24,10 +24,9 @@ contains
     end do
     end subroutine
 
-    ! Like kernel6b, but transposed
     ! The arguments A, B are swapped,
-    ! and then all accesses to A, B, C are tranposed
-    subroutine kernel6c(B, A, C, x, y, i1, s1)
+    ! and all accesses to A, B, C are tranposed
+    subroutine kernel2(B, A, C, x, y, i1, s1)
     real, intent(in) :: A(:,:), B(:,:)
     real, intent(out) :: C(:,:)
     integer, intent(in) :: x, y, i1, s1
@@ -105,41 +104,7 @@ contains
     C(y+8:y+15,x+5) = u51
     end subroutine
 
-    subroutine kernel7(A, B, C, x, y, i1, s1)
-    real, intent(in) :: A(:,:), B(:,:)
-    real, intent(out) :: C(:,:)
-    integer, intent(in) :: x, y, i1, s1
-    integer :: i, j, k
-    real :: u(0:6-1,0:16-1) ! SIMD
-    real :: Ai(0:8-1) ! SIMD
-    ! This function computes:
-    !C(x:x+6-1, y:y+16-1) = C(x:x+6-1, y:y+16-1) + matmul( &
-    !    A(x:x+6-1, i1:i1+s1-1), &
-    !    B(i1:i1+s1-1, y:y+16-1) )
-    do i = 0, 6-1
-    do j = 0, 2-1
-        u(i,j*8:j*8+8-1) = C(x+i,y+j*8:y+j*8+8-1)
-    end do
-    end do
-
-    do k = i1, i1+s1-1
-    do i = 0, 6-1
-        Ai(:) = A(x+i,k)
-        do j = 0, 2-1
-            u(i, j*8:j*8+8-1) = u(i, j*8:j*8+8-1) + &
-                Ai(:) * B(k, y+j*8:y+j*8+8-1)
-        end do
-    end do
-    end do
-
-    do i = 0, 6-1
-    do j = 0, 2-1
-        C(x+i,y+j*8:y+j*8+8-1) = u(i,j*8:j*8+8-1)
-    end do
-    end do
-    end subroutine
-
-    subroutine matmul7(A, B, C)
+    subroutine matmul2(A, B, C)
     real, intent(in) :: A(:,:), B(:,:)
     real, intent(out) :: C(:,:)
     integer :: s1, s2, s3, n
@@ -155,7 +120,7 @@ contains
     do i1 = 1, n, s1
         do x = i2, i2+s2-1, 6
         do y = i3, i3+s3-1, 16
-            call kernel6c(A, B, C, x, y, i1, s1)
+            call kernel2(A, B, C, x, y, i1, s1)
         end do
         end do
     end do
@@ -167,7 +132,7 @@ end module
 
 
 program matmul_01
-use matmul_01_cpu, only: matmul1, matmul7
+use matmul_01_cpu, only: matmul1, matmul2
 implicit none
 
 integer, parameter :: dp = kind(0.d0)
@@ -208,10 +173,10 @@ print *, "Measured:                    ", measured, "cycles"
 print *, "Percent peak:                ", percent_peak, "%"
 
 print *
-print *, "matmul7:"
+print *, "matmul2:"
 call cpu_time(t1)
 do i = 1, iter
-    call matmul7(A, B, C2)
+    call matmul2(A, B, C2)
 end do
 call cpu_time(t2)
 print *, "Error:", maxval(abs(C-C2))
