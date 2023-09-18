@@ -232,7 +232,7 @@ void handle_float(char* format, double val, char** result) {
         sprintf(dec_str, "%lld", t);
         strncat(formatted_value, dec_str, decimal_digits);
     } else {
-        strncat(formatted_value, dec_str, strlen(dec_str));
+        strcat(formatted_value, dec_str);
         for(int i=0;i<decimal_digits - strlen(dec_str);i++){
             strcat(formatted_value, "0");
         }
@@ -364,11 +364,17 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
 }
 
 char** parse_fortran_format(char* format, int *count, int *item_start) {
-    char** format_values_2 = NULL;
+    char** format_values_2 = (char**)malloc((*count + 1) * sizeof(char*));
     int format_values_count = *count;
     int index = 0 , start = 0;
     while (format[index] != '\0') {
-        format_values_2 = (char**)realloc(format_values_2, (format_values_count + 1) * sizeof(char*));
+        char** ptr = (char**)realloc(format_values_2, (format_values_count + 1) * sizeof(char*));
+        if (ptr == NULL) {
+            perror("Memory allocation failed.\n");
+            free(format_values_2);
+        } else {
+            format_values_2 = ptr;
+        }
         switch (tolower(format[index])) {
             case ',' :
                 break;
@@ -418,7 +424,7 @@ char** parse_fortran_format(char* format, int *count, int *item_start) {
             default :
                 if (isdigit(format[index]) && tolower(format[index+1]) == 'p') {
                     start = index;
-                    if (format[index-1] == '-') {
+                    if (index > 0 && format[index-1] == '-') {
                         start = index - 1;
                     }
                     index = index + 1;
@@ -440,11 +446,17 @@ char** parse_fortran_format(char* format, int *count, int *item_start) {
                             if (format[index] == '.') index++;
                             while (isdigit(format[index])) index++;
                         }
-                        fmt = substring(format, start, index);
+                        fmt = substring(format, start, index--);
+                    }
+                    ptr = (char**)realloc(format_values_2, (format_values_count + repeat + 1) * sizeof(char*));
+                    if (ptr == NULL) {
+                        perror("Memory allocation failed.\n");
+                        free(format_values_2);
+                    } else {
+                        format_values_2 = ptr;
                     }
                     for (int i = 0; i < repeat; i++) {
                         format_values_2[format_values_count++] = fmt;
-                        format_values_2 = (char**)realloc(format_values_2, (format_values_count + 1) * sizeof(char*));
                     }
                 }
         }
@@ -459,14 +471,15 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
     va_list args;
     va_start(args, format);
     int len = strlen(format);
-    char* modified_input_string = (char*)malloc(len * sizeof(char));
-    strcpy(modified_input_string,format);
+    char* modified_input_string = (char*)malloc((len+1) * sizeof(char));
+    strncpy(modified_input_string, format, len);
+    modified_input_string[len] = '\0';
     if (format[0] == '(' && format[len-1] == ')') {
-        modified_input_string = substring(format, 1, len - 1);
+        memmove(modified_input_string, modified_input_string + 1, strlen(modified_input_string));
+        modified_input_string[len-1] = '\0';
     }
-    char** format_values = (char**)malloc(sizeof(char*));
     int format_values_count = 0,item_start_idx=0;
-    format_values = parse_fortran_format(modified_input_string,&format_values_count,&item_start_idx);
+    char** format_values = parse_fortran_format(modified_input_string,&format_values_count,&item_start_idx);
     char* result = (char*)malloc(sizeof(char));
     result[0] = '\0';
     int item_start = 0;
@@ -475,43 +488,19 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
         for (int i = item_start; i < format_values_count; i++) {
             char* value = format_values[i];
 
-            if (value[0] == '/') {
-                // Slash Editing (newlines)
-                int j = 0;
-                while (value[j] == '/') {
-                    result = append_to_string(result, "\n");
-                    j++;
-                }
-                value = substring(value, j, strlen(value));
-            }
-
-            int newline = 0;
-            if (value[strlen(value) - 1] == '/') {
-                // Newlines at the end of the argument
-                int j = strlen(value) - 1;
-                while (value[j] == '/') {
-                    newline++;
-                    j--;
-                }
-                value = substring(value, 0, strlen(value) - newline);
-            }
-
-            if (isdigit(value[0]) && tolower(value[1]) == 'p') {
-                // Scale Factor (nP)
-                scale = atoi(&value[0]);
-                value = substring(value, 2, strlen(value));
-            } else if (value[0] == '-' && isdigit(value[1]) && tolower(value[2]) == 'p') {
-                scale = atoi(substring(value, 0, 2));
-                value = substring(value, 3, strlen(value));
-            }
-
             if (value[0] == '(' && value[strlen(value)-1] == ')') {
                 value = substring(value, 1, strlen(value)-1);
                 char** new_fmt_val = (char**)malloc(sizeof(char*));
                 int new_fmt_val_count = 0;
                 new_fmt_val = parse_fortran_format(value,&new_fmt_val_count,&item_start_idx);
 
-                format_values = (char**)realloc(format_values, (format_values_count + new_fmt_val_count + 1) * sizeof(char*));
+                char** ptr = (char**)realloc(format_values, (format_values_count + new_fmt_val_count + 1) * sizeof(char*));
+                if (ptr == NULL) {
+                    perror("Memory allocation failed.\n");
+                    free(format_values);
+                } else {
+                    format_values = ptr;
+                }
                 for (int k = format_values_count - 1; k >= i+1; k--) {
                     format_values[k + new_fmt_val_count] = format_values[k];
                 }
@@ -523,28 +512,38 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 continue;
             }
 
-            if ((value[0] == '\"' && value[strlen(value) - 1] == '\"') ||
+            if (value[0] == '/') {
+                result = append_to_string(result, "\n");
+            } else if (isdigit(value[0]) && tolower(value[1]) == 'p') {
+                // Scale Factor nP
+                scale = atoi(&value[0]);
+            } else if (value[0] == '-' && isdigit(value[1]) && tolower(value[2]) == 'p') {
+                scale = atoi(substring(value, 0, 2));
+            } else if ((value[0] == '\"' && value[strlen(value) - 1] == '\"') ||
                 (value[0] == '\'' && value[strlen(value) - 1] == '\'')) {
                 // String
                 value = substring(value, 1, strlen(value) - 1);
                 result = append_to_string(result, value);
             } else if (tolower(value[0]) == 'a') {
                 // Character Editing (A[n])
-                char* str = substring(value, 1, strlen(value));
                 if ( count == 0 ) break;
                 count--;
                 char* arg = va_arg(args, char*);
                 if (arg == NULL) continue;
-                if (strlen(str) == 0) {
-                    sprintf(str, "%lu", strlen(arg));
+                if (strlen(value) == 1) {
+                    result = append_to_string(result, arg);
+                } else {
+                    char* str = (char*)malloc((strlen(value)) * sizeof(char));
+                    memmove(str, value+1, strlen(value));
+                    int buffer_size = 20;
+                    char* s = (char*)malloc(buffer_size * sizeof(char));
+                    snprintf(s, buffer_size, "%%%s.%ss", str, str);
+                    char* string = (char*)malloc((strlen(arg) + atoi(value) + 1) * sizeof(char));
+                    snprintf(string, (strlen(arg) + atoi(value) + 1),s, arg);
+                    result = append_to_string(result, string);
+                    free(s);
+                    free(string);
                 }
-                char* s = (char*)malloc((strlen(str) + 4) * sizeof(char));
-                sprintf(s, "%%%s.%ss", str, str);
-                char* string = (char*)malloc((strlen(arg) + 4) * sizeof(char));
-                sprintf(string, s, arg);
-                result = append_to_string(result, string);
-                free(s);
-                free(string);
             } else if (tolower(value[strlen(value) - 1]) == 'x') {
                 result = append_to_string(result, " ");
             } else if (tolower(value[0]) == 'i') {
@@ -575,10 +574,6 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 printf("Printing support is not available for %s format.\n",value);
             }
 
-            while (newline != 0) {
-                result = append_to_string(result, "\n");
-                newline--;
-            }
         }
         if ( count > 0 ) {
             result = append_to_string(result, "\n");
