@@ -5865,7 +5865,7 @@ public:
                         } else {
                             return_type = ASRUtils::expr_type(func->m_return_var);
                         }
-                        if (ASRUtils::symbol_parent_symtab(sym)->get_counter() != current_scope->get_counter()) {
+                        if (sym != nullptr && ASRUtils::symbol_parent_symtab(sym)->get_counter() != current_scope->get_counter()) {
                             current_function_dependencies.push_back(al, s2c(al, matched_func_name));
                         }
                         ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
