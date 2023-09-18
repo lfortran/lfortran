@@ -220,9 +220,10 @@ contains
     integer :: s1, s2, s3, n
     integer :: i1, i2, i3, x, y
     n = size(A, 1)
-    s3 = 64
-    s2 = 120
-    s1 = 240
+    ! Use the commented out numbers for a good benchmark
+    s3 = 48 ! 64
+    s2 = 12 ! 120
+    s1 = 24 ! 240
     C = 0
     do i3 = 1, n, s3
     do i2 = 1, n, s2
@@ -249,7 +250,10 @@ integer :: n, iter, i
 real(dp) :: t1, t2, t, GHz, fma_clock, freq, measured, percent_peak
 real, allocatable :: A(:,:), B(:,:), C(:,:), C2(:,:)
 
-n = 960
+! Use n = 960 for a good benchmark
+n = 96
+! Increase `iter` so that the total time for a given benchmark is about 1s
+! in order to get accurate timings
 iter = 1
 
 print *, "Size (n x n): n =", n
