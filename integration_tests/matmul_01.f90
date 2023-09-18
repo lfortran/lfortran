@@ -110,9 +110,12 @@ contains
     real, intent(out) :: C(:,:)
     integer, intent(in) :: x, y, i1, s1
     integer :: k
-    real, dimension(8) :: A0, A1, A2, A3, A4, A5 ! SIMD
+    !LF$ attributes simd :: A0, A1, A2, A3, A4, A5
+    real, dimension(8) :: A0, A1, A2, A3, A4, A5
+    !LF$ attributes simd :: u00, u01, u10, u11, u20, u21
+    !LF$ attributes simd :: u30, u31, u40, u41, u50, u51
     real, dimension(8) :: u00, u01, u10, u11, u20, u21, u30, u31, &
-        u40, u41, u50, u51 ! SIMD
+        u40, u41, u50, u51
     ! This function computes:
     !C(x:x+6-1, y:y+16-1) = C(x:x+6-1, y:y+16-1) + matmul( &
     !    A(x:x+6-1, i1:i1+s1-1), &
