@@ -5239,6 +5239,21 @@ public:
                                                 source_type, dest_type);
         }
 
+        if( (ASRUtils::is_array(right_type) || ASRUtils::is_array(left_type)) &&
+             !ASRUtils::is_array(dest_type) ) {
+            ASR::dimension_t* m_dims = nullptr;
+            size_t n_dims = 0;
+            if( ASRUtils::is_array(left_type) ) {
+                n_dims = ASRUtils::extract_dimensions_from_ttype(left_type, m_dims);
+            } else if( ASRUtils::is_array(right_type) ) {
+                n_dims = ASRUtils::extract_dimensions_from_ttype(right_type, m_dims);
+            }
+            dest_type = ASRUtils::make_Array_t_util(al, dest_type->base.loc, dest_type, m_dims, n_dims);
+            if( ASR::is_a<ASR::Allocatable_t>(*left_type) || ASR::is_a<ASR::Allocatable_t>(*right_type) ) {
+                dest_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, dest_type->base.loc, dest_type));
+            }
+        }
+
         if (!ASRUtils::check_equal_type(ASRUtils::expr_type(left),
                                     ASRUtils::expr_type(right))) {
             std::string ltype = ASRUtils::type_to_str(ASRUtils::expr_type(left));
