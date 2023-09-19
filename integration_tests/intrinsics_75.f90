@@ -1,4 +1,4 @@
-program intrinsics_74
+program intrinsics_75
 implicit none
 
 real(8) :: lambda = 1.123
