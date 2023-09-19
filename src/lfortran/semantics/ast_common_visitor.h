@@ -4754,11 +4754,14 @@ public:
     }
 
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
+        std::string var_name = to_lower(x.m_func);
         if (x.n_temp_args > 0) {
+            // To keep function names from overlapping,
+            // templated function calls use a different name
             handle_templated(x);
+            var_name = "__templated_" + var_name;
         }
         SymbolTable *scope = current_scope;
-        std::string var_name = to_lower(x.m_func);
         ASR::symbol_t *v = nullptr;
         ASR::expr_t *v_expr = nullptr;
         bool is_external_procedure = check_is_external(var_name);
@@ -5677,14 +5680,33 @@ public:
         }
 
         ASR::symbol_t *s = temp->m_symtab->resolve_symbol(func_name);
+        std::string new_func_name = current_scope->get_unique_name("__asr_" + func_name);
         pass_instantiate_symbol(al, context_map, type_subs, symbol_subs,
-            current_scope, temp->m_symtab, func_name, s);
-        context_map[func_name] = func_name;
+            current_scope, temp->m_symtab, new_func_name, s);
+        context_map[func_name] = new_func_name;
 
-        ASR::Function_t *new_f = ASR::down_cast<ASR::Function_t>(
-            current_scope->get_symbol(func_name));
+        ASR::symbol_t *new_s = current_scope->get_symbol(new_func_name);
+        ASR::Function_t *new_f = ASR::down_cast<ASR::Function_t>(new_s);
         pass_instantiate_function_body(al, context_map, type_subs, symbol_subs,
             current_scope, temp->m_symtab, new_f, ASR::down_cast<ASR::Function_t>(s));
+
+        // Build generic procedure if has not existed yet
+        std::string g_name = "__templated_" + func_name;
+
+        Vec<ASR::symbol_t*> symbols;
+        if (current_scope->get_symbol(g_name) != nullptr) {
+            ASR::GenericProcedure_t *old_g = ASR::down_cast<ASR::GenericProcedure_t>(current_scope->get_symbol(g_name));
+            symbols.reserve(al, old_g->n_procs + 1);
+            for (size_t i=0; i<old_g->n_procs; i++) {
+                symbols.push_back(al, old_g->m_procs[i]);
+            }
+        } else {
+            symbols.reserve(al, 1);
+        }
+        symbols.push_back(al, new_s);
+        ASR::asr_t *g = ASR::make_GenericProcedure_t(al, x.base.base.loc,
+            current_scope, s2c(al, g_name), symbols.p, symbols.size(), ASR::Public);
+        current_scope->add_or_overwrite_symbol(g_name, ASR::down_cast<ASR::symbol_t>(g));
 
         context_map.clear();
     }
