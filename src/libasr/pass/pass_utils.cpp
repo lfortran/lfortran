@@ -219,9 +219,6 @@ namespace LCompilers {
 
         ASR::ttype_t* get_matching_type(ASR::expr_t* sibling, Allocator& al) {
             ASR::ttype_t* sibling_type = ASRUtils::expr_type(sibling);
-            if( sibling->type != ASR::exprType::Var ) {
-                return sibling_type;
-            }
             ASR::dimension_t* m_dims;
             int ndims;
             PassUtils::get_dim_rank(sibling_type, m_dims, ndims);

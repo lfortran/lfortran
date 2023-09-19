@@ -1,17 +1,16 @@
 program intrinsics_76
 implicit none
 
-real, allocatable :: mat1(:, :), mat2(:, :), mat3(:, :), mat4(:, :)
-real :: error
+real(8) :: gamma = 1
+real(8) :: x(3), xsqrt(3)
+gamma = 0.3612163121_8
+x = [1._8, 2._8, 3._8]
 
-allocate(mat1(5, 5), mat2(5, 5), mat3(5, 5), mat4(5, 5))
-mat1 = 2.0
-mat2 = 3.0
-mat3 = mat1 + mat2
-mat4 = 5.0
+if( any(abs(exp(-gamma*sqrt(x)) - [0.69682824978102864_8, 0.59999316978514361_8, 0.53491629349743086_8]) > 1e-6) ) error stop
+print *, exp(-gamma*sqrt(x))
 
-error = maxval(abs(mat3 - mat4))
-print *, maxval(abs(mat3 - mat4))
-if( (error - 0.0) > 1e-8 ) error stop
+xsqrt = -gamma*sqrt(x)
+if( any(abs(exp(xsqrt) - [0.69682824978102864_8, 0.59999316978514361_8, 0.53491629349743086_8]) > 1e-6) ) error stop
+print *, exp(xsqrt)
 
 end program

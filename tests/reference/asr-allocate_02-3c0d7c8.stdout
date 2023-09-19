@@ -549,12 +549,22 @@
                                                 (IntegerConstant 2 (Integer 4))
                                                 Mul
                                                 (Var 3 a)
-                                                (Integer 4)
+                                                (Array
+                                                    (Integer 4)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
                                                 ()
                                             )
                                             Mul
                                             (Var 3 b)
-                                            (Integer 4)
+                                            (Array
+                                                (Integer 4)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
                                             ()
                                         )
                                         ()
@@ -566,12 +576,22 @@
                                                 (IntegerConstant 2 (Integer 4))
                                                 Mul
                                                 (Var 3 b)
-                                                (Integer 4)
+                                                (Array
+                                                    (Integer 4)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
                                                 ()
                                             )
                                             Mul
                                             (Var 3 c)
-                                            (Integer 4)
+                                            (Array
+                                                (Integer 4)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
                                             ()
                                         )
                                         ()
@@ -583,12 +603,22 @@
                                                 (IntegerConstant 2 (Integer 4))
                                                 Mul
                                                 (Var 3 c)
-                                                (Integer 4)
+                                                (Array
+                                                    (Integer 4)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
                                                 ()
                                             )
                                             Mul
                                             (Var 3 a)
-                                            (Integer 4)
+                                            (Array
+                                                (Integer 4)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
                                             ()
                                         )
                                         ()
@@ -601,17 +631,32 @@
                                                     (IntegerConstant 2 (Integer 4))
                                                     Mul
                                                     (Var 3 a)
-                                                    (Integer 4)
+                                                    (Array
+                                                        (Integer 4)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
                                                     ()
                                                 )
                                                 Mul
                                                 (Var 3 b)
-                                                (Integer 4)
+                                                (Array
+                                                    (Integer 4)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
                                                 ()
                                             )
                                             Mul
                                             (Var 3 c)
-                                            (Integer 4)
+                                            (Array
+                                                (Integer 4)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
                                             ()
                                         )
                                         ()
