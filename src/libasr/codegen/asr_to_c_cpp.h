@@ -1382,6 +1382,37 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         from_std_vector_helper.clear();
     }
 
+    void visit_Associate(const ASR::Associate_t &x) {
+        if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
+            self().visit_expr(*x.m_target);
+            std::string target = std::move(src);
+            // ArraySection(expr v, array_index* args, ttype type, expr? value)
+            ASR::ArraySection_t *as = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
+            self().visit_expr(*as->m_v);
+            std::string value = std::move(src);
+            std::string c = "";
+            for( size_t i = 0; i < as->n_args; i++ ) {
+                std::string left, right, step;
+                if (as->m_args[i].m_left) {
+                    self().visit_expr(*as->m_args[i].m_left);
+                    left = std::move(src);
+                }
+                if (as->m_args[i].m_right) {
+                    self().visit_expr(*as->m_args[i].m_right);
+                    right = std::move(src);
+                }
+                if (as->m_args[i].m_step) {
+                    self().visit_expr(*as->m_args[i].m_step);
+                    step = std::move(src);
+                }
+                c += left + ":" + right + ":" + step + ",";
+            }
+            src = target + "= " + value + "; // TODO: " + value + "(" + c + ")\n";
+        } else {
+            throw CodeGenError("Associate only implemented for ArraySection so far");
+        }
+    }
+
     void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
         src = std::to_string(x.m_n);
         last_expr_precedence = 2;
@@ -2351,7 +2382,8 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         }
     }
 
-    void visit_Allocate(const ASR::Allocate_t &x) {
+    template <typename T>
+    void handle_alloc_realloc(const T &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out = "";
         for (size_t i=0; i<x.n_args; i++) {
@@ -2407,6 +2439,15 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         }
         src = out;
     }
+
+    void visit_Allocate(const ASR::Allocate_t &x) {
+        handle_alloc_realloc(x);
+    }
+
+    void visit_ReAlloc(const ASR::ReAlloc_t &x) {
+        handle_alloc_realloc(x);
+    }
+
 
     void visit_Assert(const ASR::Assert_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
