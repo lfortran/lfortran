@@ -219,6 +219,10 @@ static inline LCompilers::LFortran::IntSuffix divide_int_by_2(
     return n2;
 }
 
+#define VAR_DECL_PRAGMA(text, trivia, l) make_DeclarationPragma_t(p.m_a, l, \
+        LCompilers::LFortran::AST::LFortranPragma, text.c_str(p.m_a), \
+        trivia_cast(trivia))
+
 #define VAR_DECL_EQUIVALENCE(args, trivia, l) make_Declaration_t(p.m_a, l, \
         nullptr, EQUIVALENCE(p.m_a, l, args.p, args.n), 1, \
         nullptr, 0, trivia_cast(trivia))
