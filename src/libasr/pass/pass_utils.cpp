@@ -252,6 +252,16 @@ namespace LCompilers {
 
     ASR::expr_t* create_var(int counter, std::string suffix, const Location& loc,
                             ASR::ttype_t* var_type, Allocator& al, SymbolTable*& current_scope) {
+        ASR::dimension_t* m_dims = nullptr;
+        int ndims = 0;
+        PassUtils::get_dim_rank(var_type, m_dims, ndims);
+        if( !ASRUtils::is_fixed_size_array(m_dims, ndims) &&
+            !ASRUtils::is_dimension_dependent_only_on_arguments(m_dims, ndims) &&
+            !(ASR::is_a<ASR::Allocatable_t>(*var_type) || ASR::is_a<ASR::Pointer_t>(*var_type)) ) {
+            var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, var_type->base.loc,
+                ASRUtils::type_get_past_allocatable(
+                    ASRUtils::duplicate_type_with_empty_dims(al, var_type))));
+        }
         ASR::expr_t* idx_var = nullptr;
         std::string str_name = "__libasr__created__var__" + std::to_string(counter) + "_" + suffix;
         char* idx_var_name = s2c(al, str_name);
