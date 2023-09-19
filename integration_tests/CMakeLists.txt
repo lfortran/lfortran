@@ -508,6 +508,7 @@ RUN(NAME intrinsics_71 LABELS gfortran llvm) # matmul
 RUN(NAME intrinsics_72 LABELS gfortran llvmImplicit) # datan2
 RUN(NAME intrinsics_73 LABELS gfortran llvm) #sngl
 RUN(NAME intrinsics_74 LABELS gfortran llvm c) # random_number
+RUN(NAME intrinsics_76 LABELS gfortran llvm)
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
