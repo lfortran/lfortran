@@ -159,7 +159,12 @@
                                                     )
                                                     ()
                                                 )
-                                                (Real 4)
+                                                (Array
+                                                    (Real 4)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
                                                 ()
                                             )
                                             ()
