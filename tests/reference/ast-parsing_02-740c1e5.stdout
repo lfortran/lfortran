@@ -314,22 +314,26 @@
                                 []
                                 []
                                 []
-                            )
-                            (FuncCallOrArray
-                                type
-                                []
-                                []
-                                []
                                 []
                             )
                             (FuncCallOrArray
                                 type
+                                []
+                                []
+                                []
+                                []
+                                []
+                            )
+                            (FuncCallOrArray
+                                type
+                                []
                                 []
                                 []
                                 []
                                 []
                             )]
                         ))]
+                        []
                         []
                     )
                     (FuncCallOrArray
@@ -338,8 +342,10 @@
                         []
                         []
                         []
+                        []
                     )]
                 ))]
+                []
                 []
             )
             (TriviaNode
