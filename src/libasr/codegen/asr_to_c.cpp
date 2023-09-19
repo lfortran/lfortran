@@ -336,7 +336,7 @@ public:
                 if( is_array ) {
                     bool is_fixed_size = true;
                     std::string dims = convert_dims_c(n_dims, m_dims, v_m_type, is_fixed_size, true);
-                    std::string encoded_type_name = "f" + std::to_string(t->m_kind * 8);
+                    std::string encoded_type_name = ASRUtils::get_type_code(t2);
                     generate_array_decl(sub, std::string(v.m_name), type_name, dims,
                                         encoded_type_name, m_dims, n_dims,
                                         use_ref, dummy,

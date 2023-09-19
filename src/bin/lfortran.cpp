@@ -1619,6 +1619,17 @@ int link_executable(const std::vector<std::string> &infiles,
             std::cout << "The command '" + cmd + "' failed." << std::endl;
             return 10;
         }
+        if (compiler_options.run) {
+            std::string run_cmd = (t == "x86_64-pc-windows-msvc") ? outfile : "./" + outfile;
+            int err = system(run_cmd.c_str());
+            if (err != 0) {
+                if (0 < err && err < 256) {
+                    return err;
+                } else {
+                    return 1;
+                }
+            }
+        }
         return 0;
     } else if (backend == Backend::cpp) {
         std::string CXX = "g++";
