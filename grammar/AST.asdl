@@ -62,6 +62,7 @@ unit_decl1
 unit_decl2
     = Declaration(decl_attribute? vartype, decl_attribute* attributes,
         var_sym* syms, trivia? trivia)
+    | DeclarationPragma(pragma_type type, string text)
     | Interface(interface_header header, trivia? trivia, interface_item* items)
     | DerivedType(identifier name, identifier* namelist, trivia? trivia, decl_attribute* attrtype,
         unit_decl2* items, procedure_decl* contains)
@@ -446,5 +447,9 @@ reduce_op = ReduceAdd | ReduceMul | ReduceMIN | ReduceMAX
 
 data_stmt_set
     = DataStmtSet(expr* object, expr* value)
+
+pragma_type
+    = LFortranPragma
+    | OMPPragma
 
 }
