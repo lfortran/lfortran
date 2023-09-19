@@ -233,6 +233,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             real = ((significand exp?) | (digit+ exp)) ("_" kind)?;
             string1 = (kind "_")? '"' ('""'|[^"\x00])* '"';
             string2 = (kind "_")? "'" ("''"|[^'\x00])* "'";
+            pragma = "!LF$" [^\n\x00]*;
             comment = "!" [^\n\x00]*;
             ws_comment = whitespace? comment? newline;
 
@@ -640,6 +641,18 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
 
             "&" ws_comment+ whitespace? "&"? {
                 line_num++; cur_line=cur; continue;
+            }
+
+            pragma / newline {
+                line_num++; cur_line=cur;
+                token(yylval.string);
+                token_loc(loc);
+                if (last_token == yytokentype::TK_NEWLINE) {
+                    return yytokentype::TK_PRAGMA;
+                } else {
+                    last_token=yytokentype::TK_NEWLINE;
+                    return yytokentype::TK_EOLCOMMENT;
+                }
             }
 
             comment newline {
