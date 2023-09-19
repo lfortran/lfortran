@@ -53,18 +53,18 @@ contains
     end function
 
     subroutine test_template()
-        instantiate generic_sum(integer, operator(+), cast_integer), only: generic_sum_integer => generic_sum
-        instantiate generic_sum(real, operator(+), cast_real), only: generic_sum_real => generic_sum
+        !instantiate generic_sum(integer, operator(+), cast_integer), only: generic_sum_integer => generic_sum
+        !instantiate generic_sum(real, operator(+), cast_real), only: generic_sum_real => generic_sum
         integer :: a_i(10), i, s_i
-        real :: a_r(10), s_r
+        !real :: a_r(10), s_r
         do i = 1, size(a_i)
             a_i(i) = i
-            a_r(i) = i
+            !a_r(i) = i
         end do
-        s_i = generic_sum_integer(a_i)
-        s_r = generic_sum_real(a_r)
+        s_i = generic_sum{integer, operator(+), cast_integer}(a_i)
+        !s_r = generic_sum_real(a_r)
         print *, s_i
-        print *, s_r
+        !print *, s_r
     end subroutine
 
 end module
