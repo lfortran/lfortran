@@ -1919,7 +1919,7 @@ int main(int argc, char *argv[])
         std::string arg_kernel_f;
         bool print_targets = false;
         bool link_with_gcc = false;
-	bool fixed_form_infer = false;
+	    bool fixed_form_infer = false;
 
         std::string arg_fmt_file;
         int arg_fmt_indent = 4;
@@ -2016,6 +2016,7 @@ int main(int argc, char *argv[])
         app.add_flag("--bindc-mangling", compiler_options.bindc_mangling, "Mangles functions with abi bind(c)");
         app.add_flag("--mangle-underscore", compiler_options.mangle_underscore, "Mangles with underscore");
         app.add_flag("--run", compiler_options.run, "Executes the generated binary");
+        app.add_flag("--legacy-array-sections", compiler_options.legacy_array_sections, "Enables passing array items as sections if required");
 
         /*
         * Subcommands:
