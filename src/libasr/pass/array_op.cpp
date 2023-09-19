@@ -1110,7 +1110,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         bool result_var_created = false;
         if( result_var == nullptr ) {
             result_var = PassUtils::create_var(result_counter, res_prefix,
-                            loc, x->m_type, al, current_scope);
+                            loc, *current_expr, al, current_scope);
             result_counter += 1;
             operand = first_array_operand;
             ASR::dimension_t* m_dims;
