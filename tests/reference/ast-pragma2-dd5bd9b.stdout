@@ -1,16 +1,15 @@
 (TranslationUnit
     [(Program
         pragma2
-        (TriviaNode
-            [(EndOfLine)
-            (Comment
-                "!LF$ attributes simd :: A"
-            )]
-            []
+        ()
+        []
+        []
+        [(DeclarationPragma
+            LFortranPragma
+            "!LF$ attributes simd :: A"
+            ()
         )
-        []
-        []
-        [(Declaration
+        (Declaration
             (AttrType
                 TypeReal
                 []
