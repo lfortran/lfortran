@@ -119,6 +119,9 @@ public:
             } case ASR::ttypeType::Array: {
                 r = get_type(down_cast<ASR::Array_t>(t)->m_type);
                 break;
+            } case ASR::ttypeType::Allocatable: {
+                r = get_type(down_cast<ASR::Allocatable_t>(t)->m_type);
+                break;
             }
             default:
                 throw LCompilersException("The type `"
@@ -263,14 +266,24 @@ public:
         if (x.m_storage == ASR::storage_typeType::Parameter) {
             r += ", parameter";
         }
+        if (is_a<ASR::Allocatable_t>(*x.m_type)) {
+            r += ", allocatable";
+
+        }
         r += " :: ";
         r.append(x.m_name);
-        if (is_a<ASR::Array_t>(*x.m_type)) {
-            ASR::Array_t *arr = down_cast<ASR::Array_t>(x.m_type);
+        ASR::ttype_t *x_m_type = ASRUtils::type_get_past_allocatable(x.m_type);
+        if (is_a<ASR::Array_t>(*x_m_type)) {
+            ASR::Array_t *arr = down_cast<ASR::Array_t>(x_m_type);
             r += "(";
-            for(size_t i = 0; i < arr->n_dims; i++) {
-                visit_expr(*arr->m_dims[i].m_length);
-                r += s;
+            for (size_t i = 0; i < arr->n_dims; i++) {
+                if (arr->m_dims[i].m_length) {
+                    visit_expr(*arr->m_dims[i].m_length);
+                    r += s;
+                } else {
+                    r += ":";
+                }
+                if (i < arr->n_dims-1) r += ", ";
             }
             r += ")";
         }
