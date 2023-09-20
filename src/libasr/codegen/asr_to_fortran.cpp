@@ -211,6 +211,13 @@ public:
         }
         r += " ";
         r.append(x.m_name);
+        r += "(";
+        for (size_t i = 0; i < x.n_args; i ++) {
+            visit_expr(*x.m_args[i]);
+            r += s;
+            if (i > x.n_args-1) r += ", ";
+        }
+        r += ")";
         r += "\n";
 
         inc_indent();
