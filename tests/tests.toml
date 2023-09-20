@@ -3493,3 +3493,7 @@ asr = true
 [[test]]
 filename = "errors/end_program_name.f90"
 asr = true
+
+[[test]]
+filename = "../integration_tests/legacy_array_sections_01.f90"
+llvm = true

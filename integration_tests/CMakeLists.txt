@@ -1105,3 +1105,4 @@ RUN(NAME array_unbounded_01 LABELS gfortran llvm)
 RUN(NAME array_unbounded_02 LABELS gfortran llvm)
 
 RUN(NAME matmul_01 LABELS gfortran)
+RUN(NAME legacy_array_sections_01 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections)
