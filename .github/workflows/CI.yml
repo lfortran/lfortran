@@ -175,10 +175,10 @@ jobs:
             micromamba activate scipy-dev
             git submodule update --init
             for src in $(find ./scipy/optimize/minpack/ -name "*.f"); do
-                ../src/bin/lfortran -c $src -o ${src%.f}.o --fixed-form --implicit-typing --implicit-interface --generate-object-code --use-loop-variable-after-loop --all-mangling --bindc-mangling --mangle-underscore
+                ../src/bin/lfortran -c $src -o ${src%.f}.o --fixed-form --implicit-typing --implicit-interface --generate-object-code --use-loop-variable-after-loop --all-mangling --bindc-mangling --mangle-underscore --legacy-array-sections
                 cp ${src%.f}.o ./
             done
-            ../src/bin/lfortran -c ./scipy/optimize/minpack/chkder.f -o chkder.o --fixed-form --implicit-typing --implicit-interface --generate-object-code --use-loop-variable-after-loop --rtlib --all-mangling --bindc-mangling --mangle-underscore
+            ../src/bin/lfortran -c ./scipy/optimize/minpack/chkder.f -o chkder.o --fixed-form --implicit-typing --implicit-interface --generate-object-code --use-loop-variable-after-loop --rtlib --all-mangling --bindc-mangling --mangle-underscore --legacy-array-sections
 
             clang -shared -fPIC -o ./scipy/optimize/minpack.so *.o -L../src/runtime -llfortran_runtime
 
@@ -186,16 +186,16 @@ jobs:
 
             for src in $(find ./scipy/interpolate/fitpack/ -name "*.f"); do
                 echo "Compiling $src"
-                ../src/bin/lfortran -c $src -o ${src%.f}.o --fixed-form --implicit-typing --implicit-interface --generate-object-code --use-loop-variable-after-loop --all-mangling --bindc-mangling --mangle-underscore
+                ../src/bin/lfortran -c $src -o ${src%.f}.o --fixed-form --implicit-typing --implicit-interface --generate-object-code --use-loop-variable-after-loop --all-mangling --bindc-mangling --mangle-underscore --legacy-array-sections
                 cp ${src%.f}.o ./
             done
-            ../src/bin/lfortran -c ./scipy/interpolate/fitpack/evapol.f -o evapol.o --fixed-form --implicit-typing --implicit-interface --generate-object-code --use-loop-variable-after-loop --rtlib --all-mangling --bindc-mangling --mangle-underscore
+            ../src/bin/lfortran -c ./scipy/interpolate/fitpack/evapol.f -o evapol.o --fixed-form --implicit-typing --implicit-interface --generate-object-code --use-loop-variable-after-loop --rtlib --all-mangling --bindc-mangling --mangle-underscore --legacy-array-sections
 
             clang -shared -fPIC -o ./scipy/interpolate/fitpack.so *.o -L../src/runtime -llfortran_runtime
 
             rm *.o
 
-            ../src/bin/lfortran -c ./scipy/special/specfun/specfun.f -o scipy/special/specfun.o --fixed-form --implicit-typing --implicit-interface --generate-object-code --use-loop-variable-after-loop --all-mangling --mangle-underscore --bindc-mangling --rtlib
+            ../src/bin/lfortran -c ./scipy/special/specfun/specfun.f -o scipy/special/specfun.o --fixed-form --implicit-typing --implicit-interface --generate-object-code --use-loop-variable-after-loop --all-mangling --mangle-underscore --legacy-array-sections --bindc-mangling --rtlib
 
             clang -shared -fPIC -o ./scipy/special/specfun.so scipy/special/specfun.o -L../src/runtime -llfortran_runtime
 
@@ -473,11 +473,11 @@ jobs:
             git clone https://github.com/fortran-lang/minpack modern_minpack_01
             cd modern_minpack_01
             git checkout c0b5aea9fcd2b83865af921a7a7e881904f8d3c2
-            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90
-            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90
-            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90
+            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
 
       - name: Test Modern Minpack (check results)
         shell: bash -e -x -l {0}
@@ -486,16 +486,16 @@ jobs:
             cd modern_minpack_02
             git checkout -t origin/w5
             git checkout fcde66ca86348eb0c4012dbdf0f4d8dba61261d8
-            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90
-            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90
-            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90
+            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
 
-            # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd.f90
-            # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd1.f90
-            # $(pwd)/../src/bin/lfortran --fast ./examples/example_lmdif1.f90
-            # $(pwd)/../src/bin/lfortran --fast ./examples/example_lmder1.f90
+            # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd.f90 --legacy-array-sections
+            # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd1.f90 --legacy-array-sections
+            # $(pwd)/../src/bin/lfortran --fast ./examples/example_lmdif1.f90 --legacy-array-sections
+            # $(pwd)/../src/bin/lfortran --fast ./examples/example_lmder1.f90 --legacy-array-sections
 
       - name: Test fastGPT
         shell: bash -e -x -l {0}
