@@ -649,7 +649,16 @@ public:
 
     // void visit_FunctionParam(const ASR::FunctionParam_t &x) {}
 
-    // void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {}
+    void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
+        std::string r = "[";
+        for(size_t i = 0; i < x.n_args; i++) {
+            visit_expr(*x.m_args[i]);
+            r += s;
+            if (i < x.n_args-1) r += ", ";
+        }
+        r += "]";
+        s = r;
+    }
 
     void visit_ArrayItem(const ASR::ArrayItem_t &x) {
         std::string r = "";
