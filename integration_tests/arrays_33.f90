@@ -6,7 +6,7 @@ type d
 end type
 
 type(d) :: objd
-real(8) :: array(10)
+real(8), target :: array(10)
 array = 24.0
 call f(array, objd)
 objd%r => array ! TODO: Remove
