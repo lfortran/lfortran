@@ -2520,6 +2520,18 @@ public:
                                 ASR::array_index_t last_arg = array_item->m_args[array_item->n_args - 1];
                                 ASR::expr_t* idx = last_arg.m_right;
 
+                                Vec<ASR::dimension_t> dims;
+                                dims.reserve(al, 1);
+                                ASR::dimension_t dim;
+                                dim.loc = x.base.base.loc;
+                                dim.m_length = nullptr;
+                                dim.m_start = nullptr;
+                                dims.push_back(al, dim);
+                                ASR::asr_t* descriptor_array = ASR::make_Array_t(al, x.base.base.loc, ASRUtils::type_get_past_array(expected_arg_type),
+                                                                dims.p, dims.size(), ASR::array_physical_typeType::DescriptorArray);
+                                ASR::asr_t* expected_array = ASR::make_Array_t(al, x.base.base.loc, ASRUtils::type_get_past_array(expected_arg_type),
+                                                                dims.p, dims.size(), ASRUtils::extract_physical_type(expected_arg_type));
+
                                 // make ArraySection
                                 Vec<ASR::array_index_t> array_indices;
                                 array_indices.reserve(al, array_item->n_args);
@@ -2541,11 +2553,12 @@ public:
 
                                 array_indices.push_back(al, array_idx);
 
-                                ASR::expr_t* array_section = ASRUtils::EXPR(ASR::make_ArraySection_t(al, array_item->base.base.loc, array_expr, array_indices.p, array_indices.size(),
-                                                            expected_arg_type, nullptr));
+                                ASR::expr_t* array_section = ASRUtils::EXPR(ASR::make_ArraySection_t(al, array_item->base.base.loc,
+                                                            array_expr, array_indices.p, array_indices.size(),
+                                                            ASRUtils::TYPE(descriptor_array), nullptr));
 
                                 ASR::asr_t* array_cast = ASRUtils::make_ArrayPhysicalCast_t_util(al, array_item->base.base.loc, array_section, 
-                                                        ASR::array_physical_typeType::DescriptorArray, ASR::array_physical_typeType::DescriptorArray, expected_arg_type, nullptr);
+                                                        ASRUtils::extract_physical_type(ASRUtils::TYPE(descriptor_array)), ASRUtils::extract_physical_type(expected_arg_type), ASRUtils::TYPE(expected_array), nullptr);
 
                                 ASR::expr_t* array_section_cast = ASRUtils::EXPR(array_cast);
 

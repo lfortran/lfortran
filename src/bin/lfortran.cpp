@@ -1919,7 +1919,7 @@ int main(int argc, char *argv[])
         std::string arg_kernel_f;
         bool print_targets = false;
         bool link_with_gcc = false;
-	    bool fixed_form_infer = false;
+        bool fixed_form_infer = false;
 
         std::string arg_fmt_file;
         int arg_fmt_indent = 4;
