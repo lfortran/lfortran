@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-legacy_array_sections_01-2515c0f",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/legacy_array_sections_01.f90",
+    "infile_hash": "90cec79afc88ad4e171e9ff3c6f8612e820b4906e444054346abdf34",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "llvm-legacy_array_sections_01-2515c0f.stderr",
+    "stderr_hash": "f19c3431555a5c60366d9ac2c1c12b43af7a37e4b4d317bb61c830b0",
+    "returncode": 1
+}

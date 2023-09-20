@@ -75,6 +75,7 @@ struct CompilerOptions {
     bool bindc_mangling = false;
     bool mangle_underscore = false;
     bool run = false;
+    bool legacy_array_sections = false;
     std::vector<std::string> import_paths;
     Platform platform;
 
