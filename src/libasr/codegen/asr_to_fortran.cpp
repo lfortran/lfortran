@@ -197,6 +197,14 @@ public:
                 r += std::to_string(down_cast<ASR::Real_t>(x.m_type)->m_kind);
                 r += ")";
                 break;
+            } case ASR::ttypeType::Character: {
+                ASR::Character_t *c = down_cast<ASR::Character_t>(x.m_type);
+                r += "character(len=";
+                r += std::to_string(c->m_len);
+                r += ", kind=";
+                r += std::to_string(c->m_kind);
+                r += ")";
+                break;
             }
             default:
                 throw LCompilersException("Type not implemented");
