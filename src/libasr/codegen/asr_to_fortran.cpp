@@ -94,6 +94,38 @@ public:
         }
     }
 
+    std::string get_type(const ASR::ttype_t *t) {
+        std::string r = "";
+        switch (t->type) {
+            case ASR::ttypeType::Integer: {
+                r = "integer(";
+                r += std::to_string(down_cast<ASR::Integer_t>(t)->m_kind);
+                r += ")";
+                break;
+            } case ASR::ttypeType::Real: {
+                r = "real(";
+                r += std::to_string(down_cast<ASR::Real_t>(t)->m_kind);
+                r += ")";
+                break;
+            } case ASR::ttypeType::Character: {
+                ASR::Character_t *c = down_cast<ASR::Character_t>(t);
+                r = "character(len=";
+                r += std::to_string(c->m_len);
+                r += ", kind=";
+                r += std::to_string(c->m_kind);
+                r += ")";
+                break;
+            } case ASR::ttypeType::Array: {
+                r = get_type(down_cast<ASR::Array_t>(t)->m_type);
+                break;
+            }
+            default:
+                throw LCompilersException("The type `"
+                    + ASRUtils::type_to_str_python(t) + "` is not handled yet");
+        }
+        return r;
+    }
+
     /********************************** Unit **********************************/
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         std::string r = "";
@@ -206,29 +238,7 @@ public:
     void visit_Variable(const ASR::Variable_t &x) {
         std::string r = indent;
         std::string dims = "(";
-        switch (x.m_type->type) {
-            case ASR::ttypeType::Integer: {
-                r += "integer(";
-                r += std::to_string(down_cast<ASR::Integer_t>(x.m_type)->m_kind);
-                r += ")";
-                break;
-            } case ASR::ttypeType::Real: {
-                r += "real(";
-                r += std::to_string(down_cast<ASR::Real_t>(x.m_type)->m_kind);
-                r += ")";
-                break;
-            } case ASR::ttypeType::Character: {
-                ASR::Character_t *c = down_cast<ASR::Character_t>(x.m_type);
-                r += "character(len=";
-                r += std::to_string(c->m_len);
-                r += ", kind=";
-                r += std::to_string(c->m_kind);
-                r += ")";
-                break;
-            }
-            default:
-                throw LCompilersException("Type not implemented");
-        }
+        r += get_type(x.m_type);
         switch (x.m_intent) {
             case ASR::intentType::In : {
                 r += ", intent(in)";
@@ -251,6 +261,15 @@ public:
         }
         r += " :: ";
         r.append(x.m_name);
+        if (is_a<ASR::Array_t>(*x.m_type)) {
+            ASR::Array_t *arr = down_cast<ASR::Array_t>(x.m_type);
+            r += "(";
+            for(size_t i = 0; i < arr->n_dims; i++) {
+                visit_expr(*arr->m_dims[i].m_length);
+                r += s;
+            }
+            r += ")";
+        }
         if (x.m_value) {
             r += " = ";
             visit_expr(*x.m_value);
@@ -616,7 +635,20 @@ public:
 
     // void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {}
 
-    // void visit_ArrayItem(const ASR::ArrayItem_t &x) {}
+    void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+        std::string r = "";
+        visit_expr(*x.m_v);
+        r += s;
+        r += "(";
+        for(size_t i = 0; i < x.n_args; i++) {
+            if (x.m_args[i].m_right) {
+                visit_expr(*x.m_args[i].m_right);
+                r += s;
+            }
+        }
+        r += ")";
+        s = r;
+    }
 
     // void visit_ArraySection(const ASR::ArraySection_t &x) {}
 
