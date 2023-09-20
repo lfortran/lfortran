@@ -351,7 +351,23 @@ public:
 
     // void visit_Where(const ASR::Where_t &x) {}
 
-    // void visit_WhileLoop(const ASR::WhileLoop_t &x) {}
+    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+        std::string r = indent;
+        r += "do while";
+        r += " (";
+        visit_expr(*x.m_test);
+        r += s;
+        r += ")\n";
+        inc_indent();
+        for (size_t i = 0; i < x.n_body; i++) {
+            visit_stmt(*x.m_body[i]);
+            r += s;
+        }
+        dec_indent();
+        r += indent;
+        r += "end do\n";
+        s = r;
+    }
 
     // void visit_Nullify(const ASR::Nullify_t &x) {}
 
