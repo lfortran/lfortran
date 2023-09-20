@@ -792,6 +792,7 @@ public:
                 visit_expr(*x.m_args[i].m_right);
                 r += s;
             }
+            if (i < x.n_args-1) r += ", ";
         }
         r += ")";
         s = r;
@@ -801,7 +802,21 @@ public:
 
     // void visit_ArraySize(const ASR::ArraySize_t &x) {}
 
-    // void visit_ArrayBound(const ASR::ArrayBound_t &x) {}
+    void visit_ArrayBound(const ASR::ArrayBound_t &x) {
+        std::string r = "";
+        if (x.m_bound == ASR::arrayboundType::UBound) {
+            r += "ubound(";
+        } else if (x.m_bound == ASR::arrayboundType::LBound) {
+            r += "lbound(";
+        }
+        visit_expr(*x.m_v);
+        r += s;
+        r += ", ";
+        visit_expr(*x.m_dim);
+        r += s;
+        r += ")";
+        s = r;
+    }
 
     // void visit_ArrayTranspose(const ASR::ArrayTranspose_t &x) {}
 
