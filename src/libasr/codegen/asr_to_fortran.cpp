@@ -300,7 +300,25 @@ public:
     // void visit_Template(const ASR::Template_t &x) {}
 
     /********************************** Stmt **********************************/
-    // void visit_Allocate(const ASR::Allocate_t &x) {}
+    void visit_Allocate(const ASR::Allocate_t &x) {
+        std::string r = indent;
+        r += "allocate(";
+        for (size_t i = 0; i < x.n_args; i ++) {
+            visit_expr(*x.m_args[i].m_a);
+            r += s;
+            if (x.m_args[i].n_dims > 0) {
+                r += "(";
+                for (size_t j = 0; j < x.m_args[i].n_dims; j ++) {
+                    visit_expr(*x.m_args[i].m_dims[j].m_length);
+                    r += s;
+                    if (j < x.m_args[i].n_dims-1) r += ", ";
+                }
+                r += ")";
+            }
+        }
+        r += ")\n";
+        s = r;
+    }
 
     // void visit_ReAlloc(const ASR::ReAlloc_t &x) {}
 
@@ -323,11 +341,42 @@ public:
 
     // void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {}
 
-    // void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t &x) {}
+    void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t &x) {
+        std::string r = indent;
+        r += "deallocate(";
+        for (size_t i = 0; i < x.n_vars; i ++) {
+            visit_expr(*x.m_vars[i]);
+            r += s;
+            if (i < x.n_vars-1) r += ", ";
+        }
+        r += ")\n";
+        s = r;
+    }
 
     // void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {}
 
-    // void visit_DoLoop(const ASR::DoLoop_t &x) {}
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        std::string r = indent;
+        r += "do ";
+        visit_expr(*x.m_head.m_v);
+        r += s;
+        r += " = ";
+        visit_expr(*x.m_head.m_start);
+        r += s;
+        r += ", ";
+        visit_expr(*x.m_head.m_end);
+        r += s;
+        if (x.m_head.m_increment) {
+            r += ", ";
+            visit_expr(*x.m_head.m_increment);
+            r += s;
+        }
+        r += "\n";
+        visit_body(x, r);
+        r += indent;
+        r += "end do\n";
+        s = r;
+    }
 
     void visit_ErrorStop(const ASR::ErrorStop_t &/*x*/) {
         s = indent;
@@ -477,7 +526,19 @@ public:
 
     // void visit_Assert(const ASR::Assert_t &x) {}
 
-    // void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {}
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        std::string r = indent;
+        r += "call ";
+        r += ASRUtils::symbol_name(x.m_name);
+        r += "(";
+        for (size_t i = 0; i < x.n_args; i ++) {
+            visit_expr(*x.m_args[i].m_value);
+            r += s;
+            if (i < x.n_args-1) r += ", ";
+        }
+        r += ")\n";
+        s = r;
+    }
 
     // void visit_Where(const ASR::Where_t &x) {}
 
