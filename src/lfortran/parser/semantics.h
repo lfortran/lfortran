@@ -1354,7 +1354,7 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
         /*n_contains*/ contains.size(), \
         /*temp_args*/ nullptr, \
         /*n_temp_args*/ 0)
-#define TEMPLATED_FUNCTION(fn_type, name, temp_args, fn_args, return_var, bind, trivia, decl, stmts, l) \
+#define TEMPLATEDFUNCTION(fn_type, name, temp_args, fn_args, return_var, bind, trivia, decl, stmts, l) \
         make_Function_t(p.m_a, l, \
         /*name*/ name2char(name), \
         /*args*/ ARGS(p.m_a, l, fn_args), \
@@ -1865,7 +1865,39 @@ ast_t* FUNCCALLORARRAY0(Allocator &al, const ast_t *id,
         /* struct_member_t* */member.p, /* size_t */member.size(),
         /*fnarg_t* a_args*/ v.p, /*size_t n_args*/ v.size(),
         /*keyword_t* a_keywords*/ v2.p, /*size_t n_keywords*/ v2.size(),
-        /*fnarg_t* a_subargs*/ v1.p , /*size_t n_subargs*/ v1.size());
+        /*fnarg_t* a_subargs*/ v1.p , /*size_t n_subargs*/ v1.size(),
+        /*m_temp_args*/ nullptr, /*n_temp_args*/ 0);
+}
+
+ast_t* TEMPLATEDFUNCCALL(Allocator &al, const ast_t *id,
+        const Vec<struct_member_t> &member,
+        const Vec<FnArg> &args,
+        const Vec<FnArg> &subargs,
+        const Vec<ast_t*> &temp_args,
+        Location &l) {
+    Vec<fnarg_t> v;
+    v.reserve(al, args.size());
+    Vec<keyword_t> v2;
+    v2.reserve(al, args.size());
+    for (auto &item : args) {
+        if (item.keyword) {
+            v2.push_back(al, item.kw);
+        } else {
+            v.push_back(al, item.arg);
+        }
+    }
+    Vec<fnarg_t> v1;
+    v1.reserve(al, subargs.size());
+    for (auto &item : subargs) {
+        v1.push_back(al, item.arg);
+    }
+    return make_FuncCallOrArray_t(al, l,
+        /*char* a_func*/ name2char(id),
+        /* struct_member_t* */member.p, /* size_t */member.size(),
+        /*fnarg_t* a_args*/ v.p, /*size_t n_args*/ v.size(),
+        /*keyword_t* a_keywords*/ v2.p, /*size_t n_keywords*/ v2.size(),
+        /*fnarg_t* a_subargs*/ v1.p , /*size_t n_subargs*/ v1.size(),
+        USE_SYMBOLS(temp_args), temp_args.size());
 }
 
 #define FUNCCALLORARRAY(id, args, l) FUNCCALLORARRAY0(p.m_a, id, empty5(), \
@@ -1876,6 +1908,8 @@ ast_t* FUNCCALLORARRAY0(Allocator &al, const ast_t *id,
         empty5(), args, subargs, l)
 #define FUNCCALLORARRAY4(mem, id, args, subargs, l) FUNCCALLORARRAY0(p.m_a, id, \
         mem, args, subargs, l)
+#define FUNCCALLORARRAY5(id, args, temp_args, l) TEMPLATEDFUNCCALL(p.m_a, id, empty5(), \
+        args, empty1(), temp_args, l)
 
 ast_t* SUBSTRING_(Allocator &al, const LCompilers::Str &str,
         const Vec<FnArg> &args, Location &l) {

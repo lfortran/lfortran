@@ -21,7 +21,6 @@
 #include <libasr/utils.h>
 #include <libasr/pass/instantiate_template.h>
 
-
 namespace LCompilers::LFortran {
 
 template <typename T>
@@ -2366,12 +2365,13 @@ public:
         // check if the symbol is a template
         ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(sym0);
         if (!ASR::is_a<ASR::Template_t>(*sym)) {
-            throw SemanticError("Cannot instantiate a non-tempalte '" + template_name
+            throw SemanticError("Cannot instantiate a non-template '" + template_name
                 + "'", x.base.base.loc);
         }
 
         ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(sym);
 
+        // TODO: default template arguments
         // check for number of template arguments
         if (temp->n_args != x.n_args) {
             throw SemanticError("Number of template arguments don't match", x.base.base.loc);
@@ -2623,6 +2623,7 @@ public:
                 std::string new_sym_name = to_lower(use_symbol->m_local_rename);
                 pass_instantiate_symbol(al, context_map, type_subs, symbol_subs,
                     current_scope, temp->m_symtab, new_sym_name, s);
+                // TODO: can this be removed?
                 context_map[generic_name] = new_sym_name;
             }
         }

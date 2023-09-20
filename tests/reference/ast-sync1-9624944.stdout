@@ -52,6 +52,7 @@
                 []
                 []
                 []
+                []
             )
             (TriviaNode
                 []
@@ -138,6 +139,7 @@
             ()
             (== (FuncCallOrArray
                 this_image
+                []
                 []
                 []
                 []

@@ -11,6 +11,7 @@
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <lfortran/utils.h>
 #include <lfortran/semantics/comptime_eval.h>
+#include <libasr/pass/instantiate_template.h>
 
 #include <string>
 #include <unordered_set>
@@ -4753,8 +4754,14 @@ public:
     }
 
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
-        SymbolTable *scope = current_scope;
         std::string var_name = to_lower(x.m_func);
+        if (x.n_temp_args > 0) {
+            // To keep function names from overlapping,
+            // templated function calls use a different name
+            handle_templated(x);
+            var_name = "__templated_" + var_name;
+        }
+        SymbolTable *scope = current_scope;
         ASR::symbol_t *v = nullptr;
         ASR::expr_t *v_expr = nullptr;
         bool is_external_procedure = check_is_external(var_name);
@@ -5425,6 +5432,284 @@ public:
 
     }
 
+    void handle_templated(const AST::FuncCallOrArray_t &x) {
+        std::string func_name = x.m_func;
+
+        ASR::symbol_t *sym0 = current_scope->resolve_symbol(func_name);
+        if (!sym0) {
+            throw SemanticError("Use of an unspecified templated function '" + func_name
+                + "'", x.base.base.loc);
+        }
+    
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(sym0);
+        if (!ASR::is_a<ASR::Template_t>(*sym)) {
+            throw SemanticError("Cannot instantiate a non-templated function '" + func_name
+                + "'", x.base.base.loc);
+        }
+
+        ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(sym);
+
+        if (temp->n_args != x.n_temp_args) {
+            throw SemanticError("Number of templated function arguments don't match",
+                x.base.base.loc);
+        }
+
+        std::map<std::string, ASR::ttype_t*> type_subs;
+        std::map<std::string, ASR::symbol_t*> symbol_subs;
+
+        for (size_t i=0; i<x.n_temp_args; i++) {
+            std::string param = temp->m_args[i];
+            ASR::symbol_t *param_sym = temp->m_symtab->get_symbol(param);
+            if (AST::is_a<AST::UseSymbol_t>(*x.m_temp_args[i])) {
+                AST::UseSymbol_t* arg_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_temp_args[i]);
+                std::string arg = to_lower(arg_symbol->m_remote_sym);
+                if (ASR::is_a<ASR::Variable_t>(*param_sym)) {
+                    ASR::ttype_t *t = ASRUtils::symbol_type(param_sym);
+                    ASR::ttype_t* s;
+                    if (ASRUtils::is_type_parameter(*t)) {
+                        ASR::TypeParameter_t *tp = ASR::down_cast<ASR::TypeParameter_t>(t);
+                        if (arg.compare("real") == 0) {
+                            s = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4));
+                        } else if (arg.compare("integer") == 0) {
+                            s = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                        } else if (arg.compare("complex") == 0) {
+                            s = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, 4));
+                        } else if (arg.compare("character") == 0) {
+                            s = ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc, 1, 0, nullptr));
+                        } else if (arg.compare("logical") == 0) {
+                            s = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
+                        } else {
+                            ASR::symbol_t *arg_t = current_scope->resolve_symbol(arg);
+                            if (ASRUtils::is_type_parameter(*ASRUtils::symbol_type(arg_t))) {
+                                ASR::TypeParameter_t *arg_tp = ASR::down_cast<ASR::TypeParameter_t>(ASRUtils::symbol_type(arg_t));
+                                s = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, x.base.base.loc, arg_tp->m_param));
+                            } else {
+                                throw SemanticError(
+                                    "The type " + arg + " is not yet handled for template instantiation",
+                                    x.base.base.loc);
+                            }
+                        }
+                        type_subs[tp->m_param] = s;
+                    } else {
+                        // type checking non-type parameter template arguments
+                        ASR::symbol_t *arg_sym = current_scope->resolve_symbol(arg);
+                        s = ASRUtils::symbol_type(arg_sym);
+                        if (!ASRUtils::check_equal_type(s, t)) {
+                            throw SemanticError(
+                                "The type of " + arg + " does not match the type of " + param,
+                                x.base.base.loc);
+                        }
+                        symbol_subs[param] = arg_sym;
+                    }
+                } else if (ASR::is_a<ASR::Function_t>(*param_sym)) {
+                    ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(param_sym);
+                    ASR::symbol_t *f_arg0 = current_scope->resolve_symbol(arg);
+                    if (!f_arg0) {
+                        throw SemanticError("The function argument " + arg + " is not found",
+                            x.m_temp_args[i]->base.loc);
+                    }
+                    ASR::symbol_t *f_arg = ASRUtils::symbol_get_past_external(f_arg0);
+                    if (!ASR::is_a<ASR::Function_t>(*f_arg)) {
+                        throw SemanticError(
+                            "The argument for " + param + " must be a function",
+                            x.m_temp_args[i]->base.loc);
+                    }
+                    check_restriction(type_subs, symbol_subs, f, f_arg0, x.base.base.loc, diag);
+                } else {
+                    throw SemanticError("Unsupported symbol argument", x.m_temp_args[i]->base.loc);
+                }
+            } else if (AST::is_a<AST::IntrinsicOperator_t>(*x.m_temp_args[i])) {
+                AST::IntrinsicOperator_t *intrinsic_op = AST::down_cast<AST::IntrinsicOperator_t>(x.m_temp_args[i]);
+                ASR::binopType binop = ASR::Add;
+                ASR::cmpopType cmpop = ASR::Eq;
+                bool is_binop = false, is_cmpop = false;
+                std::string op_name;
+                switch (intrinsic_op->m_op) {
+                    case (AST::PLUS):
+                        is_binop = true; binop = ASR::Add; op_name = "~add";
+                        break;
+                    case (AST::MINUS):
+                        is_binop = true; binop = ASR::Sub; op_name = "~sub";
+                        break;
+                    case (AST::STAR):
+                        is_binop = true; binop = ASR::Mul; op_name = "~mul";
+                        break;
+                    case (AST::DIV):
+                        is_binop = true; binop = ASR::Div; op_name = "~div";
+                        break;
+                    case (AST::POW):
+                        is_binop = true; binop = ASR::Pow; op_name = "~pow";
+                        break;
+                    case (AST::EQ):
+                        is_cmpop = true; cmpop = ASR::Eq; op_name = "~eq";
+                        break;
+                    case (AST::NOTEQ):
+                        is_cmpop = true; cmpop = ASR::NotEq; op_name = "~neq";
+                        break;
+                    case (AST::LT):
+                        is_cmpop = true; cmpop = ASR::Lt; op_name = "~lt";
+                        break;
+                    case (AST::LTE):
+                        is_cmpop = true; cmpop = ASR::LtE; op_name = "~lte";
+                        break;
+                    case (AST::GT):
+                        is_cmpop = true; cmpop = ASR::Gt; op_name = "~gt";
+                        break;
+                    case (AST::GTE):
+                        is_cmpop = true; cmpop = ASR::GtE; op_name = "~gte";
+                        break;
+                    default:
+                        throw SemanticError("Unsupported binary operator", x.m_temp_args[i]->base.loc);
+                }
+
+                bool is_overloaded;
+                if (is_binop) {
+                    is_overloaded = ASRUtils::is_op_overloaded(binop, op_name, current_scope, nullptr);
+                } else if (is_cmpop) {
+                    is_overloaded = ASRUtils::is_op_overloaded(cmpop, op_name, current_scope, nullptr);
+                } else {
+                    throw LCompilersException("ICE: must be binop or cmop");
+                }
+
+                ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(param_sym);
+                std::string f_name = f->m_name;
+                bool found = false;
+                // check if an alias is defined for the operator
+                if (is_overloaded) {
+                    ASR::symbol_t* sym = current_scope->resolve_symbol(op_name);
+                    ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
+                    ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
+                    for (size_t i = 0; i < gen_proc->n_procs; i++) {
+                        ASR::symbol_t* proc = gen_proc->m_procs[i];
+                        try {
+                            check_restriction(type_subs, symbol_subs, f, proc, x.base.base.loc, diag);
+                            found = true;
+                            break;
+                        } catch (const SemanticError &e) {
+                            // ignore restriction error so that the next alias can be checked
+                        }
+                    }
+                }
+
+                // if not found, then try to build a function for intrinsic operator
+                if (!found) {
+                    if (f->n_args != 2) {
+                        throw SemanticError("The restriction " + f_name
+                            + " does not have 2 parameters", x.base.base.loc);
+                    }
+                    ASR::ttype_t *ltype = ASRUtils::subs_expr_type(type_subs, f->m_args[0]);
+                    ASR::ttype_t *rtype = ASRUtils::subs_expr_type(type_subs, f->m_args[1]);
+                    ASR::ttype_t *ftype = ASRUtils::subs_expr_type(type_subs, f->m_return_var);
+                    if (is_binop) {
+                        if (!ASRUtils::check_equal_type(ltype, rtype) || !ASRUtils::check_equal_type(rtype, ftype)) {
+                            throw SemanticError("Intrinsic operator "+ op_name + " does not apply to "
+                                "arguments of different types", x.base.base.loc);
+                        }
+                    } else if (is_cmpop) {
+                        if (!ASRUtils::check_equal_type(ltype, rtype) || !ASRUtils::is_logical(*ftype)) {
+                            throw SemanticError("Intrinsic operator " + op_name +
+                                " requires same-typed arguments and a logical return type", x.base.base.loc);
+                        }
+                    }
+
+                    SymbolTable *parent_scope = current_scope;
+                    current_scope = al.make_new<SymbolTable>(parent_scope);
+                    Vec<ASR::expr_t*> args;
+                    args.reserve(al, 2);
+                    for (size_t i=0; i<2; i++) {
+                        std::string var_name = "arg" + std::to_string(i);
+                        ASR::asr_t *v = ASR::make_Variable_t(al, x.base.base.loc, current_scope,
+                            s2c(al, var_name), nullptr, 0, ASR::intentType::In, nullptr, nullptr,
+                            ASR::storage_typeType::Default, ASRUtils::duplicate_type(al, ltype),
+                            nullptr,
+                            ASR::abiType::Source, ASR::accessType::Private,
+                            ASR::presenceType::Required, false);
+                        current_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(v));
+                        ASR::symbol_t *var = current_scope->get_symbol(var_name);
+                        args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, var)));
+                    }
+
+                    std::string func_name = op_name + "_intrinsic_" + ASRUtils::type_to_str(ltype);
+                    ASR::ttype_t *return_type = nullptr;
+                    ASR::expr_t *value = nullptr;
+                    ASR::expr_t *lexpr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
+                        current_scope->get_symbol("arg0")));
+                    ASR::expr_t *rexpr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
+                        current_scope->get_symbol("arg1")));
+
+                    if (is_binop) {
+                        value = ASRUtils::EXPR(ASRUtils::make_Binop_util(al, x.base.base.loc, binop, lexpr, rexpr, ltype));
+                        return_type = ASRUtils::duplicate_type(al, ltype);
+                    } else {
+                        value = ASRUtils::EXPR(ASRUtils::make_Cmpop_util(al, x.base.base.loc, cmpop, lexpr, rexpr, ltype));
+                        return_type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
+                    }
+
+                    ASR::asr_t *return_v = ASR::make_Variable_t(al, x.base.base.loc,
+                        current_scope, s2c(al, "ret"), nullptr, 0,
+                        ASR::intentType::ReturnVar, nullptr, nullptr, ASR::storage_typeType::Default,
+                        return_type, nullptr, ASR::abiType::Source,
+                        ASR::accessType::Private, ASR::presenceType::Required, false);
+                    current_scope->add_symbol("ret", ASR::down_cast<ASR::symbol_t>(return_v));
+                    ASR::expr_t *return_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
+                        current_scope->get_symbol("ret")));
+
+                    Vec<ASR::stmt_t*> body;
+                    body.reserve(al, 1);
+                    ASR::symbol_t *return_sym = current_scope->get_symbol("ret");
+                    ASR::expr_t *target = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, return_sym));
+                    ASR::stmt_t *assignment = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc,
+                        target, value, nullptr));
+                    body.push_back(al, assignment);
+
+                    ASR::asr_t *op_function = ASRUtils::make_Function_t_util(
+                        al, x.base.base.loc, current_scope, s2c(al, func_name),
+                        nullptr, 0, args.p, 2, body.p, 1, return_expr,
+                        ASR::abiType::Source, ASR::accessType::Public,
+                        ASR::deftypeType::Implementation, nullptr, false, true,
+                        false, false, false, nullptr, 0, false, false, true);
+
+                    ASR::symbol_t *op_sym = ASR::down_cast<ASR::symbol_t>(op_function);
+                    parent_scope->add_symbol(func_name, op_sym);
+                    current_scope = parent_scope;
+                    symbol_subs[f->m_name] = op_sym;
+                }
+            } else {
+                throw SemanticError("Unsupported template argument", x.m_temp_args[i]->base.loc);
+            }
+        }
+
+        ASR::symbol_t *s = temp->m_symtab->resolve_symbol(func_name);
+        std::string new_func_name = current_scope->get_unique_name("__asr_" + func_name);
+        pass_instantiate_symbol(al, context_map, type_subs, symbol_subs,
+            current_scope, temp->m_symtab, new_func_name, s);
+        context_map[func_name] = new_func_name;
+
+        ASR::symbol_t *new_s = current_scope->get_symbol(new_func_name);
+        ASR::Function_t *new_f = ASR::down_cast<ASR::Function_t>(new_s);
+        pass_instantiate_function_body(al, context_map, type_subs, symbol_subs,
+            current_scope, temp->m_symtab, new_f, ASR::down_cast<ASR::Function_t>(s));
+
+        // Build generic procedure if has not existed yet
+        std::string g_name = "__templated_" + func_name;
+
+        Vec<ASR::symbol_t*> symbols;
+        if (current_scope->get_symbol(g_name) != nullptr) {
+            ASR::GenericProcedure_t *old_g = ASR::down_cast<ASR::GenericProcedure_t>(current_scope->get_symbol(g_name));
+            symbols.reserve(al, old_g->n_procs + 1);
+            for (size_t i=0; i<old_g->n_procs; i++) {
+                symbols.push_back(al, old_g->m_procs[i]);
+            }
+        } else {
+            symbols.reserve(al, 1);
+        }
+        symbols.push_back(al, new_s);
+        ASR::asr_t *g = ASR::make_GenericProcedure_t(al, x.base.base.loc,
+            current_scope, s2c(al, g_name), symbols.p, symbols.size(), ASR::Public);
+        current_scope->add_or_overwrite_symbol(g_name, ASR::down_cast<ASR::symbol_t>(g));
+
+        context_map.clear();
+    }
 
     void visit_BinOp(const AST::BinOp_t &x) {
         this->visit_expr(*x.m_left);

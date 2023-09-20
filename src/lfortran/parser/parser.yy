@@ -991,7 +991,7 @@ function
         sep
         decl_statements
         end_function sep {
-            LLOC(@$, @14); $$ = TEMPLATED_FUNCTION($1, $3, $5, $8, $10, nullptr,
+            LLOC(@$, @14); $$ = TEMPLATEDFUNCTION($1, $3, $5, $8, $10, nullptr,
                 TRIVIA($11, $14, @$), SPLIT_DECL(p.m_a, $12),
                 SPLIT_STMT(p.m_a, $12), @$); } 
     ;
@@ -2241,6 +2241,7 @@ expr
     : id { $$ = $1; }
     | struct_member_star id { NAME1($$, $2, $1, @$); }
     | id "(" fnarray_arg_list_opt ")" { $$ = FUNCCALLORARRAY($1, $3, @$); }
+    | id "{" use_symbol_list "}" "(" fnarray_arg_list_opt ")" { $$ = FUNCCALLORARRAY5($1, $6, $3, @$); }
     | TK_STRING "(" fnarray_arg_list_opt ")" { $$ = SUBSTRING($1, $3, @$);}
     | struct_member_star id "(" fnarray_arg_list_opt ")" {
             $$ = FUNCCALLORARRAY2($1, $2, $4, @$); }
