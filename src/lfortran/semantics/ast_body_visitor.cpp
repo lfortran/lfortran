@@ -2781,7 +2781,7 @@ public:
             print_args.reserve(al, 1);
             print_args.push_back(al, string_format);
 
-            tmp = ASR::make_Print_t(al, x.base.base.loc, nullptr,
+            tmp = ASR::make_Print_t(al, x.base.base.loc, fmt,
                 print_args.p, print_args.size(), nullptr, nullptr);
         } else if (fmt && ASR::is_a<ASR::IntegerConstant_t>(*fmt)) {
             ASR::IntegerConstant_t *f = ASR::down_cast<ASR::IntegerConstant_t>(fmt);
@@ -2806,7 +2806,7 @@ public:
             print_args.reserve(al, 1);
             print_args.push_back(al, string_format);
 
-            tmp = ASR::make_Print_t(al, x.base.base.loc, nullptr,
+            tmp = ASR::make_Print_t(al, x.base.base.loc, fmt_constant,
                 print_args.p, print_args.size(), nullptr, nullptr);
         } else {
             tmp = ASR::make_Print_t(al, x.base.base.loc, fmt,

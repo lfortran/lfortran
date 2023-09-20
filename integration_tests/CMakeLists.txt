@@ -175,14 +175,14 @@ endmacro(RUN)
 # GFortran + LFortran LLVM + LFortran C++
 
 RUN(NAME program_cmake_01 LABELS gfortran llvm cpp x86 wasm c fortran)
-RUN(NAME program_cmake_02 LABELS gfortran llvm cpp x86 wasm c)
+RUN(NAME program_cmake_02 LABELS gfortran llvm cpp x86 wasm c fortran)
 
-RUN(NAME error_stop_01 FAIL LABELS gfortran llvm cpp x86 wasm llvm2)
-RUN(NAME error_stop_02 FAIL LABELS llvm wasm llvm2)
-RUN(NAME stop_01 LABELS llvm wasm llvm2 c)
+RUN(NAME error_stop_01 FAIL LABELS gfortran llvm cpp x86 wasm llvm2 fortran)
+RUN(NAME error_stop_02 FAIL LABELS llvm wasm llvm2 fortran)
+RUN(NAME stop_01 LABELS llvm wasm llvm2 c fortran)
 
-RUN(NAME print_01 LABELS gfortran llvm cpp llvm2 wasm)
-RUN(NAME print_02 LABELS gfortran llvm llvm2 wasm)
+RUN(NAME print_01 LABELS gfortran llvm cpp llvm2 wasm fortran)
+RUN(NAME print_02 LABELS gfortran llvm llvm2 wasm fortran)
 RUN(NAME print_03 LABELS gfortran llvm llvm2 wasm c)
 RUN(NAME print_04 LABELS gfortran llvm llvm2)
 RUN(NAME print_arr_01 LABELS gfortran llvm llvm2 wasm c)

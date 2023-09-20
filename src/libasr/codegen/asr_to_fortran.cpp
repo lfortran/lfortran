@@ -8,32 +8,6 @@ using LCompilers::ASR::down_cast;
 
 namespace LCompilers {
 
-namespace {
-
-    std::string binop2str(const ASR::binopType type) {
-        switch (type) {
-            case (ASR::binopType::Add) : return " + ";
-            case (ASR::binopType::Sub) : return " - ";
-            case (ASR::binopType::Mul) : return " * ";
-            case (ASR::binopType::Div) : return " / ";
-            case (ASR::binopType::Pow) : return " ** ";
-            default : throw LCompilersException("Binop type not implemented");
-        }
-    }
-
-    std::string cmpop2str(const ASR::cmpopType type) {
-        switch (type) {
-            case (ASR::cmpopType::Eq)    : return " == ";
-            case (ASR::cmpopType::NotEq) : return " /= ";
-            case (ASR::cmpopType::Lt)    : return " < " ;
-            case (ASR::cmpopType::LtE)   : return " <= ";
-            case (ASR::cmpopType::Gt)    : return " > " ;
-            case (ASR::cmpopType::GtE)   : return " >= ";
-            default : throw LCompilersException("Cmpop type not implemented");
-        }
-    }
-}
-
 class ASRToFortranVisitor : public ASR::BaseVisitor<ASRToFortranVisitor>
 {
 public:
@@ -42,6 +16,9 @@ public:
     int indent_level;
     std::string indent;
     int indent_spaces;
+    // The precedence of the last expression, using the table 10.1
+    // in the Fortran 2018 standard
+    int last_expr_precedence;
 
 public:
     ASRToFortranVisitor(bool _use_colors, int _indent)
@@ -49,7 +26,7 @@ public:
             indent_spaces{_indent}
         { }
 
-    /*********************************** Utils *********************************/
+    /********************************** Utils *********************************/
     void inc_indent() {
         indent_level++;
         indent = std::string(indent_level*indent_spaces, ' ');
@@ -60,7 +37,64 @@ public:
         indent = std::string(indent_level*indent_spaces, ' ');
     }
 
-    /*********************************** Unit **********************************/
+    void visit_expr_with_precedence(const ASR::expr_t &x, int current_precedence) {
+        visit_expr(x);
+        if (last_expr_precedence < current_precedence) {
+            s = "(" + s + ")";
+        }
+    }
+
+    std::string binop2str(const ASR::binopType type) {
+        switch (type) {
+            case (ASR::binopType::Add) : {
+                last_expr_precedence = 8;
+                return " + ";
+            } case (ASR::binopType::Sub) : {
+                last_expr_precedence = 8;
+                return " - ";
+            } case (ASR::binopType::Mul) : {
+                last_expr_precedence = 10;
+                return " * ";
+            } case (ASR::binopType::Div) : {
+                last_expr_precedence = 10;
+                return " / ";
+            } case (ASR::binopType::Pow) : {
+                last_expr_precedence = 11;
+                return " ** ";
+            }
+            default :
+                throw LCompilersException("Binop type not implemented");
+        }
+    }
+
+    std::string cmpop2str(const ASR::cmpopType type) {
+        last_expr_precedence = 6;
+        switch (type) {
+            case (ASR::cmpopType::Eq)    : return " == ";
+            case (ASR::cmpopType::NotEq) : return " /= ";
+            case (ASR::cmpopType::Lt)    : return " < " ;
+            case (ASR::cmpopType::LtE)   : return " <= ";
+            case (ASR::cmpopType::Gt)    : return " > " ;
+            case (ASR::cmpopType::GtE)   : return " >= ";
+            default : throw LCompilersException("Cmpop type not implemented");
+        }
+    }
+
+    template <typename T>
+    void visit_body(const T &x, std::string &r, bool apply_indent=true) {
+        if (apply_indent) {
+            inc_indent();
+        }
+        for (size_t i = 0; i < x.n_body; i++) {
+            visit_stmt(*x.m_body[i]);
+            r += s;
+        }
+        if (apply_indent) {
+            dec_indent();
+        }
+    }
+
+    /********************************** Unit **********************************/
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         std::string r = "";
         for (auto &item : x.m_symtab->get_scope()) {
@@ -78,7 +112,7 @@ public:
         s = r;
     }
 
-    /********************************** Symbol *********************************/
+    /********************************* Symbol *********************************/
     void visit_Program(const ASR::Program_t &x) {
         std::string r;
         r = "program";
@@ -95,11 +129,7 @@ public:
             }
         }
 
-        for (size_t i = 0; i < x.n_body; i++) {
-            if (i == 0) r += "\n";
-            visit_stmt(*x.m_body[i]);
-            r += s;
-        }
+        visit_body(x, r, false);
 
         bool prepend_contains_keyword = true;
         for (auto &item : x.m_symtab->get_scope()) {
@@ -151,11 +181,7 @@ public:
             }
         }
 
-        for (size_t i = 0; i < x.n_body; i++) {
-            if (i == 0) r += "\n";
-            visit_stmt(*x.m_body[i]);
-            r += s;
-        }
+        visit_body(x, r, false);
         dec_indent();
         r += indent;
         r += "end function";
@@ -164,6 +190,18 @@ public:
         r += "\n";
         s = r;
     }
+
+    // void visit_GenericProcedure(const ASR::GenericProcedure_t &x) {}
+
+    // void visit_CustomOperator(const ASR::CustomOperator_t &x) {}
+
+    // void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {}
+
+    // void visit_StructType(const ASR::StructType_t &x) {}
+
+    // void visit_EnumType(const ASR::EnumType_t &x) {}
+
+    // void visit_UnionType(const ASR::UnionType_t &x) {}
 
     void visit_Variable(const ASR::Variable_t &x) {
         std::string r = indent;
@@ -177,6 +215,14 @@ public:
             } case ASR::ttypeType::Real: {
                 r += "real(";
                 r += std::to_string(down_cast<ASR::Real_t>(x.m_type)->m_kind);
+                r += ")";
+                break;
+            } case ASR::ttypeType::Character: {
+                ASR::Character_t *c = down_cast<ASR::Character_t>(x.m_type);
+                r += "character(len=";
+                r += std::to_string(c->m_len);
+                r += ", kind=";
+                r += std::to_string(c->m_kind);
                 r += ")";
                 break;
             }
@@ -205,11 +251,38 @@ public:
         }
         r += " :: ";
         r.append(x.m_name);
+        if (x.m_value) {
+            r += " = ";
+            visit_expr(*x.m_value);
+            r += s;
+        } else if (x.m_symbolic_value) {
+            r += " = ";
+            visit_expr(*x.m_symbolic_value);
+            r += s;
+        }
         r += "\n";
         s = r;
     }
 
-    /*********************************** Stmt **********************************/
+    // void visit_ClassType(const ASR::ClassType_t &x) {}
+
+    // void visit_ClassProcedure(const ASR::ClassProcedure_t &x) {}
+
+    // void visit_AssociateBlock(const ASR::AssociateBlock_t &x) {}
+
+    // void visit_Block(const ASR::Block_t &x) {}
+
+    // void visit_Requirement(const ASR::Requirement_t &x) {}
+
+    // void visit_Template(const ASR::Template_t &x) {}
+
+    /********************************** Stmt **********************************/
+    // void visit_Allocate(const ASR::Allocate_t &x) {}
+
+    // void visit_ReAlloc(const ASR::ReAlloc_t &x) {}
+
+    // void visit_Assign(const ASR::Assign_t &x) {}
+
     void visit_Assignment(const ASR::Assignment_t &x) {
         std::string r = indent;
         visit_expr(*x.m_target);
@@ -221,11 +294,31 @@ public:
         s = r;
     }
 
+    // void visit_Associate(const ASR::Associate_t &x) {}
+
+    // void visit_Cycle(const ASR::Cycle_t &x) {}
+
+    // void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {}
+
+    // void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t &x) {}
+
+    // void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {}
+
+    // void visit_DoLoop(const ASR::DoLoop_t &x) {}
+
     void visit_ErrorStop(const ASR::ErrorStop_t &/*x*/) {
         s = indent;
         s += "error stop";
         s += "\n";
     }
+
+    // void visit_Exit(const ASR::Exit_t &x) {}
+
+    // void visit_ForAllSingle(const ASR::ForAllSingle_t &x) {}
+
+    // void visit_GoTo(const ASR::GoTo_t &x) {}
+
+    // void visit_GoToTarget(const ASR::GoToTarget_t &x) {}
 
     void visit_If(const ASR::If_t &x) {
         std::string r = indent;
@@ -236,12 +329,7 @@ public:
         r += ") ";
         r += "then";
         r += "\n";
-        inc_indent();
-        for (size_t i = 0; i < x.n_body; i++) {
-            visit_stmt(*x.m_body[i]);
-            r += s;
-        }
-        dec_indent();
+        visit_body(x, r);
         for (size_t i = 0; i < x.n_orelse; i++) {
             r += indent;
             r += "else";
@@ -257,13 +345,19 @@ public:
         s = r;
     }
 
+    // void visit_IfArithmetic(const ASR::IfArithmetic_t &x) {}
+
     void visit_Print(const ASR::Print_t &x) {
         std::string r = indent;
         r += "print";
         r += " ";
-        if (!x.m_fmt) {
-            r += "*, ";
+        if (x.m_fmt) {
+            visit_expr(*x.m_fmt);
+            r += s;
+        } else {
+            r += "*";
         }
+        r += ", ";
         for (size_t i = 0; i < x.n_values; i++) {
             visit_expr(*x.m_values[i]);
             r += s;
@@ -273,15 +367,92 @@ public:
         s = r;
     }
 
-    /*********************************** Expr **********************************/
-    void visit_Cast(const ASR::Cast_t &x) {
-        // TODO
-        visit_expr(*x.m_arg);
+    // void visit_FileOpen(const ASR::FileOpen_t &x) {}
+
+    // void visit_FileClose(const ASR::FileClose_t &x) {}
+
+    // void visit_FileRead(const ASR::FileRead_t &x) {}
+
+    // void visit_FileBackspace(const ASR::FileBackspace_t &x) {}
+
+    // void visit_FileRewind(const ASR::FileRewind_t &x) {}
+
+    // void visit_FileInquire(const ASR::FileInquire_t &x) {}
+
+    void visit_FileWrite(const ASR::FileWrite_t &x) {
+        std::string r = indent;
+        r += "write";
+        r += "(";
+        if (!x.m_unit) {
+            r += "*, ";
+        }
+        if (x.m_fmt) {
+            visit_expr(*x.m_fmt);
+            r += s;
+        } else {
+            r += "*";
+        }
+        r += ") ";
+        for (size_t i = 0; i < x.n_values; i++) {
+            visit_expr(*x.m_values[i]);
+            r += s;
+            if (i < x.n_values-1) r += ", ";
+        }
+        r += "\n";
+        s = r;
     }
 
-    void visit_Var(const ASR::Var_t &x) {
-        s = ASRUtils::symbol_name(x.m_v);
+    // void visit_Return(const ASR::Return_t &x) {}
+
+    // void visit_Select(const ASR::Select_t &x) {}
+
+    void visit_Stop(const ASR::Stop_t /*x*/) {
+        s = indent;
+        s += "stop";
+        s += "\n";
     }
+
+    // void visit_Assert(const ASR::Assert_t &x) {}
+
+    // void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {}
+
+    // void visit_Where(const ASR::Where_t &x) {}
+
+    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+        std::string r = indent;
+        r += "do while";
+        r += " (";
+        visit_expr(*x.m_test);
+        r += s;
+        r += ")\n";
+        visit_body(x, r);
+        r += indent;
+        r += "end do\n";
+        s = r;
+    }
+
+    // void visit_Nullify(const ASR::Nullify_t &x) {}
+
+    // void visit_Flush(const ASR::Flush_t &x) {}
+
+    // void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {}
+
+    // void visit_SelectType(const ASR::SelectType_t &x) {}
+
+    // void visit_CPtrToPointer(const ASR::CPtrToPointer_t &x) {}
+
+    // void visit_BlockCall(const ASR::BlockCall_t &x) {}
+
+    // void visit_Expr(const ASR::Expr_t &x) {}
+
+    /********************************** Expr **********************************/
+    // void visit_IfExp(const ASR::IfExp_t &x) {}
+
+    // void visit_ComplexConstructor(const ASR::ComplexConstructor_t &x) {}
+
+    // void visit_NamedExpr(const ASR::NamedExpr_t &x) {}
+
+    // void visit_FunctionCall(const ASR::FunctionCall_t &x) {}
 
     void visit_IntrinsicScalarFunction(const ASR::IntrinsicScalarFunction_t &x) {
         std::string out;
@@ -299,67 +470,218 @@ public:
         s = out;
     }
 
+    // void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t &x) {}
 
-    void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
-        std::string r;
-        // TODO: Handle precedence based on the last_operator_precedence
-        r = "(";
-        visit_expr(*x.m_left);
-        r += s;
-        r += binop2str(x.m_op);
-        visit_expr(*x.m_right);
-        r += s;
-        r += ")";
-        s = r;
-    }
+    // void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t &x) {}
+
+    // void visit_StructTypeConstructor(const ASR::StructTypeConstructor_t &x) {}
+
+    // void visit_EnumTypeConstructor(const ASR::EnumTypeConstructor_t &x) {}
+
+    // void visit_UnionTypeConstructor(const ASR::UnionTypeConstructor_t &x) {}
+
+    // void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t &x) {}
 
     void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
+        last_expr_precedence = 13;
         s = std::to_string(x.m_n);
     }
 
+    // void visit_IntegerBOZ(const ASR::IntegerBOZ_t &x) {}
+
+    // void visit_IntegerBitNot(const ASR::IntegerBitNot_t &x) {}
+
+    void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t &x) {
+        last_expr_precedence = 9;
+        visit_expr(*x.m_value);
+    }
+
     void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
-        std::string r;
-        // TODO: Handle precedence based on the last_operator_precedence
-        r = "(";
-        visit_expr(*x.m_left);
+        std::string r = "", m_op = cmpop2str(x.m_op);
+        int current_precedence = last_expr_precedence;
+        visit_expr_with_precedence(*x.m_left, current_precedence);
         r += s;
-        r += cmpop2str(x.m_op);
-        visit_expr(*x.m_right);
+        r += m_op;
+        visit_expr_with_precedence(*x.m_right, current_precedence);
         r += s;
-        r += ")";
+        last_expr_precedence = current_precedence;
         s = r;
     }
 
-    void visit_RealCompare(const ASR::RealCompare_t &x) {
-        std::string r;
-        // TODO: Handle precedence based on the last_operator_precedence
-        r = "(";
-        visit_expr(*x.m_left);
+    void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
+        std::string r = "", m_op = binop2str(x.m_op);
+        int current_precedence = last_expr_precedence;
+        visit_expr_with_precedence(*x.m_left, current_precedence);
         r += s;
-        r += cmpop2str(x.m_op);
-        visit_expr(*x.m_right);
+        r += m_op;
+        visit_expr_with_precedence(*x.m_right, current_precedence);
         r += s;
-        r += ")";
+        last_expr_precedence = current_precedence;
         s = r;
     }
+
+    // void visit_UnsignedIntegerConstant(const ASR::UnsignedIntegerConstant_t &x) {}
+
+    // void visit_UnsignedIntegerUnaryMinus(const ASR::UnsignedIntegerUnaryMinus_t &x) {}
+
+    // void visit_UnsignedIntegerBitNot(const ASR::UnsignedIntegerBitNot_t &x) {}
+
+    // void visit_UnsignedIntegerCompare(const ASR::UnsignedIntegerCompare_t &x) {}
+
+    // void visit_UnsignedIntegerBinOp(const ASR::UnsignedIntegerBinOp_t &x) {}
 
     void visit_RealConstant(const ASR::RealConstant_t &x) {
+        last_expr_precedence = 13;
         s = std::to_string(x.m_r);
     }
 
     void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t &x) {
+        last_expr_precedence = 9;
         visit_expr(*x.m_value);
     }
 
-    void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t &x) {
-        visit_expr(*x.m_value);
+    void visit_RealCompare(const ASR::RealCompare_t &x) {
+        std::string r = "", m_op = cmpop2str(x.m_op);
+        int current_precedence = last_expr_precedence;
+        visit_expr_with_precedence(*x.m_left, current_precedence);
+        r += s;
+        r += m_op;
+        visit_expr_with_precedence(*x.m_right, current_precedence);
+        r += s;
+        last_expr_precedence = current_precedence;
+        s = r;
     }
+
+    // void visit_RealBinOp(const ASR::RealBinOp_t &x) {}
+
+    // void visit_RealCopySign(const ASR::RealCopySign_t &x) {}
+
+    // void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {}
+
+    // void visit_ComplexUnaryMinus(const ASR::ComplexUnaryMinus_t &x) {}
+
+    // void visit_ComplexCompare(const ASR::ComplexCompare_t &x) {}
+
+    // void visit_ComplexBinOp(const ASR::ComplexBinOp_t &x) {}
+
+    // void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {}
+
+    // void visit_LogicalNot(const ASR::LogicalNot_t &x) {}
+
+    // void visit_LogicalCompare(const ASR::LogicalCompare_t &x) {}
+
+    // void visit_LogicalBinOp(const ASR::LogicalBinOp_t &x) {}
 
     void visit_StringConstant(const ASR::StringConstant_t &x) {
         s = "\"";
         s.append(x.m_s);
         s += "\"";
     }
+
+    // void visit_StringConcat(const ASR::StringConcat_t &x) {}
+
+    // void visit_StringRepeat(const ASR::StringRepeat_t &x) {}
+
+    // void visit_StringLen(const ASR::StringLen_t &x) {}
+
+    // void visit_StringItem(const ASR::StringItem_t &x) {}
+
+    // void visit_StringSection(const ASR::StringSection_t &x) {}
+
+    // void visit_StringCompare(const ASR::StringCompare_t &x) {}
+
+    // void visit_StringOrd(const ASR::StringOrd_t &x) {}
+
+    // void visit_StringChr(const ASR::StringChr_t &x) {}
+
+    void visit_StringFormat(const ASR::StringFormat_t &x) {
+        std::string r = "";
+        for (size_t i = 0; i < x.n_args; i++) {
+            visit_expr(*x.m_args[i]);
+            r += s;
+            if (i < x.n_args-1) r += ", ";
+        }
+        s = r;
+    }
+
+    // void visit_CPtrCompare(const ASR::CPtrCompare_t &x) {}
+
+    // void visit_SymbolicCompare(const ASR::SymbolicCompare_t &x) {}
+
+    void visit_Var(const ASR::Var_t &x) {
+        s = ASRUtils::symbol_name(x.m_v);
+    }
+
+    // void visit_FunctionParam(const ASR::FunctionParam_t &x) {}
+
+    // void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {}
+
+    // void visit_ArrayItem(const ASR::ArrayItem_t &x) {}
+
+    // void visit_ArraySection(const ASR::ArraySection_t &x) {}
+
+    // void visit_ArraySize(const ASR::ArraySize_t &x) {}
+
+    // void visit_ArrayBound(const ASR::ArrayBound_t &x) {}
+
+    // void visit_ArrayTranspose(const ASR::ArrayTranspose_t &x) {}
+
+    // void visit_ArrayPack(const ASR::ArrayPack_t &x) {}
+
+    // void visit_ArrayReshape(const ASR::ArrayReshape_t &x) {}
+
+    // void visit_ArrayAll(const ASR::ArrayAll_t &x) {}
+
+    // void visit_BitCast(const ASR::BitCast_t &x) {}
+
+    // void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {}
+
+    // void visit_StructStaticMember(const ASR::StructStaticMember_t &x) {}
+
+    // void visit_EnumStaticMember(const ASR::EnumStaticMember_t &x) {}
+
+    // void visit_UnionInstanceMember(const ASR::UnionInstanceMember_t &x) {}
+
+    // void visit_EnumName(const ASR::EnumName_t &x) {}
+
+    // void visit_EnumValue(const ASR::EnumValue_t &x) {}
+
+    // void visit_OverloadedCompare(const ASR::OverloadedCompare_t &x) {}
+
+    // void visit_OverloadedBinOp(const ASR::OverloadedBinOp_t &x) {}
+
+    // void visit_OverloadedUnaryMinus(const ASR::OverloadedUnaryMinus_t &x) {}
+
+    void visit_Cast(const ASR::Cast_t &x) {
+        // TODO
+        visit_expr(*x.m_arg);
+    }
+
+    // void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t &x) {}
+
+    // void visit_ComplexRe(const ASR::ComplexRe_t &x) {}
+
+    // void visit_ComplexIm(const ASR::ComplexIm_t &x) {}
+
+    // void visit_CLoc(const ASR::CLoc_t &x) {}
+
+    // void visit_PointerToCPtr(const ASR::PointerToCPtr_t &x) {}
+
+    // void visit_GetPointer(const ASR::GetPointer_t &x) {}
+
+    // void visit_IntegerBitLen(const ASR::IntegerBitLen_t &x) {}
+
+    // void visit_Ichar(const ASR::Ichar_t &x) {}
+
+    // void visit_Iachar(const ASR::Iachar_t &x) {}
+
+    // void visit_SizeOfType(const ASR::SizeOfType_t &x) {}
+
+    // void visit_PointerNullConstant(const ASR::PointerNullConstant_t &x) {}
+
+    // void visit_PointerAssociated(const ASR::PointerAssociated_t &x) {}
+
+    // void visit_IntrinsicFunctionSqrt(const ASR::IntrinsicFunctionSqrt_t &x) {}
 };
 
 std::string asr_to_fortran(ASR::TranslationUnit_t &asr,

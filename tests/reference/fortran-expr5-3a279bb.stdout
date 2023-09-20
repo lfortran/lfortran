@@ -1,9 +1,8 @@
 program expr_05
     implicit none
     integer(4) :: x
-
-    x = ((2 + 3) * 5)
-    if ((x == 25)) then
+    x = (2 + 3) * 5
+    if (x == 25) then
         error stop
     end if
 end program expr_05
