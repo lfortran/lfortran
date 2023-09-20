@@ -19,6 +19,7 @@ public:
     // The precedence of the last expression, using the table 10.1
     // in the Fortran 2018 standard
     int last_expr_precedence;
+    std::string format_string;
 
 public:
     ASRToFortranVisitor(bool _use_colors, int _indent)
@@ -337,7 +338,16 @@ public:
 
     // void visit_GoTo(const ASR::GoTo_t &x) {}
 
-    // void visit_GoToTarget(const ASR::GoToTarget_t &x) {}
+    void visit_GoToTarget(const ASR::GoToTarget_t &x) {
+        s = x.m_name;
+        s += " format(";
+        if (startswith(format_string, "\"") && endswith(format_string, "\"")) {
+            format_string = format_string.substr(1, format_string.size()-2);
+        }
+        s += format_string;
+        s += ")\n";
+        format_string.clear();
+    }
 
     void visit_If(const ASR::If_t &x) {
         std::string r = indent;
@@ -372,6 +382,7 @@ public:
         r += " ";
         if (x.m_fmt) {
             visit_expr(*x.m_fmt);
+            format_string = s;
             r += s;
         } else {
             r += "*";
@@ -407,6 +418,7 @@ public:
         }
         if (x.m_fmt) {
             visit_expr(*x.m_fmt);
+            format_string = s;
             r += s;
         } else {
             r += "*";
@@ -615,6 +627,10 @@ public:
 
     void visit_StringFormat(const ASR::StringFormat_t &x) {
         std::string r = "";
+        if (format_string.size() > 0) {
+            visit_expr(*x.m_fmt);
+            format_string = s;
+        }
         for (size_t i = 0; i < x.n_args; i++) {
             visit_expr(*x.m_args[i]);
             r += s;
