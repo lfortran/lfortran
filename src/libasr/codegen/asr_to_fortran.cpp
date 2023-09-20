@@ -338,7 +338,25 @@ public:
 
     // void visit_FileInquire(const ASR::FileInquire_t &x) {}
 
-    // void visit_FileWrite(const ASR::FileWrite_t &x) {}
+    void visit_FileWrite(const ASR::FileWrite_t &x) {
+        std::string r = indent;
+        r += "write";
+        r += "(";
+        if (!x.m_unit) {
+            r += "*, ";
+        }
+        if (!x.m_fmt) {
+            r += "*";
+        }
+        r += ") ";
+        for (size_t i = 0; i < x.n_values; i++) {
+            visit_expr(*x.m_values[i]);
+            r += s;
+            if (i < x.n_values-1) r += ", ";
+        }
+        r += "\n";
+        s = r;
+    }
 
     // void visit_Return(const ASR::Return_t &x) {}
 
