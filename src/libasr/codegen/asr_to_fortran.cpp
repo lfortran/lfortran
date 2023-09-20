@@ -8,32 +8,6 @@ using LCompilers::ASR::down_cast;
 
 namespace LCompilers {
 
-namespace {
-
-    std::string binop2str(const ASR::binopType type) {
-        switch (type) {
-            case (ASR::binopType::Add) : return " + ";
-            case (ASR::binopType::Sub) : return " - ";
-            case (ASR::binopType::Mul) : return " * ";
-            case (ASR::binopType::Div) : return " / ";
-            case (ASR::binopType::Pow) : return " ** ";
-            default : throw LCompilersException("Binop type not implemented");
-        }
-    }
-
-    std::string cmpop2str(const ASR::cmpopType type) {
-        switch (type) {
-            case (ASR::cmpopType::Eq)    : return " == ";
-            case (ASR::cmpopType::NotEq) : return " /= ";
-            case (ASR::cmpopType::Lt)    : return " < " ;
-            case (ASR::cmpopType::LtE)   : return " <= ";
-            case (ASR::cmpopType::Gt)    : return " > " ;
-            case (ASR::cmpopType::GtE)   : return " >= ";
-            default : throw LCompilersException("Cmpop type not implemented");
-        }
-    }
-}
-
 class ASRToFortranVisitor : public ASR::BaseVisitor<ASRToFortranVisitor>
 {
 public:
@@ -42,6 +16,9 @@ public:
     int indent_level;
     std::string indent;
     int indent_spaces;
+    // The precedence of the last expression, using the table 10.1
+    // in the Fortran 2018 standard
+    int last_expr_precedence;
 
 public:
     ASRToFortranVisitor(bool _use_colors, int _indent)
@@ -58,6 +35,49 @@ public:
     void dec_indent() {
         indent_level--;
         indent = std::string(indent_level*indent_spaces, ' ');
+    }
+
+    void visit_expr_with_precedence(const ASR::expr_t &x, int current_precedence) {
+        visit_expr(x);
+        if (last_expr_precedence < current_precedence) {
+            s = "(" + s + ")";
+        }
+    }
+
+    std::string binop2str(const ASR::binopType type) {
+        switch (type) {
+            case (ASR::binopType::Add) : {
+                last_expr_precedence = 8;
+                return " + ";
+            } case (ASR::binopType::Sub) : {
+                last_expr_precedence = 8;
+                return " - ";
+            } case (ASR::binopType::Mul) : {
+                last_expr_precedence = 10;
+                return " * ";
+            } case (ASR::binopType::Div) : {
+                last_expr_precedence = 10;
+                return " / ";
+            } case (ASR::binopType::Pow) : {
+                last_expr_precedence = 11;
+                return " ** ";
+            }
+            default :
+                throw LCompilersException("Binop type not implemented");
+        }
+    }
+
+    std::string cmpop2str(const ASR::cmpopType type) {
+        last_expr_precedence = 6;
+        switch (type) {
+            case (ASR::cmpopType::Eq)    : return " == ";
+            case (ASR::cmpopType::NotEq) : return " /= ";
+            case (ASR::cmpopType::Lt)    : return " < " ;
+            case (ASR::cmpopType::LtE)   : return " <= ";
+            case (ASR::cmpopType::Gt)    : return " > " ;
+            case (ASR::cmpopType::GtE)   : return " >= ";
+            default : throw LCompilersException("Cmpop type not implemented");
+        }
     }
 
     template <typename T>
@@ -463,6 +483,7 @@ public:
     // void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t &x) {}
 
     void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
+        last_expr_precedence = 13;
         s = std::to_string(x.m_n);
     }
 
@@ -471,32 +492,31 @@ public:
     // void visit_IntegerBitNot(const ASR::IntegerBitNot_t &x) {}
 
     void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t &x) {
+        last_expr_precedence = 9;
         visit_expr(*x.m_value);
     }
 
     void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
-        std::string r;
-        // TODO: Handle precedence based on the last_operator_precedence
-        r = "(";
-        visit_expr(*x.m_left);
+        std::string r = "", m_op = cmpop2str(x.m_op);
+        int current_precedence = last_expr_precedence;
+        visit_expr_with_precedence(*x.m_left, current_precedence);
         r += s;
-        r += cmpop2str(x.m_op);
-        visit_expr(*x.m_right);
+        r += m_op;
+        visit_expr_with_precedence(*x.m_right, current_precedence);
         r += s;
-        r += ")";
+        last_expr_precedence = current_precedence;
         s = r;
     }
 
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
-        std::string r;
-        // TODO: Handle precedence based on the last_operator_precedence
-        r = "(";
-        visit_expr(*x.m_left);
+        std::string r = "", m_op = binop2str(x.m_op);
+        int current_precedence = last_expr_precedence;
+        visit_expr_with_precedence(*x.m_left, current_precedence);
         r += s;
-        r += binop2str(x.m_op);
-        visit_expr(*x.m_right);
+        r += m_op;
+        visit_expr_with_precedence(*x.m_right, current_precedence);
         r += s;
-        r += ")";
+        last_expr_precedence = current_precedence;
         s = r;
     }
 
@@ -511,23 +531,24 @@ public:
     // void visit_UnsignedIntegerBinOp(const ASR::UnsignedIntegerBinOp_t &x) {}
 
     void visit_RealConstant(const ASR::RealConstant_t &x) {
+        last_expr_precedence = 13;
         s = std::to_string(x.m_r);
     }
 
     void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t &x) {
+        last_expr_precedence = 9;
         visit_expr(*x.m_value);
     }
 
     void visit_RealCompare(const ASR::RealCompare_t &x) {
-        std::string r;
-        // TODO: Handle precedence based on the last_operator_precedence
-        r = "(";
-        visit_expr(*x.m_left);
+        std::string r = "", m_op = cmpop2str(x.m_op);
+        int current_precedence = last_expr_precedence;
+        visit_expr_with_precedence(*x.m_left, current_precedence);
         r += s;
-        r += cmpop2str(x.m_op);
-        visit_expr(*x.m_right);
+        r += m_op;
+        visit_expr_with_precedence(*x.m_right, current_precedence);
         r += s;
-        r += ")";
+        last_expr_precedence = current_precedence;
         s = r;
     }
 
