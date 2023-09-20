@@ -111,6 +111,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> TK_STRING
 %token <string> TK_COMMENT
 %token <string> TK_EOLCOMMENT
+%token <string> TK_PRAGMA
 
 %token TK_DBL_DOT ".."
 %token TK_DBL_COLON "::"
@@ -1265,6 +1266,8 @@ var_decl
         LLOC(@$, @2); $$ = VAR_DECL_COMMON($2, TRIVIA_AFTER($3, @$), @$); }
     | KW_EQUIVALENCE equivalence_set_list sep {
         LLOC(@$, @2); $$ = VAR_DECL_EQUIVALENCE($2, TRIVIA_AFTER($3, @$), @$);}
+    | TK_PRAGMA sep {
+        LLOC(@$, @1); $$ = VAR_DECL_PRAGMA($1, TRIVIA_AFTER($2, @$), @$);}
     ;
 
 equivalence_set_list

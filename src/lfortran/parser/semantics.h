@@ -219,6 +219,29 @@ static inline LCompilers::LFortran::IntSuffix divide_int_by_2(
     return n2;
 }
 
+static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
+        const LCompilers::Str &text, trivia_t *trivia)
+{
+    std::string t = text.str();
+    if (LCompilers::startswith(t, "!LF$")) {
+        if (LCompilers::startswith(t, "!LF$ ")) {
+            t = t.substr(5);
+            return make_DeclarationPragma_t(al, loc,
+                LCompilers::LFortran::AST::LFortranPragma, LCompilers::s2c(al, t),
+                trivia);
+        } else {
+            throw LCompilers::LFortran::parser_local::ParserError(
+                "The LFortran pragma !LF$ must be followed by a space", loc);
+        }
+    } else {
+        throw LCompilers::LFortran::parser_local::ParserError(
+            "Unsupported compiler directive (pragma)", loc);
+    }
+}
+
+#define VAR_DECL_PRAGMA(text, trivia, l) \
+        VAR_DECL_PRAGMA2(p.m_a, l, text, trivia_cast(trivia))
+
 #define VAR_DECL_EQUIVALENCE(args, trivia, l) make_Declaration_t(p.m_a, l, \
         nullptr, EQUIVALENCE(p.m_a, l, args.p, args.n), 1, \
         nullptr, 0, trivia_cast(trivia))
