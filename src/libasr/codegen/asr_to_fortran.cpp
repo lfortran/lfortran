@@ -343,7 +343,11 @@ public:
 
     // void visit_Select(const ASR::Select_t &x) {}
 
-    // void visit_Stop(const ASR::Stop_t &x) {}
+    void visit_Stop(const ASR::Stop_t &x) {
+        s = indent;
+        s += "stop";
+        s += "\n";
+    }
 
     // void visit_Assert(const ASR::Assert_t &x) {}
 
