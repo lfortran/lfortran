@@ -260,6 +260,9 @@ public:
             default:
                 throw LCompilersException("Intent type is not handled");
         }
+        if (x.m_storage == ASR::storage_typeType::Parameter) {
+            r += ", parameter";
+        }
         r += " :: ";
         r.append(x.m_name);
         if (is_a<ASR::Array_t>(*x.m_type)) {
@@ -435,7 +438,36 @@ public:
 
     // void visit_Return(const ASR::Return_t &x) {}
 
-    // void visit_Select(const ASR::Select_t &x) {}
+    void visit_Select(const ASR::Select_t &x) {
+        std::string r = indent;
+        r += "select case";
+        r += " (";
+        visit_expr(*x.m_test);
+        r += s;
+        r += ")\n";
+        inc_indent();
+        if (x.n_body > 0) {
+            for(size_t i = 0; i < x.n_body; i ++) {
+                visit_case_stmt(*x.m_body[i]);
+                r += s;
+            }
+        }
+
+        if (x.n_default > 0) {
+            r += indent;
+            r += "case default\n";
+            inc_indent();
+            for(size_t i = 0; i < x.n_default; i ++) {
+                visit_stmt(*x.m_default[i]);
+                r += s;
+            }
+            dec_indent();
+        }
+        dec_indent();
+        r += indent;
+        r += "end select\n";
+        s = r;
+    }
 
     void visit_Stop(const ASR::Stop_t /*x*/) {
         s = indent;
@@ -739,6 +771,48 @@ public:
     // void visit_PointerAssociated(const ASR::PointerAssociated_t &x) {}
 
     // void visit_IntrinsicFunctionSqrt(const ASR::IntrinsicFunctionSqrt_t &x) {}
+
+    /******************************* Case Stmt ********************************/
+    void visit_CaseStmt(const ASR::CaseStmt_t &x) {
+        std::string r = indent;
+        r += "case (";
+        for(size_t i = 0; i < x.n_test; i ++) {
+            visit_expr(*x.m_test[i]);
+            r += s;
+            if (i < x.n_test-1) r += ", ";
+        }
+        r += ")\n";
+        inc_indent();
+        for(size_t i = 0; i < x.n_body; i ++) {
+            visit_stmt(*x.m_body[i]);
+            r += s;
+        }
+        dec_indent();
+        s = r;
+    }
+
+    void visit_CaseStmt_Range(const ASR::CaseStmt_Range_t &x) {
+        std::string r = indent;
+        r += "case (";
+        if (x.m_start) {
+            visit_expr(*x.m_start);
+            r += s;
+        }
+        r += ":";
+        if (x.m_end) {
+            visit_expr(*x.m_end);
+            r += s;
+        }
+        r += ")\n";
+        inc_indent();
+        for(size_t i = 0; i < x.n_body; i ++) {
+            visit_stmt(*x.m_body[i]);
+            r += s;
+        }
+        dec_indent();
+        s = r;
+    }
+
 };
 
 std::string asr_to_fortran(ASR::TranslationUnit_t &asr,
