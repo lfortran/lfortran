@@ -60,6 +60,20 @@ public:
         indent = std::string(indent_level*indent_spaces, ' ');
     }
 
+    template <typename T>
+    void visit_body(const T &x, std::string &r, bool apply_indent=true) {
+        if (apply_indent) {
+            inc_indent();
+        }
+        for (size_t i = 0; i < x.n_body; i++) {
+            visit_stmt(*x.m_body[i]);
+            r += s;
+        }
+        if (apply_indent) {
+            dec_indent();
+        }
+    }
+
     /********************************** Unit **********************************/
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         std::string r = "";
@@ -95,11 +109,7 @@ public:
             }
         }
 
-        for (size_t i = 0; i < x.n_body; i++) {
-            if (i == 0) r += "\n";
-            visit_stmt(*x.m_body[i]);
-            r += s;
-        }
+        visit_body(x, r, false);
 
         bool prepend_contains_keyword = true;
         for (auto &item : x.m_symtab->get_scope()) {
@@ -151,11 +161,7 @@ public:
             }
         }
 
-        for (size_t i = 0; i < x.n_body; i++) {
-            if (i == 0) r += "\n";
-            visit_stmt(*x.m_body[i]);
-            r += s;
-        }
+        visit_body(x, r, false);
         dec_indent();
         r += indent;
         r += "end function";
@@ -286,12 +292,7 @@ public:
         r += ") ";
         r += "then";
         r += "\n";
-        inc_indent();
-        for (size_t i = 0; i < x.n_body; i++) {
-            visit_stmt(*x.m_body[i]);
-            r += s;
-        }
-        dec_indent();
+        visit_body(x, r);
         for (size_t i = 0; i < x.n_orelse; i++) {
             r += indent;
             r += "else";
@@ -343,7 +344,7 @@ public:
 
     // void visit_Select(const ASR::Select_t &x) {}
 
-    void visit_Stop(const ASR::Stop_t &x) {
+    void visit_Stop(const ASR::Stop_t /*x*/) {
         s = indent;
         s += "stop";
         s += "\n";
@@ -362,12 +363,7 @@ public:
         visit_expr(*x.m_test);
         r += s;
         r += ")\n";
-        inc_indent();
-        for (size_t i = 0; i < x.n_body; i++) {
-            visit_stmt(*x.m_body[i]);
-            r += s;
-        }
-        dec_indent();
+        visit_body(x, r);
         r += indent;
         r += "end do\n";
         s = r;
