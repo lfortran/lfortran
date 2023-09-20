@@ -1090,6 +1090,33 @@ public:
         visit_DeclarationUtil(x);
     }
 
+    void visit_DeclarationPragma(const AST::DeclarationPragma_t &x) {
+        if (x.m_type == AST::LFortranPragma) {
+            std::string t = x.m_text;
+            if (startswith(t, "attributes ")) {
+                t = t.substr(11);
+                if (startswith(t, "simd :: ")) {
+                    t = t.substr(8);
+                    // TODO: for now assume just one variable
+                    // !LF$ attributes simd :: X
+                    std::string var = t;
+                    // TODO: insert `var` into a symbol table and set SIMD on it
+                    //std::cout << "pragma:" << var << std::endl;
+                } else {
+                    throw SemanticError("Only `simd` attribute supported",
+                        x.base.base.loc);
+                }
+            } else {
+                throw SemanticError("Unsupported LFortran pragma type",
+                    x.base.base.loc);
+            }
+
+        } else {
+            throw SemanticError("The pragma type not supported yet",
+                x.base.base.loc);
+        }
+    }
+
     void visit_DerivedType(const AST::DerivedType_t &x) {
         dt_name = to_lower(x.m_name);
         bool is_abstract = false;
