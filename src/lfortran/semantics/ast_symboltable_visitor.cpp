@@ -1129,7 +1129,18 @@ public:
                 throw SemanticError("The SIMD variable `" + var.first + "` not declared",
                     var.second);
             } else {
-                // TODO: set "simd" inside "s", ensure it's an array, etc.
+                ASR::ttype_t *t = ASRUtils::symbol_type(s);
+                if (ASR::is_a<ASR::Array_t>(*t)) {
+                    ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(t);
+                    a->m_physical_type = ASR::array_physical_typeType::SIMDArray;
+                    // TODO: check all the SIMD requirements here:
+                    // * 1D array
+                    // * the right, compile time, size, compatible type
+                    // * Not allocatable, or pointer
+                } else {
+                    throw SemanticError("The SIMD variable `" + var.first + "` must be an array",
+                        t->base.loc);
+                }
             }
 
         }
