@@ -79,6 +79,7 @@ public:
     std::map<std::string, std::map<std::string, std::map<std::string, ClassProcInfo>>> class_procedures;
     std::map<std::string, std::map<std::string, std::map<std::string, Location>>> class_deferred_procedures;
     std::vector<std::string> assgn_proc_names;
+    std::vector<std::pair<std::string,Location>> simd_variables;
     std::string dt_name;
     bool in_submodule = false;
     bool is_interface = false;
@@ -513,12 +514,14 @@ public:
                 }
             }
         }
+        simd_variables.clear();
         for (size_t i=0; i<x.n_use; i++) {
             visit_unit_decl1(*x.m_use[i]);
         }
         for (size_t i=0; i<x.n_decl; i++) {
             visit_unit_decl2(*x.m_decl[i]);
         }
+        process_simd_variables();
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
@@ -574,7 +577,7 @@ public:
                 }
             }
         }
-
+        simd_variables.clear();
         ASR::accessType s_access = dflt_access;
         ASR::deftypeType deftype = ASR::deftypeType::Implementation;
         SymbolTable *parent_scope = current_scope;
@@ -600,6 +603,7 @@ public:
             visit_unit_decl2(*x.m_decl[i]);
             is_Function = false;
         }
+        process_simd_variables();
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
@@ -796,6 +800,7 @@ public:
                 }
             }
         }
+        simd_variables.clear();
         // Extract local (including dummy) variables first
         current_symbol = (int64_t) ASR::symbolType::Function;
         ASR::accessType s_access = dflt_access;
@@ -855,6 +860,7 @@ public:
             }
             is_Function = false;
         }
+        process_simd_variables();
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
@@ -1099,9 +1105,8 @@ public:
                     t = t.substr(8);
                     // TODO: for now assume just one variable
                     // !LF$ attributes simd :: X
-                    std::string var = t;
-                    // TODO: insert `var` into a symbol table and set SIMD on it
-                    //std::cout << "pragma:" << var << std::endl;
+                    std::string var = to_lower(t);
+                    simd_variables.push_back(std::pair(var, x.base.base.loc));
                 } else {
                     throw SemanticError("Only `simd` attribute supported",
                         x.base.base.loc);
@@ -1115,6 +1120,20 @@ public:
             throw SemanticError("The pragma type not supported yet",
                 x.base.base.loc);
         }
+    }
+
+    void process_simd_variables() {
+        for (auto &var : simd_variables) {
+            ASR::symbol_t *s = current_scope->get_symbol(var.first);
+            if (s == nullptr) {
+                throw SemanticError("The SIMD variable `" + var.first + "` not declared",
+                    var.second);
+            } else {
+                // TODO: set "simd" inside "s", ensure it's an array, etc.
+            }
+
+        }
+        simd_variables.clear();
     }
 
     void visit_DerivedType(const AST::DerivedType_t &x) {
