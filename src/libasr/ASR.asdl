@@ -423,6 +423,7 @@ array_physical_type
     | FixedSizeArray
     | NumPyArray
     | ISODescriptorArray
+    | SIMDArray
 
 binop = Add | Sub | Mul | Div | Pow | BitAnd | BitOr | BitXor | BitLShift | BitRShift
 

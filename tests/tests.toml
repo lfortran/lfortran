@@ -3405,6 +3405,7 @@ asr_implicit_interface_and_typing = true
 [[test]]
 filename = "pragma2.f90"
 ast = true
+asr = true
 
 [[test]]
 filename = "errors/external1.f90"

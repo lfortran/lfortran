@@ -78,6 +78,7 @@ public:
     std::map<std::string, std::map<std::string, std::map<std::string, ClassProcInfo>>> class_procedures;
     std::map<std::string, std::map<std::string, std::map<std::string, Location>>> class_deferred_procedures;
     std::vector<std::string> assgn_proc_names;
+    std::vector<std::pair<std::string,Location>> simd_variables;
     std::string dt_name;
     bool in_submodule = false;
     bool is_interface = false;
@@ -512,12 +513,14 @@ public:
                 }
             }
         }
+        simd_variables.clear();
         for (size_t i=0; i<x.n_use; i++) {
             visit_unit_decl1(*x.m_use[i]);
         }
         for (size_t i=0; i<x.n_decl; i++) {
             visit_unit_decl2(*x.m_decl[i]);
         }
+        process_simd_variables();
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
@@ -573,7 +576,7 @@ public:
                 }
             }
         }
-
+        simd_variables.clear();
         ASR::accessType s_access = dflt_access;
         ASR::deftypeType deftype = ASR::deftypeType::Implementation;
         SymbolTable *parent_scope = current_scope;
@@ -599,6 +602,7 @@ public:
             visit_unit_decl2(*x.m_decl[i]);
             is_Function = false;
         }
+        process_simd_variables();
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
@@ -795,6 +799,7 @@ public:
                 }
             }
         }
+        simd_variables.clear();
         // Extract local (including dummy) variables first
         current_symbol = (int64_t) ASR::symbolType::Function;
         ASR::accessType s_access = dflt_access;
@@ -854,6 +859,7 @@ public:
             }
             is_Function = false;
         }
+        process_simd_variables();
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
@@ -1087,6 +1093,57 @@ public:
 
     void visit_Declaration(const AST::Declaration_t& x) {
         visit_DeclarationUtil(x);
+    }
+
+    void visit_DeclarationPragma(const AST::DeclarationPragma_t &x) {
+        if (x.m_type == AST::LFortranPragma) {
+            std::string t = x.m_text;
+            if (startswith(t, "attributes ")) {
+                t = t.substr(11);
+                if (startswith(t, "simd :: ")) {
+                    t = t.substr(8);
+                    // TODO: for now assume just one variable
+                    // !LF$ attributes simd :: X
+                    std::string var = to_lower(t);
+                    simd_variables.push_back(std::pair(var, x.base.base.loc));
+                } else {
+                    throw SemanticError("Only `simd` attribute supported",
+                        x.base.base.loc);
+                }
+            } else {
+                throw SemanticError("Unsupported LFortran pragma type",
+                    x.base.base.loc);
+            }
+
+        } else {
+            throw SemanticError("The pragma type not supported yet",
+                x.base.base.loc);
+        }
+    }
+
+    void process_simd_variables() {
+        for (auto &var : simd_variables) {
+            ASR::symbol_t *s = current_scope->get_symbol(var.first);
+            if (s) {
+                ASR::ttype_t *t = ASRUtils::symbol_type(s);
+                if (ASR::is_a<ASR::Array_t>(*t)) {
+                    ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(t);
+                    a->m_physical_type = ASR::array_physical_typeType::SIMDArray;
+                    // TODO: check all the SIMD requirements here:
+                    // * 1D array
+                    // * the right, compile time, size, compatible type
+                    // * Not allocatable, or pointer
+                } else {
+                    throw SemanticError("The SIMD variable `" + var.first + "` must be an array",
+                        t->base.loc);
+                }
+            } else {
+                throw SemanticError("The SIMD variable `" + var.first + "` not declared",
+                    var.second);
+            }
+
+        }
+        simd_variables.clear();
     }
 
     void visit_DerivedType(const AST::DerivedType_t &x) {
