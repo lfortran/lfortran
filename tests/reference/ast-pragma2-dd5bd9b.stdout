@@ -6,7 +6,7 @@
         []
         [(DeclarationPragma
             LFortranPragma
-            "!LF$ attributes simd :: A"
+            "attributes simd :: A"
             ()
         )
         (Declaration
