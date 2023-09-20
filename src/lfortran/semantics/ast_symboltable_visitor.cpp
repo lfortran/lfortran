@@ -1125,10 +1125,7 @@ public:
     void process_simd_variables() {
         for (auto &var : simd_variables) {
             ASR::symbol_t *s = current_scope->get_symbol(var.first);
-            if (s == nullptr) {
-                throw SemanticError("The SIMD variable `" + var.first + "` not declared",
-                    var.second);
-            } else {
+            if (s) {
                 ASR::ttype_t *t = ASRUtils::symbol_type(s);
                 if (ASR::is_a<ASR::Array_t>(*t)) {
                     ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(t);
@@ -1141,6 +1138,9 @@ public:
                     throw SemanticError("The SIMD variable `" + var.first + "` must be an array",
                         t->base.loc);
                 }
+            } else {
+                throw SemanticError("The SIMD variable `" + var.first + "` not declared",
+                    var.second);
             }
 
         }
