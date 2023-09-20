@@ -231,6 +231,15 @@ public:
         }
         r += " :: ";
         r.append(x.m_name);
+        if (x.m_value) {
+            r += " = ";
+            visit_expr(*x.m_value);
+            r += s;
+        } else if (x.m_symbolic_value) {
+            r += " = ";
+            visit_expr(*x.m_symbolic_value);
+            r += s;
+        }
         r += "\n";
         s = r;
     }
