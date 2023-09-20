@@ -202,8 +202,6 @@ expr
     | Compare(expr left, cmpop op, expr right)
     | FuncCallOrArray(identifier func, struct_member* member,
         fnarg* args, keyword* keywords, fnarg* subargs, use_symbol* temp_args)
-    --| TemplatedFuncCall(identifier func, struct_member* member,
-    --    fnarg* args, keyword* keywords, fnarg* subargs, use_symbol* temp_args)
     | CoarrayRef(identifier name, struct_member* member,
         fnarg* args, keyword* fnkw, coarrayarg* coargs, keyword* cokw)
     | ArrayInitializer(decl_attribute? vartype, identifier? classtype, expr* args)
