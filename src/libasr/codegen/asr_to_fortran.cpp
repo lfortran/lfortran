@@ -331,9 +331,13 @@ public:
         std::string r = indent;
         r += "print";
         r += " ";
-        if (!x.m_fmt) {
-            r += "*, ";
+        if (x.m_fmt) {
+            visit_expr(*x.m_fmt);
+            r += s;
+        } else {
+            r += "*";
         }
+        r += ", ";
         for (size_t i = 0; i < x.n_values; i++) {
             visit_expr(*x.m_values[i]);
             r += s;
@@ -362,7 +366,10 @@ public:
         if (!x.m_unit) {
             r += "*, ";
         }
-        if (!x.m_fmt) {
+        if (x.m_fmt) {
+            visit_expr(*x.m_fmt);
+            r += s;
+        } else {
             r += "*";
         }
         r += ") ";
@@ -566,7 +573,15 @@ public:
 
     // void visit_StringChr(const ASR::StringChr_t &x) {}
 
-    // void visit_StringFormat(const ASR::StringFormat_t &x) {}
+    void visit_StringFormat(const ASR::StringFormat_t &x) {
+        std::string r = "";
+        for (size_t i = 0; i < x.n_args; i++) {
+            visit_expr(*x.m_args[i]);
+            r += s;
+            if (i < x.n_args-1) r += ", ";
+        }
+        s = r;
+    }
 
     // void visit_CPtrCompare(const ASR::CPtrCompare_t &x) {}
 
