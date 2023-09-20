@@ -204,7 +204,11 @@ public:
 
     void visit_Function(const ASR::Function_t &x) {
         std::string r = indent;
-        r += "function";
+        if (x.m_return_var) {
+            r += "function";
+        } else {
+            r += "subroutine";
+        }
         r += " ";
         r.append(x.m_name);
         r += "\n";
@@ -220,7 +224,12 @@ public:
         visit_body(x, r, false);
         dec_indent();
         r += indent;
-        r += "end function";
+        r += "end ";
+        if (x.m_return_var) {
+            r += "function";
+        } else {
+            r += "subroutine";
+        }
         r += " ";
         r.append(x.m_name);
         r += "\n";
