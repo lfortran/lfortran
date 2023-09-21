@@ -449,7 +449,7 @@ public:
             std::string found_dep = x.m_dependencies[i];
 
             // Get the symbol of the found_dep.
-            ASR::symbol_t* dep_sym = sym->get_symbol(found_dep);
+            ASR::symbol_t* dep_sym = sym->resolve_symbol(found_dep);
 
             if (dep_sym == nullptr) {
                 // The symbol `dep_sym` is not in the parent symbol table. For
@@ -462,7 +462,7 @@ public:
                     // This is not a global scope symbol and not in the parent symbol table,
                     // Return an error:
                     require(dep_sym != nullptr,
-                            "Dependency " + found_dep +  " was not found in the parent symbol table " + std::string(x.m_name));
+                            "Dependency " + found_dep +  " is inside symbol table " + std::string(x.m_name));
                 }
             }
         }
