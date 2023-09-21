@@ -504,6 +504,7 @@ jobs:
             cd dftatom
             git checkout -t origin/lf8
             git checkout 6ead4bc47871ee83cdae6d39af93607599e105ae
+            export PATH="$(pwd)/../src/bin:$PATH"
             make -f Makefile.manual
 
       - name: Test fastGPT
