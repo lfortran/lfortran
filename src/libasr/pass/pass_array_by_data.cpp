@@ -303,8 +303,21 @@ class EditProcedureReplacer: public ASR::BaseExprReplacer<EditProcedureReplacer>
 
     void replace_Var(ASR::Var_t* x) {
         ASR::symbol_t* x_sym_ = x->m_v;
-        if ( v.proc2newproc.find(x_sym_) != v.proc2newproc.end() ) {
-            x->m_v = v.proc2newproc[x_sym_].first;
+        bool is_external = ASR::is_a<ASR::ExternalSymbol_t>(*x_sym_);
+        if ( v.proc2newproc.find(ASRUtils::symbol_get_past_external(x_sym_)) != v.proc2newproc.end() ) {
+            x->m_v = v.proc2newproc[ASRUtils::symbol_get_past_external(x_sym_)].first;
+            if( is_external ) {
+                ASR::ExternalSymbol_t* x_sym_ext = ASR::down_cast<ASR::ExternalSymbol_t>(x_sym_);
+                std::string new_func_sym_name = current_scope->get_unique_name(ASRUtils::symbol_name(
+                    ASRUtils::symbol_get_past_external(x_sym_)));
+                 ASR::symbol_t* new_func_sym_ = ASR::down_cast<ASR::symbol_t>(
+                    ASR::make_ExternalSymbol_t(v.al, x_sym_->base.loc, current_scope,
+                        s2c(v.al, new_func_sym_name), x->m_v, x_sym_ext->m_module_name,
+                        x_sym_ext->m_scope_names, x_sym_ext->n_scope_names, ASRUtils::symbol_name(x->m_v),
+                        x_sym_ext->m_access));
+                current_scope->add_symbol(new_func_sym_name, new_func_sym_);
+                x->m_v = new_func_sym_;
+            }
             return ;
         }
 
