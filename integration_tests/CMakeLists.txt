@@ -976,6 +976,7 @@ RUN(NAME pass_array_by_data_03 LABELS gfortran llvm)
 RUN(NAME pass_array_by_data_04 LABELS gfortran llvm)
 RUN(NAME pass_array_by_data_05 LABELS gfortran llvm NOFAST)
 RUN(NAME pass_array_by_data_06 LABELS gfortran llvm wasm)
+RUN(NAME pass_array_by_data_07 LABELS gfortran llvm)
 
 RUN(NAME implicit_deallocate_01 LABELS gfortran llvm)
 
