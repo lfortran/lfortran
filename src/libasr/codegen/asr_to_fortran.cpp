@@ -386,7 +386,8 @@ public:
             r += s;
             if (i < x.n_vars-1) r += ", ";
         }
-        r += ")\n";
+        r += ") ";
+        r += "! Implicit deallocate\n";
         s = r;
     }
 
@@ -725,7 +726,16 @@ public:
 
     // void visit_ComplexBinOp(const ASR::ComplexBinOp_t &x) {}
 
-    // void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {}
+    void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
+        last_expr_precedence = 13;
+        s = ".";
+        if (x.m_value) {
+            s += "true";
+        } else {
+            s += "false";
+        }
+        s += ".";
+    }
 
     // void visit_LogicalNot(const ASR::LogicalNot_t &x) {}
 
