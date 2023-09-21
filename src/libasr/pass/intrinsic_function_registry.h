@@ -812,7 +812,7 @@ class ASRBuilder {
         // Used for debugging
         Vec<ASR::expr_t *> x_exprs;
         x_exprs.from_pointer_n_copy(al, &items[0], items.size());
-        return STMT(ASR::make_Print_t(al, loc, nullptr, x_exprs.p, x_exprs.n,
+        return STMT(ASR::make_Print_t(al, loc, x_exprs.p, x_exprs.n,
             nullptr, nullptr));
     }
 
