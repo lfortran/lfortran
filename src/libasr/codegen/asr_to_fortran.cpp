@@ -19,6 +19,7 @@ public:
     // The precedence of the last expression, using the table 10.1
     // in the Fortran 2018 standard
     int last_expr_precedence;
+    std::string format_string;
 
 public:
     ASRToFortranVisitor(bool _use_colors, int _indent)
@@ -92,6 +93,38 @@ public:
         if (apply_indent) {
             dec_indent();
         }
+    }
+
+    std::string get_type(const ASR::ttype_t *t) {
+        std::string r = "";
+        switch (t->type) {
+            case ASR::ttypeType::Integer: {
+                r = "integer(";
+                r += std::to_string(down_cast<ASR::Integer_t>(t)->m_kind);
+                r += ")";
+                break;
+            } case ASR::ttypeType::Real: {
+                r = "real(";
+                r += std::to_string(down_cast<ASR::Real_t>(t)->m_kind);
+                r += ")";
+                break;
+            } case ASR::ttypeType::Character: {
+                ASR::Character_t *c = down_cast<ASR::Character_t>(t);
+                r = "character(len=";
+                r += std::to_string(c->m_len);
+                r += ", kind=";
+                r += std::to_string(c->m_kind);
+                r += ")";
+                break;
+            } case ASR::ttypeType::Array: {
+                r = get_type(down_cast<ASR::Array_t>(t)->m_type);
+                break;
+            }
+            default:
+                throw LCompilersException("The type `"
+                    + ASRUtils::type_to_str_python(t) + "` is not handled yet");
+        }
+        return r;
     }
 
     /********************************** Unit **********************************/
@@ -206,29 +239,7 @@ public:
     void visit_Variable(const ASR::Variable_t &x) {
         std::string r = indent;
         std::string dims = "(";
-        switch (x.m_type->type) {
-            case ASR::ttypeType::Integer: {
-                r += "integer(";
-                r += std::to_string(down_cast<ASR::Integer_t>(x.m_type)->m_kind);
-                r += ")";
-                break;
-            } case ASR::ttypeType::Real: {
-                r += "real(";
-                r += std::to_string(down_cast<ASR::Real_t>(x.m_type)->m_kind);
-                r += ")";
-                break;
-            } case ASR::ttypeType::Character: {
-                ASR::Character_t *c = down_cast<ASR::Character_t>(x.m_type);
-                r += "character(len=";
-                r += std::to_string(c->m_len);
-                r += ", kind=";
-                r += std::to_string(c->m_kind);
-                r += ")";
-                break;
-            }
-            default:
-                throw LCompilersException("Type not implemented");
-        }
+        r += get_type(x.m_type);
         switch (x.m_intent) {
             case ASR::intentType::In : {
                 r += ", intent(in)";
@@ -249,8 +260,20 @@ public:
             default:
                 throw LCompilersException("Intent type is not handled");
         }
+        if (x.m_storage == ASR::storage_typeType::Parameter) {
+            r += ", parameter";
+        }
         r += " :: ";
         r.append(x.m_name);
+        if (is_a<ASR::Array_t>(*x.m_type)) {
+            ASR::Array_t *arr = down_cast<ASR::Array_t>(x.m_type);
+            r += "(";
+            for(size_t i = 0; i < arr->n_dims; i++) {
+                visit_expr(*arr->m_dims[i].m_length);
+                r += s;
+            }
+            r += ")";
+        }
         if (x.m_value) {
             r += " = ";
             visit_expr(*x.m_value);
@@ -318,7 +341,16 @@ public:
 
     // void visit_GoTo(const ASR::GoTo_t &x) {}
 
-    // void visit_GoToTarget(const ASR::GoToTarget_t &x) {}
+    void visit_GoToTarget(const ASR::GoToTarget_t &x) {
+        s = x.m_name;
+        s += " format(";
+        if (startswith(format_string, "\"") && endswith(format_string, "\"")) {
+            format_string = format_string.substr(1, format_string.size()-2);
+        }
+        s += format_string;
+        s += ")\n";
+        format_string.clear();
+    }
 
     void visit_If(const ASR::If_t &x) {
         std::string r = indent;
@@ -353,6 +385,7 @@ public:
         r += " ";
         if (x.m_fmt) {
             visit_expr(*x.m_fmt);
+            format_string = s;
             r += s;
         } else {
             r += "*";
@@ -388,6 +421,7 @@ public:
         }
         if (x.m_fmt) {
             visit_expr(*x.m_fmt);
+            format_string = s;
             r += s;
         } else {
             r += "*";
@@ -404,7 +438,36 @@ public:
 
     // void visit_Return(const ASR::Return_t &x) {}
 
-    // void visit_Select(const ASR::Select_t &x) {}
+    void visit_Select(const ASR::Select_t &x) {
+        std::string r = indent;
+        r += "select case";
+        r += " (";
+        visit_expr(*x.m_test);
+        r += s;
+        r += ")\n";
+        inc_indent();
+        if (x.n_body > 0) {
+            for(size_t i = 0; i < x.n_body; i ++) {
+                visit_case_stmt(*x.m_body[i]);
+                r += s;
+            }
+        }
+
+        if (x.n_default > 0) {
+            r += indent;
+            r += "case default\n";
+            inc_indent();
+            for(size_t i = 0; i < x.n_default; i ++) {
+                visit_stmt(*x.m_default[i]);
+                r += s;
+            }
+            dec_indent();
+        }
+        dec_indent();
+        r += indent;
+        r += "end select\n";
+        s = r;
+    }
 
     void visit_Stop(const ASR::Stop_t /*x*/) {
         s = indent;
@@ -596,6 +659,10 @@ public:
 
     void visit_StringFormat(const ASR::StringFormat_t &x) {
         std::string r = "";
+        if (format_string.size() > 0) {
+            visit_expr(*x.m_fmt);
+            format_string = s;
+        }
         for (size_t i = 0; i < x.n_args; i++) {
             visit_expr(*x.m_args[i]);
             r += s;
@@ -614,9 +681,31 @@ public:
 
     // void visit_FunctionParam(const ASR::FunctionParam_t &x) {}
 
-    // void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {}
+    void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
+        std::string r = "[";
+        for(size_t i = 0; i < x.n_args; i++) {
+            visit_expr(*x.m_args[i]);
+            r += s;
+            if (i < x.n_args-1) r += ", ";
+        }
+        r += "]";
+        s = r;
+    }
 
-    // void visit_ArrayItem(const ASR::ArrayItem_t &x) {}
+    void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+        std::string r = "";
+        visit_expr(*x.m_v);
+        r += s;
+        r += "(";
+        for(size_t i = 0; i < x.n_args; i++) {
+            if (x.m_args[i].m_right) {
+                visit_expr(*x.m_args[i].m_right);
+                r += s;
+            }
+        }
+        r += ")";
+        s = r;
+    }
 
     // void visit_ArraySection(const ASR::ArraySection_t &x) {}
 
@@ -682,6 +771,48 @@ public:
     // void visit_PointerAssociated(const ASR::PointerAssociated_t &x) {}
 
     // void visit_IntrinsicFunctionSqrt(const ASR::IntrinsicFunctionSqrt_t &x) {}
+
+    /******************************* Case Stmt ********************************/
+    void visit_CaseStmt(const ASR::CaseStmt_t &x) {
+        std::string r = indent;
+        r += "case (";
+        for(size_t i = 0; i < x.n_test; i ++) {
+            visit_expr(*x.m_test[i]);
+            r += s;
+            if (i < x.n_test-1) r += ", ";
+        }
+        r += ")\n";
+        inc_indent();
+        for(size_t i = 0; i < x.n_body; i ++) {
+            visit_stmt(*x.m_body[i]);
+            r += s;
+        }
+        dec_indent();
+        s = r;
+    }
+
+    void visit_CaseStmt_Range(const ASR::CaseStmt_Range_t &x) {
+        std::string r = indent;
+        r += "case (";
+        if (x.m_start) {
+            visit_expr(*x.m_start);
+            r += s;
+        }
+        r += ":";
+        if (x.m_end) {
+            visit_expr(*x.m_end);
+            r += s;
+        }
+        r += ")\n";
+        inc_indent();
+        for(size_t i = 0; i < x.n_body; i ++) {
+            visit_stmt(*x.m_body[i]);
+            r += s;
+        }
+        dec_indent();
+        s = r;
+    }
+
 };
 
 std::string asr_to_fortran(ASR::TranslationUnit_t &asr,
