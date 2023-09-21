@@ -3509,8 +3509,17 @@ public:
                 }
             }
         }
-        if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter()) {
-            current_function_dependencies.push_back(al, ASRUtils::symbol_name(v));
+        if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter() && current_scope->asr_owner != nullptr) {
+            ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
+
+            // check if asr owner is associate block.
+            if( ASR::is_a<ASR::AssociateBlock_t>(*asr_owner_sym) ) {
+                if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->parent->get_counter()) {
+                    current_function_dependencies.push_back(al, ASRUtils::symbol_name(v));
+                }
+            } else {
+                current_function_dependencies.push_back(al, ASRUtils::symbol_name(v));
+            }
         }
         ASR::Module_t* v_module = ASRUtils::get_sym_module0(f2);
         if( v_module ) {
