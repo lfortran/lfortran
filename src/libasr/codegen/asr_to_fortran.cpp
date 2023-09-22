@@ -116,6 +116,11 @@ public:
                 r += std::to_string(c->m_kind);
                 r += ")";
                 break;
+            } case ASR::ttypeType::Logical: {
+                r = "logical(";
+                r += std::to_string(down_cast<ASR::Logical_t>(t)->m_kind);
+                r += ")";
+                break;
             } case ASR::ttypeType::Array: {
                 r = get_type(down_cast<ASR::Array_t>(t)->m_type);
                 break;
