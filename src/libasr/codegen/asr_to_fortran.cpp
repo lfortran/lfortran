@@ -40,7 +40,8 @@ public:
 
     void visit_expr_with_precedence(const ASR::expr_t &x, int current_precedence) {
         visit_expr(x);
-        if (last_expr_precedence < current_precedence) {
+        if (last_expr_precedence == 9 ||
+                last_expr_precedence < current_precedence) {
             s = "(" + s + ")";
         }
     }
@@ -703,6 +704,10 @@ public:
         r += s;
         r += m_op;
         visit_expr_with_precedence(*x.m_right, current_precedence);
+        if ((x.m_op == ASR::binopType::Sub && last_expr_precedence <= 8) ||
+            (x.m_op == ASR::binopType::Div && last_expr_precedence <= 10)) {
+            s = "(" + s + ")";
+        }
         r += s;
         last_expr_precedence = current_precedence;
         s = r;
