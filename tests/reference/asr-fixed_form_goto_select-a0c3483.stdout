@@ -68,7 +68,6 @@
                         100
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "hello"
                             (Character 1 5 ())

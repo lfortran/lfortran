@@ -361,7 +361,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StructInstanceMember
                             (Var 5 jack)
                             5 1_person_first
@@ -390,7 +389,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StructInstanceMember
                             (StructInstanceMember
                                 (Var 5 jill)

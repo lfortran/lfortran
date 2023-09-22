@@ -291,7 +291,6 @@
                                     add]
                                     []
                                     [(Print
-                                        ()
                                         [(FunctionCall
                                             6 subtract
                                             ()
@@ -306,7 +305,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(FunctionCall
                                             6 add
                                             ()

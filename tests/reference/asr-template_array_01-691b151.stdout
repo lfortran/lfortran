@@ -452,7 +452,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(ArrayItem
                                             (Var 6 a)
                                             [(()
@@ -490,7 +489,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(ArrayItem
                                             (Var 6 a)
                                             [(()

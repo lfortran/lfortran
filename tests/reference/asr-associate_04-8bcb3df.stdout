@@ -124,7 +124,6 @@
                                         (Var 2 myreal)
                                     )
                                     (Print
-                                        ()
                                         [(RealBinOp
                                             (Var 2 a)
                                             Add
@@ -271,7 +270,6 @@
                         2 associate_block
                     )
                     (Print
-                        ()
                         [(Var 2 myreal)]
                         ()
                         ()

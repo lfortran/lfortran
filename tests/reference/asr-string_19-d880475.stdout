@@ -527,7 +527,6 @@
                                     [compute_lps]
                                     [(Var 8 string)]
                                     [(Print
-                                        ()
                                         [(FunctionCall
                                             6 compute_lps
                                             ()
@@ -635,7 +634,6 @@
                                     char@char_string]
                                     [(Var 9 string)]
                                     [(Print
-                                        ()
                                         [(FunctionCall
                                             9 char@char_string
                                             6 char

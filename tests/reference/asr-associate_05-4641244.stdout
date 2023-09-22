@@ -442,7 +442,6 @@
                         2 associate_block
                     )
                     (Print
-                        ()
                         [(Var 2 myreal)]
                         ()
                         ()

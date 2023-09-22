@@ -150,10 +150,6 @@
                                         [(FileWrite
                                             0
                                             (Var 4 num)
-                                            (StringConstant
-                                                "(\"line\",1x,i0,\":\")"
-                                                (Character 1 18 ())
-                                            )
                                             ()
                                             ()
                                             ()
@@ -375,7 +371,6 @@
                     main
                     [arrays_23]
                     [(Print
-                        ()
                         [(StringConstant
                             "working"
                             (Character 1 7 ())

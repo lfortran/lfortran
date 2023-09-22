@@ -545,7 +545,6 @@
                         []
                     )
                     (Print
-                        ()
                         [(StructInstanceMember
                             (Var 2 struct_instance_sample)
                             2 1_sample_a

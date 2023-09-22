@@ -33,7 +33,6 @@
                     print_01
                     []
                     [(Print
-                        ()
                         [(StringConstant
                             "My name is "
                             (Character 1 11 ())

@@ -48,7 +48,6 @@
                     int_dp
                     []
                     [(Print
-                        ()
                         [(Var 2 u)
                         (Var 2 v)]
                         ()

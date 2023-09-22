@@ -2284,7 +2284,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(StructInstanceMember
                                             (Var 15 m1)
                                             15 1_integer_matrix_elements
@@ -2302,7 +2301,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(StructInstanceMember
                                             (Var 15 m2)
                                             15 1_integer_matrix_elements
@@ -2320,7 +2318,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(StructInstanceMember
                                             (Var 15 m3)
                                             15 1_integer_matrix_elements
@@ -2338,7 +2335,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(StructInstanceMember
                                             (Var 15 m4)
                                             15 1_integer_matrix_elements

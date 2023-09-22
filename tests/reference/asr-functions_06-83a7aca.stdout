@@ -63,7 +63,6 @@
                     functions_06
                     [functions_06_m]
                     [(Print
-                        ()
                         [(FunctionCall
                             6 trim_wrapper
                             ()
@@ -80,7 +79,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             6 int_return
                             ()
@@ -102,7 +100,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             6 real_return
                             ()

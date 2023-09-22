@@ -47,7 +47,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "executing modules_39"
                             (Character 1 20 ())

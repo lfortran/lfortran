@@ -60,7 +60,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "r ="
                             (Character 1 3 ())
@@ -221,7 +220,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(StringConstant
                                             "before:"
                                             (Character 1 7 ())
@@ -262,7 +260,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(StringConstant
                                             "after:"
                                             (Character 1 6 ())
@@ -322,7 +319,6 @@
                                                     []
                                                     []
                                                     [(Print
-                                                        ()
                                                         [(StringConstant
                                                             "x in getx"
                                                             (Character 1 9 ())
@@ -449,7 +445,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(StringConstant
                                             "in sub1"
                                             (Character 1 7 ())

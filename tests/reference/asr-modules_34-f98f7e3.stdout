@@ -199,7 +199,6 @@
                                                         (Var 5 i)
                                                     )
                                                     (Print
-                                                        ()
                                                         [(Var 6 ii)]
                                                         ()
                                                         ()
@@ -554,7 +553,6 @@
                     modules_34
                     []
                     [(Print
-                        ()
                         [(StringConstant
                             "running modules_34 program"
                             (Character 1 26 ())

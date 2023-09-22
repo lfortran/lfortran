@@ -12,13 +12,11 @@
                     preprocessor8
                     []
                     [(Print
-                        ()
                         [(IntegerConstant 1 (Integer 4))]
                         ()
                         ()
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "__VERSION__ present"
                             (Character 1 19 ())
@@ -27,7 +25,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "tests/preprocessor8.f90"
                             (Character 1 23 ())
@@ -36,13 +33,11 @@
                         ()
                     )
                     (Print
-                        ()
                         [(IntegerConstant 10 (Integer 4))]
                         ()
                         ()
                     )
                     (Print
-                        ()
                         [(IntegerConstant 11 (Integer 4))]
                         ()
                         ()

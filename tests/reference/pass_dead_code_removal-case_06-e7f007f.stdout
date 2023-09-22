@@ -225,7 +225,6 @@
                             ()
                         )
                         [(Print
-                            ()
                             [(StringConstant
                                 "a == b"
                                 (Character 1 6 ())
@@ -234,7 +233,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(StringConstant
                                 "ap /= bp"
                                 (Character 1 8 ())
@@ -243,7 +241,6 @@
                             ()
                         )]
                         [(Print
-                            ()
                             [(StringConstant
                                 "ap == cp"
                                 (Character 1 8 ())
@@ -252,7 +249,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(StringConstant
                                 "cp /= dp"
                                 (Character 1 8 ())
@@ -262,7 +258,6 @@
                         )]
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "Your grade is "
                             (Character 1 14 ())
@@ -288,7 +283,6 @@
                             )
                             ()
                             [(Print
-                                ()
                                 [(StringConstant
                                     "Pass!"
                                     (Character 1 5 ())
@@ -307,7 +301,6 @@
                                 (IntegerConstant 38 (Integer 4))
                             )
                             [(Print
-                                ()
                                 [(StringConstant
                                     "Failed!"
                                     (Character 1 7 ())
@@ -317,7 +310,6 @@
                             )]
                         )]
                         [(Print
-                            ()
                             [(StringConstant
                                 "Invalid marks"
                                 (Character 1 13 ())
@@ -327,7 +319,6 @@
                         )]
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "Your marks are "
                             (Character 1 15 ())
@@ -337,7 +328,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "Pass!"
                             (Character 1 5 ())
@@ -346,7 +336,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "Your marks are "
                             (Character 1 15 ())

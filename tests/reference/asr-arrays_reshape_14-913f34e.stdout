@@ -1850,7 +1850,6 @@
                     array_reshape_14
                     []
                     [(Print
-                        ()
                         [(Var 2 i23)]
                         ()
                         ()

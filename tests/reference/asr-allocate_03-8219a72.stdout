@@ -212,7 +212,6 @@
                                     [f]
                                     [(Var 4 x)]
                                     [(Print
-                                        ()
                                         [(ArrayItem
                                             (Var 4 x)
                                             [(()
@@ -268,7 +267,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(ArrayItem
                                             (Var 4 x)
                                             [(()
@@ -440,7 +438,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(ArrayItem
                                             (Var 5 c)
                                             [(()
@@ -646,7 +643,6 @@
                         []
                     )
                     (Print
-                        ()
                         [(ArrayItem
                             (Var 2 c)
                             [(()

@@ -467,13 +467,11 @@
                                         (Var 5 __lcompilers_created__nested_context__prune_build_targets_modules_used)
                                     )
                                     (Print
-                                        ()
                                         [(Var 5 modules_used)]
                                         ()
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(StructInstanceMember
                                             (ArrayItem
                                                 (Var 5 modules_used)

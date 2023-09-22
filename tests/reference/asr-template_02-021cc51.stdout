@@ -843,7 +843,6 @@
                     template_02
                     [template_02_m]
                     [(Print
-                        ()
                         [(FunctionCall
                             8 change_positions_int
                             ()
@@ -889,7 +888,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             8 change_positions_chr
                             ()

@@ -407,7 +407,6 @@
                         []
                     )
                     (Print
-                        ()
                         [(Var 2 x_ceil)
                         (FunctionCall
                             2 ceiling@sceiling
@@ -421,7 +420,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 y_ceil)
                         (FunctionCall
                             2 ceiling@sceiling
@@ -435,13 +433,11 @@
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 z_ceil)]
                         ()
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 w_ceil)]
                         ()
                         ()

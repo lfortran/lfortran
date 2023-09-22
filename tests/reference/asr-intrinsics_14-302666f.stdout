@@ -365,7 +365,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 selected_int_kind
                             ()
@@ -379,7 +378,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 selected_int_kind
                             ()
@@ -393,7 +391,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 selected_int_kind
                             ()
@@ -407,7 +404,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 selected_int_kind
                             ()
@@ -421,7 +417,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 selected_int_kind
                             ()
@@ -435,7 +430,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 selected_real_kind
                             ()
@@ -449,7 +443,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 selected_real_kind
                             ()
@@ -463,7 +456,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 selected_real_kind
                             ()
@@ -477,7 +469,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 selected_real_kind
                             ()
@@ -491,7 +482,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 selected_char_kind
                             ()
@@ -508,7 +498,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 selected_int_kind
                             ()
@@ -521,7 +510,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 selected_real_kind
                             ()
@@ -534,7 +522,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 selected_char_kind
                             ()
@@ -547,7 +534,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 selected_real_kind
                             ()
@@ -561,7 +547,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 selected_real_kind
                             ()

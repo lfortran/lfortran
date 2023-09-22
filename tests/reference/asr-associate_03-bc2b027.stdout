@@ -77,7 +77,6 @@
                     associate_03
                     []
                     [(Print
-                        ()
                         [(Var 2 t1)
                         (Var 2 t2)]
                         ()
@@ -101,7 +100,6 @@
                         )]
                     )
                     (Print
-                        ()
                         [(Var 2 p1)]
                         ()
                         ()

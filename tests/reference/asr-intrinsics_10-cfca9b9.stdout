@@ -37,7 +37,6 @@
                     intrinsics_10
                     []
                     [(Print
-                        ()
                         [(Cast
                             (Var 2 x)
                             IntegerToReal

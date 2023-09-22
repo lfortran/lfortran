@@ -339,7 +339,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(ArrayItem
                                             (Var 13 w)
                                             [(()

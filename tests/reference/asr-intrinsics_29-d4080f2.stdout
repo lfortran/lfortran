@@ -85,7 +85,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 random_sp)
                         (Var 2 random_dp)]
                         ()

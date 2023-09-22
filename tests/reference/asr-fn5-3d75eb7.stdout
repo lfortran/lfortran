@@ -556,10 +556,6 @@
                                     [(FileWrite
                                         0
                                         ()
-                                        (StringConstant
-                                            "(a,1x,a,1x,a,1x,a)"
-                                            (Character 1 18 ())
-                                        )
                                         ()
                                         ()
                                         ()
@@ -687,10 +683,6 @@
                                     (FileWrite
                                         0
                                         ()
-                                        (StringConstant
-                                            "(*(a,1x,a5,1x,l1,8x,\"[\",a,\"]\",/))"
-                                            (Character 1 33 ())
-                                        )
                                         ()
                                         ()
                                         ()

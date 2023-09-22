@@ -996,7 +996,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1021,7 +1020,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1046,7 +1044,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1071,7 +1068,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1096,7 +1092,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1121,7 +1116,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1146,7 +1140,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1171,7 +1164,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1196,7 +1188,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1221,7 +1212,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1246,7 +1236,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1271,7 +1260,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1296,7 +1284,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1321,7 +1308,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1346,7 +1332,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1371,7 +1356,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1396,7 +1380,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1421,7 +1404,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1446,7 +1428,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1471,7 +1452,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1496,7 +1476,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1521,7 +1500,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1546,7 +1524,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1571,7 +1548,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1596,7 +1572,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1621,7 +1596,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1646,7 +1620,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1671,7 +1644,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1696,7 +1668,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1721,7 +1692,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1746,7 +1716,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1771,7 +1740,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1797,7 +1765,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(ArrayItem
                             (Var 2 array)
                             [(()
@@ -1822,7 +1789,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(ArrayItem
                             (Var 2 array)
                             [(()
@@ -1847,7 +1813,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(ArrayItem
                             (Var 2 array)
                             [(()

@@ -209,19 +209,16 @@
                     intrinsics_20
                     [lfortran_intrinsic_kind]
                     [(Print
-                        ()
                         [(Var 2 pi)]
                         ()
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 pi_dp)]
                         ()
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 x)]
                         ()
                         ()
@@ -232,7 +229,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(IntrinsicScalarFunction
                             Cos
                             [(RealBinOp
@@ -273,7 +269,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(IntrinsicScalarFunction
                             Cos
                             [(RealBinOp
@@ -305,7 +300,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(IntrinsicScalarFunction
                             Cos
                             [(RealBinOp
@@ -346,7 +340,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(RealBinOp
                             (RealBinOp
                                 (IntrinsicScalarFunction

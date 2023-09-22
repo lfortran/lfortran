@@ -103,7 +103,6 @@
                                     []
                                     []
                                     [(Print
-                                        ()
                                         [(ImpliedDoLoop
                                             [(Var 2 j)]
                                             (Var 2 j)
@@ -132,7 +131,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(ImpliedDoLoop
                             [(ArrayItem
                                 (Var 2 a)

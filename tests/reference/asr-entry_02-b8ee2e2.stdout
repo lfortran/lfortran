@@ -95,7 +95,6 @@
                     []
                     [(Var 2 dummy)]
                     [(Print
-                        ()
                         [(StringConstant
                             "Printed using subroutine call: "
                             (Character 1 31 ())
@@ -144,7 +143,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "Printed using entry statement: "
                             (Character 1 31 ())
@@ -231,7 +229,6 @@
                     []
                     [(Var 4 dummy)]
                     [(Print
-                        ()
                         [(StringConstant
                             "Printed using entry statement: "
                             (Character 1 31 ())

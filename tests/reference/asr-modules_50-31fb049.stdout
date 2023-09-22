@@ -268,13 +268,11 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(Var 5 modules_used)]
                                         ()
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(StructInstanceMember
                                             (ArrayItem
                                                 (Var 5 modules_used)

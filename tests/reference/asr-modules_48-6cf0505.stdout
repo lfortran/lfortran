@@ -333,7 +333,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(Var 8 char_str_hash1)
                         (Var 8 char_str_hash2)]
                         ()
@@ -405,7 +404,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(Var 8 char_str_hash3)
                         (Var 8 char_str_hash4)]
                         ()
@@ -456,7 +454,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(Var 8 cat_str_alloc)
                         (FunctionCall
                             8 is_fortran_name
@@ -528,7 +525,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(Var 8 cat_str_alloc)
                         (FunctionCall
                             8 is_fortran_name

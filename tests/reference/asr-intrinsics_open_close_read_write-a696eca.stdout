@@ -296,10 +296,6 @@
                         [(FileWrite
                             0
                             (Var 2 u)
-                            (StringConstant
-                                "(10F8.2)"
-                                (Character 1 8 ())
-                            )
                             ()
                             ()
                             ()
@@ -408,7 +404,6 @@
                         ())
                         [(FileWrite
                             0
-                            ()
                             ()
                             ()
                             ()

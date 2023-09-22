@@ -12,7 +12,6 @@
                     testfortran
                     []
                     [(Print
-                        ()
                         [(StringConstant
                             "Hello"
                             (Character 1 5 ())

@@ -471,7 +471,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(StringConstant
                                             "s="
                                             (Character 1 2 ())

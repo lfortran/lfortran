@@ -310,7 +310,6 @@
                                         (Var 4 p_or_cp)
                                     )
                                     (Print
-                                        ()
                                         [(StringConstant
                                             "point: "
                                             (Character 1 7 ())
@@ -393,7 +392,6 @@
                                         (Var 4 p_or_cp)
                                     )
                                     (Print
-                                        ()
                                         [(StringConstant
                                             "color_point: "
                                             (Character 1 13 ())

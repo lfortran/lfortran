@@ -32,13 +32,11 @@
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 i)]
                         ()
                         ()
                     )
                     (Print
-                        ()
                         [(IntegerBinOp
                             (Var 2 i)
                             Add

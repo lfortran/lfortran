@@ -120,10 +120,6 @@
                                     (FileWrite
                                         0
                                         (Var 11 lhs)
-                                        (StringConstant
-                                            "(i4.4,\"-\",i2.2,\"-\",i2.2)"
-                                            (Character 1 24 ())
-                                        )
                                         ()
                                         ()
                                         ()
@@ -906,10 +902,6 @@
                                         (FileWrite
                                             0
                                             (Var 14 lhs)
-                                            (StringConstant
-                                                "(i2.2,\":\",i2.2,\":\",i2.2,\".\",i3.3)"
-                                                (Character 1 33 ())
-                                            )
                                             ()
                                             ()
                                             ()
@@ -963,10 +955,6 @@
                                         (FileWrite
                                             0
                                             (Var 14 lhs)
-                                            (StringConstant
-                                                "(i2.2,\":\",i2.2,\":\",i2.2)"
-                                                (Character 1 24 ())
-                                            )
                                             ()
                                             ()
                                             ()

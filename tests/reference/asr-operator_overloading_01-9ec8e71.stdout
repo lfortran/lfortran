@@ -95,7 +95,6 @@
                     operator_overloading_01
                     [operator_overloading_01_overload_asterisk_m]
                     [(Print
-                        ()
                         [(StringConstant
                             "T*T:"
                             (Character 1 4 ())
@@ -120,7 +119,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "T*F:"
                             (Character 1 4 ())
@@ -145,7 +143,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "F*T:"
                             (Character 1 4 ())
@@ -170,7 +167,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "F*F:"
                             (Character 1 4 ())
@@ -195,7 +191,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "T+T:"
                             (Character 1 4 ())
@@ -220,7 +215,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "T+F:"
                             (Character 1 4 ())
@@ -245,7 +239,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "F+T:"
                             (Character 1 4 ())
@@ -270,7 +263,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "F+F:"
                             (Character 1 4 ())

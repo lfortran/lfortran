@@ -176,7 +176,6 @@
                                             ()
                                         )
                                         [(Print
-                                            ()
                                             [(StringConstant
                                                 "PWD: "
                                                 (Character 1 5 ())

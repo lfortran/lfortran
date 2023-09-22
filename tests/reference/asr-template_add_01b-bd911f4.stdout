@@ -950,7 +950,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(StringConstant
                                             "The result is"
                                             (Character 1 13 ())
@@ -960,7 +959,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(StringConstant
                                             "The result is"
                                             (Character 1 13 ())

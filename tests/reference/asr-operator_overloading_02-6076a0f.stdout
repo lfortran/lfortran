@@ -58,7 +58,6 @@
                         )
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "tf=0:"
                             (Character 1 5 ())
@@ -79,7 +78,6 @@
                         )
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "tf=1:"
                             (Character 1 5 ())

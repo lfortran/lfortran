@@ -171,7 +171,6 @@
                     intrinsics_23
                     [lfortran_intrinsic_math2]
                     [(Print
-                        ()
                         [(Var 2 i32)
                         (Var 2 i64)
                         (Var 2 y)
@@ -180,7 +179,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 huge@i32huge
                             2 huge

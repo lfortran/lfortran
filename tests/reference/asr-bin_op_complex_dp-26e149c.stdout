@@ -211,7 +211,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 zero)
                         (Var 2 v)
                         (Var 2 x)
