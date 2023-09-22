@@ -55,16 +55,16 @@ public:
                 return " - ";
             } case (ASR::binopType::Mul) : {
                 last_expr_precedence = 10;
-                return " * ";
+                return "*";
             } case (ASR::binopType::Div) : {
                 last_expr_precedence = 10;
-                return " / ";
+                return "/";
             } case (ASR::binopType::Pow) : {
                 last_expr_precedence = 11;
-                return " ** ";
-            }
-            default :
+                return "**";
+            } default : {
                 throw LCompilersException("Binop type not implemented");
+            }
         }
     }
 
@@ -78,6 +78,26 @@ public:
             case (ASR::cmpopType::Gt)    : return " > " ;
             case (ASR::cmpopType::GtE)   : return " >= ";
             default : throw LCompilersException("Cmpop type not implemented");
+        }
+    }
+
+    std::string logicalbinop2str(const ASR::logicalbinopType type) {
+        switch (type) {
+            case (ASR::logicalbinopType::And) : {
+                last_expr_precedence = 4;
+                return " .and. ";
+            } case (ASR::logicalbinopType::Or) : {
+                last_expr_precedence = 3;
+                return " .or. ";
+            } case (ASR::logicalbinopType::Eqv) : {
+                last_expr_precedence = 2;
+                return " .eqv. ";
+            } case (ASR::logicalbinopType::NEqv) : {
+                last_expr_precedence = 2;
+                return " .neqv. ";
+            } default : {
+                throw LCompilersException("Logicalbinop type not implemented");
+            }
         }
     }
 
@@ -748,7 +768,17 @@ public:
 
     // void visit_LogicalCompare(const ASR::LogicalCompare_t &x) {}
 
-    // void visit_LogicalBinOp(const ASR::LogicalBinOp_t &x) {}
+    void visit_LogicalBinOp(const ASR::LogicalBinOp_t &x) {
+        std::string r = "", m_op = logicalbinop2str(x.m_op);
+        int current_precedence = last_expr_precedence;
+        visit_expr_with_precedence(*x.m_left, current_precedence);
+        r += s;
+        r += m_op;
+        visit_expr_with_precedence(*x.m_right, current_precedence);
+        r += s;
+        last_expr_precedence = current_precedence;
+        s = r;
+    }
 
     void visit_StringConstant(const ASR::StringConstant_t &x) {
         s = "\"";
