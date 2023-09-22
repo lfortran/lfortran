@@ -144,7 +144,7 @@
                                         []
                                         .false.
                                     )
-                                    [huge@i32huge]
+                                    []
                                     [(Var 3 string)]
                                     []
                                     (Var 3 r)

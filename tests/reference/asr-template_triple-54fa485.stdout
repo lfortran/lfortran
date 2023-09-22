@@ -195,7 +195,7 @@
                                         []
                                         .false.
                                     )
-                                    [max@imax]
+                                    []
                                     [(Var 5 x)
                                     (Var 5 y)]
                                     [(=
@@ -689,7 +689,7 @@
                                         []
                                         .false.
                                     )
-                                    [max@smax]
+                                    []
                                     [(Var 13 x)
                                     (Var 13 y)]
                                     [(=
@@ -2088,8 +2088,7 @@
                                         []
                                         .false.
                                     )
-                                    [triple_add_l
-                                    triple_add_r]
+                                    []
                                     []
                                     [(=
                                         (Var 25 tal)
@@ -2352,8 +2351,7 @@
                                         []
                                         .false.
                                     )
-                                    [triple_max_l
-                                    triple_max_r]
+                                    []
                                     []
                                     [(=
                                         (Var 31 tmaxl)
@@ -2622,8 +2620,7 @@
                                         []
                                         .false.
                                     )
-                                    [triple_minus_l
-                                    triple_minus_r]
+                                    []
                                     []
                                     [(=
                                         (Var 28 tml)

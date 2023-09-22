@@ -96,7 +96,7 @@
                                         []
                                         .false.
                                     )
-                                    [max@dmax]
+                                    []
                                     [(Var 89 zx)]
                                     [(=
                                         (Var 89 ftol_return_var_name)
@@ -326,7 +326,7 @@
                                         []
                                         .false.
                                     )
-                                    [max@dmax]
+                                    []
                                     [(Var 4 zx)]
                                     [(=
                                         (Var 4 ftol_return_var_name)

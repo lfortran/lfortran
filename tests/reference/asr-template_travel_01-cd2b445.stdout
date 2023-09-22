@@ -592,8 +592,7 @@
                                         []
                                         .false.
                                     )
-                                    [avg_real_s_from_t
-                                    avg_real_s_from_s]
+                                    []
                                     []
                                     [(=
                                         (Var 19 s1)

@@ -441,7 +441,7 @@
                                         []
                                         .false.
                                     )
-                                    [avg_real_s_from_s]
+                                    []
                                     []
                                     [(=
                                         (Var 24 s)

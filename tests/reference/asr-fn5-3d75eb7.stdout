@@ -239,12 +239,7 @@
                                         []
                                         .false.
                                     )
-                                    [len_trim
-                                    trim
-                                    max@imax
-                                    present
-                                    len_repeati32
-                                    repeat@repeati32]
+                                    []
                                     [(Var 3 line)
                                     (Var 3 length)
                                     (Var 3 pattern)]
@@ -546,11 +541,7 @@
                                         []
                                         .false.
                                     )
-                                    [max@imax
-                                    len_trim
-                                    trim
-                                    imax
-                                    atleast]
+                                    [atleast]
                                     [(Var 4 header)
                                     (Var 4 stop)]
                                     [(FileWrite

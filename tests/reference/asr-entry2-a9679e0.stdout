@@ -54,7 +54,7 @@
                         []
                         .false.
                     )
-                    [messpr]
+                    []
                     []
                     [(SubroutineCall
                         3 messpr
@@ -121,7 +121,7 @@
                         []
                         .false.
                     )
-                    [messpr]
+                    []
                     []
                     [(Return)
                     (SubroutineCall

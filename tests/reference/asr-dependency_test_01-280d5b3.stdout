@@ -95,7 +95,7 @@
                                         []
                                         .false.
                                     )
-                                    [1_find_dependency]
+                                    []
                                     [(Var 6 self)
                                     (Var 6 dependency)]
                                     [(=

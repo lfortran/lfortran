@@ -1,3 +1,4 @@
+name: __asr_swap
 (TranslationUnit
     (SymbolTable
         1
@@ -659,7 +660,7 @@
                                         []
                                         .false.
                                     )
-                                    [ireverse]
+                                    []
                                     []
                                     [(=
                                         (Var 7 a)

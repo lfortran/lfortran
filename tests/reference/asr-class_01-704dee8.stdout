@@ -339,7 +339,7 @@
                                         []
                                         .false.
                                     )
-                                    [1_area]
+                                    []
                                     [(Var 5 this)]
                                     [(=
                                         (Var 5 area)

@@ -917,7 +917,7 @@
                                         []
                                         .false.
                                     )
-                                    [mysum_integer]
+                                    []
                                     []
                                     [(DoLoop
                                         ()

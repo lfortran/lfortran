@@ -1569,7 +1569,7 @@
                                         []
                                         .false.
                                     )
-                                    [mymatmul_int]
+                                    []
                                     []
                                     [(=
                                         (ArrayItem
