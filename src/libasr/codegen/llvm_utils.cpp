@@ -1207,6 +1207,7 @@ namespace LCompilers {
                 ASR::ttype_t *t2 = ASR::down_cast<ASR::Pointer_t>(asr_type)->m_type;
                 bool is_pointer_ = ( ASR::is_a<ASR::Class_t>(*t2) ||
                     (ASR::is_a<ASR::Character_t>(*t2) && m_abi != ASR::abiType::BindC) );
+                is_malloc_array_type = ASRUtils::is_array(t2);
                 handle_llvm_pointers1()
                 break;
             }
