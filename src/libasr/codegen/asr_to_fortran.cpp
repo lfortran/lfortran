@@ -650,8 +650,8 @@ public:
     // void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t &x) {}
 
     void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
-        last_expr_precedence = 13;
         s = std::to_string(x.m_n);
+        last_expr_precedence = 13;
     }
 
     // void visit_IntegerBOZ(const ASR::IntegerBOZ_t &x) {}
@@ -659,8 +659,9 @@ public:
     // void visit_IntegerBitNot(const ASR::IntegerBitNot_t &x) {}
 
     void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t &x) {
+        visit_expr_with_precedence(*x.m_arg, 9);
+        s = "-" + s;
         last_expr_precedence = 9;
-        visit_expr(*x.m_value);
     }
 
     void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
@@ -698,13 +699,14 @@ public:
     // void visit_UnsignedIntegerBinOp(const ASR::UnsignedIntegerBinOp_t &x) {}
 
     void visit_RealConstant(const ASR::RealConstant_t &x) {
-        last_expr_precedence = 13;
         s = std::to_string(x.m_r);
+        last_expr_precedence = 13;
     }
 
     void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t &x) {
+        visit_expr_with_precedence(*x.m_arg, 9);
+        s = "-" + s;
         last_expr_precedence = 9;
-        visit_expr(*x.m_value);
     }
 
     void visit_RealCompare(const ASR::RealCompare_t &x) {
@@ -732,7 +734,6 @@ public:
     // void visit_ComplexBinOp(const ASR::ComplexBinOp_t &x) {}
 
     void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
-        last_expr_precedence = 13;
         s = ".";
         if (x.m_value) {
             s += "true";
@@ -740,6 +741,7 @@ public:
             s += "false";
         }
         s += ".";
+        last_expr_precedence = 13;
     }
 
     // void visit_LogicalNot(const ASR::LogicalNot_t &x) {}
