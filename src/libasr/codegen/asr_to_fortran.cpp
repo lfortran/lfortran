@@ -769,7 +769,11 @@ public:
         last_expr_precedence = 13;
     }
 
-    // void visit_LogicalNot(const ASR::LogicalNot_t &x) {}
+    void visit_LogicalNot(const ASR::LogicalNot_t &x) {
+        visit_expr_with_precedence(*x.m_arg, 5);
+        s = ".not. " + s;
+        last_expr_precedence = 5;
+    }
 
     // void visit_LogicalCompare(const ASR::LogicalCompare_t &x) {}
 
