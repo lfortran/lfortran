@@ -119,6 +119,9 @@ public:
             } case ASR::ttypeType::Array: {
                 r = get_type(down_cast<ASR::Array_t>(t)->m_type);
                 break;
+            } case ASR::ttypeType::Allocatable: {
+                r = get_type(down_cast<ASR::Allocatable_t>(t)->m_type);
+                break;
             }
             default:
                 throw LCompilersException("The type `"
@@ -136,6 +139,14 @@ public:
             r += s;
             }
         }
+
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::Function_t>(*item.second)) {
+                visit_symbol(*item.second);
+            r += s;
+            }
+        }
+
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Program_t>(*item.second)) {
                 visit_symbol(*item.second);
@@ -201,9 +212,20 @@ public:
 
     void visit_Function(const ASR::Function_t &x) {
         std::string r = indent;
-        r += "function";
+        if (x.m_return_var) {
+            r += "function";
+        } else {
+            r += "subroutine";
+        }
         r += " ";
         r.append(x.m_name);
+        r += "(";
+        for (size_t i = 0; i < x.n_args; i ++) {
+            visit_expr(*x.m_args[i]);
+            r += s;
+            if (i > x.n_args-1) r += ", ";
+        }
+        r += ")";
         r += "\n";
 
         inc_indent();
@@ -217,7 +239,12 @@ public:
         visit_body(x, r, false);
         dec_indent();
         r += indent;
-        r += "end function";
+        r += "end ";
+        if (x.m_return_var) {
+            r += "function";
+        } else {
+            r += "subroutine";
+        }
         r += " ";
         r.append(x.m_name);
         r += "\n";
@@ -263,14 +290,24 @@ public:
         if (x.m_storage == ASR::storage_typeType::Parameter) {
             r += ", parameter";
         }
+        if (is_a<ASR::Allocatable_t>(*x.m_type)) {
+            r += ", allocatable";
+
+        }
         r += " :: ";
         r.append(x.m_name);
-        if (is_a<ASR::Array_t>(*x.m_type)) {
-            ASR::Array_t *arr = down_cast<ASR::Array_t>(x.m_type);
+        ASR::ttype_t *x_m_type = ASRUtils::type_get_past_allocatable(x.m_type);
+        if (is_a<ASR::Array_t>(*x_m_type)) {
+            ASR::Array_t *arr = down_cast<ASR::Array_t>(x_m_type);
             r += "(";
-            for(size_t i = 0; i < arr->n_dims; i++) {
-                visit_expr(*arr->m_dims[i].m_length);
-                r += s;
+            for (size_t i = 0; i < arr->n_dims; i++) {
+                if (arr->m_dims[i].m_length) {
+                    visit_expr(*arr->m_dims[i].m_length);
+                    r += s;
+                } else {
+                    r += ":";
+                }
+                if (i < arr->n_dims-1) r += ", ";
             }
             r += ")";
         }
@@ -300,7 +337,25 @@ public:
     // void visit_Template(const ASR::Template_t &x) {}
 
     /********************************** Stmt **********************************/
-    // void visit_Allocate(const ASR::Allocate_t &x) {}
+    void visit_Allocate(const ASR::Allocate_t &x) {
+        std::string r = indent;
+        r += "allocate(";
+        for (size_t i = 0; i < x.n_args; i ++) {
+            visit_expr(*x.m_args[i].m_a);
+            r += s;
+            if (x.m_args[i].n_dims > 0) {
+                r += "(";
+                for (size_t j = 0; j < x.m_args[i].n_dims; j ++) {
+                    visit_expr(*x.m_args[i].m_dims[j].m_length);
+                    r += s;
+                    if (j < x.m_args[i].n_dims-1) r += ", ";
+                }
+                r += ")";
+            }
+        }
+        r += ")\n";
+        s = r;
+    }
 
     // void visit_ReAlloc(const ASR::ReAlloc_t &x) {}
 
@@ -323,11 +378,43 @@ public:
 
     // void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {}
 
-    // void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t &x) {}
+    void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t &x) {
+        std::string r = indent;
+        r += "deallocate(";
+        for (size_t i = 0; i < x.n_vars; i ++) {
+            visit_expr(*x.m_vars[i]);
+            r += s;
+            if (i < x.n_vars-1) r += ", ";
+        }
+        r += ") ";
+        r += "! Implicit deallocate\n";
+        s = r;
+    }
 
     // void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {}
 
-    // void visit_DoLoop(const ASR::DoLoop_t &x) {}
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        std::string r = indent;
+        r += "do ";
+        visit_expr(*x.m_head.m_v);
+        r += s;
+        r += " = ";
+        visit_expr(*x.m_head.m_start);
+        r += s;
+        r += ", ";
+        visit_expr(*x.m_head.m_end);
+        r += s;
+        if (x.m_head.m_increment) {
+            r += ", ";
+            visit_expr(*x.m_head.m_increment);
+            r += s;
+        }
+        r += "\n";
+        visit_body(x, r);
+        r += indent;
+        r += "end do\n";
+        s = r;
+    }
 
     void visit_ErrorStop(const ASR::ErrorStop_t &/*x*/) {
         s = indent;
@@ -477,7 +564,19 @@ public:
 
     // void visit_Assert(const ASR::Assert_t &x) {}
 
-    // void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {}
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        std::string r = indent;
+        r += "call ";
+        r += ASRUtils::symbol_name(x.m_name);
+        r += "(";
+        for (size_t i = 0; i < x.n_args; i ++) {
+            visit_expr(*x.m_args[i].m_value);
+            r += s;
+            if (i < x.n_args-1) r += ", ";
+        }
+        r += ")\n";
+        s = r;
+    }
 
     // void visit_Where(const ASR::Where_t &x) {}
 
@@ -627,7 +726,16 @@ public:
 
     // void visit_ComplexBinOp(const ASR::ComplexBinOp_t &x) {}
 
-    // void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {}
+    void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
+        last_expr_precedence = 13;
+        s = ".";
+        if (x.m_value) {
+            s += "true";
+        } else {
+            s += "false";
+        }
+        s += ".";
+    }
 
     // void visit_LogicalNot(const ASR::LogicalNot_t &x) {}
 
@@ -702,6 +810,7 @@ public:
                 visit_expr(*x.m_args[i].m_right);
                 r += s;
             }
+            if (i < x.n_args-1) r += ", ";
         }
         r += ")";
         s = r;
@@ -711,7 +820,21 @@ public:
 
     // void visit_ArraySize(const ASR::ArraySize_t &x) {}
 
-    // void visit_ArrayBound(const ASR::ArrayBound_t &x) {}
+    void visit_ArrayBound(const ASR::ArrayBound_t &x) {
+        std::string r = "";
+        if (x.m_bound == ASR::arrayboundType::UBound) {
+            r += "ubound(";
+        } else if (x.m_bound == ASR::arrayboundType::LBound) {
+            r += "lbound(";
+        }
+        visit_expr(*x.m_v);
+        r += s;
+        r += ", ";
+        visit_expr(*x.m_dim);
+        r += s;
+        r += ")";
+        s = r;
+    }
 
     // void visit_ArrayTranspose(const ASR::ArrayTranspose_t &x) {}
 
