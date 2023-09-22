@@ -40,7 +40,8 @@ public:
 
     void visit_expr_with_precedence(const ASR::expr_t &x, int current_precedence) {
         visit_expr(x);
-        if (last_expr_precedence < current_precedence) {
+        if (last_expr_precedence == 9 ||
+                last_expr_precedence < current_precedence) {
             s = "(" + s + ")";
         }
     }
@@ -55,16 +56,16 @@ public:
                 return " - ";
             } case (ASR::binopType::Mul) : {
                 last_expr_precedence = 10;
-                return " * ";
+                return "*";
             } case (ASR::binopType::Div) : {
                 last_expr_precedence = 10;
-                return " / ";
+                return "/";
             } case (ASR::binopType::Pow) : {
                 last_expr_precedence = 11;
-                return " ** ";
-            }
-            default :
+                return "**";
+            } default : {
                 throw LCompilersException("Binop type not implemented");
+            }
         }
     }
 
@@ -78,6 +79,26 @@ public:
             case (ASR::cmpopType::Gt)    : return " > " ;
             case (ASR::cmpopType::GtE)   : return " >= ";
             default : throw LCompilersException("Cmpop type not implemented");
+        }
+    }
+
+    std::string logicalbinop2str(const ASR::logicalbinopType type) {
+        switch (type) {
+            case (ASR::logicalbinopType::And) : {
+                last_expr_precedence = 4;
+                return " .and. ";
+            } case (ASR::logicalbinopType::Or) : {
+                last_expr_precedence = 3;
+                return " .or. ";
+            } case (ASR::logicalbinopType::Eqv) : {
+                last_expr_precedence = 2;
+                return " .eqv. ";
+            } case (ASR::logicalbinopType::NEqv) : {
+                last_expr_precedence = 2;
+                return " .neqv. ";
+            } default : {
+                throw LCompilersException("Logicalbinop type not implemented");
+            }
         }
     }
 
@@ -114,6 +135,11 @@ public:
                 r += std::to_string(c->m_len);
                 r += ", kind=";
                 r += std::to_string(c->m_kind);
+                r += ")";
+                break;
+            } case ASR::ttypeType::Logical: {
+                r = "logical(";
+                r += std::to_string(down_cast<ASR::Logical_t>(t)->m_kind);
                 r += ")";
                 break;
             } case ASR::ttypeType::Array: {
@@ -647,8 +673,8 @@ public:
     // void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t &x) {}
 
     void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
-        last_expr_precedence = 13;
         s = std::to_string(x.m_n);
+        last_expr_precedence = 13;
     }
 
     // void visit_IntegerBOZ(const ASR::IntegerBOZ_t &x) {}
@@ -656,8 +682,9 @@ public:
     // void visit_IntegerBitNot(const ASR::IntegerBitNot_t &x) {}
 
     void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t &x) {
+        visit_expr_with_precedence(*x.m_arg, 9);
+        s = "-" + s;
         last_expr_precedence = 9;
-        visit_expr(*x.m_value);
     }
 
     void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
@@ -679,6 +706,10 @@ public:
         r += s;
         r += m_op;
         visit_expr_with_precedence(*x.m_right, current_precedence);
+        if ((x.m_op == ASR::binopType::Sub && last_expr_precedence <= 8) ||
+            (x.m_op == ASR::binopType::Div && last_expr_precedence <= 10)) {
+            s = "(" + s + ")";
+        }
         r += s;
         last_expr_precedence = current_precedence;
         s = r;
@@ -695,13 +726,14 @@ public:
     // void visit_UnsignedIntegerBinOp(const ASR::UnsignedIntegerBinOp_t &x) {}
 
     void visit_RealConstant(const ASR::RealConstant_t &x) {
-        last_expr_precedence = 13;
         s = std::to_string(x.m_r);
+        last_expr_precedence = 13;
     }
 
     void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t &x) {
+        visit_expr_with_precedence(*x.m_arg, 9);
+        s = "-" + s;
         last_expr_precedence = 9;
-        visit_expr(*x.m_value);
     }
 
     void visit_RealCompare(const ASR::RealCompare_t &x) {
@@ -729,7 +761,6 @@ public:
     // void visit_ComplexBinOp(const ASR::ComplexBinOp_t &x) {}
 
     void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
-        last_expr_precedence = 13;
         s = ".";
         if (x.m_value) {
             s += "true";
@@ -737,18 +768,34 @@ public:
             s += "false";
         }
         s += ".";
+        last_expr_precedence = 13;
     }
 
-    // void visit_LogicalNot(const ASR::LogicalNot_t &x) {}
+    void visit_LogicalNot(const ASR::LogicalNot_t &x) {
+        visit_expr_with_precedence(*x.m_arg, 5);
+        s = ".not. " + s;
+        last_expr_precedence = 5;
+    }
 
     // void visit_LogicalCompare(const ASR::LogicalCompare_t &x) {}
 
-    // void visit_LogicalBinOp(const ASR::LogicalBinOp_t &x) {}
+    void visit_LogicalBinOp(const ASR::LogicalBinOp_t &x) {
+        std::string r = "", m_op = logicalbinop2str(x.m_op);
+        int current_precedence = last_expr_precedence;
+        visit_expr_with_precedence(*x.m_left, current_precedence);
+        r += s;
+        r += m_op;
+        visit_expr_with_precedence(*x.m_right, current_precedence);
+        r += s;
+        last_expr_precedence = current_precedence;
+        s = r;
+    }
 
     void visit_StringConstant(const ASR::StringConstant_t &x) {
         s = "\"";
         s.append(x.m_s);
         s += "\"";
+        last_expr_precedence = 13;
     }
 
     // void visit_StringConcat(const ASR::StringConcat_t &x) {}
@@ -787,6 +834,7 @@ public:
 
     void visit_Var(const ASR::Var_t &x) {
         s = ASRUtils::symbol_name(x.m_v);
+        last_expr_precedence = 13;
     }
 
     // void visit_FunctionParam(const ASR::FunctionParam_t &x) {}
@@ -800,6 +848,7 @@ public:
         }
         r += "]";
         s = r;
+        last_expr_precedence = 13;
     }
 
     void visit_ArrayItem(const ASR::ArrayItem_t &x) {
@@ -816,6 +865,7 @@ public:
         }
         r += ")";
         s = r;
+        last_expr_precedence = 13;
     }
 
     // void visit_ArraySection(const ASR::ArraySection_t &x) {}

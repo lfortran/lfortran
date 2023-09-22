@@ -2181,6 +2181,7 @@ ast = true
 cpp = true
 ast_f90 = true
 julia = true
+fortran = true
 
 [[test]]
 filename = "../integration_tests/expr_06.f90"
