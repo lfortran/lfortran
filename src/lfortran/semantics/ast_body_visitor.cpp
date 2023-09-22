@@ -2528,8 +2528,10 @@ public:
                                 dims.push_back(al, dim);
                                 ASR::asr_t* descriptor_array = ASR::make_Array_t(al, x.base.base.loc, ASRUtils::type_get_past_array(expected_arg_type),
                                                                 dims.p, dims.size(), ASR::array_physical_typeType::DescriptorArray);
+
+                                ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(expected_arg_type);
                                 ASR::asr_t* expected_array = ASR::make_Array_t(al, x.base.base.loc, ASRUtils::type_get_past_array(expected_arg_type),
-                                                                dims.p, dims.size(), ASRUtils::extract_physical_type(expected_arg_type));
+                                                                array_t->m_dims, array_t->n_dims, ASRUtils::extract_physical_type(expected_arg_type));
 
                                 // make ArraySection
                                 Vec<ASR::array_index_t> array_indices;
