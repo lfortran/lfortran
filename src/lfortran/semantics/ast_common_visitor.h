@@ -2289,6 +2289,24 @@ public:
                         type = ASRUtils::duplicate_type(al, type, &temp_dims);
                     }
                     init_expr = ASRUtils::EXPR(tmp);
+                    if (!is_compile_time && ASR::is_a<ASR::Array_t>(*type)
+                        && ASRUtils::type_get_past_array(ASRUtils::type_get_past_pointer(type))->type != ASR::ttypeType::Character
+                        && (ASR::is_a<ASR::IntegerConstant_t>(*init_expr) || ASR::is_a<ASR::RealConstant_t>(*init_expr)
+                            || ASR::is_a<ASR::RealUnaryMinus_t>(*init_expr) || ASR::is_a<ASR::IntegerUnaryMinus_t>(*init_expr))) {
+                        /*
+                            Case: integer :: x(2) = 1
+                            which is equivalent to x(2) = [1,1]
+                        */
+                        int64_t size = ASRUtils::get_fixed_size_of_array(type);
+                        Vec<ASR::expr_t*> args;
+                        args.reserve(al, size);
+                        LCOMPILERS_ASSERT(init_expr != nullptr)
+                        for (int64_t i = 0; i < size; i++) {
+                            args.push_back(al, init_expr);
+                        }
+                        init_expr = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, init_expr->base.loc, args.p, args.n, 
+                                    type, ASR::arraystorageType::ColMajor));
+                    }
                     ASR::ttype_t *init_type = ASRUtils::expr_type(init_expr);
                     if (init_type->type == ASR::ttypeType::Integer
                         && ASRUtils::type_get_past_array(ASRUtils::type_get_past_pointer(type))->type == ASR::ttypeType::Character
