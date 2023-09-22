@@ -789,6 +789,7 @@ public:
         s = "\"";
         s.append(x.m_s);
         s += "\"";
+        last_expr_precedence = 13;
     }
 
     // void visit_StringConcat(const ASR::StringConcat_t &x) {}
@@ -827,6 +828,7 @@ public:
 
     void visit_Var(const ASR::Var_t &x) {
         s = ASRUtils::symbol_name(x.m_v);
+        last_expr_precedence = 13;
     }
 
     // void visit_FunctionParam(const ASR::FunctionParam_t &x) {}
@@ -840,6 +842,7 @@ public:
         }
         r += "]";
         s = r;
+        last_expr_precedence = 13;
     }
 
     void visit_ArrayItem(const ASR::ArrayItem_t &x) {
@@ -856,6 +859,7 @@ public:
         }
         r += ")";
         s = r;
+        last_expr_precedence = 13;
     }
 
     // void visit_ArraySection(const ASR::ArraySection_t &x) {}
