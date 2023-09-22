@@ -676,7 +676,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(StringConstant
                                             "The result is "
                                             (Character 1 14 ())

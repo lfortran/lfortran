@@ -64,7 +64,6 @@
                     intrinsics_11
                     [lfortran_intrinsic_builtin]
                     [(Print
-                        ()
                         [(Var 2 y)]
                         ()
                         ()

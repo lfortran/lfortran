@@ -106,7 +106,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 dimag@zaimag
                             2 dimag

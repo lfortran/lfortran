@@ -152,7 +152,6 @@
                                     []
                                     [(Var 7 tab)]
                                     [(Print
-                                        ()
                                         [(StringConstant
                                             "inside check_table"
                                             (Character 1 18 ())
@@ -613,7 +612,6 @@
                     select_type4
                     []
                     [(Print
-                        ()
                         [(StringConstant
                             "running select_type4 main program"
                             (Character 1 33 ())

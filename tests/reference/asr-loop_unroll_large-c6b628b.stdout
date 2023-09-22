@@ -118,7 +118,6 @@
                         (IntegerConstant 35 (Integer 4))
                         ())
                         [(Print
-                            ()
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()

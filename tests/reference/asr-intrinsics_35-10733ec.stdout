@@ -119,7 +119,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(IntrinsicArrayFunction
                                             Any
                                             [(ArrayPhysicalCast
@@ -163,7 +162,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(IntrinsicArrayFunction
                                             Any
                                             [(ArrayPhysicalCast
@@ -258,7 +256,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 l)]
                         ()
                         ()

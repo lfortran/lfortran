@@ -42,7 +42,6 @@
                     []
                     [(Var 2 mess)]
                     [(Print
-                        ()
                         [(StringItem
                             (Var 2 mess)
                             (IntegerConstant 1 (Integer 4))

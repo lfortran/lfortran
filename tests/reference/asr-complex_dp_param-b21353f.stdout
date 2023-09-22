@@ -145,7 +145,6 @@
                     complex_dp_param
                     []
                     [(Print
-                        ()
                         [(Var 2 u)
                         (Var 2 v)
                         (Var 2 zero)]

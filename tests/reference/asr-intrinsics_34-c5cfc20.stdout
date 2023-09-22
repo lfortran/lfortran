@@ -129,7 +129,6 @@
                     intrinsics_34
                     [lfortran_intrinsic_kind]
                     [(Print
-                        ()
                         [(FunctionCall
                             2 epsilon@sepsilon
                             2 epsilon
@@ -145,7 +144,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 epsilon@depsilon
                             2 epsilon
@@ -161,7 +159,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(RealBinOp
                             (FunctionCall
                                 2 epsilon@depsilon

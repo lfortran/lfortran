@@ -124,7 +124,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 is_alpha)]
                         ()
                         ()
@@ -197,7 +196,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 is_alpha)]
                         ()
                         ()
@@ -270,7 +268,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 is_alpha)]
                         ()
                         ()

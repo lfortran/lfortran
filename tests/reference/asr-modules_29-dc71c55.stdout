@@ -999,7 +999,6 @@
                     modules_29
                     [fpm_manifest_executable]
                     [(Print
-                        ()
                         [(StringConstant
                             "running modules_29 program"
                             (Character 1 26 ())

@@ -725,7 +725,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 whole_square
                             ()

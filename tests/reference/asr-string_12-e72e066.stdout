@@ -252,49 +252,41 @@
                     string_12
                     []
                     [(Print
-                        ()
                         [(Var 2 fullhex_digits)]
                         ()
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 hex_digits)]
                         ()
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 lowerhex_digits)]
                         ()
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 digits)]
                         ()
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 octal_digits)]
                         ()
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 letters)]
                         ()
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 uppercase)]
                         ()
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 lowercase)]
                         ()
                         ()

@@ -2116,7 +2116,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(StringConstant
                                             "tal = "
                                             (Character 1 6 ())
@@ -2387,7 +2386,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(StringConstant
                                             "tmaxl ="
                                             (Character 1 7 ())
@@ -2658,7 +2656,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(StringConstant
                                             "tml = "
                                             (Character 1 6 ())

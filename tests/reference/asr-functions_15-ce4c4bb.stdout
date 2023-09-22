@@ -228,7 +228,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(Var 4 a)
                         (Var 4 b)]
                         ()
@@ -264,7 +263,6 @@
                         []
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             4 f
                             ()

@@ -428,15 +428,9 @@ public:
 
     // void visit_GoTo(const ASR::GoTo_t &x) {}
 
-    void visit_GoToTarget(const ASR::GoToTarget_t &x) {
-        s = x.m_name;
-        s += " format(";
-        if (startswith(format_string, "\"") && endswith(format_string, "\"")) {
-            format_string = format_string.substr(1, format_string.size()-2);
-        }
-        s += format_string;
-        s += ")\n";
-        format_string.clear();
+    void visit_GoToTarget(const ASR::GoToTarget_t &/*x*/) {
+        // Skip GoToTarget for now
+        s = "";
     }
 
     void visit_If(const ASR::If_t &x) {
@@ -470,9 +464,13 @@ public:
         std::string r = indent;
         r += "print";
         r += " ";
-        if (x.m_fmt) {
-            visit_expr(*x.m_fmt);
-            format_string = s;
+        if (x.m_values[0] && is_a<ASR::StringFormat_t>(*x.m_values[0])) {
+            ASR::StringFormat_t *sf = down_cast<ASR::StringFormat_t>(x.m_values[0]);
+            visit_expr(*sf->m_fmt);
+            if (is_a<ASR::StringConstant_t>(*sf->m_fmt)
+                    && (!startswith(s, "\"(") || !endswith(s, ")\""))) {
+                s = "\"(" + s.substr(1, s.size()-2) + ")\"";
+            }
             r += s;
         } else {
             r += "*";
@@ -506,9 +504,13 @@ public:
         if (!x.m_unit) {
             r += "*, ";
         }
-        if (x.m_fmt) {
-            visit_expr(*x.m_fmt);
-            format_string = s;
+        if (x.m_values[0] && is_a<ASR::StringFormat_t>(*x.m_values[0])) {
+            ASR::StringFormat_t *sf = down_cast<ASR::StringFormat_t>(x.m_values[0]);
+            visit_expr(*sf->m_fmt);
+            if (is_a<ASR::StringConstant_t>(*sf->m_fmt)
+                    && (!startswith(s, "\"(") || !endswith(s, ")\""))) {
+                s = "\"(" + s.substr(1, s.size()-2) + ")\"";
+            }
             r += s;
         } else {
             r += "*";

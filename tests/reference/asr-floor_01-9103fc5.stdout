@@ -363,7 +363,6 @@
                         []
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 floor@sfloor_i32
                             2 floor
@@ -395,7 +394,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 floor@sfloor_i32
                             2 floor

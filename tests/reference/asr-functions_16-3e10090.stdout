@@ -12,7 +12,6 @@
                     functions_16
                     []
                     [(Print
-                        ()
                         [(StringConstant
                             "running functions_16 program"
                             (Character 1 28 ())

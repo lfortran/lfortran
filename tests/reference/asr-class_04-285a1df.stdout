@@ -348,7 +348,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StructInstanceMember
                             (StructInstanceMember
                                 (Var 2 foo)
@@ -366,7 +365,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StructInstanceMember
                             (StructInstanceMember
                                 (Var 2 foo)
@@ -384,7 +382,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StructInstanceMember
                             (StructInstanceMember
                                 (Var 2 foo)

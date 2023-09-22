@@ -65,7 +65,6 @@
                                     [(Var 4 file)
                                     (Var 4 line)]
                                     [(Print
-                                        ()
                                         [(StringConcat
                                             (StringConcat
                                                 (StringConstant

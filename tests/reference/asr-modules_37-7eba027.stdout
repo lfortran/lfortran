@@ -12,7 +12,6 @@
                     modules_37
                     []
                     [(Print
-                        ()
                         [(StringConstant
                             "executing modules_37"
                             (Character 1 20 ())

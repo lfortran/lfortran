@@ -96,7 +96,6 @@
                     intrinsics_15
                     [lfortran_intrinsic_builtin]
                     [(Print
-                        ()
                         [(Var 2 y1)
                         (Var 2 y2)]
                         ()

@@ -96,7 +96,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 z1)
                         (ComplexConstructor
                             (Cast

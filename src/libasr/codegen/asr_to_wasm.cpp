@@ -3045,12 +3045,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_Print(const ASR::Print_t &x) {
-        if (x.m_fmt != nullptr) {
-            diag.codegen_warning_label(
-                "format string in `print` is not implemented yet and it is "
-                "currently treated as '*'",
-                {x.m_fmt->base.loc}, "treated as '*'");
-        }
         handle_print(x);
     }
 
@@ -3062,12 +3056,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
-        if (x.m_fmt != nullptr) {
-            diag.codegen_warning_label(
-                "format string in `print` is not implemented yet and it is "
-                "currently treated as '*'",
-                {x.m_fmt->base.loc}, "treated as '*'");
-        }
         if (x.m_unit != nullptr) {
             diag.codegen_error_label("unit in write() is not implemented yet",
                                      {x.m_unit->base.loc}, "not implemented");

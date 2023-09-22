@@ -109,14 +109,12 @@
                                     )
                                 )
                                 [(Print
-                                    ()
                                     [(Var 2 i)
                                     (Var 2 j)]
                                     ()
                                     ()
                                 )]
                                 [(Print
-                                    ()
                                     [(Var 2 j)
                                     (Var 2 i)]
                                     ()

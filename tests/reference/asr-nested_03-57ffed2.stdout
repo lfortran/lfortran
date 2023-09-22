@@ -62,13 +62,11 @@
                                                     []
                                                     []
                                                     [(Print
-                                                        ()
                                                         [(IntegerConstant 5 (Integer 4))]
                                                         ()
                                                         ()
                                                     )
                                                     (Print
-                                                        ()
                                                         [(Var 3 x)]
                                                         ()
                                                         ()
@@ -127,7 +125,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(StringConstant
                                             "b()"
                                             (Character 1 3 ())

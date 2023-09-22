@@ -80,7 +80,6 @@
                     int_dp_param
                     []
                     [(Print
-                        ()
                         [(Var 2 u)
                         (Var 2 v)]
                         ()

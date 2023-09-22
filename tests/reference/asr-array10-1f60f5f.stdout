@@ -58,7 +58,6 @@
                     const_arrays
                     []
                     [(Print
-                        ()
                         [(Var 2 x)]
                         ()
                         ()

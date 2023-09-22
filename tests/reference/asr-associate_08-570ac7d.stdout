@@ -96,7 +96,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StructInstanceMember
                             (ArrayItem
                                 (StructInstanceMember

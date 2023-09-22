@@ -42,7 +42,6 @@
                     intrinsics_27
                     []
                     [(Print
-                        ()
                         [(IntrinsicArrayFunction
                             Shape
                             [(ArrayPhysicalCast
@@ -90,7 +89,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(ArraySize
                             (IntrinsicArrayFunction
                                 Shape

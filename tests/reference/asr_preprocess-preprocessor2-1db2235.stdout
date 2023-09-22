@@ -60,7 +60,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 x)
                         (IntegerConstant 12345678 (Integer 4))]
                         ()

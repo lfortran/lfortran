@@ -173,7 +173,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 f
                             ()
@@ -394,7 +393,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             3 c
                             ()
@@ -567,7 +565,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             4 a
                             ()

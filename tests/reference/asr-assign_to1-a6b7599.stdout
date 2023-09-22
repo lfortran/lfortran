@@ -82,7 +82,6 @@
                         15
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "run"
                             (Character 1 3 ())

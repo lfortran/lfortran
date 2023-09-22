@@ -640,7 +640,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(StringConstant
                                             "First element: "
                                             (Character 1 15 ())
@@ -667,7 +666,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(StringConstant
                                             "Second element: "
                                             (Character 1 16 ())

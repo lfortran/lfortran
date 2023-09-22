@@ -91,7 +91,6 @@
                             ()
                         )
                         [(Print
-                            ()
                             [(StringConstant
                                 "test is not found"
                                 (Character 1 17 ())
@@ -100,7 +99,6 @@
                             ()
                         )]
                         [(Print
-                            ()
                             [(StringConstant
                                 "test is found at index: "
                                 (Character 1 24 ())

@@ -91,7 +91,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 x)
                         (Var 2 v)
                         (Var 2 zero)]

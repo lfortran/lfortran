@@ -167,7 +167,6 @@
                     implied_do_loop3
                     []
                     [(Print
-                        ()
                         [(StringConstant
                             "Loop 1"
                             (Character 1 6 ())
@@ -176,7 +175,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(ImpliedDoLoop
                             [(Var 2 i)
                             (ImpliedDoLoop
@@ -205,7 +203,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "Loop 2"
                             (Character 1 6 ())
@@ -214,7 +211,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(ImpliedDoLoop
                             [(ImpliedDoLoop
                                 [(RealBinOp
@@ -258,7 +254,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "Loop 3"
                             (Character 1 6 ())
@@ -267,7 +262,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(ImpliedDoLoop
                             [(ImpliedDoLoop
                                 [(RealBinOp
@@ -311,7 +305,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "Loop4"
                             (Character 1 5 ())
@@ -320,7 +313,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(ImpliedDoLoop
                             [(Var 2 i)
                             (ImpliedDoLoop
@@ -370,7 +362,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "Loop5"
                             (Character 1 5 ())
@@ -379,7 +370,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(ImpliedDoLoop
                             [(Var 2 i)
                             (ImpliedDoLoop

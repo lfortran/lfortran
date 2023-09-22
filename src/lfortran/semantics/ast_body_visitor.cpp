@@ -232,12 +232,12 @@ public:
     void process_format_statement(ASR::asr_t *old_tmp, int &label, Allocator &al, std::map<int64_t, std::string> &format_statements) {
         T *old_stmt = ASR::down_cast<T>(ASRUtils::STMT(old_tmp));
         ASR::ttype_t *fmt_type = ASRUtils::TYPE(ASR::make_Character_t(
-            al, old_stmt->m_fmt->base.loc, 1, format_statements[label].size(), nullptr));
+            al, old_stmt->base.base.loc, 1, format_statements[label].size(), nullptr));
         ASR::expr_t *fmt_constant = ASRUtils::EXPR(ASR::make_StringConstant_t(
-            al, old_stmt->m_fmt->base.loc, s2c(al, format_statements[label]), fmt_type));
+            al, old_stmt->base.base.loc, s2c(al, format_statements[label]), fmt_type));
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(
             al, old_stmt->base.base.loc, -1, 0, nullptr));
-        ASR::expr_t *string_format = ASRUtils::EXPR(ASR::make_StringFormat_t(al, old_stmt->m_fmt->base.loc,
+        ASR::expr_t *string_format = ASRUtils::EXPR(ASR::make_StringFormat_t(al, old_stmt->base.base.loc,
             fmt_constant, old_stmt->m_values, old_stmt->n_values, ASR::string_format_kindType::FormatFortran,
             type, nullptr));
         Vec<ASR::expr_t *> print_args;
@@ -537,9 +537,6 @@ public:
                 *args[i] = ASRUtils::EXPR(tmp);
             }
         }
-        if (_type == AST::stmtType::Write){
-            a_fmt_constant = a_fmt;
-        }
         for( std::uint32_t i = 0; i < n_kwargs; i++ ) {
             AST::kw_argstar_t kwarg = m_kwargs[i];
             std::string m_arg_str(kwarg.m_arg);
@@ -644,7 +641,7 @@ public:
                     Vec<ASR::stmt_t*> body;
                     body.reserve(al, 1);
                     body.push_back(al, ASRUtils::STMT(
-                        ASR::make_FileWrite_t(al, loc, 0, a_unit, nullptr,
+                        ASR::make_FileWrite_t(al, loc, 0, a_unit,
                         nullptr, nullptr, nullptr, nullptr, 0, nullptr, newline)));
                     // TODO: Compare with "no" (case-insensitive) in else part
                     // Throw runtime error if advance expression does not match "no"
@@ -654,7 +651,9 @@ public:
                 }
             }
         }
-        if (_type == AST::stmtType::Write && a_fmt == nullptr
+        if (_type == AST::stmtType::Write) {
+            a_fmt_constant = a_fmt;
+        } else if (_type == AST::stmtType::Write && a_fmt == nullptr
                 && compiler_options.print_leading_space) {
             ASR::ttype_t *str_type_len_0 = ASRUtils::TYPE(ASR::make_Character_t(
                 al, loc, 1, 0, nullptr));
@@ -671,7 +670,7 @@ public:
             int64_t label = a_fmt_int->m_n;
             if (format_statements.find(label) == format_statements.end()) {
                 if( _type == AST::stmtType::Write ) {
-                    tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit, a_fmt,
+                    tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
                                             a_iomsg, a_iostat, a_id, a_values_vec.p, a_values_vec.size(), a_separator, a_end);
                     print_statements[tmp] = std::make_pair(&w->base,label);
                 } else if( _type == AST::stmtType::Read ) {
@@ -696,7 +695,7 @@ public:
             write_args.reserve(al, 1);
             write_args.push_back(al, string_format);
             if( _type == AST::stmtType::Write ) {
-                tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit, a_fmt,
+                tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
                                         a_iomsg, a_iostat, a_id, write_args.p, write_args.size(), a_separator, a_end);
             } else if( _type == AST::stmtType::Read ) {
                 tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
@@ -704,7 +703,7 @@ public:
             }
         } else {
             if( _type == AST::stmtType::Write ) {
-                tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit, a_fmt,
+                tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
                                         a_iomsg, a_iostat, a_id, a_values_vec.p, a_values_vec.size(), a_separator, a_end);
             } else if( _type == AST::stmtType::Read ) {
                 tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
@@ -2557,7 +2556,7 @@ public:
                                                             array_expr, array_indices.p, array_indices.size(),
                                                             ASRUtils::TYPE(descriptor_array), nullptr));
 
-                                ASR::asr_t* array_cast = ASRUtils::make_ArrayPhysicalCast_t_util(al, array_item->base.base.loc, array_section, 
+                                ASR::asr_t* array_cast = ASRUtils::make_ArrayPhysicalCast_t_util(al, array_item->base.base.loc, array_section,
                                                         ASRUtils::extract_physical_type(ASRUtils::TYPE(descriptor_array)), ASRUtils::extract_physical_type(expected_arg_type), ASRUtils::TYPE(expected_array), nullptr);
 
                                 ASR::expr_t* array_section_cast = ASRUtils::EXPR(array_cast);
@@ -2781,13 +2780,13 @@ public:
             print_args.reserve(al, 1);
             print_args.push_back(al, string_format);
 
-            tmp = ASR::make_Print_t(al, x.base.base.loc, fmt,
+            tmp = ASR::make_Print_t(al, x.base.base.loc,
                 print_args.p, print_args.size(), nullptr, nullptr);
         } else if (fmt && ASR::is_a<ASR::IntegerConstant_t>(*fmt)) {
             ASR::IntegerConstant_t *f = ASR::down_cast<ASR::IntegerConstant_t>(fmt);
             int64_t label = f->m_n;
             if (format_statements.find(label) == format_statements.end()) {
-                tmp = ASR::make_Print_t(al, x.base.base.loc, fmt,
+                tmp = ASR::make_Print_t(al, x.base.base.loc,
                     body.p, body.size(), nullptr, nullptr);
                 print_statements[tmp] = std::make_pair(&x.base,label);
                 return;
@@ -2806,10 +2805,10 @@ public:
             print_args.reserve(al, 1);
             print_args.push_back(al, string_format);
 
-            tmp = ASR::make_Print_t(al, x.base.base.loc, fmt_constant,
+            tmp = ASR::make_Print_t(al, x.base.base.loc,
                 print_args.p, print_args.size(), nullptr, nullptr);
         } else {
-            tmp = ASR::make_Print_t(al, x.base.base.loc, fmt,
+            tmp = ASR::make_Print_t(al, x.base.base.loc,
                 body.p, body.size(), nullptr, nullptr);
         }
     }
@@ -3305,3 +3304,4 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
 }
 
 } // namespace LCompilers::LFortran
+

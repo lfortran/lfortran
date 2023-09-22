@@ -338,7 +338,6 @@
                                     [(Var 5 c)
                                     (Var 5 d)]
                                     [(Print
-                                        ()
                                         [(FunctionCall
                                             2 cb
                                             ()

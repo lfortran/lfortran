@@ -311,7 +311,6 @@
                                         []
                                     )
                                     (Print
-                                        ()
                                         [(Var 3 reldiff)]
                                         ()
                                         ()

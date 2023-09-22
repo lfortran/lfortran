@@ -58,7 +58,6 @@
                                 ()
                             )
                             (Print
-                                ()
                                 [(StringConstant
                                     "Excellent!"
                                     (Character 1 10 ())
@@ -76,7 +75,6 @@
                                 ()
                             )
                             (Print
-                                ()
                                 [(StringConstant
                                     "Very good!"
                                     (Character 1 10 ())
@@ -94,7 +92,6 @@
                                 ()
                             )
                             (Print
-                                ()
                                 [(StringConstant
                                     "Well done!"
                                     (Character 1 10 ())
@@ -112,7 +109,6 @@
                                 ()
                             )
                             (Print
-                                ()
                                 [(StringConstant
                                     "Not bad!"
                                     (Character 1 8 ())
@@ -130,7 +126,6 @@
                                 ()
                             )
                             (Print
-                                ()
                                 [(StringConstant
                                     "You passed!"
                                     (Character 1 11 ())
@@ -148,7 +143,6 @@
                                 ()
                             )
                             (Print
-                                ()
                                 [(StringConstant
                                     "Better try again!"
                                     (Character 1 17 ())
@@ -163,7 +157,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(StringConstant
                                 "Invalid marks"
                                 (Character 1 13 ())
@@ -173,7 +166,6 @@
                         )]
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "Your marks are "
                             (Character 1 15 ())
@@ -201,7 +193,6 @@
                             (IntegerConstant 91 (Integer 4))
                             (IntegerConstant 100 (Integer 4))
                             [(Print
-                                ()
                                 [(StringConstant
                                     "Excellent!"
                                     (Character 1 10 ())
@@ -214,7 +205,6 @@
                             (IntegerConstant 81 (Integer 4))
                             (IntegerConstant 90 (Integer 4))
                             [(Print
-                                ()
                                 [(StringConstant
                                     "Very good!"
                                     (Character 1 10 ())
@@ -227,7 +217,6 @@
                             (IntegerConstant 71 (Integer 4))
                             (IntegerConstant 80 (Integer 4))
                             [(Print
-                                ()
                                 [(StringConstant
                                     "Well done!"
                                     (Character 1 10 ())
@@ -240,7 +229,6 @@
                             (IntegerConstant 61 (Integer 4))
                             (IntegerConstant 70 (Integer 4))
                             [(Print
-                                ()
                                 [(StringConstant
                                     "Not bad!"
                                     (Character 1 8 ())
@@ -253,7 +241,6 @@
                             (IntegerConstant 41 (Integer 4))
                             (IntegerConstant 60 (Integer 4))
                             [(Print
-                                ()
                                 [(StringConstant
                                     "You passed!"
                                     (Character 1 11 ())
@@ -266,7 +253,6 @@
                             ()
                             (IntegerConstant 40 (Integer 4))
                             [(Print
-                                ()
                                 [(StringConstant
                                     "Better try again!"
                                     (Character 1 17 ())
@@ -276,7 +262,6 @@
                             )]
                         )]
                         [(Print
-                            ()
                             [(StringConstant
                                 "Invalid marks"
                                 (Character 1 13 ())
@@ -286,7 +271,6 @@
                         )]
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "Your marks are "
                             (Character 1 15 ())
@@ -301,7 +285,6 @@
                             (IntegerConstant 91 (Integer 4))
                             (IntegerConstant 100 (Integer 4))
                             [(Print
-                                ()
                                 [(StringConstant
                                     "Excellent!"
                                     (Character 1 10 ())
@@ -314,7 +297,6 @@
                             (IntegerConstant 81 (Integer 4))
                             (IntegerConstant 90 (Integer 4))
                             [(Print
-                                ()
                                 [(StringConstant
                                     "Very good!"
                                     (Character 1 10 ())
@@ -327,7 +309,6 @@
                             (IntegerConstant 71 (Integer 4))
                             (IntegerConstant 80 (Integer 4))
                             [(Print
-                                ()
                                 [(StringConstant
                                     "Well done!"
                                     (Character 1 10 ())
@@ -340,7 +321,6 @@
                             (IntegerConstant 61 (Integer 4))
                             (IntegerConstant 70 (Integer 4))
                             [(Print
-                                ()
                                 [(StringConstant
                                     "Not bad!"
                                     (Character 1 8 ())
@@ -353,7 +333,6 @@
                             (IntegerConstant 41 (Integer 4))
                             (IntegerConstant 60 (Integer 4))
                             [(Print
-                                ()
                                 [(StringConstant
                                     "You passed!"
                                     (Character 1 11 ())
@@ -366,7 +345,6 @@
                             ()
                             (IntegerConstant 40 (Integer 4))
                             [(Print
-                                ()
                                 [(StringConstant
                                     "Better try again!"
                                     (Character 1 17 ())
@@ -376,7 +354,6 @@
                             )]
                         )]
                         [(Print
-                            ()
                             [(StringConstant
                                 "Invalid marks"
                                 (Character 1 13 ())
@@ -386,7 +363,6 @@
                         )]
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "Your marks are "
                             (Character 1 15 ())

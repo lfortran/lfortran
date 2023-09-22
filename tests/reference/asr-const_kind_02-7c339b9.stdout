@@ -106,7 +106,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 int32)
                         (Var 2 int64)
                         (Var 2 i1)

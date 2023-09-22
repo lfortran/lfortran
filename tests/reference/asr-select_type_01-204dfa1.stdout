@@ -199,7 +199,6 @@
                                                         })
                                                     ~select_type_block_
                                                     [(Print
-                                                        ()
                                                         [(StringConstant
                                                             "base type: component value: "
                                                             (Character 1 28 ())
@@ -260,7 +259,6 @@
                                                         })
                                                     ~select_type_block_1
                                                     [(Print
-                                                        ()
                                                         [(StringConstant
                                                             "child type: component values: "
                                                             (Character 1 30 ())
@@ -380,7 +378,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StructInstanceMember
                             (Var 2 base_target)
                             2 1_base_i
@@ -391,7 +388,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StructInstanceMember
                             (Var 2 child_target)
                             2 1_base_i

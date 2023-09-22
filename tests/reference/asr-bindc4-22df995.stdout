@@ -342,7 +342,6 @@
                             )
                             ())
                             [(Print
-                                ()
                                 [(Var 2 i)
                                 (Var 2 j)
                                 (PointerToCPtr
@@ -379,7 +378,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(PointerToCPtr
                             (Var 2 x)
                             (CPtr)
@@ -426,7 +424,6 @@
                             )
                             ())
                             [(Print
-                                ()
                                 [(Var 2 i)
                                 (Var 2 j)
                                 (PointerToCPtr
@@ -473,7 +470,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(PointerToCPtr
                             (Var 2 x)
                             (CPtr)
@@ -520,7 +516,6 @@
                             )
                             ())
                             [(Print
-                                ()
                                 [(Var 2 i)
                                 (Var 2 j)
                                 (PointerToCPtr

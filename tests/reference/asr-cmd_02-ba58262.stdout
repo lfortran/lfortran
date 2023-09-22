@@ -86,7 +86,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 trim
                             ()

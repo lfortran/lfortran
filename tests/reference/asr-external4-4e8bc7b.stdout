@@ -227,7 +227,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 f
                             ()
@@ -246,7 +245,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 dlog
                             ()

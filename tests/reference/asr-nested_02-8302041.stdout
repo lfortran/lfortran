@@ -62,7 +62,6 @@
                                                     []
                                                     []
                                                     [(Print
-                                                        ()
                                                         [(IntegerConstant 5 (Integer 4))]
                                                         ()
                                                         ()
@@ -92,7 +91,6 @@
                                     [c]
                                     []
                                     [(Print
-                                        ()
                                         [(StringConstant
                                             "b()"
                                             (Character 1 3 ())

@@ -366,7 +366,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(ArrayItem
                             (Var 2 a)
                             [(()
@@ -407,7 +406,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(ArrayItem
                             (Var 2 b)
                             [(()
@@ -448,7 +446,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(ArrayItem
                             (Var 2 c)
                             [(()
@@ -526,7 +523,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(ArrayItem
                             (Var 2 d)
                             [(()
@@ -710,7 +706,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(ArrayItem
                             (Var 2 d)
                             [(()
@@ -891,7 +886,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(ArrayItem
                             (Var 2 d)
                             [(()
@@ -1084,7 +1078,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(ArrayItem
                             (Var 2 d)
                             [(()
