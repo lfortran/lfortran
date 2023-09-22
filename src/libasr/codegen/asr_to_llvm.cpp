@@ -3031,18 +3031,15 @@ public:
                 ASRUtils::type_get_past_allocatable(m_type)));
         llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(asr_data_type, module.get());
         llvm::Value* ptr_ = nullptr;
-        if( is_malloc_array_type && m_type->type != ASR::ttypeType::Pointer &&
-            !is_list && !is_data_only ) {
+        if( is_malloc_array_type && !is_list && !is_data_only ) {
             ptr_ = builder->CreateAlloca(type_, nullptr, "arr_desc");
             arr_descr->fill_dimension_descriptor(ptr_, n_dims);
         }
         if( is_array_type && !is_malloc_array_type &&
-            m_type->type != ASR::ttypeType::Pointer &&
             !is_list ) {
             fill_array_details(ptr, llvm_data_type, m_dims, n_dims, is_data_only);
         }
         if( is_array_type && is_malloc_array_type &&
-            m_type->type != ASR::ttypeType::Pointer &&
             !is_list && !is_data_only ) {
             // Set allocatable arrays as unallocated
             LCOMPILERS_ASSERT(ptr_ != nullptr);
@@ -3112,7 +3109,8 @@ public:
                                 is_malloc_array_type, is_list, m_dims, n_dims, a_kind,
                                 module.get());
                     llvm::Type* type_ = llvm_utils->get_type_from_ttype_t_util(
-                        ASRUtils::type_get_past_allocatable(v->m_type), module.get(), v->m_abi);
+                        ASRUtils::type_get_past_pointer(
+                            ASRUtils::type_get_past_allocatable(v->m_type)), module.get(), v->m_abi);
                     fill_array_details_(ptr_member, type_, m_dims, n_dims,
                              is_malloc_array_type, is_array_type, is_list, v->m_type);
                 } else {
@@ -3295,7 +3293,8 @@ public:
                         v->m_type, v->m_type_declaration, v->m_storage, is_array_type,
                         is_malloc_array_type, is_list, m_dims, n_dims, a_kind, module.get());
                     llvm::Type* type_ = llvm_utils->get_type_from_ttype_t_util(
-                        ASRUtils::type_get_past_allocatable(v->m_type), module.get(), v->m_abi);
+                        ASRUtils::type_get_past_pointer(
+                            ASRUtils::type_get_past_allocatable(v->m_type)), module.get(), v->m_abi);
 
                     /*
                     * The following if block is used for converting any
