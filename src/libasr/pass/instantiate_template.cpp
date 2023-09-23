@@ -475,7 +475,6 @@ public:
             }
         }
         if (ASRUtils::symbol_parent_symtab(name)->get_counter() != current_scope->get_counter()) {
-            std::cout << "name: " << ASRUtils::symbol_name(name) << std::endl;
             dependencies.push_back(al, ASRUtils::symbol_name(name));
         }
         return ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc, name /* change this */,
