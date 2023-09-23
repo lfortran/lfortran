@@ -1102,10 +1102,10 @@ public:
                 t = t.substr(11);
                 if (startswith(t, "simd :: ")) {
                     t = t.substr(8);
-                    // TODO: for now assume just one variable
-                    // !LF$ attributes simd :: X
-                    std::string var = to_lower(t);
-                    simd_variables.push_back(std::pair(var, x.base.base.loc));
+                    // !LF$ attributes simd :: X, Y, Z
+                    for (auto &var : string_split(t, ", ")) {
+                        simd_variables.push_back(std::pair(to_lower(var), x.base.base.loc));
+                    }
                 } else {
                     throw SemanticError("Only `simd` attribute supported",
                         x.base.base.loc);
