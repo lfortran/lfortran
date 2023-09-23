@@ -502,8 +502,8 @@ jobs:
         run: |
             git clone https://github.com/czgdp1807/dftatom.git
             cd dftatom
-            git checkout -t origin/lf8
-            git checkout 6ead4bc47871ee83cdae6d39af93607599e105ae
+            git checkout -t origin/lf9
+            git checkout e421613bc1c98313155f643e40f51510553f7512
             export PATH="$(pwd)/../src/bin:$PATH"
             make -f Makefile.manual
 
