@@ -79,6 +79,7 @@ public:
     std::map<std::string, std::map<std::string, std::map<std::string, Location>>> class_deferred_procedures;
     std::vector<std::string> assgn_proc_names;
     std::vector<std::pair<std::string,Location>> simd_variables;
+    std::vector<std::string> entry_function_names;
     std::string dt_name;
     bool in_submodule = false;
     bool is_interface = false;
@@ -561,6 +562,96 @@ public:
         mark_common_blocks_as_declared();
     }
 
+    bool subroutine_contains_entry_function(AST::stmt_t** body, size_t n_body) {
+        bool contains_entry_function = false;
+        for (size_t i=0; i<n_body; i++) {
+            if (AST::is_a<AST::Entry_t>(*body[i])) {
+                entry_function_names.push_back(to_lower(AST::down_cast<AST::Entry_t>(body[i])->m_name));
+                contains_entry_function = true;
+            }
+        }
+        return contains_entry_function;
+    }
+
+    bool transfer_to_module(ASR::symbol_t* sym, std::string sym_name, std::map<std::string, std::string> &double_precision_intrinsics) {
+        bool is_double_precision_intrinsic = double_precision_intrinsics.find(sym_name) != double_precision_intrinsics.end();
+        return (std::find(entry_function_names.begin(), entry_function_names.end(), to_lower(sym_name)) == entry_function_names.end() &&
+                    ASR::down_cast<ASR::Variable_t>(sym)->m_storage == ASR::storage_typeType::Save &&
+                    !( ASRUtils::IntrinsicScalarFunctionRegistry::is_intrinsic_function(sym_name) ||
+                    ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(sym_name) ||
+                    ASRUtils::IntrinsicImpureFunctionRegistry::is_intrinsic_function(sym_name) ||
+                    intrinsic_procedures.is_intrinsic(sym_name) ||
+                    is_double_precision_intrinsic ) );
+    }
+
+    template <typename T>
+    void create_module_for_saved_variables(const T &x) {
+
+        SetChar current_module_dependencies_copy = current_module_dependencies;
+        current_module_dependencies.clear(al);
+
+        // get global scope
+        SymbolTable *parent_scope = current_scope;
+        SymbolTable *global_scope = parent_scope;
+        while (global_scope->parent) {
+            global_scope = global_scope->parent;
+        }
+
+        // create module containing variables with save attribute
+        current_scope = al.make_new<SymbolTable>(global_scope);
+        std::string module_name = to_lower(x.m_name) + "_" + "saved_variables";
+
+
+        ASR::asr_t *tmp0 = ASR::make_Module_t(al, x.base.base.loc,
+                                            /* a_symtab */ current_scope,
+                                            /* a_name */ s2c(al, module_name),
+                                            nullptr,
+                                            0,
+                                            false, false);
+
+        ASR::Module_t *m = ASR::down_cast2<ASR::Module_t>(tmp0);
+
+        if (global_scope->get_symbol(module_name) != nullptr) {
+            throw SemanticError("Module already defined", tmp0->loc);
+        }
+
+        global_scope->add_symbol(module_name, ASR::down_cast<ASR::symbol_t>(tmp0));
+
+        ASRUtils::SymbolDuplicator symbol_duplicator(al);
+        std::map<std::string, std::string> double_precision_intrinsics;
+        populate_double_precision_intrinsics(double_precision_intrinsics);
+        for (auto &it: parent_scope->get_scope()) {
+            if (it.second->type == ASR::symbolType::Variable) {
+                if (transfer_to_module(it.second, it.first, double_precision_intrinsics)) {
+                    symbol_duplicator.duplicate_symbol(it.second, current_scope);
+
+                    // use the variable from the module
+                    ASR::symbol_t *var = current_scope->get_symbol(it.first);
+                    ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(var);
+                    if (variable->m_intent == ASR::intentType::Local) {
+                        variable->m_intent = ASR::intentType::Unspecified;
+                    }
+                    std::string sym_name = to_lower(it.first) + "__lcompilers_saved_variable";
+                    ASR::asr_t* external_var = ASR::make_ExternalSymbol_t(al, var->base.loc, 
+                                                parent_scope, s2c(al, sym_name), var, s2c(al, module_name),
+                                                nullptr, 0, s2c(al, it.first), ASR::accessType::Public);
+                    ASR::symbol_t* external_var_sym = ASR::down_cast<ASR::symbol_t>(external_var);
+
+                    // add the variable to the parent scope
+                    parent_scope->erase_symbol(it.first);
+                    parent_scope->add_or_overwrite_symbol(sym_name, external_var_sym);
+                }
+            }
+        }
+
+        m->m_symtab = current_scope;
+        m->m_dependencies = current_module_dependencies.p;
+        m->n_dependencies = current_module_dependencies.size();
+
+        current_scope = parent_scope;
+        current_module_dependencies = current_module_dependencies_copy;
+    }
+
     void visit_Subroutine(const AST::Subroutine_t &x) {
         in_Subroutine = true;
         SetChar current_function_dependencies_copy = current_function_dependencies;
@@ -609,12 +700,20 @@ public:
             visit_program_unit(*x.m_contains[i]);
             default_storage_save = current_storage_save;
         }
+        handle_save();
+        if (subroutine_contains_entry_function(x.m_body, x.n_body)) {
+            create_module_for_saved_variables(x);
+        }
         Vec<ASR::expr_t*> args;
         args.reserve(al, x.n_args);
         for (size_t i=0; i<x.n_args; i++) {
             char *arg=x.m_args[i].m_arg;
             std::string arg_s = to_lower(arg);
-            if (current_scope->get_symbol(arg_s) == nullptr) {
+            ASR::symbol_t* arg_sym = current_scope->get_symbol(arg_s);
+            if (arg_sym == nullptr) {
+                arg_sym = current_scope->get_symbol(arg_s + "__lcompilers_saved_variable");
+            }
+            if (arg_sym == nullptr) {
                 if (compiler_options.implicit_typing) {
                     ASR::ttype_t *t = implicit_dictionary[std::string(1, arg_s[0])];
                     if (t == nullptr) {
@@ -622,11 +721,13 @@ public:
                     }
                     declare_implicit_variable2(x.base.base.loc, arg_s,
                         ASRUtils::intent_unspecified, t);
+                    arg_sym = current_scope->get_symbol(arg_s);
                 } else {
                     throw SemanticError("Dummy argument '" + arg_s + "' not defined", x.base.base.loc);
                 }
             }
-            ASR::symbol_t *var = current_scope->get_symbol(arg_s);
+            ASR::symbol_t *var = arg_sym;
+            LCOMPILERS_ASSERT(var != nullptr);
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                 var)));
         }
@@ -696,7 +797,6 @@ public:
             is_pure, is_module, false, false, false,
             nullptr, 0,
             is_requirement, false, false);
-        handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         /* FIXME: This can become incorrect/get cleared prematurely, perhaps
@@ -865,6 +965,10 @@ public:
             default_storage_save = false;
             visit_program_unit(*x.m_contains[i]);
             default_storage_save = current_storage_save;
+        }
+        handle_save();
+        if (subroutine_contains_entry_function(x.m_body, x.n_body)) {
+            create_module_for_saved_variables(x);
         }
         // Convert and check arguments
         Vec<ASR::expr_t*> args;
@@ -1062,7 +1166,6 @@ public:
             current_procedure_abi_type, s_access, deftype,
             bindc_name, is_elemental, false, false, false, false,
             nullptr, 0, is_requirement, false, false);
-        handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         if (x.n_temp_args > 0) {
             current_scope = grandparent_scope;
