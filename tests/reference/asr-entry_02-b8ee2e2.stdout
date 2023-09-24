@@ -5,11 +5,11 @@
             entry_02:
                 (Program
                     (SymbolTable
-                        3
+                        4
                         {
                             dummy:
                                 (Variable
-                                    3
+                                    4
                                     dummy
                                     []
                                     Local
@@ -27,7 +27,7 @@
                     entry_02
                     []
                     [(=
-                        (Var 3 dummy)
+                        (Var 4 dummy)
                         (RealConstant
                             10.000000
                             (Real 4)
@@ -37,11 +37,11 @@
                     (SubroutineCall
                         1 x
                         ()
-                        [((Var 3 dummy))]
+                        [((Var 4 dummy))]
                         ()
                     )
                     (=
-                        (Var 3 dummy)
+                        (Var 4 dummy)
                         (RealConstant
                             5.000000
                             (Real 4)
@@ -51,7 +51,7 @@
                     (SubroutineCall
                         1 y
                         ()
-                        [((Var 3 dummy))]
+                        [((Var 4 dummy))]
                         ()
                     )]
                 ),
@@ -189,14 +189,26 @@
                     .false.
                     ()
                 ),
+            x_saved_variables:
+                (Module
+                    (SymbolTable
+                        3
+                        {
+                            
+                        })
+                    x_saved_variables
+                    []
+                    .false.
+                    .false.
+                ),
             y:
                 (Function
                     (SymbolTable
-                        4
+                        5
                         {
                             dummy:
                                 (Variable
-                                    4
+                                    5
                                     dummy
                                     []
                                     Unspecified
@@ -227,13 +239,13 @@
                         .false.
                     )
                     []
-                    [(Var 4 dummy)]
+                    [(Var 5 dummy)]
                     [(Print
                         [(StringConstant
                             "Printed using entry statement: "
                             (Character 1 31 ())
                         )
-                        (Var 4 dummy)]
+                        (Var 5 dummy)]
                         ()
                         ()
                     )
@@ -242,7 +254,7 @@
                             (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
-                                    (Var 4 dummy)
+                                    (Var 5 dummy)
                                     Sub
                                     (RealConstant
                                         5.000000

@@ -5,16 +5,16 @@
             entry_06:
                 (Program
                     (SymbolTable
-                        3
+                        4
                         {
                             mvndfn:
                                 (Function
                                     (SymbolTable
-                                        4
+                                        5
                                         {
                                             mvndfn:
                                                 (Variable
-                                                    4
+                                                    5
                                                     mvndfn
                                                     []
                                                     ReturnVar
@@ -30,7 +30,7 @@
                                                 ),
                                             w:
                                                 (Variable
-                                                    4
+                                                    5
                                                     w
                                                     []
                                                     Unspecified
@@ -71,9 +71,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 4 w)]
+                                    [(Var 5 w)]
                                     []
-                                    (Var 4 mvndfn)
+                                    (Var 5 mvndfn)
                                     Public
                                     .false.
                                     .false.
@@ -81,7 +81,7 @@
                                 ),
                             w:
                                 (Variable
-                                    3
+                                    4
                                     w
                                     []
                                     Local
@@ -109,10 +109,10 @@
                                 Abs
                                 [(RealBinOp
                                     (FunctionCall
-                                        3 mvndfn
+                                        4 mvndfn
                                         ()
                                         [((ArrayPhysicalCast
-                                            (Var 3 w)
+                                            (Var 4 w)
                                             FixedSizeArray
                                             DescriptorArray
                                             (Array
@@ -366,14 +366,26 @@
                     .false.
                     ()
                 ),
+            mvndfn_saved_variables:
+                (Module
+                    (SymbolTable
+                        3
+                        {
+                            
+                        })
+                    mvndfn_saved_variables
+                    []
+                    .false.
+                    .false.
+                ),
             mvndnt:
                 (Function
                     (SymbolTable
-                        5
+                        6
                         {
                             mvndfn:
                                 (Variable
-                                    5
+                                    6
                                     mvndfn
                                     []
                                     ReturnVar
@@ -389,7 +401,7 @@
                                 ),
                             w:
                                 (Variable
-                                    5
+                                    6
                                     w
                                     []
                                     Unspecified
@@ -428,7 +440,7 @@
                     []
                     [(=
                         (ArrayItem
-                            (Var 5 w)
+                            (Var 6 w)
                             [(()
                             (IntegerConstant 1 (Integer 4))
                             ())]
@@ -444,7 +456,7 @@
                     )
                     (=
                         (ArrayItem
-                            (Var 5 w)
+                            (Var 6 w)
                             [(()
                             (IntegerConstant 2 (Integer 4))
                             ())]
@@ -464,7 +476,7 @@
                                 Abs
                                 [(RealBinOp
                                     (ArrayItem
-                                        (Var 5 w)
+                                        (Var 6 w)
                                         [(()
                                         (IntegerConstant 1 (Integer 4))
                                         ())]
@@ -511,7 +523,7 @@
                                 Abs
                                 [(RealBinOp
                                     (ArrayItem
-                                        (Var 5 w)
+                                        (Var 6 w)
                                         [(()
                                         (IntegerConstant 2 (Integer 4))
                                         ())]
@@ -553,7 +565,7 @@
                         []
                     )
                     (=
-                        (Var 5 mvndfn)
+                        (Var 6 mvndfn)
                         (RealConstant
                             1.200000
                             (Real 8)

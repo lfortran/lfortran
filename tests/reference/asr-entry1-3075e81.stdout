@@ -26,11 +26,11 @@
                             y:
                                 (Function
                                     (SymbolTable
-                                        4
+                                        5
                                         {
                                             y_arg_0:
                                                 (Variable
-                                                    4
+                                                    5
                                                     y_arg_0
                                                     []
                                                     Unspecified
@@ -61,7 +61,7 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 4 y_arg_0)]
+                                    [(Var 5 y_arg_0)]
                                     []
                                     ()
                                     Public
@@ -171,14 +171,26 @@
                     .false.
                     ()
                 ),
+            x_saved_variables:
+                (Module
+                    (SymbolTable
+                        4
+                        {
+                            
+                        })
+                    x_saved_variables
+                    []
+                    .false.
+                    .false.
+                ),
             y:
                 (Function
                     (SymbolTable
-                        5
+                        6
                         {
                             dummy:
                                 (Variable
-                                    5
+                                    6
                                     dummy
                                     []
                                     Unspecified
@@ -209,13 +221,13 @@
                         .false.
                     )
                     []
-                    [(Var 5 dummy)]
+                    [(Var 6 dummy)]
                     [(Print
                         [(StringConstant
                             "Printed using entry statement: "
                             (Character 1 31 ())
                         )
-                        (Var 5 dummy)]
+                        (Var 6 dummy)]
                         ()
                         ()
                     )

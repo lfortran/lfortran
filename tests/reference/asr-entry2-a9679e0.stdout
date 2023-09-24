@@ -5,12 +5,12 @@
             prin:
                 (Function
                     (SymbolTable
-                        3
+                        4
                         {
                             messpr:
                                 (Function
                                     (SymbolTable
-                                        5
+                                        6
                                         {
                                             
                                         })
@@ -57,7 +57,7 @@
                     [messpr]
                     []
                     [(SubroutineCall
-                        3 messpr
+                        4 messpr
                         ()
                         []
                         ()
@@ -77,7 +77,7 @@
                             messpr:
                                 (Function
                                     (SymbolTable
-                                        4
+                                        5
                                         {
                                             
                                         })
@@ -136,6 +136,18 @@
                     .false.
                     .false.
                     ()
+                ),
+            prini_saved_variables:
+                (Module
+                    (SymbolTable
+                        3
+                        {
+                            
+                        })
+                    prini_saved_variables
+                    []
+                    .false.
+                    .false.
                 )
         })
     []
