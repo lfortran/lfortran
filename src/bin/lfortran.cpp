@@ -1934,6 +1934,7 @@ int main(int argc, char *argv[])
         std::string arg_pywrap_file;
         std::string arg_pywrap_array_order="f";
         std::vector<std::string> linker_flags;
+        std::vector<std::string> f_flags;
 
         CompilerOptions compiler_options;
         compiler_options.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
@@ -1958,6 +1959,7 @@ int main(int argc, char *argv[])
         app.add_option("-D", compiler_options.c_preprocessor_defines, "Define <macro>=<value> (or 1 if <value> omitted)")->allow_extra_args(false);
         app.add_flag("--version", arg_version, "Display compiler version information");
         app.add_option("-W", linker_flags, "Linker flags")->allow_extra_args(false);
+        app.add_option("-f", f_flags, "All `-f*` flags (only -fPIC supported for now)")->allow_extra_args(false);
 
         // LFortran specific options
         app.add_flag("--cpp", compiler_options.c_preprocessor, "Enable C preprocessing");
@@ -2081,6 +2083,16 @@ int main(int argc, char *argv[])
         compiler_options.use_colors = !arg_no_color;
         compiler_options.indent = !arg_no_indent;
         compiler_options.prescan = !arg_no_prescan;
+
+        for (auto &f_flag : f_flags) {
+            if (f_flag == "PIC") {
+                // Position Independent Code
+                // We do this by default, so we ignore for now
+            } else {
+                std::cerr << "The flag `-f" << f_flag << "` is not supported" << std::endl;
+                return 1;
+            }
+        }
 
         if( compiler_options.fast ) {
             lfortran_pass_manager.use_optimization_passes();
