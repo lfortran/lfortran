@@ -1456,6 +1456,11 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
         }
 
         void visit_Assignment(const ASR::Assignment_t &x) {
+            if (ASR::is_a<ASR::Array_t>(*ASRUtils::expr_type(x.m_target)) &&
+                ASR::down_cast<ASR::Array_t>(ASRUtils::expr_type(x.m_target))->m_physical_type
+                    == ASR::array_physical_typeType::SIMDArray) {
+                return;
+            }
             if( (ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_target)) &&
                 ASR::is_a<ASR::GetPointer_t>(*x.m_value)) ||
                 (ASR::is_a<ASR::ArrayConstant_t>(*x.m_value)) ) {
