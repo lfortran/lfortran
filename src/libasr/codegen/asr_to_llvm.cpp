@@ -7154,11 +7154,61 @@ public:
     }
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
-        if (x.m_unit != nullptr) {
-            diag.codegen_warning_label("unit in write() is not implemented yet and it is currently treated as '*'",
-                {x.m_unit->base.loc}, "treated as '*'");
+        if (x.m_unit) {
+            ASR::ttype_t *unit_type = expr_type(x.m_unit);
+            llvm::Value *unit_val;
+            int ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(x.m_unit);
+            ptr_loads = ptr_loads_copy;
+            unit_val = tmp;
+            if (ASRUtils::is_character(*unit_type)) {
+                std::vector<llvm::Value *> args;
+                args.push_back(unit_val);
+                std::vector<std::string> fmt;
+                size_t n_values = x.n_values; ASR::expr_t **m_values = x.m_values;
+                // TODO: Handle String Formatting
+                if (n_values>0 && is_a<ASR::StringFormat_t>(*m_values[0])) {
+                    n_values = down_cast<ASR::StringFormat_t>(m_values[0])->n_args;
+                    m_values = down_cast<ASR::StringFormat_t>(m_values[0])->m_args;
+                }
+                for (size_t i=0; i<n_values; i++) {
+                    if (!ASRUtils::is_integer(*expr_type(m_values[i]))) {
+                        throw CodeGenError("Only integer type is "
+                            "supported for string write(..) for now");
+                    }
+                    compute_fmt_specifier_and_arg(fmt, args, m_values[i],
+                        x.base.base.loc);
+                }
+                std::string fmt_str;
+                for (auto &s: fmt) fmt_str += s;
+                llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(fmt_str);
+                args.insert(args.begin()+1, fmt_ptr);
+
+                std::string runtime_func_name = "_lfortran_string_write";
+                llvm::Function *fn = module->getFunction(runtime_func_name);
+                if (!fn) {
+                    llvm::FunctionType *function_type = llvm::FunctionType::get(
+                            llvm::Type::getVoidTy(context), {
+                                llvm::Type::getInt8PtrTy(context)->getPointerTo(),
+                                llvm::Type::getInt8PtrTy(context),
+                            }, true);
+                    fn = llvm::Function::Create(function_type,
+                            llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                }
+                tmp = builder->CreateCall(fn, args);
+
+            } else if (ASRUtils::is_integer(*unit_type)) {
+                diag.codegen_warning_label("Interger unit in write(..) is "
+                    "not supported yet and it is currently treated as '*'",
+                    {x.m_unit->base.loc}, "treated as '*'");
+                handle_print(x);
+            } else {
+                throw CodeGenError("Unsupported type for unit in write(..)");
+            }
+        } else {
+            handle_print(x);
         }
-        handle_print(x);
     }
 
     // It appends the format specifier and arg based on the type of expression

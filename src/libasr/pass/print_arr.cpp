@@ -310,6 +310,10 @@ public:
     }
 
     void visit_FileWrite(const ASR::FileWrite_t& x) {
+        if (x.m_unit && ASRUtils::is_character(*ASRUtils::expr_type(x.m_unit))) {
+            // Skip for character write
+            return;
+        }
         std::vector<ASR::expr_t*> write_body;
         ASR::stmt_t* write_stmt;
         ASR::stmt_t* empty_file_write_endl = ASRUtils::STMT(ASR::make_FileWrite_t(al, x.base.base.loc,
