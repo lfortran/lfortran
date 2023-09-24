@@ -1097,6 +1097,7 @@ RUN(NAME minpack_03 LABELS gfortran llvm NOFAST)
 RUN(NAME optional_01 LABELS gfortran llvm)
 RUN(NAME optional_02 LABELS gfortran llvm)
 RUN(NAME optional_03 LABELS gfortran llvm)
+RUN(NAME optional_04 LABELS gfortran llvm)
 
 RUN(NAME end_name_match LABELS gfortran llvm)
 
