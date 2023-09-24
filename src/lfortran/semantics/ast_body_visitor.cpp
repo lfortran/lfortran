@@ -1650,6 +1650,16 @@ public:
         for (size_t i=0; i<x.n_args; i++) {
             char *arg=x.m_args[i].m_arg;
             std::string arg_s = to_lower(arg);
+            ASR::symbol_t* arg_sym = current_scope->get_symbol(arg_s);
+            if (arg_sym == nullptr) {
+                arg_sym = current_scope->get_symbol(arg_s+"__lcompilers_saved_variable");
+                if (arg_sym != nullptr) {
+                    ASR::Variable_t* arg_var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(arg_sym));
+                    ASR::ttype_t *t = arg_var->m_type;
+                    declare_implicit_variable2(x.base.base.loc, arg_s,
+                        ASRUtils::intent_in, t);
+                }
+            }
             if (current_scope->get_symbol(arg_s) == nullptr) {
                 if (compiler_options.implicit_typing) {
                     ASR::ttype_t *t = implicit_dictionary[std::string(1, arg_s[0])];
@@ -1960,7 +1970,8 @@ public:
             sym = ASR::down_cast<ASR::symbol_t>(a_variable);
         } else {
             // symbol found but we need to have consistent types
-            if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+            ASR::symbol_t *ext_sym = ASRUtils::symbol_get_past_external(sym);
+            if (!(ASR::is_a<ASR::Variable_t>(*sym) || ASR::is_a<ASR::Variable_t>(*ext_sym))) {
                 throw SemanticError("Assign target needs to be a variable.", x.base.base.loc);
             }
 
@@ -1968,8 +1979,7 @@ public:
                 labels.insert(var_name);
             }
             // ensure the precision is consistent
-            auto v = ASR::down_cast<ASR::Variable_t>(sym);
-            auto t = ASR::down_cast<ASR::Integer_t>(v->m_type);
+            auto t = ASR::down_cast<ASR::Integer_t>(ASRUtils::symbol_type(ASRUtils::symbol_get_past_external(sym)));
             t->m_kind = 4;
         }
 
@@ -2000,6 +2010,9 @@ public:
             std::string var_name = func_call_or_array->m_func;
             var_name = to_lower(var_name);
             ASR::symbol_t *sym = current_scope->resolve_symbol(var_name);
+            if (sym == nullptr) {
+                sym = current_scope->resolve_symbol(var_name+"__lcompilers_saved_variable");
+            }
             if (sym==nullptr) {
                 if (compiler_options.implicit_typing) {
                     return true;
@@ -2007,6 +2020,10 @@ public:
                     return false;
                 }
             } else {
+                if (ASR::is_a<ASR::ExternalSymbol_t>(*sym)) {
+                    ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(sym);
+                    sym = ext_sym->m_external;
+                }
                 if (ASR::is_a<ASR::Variable_t>(*sym)) {
                     auto v = ASR::down_cast<ASR::Variable_t>(sym);
                     if (ASR::is_a<ASR::Integer_t>(*v->m_type) || ASR::is_a<ASR::Real_t>(*v->m_type) || ASR::is_a<ASR::Logical_t>(*v->m_type)) {
@@ -2060,7 +2077,15 @@ public:
                 throw SemanticError("Statement function can only contain variables as arguments.", x.base.base.loc);
             }
 
-            ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(tmp_var->m_v);
+            ASR::Variable_t* variable = nullptr;
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*tmp_var->m_v)) {
+                // This is the case of subroutine with entry function
+                ASR::ExternalSymbol_t* ext_var = ASR::down_cast<ASR::ExternalSymbol_t>(tmp_var->m_v);
+                ASR::symbol_t* ext_sym = ext_var->m_external;
+                variable = ASR::down_cast<ASR::Variable_t>(ext_sym);
+            } else {
+                variable = ASR::down_cast<ASR::Variable_t>(tmp_var->m_v);
+            }
             std::string arg_name = variable->m_name;
             arg_name = to_lower(arg_name);
             SetChar variable_dependencies_vec;
@@ -2085,6 +2110,9 @@ public:
         // extract the type of var_name from symbol table
         ASR::symbol_t *sym = current_scope->resolve_symbol(var_name);
         ASR::ttype_t *type;
+        if (sym == nullptr) {
+            sym = current_scope->resolve_symbol(var_name+"__lcompilers_saved_variable");
+        }
 
         if (sym==nullptr) {
             if (compiler_options.implicit_typing) {
@@ -2094,6 +2122,22 @@ public:
                 throw SemanticError("Statement function needs to be declared.", x.base.base.loc);
             }
         } else {
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*sym)) {
+                // This is the case of subroutine with entry function
+                ASR::ExternalSymbol_t* ext_var = ASR::down_cast<ASR::ExternalSymbol_t>(sym);
+                ASR::symbol_t* ext_sym = ext_var->m_external;
+                std::string ext_sym_name = ASRUtils::symbol_name(ext_sym);
+                SymbolTable* module_scope = ASRUtils::symbol_parent_symtab(ext_sym);
+                if (module_scope) {
+                    parent_scope->erase_symbol(ext_sym_name + "__lcompilers_saved_variable");
+                    module_scope->erase_symbol(ext_sym_name);
+                    ASRUtils::SymbolDuplicator symbol_duplicator(al);
+                    symbol_duplicator.duplicate_symbol(ext_sym, parent_scope);
+                    sym = current_scope->resolve_symbol(ext_sym_name);
+                } else {
+                    sym = nullptr;
+                }
+            }
             type = ASRUtils::symbol_type(sym);
         }
 
@@ -2351,7 +2395,7 @@ public:
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
         SymbolTable* scope = current_scope;
         std::string sub_name = to_lower(x.m_name);
-        ASR::symbol_t *original_sym;
+                ASR::symbol_t *original_sym;
         ASR::expr_t *v_expr = nullptr;
         bool is_external = check_is_external(sub_name);
         // If this is a type bound procedure (in a class) it won't be in the

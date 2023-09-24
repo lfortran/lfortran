@@ -176,7 +176,7 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
                     ASR::symbol_t* arg_sym = arg_var->m_v;
                     ASR::symbol_t* arg_sym_underlying = ASRUtils::symbol_get_past_external(arg_sym);
                     ASR::symbol_t* sym = fetch_sym(arg_sym_underlying);
-                    if (sym != arg_sym) {
+                    if (sym != arg_sym && ASR::is_a<ASR::Function_t>(*sym)) {
                         subrout_call->m_args[j].m_value = ASRUtils::EXPR(ASR::make_Var_t(al, arg_expr->base.loc, sym));
                     }
                 }

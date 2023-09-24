@@ -882,6 +882,9 @@ public:
     ASR::asr_t* resolve_variable(const Location &loc, const std::string &var_name) {
         SymbolTable *scope = current_scope;
         ASR::symbol_t *v = scope->resolve_symbol(var_name);
+        if (v == nullptr) {
+            v = scope->resolve_symbol(var_name + "__lcompilers_saved_variable");
+        }
         if (compiler_options.implicit_typing) {
             if (!in_Subroutine) {
                 if (implicit_mapping.size() != 0) {
