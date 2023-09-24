@@ -1065,6 +1065,9 @@ RUN(NAME entry_05 LABELS gfortran llvm)
 RUN(NAME entry_06 LABELS gfortran)
 RUN(NAME entry_07 LABELS gfortran llvm)
 RUN(NAME entry_08 LABELS gfortran llvm)
+RUN(NAME entry_09 LABELS gfortran llvm)
+RUN(NAME entry_10 LABELS gfortran llvm)
+RUN(NAME entry_11 LABELS llvm) #TODO: Fix this test
 
 RUN(NAME character_01 LABELS gfortran llvm)
 
