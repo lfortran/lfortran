@@ -378,7 +378,7 @@ char** parse_fortran_format(char* format, int *count, int *item_start) {
         switch (tolower(format[index])) {
             case ',' :
                 break;
-            case '/' : 
+            case '/' :
                 format_values_2[format_values_count++] = "/";
                 break;
             case '"' :
@@ -2247,6 +2247,14 @@ LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n)
     int x = fread(c, 1, n, (FILE*)fd);
     c[x] = '\0';
     return c;
+}
+
+LFORTRAN_API void _lfortran_string_write(char **str, const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    *str = (char *) malloc(strlen(*str)*sizeof(char));
+    vsprintf(*str, format, args);
+    va_end(args);
 }
 
 LFORTRAN_API void _lpython_close(int64_t fd)
