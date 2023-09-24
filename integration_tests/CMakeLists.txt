@@ -986,6 +986,7 @@ RUN(NAME write_01 LABELS gfortran llvm)
 RUN(NAME write_02 LABELS gfortran llvm)
 RUN(NAME write_03 LABELS gfortran llvmImplicit NOFAST)
 RUN(NAME write_04 LABELS gfortran llvm)
+RUN(NAME write_05 LABELS gfortran llvm)
 
 RUN(NAME do_loop_01 LABELS gfortran llvm)
 
