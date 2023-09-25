@@ -5273,6 +5273,15 @@ public:
                                                 source_type, dest_type);
         }
 
+        // Broadcast a scalar to an array if needed
+        if (ASRUtils::is_array(left_type) && !ASRUtils::is_array(right_type)) {
+            ASRUtils::make_ArrayBroadcast_t_util(al, right->base.loc, left, right);
+            right_type = left_type;
+        } else if (!ASRUtils::is_array(left_type) && ASRUtils::is_array(right_type)) {
+            ASRUtils::make_ArrayBroadcast_t_util(al, right->base.loc, right, left);
+            left_type = right_type;
+        }
+
         if( (ASRUtils::is_array(right_type) || ASRUtils::is_array(left_type)) &&
              !ASRUtils::is_array(dest_type) ) {
             ASR::dimension_t* m_dims = nullptr;
