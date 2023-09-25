@@ -1951,6 +1951,29 @@ LFORTRAN_API void _lfortran_rewind(int32_t unit_num)
     rewind(filep);
 }
 
+LFORTRAN_API void _lfortran_backspace(int32_t unit_num)
+{
+    bool unit_file_bin;
+    FILE* fd = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+    if( fd == NULL ) {
+        printf("Specified UNIT %d in BACKSPACE is not created or connected.\n",
+            unit_num);
+        exit(1);
+    }
+    int n = ftell(fd);
+    for(int i = n; i >= 0; i --) {
+        char c = fgetc(fd);
+        if (i == n) {
+            // Skip previous record newline
+            fseek(fd, -3, SEEK_CUR);
+            continue;
+        } else  if (c == '\n') {
+            break;
+        } else {
+            fseek(fd, -2, SEEK_CUR);
+        }
+    }
+}
 
 LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
 {
@@ -2231,7 +2254,7 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, ch
         exit(1);
     }
 
-    *iostat = !(fgets(*arg, n, filep) == *arg);
+    *iostat = !(fgets(*arg, n+1, filep) == *arg);
     (*arg)[strcspn(*arg, "\n")] = 0;
     va_end(args);
 }
