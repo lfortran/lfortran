@@ -4291,6 +4291,9 @@ inline ASR::asr_t* make_ArrayConstant_t_util(Allocator &al, const Location &a_lo
     return ASR::make_ArrayConstant_t(al, a_loc, a_args, n_args, a_type, a_storage_format);
 }
 
+void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
+    ASR::expr_t*& expr1, ASR::expr_t*& expr2);
+
 static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     ASR::call_arg_t* a_args, size_t n_args, ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt, bool implicit_argument_casting) {
     bool is_method = a_dt != nullptr;
