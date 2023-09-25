@@ -219,7 +219,39 @@
                             )
                             ()
                         )
-                        (IntegerConstant 4 (Integer 4))
+                        (ArrayBroadcast
+                            (IntegerConstant 4 (Integer 4))
+                            (ArrayConstant
+                                [(IntegerConstant 5 (Integer 4))]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
+                            )
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 5 (Integer 4)))]
+                                FixedSizeArray
+                            )
+                            (ArrayConstant
+                                [(IntegerConstant 4 (Integer 4))
+                                (IntegerConstant 4 (Integer 4))
+                                (IntegerConstant 4 (Integer 4))
+                                (IntegerConstant 4 (Integer 4))
+                                (IntegerConstant 4 (Integer 4))]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 5 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
+                            )
+                        )
                         ()
                     )
                     (=

@@ -921,6 +921,11 @@ public:
         visit_expr(*x.m_arg);
     }
 
+    void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t &x) {
+        // TODO
+        visit_expr(*x.m_array);
+    }
+
     // void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t &x) {}
 
     // void visit_ComplexRe(const ASR::ComplexRe_t &x) {}

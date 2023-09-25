@@ -940,6 +940,7 @@ public:
                 ASR::stmt_t* associate_stmt = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, tmp_expr->base.loc, target_var, tmp_expr));
                 body.push_back(al, associate_stmt);
             } else {
+                ASRUtils::make_ArrayBroadcast_t_util(al, tmp_expr->base.loc, target_var, tmp_expr);
                 ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, tmp_expr->base.loc, target_var, tmp_expr, nullptr));
                 body.push_back(al, assign_stmt);
             }
@@ -1975,7 +1976,9 @@ public:
 
         // ASSIGN XXX TO k -- XXX can only be integer for now.
         ASR::expr_t* target_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym));
-        tmp = (ASR::asr_t*)ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, target_var, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, x.m_assign_label, int32_type)), nullptr));
+        ASR::expr_t* tmp_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, x.m_assign_label, int32_type));
+        ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, target_var, tmp_expr);
+        tmp = (ASR::asr_t*)ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, target_var, tmp_expr, nullptr));
     }
 
     /* Returns true if `x` is a statement function, false otherwise.
@@ -2130,6 +2133,7 @@ public:
             );
             throw SemanticAbort();
         }
+        ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, to_return, value);
         body.push_back(al, ASR::down_cast<ASR::stmt_t>(ASR::make_Assignment_t(al, x.base.base.loc, to_return, value, nullptr)));
 
         tmp = ASRUtils::make_Function_t_util(
@@ -2267,6 +2271,7 @@ public:
             }
         }
 
+        ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, target, value);
         tmp = ASR::make_Assignment_t(al, x.base.base.loc, target, value,
                             overloaded_stmt);
     }
@@ -3306,4 +3311,3 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
 }
 
 } // namespace LCompilers::LFortran
-

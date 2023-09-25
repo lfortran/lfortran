@@ -318,6 +318,7 @@ expr
     | ArrayPack(expr array, expr mask, expr? vector, ttype type, expr? value)
     | ArrayReshape(expr array, expr shape, ttype type, expr? value)
     | ArrayAll(expr mask, expr? dim, ttype type, expr? value)
+    | ArrayBroadcast(expr array, expr shape, ttype type, expr? value)
 
     | BitCast(expr source, expr mold, expr? size, ttype type, expr? value)
     | StructInstanceMember(expr v, symbol m, ttype type, expr? value)

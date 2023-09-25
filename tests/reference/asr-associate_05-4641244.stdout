@@ -400,41 +400,332 @@
                     )
                     (=
                         (Var 2 x)
-                        (RealConstant
-                            0.420000
-                            (Real 4)
+                        (ArrayBroadcast
+                            (RealConstant
+                                0.420000
+                                (Real 4)
+                            )
+                            (ArrayConstant
+                                [(IntegerConstant 10 (Integer 4))]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
+                            )
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 10 (Integer 4)))]
+                                FixedSizeArray
+                            )
+                            (ArrayConstant
+                                [(RealConstant
+                                    0.420000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    0.420000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    0.420000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    0.420000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    0.420000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    0.420000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    0.420000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    0.420000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    0.420000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    0.420000
+                                    (Real 4)
+                                )]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 10 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
+                            )
                         )
                         ()
                     )
                     (=
                         (Var 2 y)
-                        (RealConstant
-                            0.350000
-                            (Real 4)
+                        (ArrayBroadcast
+                            (RealConstant
+                                0.350000
+                                (Real 4)
+                            )
+                            (ArrayConstant
+                                [(IntegerConstant 10 (Integer 4))]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
+                            )
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 10 (Integer 4)))]
+                                FixedSizeArray
+                            )
+                            (ArrayConstant
+                                [(RealConstant
+                                    0.350000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    0.350000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    0.350000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    0.350000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    0.350000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    0.350000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    0.350000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    0.350000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    0.350000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    0.350000
+                                    (Real 4)
+                                )]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 10 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
+                            )
                         )
                         ()
                     )
                     (=
                         (Var 2 myreal)
-                        (RealConstant
-                            9.100000
-                            (Real 4)
+                        (ArrayBroadcast
+                            (RealConstant
+                                9.100000
+                                (Real 4)
+                            )
+                            (IntrinsicArrayFunction
+                                Shape
+                                [(Var 2 myreal)]
+                                0
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            (Allocatable
+                                (Array
+                                    (Real 4)
+                                    [(()
+                                    ())]
+                                    DescriptorArray
+                                )
+                            )
+                            ()
                         )
                         ()
                     )
                     (=
                         (Var 2 theta)
-                        (RealConstant
-                            1.500000
-                            (Real 4)
+                        (ArrayBroadcast
+                            (RealConstant
+                                1.500000
+                                (Real 4)
+                            )
+                            (ArrayConstant
+                                [(IntegerConstant 10 (Integer 4))]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
+                            )
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 10 (Integer 4)))]
+                                FixedSizeArray
+                            )
+                            (ArrayConstant
+                                [(RealConstant
+                                    1.500000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    1.500000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    1.500000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    1.500000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    1.500000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    1.500000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    1.500000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    1.500000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    1.500000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    1.500000
+                                    (Real 4)
+                                )]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 10 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
+                            )
                         )
                         ()
                     )
                     (=
                         (Var 2 a)
-                        (RealConstant
-                            0.400000
-                            (Real 4)
+                        (ArrayBroadcast
+                            (RealConstant
+                                0.400000
+                                (Real 4)
+                            )
+                            (ArrayConstant
+                                [(IntegerConstant 10 (Integer 4))]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
+                            )
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 10 (Integer 4)))]
+                                FixedSizeArray
+                            )
+                            (ArrayConstant
+                                [(RealConstant
+                                    0.400000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    0.400000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    0.400000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    0.400000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    0.400000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    0.400000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    0.400000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    0.400000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    0.400000
+                                    (Real 4)
+                                )
+                                (RealConstant
+                                    0.400000
+                                    (Real 4)
+                                )]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 10 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
+                            )
                         )
                         ()
                     )
