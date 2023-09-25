@@ -8,7 +8,7 @@ module reverse_m
     end requirement
 
     template reverse_tmpl(t)
-        requires default_behavior(t)
+        requires :: default_behavior(t)
         private
         public :: reverse
     contains

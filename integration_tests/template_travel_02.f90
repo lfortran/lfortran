@@ -56,7 +56,7 @@ module template_travel_02_travel
     end requirement
 
     template travel_tmpl(D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S)
-        requires operations(D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S)
+        requires :: operations(D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S)
         private
         public :: avg_S_from_T
     contains
@@ -76,7 +76,7 @@ module template_travel_02_travel
     end template
 
     template travel_tmpl2(T, plus, div)
-        requires operations(T, T, T, plus, plus, div, div)
+        requires :: operations(T, T, T, plus, plus, div, div)
         instantiate travel_tmpl(T, T, T, plus, plus, div, div)
     end template
 

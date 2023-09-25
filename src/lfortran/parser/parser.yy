@@ -734,7 +734,7 @@ requirement_decl
     ;
 
 requires_decl
-    : KW_REQUIRES id "(" id_list ")" sep {
+    : KW_REQUIRES "::" id "(" id_list ")" sep {
         $$ = REQUIRES($2, $4, @$); }
     ;
 

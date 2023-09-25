@@ -9,7 +9,7 @@ module template_array_01_m
     end requirement
 
     template array_tmpl(t)
-        requires r(t)
+        requires :: r(t)
         private
         public :: insert_t
     contains

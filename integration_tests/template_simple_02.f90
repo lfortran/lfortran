@@ -37,8 +37,8 @@ contains
     end function
 
     pure function generic_sum {T, add, cast} (arr) result(res)
-        requires operator_r(T, T, T, add)
-        requires cast_r(T, cast)
+        requires :: operator_r(T, T, T, add)
+        requires :: cast_r(T, cast)
         type(T), intent(in) :: arr(:)
         type(T) :: res
         integer :: n, i
