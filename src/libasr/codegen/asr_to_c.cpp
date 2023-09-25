@@ -205,8 +205,8 @@ public:
                 }
                 bool is_module_var = ASR::is_a<ASR::Module_t>(
                     *ASR::down_cast<ASR::symbol_t>(v.m_parent_symtab->asr_owner));
-                bool is_simd_array = (ASR::is_a<ASR::Array_t>(*v_m_type) &&
-                    ASR::down_cast<ASR::Array_t>(v_m_type)->m_physical_type
+                bool is_simd_array = (ASR::is_a<ASR::Array_t>(*v.m_type) &&
+                    ASR::down_cast<ASR::Array_t>(v.m_type)->m_physical_type
                         == ASR::array_physical_typeType::SIMDArray);
                 generate_array_decl(sub, force_declare_name, type_name, dims,
                                     encoded_type_name, m_dims, n_dims,
