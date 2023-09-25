@@ -374,6 +374,11 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         current_expr = &(x->m_array);
         replace_expr(x->m_array);
         current_expr = current_expr_copy_161;
+        // This line nullifies where `current_expr` points to, and it fails
+        // later in replace_ArrayOpCommon() at the lines:
+        //     this->replace_expr(x->m_left);
+        //     ASR::expr_t* left = *current_expr;
+        // Now `left` is a nullptr, and we fail.
         *current_expr = nullptr;
     }
 
