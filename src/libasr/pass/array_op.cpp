@@ -686,6 +686,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         op_expr = *current_expr;
         result_var = nullptr;
         this->replace_expr(x->m_left);
+        LCOMPILERS_ASSERT(*current_expr != nullptr)
         ASR::expr_t* left = *current_expr;
         left_dims = op_dims;
         rank_left = op_n_dims;
@@ -698,6 +699,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         op_expr = *current_expr;
         result_var = nullptr;
         this->replace_expr(x->m_right);
+        LCOMPILERS_ASSERT(*current_expr != nullptr)
         ASR::expr_t* right = *current_expr;
         right_dims = op_dims;
         rank_right = op_n_dims;
