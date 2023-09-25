@@ -90,6 +90,10 @@ public:
         std::string type_name_copy = type_name;
         type_name = c_ds_api->get_array_type(type_name, encoded_type_name, array_types_decls);
         std::string type_name_without_ptr = c_ds_api->get_array_type(type_name, encoded_type_name, array_types_decls, false);
+        if (is_simd_array) {
+            sub = "float " + std::string(v_m_name) + " __attribute__ (( vector_size(sizeof(float) * 8) ));\n";
+            return;
+        }
         if( declare_value ) {
             std::string variable_name = std::string(v_m_name) + "_value";
             sub = format_type_c("", type_name_without_ptr, variable_name, use_ref, dummy) + ";\n";
@@ -138,9 +142,6 @@ public:
             } else {
                 sub = format_type_c("", type_name, v_m_name, use_ref, dummy);
             }
-        }
-        if (is_simd_array) {
-            sub += "// SIMD !!\n";
         }
     }
 
