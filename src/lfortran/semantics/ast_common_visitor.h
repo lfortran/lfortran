@@ -1168,6 +1168,7 @@ public:
             }
             ASR::expr_t* expression_value = ASRUtils::expr_value(value);
             if (expression_value) {
+                ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
                 ASR::stmt_t* assignment_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc,
                                             object, expression_value, nullptr));
                 current_body->push_back(al, assignment_stmt);
@@ -1266,6 +1267,7 @@ public:
             ASR::expr_t* target = ASRUtils::EXPR((ASR::asr_t*) array_item);
             this->visit_expr(*a->m_value[j++]);
             ASR::expr_t* value = ASRUtils::EXPR(tmp);
+            ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, target, value);
             ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
                     x.base.base.loc, target, value, nullptr));
             LCOMPILERS_ASSERT(current_body != nullptr)
@@ -1300,6 +1302,7 @@ public:
                 v2->m_symbolic_value, v2->m_value);
             v2->m_dependencies = var_deps_vec.p;
             v2->n_dependencies = var_deps_vec.size();
+            ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
             ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
                         object->base.loc, object, expression_value, nullptr));
             LCOMPILERS_ASSERT(current_body != nullptr)
@@ -1317,6 +1320,7 @@ public:
                 v2->m_symbolic_value, v2->m_value);
             v2->m_dependencies = var_deps_vec.p;
             v2->n_dependencies = var_deps_vec.size();
+            ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
             ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
                         object->base.loc, object, expression_value, nullptr));
             LCOMPILERS_ASSERT(current_body != nullptr)
@@ -1331,6 +1335,7 @@ public:
             // won't work correctly
             // To fix that, we would have to iterate over data statements first
             // but we can fix that later.
+            ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
             ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
                         object->base.loc, object, expression_value, nullptr));
             LCOMPILERS_ASSERT(current_body != nullptr)
@@ -2304,7 +2309,7 @@ public:
                         for (int64_t i = 0; i < size; i++) {
                             args.push_back(al, init_expr);
                         }
-                        init_expr = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, init_expr->base.loc, args.p, args.n, 
+                        init_expr = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, init_expr->base.loc, args.p, args.n,
                                     type, ASR::arraystorageType::ColMajor));
                     }
                     ASR::ttype_t *init_type = ASRUtils::expr_type(init_expr);
@@ -5462,7 +5467,7 @@ public:
             throw SemanticError("Use of an unspecified templated function '" + func_name
                 + "'", x.base.base.loc);
         }
-    
+
         ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(sym0);
         if (!ASR::is_a<ASR::Template_t>(*sym)) {
             throw SemanticError("Cannot instantiate a non-templated function '" + func_name
@@ -5680,6 +5685,7 @@ public:
                     body.reserve(al, 1);
                     ASR::symbol_t *return_sym = current_scope->get_symbol("ret");
                     ASR::expr_t *target = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, return_sym));
+                    ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, target, value);
                     ASR::stmt_t *assignment = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc,
                         target, value, nullptr));
                     body.push_back(al, assignment);
