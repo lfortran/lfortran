@@ -1825,6 +1825,11 @@ public:
             std::string subrout_name = to_lower(x.m_name) + "~genericprocedure";
             t = current_scope->get_symbol(subrout_name);
         }
+
+        if (x.n_temp_args > 0) {
+            t = ASRUtils::symbol_symtab(t)->get_symbol(to_lower(x.m_name));
+        }
+
         ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
         for (size_t i=0; i<x.n_decl; i++) {
@@ -2354,8 +2359,12 @@ public:
     }
 
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
-        SymbolTable* scope = current_scope;
         std::string sub_name = to_lower(x.m_name);
+        if (x.n_temp_args > 0) {
+            handle_templated(x.m_name, x.m_temp_args, x.n_temp_args, x.base.base.loc);
+            sub_name = "__templated_" + sub_name;
+        }
+        SymbolTable* scope = current_scope;
         ASR::symbol_t *original_sym;
         ASR::expr_t *v_expr = nullptr;
         bool is_external = check_is_external(sub_name);
