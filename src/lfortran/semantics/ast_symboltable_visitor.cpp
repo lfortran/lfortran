@@ -1096,6 +1096,9 @@ public:
     }
 
     void visit_DeclarationPragma(const AST::DeclarationPragma_t &x) {
+        if (compiler_options.ignore_pragma) {
+            return;
+        }
         if (x.m_type == AST::LFortranPragma) {
             std::string t = x.m_text;
             if (startswith(t, "attributes ")) {
