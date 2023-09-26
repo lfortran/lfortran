@@ -168,6 +168,9 @@ void handle_integer(char* format, int val, char** result) {
                 *result = append_to_string(*result, "0");
             }
         } else if (width == 0) {
+            if (val < 0) {
+                *result = append_to_string(*result, "-");
+            }
             for (int i = 0; i < (min_width - len - sign_width); i++) {
                 *result = append_to_string(*result, "0");
             }
