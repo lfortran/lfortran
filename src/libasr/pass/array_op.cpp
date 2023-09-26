@@ -374,7 +374,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         current_expr = &(x->m_array);
         replace_expr(x->m_array);
         current_expr = current_expr_copy_161;
-        *current_expr = nullptr;
+        *current_expr = x->m_array;
     }
 
     template <typename LOOP_BODY>
