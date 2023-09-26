@@ -88,8 +88,14 @@ public:
                              bool is_simd_array) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string type_name_copy = type_name;
+        std::string original_type_name = type_name;
         type_name = c_ds_api->get_array_type(type_name, encoded_type_name, array_types_decls);
         std::string type_name_without_ptr = c_ds_api->get_array_type(type_name, encoded_type_name, array_types_decls, false);
+        if (is_simd_array) {
+            int64_t size = ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
+            sub = original_type_name + " " + v_m_name + " __attribute__ (( vector_size(sizeof(" + original_type_name + ") * " + std::to_string(size) + ") ))";
+            return;
+        }
         if( declare_value ) {
             std::string variable_name = std::string(v_m_name) + "_value";
             sub = format_type_c("", type_name_without_ptr, variable_name, use_ref, dummy) + ";\n";
@@ -138,9 +144,6 @@ public:
             } else {
                 sub = format_type_c("", type_name, v_m_name, use_ref, dummy);
             }
-        }
-        if (is_simd_array) {
-            sub += "// SIMD !!\n";
         }
     }
 
@@ -1199,6 +1202,34 @@ R"(    // Initialise Numpy
         bracket_open--;
         out += tmp_gen;
         src = this->check_tmp_buffer() + out;
+    }
+
+    void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t& x) {
+        /*
+            !LF$ attributes simd :: A
+            real :: A(8)
+            A = 1
+            We need to generate:
+            a = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
+        */
+
+        CHECK_FAST_C(compiler_options, x)
+        if (x.m_value) {
+            ASR::expr_t* value = x.m_value;
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
+            ASR::ArrayConstant_t* array_const = ASR::down_cast<ASR::ArrayConstant_t>(value);
+            std::string array_const_str = "{";
+            for( size_t i = 0; i < array_const->n_args; i++ ) {
+                ASR::expr_t* array_const_arg = array_const->m_args[i];
+                this->visit_expr(*array_const_arg);
+                array_const_str += src + ", ";
+            }
+            array_const_str.pop_back();
+            array_const_str.pop_back();
+            array_const_str += "}";
+
+            src = array_const_str;
+        }
     }
 
     void visit_ArraySize(const ASR::ArraySize_t& x) {
