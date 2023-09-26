@@ -1,0 +1,13 @@
+{
+    "basename": "c-pragma2-a14de52",
+    "cmd": "lfortran --no-color --show-c {infile}",
+    "infile": "tests/pragma2.f90",
+    "infile_hash": "c76c30115a39aa0c98b24173c8517df1fb525bf101023b12dc38ca3e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "c-pragma2-a14de52.stdout",
+    "stdout_hash": "42b0158d9e55d3affa1d33eafa7525ee45526288037f77f9e5027f1c",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
