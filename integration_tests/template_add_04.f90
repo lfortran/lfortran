@@ -12,7 +12,7 @@ module template_add_04_m
   end requirement
 
   template add_t(T, F, mult)
-      requires :: R(T, F)
+      require :: R(T, F)
       integer :: mult
       private
       public :: add_generic

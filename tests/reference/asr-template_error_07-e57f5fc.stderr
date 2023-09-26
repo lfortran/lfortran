@@ -1,5 +1,5 @@
-semantic error: The number of parameters passed to 'r' is not correct
+syntax error: Token 'requires' (of type 'identifier') is unexpected here
   --> tests/errors/template_error_07.f90:15:9
    |
 15 |         requires r(t)
-   |         ^^^^^^^^^^^^^^ 
+   |         ^^^^^^^^ 

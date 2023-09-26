@@ -12,7 +12,7 @@ module template_01_m
     end requirement
   
     requirement extended_semigroup(t, combine, sconcat, stimes)
-        requires :: semigroup(t, combine)
+        require :: semigroup(t, combine)
         pure function sconcat(list) result(combined)
             type(t), intent(in) :: list(:)
             type(t) :: combined

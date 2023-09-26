@@ -2,7 +2,7 @@
     "basename": "asr-template_matrix-69b3f11",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/template_matrix.f90",
-    "infile_hash": "32f5179482e33be6e1a6704c26c1c00058e0f3eacdd903c68e053bf5",
+    "infile_hash": "a86b29b3f25a55c1de446e3e61edcc35d9e8eb51c0cf73036bc87b3d",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-template_matrix-69b3f11.stdout",

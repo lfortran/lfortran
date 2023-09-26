@@ -551,15 +551,17 @@
             plus_T
             D_divided_by_T
             D_divided_by_S]
-            [(Requires
-                operations
-                [D
-                T
-                S
-                plus_D
-                plus_T
-                D_divided_by_T
-                D_divided_by_S]
+            [(Require
+                [(UnitRequire
+                    operations
+                    [D
+                    T
+                    S
+                    plus_D
+                    plus_T
+                    D_divided_by_T
+                    D_divided_by_S]
+                )]
             )
             (Declaration
                 ()

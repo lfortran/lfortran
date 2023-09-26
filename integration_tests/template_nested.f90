@@ -12,7 +12,7 @@ module template_nested_m
     end requirement
 
     template add_t(T, F)
-        requires :: R(T, F)
+        require :: R(T, F)
         private
         public :: add_generic
     contains

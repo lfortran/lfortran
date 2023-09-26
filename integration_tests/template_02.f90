@@ -10,7 +10,7 @@ module template_02_m
   end requirement
 
   template change_positions_tmpl(t, ne)
-    requires :: eq(t, ne)
+    require :: eq(t, ne)
     private
     public :: change_positions_t
   contains

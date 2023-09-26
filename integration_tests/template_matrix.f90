@@ -14,8 +14,7 @@ module template_matrix_m
 
   template matrix_t(t, plus, times, n)
 
-    requires :: elemental_oper(t, plus)
-    requires :: elemental_oper(t, times)
+    require :: elemental_oper(t, plus), elemental_oper(t, times)
     integer :: n
     private
 

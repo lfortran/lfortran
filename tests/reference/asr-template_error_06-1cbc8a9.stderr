@@ -1,5 +1,5 @@
-semantic error: Type parameter 'g' is not specified in any requirements
-  --> tests/errors/template_error_06.f90:16:11
+syntax error: Token 'requires' (of type 'identifier') is unexpected here
+  --> tests/errors/template_error_06.f90:11:7
    |
-16 |           type(g) :: fst
-   |           ^^^^^^^^^^^^^^ 
+11 |       requires r(t)
+   |       ^^^^^^^^ 
