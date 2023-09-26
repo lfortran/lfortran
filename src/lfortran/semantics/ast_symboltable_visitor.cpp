@@ -823,10 +823,13 @@ public:
             Vec<ASR::require_instantiation_t*> reqs;
             reqs.reserve(al, x.n_decl);
             for (size_t i=0; i < x.n_decl; i++) {
-                if (AST::is_a<AST::Requires_t>(*x.m_decl[i])) {
-                    this->visit_unit_decl2(*x.m_decl[i]);
-                    reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
-                    tmp = nullptr;
+                if (AST::is_a<AST::Require_t>(*x.m_decl[i])) {
+                    AST::Require_t *r = AST::down_cast<AST::Require_t>(x.m_decl[i]);
+                    for (size_t i=0; i<r->n_reqs; i++) {
+                        visit_unit_require(*r->m_reqs[i]);
+                        reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
+                        tmp = nullptr;
+                    }
                 }
             }
 
@@ -854,7 +857,7 @@ public:
         }
         for (size_t i=0; i<x.n_decl; i++) {
             is_Function = true;
-            if (!AST::is_a<AST::Requires_t>(*x.m_decl[i])) {
+            if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {
                 visit_unit_decl2(*x.m_decl[i]);
             }
             is_Function = false;
@@ -2240,10 +2243,15 @@ public:
         Vec<ASR::require_instantiation_t*> reqs;
         reqs.reserve(al, x.n_decl);
         for (size_t i=0; i<x.n_decl; i++) {
-            this->visit_unit_decl2(*x.m_decl[i]);
-            if (tmp && ASR::is_a<ASR::require_instantiation_t>(*tmp)) {
-                reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
-                tmp = nullptr;
+            if (AST::is_a<AST::Require_t>(*x.m_decl[i])) {
+                AST::Require_t *r = AST::down_cast<AST::Require_t>(x.m_decl[i]);
+                for (size_t i=0; i<r->n_reqs; i++) {
+                    visit_unit_require(*r->m_reqs[i]);
+                    reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
+                    tmp = nullptr;
+                }
+            } else {    
+                this->visit_unit_decl2(*x.m_decl[i]);
             }
         }
         for (size_t i=0; i<x.n_funcs; i++) {
@@ -2295,7 +2303,13 @@ public:
         is_requirement = false;
     }
 
-    void visit_Requires(const AST::Requires_t &x) {
+    void visit_Require(const AST::Require_t &x) {
+        for (size_t i=0; i<x.n_reqs; i++) {
+            visit_unit_require(*x.m_reqs[i]);
+        }
+    }
+
+    void visit_UnitRequire(const AST::UnitRequire_t &x) {
         std::string require_name = to_lower(x.m_name);
         ASR::symbol_t *req0 = current_scope->resolve_symbol(require_name);
 
@@ -2374,10 +2388,15 @@ public:
         reqs.reserve(al, x.n_decl);
         // For interface and type parameters (derived type)
         for (size_t i=0; i<x.n_decl; i++) {
-            this->visit_unit_decl2(*x.m_decl[i]);
-            if (tmp && ASR::is_a<ASR::require_instantiation_t>(*tmp)) {
-                reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
-                tmp = nullptr;
+            if (AST::is_a<AST::Require_t>(*x.m_decl[i])) {
+                AST::Require_t *r = AST::down_cast<AST::Require_t>(x.m_decl[i]);
+                for (size_t i=0; i<r->n_reqs; i++) {
+                    visit_unit_require(*r->m_reqs[i]);
+                    reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
+                    tmp = nullptr;
+                }
+            } else {    
+                this->visit_unit_decl2(*x.m_decl[i]);
             }
         }
 

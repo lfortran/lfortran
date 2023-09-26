@@ -345,7 +345,6 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_TEAM
 %token <string> KW_TEAM_NUMBER
 %token <string> KW_REQUIREMENT
-//%token <string> KW_REQUIRES
 %token <string> KW_REQUIRE
 %token <string> KW_TEMPLATE
 %token <string> KW_THEN
@@ -736,11 +735,6 @@ requirement_decl
         sub_or_func_star KW_END KW_REQUIREMENT sep {
             $$ = REQUIREMENT($2, $4, $7, $8, @$); }
     ;
-
-//requires_decl
-//    : KW_REQUIRES "::" id "(" id_list ")" sep {
-//        $$ = REQUIRES($3, $5, @$); }
-//    ;
 
 require_decl
     : KW_REQUIRE "::" unit_require_plus sep {
@@ -1573,6 +1567,7 @@ decl_statement
     | enum_decl
     | statement
     | instantiate
+    | require_decl
     //| requires_decl
     ;
 
@@ -2548,7 +2543,6 @@ id
     | KW_RECURSIVE { $$ = SYMBOL($1, @$); }
     | KW_REDUCE { $$ = SYMBOL($1, @$); }
     | KW_REQUIREMENT { $$ = SYMBOL($1, @$); }
-    //| KW_REQUIRES { $$ = SYMBOL($1, @$); }
     | KW_REQUIRE { $$ = SYMBOL($1, @$); }
     | KW_RESULT { $$ = SYMBOL($1, @$); }
     | KW_RETURN { $$ = SYMBOL($1, @$); }

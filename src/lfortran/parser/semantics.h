@@ -2153,9 +2153,6 @@ ast_t* TYPEPARAMETER0(Allocator &al,
         make_Requirement_t(p.m_a, l, name2char(name), \
         REDUCE_ARGS(p.m_a, namelist), namelist.size(), \
         DECLS(decl), decl.size(), CONTAINS(funcs), funcs.size())
-//#define REQUIRES(name, namelist, l) \
-//        make_Requires_t(p.m_a, l, name2char(name), \
-//        REDUCE_ARGS(p.m_a, namelist), namelist.size())
 #define REQUIRE(require_list, l) \
         make_Require_t(p.m_a, l, \
         VEC_CAST(require_list, unit_require), require_list.size())
