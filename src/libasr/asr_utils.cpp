@@ -1348,6 +1348,7 @@ ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
 
 ASR::asr_t* make_Binop_util(Allocator &al, const Location& loc, ASR::binopType binop,
                         ASR::expr_t* lexpr, ASR::expr_t* rexpr, ASR::ttype_t* ttype) {
+    ASRUtils::make_ArrayBroadcast_t_util(al, loc, lexpr, rexpr);
     switch (ttype->type) {
         case ASR::ttypeType::Real: {
             return ASR::make_RealBinOp_t(al, loc, lexpr, binop, rexpr,
@@ -1428,7 +1429,8 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
             1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
         dims.push_back(al, dim);
 
-        if( ASRUtils::is_value_constant(expr2) ) {
+        if( ASRUtils::is_value_constant(expr2) &&
+            ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims) <= 256 ) {
             ASR::ttype_t* value_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
                 ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), dims.p, dims.size(),
                 ASR::array_physical_typeType::FixedSizeArray));

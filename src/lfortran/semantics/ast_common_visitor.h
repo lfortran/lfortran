@@ -456,6 +456,7 @@ public:
             al, x.base.base.loc, result, dest_type));
     }
 
+    ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, left, right);
     asr = ASR::make_LogicalBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
 
   }
@@ -5338,6 +5339,7 @@ public:
                     al, x.base.base.loc, result, dest_type));
             }
 
+            ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, left, right);
             asr = ASR::make_IntegerBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
 
         } else if (ASRUtils::is_real(*dest_type)) {
@@ -5375,6 +5377,7 @@ public:
                     ASR::make_RealConstant_t(al, x.base.base.loc, result, dest_type));
             }
 
+            ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, left, right);
             asr = ASR::make_RealBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
 
         } else if (ASRUtils::is_complex(*dest_type)) {
@@ -5416,6 +5419,7 @@ public:
                         std::real(result), std::imag(result), dest_type));
             }
 
+            ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, left, right);
             asr = ASR::make_ComplexBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
 
         } else if (ASRUtils::is_character(*dest_type)) {

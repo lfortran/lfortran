@@ -180,14 +180,36 @@
                                                 ()
                                             )
                                             Pow
-                                            (Cast
-                                                (IntegerConstant 2 (Integer 4))
-                                                IntegerToReal
-                                                (Real 8)
-                                                (RealConstant
-                                                    2.000000
+                                            (ArrayBroadcast
+                                                (Cast
+                                                    (IntegerConstant 2 (Integer 4))
+                                                    IntegerToReal
                                                     (Real 8)
+                                                    (RealConstant
+                                                        2.000000
+                                                        (Real 8)
+                                                    )
                                                 )
+                                                (ArrayConstant
+                                                    [(IntegerConstant 256 (Integer 4))
+                                                    (IntegerConstant 64 (Integer 4))]
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 2 (Integer 4)))]
+                                                        FixedSizeArray
+                                                    )
+                                                    ColMajor
+                                                )
+                                                (Array
+                                                    (Real 8)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 256 (Integer 4)))
+                                                    ((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 64 (Integer 4)))]
+                                                    FixedSizeArray
+                                                )
+                                                ()
                                             )
                                             (Array
                                                 (Real 8)
@@ -602,14 +624,39 @@
                                                 ()
                                             )
                                             Pow
-                                            (Cast
-                                                (IntegerConstant 2 (Integer 4))
-                                                IntegerToReal
-                                                (Real 8)
-                                                (RealConstant
-                                                    2.000000
+                                            (ArrayBroadcast
+                                                (Cast
+                                                    (IntegerConstant 2 (Integer 4))
+                                                    IntegerToReal
                                                     (Real 8)
+                                                    (RealConstant
+                                                        2.000000
+                                                        (Real 8)
+                                                    )
                                                 )
+                                                (ArrayConstant
+                                                    [(IntegerConstant 256 (Integer 4))
+                                                    (IntegerConstant 64 (Integer 4))
+                                                    (IntegerConstant 16 (Integer 4))]
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 3 (Integer 4)))]
+                                                        FixedSizeArray
+                                                    )
+                                                    ColMajor
+                                                )
+                                                (Array
+                                                    (Real 8)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 256 (Integer 4)))
+                                                    ((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 64 (Integer 4)))
+                                                    ((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 16 (Integer 4)))]
+                                                    FixedSizeArray
+                                                )
+                                                ()
                                             )
                                             (Array
                                                 (Real 8)
@@ -999,14 +1046,42 @@
                                                     ()
                                                 )
                                                 Pow
-                                                (Cast
-                                                    (IntegerConstant 2 (Integer 4))
-                                                    IntegerToReal
-                                                    (Real 8)
-                                                    (RealConstant
-                                                        2.000000
+                                                (ArrayBroadcast
+                                                    (Cast
+                                                        (IntegerConstant 2 (Integer 4))
+                                                        IntegerToReal
                                                         (Real 8)
+                                                        (RealConstant
+                                                            2.000000
+                                                            (Real 8)
+                                                        )
                                                     )
+                                                    (ArrayConstant
+                                                        [(IntegerConstant 64 (Integer 4))
+                                                        (IntegerConstant 32 (Integer 4))
+                                                        (IntegerConstant 8 (Integer 4))
+                                                        (IntegerConstant 4 (Integer 4))]
+                                                        (Array
+                                                            (Integer 4)
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 4 (Integer 4)))]
+                                                            FixedSizeArray
+                                                        )
+                                                        ColMajor
+                                                    )
+                                                    (Array
+                                                        (Real 8)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 64 (Integer 4)))
+                                                        ((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 32 (Integer 4)))
+                                                        ((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 8 (Integer 4)))
+                                                        ((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 4 (Integer 4)))]
+                                                        FixedSizeArray
+                                                    )
+                                                    ()
                                                 )
                                                 (Array
                                                     (Real 8)
@@ -1060,14 +1135,42 @@
                                                     ()
                                                 )
                                                 Pow
-                                                (Cast
-                                                    (IntegerConstant 2 (Integer 4))
-                                                    IntegerToReal
-                                                    (Real 8)
-                                                    (RealConstant
-                                                        2.000000
+                                                (ArrayBroadcast
+                                                    (Cast
+                                                        (IntegerConstant 2 (Integer 4))
+                                                        IntegerToReal
                                                         (Real 8)
+                                                        (RealConstant
+                                                            2.000000
+                                                            (Real 8)
+                                                        )
                                                     )
+                                                    (ArrayConstant
+                                                        [(IntegerConstant 64 (Integer 4))
+                                                        (IntegerConstant 32 (Integer 4))
+                                                        (IntegerConstant 8 (Integer 4))
+                                                        (IntegerConstant 4 (Integer 4))]
+                                                        (Array
+                                                            (Integer 4)
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 4 (Integer 4)))]
+                                                            FixedSizeArray
+                                                        )
+                                                        ColMajor
+                                                    )
+                                                    (Array
+                                                        (Real 8)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 64 (Integer 4)))
+                                                        ((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 32 (Integer 4)))
+                                                        ((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 8 (Integer 4)))
+                                                        ((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 4 (Integer 4)))]
+                                                        FixedSizeArray
+                                                    )
+                                                    ()
                                                 )
                                                 (Array
                                                     (Real 8)

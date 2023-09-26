@@ -305,24 +305,26 @@ class ASRBuilder {
 
     // Binop -------------------------------------------------------------------
     #define iAdd(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
-        ASR::binopType::Add, right, int32, nullptr))
+            ASR::binopType::Add, right, int32, nullptr))
     #define iMul(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
-        ASR::binopType::Mul, right, int32, nullptr))
+            ASR::binopType::Mul, right, int32, nullptr))
     #define iSub(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
-        ASR::binopType::Sub, right, int32, nullptr))
-    #define iDiv(left, right) r2i32(EXPR(ASR::make_RealBinOp_t(al, loc,         \
-        i2r32(left), ASR::binopType::Div, i2r32(right), real32, nullptr)))
+            ASR::binopType::Sub, right, int32, nullptr))
+    #define iDiv(left, right) r2i32(EXPR(ASR::make_RealBinOp_t(al, loc, \
+                i2r32(left), ASR::binopType::Div, i2r32(right), real32, nullptr))) \
 
-    #define rDiv(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,         \
-        ASR::binopType::Div, right, real32, nullptr))
+    #define rDiv(left, right) ASRUtils::make_ArrayBroadcast_t_util(al, loc, left, right); \
+        EXPR(ASR::make_RealBinOp_t(al, loc, left, \
+            ASR::binopType::Div, right, real32, nullptr)) \
 
     #define And(x, y) EXPR(ASR::make_LogicalBinOp_t(al, loc, x,                 \
-        ASR::logicalbinopType::And, y, logical, nullptr))
+            ASR::logicalbinopType::And, y, logical, nullptr))
     #define Not(x)    EXPR(ASR::make_LogicalNot_t(al, loc, x, logical, nullptr))
 
     ASR::expr_t *Add(ASR::expr_t *left, ASR::expr_t *right) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
         ASR::ttype_t *type = expr_type(left);
+        ASRUtils::make_ArrayBroadcast_t_util(al, loc, left, right);
         switch (type->type) {
             case ASR::ttypeType::Integer : {
                 return EXPR(ASR::make_IntegerBinOp_t(al, loc, left,
@@ -344,6 +346,7 @@ class ASRBuilder {
     ASR::expr_t *Mul(ASR::expr_t *left, ASR::expr_t *right) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
         ASR::ttype_t *type = expr_type(left);
+        ASRUtils::make_ArrayBroadcast_t_util(al, loc, left, right);
         switch (type->type) {
             case ASR::ttypeType::Integer : {
                 return EXPR(ASR::make_IntegerBinOp_t(al, loc, left,

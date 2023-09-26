@@ -202,7 +202,57 @@
                                                     ()
                                                 )
                                                 (RealBinOp
-                                                    (Var 3 absdiff)
+                                                    (ArrayBroadcast
+                                                        (Var 3 absdiff)
+                                                        (IntrinsicArrayFunction
+                                                            Shape
+                                                            [(IntrinsicScalarFunction
+                                                                Abs
+                                                                [(FunctionCall
+                                                                    2 solution
+                                                                    ()
+                                                                    []
+                                                                    (Allocatable
+                                                                        (Array
+                                                                            (Real 4)
+                                                                            [(()
+                                                                            ())]
+                                                                            DescriptorArray
+                                                                        )
+                                                                    )
+                                                                    ()
+                                                                    ()
+                                                                )]
+                                                                0
+                                                                (Allocatable
+                                                                    (Array
+                                                                        (Real 4)
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                )
+                                                                ()
+                                                            )]
+                                                            0
+                                                            (Array
+                                                                (Integer 4)
+                                                                [((IntegerConstant 1 (Integer 4))
+                                                                (IntegerConstant 1 (Integer 4)))]
+                                                                FixedSizeArray
+                                                            )
+                                                            ()
+                                                        )
+                                                        (Allocatable
+                                                            (Array
+                                                                (Real 4)
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                            )
+                                                        )
+                                                        ()
+                                                    )
                                                     Div
                                                     (IntrinsicScalarFunction
                                                         Abs
