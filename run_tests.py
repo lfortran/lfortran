@@ -37,6 +37,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     ast_cpp_hip = is_included("ast_cpp_hip")
     ast_openmp = is_included("ast_openmp")
     asr = is_included("asr")
+    asr_ignore_pragma = is_included("asr_ignore_pragma")
     asr_implicit_typing = is_included("asr_implicit_typing")
     asr_implicit_interface = is_included("asr_implicit_interface")
     asr_implicit_interface_and_typing = is_included("asr_implicit_interface_and_typing")
@@ -322,6 +323,15 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             "lfortran mod --show-asr --no-indent --no-color {infile}",
             filename,
             update_reference)
+
+    if asr_ignore_pragma:
+        run_test(
+            filename,
+            "asr_ignore_pragma",
+            "lfortran --ignore-pragma --show-asr --no-color {infile} -o {outfile}",
+            filename,
+            update_reference,
+            extra_args)
 
     if pass_ is not None:
         cmd = "lfortran "

@@ -3407,6 +3407,7 @@ asr_implicit_interface_and_typing = true
 filename = "pragma2.f90"
 ast = true
 asr = true
+asr_ignore_pragma = true
 
 [[test]]
 filename = "../integration_tests/matmul_01.f90"
