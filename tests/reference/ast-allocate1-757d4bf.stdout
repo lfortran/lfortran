@@ -69,6 +69,7 @@
             []
             [(length
             cmdlen)]
+            []
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -106,6 +107,7 @@
                 cmd
                 ()
                 0)]
+                []
                 []
                 ()
             )

@@ -73,6 +73,7 @@
                 ()
             )]
             []
+            []
         )]
     )
     (Program
@@ -102,6 +103,7 @@
         (SubroutineCall
             0
             access_internally
+            []
             []
             []
             []
