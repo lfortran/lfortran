@@ -1425,6 +1425,10 @@ filename = "write5.f90"
 run = true
 
 [[test]]
+filename = "write6.f90"
+run = true
+
+[[test]]
 filename = "read1.f90"
 ast = true
 ast_f90 = true

@@ -1,0 +1,13 @@
+{
+    "basename": "run-write6-5921a4e",
+    "cmd": "lfortran --no-color --run {infile} -o write6.f90.out",
+    "infile": "tests/write6.f90",
+    "infile_hash": "d1156f9891114f6be63e53f3abfc6b2bf8980e54727adbf8ea73eaa5",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-write6-5921a4e.stdout",
+    "stdout_hash": "53080fbd73388bd51a3aaaaf74ff6364f60547136f170eb8655751f1",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
