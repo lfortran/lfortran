@@ -861,6 +861,7 @@ RUN(NAME file_11       LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
 RUN(NAME file_12       LABELS gfortran llvm COPY_TO_BIN file_12_data.txt)
 RUN(NAME file_13       LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
 RUN(NAME file_14       LABELS gfortran llvm COPY_TO_BIN file_08.txt)
+RUN(NAME file_15       LABELS gfortran llvm COPY_TO_BIN file_03_data.txt)
 RUN(NAME inquire_01    LABELS gfortran llvm)
 RUN(NAME test_backspace_01 LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
 
