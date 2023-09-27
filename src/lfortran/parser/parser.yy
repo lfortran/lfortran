@@ -381,7 +381,6 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> derived_type_decl
 %type <ast> template_decl
 %type <ast> requirement_decl
-//%type <ast> requires_decl
 %type <ast> require_decl
 %type <vec_ast> unit_require_plus
 %type <ast> unit_require
@@ -1044,7 +1043,6 @@ temp_decl
     : var_decl
     | interface_decl
     | derived_type_decl
-    //| requires_decl
     | require_decl
     | instantiate
     ;
@@ -1582,7 +1580,6 @@ decl_statement
     | statement
     | instantiate
     | require_decl
-    //| requires_decl
     ;
 
 statement

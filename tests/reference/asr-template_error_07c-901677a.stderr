@@ -1,5 +1,5 @@
-syntax error: Token 'requires' (of type 'identifier') is unexpected here
-  --> tests/errors/template_error_07c.f90:15:9
+semantic error: Parameter 'scombine' was not declared
+  --> tests/errors/template_error_07c.f90:15:20
    |
-15 |         requires semigroup(t, scombine)
-   |         ^^^^^^^^ 
+15 |         require :: semigroup(t, scombine)
+   |                    ^^^^^^^^^^^^^^^^^^^^^^ 

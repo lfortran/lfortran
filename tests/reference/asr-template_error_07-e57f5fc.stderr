@@ -1,5 +1,5 @@
-syntax error: Token 'requires' (of type 'identifier') is unexpected here
-  --> tests/errors/template_error_07.f90:15:9
+semantic error: The number of parameters passed to 'r' is not correct
+  --> tests/errors/template_error_07.f90:15:20
    |
-15 |         requires r(t)
-   |         ^^^^^^^^ 
+15 |         require :: r(t)
+   |                    ^^^^ 
