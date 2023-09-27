@@ -1,5 +1,0 @@
-syntax error: Token 'default_behavior' (of type 'identifier') is unexpected here
-  --> tests/../integration_tests/template_array_04b.f90:13:18
-   |
-13 |         requires default_behavior(T)
-   |                  ^^^^^^^^^^^^^^^^ 
