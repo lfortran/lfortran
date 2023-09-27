@@ -274,6 +274,13 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         }
     }
 
+    void replace_ArrayBroadcast(ASR::ArrayBroadcast_t* x) {
+        ASR::expr_t** current_expr_copy_161 = current_expr;
+        current_expr = &(x->m_array);
+        replace_expr(x->m_array);
+        current_expr = current_expr_copy_161;
+    }
+
 };
 
 class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayConstantVisitor>
@@ -368,7 +375,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 this->visit_expr(*x.m_value);
             }
         }
-        
+
         template <typename T>
         ASR::asr_t* create_array_constant(const T& x, ASR::expr_t* value) {
             // wrap the implied do loop in an array constant
@@ -391,13 +398,13 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             dim.push_back(al, d);
 
             ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, ASRUtils::expr_type(value), dim.p, dim.size(), ASR::array_physical_typeType::FixedSizeArray));
-            ASR::asr_t* array_constant = ASR::make_ArrayConstant_t(al, value->base.loc, 
+            ASR::asr_t* array_constant = ASR::make_ArrayConstant_t(al, value->base.loc,
                                         args.p, args.n, array_type, ASR::arraystorageType::ColMajor);
             return array_constant;
         }
 
         void visit_Print(const ASR::Print_t &x) {
-            /* 
+            /*
                 integer :: i
                 print *, (i, i=1, 10)
 
@@ -435,7 +442,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         }
 
         void visit_StringFormat(const ASR::StringFormat_t &x) {
-            /* 
+            /*
                 integer :: i
                 write(*, '(i)') (i, i=1, 10)
 
@@ -473,7 +480,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         }
 
         void visit_FileWrite(const ASR::FileWrite_t &x) {
-            /* 
+            /*
                 integer :: i
                 write(*,*) (i, i=1, 10)
 
@@ -519,6 +526,16 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 current_expr = current_expr_copy;
                 if( x.m_shape )
                 this->visit_expr(*x.m_shape);
+            }
+        }
+
+        void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t& x) {
+            ASR::expr_t** current_expr_copy_269 = current_expr;
+            current_expr = const_cast<ASR::expr_t**>(&(x.m_array));
+            call_replacer();
+            current_expr = current_expr_copy_269;
+            if( x.m_array ) {
+                visit_expr(*x.m_array);
             }
         }
 

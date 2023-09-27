@@ -310,7 +310,7 @@ public:
                     arg.m_end = kwarg.m_value;
                     args.push_back(al, arg);
                     AST::SubroutineCall_t* subrout_call = AST::down_cast2<AST::SubroutineCall_t>(
-                        AST::make_SubroutineCall_t(al, x.base.base.loc, 0, s2c(al, "newunit"), nullptr, 0, args.p, args.size(), nullptr, 0, nullptr));
+                        AST::make_SubroutineCall_t(al, x.base.base.loc, 0, s2c(al, "newunit"), nullptr, 0, args.p, args.size(), nullptr, 0, nullptr, 0, nullptr));
                     visit_SubroutineCall(*subrout_call);
                     tmp_vec.push_back(tmp);
                 }
@@ -940,6 +940,7 @@ public:
                 ASR::stmt_t* associate_stmt = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, tmp_expr->base.loc, target_var, tmp_expr));
                 body.push_back(al, associate_stmt);
             } else {
+                ASRUtils::make_ArrayBroadcast_t_util(al, tmp_expr->base.loc, target_var, tmp_expr);
                 ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, tmp_expr->base.loc, target_var, tmp_expr, nullptr));
                 body.push_back(al, assign_stmt);
             }
@@ -1824,6 +1825,11 @@ public:
             std::string subrout_name = to_lower(x.m_name) + "~genericprocedure";
             t = current_scope->get_symbol(subrout_name);
         }
+
+        if (x.n_temp_args > 0) {
+            t = ASRUtils::symbol_symtab(t)->get_symbol(to_lower(x.m_name));
+        }
+
         ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
         for (size_t i=0; i<x.n_decl; i++) {
@@ -1975,7 +1981,9 @@ public:
 
         // ASSIGN XXX TO k -- XXX can only be integer for now.
         ASR::expr_t* target_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym));
-        tmp = (ASR::asr_t*)ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, target_var, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, x.m_assign_label, int32_type)), nullptr));
+        ASR::expr_t* tmp_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, x.m_assign_label, int32_type));
+        ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, target_var, tmp_expr);
+        tmp = (ASR::asr_t*)ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, target_var, tmp_expr, nullptr));
     }
 
     /* Returns true if `x` is a statement function, false otherwise.
@@ -2130,6 +2138,7 @@ public:
             );
             throw SemanticAbort();
         }
+        ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, to_return, value);
         body.push_back(al, ASR::down_cast<ASR::stmt_t>(ASR::make_Assignment_t(al, x.base.base.loc, to_return, value, nullptr)));
 
         tmp = ASRUtils::make_Function_t_util(
@@ -2267,6 +2276,7 @@ public:
             }
         }
 
+        ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, target, value);
         tmp = ASR::make_Assignment_t(al, x.base.base.loc, target, value,
                             overloaded_stmt);
     }
@@ -2349,8 +2359,12 @@ public:
     }
 
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
-        SymbolTable* scope = current_scope;
         std::string sub_name = to_lower(x.m_name);
+        if (x.n_temp_args > 0) {
+            handle_templated(x.m_name, x.m_temp_args, x.n_temp_args, x.base.base.loc);
+            sub_name = "__templated_" + sub_name;
+        }
+        SymbolTable* scope = current_scope;
         ASR::symbol_t *original_sym;
         ASR::expr_t *v_expr = nullptr;
         bool is_external = check_is_external(sub_name);
@@ -3306,4 +3320,3 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
 }
 
 } // namespace LCompilers::LFortran
-

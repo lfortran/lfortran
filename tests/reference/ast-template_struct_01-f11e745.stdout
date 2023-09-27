@@ -353,6 +353,7 @@
                 ()
             )]
             []
+            []
         )]
     )
     (Program
@@ -381,6 +382,7 @@
         [(SubroutineCall
             0
             test_template
+            []
             []
             []
             []

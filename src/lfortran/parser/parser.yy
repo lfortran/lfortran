@@ -933,12 +933,20 @@ subroutine
         end_subroutine sep {
             LLOC(@$, @11); $$ = SUBROUTINE($2, $3, $4, TRIVIA($5, $12, @$), $6,
                 $7, $8, SPLIT_DECL(p.m_a, $9), SPLIT_STMT(p.m_a, $9), $10, $11, @$); }
+    | KW_SUBROUTINE id "{" id_list "}" sub_args bind_opt
+    sep decl_statements end_subroutine sep {
+            LLOC(@$, @10); $$ = TEMPLATED_SUBROUTINE($2, $4, $6, $7,
+                TRIVIA($8, $11, @$), SPLIT_DECL(p.m_a, $9), SPLIT_STMT(p.m_a, $9), @$); }
     | fn_mod_plus KW_SUBROUTINE id sub_args bind_opt sep use_statement_star
     import_statement_star implicit_statement_star decl_statements
         contains_block_opt
         end_subroutine sep {
             LLOC(@$, @12); $$ = SUBROUTINE1($1, $3, $4, $5, TRIVIA($6, $13, @$),
                 $7, $8, $9, SPLIT_DECL(p.m_a, $10), SPLIT_STMT(p.m_a, $10), $11, $12, @$); }
+    | fn_mod_plus KW_SUBROUTINE id "{" id_list "}" sub_args bind_opt
+    sep decl_statements end_subroutine sep {
+            LLOC(@$, @11); $$ = TEMPLATED_SUBROUTINE1($1, $3, $5, $7, $8,
+                TRIVIA($9, $12, @$), SPLIT_DECL(p.m_a, $10), SPLIT_STMT(p.m_a, $10), @$); }
     ;
 
 procedure
@@ -974,6 +982,13 @@ function
         end_function sep {
             LLOC(@$, @15); $$ = FUNCTION0($2, $4, $6, $7, TRIVIA($8, $15, @$),
                 $9, $10, $11, SPLIT_DECL(p.m_a, $12), SPLIT_STMT(p.m_a, $12), $13, @$); }
+    | KW_FUNCTION id "{" id_list "}" "(" id_list_opt ")"
+        result_opt
+        bind_opt
+        sep decl_statements
+        end_function sep {
+            LLOC(@$, @13); $$ = TEMPLATED_FUNCTION0($2, $4, $7, $9, $10,
+                TRIVIA($11, $14, @$), SPLIT_DECL(p.m_a, $12), SPLIT_STMT(p.m_a, $12), @$); } 
     | fn_mod_plus KW_FUNCTION id "(" id_list_opt ")"
         sep use_statement_star import_statement_star implicit_statement_star decl_statements
         contains_block_opt
@@ -999,12 +1014,11 @@ function
                 $10, $11, $12, SPLIT_DECL(p.m_a, $13), SPLIT_STMT(p.m_a, $13), $14, @$); }
     | fn_mod_plus KW_FUNCTION id "{" id_list "}" "(" id_list_opt ")"
         result_opt
-        sep
-        decl_statements
+        bind_opt
+        sep decl_statements
         end_function sep {
-            LLOC(@$, @14); $$ = TEMPLATEDFUNCTION($1, $3, $5, $8, $10, nullptr,
-                TRIVIA($11, $14, @$), SPLIT_DECL(p.m_a, $12),
-                SPLIT_STMT(p.m_a, $12), @$); } 
+            LLOC(@$, @14); $$ = TEMPLATED_FUNCTION($1, $3, $5, $8, $10, $11,
+                TRIVIA($12, $15, @$), SPLIT_DECL(p.m_a, $13), SPLIT_STMT(p.m_a, $13), @$); } 
     ;
 
 fn_mod_plus
@@ -1696,6 +1710,8 @@ subroutine_call
             $$ = SUBROUTINE_CALL2($2, @$); }
     | KW_CALL struct_member_star id {
             $$ = SUBROUTINE_CALL3($2, $3, @$); }
+    | KW_CALL id "{" use_symbol_list "}" "(" fnarray_arg_list_opt ")" {
+            $$ = SUBROUTINE_CALL4($2, $4, $7, @$); }
     ;
 
 print_statement

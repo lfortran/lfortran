@@ -579,8 +579,40 @@ public:
         simd_variables.clear();
         ASR::accessType s_access = dflt_access;
         ASR::deftypeType deftype = ASR::deftypeType::Implementation;
+        std::string sym_name = to_lower(x.m_name);
+
+        SymbolTable *grandparent_scope = current_scope;
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+
+        // Handle templated subroutines
+        if (x.n_temp_args > 0) {
+            SetChar temp_args;
+            temp_args.reserve(al, x.n_temp_args);
+            for (size_t i=0; i < x.n_temp_args; i++) {
+                current_procedure_args.push_back(to_lower(x.m_temp_args[i]));
+                temp_args.push_back(al, s2c(al, to_lower(x.m_temp_args[i])));
+            }
+
+            Vec<ASR::require_instantiation_t*> reqs;
+            reqs.reserve(al, x.n_decl);
+            for (size_t i=0; i < x.n_decl; i++) {
+                if (AST::is_a<AST::Requires_t>(*x.m_decl[i])) {
+                    this->visit_unit_decl2(*x.m_decl[i]);
+                    reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
+                    tmp = nullptr;
+                }
+            }
+
+            ASR::asr_t *temp = ASR::make_Template_t(al, x.base.base.loc,
+                current_scope, s2c(al, sym_name), temp_args.p, temp_args.size(), reqs.p, reqs.size());
+
+            parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(temp));
+            parent_scope = current_scope;
+            current_scope = al.make_new<SymbolTable>(parent_scope);
+            current_procedure_args.clear();
+        }
+
         for (size_t i=0; i<x.n_args; i++) {
             char *arg=x.m_args[i].m_arg;
             if (arg) {
@@ -599,7 +631,9 @@ public:
         }
         for (size_t i=0; i<x.n_decl; i++) {
             is_Function = true;
-            visit_unit_decl2(*x.m_decl[i]);
+            if (!AST::is_a<AST::Requires_t>(*x.m_decl[i])) {
+                visit_unit_decl2(*x.m_decl[i]);
+            }
             is_Function = false;
         }
         process_simd_variables();
@@ -630,7 +664,6 @@ public:
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                 var)));
         }
-        std::string sym_name = to_lower(x.m_name);
         if (assgnd_access.count(sym_name)) {
             s_access = assgnd_access[sym_name];
         }
@@ -698,7 +731,11 @@ public:
             is_requirement, false, false);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
-        current_scope = parent_scope;
+        if (x.n_temp_args > 0) {
+            current_scope = grandparent_scope;
+        } else {
+            current_scope = parent_scope;
+        }
         /* FIXME: This can become incorrect/get cleared prematurely, perhaps
            in nested functions, and also in callback.f90 test, but it may not
            matter since we would have already checked the intent */
@@ -808,7 +845,6 @@ public:
 
         SymbolTable *grandparent_scope = current_scope;
         SymbolTable *parent_scope = current_scope;
-
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
         // Handle templated functions
@@ -1099,6 +1135,9 @@ public:
     }
 
     void visit_DeclarationPragma(const AST::DeclarationPragma_t &x) {
+        if (compiler_options.ignore_pragma) {
+            return;
+        }
         if (x.m_type == AST::LFortranPragma) {
             std::string t = x.m_text;
             if (startswith(t, "attributes ")) {
@@ -2657,6 +2696,7 @@ public:
                     body.reserve(al, 1);
                     ASR::symbol_t *return_sym = current_scope->get_symbol("ret");
                     ASR::expr_t *target = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, return_sym));
+                    ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, target, value);
                     ASR::stmt_t *assignment = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc,
                         target, value, nullptr));
                     body.push_back(al, assignment);

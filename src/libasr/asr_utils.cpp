@@ -9,6 +9,7 @@
 #include <libasr/modfile.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
+#include <libasr/pass/intrinsic_array_function_registry.h>
 
 namespace LCompilers {
 
@@ -1347,6 +1348,7 @@ ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
 
 ASR::asr_t* make_Binop_util(Allocator &al, const Location& loc, ASR::binopType binop,
                         ASR::expr_t* lexpr, ASR::expr_t* rexpr, ASR::ttype_t* ttype) {
+    ASRUtils::make_ArrayBroadcast_t_util(al, loc, lexpr, rexpr);
     switch (ttype->type) {
         case ASR::ttypeType::Real: {
             return ASR::make_RealBinOp_t(al, loc, lexpr, binop, rexpr,
@@ -1383,6 +1385,94 @@ ASR::asr_t* make_Cmpop_util(Allocator &al, const Location& loc, ASR::cmpopType c
         }
         default:
             throw LCompilersException("Not implemented " + std::to_string(ttype->type));
+    }
+}
+
+void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
+    ASR::expr_t*& expr1, ASR::expr_t*& expr2, ASR::dimension_t* expr1_mdims,
+    size_t expr1_ndims) {
+    ASR::ttype_t* expr1_type = ASRUtils::expr_type(expr1);
+    Vec<ASR::expr_t*> shape_args;
+    shape_args.reserve(al, 1);
+    shape_args.push_back(al, expr1);
+
+    Vec<ASR::dimension_t> dims;
+    dims.reserve(al, 1);
+    ASR::dimension_t dim;
+    dim.loc = loc;
+    dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+        expr1_ndims, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+    dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+        1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+    dims.push_back(al, dim);
+    ASR::ttype_t* dest_shape_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
+        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), dims.p, dims.size(),
+        ASR::array_physical_typeType::FixedSizeArray));
+
+    ASR::expr_t* dest_shape = nullptr;
+    ASR::expr_t* value = nullptr;
+    if( ASRUtils::is_fixed_size_array(expr1_mdims, expr1_ndims) ) {
+        Vec<ASR::expr_t*> lengths; lengths.reserve(al, expr1_ndims);
+        for( size_t i = 0; i < expr1_ndims; i++ ) {
+            lengths.push_back(al, ASRUtils::expr_value(expr1_mdims[i].m_length));
+        }
+        dest_shape = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc,
+            lengths.p, lengths.size(), dest_shape_type, ASR::arraystorageType::ColMajor));
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, 1);
+        ASR::dimension_t dim;
+        dim.loc = loc;
+        dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims),
+            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+        dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+        dims.push_back(al, dim);
+
+        if( ASRUtils::is_value_constant(expr2) &&
+            ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims) <= 256 ) {
+            ASR::ttype_t* value_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), dims.p, dims.size(),
+                ASR::array_physical_typeType::FixedSizeArray));
+            Vec<ASR::expr_t*> values;
+            values.reserve(al, ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims));
+            for( int64_t i = 0; i < ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims); i++ ) {
+                values.push_back(al, expr2);
+            }
+            value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc,
+                values.p, values.size(), value_type, ASR::arraystorageType::ColMajor));
+        }
+    } else {
+        dest_shape = ASRUtils::EXPR(ASR::make_IntrinsicArrayFunction_t(al, loc,
+            static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Shape), shape_args.p,
+            shape_args.size(), 0, dest_shape_type, nullptr));
+    }
+
+    expr2 = ASRUtils::EXPR(ASR::make_ArrayBroadcast_t(al, loc, expr2, dest_shape, expr1_type, value));
+}
+
+void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
+    ASR::expr_t*& expr1, ASR::expr_t*& expr2) {
+    ASR::ttype_t* expr1_type = ASRUtils::expr_type(expr1);
+    ASR::ttype_t* expr2_type = ASRUtils::expr_type(expr2);
+    ASR::dimension_t *expr1_mdims = nullptr, *expr2_mdims = nullptr;
+    size_t expr1_ndims = ASRUtils::extract_dimensions_from_ttype(expr1_type, expr1_mdims);
+    size_t expr2_ndims = ASRUtils::extract_dimensions_from_ttype(expr2_type, expr2_mdims);
+    if( expr1_ndims == expr2_ndims ) {
+        // TODO: Always broadcast both the expressions
+        return ;
+    }
+
+    if( expr1_ndims > expr2_ndims ) {
+        if( ASR::is_a<ASR::ArrayReshape_t>(*expr2) ) {
+            return ;
+        }
+        make_ArrayBroadcast_t_util(al, loc, expr1, expr2, expr1_mdims, expr1_ndims);
+    } else {
+        if( ASR::is_a<ASR::ArrayReshape_t>(*expr1) ) {
+            return ;
+        }
+        make_ArrayBroadcast_t_util(al, loc, expr2, expr1, expr2_mdims, expr2_ndims);
     }
 }
 

@@ -553,6 +553,7 @@ namespace LCompilers {
         ASR::expr_t* create_binop_helper(Allocator &al, const Location &loc, ASR::expr_t* left, ASR::expr_t* right,
                                                 ASR::binopType op) {
             ASR::ttype_t* type = ASRUtils::expr_type(left);
+            ASRUtils::make_ArrayBroadcast_t_util(al, loc, left, right);
             // TODO: compute `value`:
             if (ASRUtils::is_integer(*type)) {
                 return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, left, op, right, type, nullptr));

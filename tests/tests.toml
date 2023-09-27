@@ -83,6 +83,10 @@ filename = "../integration_tests/template_array_04.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/template_array_04b.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/template_01.f90"
 asr = true
 ast = true
@@ -1422,6 +1426,10 @@ run = true
 
 [[test]]
 filename = "write5.f90"
+run = true
+
+[[test]]
+filename = "write6.f90"
 run = true
 
 [[test]]
@@ -3407,6 +3415,8 @@ asr_implicit_interface_and_typing = true
 filename = "pragma2.f90"
 ast = true
 asr = true
+asr_ignore_pragma = true
+c = true
 
 [[test]]
 filename = "../integration_tests/matmul_01.f90"

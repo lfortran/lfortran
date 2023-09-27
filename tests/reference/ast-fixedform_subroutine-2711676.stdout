@@ -18,6 +18,7 @@
             ()
         )]
         []
+        []
     )
     (Program
         implicit_program_lfortran

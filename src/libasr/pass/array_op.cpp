@@ -369,6 +369,14 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         replace_vars_helper(x);
     }
 
+    void replace_ArrayBroadcast(ASR::ArrayBroadcast_t* x) {
+        ASR::expr_t** current_expr_copy_161 = current_expr;
+        current_expr = &(x->m_array);
+        replace_expr(x->m_array);
+        current_expr = current_expr_copy_161;
+        *current_expr = x->m_array;
+    }
+
     template <typename LOOP_BODY>
     void create_do_loop(const Location& loc, int result_rank,
         Vec<ASR::expr_t*>& idx_vars, Vec<ASR::expr_t*>& idx_vars_value,
@@ -1437,7 +1445,12 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
         inline void visit_AssignmentUtil(const ASR::Assignment_t& x) {
             ASR::expr_t** current_expr_copy_9 = current_expr;
             ASR::expr_t* original_value = x.m_value;
-            resultvar2value[replacer.result_var] = original_value;
+            if( ASR::is_a<ASR::ArrayBroadcast_t>(*x.m_value) ) {
+                resultvar2value[replacer.result_var] =
+                    ASR::down_cast<ASR::ArrayBroadcast_t>(original_value)->m_array;
+            } else {
+                resultvar2value[replacer.result_var] = original_value;
+            }
             current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
             this->call_replacer();
             current_expr = current_expr_copy_9;
@@ -1456,6 +1469,11 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
         }
 
         void visit_Assignment(const ASR::Assignment_t &x) {
+            if (ASR::is_a<ASR::Array_t>(*ASRUtils::expr_type(x.m_target)) &&
+                ASR::down_cast<ASR::Array_t>(ASRUtils::expr_type(x.m_target))->m_physical_type
+                    == ASR::array_physical_typeType::SIMDArray) {
+                return;
+            }
             if( (ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_target)) &&
                 ASR::is_a<ASR::GetPointer_t>(*x.m_value)) ||
                 (ASR::is_a<ASR::ArrayConstant_t>(*x.m_value)) ) {
@@ -1544,6 +1562,16 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
 
         void visit_Array(const ASR::Array_t& /*x*/) {
 
+        }
+
+        void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t& x) {
+            ASR::expr_t** current_expr_copy_269 = current_expr;
+            current_expr = const_cast<ASR::expr_t**>(&(x.m_array));
+            call_replacer();
+            current_expr = current_expr_copy_269;
+            if( x.m_array ) {
+                visit_expr(*x.m_array);
+            }
         }
 
 };

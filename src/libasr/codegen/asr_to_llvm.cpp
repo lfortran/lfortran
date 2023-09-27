@@ -6806,7 +6806,8 @@ public:
     }
 
     llvm::Function* get_read_function(ASR::ttype_t *type) {
-        type = ASRUtils::type_get_past_allocatable(type);
+        type = ASRUtils::type_get_past_allocatable(
+            ASRUtils::type_get_past_pointer(type));
         llvm::Function *fn = nullptr;
         switch (type->type) {
             case (ASR::ttypeType::Integer): {
@@ -6989,11 +6990,13 @@ public:
                 ASR::ttype_t* type = ASRUtils::expr_type(x.m_values[i]);
                 llvm::Function *fn = get_read_function(type);
                 if (ASRUtils::is_array(type)) {
-                    if (ASR::is_a<ASR::Allocatable_t>(*type)) {
+                    if (ASR::is_a<ASR::Allocatable_t>(*type)
+                        || ASR::is_a<ASR::Pointer_t>(*type)) {
                         tmp = CreateLoad(tmp);
                     }
                     tmp = arr_descr->get_pointer_to_data(tmp);
-                    if (ASR::is_a<ASR::Allocatable_t>(*type)) {
+                    if (ASR::is_a<ASR::Allocatable_t>(*type)
+                        || ASR::is_a<ASR::Pointer_t>(*type)) {
                         tmp = CreateLoad(tmp);
                     }
                     llvm::Value *arr = tmp;
@@ -7119,6 +7122,21 @@ public:
 
     void visit_FileRewind(const ASR::FileRewind_t &x) {
         std::string runtime_func_name = "_lfortran_rewind";
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {
+                        llvm::Type::getInt32Ty(context)
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+        }
+        this->visit_expr_wrapper(x.m_unit, true);
+        builder->CreateCall(fn, {tmp});
+    }
+
+    void visit_FileBackspace(const ASR::FileBackspace_t &x) {
+        std::string runtime_func_name = "_lfortran_backspace";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
