@@ -802,7 +802,10 @@ public:
 
     // void visit_StringRepeat(const ASR::StringRepeat_t &x) {}
 
-    // void visit_StringLen(const ASR::StringLen_t &x) {}
+    void visit_StringLen(const ASR::StringLen_t &x) {
+        visit_expr(*x.m_arg);
+        s = "len(" + s + ")";
+    }
 
     // void visit_StringItem(const ASR::StringItem_t &x) {}
 
