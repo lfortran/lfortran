@@ -597,10 +597,13 @@ public:
             Vec<ASR::require_instantiation_t*> reqs;
             reqs.reserve(al, x.n_decl);
             for (size_t i=0; i < x.n_decl; i++) {
-                if (AST::is_a<AST::Requires_t>(*x.m_decl[i])) {
-                    this->visit_unit_decl2(*x.m_decl[i]);
-                    reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
-                    tmp = nullptr;
+                if (AST::is_a<AST::Require_t>(*x.m_decl[i])) {
+                    AST::Require_t *r = AST::down_cast<AST::Require_t>(x.m_decl[i]);
+                    for (size_t i=0; i<r->n_reqs; i++) {
+                        visit_unit_require(*r->m_reqs[i]);
+                        reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
+                        tmp = nullptr;
+                    }
                 }
             }
 
@@ -631,7 +634,7 @@ public:
         }
         for (size_t i=0; i<x.n_decl; i++) {
             is_Function = true;
-            if (!AST::is_a<AST::Requires_t>(*x.m_decl[i])) {
+            if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {
                 visit_unit_decl2(*x.m_decl[i]);
             }
             is_Function = false;
