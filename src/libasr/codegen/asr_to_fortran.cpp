@@ -873,7 +873,20 @@ public:
 
     // void visit_ArraySection(const ASR::ArraySection_t &x) {}
 
-    // void visit_ArraySize(const ASR::ArraySize_t &x) {}
+    void visit_ArraySize(const ASR::ArraySize_t &x) {
+        visit_expr(*x.m_v);
+        std::string r = "";
+        if (x.m_dim == nullptr) {
+            // TODO: return the product of all dimensions:
+            r = "0";
+        } else {
+            if( x.m_dim ) {
+                visit_expr(*x.m_dim);
+                r += s + "-1";
+            }
+        }
+        s += r;
+    }
 
     void visit_ArrayBound(const ASR::ArrayBound_t &x) {
         std::string r = "";
