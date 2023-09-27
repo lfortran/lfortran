@@ -3266,7 +3266,7 @@ public:
 
     }
 
-    void visit_Requires(const AST::Requires_t /*&x*/) {
+    void visit_Require(const AST::Require_t /*&x*/) {
 
     }
 

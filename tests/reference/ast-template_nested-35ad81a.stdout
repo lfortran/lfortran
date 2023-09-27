@@ -112,10 +112,12 @@
             add_t
             [T
             F]
-            [(Requires
-                R
-                [T
-                F]
+            [(Require
+                [(UnitRequire
+                    R
+                    [T
+                    F]
+                )]
             )
             (Declaration
                 ()

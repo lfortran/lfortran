@@ -345,7 +345,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_TEAM
 %token <string> KW_TEAM_NUMBER
 %token <string> KW_REQUIREMENT
-%token <string> KW_REQUIRES
+%token <string> KW_REQUIRE
 %token <string> KW_TEMPLATE
 %token <string> KW_THEN
 %token <string> KW_TO
@@ -381,7 +381,9 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> derived_type_decl
 %type <ast> template_decl
 %type <ast> requirement_decl
-%type <ast> requires_decl
+%type <ast> require_decl
+%type <vec_ast> unit_require_plus
+%type <ast> unit_require
 %type <ast> enum_decl
 %type <ast> program
 %type <ast> end_program
@@ -733,10 +735,18 @@ requirement_decl
             $$ = REQUIREMENT($2, $4, $7, $8, @$); }
     ;
 
-requires_decl
-    : KW_REQUIRES id "(" id_list ")" sep {
-        $$ = REQUIRES($2, $4, @$); }
+require_decl
+    : KW_REQUIRE "::" unit_require_plus sep {
+        $$ = REQUIRE($3, @$); }
     ;
+
+unit_require_plus
+    : unit_require_plus "," unit_require { $$ = $1; LIST_ADD($$, $3); }
+    | unit_require { LIST_NEW($$); LIST_ADD($$, $1); }
+    ;
+
+unit_require
+    : id "(" id_list ")" { $$ = UNIT_REQUIRE($1, $3, @$); }
 
 instantiate
     : KW_INSTANTIATE id "(" use_symbol_list ")" sep {
@@ -1033,7 +1043,7 @@ temp_decl
     : var_decl
     | interface_decl
     | derived_type_decl
-    | requires_decl
+    | require_decl
     | instantiate
     ;
 
@@ -1569,7 +1579,7 @@ decl_statement
     | enum_decl
     | statement
     | instantiate
-    | requires_decl
+    | require_decl
     ;
 
 statement
@@ -2546,7 +2556,7 @@ id
     | KW_RECURSIVE { $$ = SYMBOL($1, @$); }
     | KW_REDUCE { $$ = SYMBOL($1, @$); }
     | KW_REQUIREMENT { $$ = SYMBOL($1, @$); }
-    | KW_REQUIRES { $$ = SYMBOL($1, @$); }
+    | KW_REQUIRE { $$ = SYMBOL($1, @$); }
     | KW_RESULT { $$ = SYMBOL($1, @$); }
     | KW_RETURN { $$ = SYMBOL($1, @$); }
     | KW_REWIND { $$ = SYMBOL($1, @$); }

@@ -91,10 +91,12 @@
             change_positions_tmpl
             [t
             ne]
-            [(Requires
-                eq
-                [t
-                ne]
+            [(Require
+                [(UnitRequire
+                    eq
+                    [t
+                    ne]
+                )]
             )
             (Declaration
                 ()

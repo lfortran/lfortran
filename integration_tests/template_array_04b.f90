@@ -10,7 +10,7 @@ module template_array_04b_m
 contains
 
     subroutine swap{T}(x, y)
-        requires default_behavior(T)
+        require :: default_behavior(T)
         type(T), intent(inout) :: x, y
         type(T) :: tmp
         tmp = x

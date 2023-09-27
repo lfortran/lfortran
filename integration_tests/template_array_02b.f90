@@ -54,7 +54,7 @@ module template_array_02b_m
     end requirement
 
     template array_tmpl(t, plus_t, zero_t)
-        requires operations(t, plus_t, zero_t)
+        require :: operations(t, plus_t, zero_t)
         private
         public :: mysum_t
     contains

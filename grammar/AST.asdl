@@ -72,7 +72,7 @@ unit_decl2
     | Instantiate(identifier name, use_symbol* args, use_symbol* symbols)
     | Requirement(identifier name, identifier* namelist, unit_decl2* decl,
         program_unit* funcs)
-    | Requires(identifier name, identifier* namelist)
+    | Require(unit_require* reqs)
 
 interface_header
     = InterfaceHeader()
@@ -451,5 +451,8 @@ data_stmt_set
 pragma_type
     = LFortranPragma
     | OMPPragma
+
+unit_require
+    = UnitRequire(identifier name, identifier* namelist)
 
 }

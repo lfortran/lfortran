@@ -54,9 +54,11 @@
         (Template
             struct_t
             [t]
-            [(Requires
-                r
-                [t]
+            [(Require
+                [(UnitRequire
+                    r
+                    [t]
+                )]
             )
             (Declaration
                 ()
