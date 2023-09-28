@@ -315,9 +315,9 @@ class ASRBuilder {
     #define iDiv(left, right) r2i32(EXPR(ASR::make_RealBinOp_t(al, loc, \
                 i2r32(left), ASR::binopType::Div, i2r32(right), real32, nullptr)))
     #define iDivr32(left, right) r2i32(EXPR(ASR::make_RealBinOp_t(al, loc, \
-                i2r32(left), ASR::binopType::Div, i2r32(right), real32, nullptr)))
+                left, ASR::binopType::Div, right, real32, nullptr)))
     #define iDivr64(left, right) r2i32(EXPR(ASR::make_RealBinOp_t(al, loc, \
-                i2r64(left), ASR::binopType::Div, i2r64(right), real64, nullptr))) \
+                left, ASR::binopType::Div, right, real64, nullptr))) \
 
     #define r32Sub(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
             ASR::binopType::Sub, right, real32, nullptr))
