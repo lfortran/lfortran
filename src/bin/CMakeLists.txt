@@ -39,7 +39,7 @@ if (WITH_STACKTRACE AND APPLE AND CMAKE_CXX_COMPILER_ID MATCHES Clang)
         add_custom_command(
             TARGET lfortran
             POST_BUILD
-            COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/dwarf_convert.py lfortran.dSYM/raw.txt lfortran.dSYM/lines.txt lfortran.dSYM/lines.dat
+            COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../libasr/dwarf_convert.py lfortran.dSYM/raw.txt lfortran.dSYM/lines.txt lfortran.dSYM/lines.dat
         )
     endif()
 endif()
