@@ -513,7 +513,7 @@ RUN(NAME intrinsics_74 LABELS gfortran llvm c) # random_number
 RUN(NAME intrinsics_75 LABELS gfortran llvm)
 RUN(NAME intrinsics_76 LABELS gfortran llvm)
 RUN(NAME intrinsics_77 LABELS gfortran llvm)
-RUN(NAME intrinsics_78 LABELS gfortran llvm) # mod
+RUN(NAME intrinsics_78 LABELS gfortran llvm wasm) # mod
 
 
 RUN(NAME parameter_01 LABELS gfortran)
