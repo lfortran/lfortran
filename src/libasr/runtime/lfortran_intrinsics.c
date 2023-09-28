@@ -2630,9 +2630,9 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
     get_local_info_dwarfdump(&d);
 
 #ifdef HAVE_LFORTRAN_MACHO
-    for (int32_t i = d.local_pc_size-2; i >= 0; i--) {
+    for (int32_t i = d.local_pc_size-1; i >= 0; i--) {
 #else
-    for (int32_t i = d.local_pc_size-3; i >= 0; i--) {
+    for (int32_t i = d.local_pc_size-2; i >= 0; i--) {
 #endif
         uint64_t index = bisection(d.addresses, d.stack_size, d.local_pc[i]);
         if(use_colors) {
