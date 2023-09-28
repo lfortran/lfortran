@@ -1118,3 +1118,5 @@ RUN(NAME matmul_01 LABELS gfortran)
 RUN(NAME legacy_array_sections_01 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections)
 RUN(NAME legacy_array_sections_02 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections)
 RUN(NAME cmake_minimal_test_01 LABELS gfortran llvm)
+
+RUN(NAME ip_01 LABELS gfortran llvm)
