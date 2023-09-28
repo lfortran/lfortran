@@ -875,17 +875,17 @@ public:
 
     void visit_ArraySize(const ASR::ArraySize_t &x) {
         visit_expr(*x.m_v);
-        std::string r = "";
-        if (x.m_dim == nullptr) {
-            // TODO: return the product of all dimensions:
-            r = "0";
-        } else {
-            if( x.m_dim ) {
+        std::string r = "size(" + s;
+        if (x.m_dim) {
+            r += ", ";
+            int dim = down_cast<ASR::Integer_t>(x.m_dim)->m_kind;
+            for(int i = 0; i < dim; i++) {
                 visit_expr(*x.m_dim);
-                r += s + "-1";
+                r += s;
+                if (i < dim-1) r += ", ";
             }
         }
-        s += r;
+        r += ")";
     }
 
     void visit_ArrayBound(const ASR::ArrayBound_t &x) {
