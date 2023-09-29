@@ -96,7 +96,6 @@ struct IntrinsicProcedures {
             {"floor", {m_math3, &eval_floor, true}},
             {"ceiling", {m_math2, &eval_ceiling, true}},
             {"nint", {m_math2, &eval_nint, true}},
-            {"mod", {m_math2, &eval_mod, true}},
             {"modulo", {m_math2, &eval_modulo, true}},
             {"min", {m_math2, &eval_min, true}},
             {"max", {m_math2, &eval_max, true}},
@@ -624,12 +623,6 @@ TRIG2(sqrt, dsqrt)
         return eval_2args_ri(al, loc, args,
             &IntrinsicProcedures::lfortran_modulo,
             &IntrinsicProcedures::lfortran_modulo_i);
-    }
-
-    static ASR::expr_t *eval_mod(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
-        return eval_2args_ri(al, loc, args,
-            &IntrinsicProcedures::lfortran_mod,
-            &IntrinsicProcedures::lfortran_mod_i);
     }
 
     static double lfortran_min(double x, double y) {
