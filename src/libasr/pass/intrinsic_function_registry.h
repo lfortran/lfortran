@@ -314,10 +314,10 @@ class ASRBuilder {
             ASR::binopType::Sub, right, int32, nullptr))
     #define iDiv(left, right) r2i32(EXPR(ASR::make_RealBinOp_t(al, loc, \
                 i2r32(left), ASR::binopType::Div, i2r32(right), real32, nullptr)))
-    #define iDivr32(left, right) r2i32(EXPR(ASR::make_RealBinOp_t(al, loc, \
-                left, ASR::binopType::Div, right, real32, nullptr)))
-    #define iDivr64(left, right) r2i32(EXPR(ASR::make_RealBinOp_t(al, loc, \
-                left, ASR::binopType::Div, right, real64, nullptr))) \
+    #define r32Div(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, \
+                left, ASR::binopType::Div, right, real32, nullptr))
+    #define r64Div(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, \
+                left, ASR::binopType::Div, right, real64, nullptr))
 
     #define r32Sub(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
             ASR::binopType::Sub, right, real32, nullptr))
@@ -2044,11 +2044,11 @@ namespace Mod {
         if (is_real(*arg_types[1])) {
             int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[1]);
             if (kind == 4) {
-                q = iDivr32(args[0], args[1]);
+                q = r2i32(r32Div(args[0], args[1]));
                 op1 = r32Mul(args[1], i2r32(q));
                 op2 = r32Sub(args[0], op1);
             } else {
-                q = iDivr64(args[0], args[1]);
+                q = r2i64(r64Div(args[0], args[1]));
                 op1 = r64Mul(args[1], i2r64(q));
                 op2 = r64Sub(args[0], op1);
             }
