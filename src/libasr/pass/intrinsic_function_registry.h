@@ -45,6 +45,7 @@ enum class IntrinsicScalarFunctions : int64_t {
     FMA,
     FlipSign,
     Mod,
+    Trailz,
     ListIndex,
     Partition,
     ListReverse,
@@ -105,6 +106,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(FMA)
         INTRINSIC_NAME_CASE(FlipSign)
         INTRINSIC_NAME_CASE(Mod)
+        INTRINSIC_NAME_CASE(Trailz)
         INTRINSIC_NAME_CASE(ListIndex)
         INTRINSIC_NAME_CASE(Partition)
         INTRINSIC_NAME_CASE(ListReverse)
@@ -2067,6 +2069,101 @@ namespace Mod {
 
 } // namespace Mod
 
+namespace Trailz {
+
+     static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 1,
+            "ASR Verify: Call to Trailz must have exactly 2 arguments",
+            x.base.base.loc, diagnostics);
+        ASR::ttype_t *type1 = ASRUtils::expr_type(x.m_args[0]);
+        ASRUtils::require_impl(is_integer(*type1),
+            "ASR Verify: Arguments to Trailz must be of integer type",
+            x.base.base.loc, diagnostics);
+    }
+
+    static ASR::expr_t *eval_Trailz(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
+        int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        int64_t trailing_zeros = __builtin_ctz(a);
+        return make_ConstantWithType(make_IntegerConstant_t, trailing_zeros, t1, loc);
+    }
+
+    static inline ASR::asr_t* create_Trailz(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args,
+            const std::function<void (const std::string &, const Location &)> err) {
+        if (args.size() != 1) {
+            err("Intrinsic Trailz function accepts exactly 1 arguments", loc);
+        }
+        ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
+        if (!(ASRUtils::is_integer(*type1))) {
+            err("Argument of the Trailz function must be Integer",
+                args[0]->base.loc);
+        }
+        ASR::expr_t *m_value = nullptr;
+        if (all_args_evaluated(args)) {
+            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 1);
+            arg_values.push_back(al, expr_value(args[0]));
+            m_value = eval_Trailz(al, loc, expr_type(args[0]), arg_values);
+        }
+        return ASR::make_IntrinsicScalarFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicScalarFunctions::Trailz),
+            args.p, args.n, 0, ASRUtils::expr_type(args[0]), m_value);
+    }
+
+    static inline ASR::expr_t* instantiate_Trailz(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_optimization_trailz_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("n", arg_types[0]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        // This is not the most efficient way to do this, but it works for now.
+        /*
+        function trailz(n) result(result)
+            integer :: n
+            integer :: result
+            result = 0
+            if (n == 0) then
+                result = 32
+            else
+                do while (mod(n,2) == 0)
+                    n = n/2
+                    result = result + 1
+                end do
+            end if
+        end function
+        */
+
+        body.push_back(al, b.Assignment(result, i(0, arg_types[0])));
+        ASR::expr_t *two = i(2, arg_types[0]);
+
+        Vec<ASR::ttype_t*> arg_types_mod; arg_types_mod.reserve(al, 2);
+        arg_types_mod.push_back(al, arg_types[0]); arg_types_mod.push_back(al, ASRUtils::expr_type(two));
+
+        Vec<ASR::call_arg_t> new_args_mod; new_args_mod.reserve(al, 2);
+        ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = args[0];
+        ASR::call_arg_t arg2; arg2.loc = loc; arg2.m_value = two;
+        new_args_mod.push_back(al, arg1); new_args_mod.push_back(al, arg2);
+
+        ASR::expr_t* func_call_mod = Mod::instantiate_Mod(al, loc, scope, arg_types_mod, return_type, new_args_mod, 0);
+        ASR::expr_t *cond = iEq(func_call_mod, i(0, arg_types[0]));
+
+        std::vector<ASR::stmt_t*> while_loop_body;
+        while_loop_body.push_back(b.Assignment(args[0], iDiv(args[0], two)));
+        while_loop_body.push_back(b.Assignment(result, iAdd(result, i(1, arg_types[0]))));
+
+        ASR::expr_t* check_zero = iEq(args[0], i(0, arg_types[0]));
+        std::vector<ASR::stmt_t*> if_body; if_body.push_back(b.Assignment(result, i(32, arg_types[0])));
+        std::vector<ASR::stmt_t*> else_body; else_body.push_back(b.While(cond, while_loop_body));
+        body.push_back(al, b.If(check_zero, if_body, else_body));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace Trailz
+
 #define create_exp_macro(X, stdeval)                                                      \
 namespace X {                                                                             \
     static inline ASR::expr_t* eval_##X(Allocator &al, const Location &loc,               \
@@ -3098,6 +3195,8 @@ namespace IntrinsicScalarFunctionRegistry {
             {&FlipSign::instantiate_FlipSign, &FlipSign::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Mod),
             {&Mod::instantiate_Mod, &Mod::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Trailz),
+            {&Trailz::instantiate_Trailz, &Trailz::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Abs),
             {&Abs::instantiate_Abs, &Abs::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Partition),
@@ -3200,6 +3299,8 @@ namespace IntrinsicScalarFunctionRegistry {
             "flipsign"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Mod),
             "mod"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Trailz),
+            "trailz"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Expm1),
             "expm1"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::ListIndex),
@@ -3285,6 +3386,7 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"expm1", {&Expm1::create_Expm1, &Expm1::eval_Expm1}},
                 {"fma", {&FMA::create_FMA, &FMA::eval_FMA}},
                 {"mod", {&Mod::create_Mod, &Mod::eval_Mod}},
+                {"trailz", {&Trailz::create_Trailz, &Trailz::eval_Trailz}},
                 {"list.index", {&ListIndex::create_ListIndex, &ListIndex::eval_list_index}},
                 {"list.reverse", {&ListReverse::create_ListReverse, &ListReverse::eval_list_reverse}},
                 {"list.pop", {&ListPop::create_ListPop, &ListPop::eval_list_pop}},
