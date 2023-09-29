@@ -1123,3 +1123,6 @@ RUN(NAME legacy_array_sections_02 LABELS gfortran llvm EXTRA_ARGS --legacy-array
 RUN(NAME cmake_minimal_test_01 LABELS gfortran llvm)
 
 RUN(NAME ip_01 LABELS gfortran llvm)
+
+RUN(NAME shifta_01 LABELS gfortran llvm)
+RUN(NAME shifta_02 LABELS gfortran llvm)
