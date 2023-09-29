@@ -4782,6 +4782,18 @@ public:
                                         type, nullptr);
     }
 
+    ASR::asr_t* create_Shifta(const Location &loc, Vec<ASR::call_arg_t> args) {
+        /*
+            shifta(n, w):
+            This is arithmetic shift right by w bits.
+            Represent using BinOp, with left = n, right = w, op = BitRShift
+        */
+        ASR::expr_t *n = args[0].m_value;
+        ASR::expr_t *w = args[1].m_value;
+        return ASRUtils::make_Binop_util(al, loc, ASR::binopType::BitRShift,
+                            n, w, ASRUtils::expr_type(n));
+    }
+
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
         std::string var_name = to_lower(x.m_func);
         if (x.n_temp_args > 0) {
@@ -4821,6 +4833,11 @@ public:
                 Vec<ASR::call_arg_t> args;
                 visit_expr_list(x.m_args, x.n_args, args);
                 tmp = handle_intrinsic_float(al, args, x.base.base.loc);
+                return;
+            } else if (var_name == "shifta") {
+                Vec<ASR::call_arg_t> args;
+                visit_expr_list(x.m_args, x.n_args, args);
+                tmp = create_Shifta(x.base.base.loc, args);
                 return;
             }
             bool is_function = true;
