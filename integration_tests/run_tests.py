@@ -32,7 +32,7 @@ def run_test(backend):
                 cwd=cwd)
     elif backend == "fortran":
         run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} "
-            "-DFAST={fast_tests} -DCMAKE_Fortran_FLAGS=\"-g\"" + common,
+            "-DFAST={fast_tests} -DCMAKE_Fortran_FLAGS=\"-fPIC\"" + common,
                 cwd=cwd)
     else:
         run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests}" + common,
