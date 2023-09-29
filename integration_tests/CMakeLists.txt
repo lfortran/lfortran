@@ -1126,3 +1126,12 @@ RUN(NAME ip_01 LABELS gfortran llvm)
 
 RUN(NAME shifta_01 LABELS gfortran llvm)
 RUN(NAME shifta_02 LABELS gfortran llvm)
+
+RUN(NAME equivalence_01 LABELS gfortran)
+RUN(NAME equivalence_02 LABELS gfortran llvm)
+RUN(NAME equivalence_03 LABELS gfortran)
+RUN(NAME equivalence_04 LABELS gfortran llvm)
+RUN(NAME equivalence_05 LABELS gfortran)
+RUN(NAME equivalence_06 LABELS gfortran llvm)
+RUN(NAME equivalence_07 LABELS gfortran llvm)
+
