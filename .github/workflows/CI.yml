@@ -53,6 +53,7 @@ jobs:
             echo "LFORTRAN_CMAKE_GENERATOR=Ninja" >> $GITHUB_ENV
             echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
             echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+            echo "ENABLE_RUNTIME_STACKTRACE=yes" >> $GITHUB_ENV
 
       - name: Build (Linux / macOS)
         shell: bash -e -l {0}
@@ -313,6 +314,7 @@ jobs:
               -DWITH_LLVM=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
+              -DWITH_RUNTIME_STACKTRACE=yes \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
@@ -324,7 +326,7 @@ jobs:
         shell: bash -e -l {0}
         run: |
             ctest
-            ./run_tests.py -s
+            ./run_tests.py
             cd integration_tests
             ./run_tests.py -m
             ./run_tests.py -b llvm
@@ -359,6 +361,7 @@ jobs:
               -DWITH_LLVM=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
+              -DWITH_RUNTIME_STACKTRACE=yes \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
@@ -370,7 +373,7 @@ jobs:
         shell: bash -e -l {0}
         run: |
             ctest
-            ./run_tests.py -s
+            ./run_tests.py
             cd integration_tests
             ./run_tests.py -m
             ./run_tests.py -b llvm

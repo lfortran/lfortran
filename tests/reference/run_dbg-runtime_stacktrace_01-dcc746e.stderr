@@ -1,0 +1,9 @@
+  File "tests/errors/runtime_stacktrace_01.f90", line 3
+    print *, main()
+  File "tests/errors/runtime_stacktrace_01.f90", line 10
+    print *, g()
+  File "tests/errors/runtime_stacktrace_01.f90", line 20
+    call f()
+  File "tests/errors/runtime_stacktrace_01.f90", line 14
+    stop
+STOP

@@ -958,6 +958,19 @@ int compile_to_object_file(const std::string &infile,
 
     std::unique_ptr<LCompilers::LLVMModule> m;
     diagnostics.diagnostics.clear();
+    if (compiler_options.emit_debug_info) {
+#ifndef HAVE_RUNTIME_STACKTRACE
+        diagnostics.add(LCompilers::diag::Diagnostic(
+            "The `runtime stacktrace` is not enabled. To get the stack traces "
+            "or debugging information, please re-build LFortran with "
+            "`-DWITH_RUNTIME_STACKTRACE=yes`",
+            LCompilers::diag::Level::Error,
+            LCompilers::diag::Stage::Semantic, {})
+        );
+        std::cerr << diagnostics.render(lm, compiler_options);
+        return 1;
+#endif
+    }
     LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
         res = fe.get_llvm3(*asr, lpm, diagnostics, infile);
     std::cerr << diagnostics.render(lm, compiler_options);
@@ -1589,7 +1602,34 @@ int link_executable(const std::vector<std::string> &infiles,
             std::cout << "The command '" + compile_cmd + "' failed." << std::endl;
             return 10;
         }
-        if (compiler_options.run || (outfile == "a.out" && compiler_options.arg_o == "")) {
+        size_t dot_index = outfile.find_last_of(".");
+        std::string file_name = outfile.substr(0, dot_index);
+        if (compiler_options.run || (outfile == file_name + ".out" &&
+                compiler_options.arg_o == "")) {
+#ifdef HAVE_RUNTIME_STACKTRACE
+            if (compiler_options.emit_debug_info) {
+                // TODO: Replace the following hardcoded part
+                std::string cmd = "";
+#ifdef HAVE_LFORTRAN_MACHO
+                cmd += "dsymutil " + file_name + ".out && llvm-dwarfdump --debug-line "
+                    + file_name + ".out.dSYM > ";
+#else
+                cmd += "llvm-dwarfdump --debug-line " + file_name + ".out > ";
+#endif
+                cmd += file_name + "_ldd.txt && (cd src/libasr; ./dwarf_convert.py ../../"
+                    + file_name + "_ldd.txt ../../" + file_name + "_lines.txt ../../"
+                    + file_name + "_lines.dat && ./dat_convert.py ../../"
+                    + file_name + "_lines.dat)";
+                int status = system(cmd.c_str());
+                if ( status != 0 ) {
+                    std::cerr << "Error in creating the files used to generate "
+                        "the debug information. This might be caused because either"
+                        " `llvm-dwarfdump` or `Python` are not available. "
+                        "Please activate the CONDA environment and compile again.\n";
+                    return status;
+                }
+            }
+#endif
             int err = system(run_cmd.c_str());
             if (err != 0) {
                 if (0 < err && err < 256) {
@@ -1956,6 +1996,8 @@ int main(int argc, char *argv[])
         app.add_option("-I", compiler_options.include_dirs, "Include path")->allow_extra_args(false);
         app.add_option("-J", compiler_options.mod_files_dir, "Where to save mod files");
         app.add_flag("-g", compiler_options.emit_debug_info, "Compile with debugging information");
+        app.add_flag("--debug-with-line-column", compiler_options.emit_debug_line_column,
+            "Convert the linear location info into line + column in the debugging information");
         app.add_option("-D", compiler_options.c_preprocessor_defines, "Define <macro>=<value> (or 1 if <value> omitted)")->allow_extra_args(false);
         app.add_flag("--version", arg_version, "Display compiler version information");
         app.add_option("-W", linker_flags, "Linker flags")->allow_extra_args(false);
@@ -2017,7 +2059,7 @@ int main(int argc, char *argv[])
         app.add_flag("--all-mangling", compiler_options.all_symbols_mangling, "Mangles all possible symbols");
         app.add_flag("--bindc-mangling", compiler_options.bindc_mangling, "Mangles functions with abi bind(c)");
         app.add_flag("--mangle-underscore", compiler_options.mangle_underscore, "Mangles with underscore");
-        app.add_flag("--run", compiler_options.run, "Executes the generated binary");
+        app.add_flag("--run", compiler_options.run, "Executes the generated binary when the `-o` option is specified");
         app.add_flag("--legacy-array-sections", compiler_options.legacy_array_sections, "Enables passing array items as sections if required");
         app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas");
 
@@ -2132,11 +2174,6 @@ int main(int argc, char *argv[])
                 compiler_options);
         }
 
-        if (compiler_options.emit_debug_info) {
-            compiler_options.emit_debug_line_column = true;
-        }
-
-
         if (arg_backend == "llvm") {
             backend = Backend::llvm;
         } else if (arg_backend == "c") {
@@ -2198,7 +2235,7 @@ int main(int argc, char *argv[])
         } else if (show_julia) {
             outfile = basename.replace_extension(".jl").string();
         } else {
-            outfile = "a.out";
+            outfile = basename.replace_extension(".out").string();
         }
 
         if (arg_E) {
