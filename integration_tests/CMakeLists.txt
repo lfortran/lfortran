@@ -514,6 +514,7 @@ RUN(NAME intrinsics_75 LABELS gfortran llvm)
 RUN(NAME intrinsics_76 LABELS gfortran llvm)
 RUN(NAME intrinsics_77 LABELS gfortran llvm)
 RUN(NAME intrinsics_78 LABELS gfortran llvm wasm) # mod
+RUN(NAME intrinsics_79 LABELS gfortran llvm wasm) # Trailz
 
 
 RUN(NAME parameter_01 LABELS gfortran)
