@@ -9,9 +9,9 @@ program equivalence_01
     equivalence (dmach(3),maxmag(1))
     minmag = 2
     mcheps = 1
-    if(minmag(1) - 1 > 1e-15) error stop
-    if(minmag(2) - 1 > 1e-15) error stop
-    if(minmag(3) - 2 > 1e-15) error stop
-    if(minmag(4) - 2 > 1e-15) error stop
-    if(mcheps(1) - 1 > 1e-15) error stop
+    if(minmag(1) /= 1 ) error stop
+    if(minmag(2) /= 1 ) error stop
+    if(minmag(3) /= 2 ) error stop
+    if(minmag(4) /= 2 ) error stop
+    if(mcheps(1) /= 1 ) error stop
 end

@@ -13,9 +13,9 @@ program equivalence_04
     call c_f_pointer(c_loc(dmach(4)), diver, [2])
     call c_f_pointer(c_loc(dmach(5)), log10, [2])
     dmach(2) = 5.6_8
-    if(large(1) - 1717986918 > 1e-15) error stop
-    if(large(2) - 1075209830 > 1e-15) error stop
+    if(large(1) /= 1717986918) error stop
+    if(large(2) /= 1075209830) error stop
     dmach(2) = 5.7_8
-    if(large(1) - 858993459 > 1e-15) error stop
-    if(large(2) - 1075236044 > 1e-15) error stop
+    if(large(1) /= -858993459) error stop
+    if(large(2) /= 1075236044) error stop
     end

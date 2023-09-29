@@ -12,9 +12,9 @@ program equivalence_03
     EQUIVALENCE (DMACH(4),DIVER(1))
     EQUIVALENCE (DMACH(5),LOG10(1))
     dmach(2) = 5.6_8
-    if(large(1) - 1717986918 > 1e-15) error stop
-    if(large(2) - 1075209830 > 1e-15) error stop
+    if(large(1) /= 1717986918) error stop
+    if(large(2) /= 1075209830) error stop
     dmach(2) = 5.7_8
-    if(large(1) - 858993459 > 1e-15) error stop
-    if(large(2) - 1075236044 > 1e-15) error stop
+    if(large(1) /= -858993459) error stop
+    if(large(2) /= 1075236044) error stop
 end
