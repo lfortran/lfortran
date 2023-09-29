@@ -2267,6 +2267,23 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, ch
     va_end(args);
 }
 
+LFORTRAN_API void _lfortran_empty_read(int32_t unit_num) {
+    bool unit_file_bin;
+    FILE* fp = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+    if (!fp) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (!unit_file_bin) {
+        // The contents of `c` are ignored
+        char c;
+        while (c != '\n') {
+            c = fgetc(fp);
+        }
+    }
+}
+
 LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n)
 {
     char *c = (char *) calloc(n, sizeof(char));

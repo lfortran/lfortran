@@ -7009,6 +7009,27 @@ public:
                     builder->CreateCall(fn, {tmp, unit_val});
                 }
             }
+
+            // In Fortran, read(u, *) is used to read the entire line. The
+            // next read(u, *) function is intended to read the next entire
+            // line. Let's take an example: `read(u, *) n`, where n is an
+            // integer. The first occurance of the integer value will be
+            // read, and anything after that will be skipped.
+            // Here, we can use `_lfortran_empty_read` function to move to the
+            // pointer to the next line.
+            std::string runtime_func_name = "_lfortran_empty_read";
+            llvm::Function *fn = module->getFunction(runtime_func_name);
+            if (!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context), {
+                            llvm::Type::getInt32Ty(context)
+                        }, false);
+                fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, runtime_func_name,
+                            *module);
+            }
+            this->visit_expr_wrapper(x.m_unit, true);
+            builder->CreateCall(fn, {unit_val});
         }
     }
 
