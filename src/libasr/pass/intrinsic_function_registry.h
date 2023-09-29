@@ -310,11 +310,16 @@ class ASRBuilder {
     // Binop -------------------------------------------------------------------
     #define iAdd(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
             ASR::binopType::Add, right, int32, nullptr))
+
     #define iMul(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
             ASR::binopType::Mul, right, int32, nullptr))
     #define iSub(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
             ASR::binopType::Sub, right, int32, nullptr))
     #define iDiv(left, right) r2i32(EXPR(ASR::make_RealBinOp_t(al, loc, \
+                i2r32(left), ASR::binopType::Div, i2r32(right), real32, nullptr)))
+    #define iAdd64(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
+            ASR::binopType::Add, right, int64, nullptr))
+    #define iDiv64(left, right) r2i64(EXPR(ASR::make_RealBinOp_t(al, loc, \
                 i2r32(left), ASR::binopType::Div, i2r32(right), real32, nullptr)))
     #define r32Div(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, \
                 left, ASR::binopType::Div, right, real32, nullptr))
@@ -2115,7 +2120,7 @@ namespace Trailz {
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_optimization_trailz_" + type_to_str_python(arg_types[0]));
         fill_func_arg("n", arg_types[0]);
-        auto result = declare(fn_name, return_type, ReturnVar);
+        auto result = declare(fn_name, arg_types[0], ReturnVar);
         // This is not the most efficient way to do this, but it works for now.
         /*
         function trailz(n) result(result)
@@ -2135,6 +2140,7 @@ namespace Trailz {
 
         body.push_back(al, b.Assignment(result, i(0, arg_types[0])));
         ASR::expr_t *two = i(2, arg_types[0]);
+        int arg_0_kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
 
         Vec<ASR::ttype_t*> arg_types_mod; arg_types_mod.reserve(al, 2);
         arg_types_mod.push_back(al, arg_types[0]); arg_types_mod.push_back(al, ASRUtils::expr_type(two));
@@ -2148,8 +2154,13 @@ namespace Trailz {
         ASR::expr_t *cond = iEq(func_call_mod, i(0, arg_types[0]));
 
         std::vector<ASR::stmt_t*> while_loop_body;
-        while_loop_body.push_back(b.Assignment(args[0], iDiv(args[0], two)));
-        while_loop_body.push_back(b.Assignment(result, iAdd(result, i(1, arg_types[0]))));
+        if (arg_0_kind == 4) {
+            while_loop_body.push_back(b.Assignment(args[0], iDiv(args[0], two)));
+            while_loop_body.push_back(b.Assignment(result, iAdd(result, i(1, arg_types[0]))));
+        } else {
+            while_loop_body.push_back(b.Assignment(args[0], iDiv64(args[0], two)));
+            while_loop_body.push_back(b.Assignment(result, iAdd64(result, i(1, arg_types[0]))));
+        }
 
         ASR::expr_t* check_zero = iEq(args[0], i(0, arg_types[0]));
         std::vector<ASR::stmt_t*> if_body; if_body.push_back(b.Assignment(result, i(32, arg_types[0])));
