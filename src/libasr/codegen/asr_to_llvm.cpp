@@ -8500,6 +8500,7 @@ public:
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        if ( compiler_options.emit_debug_info ) debug_emit_loc(x);
         if( ASRUtils::is_intrinsic_optimization(x.m_name) ) {
             ASR::Function_t* routine = ASR::down_cast<ASR::Function_t>(
                         ASRUtils::symbol_get_past_external(x.m_name));
