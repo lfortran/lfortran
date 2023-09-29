@@ -736,6 +736,7 @@ public:
         {"aint", {IntrinsicSignature({}, 1, 2)}},
         {"atan2", {IntrinsicSignature({}, 2, 2)}},
         {"shape", {IntrinsicSignature({"kind"}, 1, 2)}},
+        {"mod", {IntrinsicSignature({"mod"}, 1, 2)}},
     };
 
 

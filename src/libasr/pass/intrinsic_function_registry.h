@@ -44,6 +44,7 @@ enum class IntrinsicScalarFunctions : int64_t {
     Expm1,
     FMA,
     FlipSign,
+    Mod,
     ListIndex,
     Partition,
     ListReverse,
@@ -103,6 +104,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Expm1)
         INTRINSIC_NAME_CASE(FMA)
         INTRINSIC_NAME_CASE(FlipSign)
+        INTRINSIC_NAME_CASE(Mod)
         INTRINSIC_NAME_CASE(ListIndex)
         INTRINSIC_NAME_CASE(Partition)
         INTRINSIC_NAME_CASE(ListReverse)
@@ -311,8 +313,20 @@ class ASRBuilder {
     #define iSub(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
             ASR::binopType::Sub, right, int32, nullptr))
     #define iDiv(left, right) r2i32(EXPR(ASR::make_RealBinOp_t(al, loc, \
-                i2r32(left), ASR::binopType::Div, i2r32(right), real32, nullptr))) \
+                i2r32(left), ASR::binopType::Div, i2r32(right), real32, nullptr)))
+    #define r32Div(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, \
+                left, ASR::binopType::Div, right, real32, nullptr))
+    #define r64Div(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, \
+                left, ASR::binopType::Div, right, real64, nullptr))
 
+    #define r32Sub(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
+            ASR::binopType::Sub, right, real32, nullptr))
+    #define r64Sub(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
+            ASR::binopType::Sub, right, real64, nullptr))
+    #define r32Mul(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
+            ASR::binopType::Mul, right, real32, nullptr))
+    #define r64Mul(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
+            ASR::binopType::Mul, right, real64, nullptr))
     #define rDiv(left, right) ASRUtils::make_ArrayBroadcast_t_util(al, loc, left, right); \
         EXPR(ASR::make_RealBinOp_t(al, loc, left, \
             ASR::binopType::Div, right, real32, nullptr)) \
@@ -1952,6 +1966,107 @@ namespace FlipSign {
 
 } // namespace FlipSign
 
+namespace Mod {
+
+     static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 2,
+            "ASR Verify: Call to Mod must have exactly 2 arguments",
+            x.base.base.loc, diagnostics);
+        ASR::ttype_t *type1 = ASRUtils::expr_type(x.m_args[0]);
+        ASR::ttype_t *type2 = ASRUtils::expr_type(x.m_args[1]);
+        ASRUtils::require_impl((is_integer(*type1) && is_integer(*type2)) ||
+                                (is_real(*type1) && is_real(*type2)),
+            "ASR Verify: Arguments to Mod must be of real or integer type",
+            x.base.base.loc, diagnostics);
+    }
+
+    static ASR::expr_t *eval_Mod(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
+        bool is_real1 = is_real(*ASRUtils::expr_type(args[0]));
+        bool is_real2 = is_real(*ASRUtils::expr_type(args[1]));
+        bool is_int1 = is_integer(*ASRUtils::expr_type(args[0]));
+        bool is_int2 = is_integer(*ASRUtils::expr_type(args[1]));
+
+        if (is_int1 && is_int2) {
+            int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+            int64_t b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+            return make_ConstantWithType(make_IntegerConstant_t, a % b, t1, loc);
+        } else if (is_real1 && is_real2) {
+            double a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+            return make_ConstantWithType(make_RealConstant_t, std::fmod(a, b), t1, loc);
+        }
+        return nullptr;
+    }
+
+    static inline ASR::asr_t* create_Mod(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args,
+            const std::function<void (const std::string &, const Location &)> err) {
+        if (args.size() != 2) {
+            err("Intrinsic Mod function accepts exactly 2 arguments", loc);
+        }
+        ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
+        ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
+        if (!((ASRUtils::is_integer(*type1) && ASRUtils::is_integer(*type2)) ||
+            (ASRUtils::is_real(*type1) && ASRUtils::is_real(*type2)))) {
+            err("Argument of the Mod function must be either Real or Integer",
+                args[0]->base.loc);
+        }
+        ASR::expr_t *m_value = nullptr;
+        if (all_args_evaluated(args)) {
+            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 2);
+            arg_values.push_back(al, expr_value(args[0]));
+            arg_values.push_back(al, expr_value(args[1]));
+            m_value = eval_Mod(al, loc, expr_type(args[1]), arg_values);
+        }
+        return ASR::make_IntrinsicScalarFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicScalarFunctions::Mod),
+            args.p, args.n, 0, ASRUtils::expr_type(args[0]), m_value);
+    }
+
+    static inline ASR::expr_t* instantiate_Mod(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_optimization_mod_" + type_to_str_python(arg_types[1]));
+        fill_func_arg("a", arg_types[0]);
+        fill_func_arg("p", arg_types[1]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        /*
+        function modi32i32(a, p) result(d)
+            integer(int32), intent(in) :: a, p
+            integer(int32) :: q
+            q = a/p
+            d = a - p*q
+        end function
+        */
+
+        ASR::expr_t *q = nullptr, *op1 = nullptr, *op2 = nullptr;
+        if (is_real(*arg_types[1])) {
+            int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[1]);
+            if (kind == 4) {
+                q = r2i32(r32Div(args[0], args[1]));
+                op1 = r32Mul(args[1], i2r32(q));
+                op2 = r32Sub(args[0], op1);
+            } else {
+                q = r2i64(r64Div(args[0], args[1]));
+                op1 = r64Mul(args[1], i2r64(q));
+                op2 = r64Sub(args[0], op1);
+            }
+        } else {
+            q = iDiv(args[0], args[1]);
+            op1 = iMul(args[1], q);
+            op2 = iSub(args[0], op1);
+        }
+        body.push_back(al, b.Assignment(result, op2));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace Mod
+
 #define create_exp_macro(X, stdeval)                                                      \
 namespace X {                                                                             \
     static inline ASR::expr_t* eval_##X(Allocator &al, const Location &loc,               \
@@ -2981,6 +3096,8 @@ namespace IntrinsicScalarFunctionRegistry {
             {&FMA::instantiate_FMA, &FMA::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::FlipSign),
             {&FlipSign::instantiate_FlipSign, &FlipSign::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Mod),
+            {&Mod::instantiate_Mod, &Mod::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Abs),
             {&Abs::instantiate_Abs, &Abs::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Partition),
@@ -3081,6 +3198,8 @@ namespace IntrinsicScalarFunctionRegistry {
             "fma"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::FlipSign),
             "flipsign"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Mod),
+            "mod"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Expm1),
             "expm1"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::ListIndex),
@@ -3165,6 +3284,7 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"exp2", {&Exp2::create_Exp2, &Exp2::eval_Exp2}},
                 {"expm1", {&Expm1::create_Expm1, &Expm1::eval_Expm1}},
                 {"fma", {&FMA::create_FMA, &FMA::eval_FMA}},
+                {"mod", {&Mod::create_Mod, &Mod::eval_Mod}},
                 {"list.index", {&ListIndex::create_ListIndex, &ListIndex::eval_list_index}},
                 {"list.reverse", {&ListReverse::create_ListReverse, &ListReverse::eval_list_reverse}},
                 {"list.pop", {&ListPop::create_ListPop, &ListPop::eval_list_pop}},
