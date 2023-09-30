@@ -2399,8 +2399,14 @@ struct Stacktrace get_stacktrace_addresses() {
 }
 
 char *get_base_name(char *filename) {
-    size_t start = strrchr(filename, '/')-filename+1;
+    // Assuming filename always has an extensions
     size_t end = strrchr(filename, '.')-filename-1;
+    // Check for directories else start at 0th index
+    char *slash_idx_ptr = strrchr(filename, '/');
+    size_t start = 0;
+    if (slash_idx_ptr) {
+        start = slash_idx_ptr - filename+1;
+    }
     int nos_of_chars = end - start + 1;
     char *base_name;
     if (nos_of_chars < 0) {
