@@ -2,12 +2,12 @@
     "basename": "run_dbg-runtime_stacktrace_01-dcc746e",
     "cmd": "lfortran {infile} -g --debug-with-line-column --no-color",
     "infile": "tests/errors/runtime_stacktrace_01.f90",
-    "infile_hash": "70031852210149a2ec58efe720915a059b5f7ead51ceef0d49f18fc3",
+    "infile_hash": "3e65758e10744eea8d101be6437af3724c0ec32c832e29da968fc22d",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "run_dbg-runtime_stacktrace_01-dcc746e.stderr",
-    "stderr_hash": "6dcd8322c09d7b64ef1415d7c4346958e505f9d0d4c554aa554eada1",
-    "returncode": 0
+    "stderr_hash": "f02fbf456d669fd75ad684a7bcb6d1a8e12145593f1a977719365e33",
+    "returncode": 1
 }

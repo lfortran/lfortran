@@ -5,5 +5,5 @@
   File "tests/errors/runtime_stacktrace_01.f90", line 20
     call f()
   File "tests/errors/runtime_stacktrace_01.f90", line 14
-    stop
+    stop 1
 STOP

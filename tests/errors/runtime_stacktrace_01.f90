@@ -11,7 +11,7 @@ contains
     end function main
 
     subroutine f()
-        stop
+        stop 1
     end subroutine f
 
     function g()
