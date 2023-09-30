@@ -4606,6 +4606,8 @@ inline ASR::ttype_t* make_Pointer_t_util(Allocator& al, const Location& loc, ASR
     return ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, type));
 }
 
+int64_t compute_trailing_zeros(int64_t number);
+
 } // namespace ASRUtils
 
 } // namespace LCompilers

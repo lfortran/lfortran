@@ -1476,6 +1476,18 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
     }
 }
 
+int64_t compute_trailing_zeros(int64_t number) {
+    int64_t trailing_zeros = 0;
+    if (number == 0) {
+        return 32;
+    }
+    while (number % 2 == 0) {
+        number = number / 2;
+        trailing_zeros++;
+    }
+    return trailing_zeros;
+}
+
 //Initialize pointer to zero so that it can be initialized in first call to get_instance
 ASRUtils::LabelGenerator* ASRUtils::LabelGenerator::label_generator = nullptr;
 
