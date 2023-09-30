@@ -2078,7 +2078,7 @@ namespace Trailz {
 
      static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args == 1,
-            "ASR Verify: Call to Trailz must have exactly 2 arguments",
+            "ASR Verify: Call to Trailz must have exactly 1 argument",
             x.base.base.loc, diagnostics);
         ASR::ttype_t *type1 = ASRUtils::expr_type(x.m_args[0]);
         ASRUtils::require_impl(is_integer(*type1),
