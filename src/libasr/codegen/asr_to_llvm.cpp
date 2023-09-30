@@ -7466,25 +7466,28 @@ public:
     }
 
     void visit_Stop(const ASR::Stop_t &x) {
-        if (compiler_options.emit_debug_info) {
-            debug_emit_loc(x);
-            llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(infile);
-            llvm::Value *fmt_ptr1 = llvm::ConstantInt::get(context, llvm::APInt(
-                1, compiler_options.use_colors));
-            call_print_stacktrace_addresses(context, *module, *builder,
-                {fmt_ptr, fmt_ptr1});
-        }
-        llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("STOP\n");
-        print_error(context, *module, *builder, {fmt_ptr});
+        if (compiler_options.emit_debug_info) debug_emit_loc(x);
         llvm::Value *exit_code;
-        if (x.m_code && ASRUtils::expr_type(x.m_code)->type == ASR::ttypeType::Integer) {
+        if (x.m_code && is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_code))) {
             this->visit_expr(*x.m_code);
             exit_code = tmp;
+            if (compiler_options.emit_debug_info) {
+                llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(infile);
+                llvm::Value *fmt_ptr1 = llvm::ConstantInt::get(context, llvm::APInt(
+                    1, compiler_options.use_colors));
+                llvm::Value *test = builder->CreateICmpNE(exit_code, builder->getInt32(0));
+                llvm_utils->create_if_else(test, [=]() {
+                    call_print_stacktrace_addresses(context, *module, *builder,
+                        {fmt_ptr, fmt_ptr1});
+                }, [](){});
+            }
         } else {
             int exit_code_int = 0;
             exit_code = llvm::ConstantInt::get(context,
                     llvm::APInt(32, exit_code_int));
         }
+        llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("STOP\n");
+        print_error(context, *module, *builder, {fmt_ptr});
         exit(context, *module, *builder, exit_code);
     }
 
