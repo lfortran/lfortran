@@ -1136,3 +1136,4 @@ RUN(NAME equivalence_05 LABELS gfortran)
 RUN(NAME equivalence_06 LABELS gfortran llvm)
 RUN(NAME equivalence_07 LABELS gfortran llvm)
 
+RUN(NAME fortran_primes_01 LABELS gfortran llvm)
