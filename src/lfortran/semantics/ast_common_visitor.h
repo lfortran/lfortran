@@ -5947,7 +5947,7 @@ public:
                                 x.base.base.loc);
         }
         std::string boz_str = s.substr(2, s.size() - 2);
-        int boz_int = std::stoi(boz_str, nullptr, base);
+        int64_t boz_int = std::stoll(boz_str, nullptr, base);
         tmp = ASR::make_IntegerBOZ_t(al, x.base.base.loc, boz_int,
                                 boz_type, nullptr);
     }
