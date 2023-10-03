@@ -251,7 +251,7 @@ namespace LCompilers {
                 "print_list_tuple",
                 "print_struct_type",
                 "loop_vectorise",
-                "loop_unroll",
+                // "loop_unroll",
                 "array_dim_intrinsics_update",
                 "where",
                 "do_loops",
@@ -264,7 +264,7 @@ namespace LCompilers {
                 "div_to_mul",
                 "fma",
                 "transform_optional_argument_functions",
-                // "inline_function_calls", TODO: Uncomment later
+                "inline_function_calls",
                 "unique_symbols"
             };
 
