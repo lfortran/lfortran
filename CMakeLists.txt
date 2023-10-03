@@ -11,9 +11,14 @@ if (LFORTRAN_BUILD_ALL)
     endif ()
 endif()
 
-file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/version" LFORTRAN_VERSION)
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/version" LFORTRAN_FULL_VERSION)
+string(REGEX MATCH "^[^-]*" LFORTRAN_NO_TAG_VERSION ${LFORTRAN_FULL_VERSION} CACHE STRING "project version")
 
-project(lfortran LANGUAGES C CXX)
+project(lfortran
+        VERSION ${LFORTRAN_NO_TAG_VERSION}
+        DESCRIPTION "A modern open-source interactive Fortran compiler"
+        HOMEPAGE_URL "https://lfortran.org/"
+        LANGUAGES C CXX)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
@@ -51,10 +56,10 @@ include(GNUInstallDirs)
 include(InstallRequiredSystemLibraries)
 set(CPACK_GENERATOR "TBZ2")
 set(CPACK_STRIP_FILES YES)
-set(CPACK_PACKAGE_FILE_NAME lfortran-${LFORTRAN_VERSION}-${CMAKE_SYSTEM_NAME})
+set(CPACK_PACKAGE_FILE_NAME lfortran-${LFORTRAN_FULL_VERSION}-${CMAKE_SYSTEM_NAME})
 include(CPack)
 # So that CPACK_PACKAGE_FILE_NAME prints the correct value below
-set(CPACK_PACKAGE_FILE_NAME lfortran-${LFORTRAN_VERSION}-${CMAKE_SYSTEM_NAME})
+set(CPACK_PACKAGE_FILE_NAME lfortran-${LFORTRAN_FULL_VERSION}-${CMAKE_SYSTEM_NAME})
 
 
 if (NOT CMAKE_CXX_STANDARD)
@@ -308,7 +313,7 @@ enable_testing()
 message("\n")
 message("Configuration results")
 message("---------------------")
-message("LFORTRAN_VERSION: ${LFORTRAN_VERSION}")
+message("LFORTRAN_VERSION: ${LFORTRAN_FULL_VERSION}")
 message("CPACK_PACKAGE_FILE_NAME: ${CPACK_PACKAGE_FILE_NAME}")
 message("C compiler      : ${CMAKE_C_COMPILER}")
 message("C++ compiler    : ${CMAKE_CXX_COMPILER}")
