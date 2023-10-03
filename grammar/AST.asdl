@@ -46,14 +46,14 @@ program_unit
     = Subroutine(identifier name, arg* args, decl_attribute* attributes,
         bind? bind, trivia? trivia, unit_decl1* use, import_statement* import,
         implicit_statement* implicit, unit_decl2* decl,
-        stmt* body, program_unit* contains)
+        stmt* body, program_unit* contains, identifier* temp_args)
     | Procedure(identifier name, arg* args, decl_attribute* attributes, trivia? trivia,
         unit_decl1* use, import_statement* import, implicit_statement* implicit,
         unit_decl2* decl, stmt* body, program_unit* contains)
     | Function(identifier name, arg* args, decl_attribute* attributes,
         expr? return_var, bind? bind, trivia? trivia, unit_decl1* use, import_statement* import,
         implicit_statement* implicit, unit_decl2* decl, stmt* body,
-        program_unit* contains)
+        program_unit* contains, identifier* temp_args)
 
 unit_decl1
     = Use(decl_attribute* nature, identifier module, use_symbol* symbols,
@@ -62,6 +62,7 @@ unit_decl1
 unit_decl2
     = Declaration(decl_attribute? vartype, decl_attribute* attributes,
         var_sym* syms, trivia? trivia)
+    | DeclarationPragma(pragma_type type, string text, trivia? trivia)
     | Interface(interface_header header, trivia? trivia, interface_item* items)
     | DerivedType(identifier name, identifier* namelist, trivia? trivia, decl_attribute* attrtype,
         unit_decl2* items, procedure_decl* contains)
@@ -71,7 +72,7 @@ unit_decl2
     | Instantiate(identifier name, use_symbol* args, use_symbol* symbols)
     | Requirement(identifier name, identifier* namelist, unit_decl2* decl,
         program_unit* funcs)
-    | Requires(identifier name, identifier* namelist)
+    | Require(unit_require* reqs)
 
 interface_header
     = InterfaceHeader()
@@ -145,7 +146,7 @@ stmt
     | Rewind(int label, expr* args, keyword* kwargs, trivia? trivia)
     | Stop(int label, expr? code, expr? quiet, trivia? trivia)
     | SubroutineCall(int label, identifier name, struct_member* member,
-            fnarg* args, keyword* keywords, trivia? trivia)
+            fnarg* args, keyword* keywords, use_symbol* temp_args, trivia? trivia)
     | SyncAll(int label, event_attribute* stat, trivia? trivia)
     | SyncImages(int label, expr? image_set, symbol sym,
             event_attribute* stat, trivia? trivia)
@@ -200,7 +201,7 @@ expr
     | DefUnaryOp(string op, expr operand)
     | Compare(expr left, cmpop op, expr right)
     | FuncCallOrArray(identifier func, struct_member* member,
-        fnarg* args, keyword* keywords, fnarg* subargs)
+        fnarg* args, keyword* keywords, fnarg* subargs, use_symbol* temp_args)
     | CoarrayRef(identifier name, struct_member* member,
         fnarg* args, keyword* fnkw, coarrayarg* coargs, keyword* cokw)
     | ArrayInitializer(decl_attribute? vartype, identifier? classtype, expr* args)
@@ -446,5 +447,12 @@ reduce_op = ReduceAdd | ReduceMul | ReduceMIN | ReduceMAX
 
 data_stmt_set
     = DataStmtSet(expr* object, expr* value)
+
+pragma_type
+    = LFortranPragma
+    | OMPPragma
+
+unit_require
+    = UnitRequire(identifier name, identifier* namelist)
 
 }

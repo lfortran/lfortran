@@ -37,6 +37,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     ast_cpp_hip = is_included("ast_cpp_hip")
     ast_openmp = is_included("ast_openmp")
     asr = is_included("asr")
+    asr_ignore_pragma = is_included("asr_ignore_pragma")
     asr_implicit_typing = is_included("asr_implicit_typing")
     asr_implicit_interface = is_included("asr_implicit_interface")
     asr_implicit_interface_and_typing = is_included("asr_implicit_interface_and_typing")
@@ -55,11 +56,14 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     wat = is_included("wat")
     obj = is_included("obj")
     x86 = is_included("x86")
+    fortran = is_included("fortran")
     bin_ = is_included("bin")
     print_leading_space = is_included("print_leading_space")
     interactive = is_included("interactive")
     pass_ = test.get("pass", None)
     extrafiles = test.get("extrafiles", "").split(",")
+    run = test.get("run")
+    run_with_dbg = test.get("run_with_dbg")
     optimization_passes = ["flip_sign", "div_to_mul", "fma", "sign_from_value",
                            "inline_function_calls", "loop_unroll",
                            "dead_code_removal"]
@@ -212,13 +216,23 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             pass_ = None
 
     if asr_implicit_interface_and_typing:
-        run_test(
-            filename,
-            "asr",
-            "lfortran --show-asr --implicit-typing --implicit-interface --no-color {infile} -o {outfile}",
-            filename,
-            update_reference,
-            extra_args)
+        # run fixed form
+        if filename.endswith(".f"):
+            run_test(
+                filename,
+                "asr",
+                "lfortran --fixed-form --show-asr --implicit-typing --implicit-interface --no-color {infile} -o {outfile}",
+                filename,
+                update_reference,
+                extra_args)
+        else:
+            run_test(
+                filename,
+                "asr",
+                "lfortran --show-asr --implicit-typing --implicit-interface --no-color {infile} -o {outfile}",
+                filename,
+                update_reference,
+                extra_args)
     if asr_use_loop_variable_after_loop:
         run_test(
             filename,
@@ -311,6 +325,15 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             filename,
             update_reference)
 
+    if asr_ignore_pragma:
+        run_test(
+            filename,
+            "asr_ignore_pragma",
+            "lfortran --ignore-pragma --show-asr --no-color {infile} -o {outfile}",
+            filename,
+            update_reference,
+            extra_args)
+
     if pass_ is not None:
         cmd = "lfortran "
         if is_cumulative_pass:
@@ -369,10 +392,36 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             update_reference,
             extra_args)
 
+    if fortran:
+        run_test(
+            filename,
+            "fortran",
+            "lfortran --show-fortran --no-color {infile} -o {outfile}",
+            filename,
+            update_reference,
+            extra_args)
+
     if bin_:
         run_test(filename, "bin", "lfortran --no-color {infile} -o {outfile}",
                  filename, update_reference, extra_args)
 
+    if run:
+        if no_llvm:
+            log.info(f"{filename} * obj    SKIPPED as requested")
+        else:
+            run_test(filename, "run", "lfortran --no-color --run {infile} -o " + filename + ".out",
+                 filename, update_reference, extra_args)
+
+    if run_with_dbg:
+        if no_llvm:
+            log.info(f"{filename} * obj    SKIPPED as requested")
+        elif skip_run_with_dbg:
+            log.info(f"{filename} * run_with_dbg   SKIPPED as requested")
+        else:
+            run_test(
+                filename, "run_dbg",
+                "lfortran {infile} -g --debug-with-line-column --no-color",
+                filename, update_reference, extra_args)
 
 if __name__ == "__main__":
     tester_main("LFortran", single_test)

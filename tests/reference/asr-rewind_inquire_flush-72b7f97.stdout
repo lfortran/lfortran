@@ -219,7 +219,6 @@
                         10
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "err rewind"
                             (Character 1 10 ())
@@ -232,7 +231,6 @@
                         20
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "err inquire"
                             (Character 1 11 ())

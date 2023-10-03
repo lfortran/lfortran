@@ -1,12 +1,20 @@
 program test_backspace_01
-    integer :: u=10, i=0, iostat
-    open(file='tests.txt', unit=u)
-    do
-        read(u, *, end=20) i
-    end do
-20  backspace(u, iostat=iostat)
 
-    if (iostat == 0) then
-        write(u, *), i+1
-    end if
+    implicit none
+    character(80) :: line
+    integer :: u = 10
+    open(10, file='file_01_data.txt', status='old', action='read')
+
+    read(u, '(A)') line
+    write(*, '(A)') line
+
+    backspace(u)
+
+    read(u, '(A)') line
+    write(*, '(A)') "Read and printed the same line again:"
+    write(*, '(A)') line
+
+    if (line /= "10130") error stop
+    close(u)
+
 end program test_backspace_01

@@ -6,8 +6,8 @@ import os
 
 # Initialization
 NO_OF_THREADS = 8 # default no of threads is 8
-SUPPORTED_BACKENDS = ['llvm', 'llvm2', 'llvm_rtlib', 'c',
-                      'cpp', 'x86', 'wasm', 'gfortran', 'llvmImplicit', 'llvmImplicitArgument', 'llvmUseLoopVariableAfterLoop']
+SUPPORTED_BACKENDS = ['llvm', 'llvm2', 'llvm_rtlib', 'c', 'cpp', 'x86', 'wasm',
+                      'gfortran', 'llvmImplicit', 'fortran']
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 LFORTRAN_PATH = f"{BASE_DIR}/../src/bin:$PATH"
 
@@ -29,6 +29,10 @@ def run_test(backend):
                 cwd=cwd)
     elif backend == "cpp":
         run_cmd(f"FC=lfortran FFLAGS=\"--openmp\" cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests}" + common,
+                cwd=cwd)
+    elif backend == "fortran":
+        run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} "
+            "-DFAST={fast_tests} -DCMAKE_Fortran_FLAGS=\"-fPIC\"" + common,
                 cwd=cwd)
     else:
         run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests}" + common,

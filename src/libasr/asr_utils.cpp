@@ -9,6 +9,7 @@
 #include <libasr/modfile.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
+#include <libasr/pass/intrinsic_array_function_registry.h>
 
 namespace LCompilers {
 
@@ -52,7 +53,7 @@ std::vector<std::string> determine_module_dependencies(
         const ASR::TranslationUnit_t &unit)
 {
     std::map<std::string, std::vector<std::string>> deps;
-    for (auto &item : unit.m_global_scope->get_scope()) {
+    for (auto &item : unit.m_symtab->get_scope()) {
         if (ASR::is_a<ASR::Module_t>(*item.second)) {
             std::string name = item.first;
             ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(item.second);
@@ -116,7 +117,7 @@ void extract_module_python(const ASR::TranslationUnit_t &m,
                 std::vector<std::pair<std::string, ASR::Module_t*>>& children_modules,
                 std::string module_name) {
     bool module_found = false;
-    for (auto &a : m.m_global_scope->get_scope()) {
+    for (auto &a : m.m_symtab->get_scope()) {
         if( ASR::is_a<ASR::Module_t>(*a.second) ) {
             if( a.first == "__main__" ) {
                 module_found = true;
@@ -219,8 +220,8 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
 }
 
 ASR::Module_t* extract_module(const ASR::TranslationUnit_t &m) {
-    LCOMPILERS_ASSERT(m.m_global_scope->get_scope().size()== 1);
-    for (auto &a : m.m_global_scope->get_scope()) {
+    LCOMPILERS_ASSERT(m.m_symtab->get_scope().size()== 1);
+    for (auto &a : m.m_symtab->get_scope()) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Module_t>(*a.second));
         return ASR::down_cast<ASR::Module_t>(a.second);
     }
@@ -370,7 +371,7 @@ void set_intrinsic(ASR::symbol_t* sym) {
 }
 
 void set_intrinsic(ASR::TranslationUnit_t* trans_unit) {
-    for( auto& itr: trans_unit->m_global_scope->get_scope() ) {
+    for( auto& itr: trans_unit->m_symtab->get_scope() ) {
         set_intrinsic(itr.second);
     }
 }
@@ -1265,6 +1266,14 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
             int64_t int_value = ASR::down_cast<ASR::IntegerConstant_t>(
                                 ASRUtils::expr_value(a_arg))->m_n;
             value = ASR::down_cast<ASR::expr_t>(ASR::make_UnsignedIntegerConstant_t(al, a_loc, int_value, a_type));
+        } else if (a_kind == ASR::cast_kindType::UnsignedIntegerToInteger) {
+            int64_t int_value = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(
+                                ASRUtils::expr_value(a_arg))->m_n;
+            value = ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, a_loc, int_value, a_type));
+        } else if (a_kind == ASR::cast_kindType::UnsignedIntegerToUnsignedInteger) {
+            int64_t int_value = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(
+                                ASRUtils::expr_value(a_arg))->m_n;
+            value = ASR::down_cast<ASR::expr_t>(ASR::make_UnsignedIntegerConstant_t(al, a_loc, int_value, a_type));
         } else if (a_kind == ASR::cast_kindType::IntegerToLogical) {
             // TODO: implement
         } else if (a_kind == ASR::cast_kindType::ComplexToComplex) {
@@ -1285,7 +1294,7 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
             args.reserve(al, 1);
             args.push_back(al, a_arg);
             LCompilers::ASRUtils::create_intrinsic_function create_function =
-                LCompilers::ASRUtils::IntrinsicFunctionRegistry::get_create_function("SymbolicInteger");
+                LCompilers::ASRUtils::IntrinsicScalarFunctionRegistry::get_create_function("SymbolicInteger");
             value = ASR::down_cast<ASR::expr_t>(create_function(al, a_loc, args,
                 [](const std::string&, const Location&) {
             }));
@@ -1335,6 +1344,148 @@ ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
         }
     }
     return original_sym;
+}
+
+ASR::asr_t* make_Binop_util(Allocator &al, const Location& loc, ASR::binopType binop,
+                        ASR::expr_t* lexpr, ASR::expr_t* rexpr, ASR::ttype_t* ttype) {
+    ASRUtils::make_ArrayBroadcast_t_util(al, loc, lexpr, rexpr);
+    switch (ttype->type) {
+        case ASR::ttypeType::Real: {
+            return ASR::make_RealBinOp_t(al, loc, lexpr, binop, rexpr,
+                ASRUtils::duplicate_type(al, ttype), nullptr);
+        }
+        case ASR::ttypeType::Integer: {
+            return ASR::make_IntegerBinOp_t(al, loc, lexpr, binop, rexpr,
+                ASRUtils::duplicate_type(al, ttype), nullptr);
+        }
+        case ASR::ttypeType::Complex: {
+            return ASR::make_ComplexBinOp_t(al, loc, lexpr, binop, rexpr,
+                ASRUtils::duplicate_type(al, ttype), nullptr);
+        }
+        default:
+            throw LCompilersException("Not implemented " + std::to_string(ttype->type));
+    }
+}
+
+ASR::asr_t* make_Cmpop_util(Allocator &al, const Location& loc, ASR::cmpopType cmpop,
+                        ASR::expr_t* lexpr, ASR::expr_t* rexpr, ASR::ttype_t* ttype) {
+    ASR::ttype_t* expr_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+    switch (ttype->type) {
+        case ASR::ttypeType::Real: {
+            return ASR::make_RealCompare_t(al, loc, lexpr, cmpop, rexpr, expr_type, nullptr);
+        }
+        case ASR::ttypeType::Integer: {
+            return ASR::make_IntegerCompare_t(al, loc, lexpr, cmpop, rexpr, expr_type, nullptr);
+        }
+        case ASR::ttypeType::Complex: {
+            return ASR::make_ComplexCompare_t(al, loc, lexpr, cmpop, rexpr, expr_type, nullptr);
+        }
+        case ASR::ttypeType::Character: {
+            return ASR::make_StringCompare_t(al, loc, lexpr, cmpop, rexpr, expr_type, nullptr);
+        }
+        default:
+            throw LCompilersException("Not implemented " + std::to_string(ttype->type));
+    }
+}
+
+void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
+    ASR::expr_t*& expr1, ASR::expr_t*& expr2, ASR::dimension_t* expr1_mdims,
+    size_t expr1_ndims) {
+    ASR::ttype_t* expr1_type = ASRUtils::expr_type(expr1);
+    Vec<ASR::expr_t*> shape_args;
+    shape_args.reserve(al, 1);
+    shape_args.push_back(al, expr1);
+
+    Vec<ASR::dimension_t> dims;
+    dims.reserve(al, 1);
+    ASR::dimension_t dim;
+    dim.loc = loc;
+    dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+        expr1_ndims, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+    dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+        1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+    dims.push_back(al, dim);
+    ASR::ttype_t* dest_shape_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
+        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), dims.p, dims.size(),
+        ASR::array_physical_typeType::FixedSizeArray));
+
+    ASR::expr_t* dest_shape = nullptr;
+    ASR::expr_t* value = nullptr;
+    if( ASRUtils::is_fixed_size_array(expr1_mdims, expr1_ndims) ) {
+        Vec<ASR::expr_t*> lengths; lengths.reserve(al, expr1_ndims);
+        for( size_t i = 0; i < expr1_ndims; i++ ) {
+            lengths.push_back(al, ASRUtils::expr_value(expr1_mdims[i].m_length));
+        }
+        dest_shape = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc,
+            lengths.p, lengths.size(), dest_shape_type, ASR::arraystorageType::ColMajor));
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, 1);
+        ASR::dimension_t dim;
+        dim.loc = loc;
+        dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims),
+            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+        dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+        dims.push_back(al, dim);
+
+        if( ASRUtils::is_value_constant(expr2) &&
+            ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims) <= 256 ) {
+            ASR::ttype_t* value_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), dims.p, dims.size(),
+                ASR::array_physical_typeType::FixedSizeArray));
+            Vec<ASR::expr_t*> values;
+            values.reserve(al, ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims));
+            for( int64_t i = 0; i < ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims); i++ ) {
+                values.push_back(al, expr2);
+            }
+            value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc,
+                values.p, values.size(), value_type, ASR::arraystorageType::ColMajor));
+        }
+    } else {
+        dest_shape = ASRUtils::EXPR(ASR::make_IntrinsicArrayFunction_t(al, loc,
+            static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Shape), shape_args.p,
+            shape_args.size(), 0, dest_shape_type, nullptr));
+    }
+
+    expr2 = ASRUtils::EXPR(ASR::make_ArrayBroadcast_t(al, loc, expr2, dest_shape, expr1_type, value));
+}
+
+void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
+    ASR::expr_t*& expr1, ASR::expr_t*& expr2) {
+    ASR::ttype_t* expr1_type = ASRUtils::expr_type(expr1);
+    ASR::ttype_t* expr2_type = ASRUtils::expr_type(expr2);
+    ASR::dimension_t *expr1_mdims = nullptr, *expr2_mdims = nullptr;
+    size_t expr1_ndims = ASRUtils::extract_dimensions_from_ttype(expr1_type, expr1_mdims);
+    size_t expr2_ndims = ASRUtils::extract_dimensions_from_ttype(expr2_type, expr2_mdims);
+    if( expr1_ndims == expr2_ndims ) {
+        // TODO: Always broadcast both the expressions
+        return ;
+    }
+
+    if( expr1_ndims > expr2_ndims ) {
+        if( ASR::is_a<ASR::ArrayReshape_t>(*expr2) ) {
+            return ;
+        }
+        make_ArrayBroadcast_t_util(al, loc, expr1, expr2, expr1_mdims, expr1_ndims);
+    } else {
+        if( ASR::is_a<ASR::ArrayReshape_t>(*expr1) ) {
+            return ;
+        }
+        make_ArrayBroadcast_t_util(al, loc, expr2, expr1, expr2_mdims, expr2_ndims);
+    }
+}
+
+int64_t compute_trailing_zeros(int64_t number) {
+    int64_t trailing_zeros = 0;
+    if (number == 0) {
+        return 32;
+    }
+    while (number % 2 == 0) {
+        number = number / 2;
+        trailing_zeros++;
+    }
+    return trailing_zeros;
 }
 
 //Initialize pointer to zero so that it can be initialized in first call to get_instance

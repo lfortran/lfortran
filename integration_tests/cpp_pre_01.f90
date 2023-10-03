@@ -1,5 +1,4 @@
-! File test.f90
-program test
+program cpp_pre_01
 #ifdef SOMETHING
 #endif // This should work
 
@@ -16,4 +15,4 @@ program test
     print *, /*hi, "abc\n"*/ square(a), "hi /* abc*/  //abc"
     print *, "asdjfal" // "djafl"
     print *, abc
-end program test
+end program

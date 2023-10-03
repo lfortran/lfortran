@@ -296,7 +296,6 @@
                     [iso_fortran_env
                     lfortran_intrinsic_math]
                     [(Print
-                        ()
                         [(FunctionCall
                             2 range@i32range
                             2 range
@@ -319,7 +318,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 range@srange
                             2 range
@@ -340,7 +338,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 range@crange
                             2 range

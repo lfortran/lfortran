@@ -1277,7 +1277,7 @@ TEST_CASE("Location") {
     co.interactive = true;
     LCompilers::LFortran::AST::ast_t* result = TRY(parse(al, input, diagnostics, co))->m_items[0];
     CHECK(result->loc.first == 0);
-    CHECK(result->loc.last == 56);
+    CHECK(result->loc.last == 55);
     auto sub = cast(Subroutine, result);
     auto stmt = cast(Assignment, sub->m_body[1]);
     CHECK(stmt->base.base.loc.first == 27);
@@ -1312,7 +1312,7 @@ TEST_CASE("Location") {
     end program)";
     result = TRY(parse(al, input, diagnostics, co))->m_items[0];
     CHECK(result->loc.first == 0);
-    CHECK(result->loc.last == 50);
+    CHECK(result->loc.last == 49);
 }
 
 TEST_CASE("Errors") {

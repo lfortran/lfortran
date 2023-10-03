@@ -152,7 +152,6 @@
                                     []
                                     [(Var 9 tab)]
                                     [(Print
-                                        ()
                                         [(StringConstant
                                             "inside check_table"
                                             (Character 1 18 ())
@@ -265,7 +264,7 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            ~select_type_block__:
+                                            ~select_type_block_:
                                                 (Block
                                                     (SymbolTable
                                                         10
@@ -291,7 +290,7 @@
                                                                     Private
                                                                 )
                                                         })
-                                                    ~select_type_block__
+                                                    ~select_type_block_
                                                     [(=>
                                                         (Var 8 ptr)
                                                         (Var 8 tmp)
@@ -363,7 +362,7 @@
                                                 2 toml_table
                                                 [(BlockCall
                                                     -1
-                                                    8 ~select_type_block__
+                                                    8 ~select_type_block_
                                                 )]
                                             )]
                                             [(If

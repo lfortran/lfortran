@@ -127,7 +127,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 sp)
                         (Var 2 dp)
                         (Var 2 r1)

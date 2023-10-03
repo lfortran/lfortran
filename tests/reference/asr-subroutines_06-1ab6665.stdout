@@ -327,7 +327,6 @@
                                     (Var 6 module)
                                     (Var 6 procedure)]
                                     [(Print
-                                        ()
                                         [(Var 6 error)
                                         (Var 6 status)]
                                         ()

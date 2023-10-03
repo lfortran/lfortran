@@ -1,0 +1,9 @@
+syntax error: End program name does not match program name
+ --> tests/errors/end_program_name.f90:1:1 - 2:17
+  |
+1 |    program name
+  |    ^^^^^^^^^^^^...
+...
+  |
+2 |    end program name2
+  | ...^^^^^^^^^^^^^^^^^ 

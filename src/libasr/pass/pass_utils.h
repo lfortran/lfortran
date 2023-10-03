@@ -81,11 +81,9 @@ namespace LCompilers {
                                 Allocator& al);
 
 
-        ASR::stmt_t* get_flipsign(ASR::expr_t* arg0, ASR::expr_t* arg1,
-                                  Allocator& al, ASR::TranslationUnit_t& unit,
-                                  LCompilers::PassOptions& pass_options,
-                                  SymbolTable*& current_scope,
-                                  const std::function<void (const std::string &, const Location &)> err);
+        ASR::expr_t* get_flipsign(ASR::expr_t* arg0, ASR::expr_t* arg1,
+                             Allocator& al, ASR::TranslationUnit_t& unit, const Location& loc,
+                             PassOptions& pass_options);
 
         ASR::expr_t* to_int32(ASR::expr_t* x, ASR::ttype_t* int32type, Allocator& al);
 
@@ -97,15 +95,12 @@ namespace LCompilers {
             ASR::intentType var_intent=ASR::intentType::Local);
 
         ASR::expr_t* get_fma(ASR::expr_t* arg0, ASR::expr_t* arg1, ASR::expr_t* arg2,
-                             Allocator& al, ASR::TranslationUnit_t& unit, LCompilers::PassOptions& pass_options,
-                             SymbolTable*& current_scope,Location& loc,
-                             const std::function<void (const std::string &, const Location &)> err);
+                             Allocator& al, ASR::TranslationUnit_t& unit, Location& loc,
+                             PassOptions& pass_options);
 
         ASR::expr_t* get_sign_from_value(ASR::expr_t* arg0, ASR::expr_t* arg1,
                                          Allocator& al, ASR::TranslationUnit_t& unit,
-                                         LCompilers::PassOptions& pass_options,
-                                         SymbolTable*& current_scope, Location& loc,
-                                         const std::function<void (const std::string &, const Location &)> err);
+                                         Location& loc, PassOptions& pass_options);
 
         ASR::stmt_t* get_vector_copy(ASR::expr_t* array0, ASR::expr_t* array1, ASR::expr_t* start,
             ASR::expr_t* end, ASR::expr_t* step, ASR::expr_t* vector_length,
@@ -117,6 +112,11 @@ namespace LCompilers {
 
         static inline bool is_aggregate_type(ASR::expr_t* var) {
             return ASR::is_a<ASR::Struct_t>(*ASRUtils::expr_type(var));
+        }
+
+        static inline bool is_aggregate_or_array_type(ASR::expr_t* var) {
+            return (ASR::is_a<ASR::Struct_t>(*ASRUtils::expr_type(var)) ||
+                    ASRUtils::is_array(ASRUtils::expr_type(var)));
         }
 
         template <class Struct>
@@ -744,7 +744,7 @@ namespace LCompilers {
                 for(auto &e: a_args) {
                     ASRUtils::ReplaceWithFunctionParamVisitor replacer(al, x->m_args, x->n_args);
                     arg_types.push_back(al, replacer.replace_args_with_FunctionParam(
-                                                ASRUtils::expr_type(e)));
+                                                ASRUtils::expr_type(e), x->m_symtab));
                 }
                 s_func_type->m_arg_types = arg_types.p;
                 s_func_type->n_arg_types = arg_types.n;

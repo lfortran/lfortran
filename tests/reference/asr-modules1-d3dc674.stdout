@@ -213,7 +213,6 @@
                                             )
                                         )
                                         [(Print
-                                            ()
                                             [(IntegerConstant 1 (Integer 4))]
                                             ()
                                             ()

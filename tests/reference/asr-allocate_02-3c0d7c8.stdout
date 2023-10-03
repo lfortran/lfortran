@@ -546,15 +546,48 @@
                                         (Var 3 ab)
                                         (IntegerBinOp
                                             (IntegerBinOp
-                                                (IntegerConstant 2 (Integer 4))
+                                                (ArrayBroadcast
+                                                    (IntegerConstant 2 (Integer 4))
+                                                    (IntrinsicArrayFunction
+                                                        Shape
+                                                        [(Var 3 a)]
+                                                        0
+                                                        (Array
+                                                            (Integer 4)
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4)))]
+                                                            FixedSizeArray
+                                                        )
+                                                        ()
+                                                    )
+                                                    (Allocatable
+                                                        (Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                    )
+                                                    ()
+                                                )
                                                 Mul
                                                 (Var 3 a)
-                                                (Integer 4)
+                                                (Array
+                                                    (Integer 4)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
                                                 ()
                                             )
                                             Mul
                                             (Var 3 b)
-                                            (Integer 4)
+                                            (Array
+                                                (Integer 4)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
                                             ()
                                         )
                                         ()
@@ -563,15 +596,48 @@
                                         (Var 3 bc)
                                         (IntegerBinOp
                                             (IntegerBinOp
-                                                (IntegerConstant 2 (Integer 4))
+                                                (ArrayBroadcast
+                                                    (IntegerConstant 2 (Integer 4))
+                                                    (IntrinsicArrayFunction
+                                                        Shape
+                                                        [(Var 3 b)]
+                                                        0
+                                                        (Array
+                                                            (Integer 4)
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4)))]
+                                                            FixedSizeArray
+                                                        )
+                                                        ()
+                                                    )
+                                                    (Allocatable
+                                                        (Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                    )
+                                                    ()
+                                                )
                                                 Mul
                                                 (Var 3 b)
-                                                (Integer 4)
+                                                (Array
+                                                    (Integer 4)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
                                                 ()
                                             )
                                             Mul
                                             (Var 3 c)
-                                            (Integer 4)
+                                            (Array
+                                                (Integer 4)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
                                             ()
                                         )
                                         ()
@@ -580,15 +646,48 @@
                                         (Var 3 ca)
                                         (IntegerBinOp
                                             (IntegerBinOp
-                                                (IntegerConstant 2 (Integer 4))
+                                                (ArrayBroadcast
+                                                    (IntegerConstant 2 (Integer 4))
+                                                    (IntrinsicArrayFunction
+                                                        Shape
+                                                        [(Var 3 c)]
+                                                        0
+                                                        (Array
+                                                            (Integer 4)
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4)))]
+                                                            FixedSizeArray
+                                                        )
+                                                        ()
+                                                    )
+                                                    (Allocatable
+                                                        (Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                    )
+                                                    ()
+                                                )
                                                 Mul
                                                 (Var 3 c)
-                                                (Integer 4)
+                                                (Array
+                                                    (Integer 4)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
                                                 ()
                                             )
                                             Mul
                                             (Var 3 a)
-                                            (Integer 4)
+                                            (Array
+                                                (Integer 4)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
                                             ()
                                         )
                                         ()
@@ -598,20 +697,58 @@
                                         (IntegerBinOp
                                             (IntegerBinOp
                                                 (IntegerBinOp
-                                                    (IntegerConstant 2 (Integer 4))
+                                                    (ArrayBroadcast
+                                                        (IntegerConstant 2 (Integer 4))
+                                                        (IntrinsicArrayFunction
+                                                            Shape
+                                                            [(Var 3 a)]
+                                                            0
+                                                            (Array
+                                                                (Integer 4)
+                                                                [((IntegerConstant 1 (Integer 4))
+                                                                (IntegerConstant 1 (Integer 4)))]
+                                                                FixedSizeArray
+                                                            )
+                                                            ()
+                                                        )
+                                                        (Allocatable
+                                                            (Array
+                                                                (Integer 4)
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                            )
+                                                        )
+                                                        ()
+                                                    )
                                                     Mul
                                                     (Var 3 a)
-                                                    (Integer 4)
+                                                    (Array
+                                                        (Integer 4)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
                                                     ()
                                                 )
                                                 Mul
                                                 (Var 3 b)
-                                                (Integer 4)
+                                                (Array
+                                                    (Integer 4)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
                                                 ()
                                             )
                                             Mul
                                             (Var 3 c)
-                                            (Integer 4)
+                                            (Array
+                                                (Integer 4)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
                                             ()
                                         )
                                         ()
@@ -666,21 +803,89 @@
                     )
                     (=
                         (Var 2 a)
-                        (IntegerConstant 1 (Integer 4))
+                        (ArrayBroadcast
+                            (IntegerConstant 1 (Integer 4))
+                            (IntrinsicArrayFunction
+                                Shape
+                                [(Var 2 a)]
+                                0
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            (Allocatable
+                                (Array
+                                    (Integer 4)
+                                    [(()
+                                    ())]
+                                    DescriptorArray
+                                )
+                            )
+                            ()
+                        )
                         ()
                     )
                     (=
                         (Var 2 b)
-                        (IntegerConstant 2 (Integer 4))
+                        (ArrayBroadcast
+                            (IntegerConstant 2 (Integer 4))
+                            (IntrinsicArrayFunction
+                                Shape
+                                [(Var 2 b)]
+                                0
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            (Allocatable
+                                (Array
+                                    (Integer 4)
+                                    [(()
+                                    ())]
+                                    DescriptorArray
+                                )
+                            )
+                            ()
+                        )
                         ()
                     )
                     (=
                         (Var 2 c)
-                        (IntegerConstant 3 (Integer 4))
+                        (ArrayBroadcast
+                            (IntegerConstant 3 (Integer 4))
+                            (IntrinsicArrayFunction
+                                Shape
+                                [(Var 2 c)]
+                                0
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            (Allocatable
+                                (Array
+                                    (Integer 4)
+                                    [(()
+                                    ())]
+                                    DescriptorArray
+                                )
+                            )
+                            ()
+                        )
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 whole_square
                             ()

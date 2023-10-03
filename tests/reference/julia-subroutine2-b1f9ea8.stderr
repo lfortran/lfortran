@@ -5,11 +5,11 @@ style suggestion: Use 'end do' instead of 'enddo'
    | ^^^^^ help: write this as 'end do'
 
 semantic error: Subroutine already defined
- --> tests/subroutine2.f90:1:1 - 5:1
+ --> tests/subroutine2.f90:1:1 - 4:14
   |
 1 |    subroutine g
   |    ^^^^^^^^^^^^...
 ...
   |
-5 |    
-  | ...^ 
+4 |    end subroutine
+  | ...^^^^^^^^^^^^^^ 

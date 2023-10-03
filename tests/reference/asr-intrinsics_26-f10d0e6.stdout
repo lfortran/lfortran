@@ -37,7 +37,6 @@
                     intrinsics_26
                     [stdlib_bitsets_64]
                     [(Print
-                        ()
                         [(FunctionCall
                             4 all_set
                             ()

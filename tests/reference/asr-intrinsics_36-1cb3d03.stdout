@@ -294,7 +294,6 @@
                     intrinsics_36
                     [lfortran_intrinsic_string]
                     [(Print
-                        ()
                         [(Var 2 empty)]
                         ()
                         ()
@@ -316,7 +315,6 @@
                         []
                     )
                     (Print
-                        ()
                         [(Var 2 all_spaces)]
                         ()
                         ()
@@ -338,7 +336,6 @@
                         []
                     )
                     (Print
-                        ()
                         [(Var 2 simple)]
                         ()
                         ()
@@ -360,7 +357,6 @@
                         []
                     )
                     (Print
-                        ()
                         [(Var 2 space_at_start)]
                         ()
                         ()
@@ -382,7 +378,6 @@
                         []
                     )
                     (Print
-                        ()
                         [(Var 2 space_at_end)]
                         ()
                         ()
@@ -404,7 +399,6 @@
                         []
                     )
                     (Print
-                        ()
                         [(Var 2 space_in_between)]
                         ()
                         ()
@@ -426,7 +420,6 @@
                         []
                     )
                     (Print
-                        ()
                         [(Var 2 spaces_with_symbols)]
                         ()
                         ()

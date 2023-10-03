@@ -40,7 +40,6 @@
                             ()
                         )
                         [(Print
-                            ()
                             [(StringConstant
                                 "h"
                                 (Character 1 1 ())

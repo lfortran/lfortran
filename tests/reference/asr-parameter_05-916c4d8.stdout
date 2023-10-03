@@ -89,7 +89,6 @@
                     paramter_05
                     []
                     [(Print
-                        ()
                         [(Var 2 x)
                         (Var 2 y)
                         (Var 2 z)]

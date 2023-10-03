@@ -1,0 +1,13 @@
+{
+    "basename": "asr-matmul_01-7b0b0c2",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/matmul_01.f90",
+    "infile_hash": "1b7adac0d66138d6eed440c0ab5aaad8cbb9f3119a3759df3ed4fa4b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-matmul_01-7b0b0c2.stdout",
+    "stdout_hash": "16be51e4f9b3e64399fa6e8d3915057fc218f354449eccc773fe3537",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

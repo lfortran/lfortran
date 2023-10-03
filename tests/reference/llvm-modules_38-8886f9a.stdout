@@ -80,36 +80,59 @@ define i32 @main(i32 %0, i8** %1) {
   %7 = getelementptr %compiler_t, %compiler_t* %compiler_arg, i32 0, i32 5
   store i1 true, i1* %7, align 1
   %libs_arg = alloca [4 x %string_t], align 8
+  %array_size = alloca i32, align 4
+  store i32 4, i32* %array_size, align 4
+  %i = alloca i32, align 4
+  store i32 0, i32* %i, align 4
+  br label %loop.head
+
+loop.head:                                        ; preds = %loop.body, %.entry
+  %8 = load i32, i32* %i, align 4
+  %9 = load i32, i32* %array_size, align 4
+  %10 = icmp slt i32 %8, %9
+  br i1 %10, label %loop.body, label %loop.end
+
+loop.body:                                        ; preds = %loop.head
+  %11 = load i32, i32* %i, align 4
+  %12 = getelementptr [4 x %string_t], [4 x %string_t]* %libs_arg, i32 0, i32 %11
+  %13 = getelementptr %string_t, %string_t* %12, i32 0, i32 0
+  store i8* null, i8** %13, align 8
+  %14 = load i32, i32* %i, align 4
+  %15 = add i32 %14, 1
+  store i32 %15, i32* %i, align 4
+  br label %loop.head
+
+loop.end:                                         ; preds = %loop.head
   %prefix_arg = alloca i8*, align 8
   store i8* getelementptr inbounds ([4 x i8], [4 x i8]* @0, i32 0, i32 0), i8** %prefix_arg, align 8
-  %8 = alloca %compiler_t_polymorphic, align 8
-  %9 = getelementptr %compiler_t_polymorphic, %compiler_t_polymorphic* %8, i32 0, i32 0
-  store i64 0, i64* %9, align 4
-  %10 = getelementptr %compiler_t_polymorphic, %compiler_t_polymorphic* %8, i32 0, i32 1
-  store %compiler_t* %compiler_arg, %compiler_t** %10, align 8
-  %11 = getelementptr [4 x %string_t], [4 x %string_t]* %libs_arg, i32 0, i32 0
-  %12 = getelementptr %array, %array* %array_descriptor, i32 0, i32 0
-  store %string_t* %11, %string_t** %12, align 8
-  %13 = getelementptr %array, %array* %array_descriptor, i32 0, i32 1
-  store i32 0, i32* %13, align 4
-  %14 = getelementptr %array, %array* %array_descriptor, i32 0, i32 2
-  %15 = alloca i32, align 4
-  store i32 1, i32* %15, align 4
-  %16 = load i32, i32* %15, align 4
-  %17 = alloca %dimension_descriptor, i32 %16, align 8
-  %18 = getelementptr %array, %array* %array_descriptor, i32 0, i32 4
-  store i32 1, i32* %18, align 4
-  store %dimension_descriptor* %17, %dimension_descriptor** %14, align 8
-  %19 = load %dimension_descriptor*, %dimension_descriptor** %14, align 8
-  %20 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %19, i32 0
-  %21 = getelementptr %dimension_descriptor, %dimension_descriptor* %20, i32 0, i32 0
-  %22 = getelementptr %dimension_descriptor, %dimension_descriptor* %20, i32 0, i32 1
-  %23 = getelementptr %dimension_descriptor, %dimension_descriptor* %20, i32 0, i32 2
-  store i32 1, i32* %21, align 4
-  store i32 1, i32* %22, align 4
-  store i32 4, i32* %23, align 4
-  %24 = call i8* @__module_fpm_compiler_enumerate_libraries(%compiler_t_polymorphic* %8, i8** %prefix_arg, %array* %array_descriptor)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %24, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
+  %16 = alloca %compiler_t_polymorphic, align 8
+  %17 = getelementptr %compiler_t_polymorphic, %compiler_t_polymorphic* %16, i32 0, i32 0
+  store i64 0, i64* %17, align 4
+  %18 = getelementptr %compiler_t_polymorphic, %compiler_t_polymorphic* %16, i32 0, i32 1
+  store %compiler_t* %compiler_arg, %compiler_t** %18, align 8
+  %19 = getelementptr [4 x %string_t], [4 x %string_t]* %libs_arg, i32 0, i32 0
+  %20 = getelementptr %array, %array* %array_descriptor, i32 0, i32 0
+  store %string_t* %19, %string_t** %20, align 8
+  %21 = getelementptr %array, %array* %array_descriptor, i32 0, i32 1
+  store i32 0, i32* %21, align 4
+  %22 = getelementptr %array, %array* %array_descriptor, i32 0, i32 2
+  %23 = alloca i32, align 4
+  store i32 1, i32* %23, align 4
+  %24 = load i32, i32* %23, align 4
+  %25 = alloca %dimension_descriptor, i32 %24, align 8
+  %26 = getelementptr %array, %array* %array_descriptor, i32 0, i32 4
+  store i32 1, i32* %26, align 4
+  store %dimension_descriptor* %25, %dimension_descriptor** %22, align 8
+  %27 = load %dimension_descriptor*, %dimension_descriptor** %22, align 8
+  %28 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %27, i32 0
+  %29 = getelementptr %dimension_descriptor, %dimension_descriptor* %28, i32 0, i32 0
+  %30 = getelementptr %dimension_descriptor, %dimension_descriptor* %28, i32 0, i32 1
+  %31 = getelementptr %dimension_descriptor, %dimension_descriptor* %28, i32 0, i32 2
+  store i32 1, i32* %29, align 4
+  store i32 1, i32* %30, align 4
+  store i32 4, i32* %31, align 4
+  %32 = call i8* @__module_fpm_compiler_enumerate_libraries(%compiler_t_polymorphic* %16, i8** %prefix_arg, %array* %array_descriptor)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %32, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
   ret i32 0
 }
 

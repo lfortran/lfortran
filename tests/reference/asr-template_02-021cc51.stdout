@@ -190,7 +190,30 @@
                                     )
                                     (=
                                         (Var 12 pos)
-                                        (IntegerConstant 0 (Integer 4))
+                                        (ArrayBroadcast
+                                            (IntegerConstant 0 (Integer 4))
+                                            (IntrinsicArrayFunction
+                                                Shape
+                                                [(Var 12 pos)]
+                                                0
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4)))]
+                                                    FixedSizeArray
+                                                )
+                                                ()
+                                            )
+                                            (Allocatable
+                                                (Array
+                                                    (Integer 4)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
+                                            )
+                                            ()
+                                        )
                                         ()
                                     )
                                     (=
@@ -506,7 +529,30 @@
                                     )
                                     (=
                                         (Var 10 pos)
-                                        (IntegerConstant 0 (Integer 4))
+                                        (ArrayBroadcast
+                                            (IntegerConstant 0 (Integer 4))
+                                            (IntrinsicArrayFunction
+                                                Shape
+                                                [(Var 10 pos)]
+                                                0
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4)))]
+                                                    FixedSizeArray
+                                                )
+                                                ()
+                                            )
+                                            (Allocatable
+                                                (Array
+                                                    (Integer 4)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
+                                            )
+                                            ()
+                                        )
                                         ()
                                     )
                                     (=
@@ -843,7 +889,6 @@
                     template_02
                     [template_02_m]
                     [(Print
-                        ()
                         [(FunctionCall
                             8 change_positions_int
                             ()
@@ -889,7 +934,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             8 change_positions_chr
                             ()
@@ -1153,7 +1197,30 @@
                                                     )
                                                     (=
                                                         (Var 7 pos)
-                                                        (IntegerConstant 0 (Integer 4))
+                                                        (ArrayBroadcast
+                                                            (IntegerConstant 0 (Integer 4))
+                                                            (IntrinsicArrayFunction
+                                                                Shape
+                                                                [(Var 7 pos)]
+                                                                0
+                                                                (Array
+                                                                    (Integer 4)
+                                                                    [((IntegerConstant 1 (Integer 4))
+                                                                    (IntegerConstant 1 (Integer 4)))]
+                                                                    FixedSizeArray
+                                                                )
+                                                                ()
+                                                            )
+                                                            (Allocatable
+                                                                (Array
+                                                                    (Integer 4)
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
+                                                                )
+                                                            )
+                                                            ()
+                                                        )
                                                         ()
                                                     )
                                                     (=

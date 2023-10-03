@@ -296,7 +296,6 @@
                     init_values
                     []
                     [(Print
-                        ()
                         [(Var 2 i)
                         (Var 2 j)
                         (Var 2 r)

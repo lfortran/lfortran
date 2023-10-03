@@ -12,7 +12,7 @@ module template_error_07_m
     end requirement
 
     template tmp(t, f)
-        requires r(t)
+        require :: r(t)
     end template
 
 contains

@@ -171,7 +171,6 @@
                         (Var 6 rect)
                     )
                     (Print
-                        ()
                         [(StructInstanceMember
                             (Var 6 shp)
                             6 1_shape_color
@@ -200,7 +199,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StructInstanceMember
                             (Var 6 rect)
                             6 1_shape_color
@@ -249,7 +247,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StructInstanceMember
                             (Var 6 rect)
                             6 1_rectangle_length

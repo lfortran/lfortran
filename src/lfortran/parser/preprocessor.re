@@ -464,8 +464,9 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
                 output.append(token(tok, cur));
                 continue;
             }
-            [/][*] {
+            "/*" {
                 if (!branch_enabled) continue;
+                cur++;
                 while (!(*cur == '/' && *(cur - 1) == '*')) {
                     cur++;
                 }

@@ -223,7 +223,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "Here is "
                             (Character 1 8 ())
@@ -259,7 +258,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 greetings)]
                         ()
                         ()

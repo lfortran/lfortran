@@ -52,7 +52,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(BitCast
                             (Var 2 m)
                             (ArrayConstant

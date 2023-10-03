@@ -12,7 +12,6 @@
                     preprocessor9
                     []
                     [(Print
-                        ()
                         [(IntegerBinOp
                             (IntegerBinOp
                                 (IntegerBinOp
@@ -48,7 +47,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(IntegerBinOp
                             (IntegerBinOp
                                 (IntegerBinOp

@@ -10,6 +10,7 @@
 #include <lfortran/parser/parser.h>
 #include <lfortran/parser/preprocessor.h>
 #include <lfortran/pickle.h>
+#include <libasr/pickle.h>
 #include <lfortran/semantics/ast_to_asr.h>
 #include <lfortran/mod_to_asr.h>
 #include <libasr/codegen/asr_to_llvm.h>
@@ -38,6 +39,7 @@
 #include <libasr/pass/inline_function_calls.h>
 #include <libasr/pass/dead_code_removal.h>
 #include <libasr/pass/replace_sign_from_value.h>
+#include <libasr/pass/unique_symbols.h>
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
 #include <libasr/modfile.h>
@@ -62,7 +64,7 @@ using LCompilers::endswith;
 using LCompilers::CompilerOptions;
 
 enum Backend {
-    llvm, c, cpp, x86, wasm
+    llvm, c, cpp, x86, wasm, fortran
 };
 
 std::string get_unique_ID() {
@@ -667,20 +669,27 @@ int emit_asr(const std::string &infile,
     pass_options.always_run = true;
     pass_options.run_fun = "f";
     pass_options.verbose = compiler_options.verbose;
+    pass_options.dump_all_passes = compiler_options.dump_all_passes;
     pass_options.pass_cumulative = compiler_options.pass_cumulative;
     pass_options.realloc_lhs = compiler_options.realloc_lhs;
+    pass_options.all_symbols_mangling = compiler_options.all_symbols_mangling;
+    pass_options.module_name_mangling = compiler_options.module_name_mangling;
+    pass_options.global_symbols_mangling = compiler_options.global_symbols_mangling;
+    pass_options.intrinsic_symbols_mangling = compiler_options.intrinsic_symbols_mangling;
+    pass_options.bindc_mangling = compiler_options.bindc_mangling;
+    pass_options.mangle_underscore = compiler_options.mangle_underscore;
 
     pass_manager.apply_passes(al, asr, pass_options, diagnostics);
     if (compiler_options.tree) {
-        std::cout << LCompilers::LFortran::pickle_tree(*asr,
+        std::cout << LCompilers::pickle_tree(*asr,
             compiler_options.use_colors) << std::endl;
     } else if (compiler_options.json) {
-        std::cout << LCompilers::LFortran::pickle_json(*asr, lm, with_intrinsic_modules) << std::endl;
+        std::cout << LCompilers::pickle_json(*asr, lm, with_intrinsic_modules) << std::endl;
     } else if (compiler_options.visualize) {
-        std::string astr_data_json = LCompilers::LFortran::pickle_json(*asr, lm, with_intrinsic_modules);
+        std::string astr_data_json = LCompilers::pickle_json(*asr, lm, with_intrinsic_modules);
         return visualize_json(astr_data_json, compiler_options.platform);
     } else {
-        std::cout << LCompilers::LFortran::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
+        std::cout << LCompilers::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
                 with_intrinsic_modules) << std::endl;
     }
     return 0;
@@ -710,7 +719,8 @@ int emit_cpp(const std::string &infile, CompilerOptions &compiler_options)
     }
 }
 
-int emit_c(const std::string &infile, CompilerOptions &compiler_options)
+int emit_c(const std::string &infile,
+    LCompilers::PassManager& pass_manager, CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
 
@@ -723,10 +733,21 @@ int emit_c(const std::string &infile, CompilerOptions &compiler_options)
         lm.files.push_back(fl);
         lm.file_ends.push_back(input.size());
     }
-    LCompilers::Result<std::string> cpp = fe.get_c(input, lm, diagnostics, 1);
+    LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
+        r = fe.get_asr2(input, lm, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
-    if (cpp.ok) {
-        std::cout << cpp.result;
+    if (!r.ok) {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return 2;
+    }
+    diagnostics.diagnostics.clear();
+    LCompilers::ASR::TranslationUnit_t* asr = r.result;
+
+    LCompilers::Result<std::string> c_result = fe.get_c3(*asr, diagnostics,
+                                                pass_manager, 1);
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (c_result.ok) {
+        std::cout << c_result.result;
         return 0;
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -758,10 +779,33 @@ int emit_julia(const std::string &infile, CompilerOptions &compiler_options)
     }
 }
 
+int emit_fortran(const std::string &infile, CompilerOptions &compiler_options) {
+    std::string input = read_file(infile);
+
+    LCompilers::FortranEvaluator fe(compiler_options);
+    LCompilers::LocationManager lm;
+    LCompilers::diag::Diagnostics diagnostics;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
+    LCompilers::Result<std::string> src = fe.get_fortran(input, lm, diagnostics);
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (src.ok) {
+        std::cout << src.result;
+        return 0;
+    } else {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return 1;
+    }
+}
+
 int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
     const LCompilers::CompilerOptions &compiler_options)
 {
-    for (auto &item : u.m_global_scope->get_scope()) {
+    for (auto &item : u.m_symtab->get_scope()) {
         if (LCompilers::ASR::is_a<LCompilers::ASR::Module_t>(*item.second)) {
             LCompilers::ASR::Module_t *m = LCompilers::ASR::down_cast<LCompilers::ASR::Module_t>(item.second);
 
@@ -914,6 +958,19 @@ int compile_to_object_file(const std::string &infile,
 
     std::unique_ptr<LCompilers::LLVMModule> m;
     diagnostics.diagnostics.clear();
+    if (compiler_options.emit_debug_info) {
+#ifndef HAVE_RUNTIME_STACKTRACE
+        diagnostics.add(LCompilers::diag::Diagnostic(
+            "The `runtime stacktrace` is not enabled. To get the stack traces "
+            "or debugging information, please re-build LFortran with "
+            "`-DWITH_RUNTIME_STACKTRACE=yes`",
+            LCompilers::diag::Level::Error,
+            LCompilers::diag::Stage::Semantic, {})
+        );
+        std::cerr << diagnostics.render(lm, compiler_options);
+        return 1;
+#endif
+    }
     LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
         res = fe.get_llvm3(*asr, lpm, diagnostics, infile);
     std::cerr << diagnostics.render(lm, compiler_options);
@@ -1285,13 +1342,12 @@ int compile_to_object_file_cpp(const std::string &infile,
 int compile_to_object_file_c(const std::string &infile,
         const std::string &outfile,
         bool assembly, const std::string &rtlib_header_dir,
+        LCompilers::PassManager pass_manager,
         CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
-    LCompilers::ASR::TranslationUnit_t* asr;
-
     // Src -> AST -> ASR
     LCompilers::LocationManager lm;
     {
@@ -1302,14 +1358,14 @@ int compile_to_object_file_c(const std::string &infile,
     }
     LCompilers::diag::Diagnostics diagnostics;
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
-        result = fe.get_asr2(input, lm, diagnostics);
+        r = fe.get_asr2(input, lm, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
-    if (result.ok) {
-        asr = result.result;
-    } else {
+    if (!r.ok) {
         LCOMPILERS_ASSERT(diagnostics.has_error())
-        return 1;
+        return 2;
     }
+    diagnostics.diagnostics.clear();
+    LCompilers::ASR::TranslationUnit_t* asr = r.result;
 
     // Save .mod files
     {
@@ -1350,7 +1406,7 @@ int compile_to_object_file_c(const std::string &infile,
     std::string src;
     diagnostics.diagnostics.clear();
     LCompilers::Result<std::string> res
-        = fe.get_c2(*asr, diagnostics, 1);
+        = fe.get_c3(*asr, diagnostics, pass_manager, 1);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (res.ok) {
         src = res.result;
@@ -1380,6 +1436,43 @@ int compile_to_object_file_c(const std::string &infile,
         }
     }
 
+    return 0;
+}
+
+int compile_to_binary_fortran(const std::string &infile,
+        const std::string &outfile,
+        CompilerOptions &compiler_options) {
+    std::string input = read_file(infile);
+
+    LCompilers::FortranEvaluator fe(compiler_options);
+    LCompilers::LocationManager lm;
+    LCompilers::diag::Diagnostics diagnostics;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
+    LCompilers::Result<std::string> src = fe.get_fortran(input, lm, diagnostics);
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (!src.ok) {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return 1;
+    }
+
+    std::string in_file = outfile + ".tmp.f90";
+    {
+        std::ofstream out;
+        out.open(in_file);
+        out << src.result;
+    }
+
+    std::string cmd = "gfortran -o " + outfile + " -c " + in_file;
+    int err = system(cmd.c_str());
+    if (err) {
+        std::cout << "The command '" + cmd + "' failed." << std::endl;
+        return 11;
+    }
     return 0;
 }
 
@@ -1458,27 +1551,14 @@ int link_executable(const std::vector<std::string> &infiles,
         }
     }
     if (backend == Backend::llvm) {
+        std::string run_cmd = "", compile_cmd = "";
         if (t == "x86_64-pc-windows-msvc") {
-            std::string cmd = "link /NOLOGO /OUT:" + outfile + " ";
+            compile_cmd = "link /NOLOGO /OUT:" + outfile + " ";
             for (auto &s : infiles) {
-                cmd += s + " ";
+                compile_cmd += s + " ";
             }
-            cmd += runtime_library_dir + "\\lfortran_runtime_static.lib";
-            int err = system(cmd.c_str());
-            if (err) {
-                std::cout << "The command '" + cmd + "' failed." << std::endl;
-                return 10;
-            }
-            if (outfile == "a.out" && compiler_options.arg_o == "") {
-                err = system("a.out");
-                if (err != 0) {
-                    if (0 < err && err < 256) {
-                        return err;
-                    } else {
-                        return 1;
-                    }
-                }
-            }
+            compile_cmd += runtime_library_dir + "\\lfortran_runtime_static.lib";
+            run_cmd = outfile;
         } else {
             std::string CC;
             std::string base_path = "\"" + runtime_library_dir + "\"";
@@ -1505,29 +1585,58 @@ int link_executable(const std::vector<std::string> &infiles,
                 }
                 runtime_lib = "lfortran_runtime_static";
             }
-            std::string cmd = CC + options + " -o " + outfile + " ";
+            compile_cmd = CC + options + " -o " + outfile + " ";
             for (auto &s : infiles) {
-                cmd += s + " ";
+                compile_cmd += s + " ";
             }
-            cmd += + " -L"
+            compile_cmd += + " -L"
                 + base_path + " -Wl,-rpath," + base_path;
             if (!extra_runtime_linker_path.empty()) {
-                cmd += extra_runtime_linker_path;
+                compile_cmd += extra_runtime_linker_path;
             }
-            cmd += " -l" + runtime_lib + " -lm";
-            int err = system(cmd.c_str());
-            if (err) {
-                std::cout << "The command '" + cmd + "' failed." << std::endl;
-                return 10;
+            compile_cmd += " -l" + runtime_lib + " -lm";
+            run_cmd = "./" + outfile;
+        }
+        int err = system(compile_cmd.c_str());
+        if (err) {
+            std::cout << "The command '" + compile_cmd + "' failed." << std::endl;
+            return 10;
+        }
+        size_t dot_index = outfile.find_last_of(".");
+        std::string file_name = outfile.substr(0, dot_index);
+        if (compiler_options.run || (outfile == file_name + ".out" &&
+                compiler_options.arg_o == "")) {
+#ifdef HAVE_RUNTIME_STACKTRACE
+            if (compiler_options.emit_debug_info) {
+                // TODO: Replace the following hardcoded part
+                std::string cmd = "";
+#ifdef HAVE_LFORTRAN_MACHO
+                cmd += "dsymutil " + file_name + ".out && llvm-dwarfdump --debug-line "
+                    + file_name + ".out.dSYM > ";
+#else
+                cmd += "llvm-dwarfdump --debug-line " + file_name + ".out > ";
+#endif
+                std::string libasr_path = LCompilers::LFortran::get_runtime_library_c_header_dir() + "/../";
+                cmd += file_name + "_ldd.txt && (" + libasr_path + "dwarf_convert.py "
+                    + file_name + "_ldd.txt " + file_name + "_lines.txt "
+                    + file_name + "_lines.dat && " + libasr_path + "dat_convert.py "
+                    + file_name + "_lines.dat)";
+                int status = system(cmd.c_str());
+                if ( status != 0 ) {
+                    std::cerr << "Error in creating the files used to generate "
+                        "the debug information. This might be caused because either"
+                        " `llvm-dwarfdump` or `Python` are not available. "
+                        "Please activate the CONDA environment and compile again.\n";
+                    return status;
+                }
             }
-            if (outfile == "a.out" && compiler_options.arg_o == "") {
-                err = system("./a.out");
-                if (err != 0) {
-                    if (0 < err && err < 256) {
-                        return err;
-                    } else {
-                        return 1;
-                    }
+#endif
+            int err = system(run_cmd.c_str());
+            if (err != 0) {
+                if (0 < err && err < 256) {
+                    return err;
+                } else {
+                    return 1;
                 }
             }
         }
@@ -1550,6 +1659,17 @@ int link_executable(const std::vector<std::string> &infiles,
         if (err) {
             std::cout << "The command '" + cmd + "' failed." << std::endl;
             return 10;
+        }
+        if (compiler_options.run) {
+            std::string run_cmd = (t == "x86_64-pc-windows-msvc") ? outfile : "./" + outfile;
+            int err = system(run_cmd.c_str());
+            if (err != 0) {
+                if (0 < err && err < 256) {
+                    return err;
+                } else {
+                    return 1;
+                }
+            }
         }
         return 0;
     } else if (backend == Backend::cpp) {
@@ -1588,6 +1708,17 @@ int link_executable(const std::vector<std::string> &infiles,
     } else if (backend == Backend::wasm) {
         std::string cmd = "cp " + infiles[0] + " " + outfile
             + " && " + "cp " + infiles[0] + ".js" + " " + outfile + ".js";
+        int err = system(cmd.c_str());
+        if (err) {
+            std::cout << "The command '" + cmd + "' failed." << std::endl;
+            return 10;
+        }
+        return 0;
+    } else if (backend == Backend::fortran) {
+        std::string cmd = "gfortran -o " + outfile + " ";
+        for (auto &s : infiles) {
+            cmd += s + " ";
+        }
         int err = system(cmd.c_str());
         if (err) {
             std::cout << "The command '" + cmd + "' failed." << std::endl;
@@ -1821,6 +1952,7 @@ int main(int argc, char *argv[])
         bool show_asm = false;
         bool show_wat = false;
         bool show_julia = false;
+        bool show_fortran = false;
         bool time_report = false;
         bool static_link = false;
         std::string skip_pass;
@@ -1828,6 +1960,7 @@ int main(int argc, char *argv[])
         std::string arg_kernel_f;
         bool print_targets = false;
         bool link_with_gcc = false;
+        bool fixed_form_infer = false;
 
         std::string arg_fmt_file;
         int arg_fmt_indent = 4;
@@ -1842,6 +1975,7 @@ int main(int argc, char *argv[])
         std::string arg_pywrap_file;
         std::string arg_pywrap_array_order="f";
         std::vector<std::string> linker_flags;
+        std::vector<std::string> f_flags;
 
         CompilerOptions compiler_options;
         compiler_options.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
@@ -1863,13 +1997,17 @@ int main(int argc, char *argv[])
         app.add_option("-I", compiler_options.include_dirs, "Include path")->allow_extra_args(false);
         app.add_option("-J", compiler_options.mod_files_dir, "Where to save mod files");
         app.add_flag("-g", compiler_options.emit_debug_info, "Compile with debugging information");
+        app.add_flag("--debug-with-line-column", compiler_options.emit_debug_line_column,
+            "Convert the linear location info into line + column in the debugging information");
         app.add_option("-D", compiler_options.c_preprocessor_defines, "Define <macro>=<value> (or 1 if <value> omitted)")->allow_extra_args(false);
         app.add_flag("--version", arg_version, "Display compiler version information");
         app.add_option("-W", linker_flags, "Linker flags")->allow_extra_args(false);
+        app.add_option("-f", f_flags, "All `-f*` flags (only -fPIC supported for now)")->allow_extra_args(false);
 
         // LFortran specific options
         app.add_flag("--cpp", compiler_options.c_preprocessor, "Enable C preprocessing");
         app.add_flag("--fixed-form", compiler_options.fixed_form, "Use fixed form Fortran source parsing");
+        app.add_flag("--fixed-form-infer", fixed_form_infer, "Use heuristics to infer if a file is in fixed form");
         app.add_flag("--no-prescan", arg_no_prescan, "Turn off prescan");
         app.add_flag("--show-prescan", show_prescan, "Show tokens for the given file and exit");
         app.add_flag("--show-tokens", show_tokens, "Show tokens for the given file and exit");
@@ -1890,6 +2028,7 @@ int main(int argc, char *argv[])
         app.add_flag("--show-asm", show_asm, "Show assembly for the given file and exit");
         app.add_flag("--show-wat", show_wat, "Show WAT (WebAssembly Text Format) and exit");
         app.add_flag("--show-julia", show_julia, "Show Julia translation source for the given file and exit");
+        app.add_flag("--show-fortran", show_fortran, "Show Fortran translation source for the given file and exit");
         app.add_flag("--show-stacktrace", compiler_options.show_stacktrace, "Show internal stacktrace on compiler errors");
         app.add_flag("--symtab-only", compiler_options.symtab_only, "Only create symbol tables in ASR (skip executable stmt)");
         app.add_flag("--time-report", time_report, "Show compilation time report");
@@ -1897,7 +2036,7 @@ int main(int argc, char *argv[])
         app.add_flag("--no-warnings", compiler_options.no_warnings, "Turn off all warnings");
         app.add_flag("--no-error-banner", compiler_options.no_error_banner, "Turn off error banner");
         app.add_option("--error-format", compiler_options.error_format, "Control how errors are produced (human, short)")->capture_default_str();
-        app.add_option("--backend", arg_backend, "Select a backend (llvm, cpp, x86, wasm)")->capture_default_str();
+        app.add_option("--backend", arg_backend, "Select a backend (llvm, cpp, x86, wasm, fortran)")->capture_default_str();
         app.add_flag("--openmp", compiler_options.openmp, "Enable openmp");
         app.add_flag("--generate-object-code", compiler_options.generate_object_code, "Generate object code into .o files");
         app.add_flag("--rtlib", compiler_options.rtlib, "Include the full runtime library in the LLVM output");
@@ -1912,8 +2051,18 @@ int main(int argc, char *argv[])
         app.add_flag("--print-leading-space", compiler_options.print_leading_space, "Print leading white space if format is unspecified");
         app.add_flag("--interactive-parse", compiler_options.interactive, "Use interactive parse");
         app.add_flag("--verbose", compiler_options.verbose, "Print debugging statements");
+        app.add_flag("--dump-all-passes", compiler_options.dump_all_passes, "Apply all the passes and dump the ASR into a file");
         app.add_flag("--cumulative", compiler_options.pass_cumulative, "Apply all the passes cumulatively till the given pass");
-        app.add_flag("--realloc-lhs", compiler_options.realloc_lhs, "Reallocate left hand side if its not of the required size.");
+        app.add_flag("--realloc-lhs", compiler_options.realloc_lhs, "Reallocate left hand side automatically");
+        app.add_flag("--module-mangling", compiler_options.module_name_mangling, "Mangles the module name");
+        app.add_flag("--global-mangling", compiler_options.global_symbols_mangling, "Mangles all the global symbols");
+        app.add_flag("--intrinsic-mangling", compiler_options.intrinsic_symbols_mangling, "Mangles all the intrinsic symbols");
+        app.add_flag("--all-mangling", compiler_options.all_symbols_mangling, "Mangles all possible symbols");
+        app.add_flag("--bindc-mangling", compiler_options.bindc_mangling, "Mangles functions with abi bind(c)");
+        app.add_flag("--mangle-underscore", compiler_options.mangle_underscore, "Mangles with underscore");
+        app.add_flag("--run", compiler_options.run, "Executes the generated binary when the `-o` option is specified");
+        app.add_flag("--legacy-array-sections", compiler_options.legacy_array_sections, "Enables passing array items as sections if required");
+        app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas");
 
         /*
         * Subcommands:
@@ -1979,6 +2128,16 @@ int main(int argc, char *argv[])
         compiler_options.indent = !arg_no_indent;
         compiler_options.prescan = !arg_no_prescan;
 
+        for (auto &f_flag : f_flags) {
+            if (f_flag == "PIC") {
+                // Position Independent Code
+                // We do this by default, so we ignore for now
+            } else {
+                std::cerr << "The flag `-f" << f_flag << "` is not supported" << std::endl;
+                return 1;
+            }
+        }
+
         if( compiler_options.fast ) {
             lfortran_pass_manager.use_optimization_passes();
         }
@@ -2005,7 +2164,7 @@ int main(int argc, char *argv[])
                 Allocator al(1024*1024);
                 LCompilers::ASR::TranslationUnit_t *asr;
                 asr = LCompilers::LFortran::mod_to_asr(al, arg_mod_file);
-                std::cout << LCompilers::LFortran::pickle(*asr, !arg_mod_no_color) << std::endl;
+                std::cout << LCompilers::pickle(*asr, !arg_mod_no_color) << std::endl;
                 return 0;
             }
             return 0;
@@ -2015,11 +2174,6 @@ int main(int argc, char *argv[])
             return python_wrapper(arg_pywrap_file, arg_pywrap_array_order,
                 compiler_options);
         }
-
-        if (compiler_options.emit_debug_info) {
-            compiler_options.emit_debug_line_column = true;
-        }
-
 
         if (arg_backend == "llvm") {
             backend = Backend::llvm;
@@ -2031,8 +2185,10 @@ int main(int argc, char *argv[])
             backend = Backend::x86;
         } else if (arg_backend == "wasm") {
             backend = Backend::wasm;
+        } else if (arg_backend == "fortran") {
+            backend = Backend::fortran;
         } else {
-            std::cerr << "The backend must be one of: llvm, cpp, x86, wasm." << std::endl;
+            std::cerr << "The backend must be one of: llvm, cpp, x86, wasm, fortran." << std::endl;
             return 1;
         }
 
@@ -2050,6 +2206,12 @@ int main(int argc, char *argv[])
         std::string arg_file = arg_files[0];
         if (CLI::NonexistentPath(arg_file).empty())
             throw LCompilers::LCompilersException("File does not exist: " + arg_file);
+
+        // Decide if a file is fixed format based on the extension
+        // Gfortran does the same thing
+        if (fixed_form_infer && endswith(arg_file, ".f")) {
+            compiler_options.fixed_form = true;
+        }
 
         std::string outfile;
         std::filesystem::path basename = std::filesystem::path(arg_file).filename();
@@ -2074,7 +2236,7 @@ int main(int argc, char *argv[])
         } else if (show_julia) {
             outfile = basename.replace_extension(".jl").string();
         } else {
-            outfile = "a.out";
+            outfile = basename.replace_extension(".out").string();
         }
 
         if (arg_E) {
@@ -2123,10 +2285,13 @@ int main(int argc, char *argv[])
             return emit_cpp(arg_file, compiler_options);
         }
         if (show_c) {
-            return emit_c(arg_file, compiler_options);
+            return emit_c(arg_file, lfortran_pass_manager, compiler_options);
         }
         if (show_julia) {
             return emit_julia(arg_file, compiler_options);
+        }
+        if (show_fortran) {
+            return emit_fortran(arg_file, compiler_options);
         }
         if (arg_S) {
             if (backend == Backend::llvm) {
@@ -2154,7 +2319,7 @@ int main(int argc, char *argv[])
 #endif
             } else if (backend == Backend::c) {
                 return compile_to_object_file_c(arg_file, outfile, false,
-                        rtlib_c_header_dir, compiler_options);
+                        rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
             } else if (backend == Backend::cpp) {
                 return compile_to_object_file_cpp(arg_file, outfile, false,
                         true, rtlib_c_header_dir, compiler_options);
@@ -2162,6 +2327,8 @@ int main(int argc, char *argv[])
                 return compile_to_binary_x86(arg_file, outfile, time_report, compiler_options);
             } else if (backend == Backend::wasm) {
                 return compile_to_binary_wasm(arg_file, outfile, time_report, compiler_options);
+            } else if (backend == Backend::fortran) {
+                return compile_to_binary_fortran(arg_file, outfile, compiler_options);
             } else {
                 throw LCompilers::LCompilersException("Unsupported backend.");
             }
@@ -2190,7 +2357,9 @@ int main(int argc, char *argv[])
                         true, rtlib_header_dir, compiler_options);
             } else if (backend == Backend::c) {
                 err = compile_to_object_file_c(arg_file, tmp_o,
-                        false, rtlib_c_header_dir, compiler_options);
+                        false, rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
+            } else if (backend == Backend::fortran) {
+                err = compile_to_binary_fortran(arg_file, tmp_o, compiler_options);
             } else {
                 throw LCompilers::LCompilersException("Backend not supported");
             }

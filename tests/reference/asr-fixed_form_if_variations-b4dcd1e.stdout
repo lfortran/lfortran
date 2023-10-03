@@ -42,7 +42,6 @@
                     []
                     [(Var 2 a)]
                     [(Print
-                        ()
                         [(Var 2 a)]
                         ()
                         ()
@@ -74,7 +73,6 @@
                             )
                         )
                         [(Print
-                            ()
                             [(StringConstant
                                 "first branch"
                                 (Character 1 12 ())
@@ -87,7 +85,6 @@
                             10
                         )]
                         [(Print
-                            ()
                             [(StringConstant
                                 "second branch"
                                 (Character 1 13 ())

@@ -54,9 +54,11 @@
         (Template
             struct_t
             [t]
-            [(Requires
-                r
-                [t]
+            [(Require
+                [(UnitRequire
+                    r
+                    [t]
+                )]
             )
             (Declaration
                 ()
@@ -186,6 +188,7 @@
                     ()
                 )]
                 []
+                []
             )
             (Function
                 get_snd
@@ -244,6 +247,7 @@
                     [])]
                     ()
                 )]
+                []
                 []
             )]
         )]
@@ -318,6 +322,7 @@
                     0)]
                     []
                     []
+                    []
                 )]
                 ()
             )
@@ -343,9 +348,11 @@
                     0)]
                     []
                     []
+                    []
                 )]
                 ()
             )]
+            []
             []
         )]
     )
@@ -375,6 +382,7 @@
         [(SubroutineCall
             0
             test_template
+            []
             []
             []
             []

@@ -69,7 +69,8 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
     endif()
 
     if (ADD_TEST)
-        if ((LFORTRAN_BACKEND STREQUAL "cpp") OR (LFORTRAN_BACKEND STREQUAL "x86") OR (LFORTRAN_BACKEND STREQUAL "c"))
+        if ((LFORTRAN_BACKEND STREQUAL "cpp") OR (LFORTRAN_BACKEND STREQUAL "x86")
+                OR (LFORTRAN_BACKEND STREQUAL "c") OR (LFORTRAN_BACKEND STREQUAL "fortran"))
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC ${extra_args} --backend=${LFORTRAN_BACKEND})
             target_link_options(${name} PUBLIC --backend=${LFORTRAN_BACKEND})
@@ -82,10 +83,10 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             execute_process(COMMAND "${WASM_EXEC_RUNTIME}" --version
                             OUTPUT_VARIABLE WASM_EXEC_VERSION
                             OUTPUT_STRIP_TRAILING_WHITESPACE)
-            string(COMPARE GREATER_EQUAL "${WASM_EXEC_VERSION}"
-                                    "v16.0.0" IS_NODE_ABOVE_16)
 
-            if (NOT IS_NODE_ABOVE_16)
+            string(REGEX REPLACE "v([0-9]+)\\.([0-9]+)\\.([0-9]+)" "\\1" NODE_MAJOR_VERSION "${WASM_EXEC_VERSION}")
+
+            if (NODE_MAJOR_VERSION LESS 16)
                 message(STATUS "${WASM_EXEC_RUNTIME} version: ${WASM_EXEC_VERSION}")
                 set(WASM_EXEC_FLAGS "--experimental-wasm-bigint")
             endif()
@@ -104,18 +105,6 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
         elseif (LFORTRAN_BACKEND STREQUAL "llvmImplicit")
             execute_process(COMMAND lfortran ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90
 				${extra_args} --implicit-typing --implicit-interface -o ${name})
-            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
-        elseif (LFORTRAN_BACKEND STREQUAL "llvmReAllocLHS")
-            execute_process(COMMAND lfortran ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90
-				${extra_args} --realloc-lhs=true -o ${name})
-            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
-        elseif (LFORTRAN_BACKEND STREQUAL "llvmImplicitArgument")
-            execute_process(COMMAND lfortran ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90
-				${extra_args} --implicit-argument-casting -o ${name})
-            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
-        elseif (LFORTRAN_BACKEND STREQUAL "llvmUseLoopVariableAfterLoop")
-            execute_process(COMMAND lfortran ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90
-                ${extra_args} --use-loop-variable-after-loop -o ${name})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvm")
             add_executable(${name} ${file_name}.f90 ${extra_files})
@@ -142,31 +131,19 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
 endmacro(RUN_UTIL)
 
 macro(RUN)
-    set(options FAIL NOFAST CPP_PRE IMPLICIT_ARGS)
+    set(options FAIL NOFAST)
     set(oneValueArgs NAME INCLUDE_PATH  COPY_TO_BIN)
-    set(multiValueArgs LABELS EXTRAFILES)
+    set(multiValueArgs LABELS EXTRAFILES EXTRA_ARGS GFORTRAN_ARGS)
     cmake_parse_arguments(RUN "${options}" "${oneValueArgs}"
                         "${multiValueArgs}" ${ARGN} )
 
-    set(RUN_EXTRA_ARGS "")
     set(RUN_FILE_NAME ${RUN_NAME})
-    set(RUN_GFORTRAN_ARGS "")
 
     if (RUN_INCLUDE_PATH)
         # Only one include path supported for now
         # Later add support for multiple include paths by looping over and appending to extra args
         set(RUN_EXTRA_ARGS ${RUN_EXTRA_ARGS} -I${CMAKE_CURRENT_SOURCE_DIR}/${RUN_INCLUDE_PATH})
         set(RUN_GFORTRAN_ARGS ${RUN_GFORTRAN_ARGS} -I${CMAKE_CURRENT_SOURCE_DIR}/${RUN_INCLUDE_PATH})
-    endif()
-
-    if (RUN_CPP_PRE)
-        set(RUN_EXTRA_ARGS ${RUN_EXTRA_ARGS} "--cpp")
-        set(RUN_GFORTRAN_ARGS ${RUN_GFORTRAN_ARGS} "-cpp")
-    endif()
-
-    if (RUN_IMPLICIT_ARGS)
-        set(RUN_EXTRA_ARGS ${RUN_EXTRA_ARGS} "--implicit-argument-casting")
-        set(RUN_GFORTRAN_ARGS ${RUN_GFORTRAN_ARGS} "-fallow-argument-mismatch")
     endif()
 
     if (NOT FAST)
@@ -184,6 +161,7 @@ endmacro(RUN)
 # The supported test labels are:
 #
 # gfortran      --- compile with GFortran
+# fortran       --- convert to Fortran code and compile with GFortran
 # llvm          --- compile with LFortran, only generate binary code at the very end
 # llvm2         --- compile with LFortran, generate object files
 # llvm_rtlib    --- compile with LFortran loading ASR runtime library, generate object files
@@ -196,56 +174,60 @@ endmacro(RUN)
 
 # GFortran + LFortran LLVM + LFortran C++
 
-RUN(NAME program_cmake_01 LABELS gfortran llvm cpp x86 wasm)
-RUN(NAME program_cmake_02 LABELS gfortran llvm cpp x86 wasm)
+RUN(NAME program_cmake_01 LABELS gfortran llvm cpp x86 wasm c fortran)
+RUN(NAME program_cmake_02 LABELS gfortran llvm cpp x86 wasm c fortran)
 
-RUN(NAME error_stop_01 FAIL LABELS gfortran llvm cpp x86 wasm llvm2)
-RUN(NAME error_stop_02 FAIL LABELS llvm wasm llvm2)
-RUN(NAME stop_01 LABELS llvm wasm llvm2)
+RUN(NAME error_stop_01 FAIL LABELS gfortran llvm cpp x86 wasm llvm2 fortran)
+RUN(NAME error_stop_02 FAIL LABELS llvm wasm llvm2 fortran)
+RUN(NAME stop_01 LABELS llvm wasm llvm2 c fortran)
 
-RUN(NAME print_01 LABELS gfortran llvm cpp llvm2 wasm)
-RUN(NAME print_02 LABELS gfortran llvm llvm2 wasm)
-RUN(NAME print_03 LABELS gfortran llvm llvm2 wasm)
-RUN(NAME print_04 LABELS gfortran llvm llvm2)
-RUN(NAME print_arr_01 LABELS gfortran llvm llvm2 wasm)
-RUN(NAME print_arr_02 LABELS gfortran llvm llvm2 wasm)
-RUN(NAME print_arr_03 LABELS gfortran llvm llvm2 NOFAST)
+RUN(NAME print_01 LABELS gfortran llvm cpp llvm2 wasm fortran)
+RUN(NAME print_02 LABELS gfortran llvm llvm2 wasm fortran NOFAST)
+RUN(NAME print_03 LABELS gfortran llvm llvm2 wasm c fortran NOFAST)
+RUN(NAME print_04 LABELS gfortran llvm llvm2 fortran)
+RUN(NAME print_arr_01 LABELS gfortran llvm llvm2 wasm c fortran)
+RUN(NAME print_arr_02 LABELS gfortran llvm llvm2 wasm c fortran)
+RUN(NAME print_arr_03 LABELS gfortran llvm llvm2 fortran)
 
-RUN(NAME include_01 LABELS gfortran llvm wasm)
-RUN(NAME include_02 LABELS gfortran llvm wasm)
-RUN(NAME include_03 LABELS gfortran llvm wasm INCLUDE_PATH include_03)
+RUN(NAME include_01 LABELS gfortran llvm wasm c fortran)
+RUN(NAME include_02 LABELS gfortran llvm wasm c fortran)
+RUN(NAME include_03 LABELS gfortran llvm wasm c INCLUDE_PATH include_03 fortran)
 
-RUN(NAME cond_01 LABELS gfortran llvm cpp x86 wasm)
-RUN(NAME cond_02 LABELS gfortran llvm wasm)
+RUN(NAME cond_01 LABELS gfortran llvm cpp x86 wasm c fortran)
+RUN(NAME cond_02 LABELS gfortran llvm wasm c fortran)
 
-RUN(NAME expr_01 FAIL LABELS gfortran llvm cpp x86 wasm c)
-RUN(NAME expr_02 LABELS gfortran llvm cpp x86 wasm)
-RUN(NAME expr_03 LABELS gfortran llvm cpp x86 wasm)
-RUN(NAME expr_04 LABELS gfortran llvm cpp wasm)
-RUN(NAME expr_05 LABELS gfortran llvm cpp) # it contains pow, wasm supports only x**2
-RUN(NAME expr_06 LABELS gfortran llvm wasm)
-RUN(NAME expr_07 LABELS gfortran llvm wasm)
-RUN(NAME expr_08 LABELS gfortran llvm wasm)
-RUN(NAME expr_09 LABELS gfortran llvm wasm)
-RUN(NAME expr_10 LABELS gfortran llvm wasm)
-RUN(NAME expr_12 LABELS gfortran llvm) # it uses string compare
-RUN(NAME expr_13 LABELS gfortran llvm wasm NOFAST)
-RUN(NAME expr_14 LABELS gfortran llvm wasm)
+RUN(NAME expr_01 FAIL LABELS gfortran llvm cpp x86 wasm c fortran)
+RUN(NAME expr_02 LABELS gfortran llvm cpp x86 wasm c fortran)
+RUN(NAME expr_03 LABELS gfortran llvm cpp x86 wasm c)
+RUN(NAME expr_04 LABELS gfortran llvm cpp wasm c)
+RUN(NAME expr_05 LABELS gfortran llvm cpp c) # it contains pow, wasm supports only x**2
+RUN(NAME expr_06 LABELS gfortran llvm wasm c)
+RUN(NAME expr_07 LABELS gfortran llvm wasm c)
+RUN(NAME expr_08 LABELS gfortran llvm wasm c)
+RUN(NAME expr_09 LABELS gfortran llvm wasm c)
+RUN(NAME expr_10 LABELS gfortran llvm wasm c)
+RUN(NAME expr_12 LABELS gfortran llvm c) # it uses string compare
+RUN(NAME expr_13 LABELS gfortran llvm wasm c NOFAST)
+RUN(NAME expr_14 LABELS gfortran llvm wasm c)
+RUN(NAME expr_15 LABELS gfortran llvm wasm c)
+RUN(NAME expr_16 LABELS gfortran llvm wasm c)
+RUN(NAME expr_17 LABELS gfortran llvm)
 
-RUN(NAME data_01 LABELS gfortran llvm)
+RUN(NAME data_01 LABELS gfortran llvm c)
 RUN(NAME data_02 LABELS gfortran)
-RUN(NAME data_03 LABELS gfortran llvm)
-RUN(NAME data_04 LABELS gfortran llvm)
+RUN(NAME data_03 LABELS gfortran llvm c)
+RUN(NAME data_04 LABELS gfortran llvm c)
 RUN(NAME data_05 LABELS gfortran) # llvmImplicit removed
-RUN(NAME data_06 LABELS gfortran llvm)
+RUN(NAME data_06 LABELS gfortran llvm c)
 RUN(NAME data_07 LABELS gfortran) # TODO: Fix this test
-RUN(NAME data_08 LABELS gfortran llvmImplicit NOFAST)
-RUN(NAME data_09 LABELS gfortran llvm)
-RUN(NAME minmax_01 LABELS gfortran llvm wasm)
-RUN(NAME arithmetic_if_01 LABELS gfortran llvm) # arithmetic tests use goto
-RUN(NAME arithmetic_if_02 LABELS gfortran llvm)
-RUN(NAME arithmetic_if_03 LABELS gfortran llvm)
-RUN(NAME arithmetic_if_04 LABELS gfortran llvm)
+RUN(NAME data_08 LABELS gfortran llvmImplicit)
+RUN(NAME data_09 LABELS gfortran llvm c)
+RUN(NAME data_10 LABELS gfortran llvm)
+RUN(NAME minmax_01 LABELS gfortran llvm wasm c)
+RUN(NAME arithmetic_if_01 LABELS gfortran llvm c) # arithmetic tests use goto
+RUN(NAME arithmetic_if_02 LABELS gfortran llvm c)
+RUN(NAME arithmetic_if_03 LABELS gfortran llvm c)
+RUN(NAME arithmetic_if_04 LABELS gfortran llvm c)
 
 RUN(NAME variables_01 LABELS gfortran llvm cpp x86 wasm c)
 RUN(NAME variables_02 LABELS gfortran llvm cpp x86 wasm c)
@@ -267,7 +249,7 @@ RUN(NAME doloop_04 LABELS gfortran llvm) # uses goto target
 RUN(NAME doloop_05 LABELS gfortran llvm) # uses goto
 RUN(NAME doloop_06 LABELS gfortran llvm c cpp wasm)
 RUN(NAME doloop_07 LABELS gfortran llvm c cpp wasm)
-RUN(NAME doloop_08 LABELS gfortran llvm c cpp wasm)
+RUN(NAME doloop_08 LABELS gfortran llvm c cpp wasm NOFAST)
 RUN(NAME doloop_09 LABELS gfortran llvm) # nested subroutine
 RUN(NAME doloop_10 LABELS gfortran llvm wasm) # implicit cast loop variable
 
@@ -304,7 +286,7 @@ RUN(NAME functions_09 LABELS gfortran)
 RUN(NAME functions_10 LABELS gfortran)
 RUN(NAME functions_11 LABELS gfortran llvm wasm NOFAST)
 RUN(NAME functions_13 LABELS gfortran)
-RUN(NAME functions_15 LABELS gfortran llvm NOFAST)
+RUN(NAME functions_15 LABELS gfortran llvm)
 RUN(NAME functions_16 LABELS gfortran)
 RUN(NAME functions_17 LABELS gfortran llvm)
 
@@ -337,9 +319,11 @@ RUN(NAME arrays_01_complex LABELS gfortran llvm wasm)
 RUN(NAME arrays_01_logical LABELS gfortran llvm wasm)
 RUN(NAME arrays_01_multi_dim LABELS gfortran llvm wasm)
 RUN(NAME array_bound_1 LABELS gfortran llvm wasm)
+RUN(NAME array_bound_2 LABELS gfortran llvm wasm)
+RUN(NAME array_bound_3 LABELS gfortran llvm)
 RUN(NAME arrays_op_1 LABELS gfortran llvm wasm)
 RUN(NAME arrays_op_2 LABELS gfortran llvm wasm)
-RUN(NAME arrays_op_3 LABELS gfortran llvm wasm)
+RUN(NAME arrays_op_3 LABELS gfortran llvm wasm NOFAST)
 RUN(NAME arrays_op_4 LABELS gfortran llvm)
 RUN(NAME arrays_op_5 LABELS gfortran llvm wasm)
 RUN(NAME arrays_op_6 LABELS gfortran llvm)
@@ -347,19 +331,28 @@ RUN(NAME arrays_op_7 LABELS gfortran llvm wasm)
 RUN(NAME arrays_op_8 LABELS gfortran llvm)
 RUN(NAME arrays_op_9 LABELS gfortran llvm)
 RUN(NAME arrays_op_10 LABELS gfortran llvm wasm)
-RUN(NAME arrays_op_11 LABELS gfortran llvmReAllocLHS)
+RUN(NAME arrays_op_11 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs)
 RUN(NAME arrays_op_13 LABELS gfortran llvm wasm)
 RUN(NAME arrays_op_14 LABELS gfortran llvm wasm)
 RUN(NAME arrays_op_15 LABELS gfortran llvm)
 RUN(NAME arrays_op_16 LABELS gfortran llvm)
 RUN(NAME arrays_op_17 LABELS gfortran llvm)
-RUN(NAME arrays_op_18 LABELS gfortran llvmReAllocLHS)
+RUN(NAME arrays_op_18 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs)
+RUN(NAME arrays_op_19 LABELS gfortran llvm NOFAST)
+RUN(NAME arrays_op_20 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs)
+RUN(NAME arrays_op_21 LABELS gfortran llvm)
+RUN(NAME arrays_op_22 LABELS gfortran llvm)
+RUN(NAME arrays_op_23 LABELS gfortran llvm)
+RUN(NAME arrays_op_24 LABELS gfortran llvm)
 RUN(NAME arrays_reshape_14 LABELS gfortran llvm)
 RUN(NAME arrays_elemental_15 LABELS gfortran llvm)
-RUN(NAME arrays_03_func LABELS gfortran cpp llvm wasm  NOFAST)
+RUN(NAME arrays_03_func LABELS gfortran cpp llvm wasm NOFAST)
 RUN(NAME arrays_03_func_pass_arr_dims LABELS gfortran llvm wasm NOFAST)
-RUN(NAME arrays_04_func LABELS gfortran cpp llvm wasm NOFAST)
-RUN(NAME arrays_04_func_pass_arr_dims LABELS gfortran llvm wasm NOFAST)
+RUN(NAME arrays_04_func LABELS gfortran cpp llvm wasm)
+RUN(NAME arrays_04_func_pass_arr_dims LABELS gfortran llvm wasm)
 RUN(NAME arrays_05 LABELS gfortran llvm wasm)
 RUN(NAME arrays_17 LABELS gfortran llvm wasm)
 RUN(NAME arrays_18_func LABELS gfortran llvm)
@@ -373,6 +366,11 @@ RUN(NAME arrays_26 LABELS gfortran llvm)
 RUN(NAME arrays_27 LABELS gfortran llvm)
 RUN(NAME arrays_28 LABELS gfortran llvm) # maxloc, minloc
 RUN(NAME arrays_29 LABELS gfortran llvm NOFAST)
+RUN(NAME arrays_30 LABELS gfortran llvm) # maxloc
+RUN(NAME arrays_31 LABELS gfortran llvm wasm) # init expr with fixed size arr as dependency
+RUN(NAME arrays_32 LABELS gfortran llvm)
+RUN(NAME arrays_33 LABELS gfortran llvm)
+RUN(NAME arrays_34 LABELS gfortran llvm)
 
 
 # GFortran
@@ -393,19 +391,19 @@ RUN(NAME arrays_16_func LABELS gfortran llvm)
 
 RUN(NAME arrays_intrin_01 LABELS gfortran) # minval, maxval
 RUN(NAME arrays_intrin_02 LABELS gfortran) # all, any
-RUN(NAME arrays_intrin_03 LABELS gfortran llvm) # maxval
-RUN(NAME arrays_intrin_04 LABELS gfortran llvm) # maxval
-RUN(NAME arrays_intrin_05 LABELS gfortran llvm) # minval
+RUN(NAME arrays_intrin_03 LABELS gfortran llvm NOFAST) # maxval
+RUN(NAME arrays_intrin_04 LABELS gfortran llvm NOFAST) # maxval
+RUN(NAME arrays_intrin_05 LABELS gfortran llvm NOFAST) # minval
 RUN(NAME arrays_intrin_06 LABELS gfortran llvm) # minval
 RUN(NAME any_01 LABELS gfortran)
 RUN(NAME any_02 LABELS gfortran llvm NOFAST)
-RUN(NAME sum_01 LABELS gfortran llvm)
+RUN(NAME sum_01 LABELS gfortran llvm NOFAST)
 RUN(NAME sum_02 LABELS gfortran llvm)
-RUN(NAME product_01 LABELS gfortran llvm)
+RUN(NAME product_01 LABELS gfortran llvm NOFAST)
 RUN(NAME product_02 LABELS gfortran llvm)
 
 RUN(NAME reserved_01 LABELS gfortran llvm wasm)
-RUN(NAME reserved_02 LABELS gfortran llvm NOFAST)
+RUN(NAME reserved_02 LABELS gfortran llvm)
 RUN(NAME reserved_03 LABELS gfortran)
 
 RUN(NAME namelist_01 LABELS gfortran)
@@ -415,6 +413,9 @@ RUN(NAME format_02 LABELS gfortran)
 RUN(NAME format_04 LABELS gfortran llvm)
 RUN(NAME format_05 LABELS gfortran)
 RUN(NAME format_06 LABELS gfortran llvm)
+RUN(NAME format_07 LABELS gfortran llvm)
+RUN(NAME format_08 LABELS gfortran llvm)
+RUN(NAME format_09 LABELS gfortran llvm)
 
 RUN(NAME submodule_01 LABELS gfortran)
 RUN(NAME submodule_02 LABELS gfortran)
@@ -424,7 +425,7 @@ RUN(NAME floor_01 LABELS gfortran llvm wasm) # floor body
 RUN(NAME floor_02 LABELS gfortran llvm wasm) # floor symboltable
 RUN(NAME floor_03 LABELS gfortran wasm)
 
-RUN(NAME modulo_01 LABELS gfortran llvm NOFAST)
+RUN(NAME modulo_01 LABELS gfortran llvm)
 
 RUN(NAME int_01 LABELS gfortran llvm wasm) # int body
 RUN(NAME int_02 LABELS gfortran wasm) # int symboltable
@@ -451,10 +452,10 @@ RUN(NAME intrinsics_17 LABELS gfortran llvm) # exp, log, erf
 RUN(NAME intrinsics_17b LABELS gfortran llvm c) # log
 RUN(NAME intrinsics_18 LABELS gfortran llvm)
 RUN(NAME intrinsics_18c LABELS gfortran llvm)
-RUN(NAME intrinsics_19 LABELS gfortran llvm)
+RUN(NAME intrinsics_19 LABELS gfortran llvm NOFAST)
 RUN(NAME intrinsics_19c LABELS gfortran llvm)
 RUN(NAME intrinsics_20 LABELS gfortran llvm)
-RUN(NAME intrinsics_21 LABELS gfortran llvm wasm NOFAST) # modulo and mod
+RUN(NAME intrinsics_21 LABELS gfortran llvm wasm) # modulo and mod
 RUN(NAME intrinsics_22 LABELS gfortran llvm wasm)
 RUN(NAME intrinsics_23 LABELS gfortran llvm) # huge
 RUN(NAME intrinsics_24 LABELS gfortran llvm) # System_clock
@@ -489,7 +490,7 @@ RUN(NAME intrinsics_52 LABELS gfortran llvm) #max0, min0
 RUN(NAME intrinsics_53 LABELS gfortran llvm) # repeat
 RUN(NAME intrinsics_54 LABELS gfortran llvm) #max0
 RUN(NAME intrinsics_open_close_read_write LABELS gfortran)
-RUN(NAME intrinsics_55 LABELS gfortran llvm NOFAST) #min
+RUN(NAME intrinsics_55 LABELS gfortran llvm) #min
 RUN(NAME intrinsics_56 LABELS gfortran llvm)
 RUN(NAME intrinsics_57 LABELS gfortran llvm)
 RUN(NAME intrinsics_58 LABELS gfortran llvm) # sign
@@ -498,6 +499,23 @@ RUN(NAME intrinsics_60 LABELS gfortran llvm COPY_TO_BIN intrinsics_60_data.txt) 
 RUN(NAME intrinsics_61 LABELS gfortran llvm) # char
 RUN(NAME intrinsics_62 LABELS gfortran llvm) # shape
 RUN(NAME intrinsics_63 LABELS gfortran llvm)
+RUN(NAME intrinsics_64 LABELS gfortran llvm wasm) # sign
+RUN(NAME intrinsics_65 LABELS gfortran llvm) # matmul
+RUN(NAME intrinsics_66 LABELS gfortran llvm) # sign
+RUN(NAME intrinsics_67 LABELS gfortran llvm) # dcosh, dsinh, dtanh, dtan
+RUN(NAME intrinsics_68 LABELS gfortran llvm) # dsign
+RUN(NAME intrinsics_69 LABELS gfortran llvm) # radix
+RUN(NAME intrinsics_70 LABELS gfortran llvm) # aint
+RUN(NAME intrinsics_71 LABELS gfortran llvm NOFAST) # matmul
+RUN(NAME intrinsics_72 LABELS gfortran llvmImplicit) # datan2
+RUN(NAME intrinsics_73 LABELS gfortran llvm) #sngl
+RUN(NAME intrinsics_74 LABELS gfortran llvm c) # random_number
+RUN(NAME intrinsics_75 LABELS gfortran llvm)
+RUN(NAME intrinsics_76 LABELS gfortran llvm)
+RUN(NAME intrinsics_77 LABELS gfortran llvm NOFAST)
+RUN(NAME intrinsics_78 LABELS gfortran llvm wasm) # mod
+RUN(NAME intrinsics_79 LABELS gfortran llvm wasm) # Trailz
+
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
@@ -513,7 +531,7 @@ RUN(NAME modules_05 LABELS gfortran)
 RUN(NAME modules_06 LABELS gfortran llvm wasm)
 RUN(NAME modules_07 LABELS gfortran llvm EXTRAFILES modules_07_module.f90)
 RUN(NAME modules_22 LABELS gfortran llvm EXTRAFILES modules_22_module.f90)
-RUN(NAME modules_23 LABELS gfortran llvm EXTRAFILES modules_23_module.f90 NOFAST)
+RUN(NAME modules_23 LABELS gfortran llvm EXTRAFILES modules_23_module.f90)
 RUN(NAME modules_08 LABELS gfortran llvm EXTRAFILES
         modules_08_a.f90 modules_08_b.f90)
 RUN(NAME modules_09 LABELS gfortran llvm EXTRAFILES
@@ -529,11 +547,11 @@ RUN(NAME modules_16 LABELS gfortran llvm EXTRAFILES modules_16b.f90)
 RUN(NAME modules_18 LABELS gfortran llvm EXTRAFILES
         modules_18b.f90 modules_15c.c NOFAST)
 RUN(NAME modules_19 LABELS gfortran llvm EXTRAFILES
-        modules_19b.f90 NOFAST)
+        modules_19b.f90)
 RUN(NAME modules_20 LABELS gfortran llvm EXTRAFILES
-        modules_20b.f90 NOFAST)
+        modules_20b.f90)
 RUN(NAME modules_21 LABELS gfortran llvm EXTRAFILES
-        modules_21b.f90 NOFAST)
+        modules_21b.f90)
 RUN(NAME modules_24 LABELS gfortran)
 RUN(NAME modules_25 LABELS gfortran EXTRAFILES
         modules_25_module.f90 modules_25_module1.f90)
@@ -569,10 +587,10 @@ RUN(NAME modules_42 LABELS gfortran llvm NOFAST)
 RUN(NAME modules_43 LABELS gfortran)
 RUN(NAME modules_45 LABELS gfortran)
 RUN(NAME modules_47 LABELS gfortran llvm)
-RUN(NAME modules_48 LABELS gfortran llvm NOFAST)
+RUN(NAME modules_48 LABELS gfortran llvm)
 RUN(NAME modules_49 LABELS gfortran llvm NOFAST)
 RUN(NAME modules_50 LABELS gfortran)
-RUN(NAME modules_51 LABELS gfortran llvmImplicit NOFAST)
+RUN(NAME modules_51 LABELS gfortran llvmImplicit)
 RUN(NAME operator_overloading_05_module3 LABELS gfortran llvm EXTRAFILES
         operator_overloading_05_module1.f90 operator_overloading_05_module2.f90)
 RUN(NAME associate_06 LABELS gfortran EXTRAFILES
@@ -590,7 +608,7 @@ RUN(NAME case_02 LABELS gfortran llvm)
 RUN(NAME case_03 LABELS gfortran llvm cpp)
 RUN(NAME case_04 LABELS gfortran)
 RUN(NAME case_05 LABELS gfortran llvm cpp)
-RUN(NAME case_06 LABELS gfortran llvm cpp)
+RUN(NAME case_06 LABELS gfortran llvm cpp NOFAST)
 RUN(NAME case_07 LABELS gfortran llvm)
 
 RUN(NAME select_type_01 LABELS gfortran llvm)
@@ -626,6 +644,8 @@ RUN(NAME interface_09 LABELS gfortran)
 RUN(NAME interface_10 LABELS gfortran llvm)
 RUN(NAME interface_12a LABELS gfortran llvm EXTRAFILES interface_12b.f90)
 RUN(NAME interface_13 LABELS gfortran llvm)
+RUN(NAME interface_14 LABELS gfortran llvm)
+RUN(NAME interface_15 LABELS gfortran llvm)
 
 RUN(NAME implicit_interface_01 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_interface_02 LABELS gfortran llvmImplicit)
@@ -642,6 +662,7 @@ RUN(NAME implicit_interface_12 LABELS gfortran llvmImplicit NOFAST)
 RUN(NAME implicit_interface_13 LABELS gfortran llvmImplicit NOFAST)
 RUN(NAME implicit_interface_14 LABELS gfortran) # ! TODO: fix this test
 
+RUN(NAME implicit_typing_01 LABELS gfortran llvmImplicit)
 
 RUN(NAME generic_name_01 LABELS gfortran llvm)
 
@@ -714,6 +735,8 @@ RUN(NAME derived_types_23 LABELS gfortran llvm)
 RUN(NAME derived_types_24 LABELS gfortran llvm)
 RUN(NAME derived_types_25 LABELS gfortran llvm)
 RUN(NAME derived_types_26 LABELS gfortran llvm)
+RUN(NAME derived_types_27 LABELS gfortran llvm)
+RUN(NAME derived_types_28 LABELS gfortran llvm)
 
 RUN(NAME line_continuation_01 LABELS gfortran llvm wasm)
 RUN(NAME line_continuation_02 LABELS gfortran llvm wasm)
@@ -729,6 +752,14 @@ RUN(NAME allocate_03 LABELS gfortran llvm NOFAST)
 RUN(NAME allocate_04 LABELS gfortran llvm)
 RUN(NAME allocate_05 LABELS gfortran llvm)
 RUN(NAME allocate_06 LABELS gfortran llvm)
+RUN(NAME allocate_10 LABELS gfortran llvm NOFAST)
+RUN(NAME allocate_11 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs)
+RUN(NAME allocate_12 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs)
+RUN(NAME allocate_13 LABELS gfortran llvm)
+RUN(NAME allocate_14 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs)
 RUN(NAME block_01 LABELS gfortran llvm)
 RUN(NAME block_02 LABELS gfortran)
 RUN(NAME block_03 LABELS gfortran llvm)
@@ -765,10 +796,10 @@ RUN(NAME string_01 LABELS gfortran llvm cpp wasm)
 RUN(NAME string_02 LABELS gfortran llvm wasm)
 RUN(NAME string_03 LABELS gfortran llvm)
 RUN(NAME string_04 LABELS gfortran llvm)
-RUN(NAME string_05 LABELS gfortran llvm)
+RUN(NAME string_05 LABELS gfortran llvm fortran)
 RUN(NAME string_06 LABELS gfortran llvm)
 RUN(NAME string_07 LABELS gfortran llvm)
-RUN(NAME string_08 LABELS gfortran llvm NOFAST)
+RUN(NAME string_08 LABELS gfortran llvm)
 RUN(NAME string_09 LABELS gfortran llvm)
 RUN(NAME string_10 LABELS gfortran llvm)
 RUN(NAME string_11 LABELS gfortran llvm)
@@ -792,12 +823,13 @@ RUN(NAME nested_05 LABELS gfortran llvm NOFAST)
 RUN(NAME nested_06 LABELS gfortran llvm NOFAST)
 RUN(NAME nested_07 LABELS gfortran llvm NOFAST)
 RUN(NAME nested_08 LABELS gfortran llvm)
-RUN(NAME nested_09 LABELS gfortran llvm NOFAST)
-RUN(NAME nested_10 LABELS gfortran llvm NOFAST)
+RUN(NAME nested_09 LABELS gfortran llvm)
+RUN(NAME nested_10 LABELS gfortran llvm)
 RUN(NAME nested_11 LABELS gfortran llvm)
 
-RUN(NAME nested_vars1 LABELS gfortran llvm NOFAST)
-RUN(NAME nested_vars2 LABELS gfortran llvm NOFAST)
+RUN(NAME nested_vars1 LABELS gfortran llvm wasm c NOFAST)
+RUN(NAME nested_vars2 LABELS gfortran llvm wasm c NOFAST)
+RUN(NAME nested_vars3 LABELS gfortran llvm wasm c NOFAST)
 
 RUN(NAME nbody LABELS gfortran llvm NOFAST)
 
@@ -825,7 +857,16 @@ RUN(NAME file_04       LABELS gfortran llvm COPY_TO_BIN file_04_data.dat)
 RUN(NAME file_05       LABELS gfortran llvm COPY_TO_BIN file_05_data.dat)
 RUN(NAME file_06       LABELS gfortran llvm COPY_TO_BIN file_06_data.dat)
 RUN(NAME file_07       LABELS gfortran llvm COPY_TO_BIN file_07_data.dat)
+RUN(NAME file_08       LABELS gfortran llvm COPY_TO_BIN file_08.txt NOFAST)
+RUN(NAME file_09       LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
+RUN(NAME file_10       LABELS gfortran llvm COPY_TO_BIN file_10_data.txt)
+RUN(NAME file_11       LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
+RUN(NAME file_12       LABELS gfortran llvm COPY_TO_BIN file_12_data.txt)
+RUN(NAME file_13       LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
+RUN(NAME file_14       LABELS gfortran llvm COPY_TO_BIN file_08.txt)
+RUN(NAME file_15       LABELS gfortran llvm COPY_TO_BIN file_03_data.txt)
 RUN(NAME inquire_01    LABELS gfortran llvm)
+RUN(NAME test_backspace_01 LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
 
 RUN(NAME class_01 LABELS gfortran)
 RUN(NAME class_02 LABELS gfortran llvm)
@@ -834,6 +875,10 @@ RUN(NAME class_04 LABELS gfortran)
 RUN(NAME class_05 LABELS gfortran llvm)
 RUN(NAME class_06 LABELS gfortran llvm)
 RUN(NAME class_07 LABELS gfortran llvm)
+RUN(NAME class_08 LABELS gfortran llvm)
+RUN(NAME class_09 LABELS gfortran llvm)
+RUN(NAME class_10 LABELS gfortran llvm)
+RUN(NAME class_11 LABELS gfortran llvm)
 
 RUN(NAME kwargs_01 LABELS gfortran llvm wasm)
 RUN(NAME kwargs_02 LABELS gfortran)
@@ -841,7 +886,7 @@ RUN(NAME kwargs_02 LABELS gfortran)
 RUN(NAME test_iso_c_binding LABELS gfortran llvm wasm)
 RUN(NAME test_iso_fortran_env LABELS gfortran llvm wasm)
 
-RUN(NAME abs_01 LABELS gfortran llvm wasm c)
+RUN(NAME abs_01 LABELS gfortran llvm wasm c fortran)
 RUN(NAME abs_02 LABELS gfortran llvm wasm)
 RUN(NAME abs_03 LABELS gfortran llvm wasm c)
 RUN(NAME sqrt_01 LABELS gfortran llvm)
@@ -849,7 +894,7 @@ RUN(NAME sqrt_02 LABELS gfortran llvm)
 RUN(NAME sin_01 LABELS gfortran llvm)
 RUN(NAME sin_02 LABELS gfortran llvm NOFAST)
 RUN(NAME sin_03 LABELS gfortran llvm)
-RUN(NAME sin_04 LABELS gfortran llvm NOFAST)
+RUN(NAME sin_04 LABELS gfortran llvm)
 RUN(NAME bits_01 LABELS gfortran llvm)
 RUN(NAME bits_02 LABELS gfortran llvm)
 RUN(NAME bits_03 LABELS gfortran llvm)
@@ -876,29 +921,38 @@ RUN(NAME assign_to2 LABELS gfortran llvm)
 
 RUN(NAME conv_complex2real LABELS gfortran llvm wasm)
 
-RUN(NAME template_add_01 LABELS llvm wasm)
-RUN(NAME template_add_01b LABELS llvm wasm)
-RUN(NAME template_add_02 LABELS llvm wasm)
-RUN(NAME template_add_03 LABELS llvm wasm)
-RUN(NAME template_add_04 LABELS llvm NOFAST)
-RUN(NAME template_nested LABELS llvm wasm)
-RUN(NAME template_travel LABELS llvm wasm)
-RUN(NAME template_triple LABELS llvm wasm NOFAST)
-RUN(NAME template_array_01 LABELS llvm)
-RUN(NAME template_array_01b LABELS llvm wasm)
-RUN(NAME template_array_02 LABELS llvm NOFAST)
-RUN(NAME template_array_02b LABELS llvm wasm NOFAST)
-RUN(NAME template_array_03 LABELS llvm wasm)
-RUN(NAME template_array_04 LABELS llvm NOFAST)
 RUN(NAME template_01 LABELS llvm wasm)
 RUN(NAME template_02 LABELS llvm)
+RUN(NAME template_add_01 LABELS llvm wasm)
+RUN(NAME template_add_01b LABELS llvm wasm)
+RUN(NAME template_add_01c LABELS llvm wasm)
+RUN(NAME template_add_02 LABELS llvm wasm)
+RUN(NAME template_add_03 LABELS llvm wasm)
+RUN(NAME template_add_04 LABELS llvm wasm)
+RUN(NAME template_nested LABELS llvm wasm)
+RUN(NAME template_travel_01 LABELS llvm wasm)
+RUN(NAME template_travel_02 LABELS llvm wasm)
+RUN(NAME template_triple LABELS llvm wasm)
+RUN(NAME template_array_01 LABELS llvm wasm)
+RUN(NAME template_array_01b LABELS llvm wasm)
+RUN(NAME template_array_02 LABELS llvm wasm)
+RUN(NAME template_array_02b LABELS llvm wasm)
+RUN(NAME template_array_03 LABELS llvm wasm)
+RUN(NAME template_array_04 LABELS llvm wasm)
+RUN(NAME template_array_04b LABELS llvm wasm)
+RUN(NAME template_matrix LABELS llvm)
 RUN(NAME template_struct_01 LABELS llvm)
+RUN(NAME template_vector LABELS llvm)
+RUN(NAME template_simple_01 LABELS llvm)
+RUN(NAME template_simple_02 LABELS llvm)
 
 RUN(NAME statement1 LABELS gfortran llvm)
 
-RUN(NAME implied_do_loops1 LABELS gfortran)
+RUN(NAME implied_do_loops1 LABELS gfortran llvm NOFAST)
 RUN(NAME implied_do_loops2 LABELS gfortran)
 RUN(NAME implied_do_loops3 LABELS gfortran)
+RUN(NAME implied_do_loops4 LABELS gfortran llvm)
+
 
 RUN(NAME minpack_01 LABELS gfortran llvm_rtlib EXTRAFILES
         minpack_01_module.f90 minpack_01_func.f90 NOFAST)
@@ -927,16 +981,19 @@ RUN(NAME array_section_01 LABELS gfortran llvm)
 
 RUN(NAME pass_array_by_data_01 LABELS gfortran llvm wasm)
 RUN(NAME pass_array_by_data_02 LABELS gfortran llvm)
-RUN(NAME pass_array_by_data_03 LABELS gfortran llvm NOFAST)
+RUN(NAME pass_array_by_data_03 LABELS gfortran llvm)
 RUN(NAME pass_array_by_data_04 LABELS gfortran llvm)
 RUN(NAME pass_array_by_data_05 LABELS gfortran llvm NOFAST)
 RUN(NAME pass_array_by_data_06 LABELS gfortran llvm wasm NOFAST)
+RUN(NAME pass_array_by_data_07 LABELS gfortran llvm NOFAST)
 
 RUN(NAME implicit_deallocate_01 LABELS gfortran llvm)
 
 RUN(NAME write_01 LABELS gfortran llvm)
 RUN(NAME write_02 LABELS gfortran llvm)
 RUN(NAME write_03 LABELS gfortran llvmImplicit NOFAST)
+RUN(NAME write_04 LABELS gfortran llvm)
+RUN(NAME write_05 LABELS gfortran llvm)
 
 RUN(NAME do_loop_01 LABELS gfortran llvm)
 
@@ -944,7 +1001,8 @@ RUN(NAME array_01 LABELS gfortran llvm)
 RUN(NAME array_02 LABELS gfortran llvm wasm)
 
 RUN(NAME do_loop_02 LABELS gfortran llvm)
-RUN(NAME do_loop_03 LABELS gfortran llvmUseLoopVariableAfterLoop)
+RUN(NAME do_loop_03 LABELS gfortran llvm
+    EXTRA_ARGS --use-loop-variable-after-loop)
 RUN(NAME do_loop_04 LABELS llvm) # This test is not supported by gfortran, as it uses a loop variable after the loop ( bad code practice )
 
 RUN(NAME block_07 LABELS gfortran llvm)
@@ -964,15 +1022,16 @@ RUN(NAME array_slice_03 LABELS gfortran llvm)
 
 RUN(NAME declaration_01 LABELS gfortran llvm)
 
-RUN(NAME procedure_01 LABELS gfortran llvm NOFAST)
-RUN(NAME procedure_02 LABELS gfortran llvm NOFAST)
+RUN(NAME procedure_01 LABELS gfortran llvm)
+RUN(NAME procedure_02 LABELS gfortran llvm)
 RUN(NAME procedure_03 LABELS gfortran llvm)
 RUN(NAME procedure_04 LABELS gfortran llvm)
 
 RUN(NAME allocated_01 LABELS gfortran llvm)
 RUN(NAME allocated_02 LABELS gfortran llvm)
 RUN(NAME allocated_03 LABELS gfortran llvm)
-RUN(NAME allocate_07 LABELS gfortran llvmReAllocLHS)
+RUN(NAME allocate_07 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs)
 RUN(NAME allocate_08 LABELS gfortran llvm)
 RUN(NAME allocate_09 LABELS gfortran llvm)
 
@@ -1016,14 +1075,65 @@ RUN(NAME entry_08 LABELS gfortran llvm)
 
 RUN(NAME character_01 LABELS gfortran llvm)
 
-RUN(NAME c_ptr_01 LABELS gfortran llvm NOFAST)
-
-RUN(NAME implicit_argument_casting_01 LABELS llvmImplicitArgument)
+RUN(NAME c_ptr_01 LABELS gfortran llvm)
 
 RUN(NAME arrayitem_01 LABELS gfortran llvm)
 
-RUN(NAME implicit_argument_casting_01 LABELS gfortran IMPLICIT_ARGS)
+RUN(NAME implicit_argument_casting_01 LABELS gfortran llvm
+    EXTRA_ARGS --implicit-argument-casting
+    GFORTRAN_ARGS -fallow-argument-mismatch)
 
-RUN(NAME specfun_01 LABELS gfortran llvmUseLoopVariableAfterLoop NOFAST)
+RUN(NAME implicit_argument_casting_02 LABELS gfortran llvm
+    EXTRA_ARGS --implicit-argument-casting
+    GFORTRAN_ARGS -fallow-argument-mismatch)
 
-RUN(NAME cpp_pre_01 LABELS gfortran llvm c CPP_PRE)
+RUN(NAME specfun_01 LABELS gfortran llvm
+    EXTRA_ARGS --use-loop-variable-after-loop --implicit-typing)
+
+RUN(NAME cpp_pre_01 LABELS gfortran llvm c
+    EXTRA_ARGS --cpp
+    GFORTRAN_ARGS -cpp)
+RUN(NAME cpp_pre_02 LABELS gfortran llvm c wasm
+    EXTRA_ARGS --cpp
+    GFORTRAN_ARGS -cpp)
+
+RUN(NAME dabs_01 LABELS gfortran llvmImplicit)
+
+RUN(NAME minpack_03 LABELS gfortran llvm NOFAST)
+
+RUN(NAME optional_01 LABELS gfortran llvm)
+RUN(NAME optional_02 LABELS gfortran llvm)
+RUN(NAME optional_03 LABELS gfortran llvm)
+RUN(NAME optional_04 LABELS gfortran llvm)
+
+RUN(NAME end_name_match LABELS gfortran llvm)
+
+RUN(NAME mangle_underscore_01 LABELS gfortran llvm EXTRA_ARGS --mangle-underscore --all-mangling)
+
+RUN(NAME nan_handling_01 LABELS gfortran llvm)
+
+RUN(NAME precision_01 LABELS gfortran llvm)
+RUN(NAME precision_02 LABELS gfortran) # TODO fix this test
+
+RUN(NAME array_unbounded_01 LABELS gfortran llvm)
+RUN(NAME array_unbounded_02 LABELS gfortran llvm)
+
+RUN(NAME matmul_01 LABELS gfortran)
+RUN(NAME legacy_array_sections_01 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections)
+RUN(NAME legacy_array_sections_02 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections)
+RUN(NAME cmake_minimal_test_01 LABELS gfortran llvm)
+
+RUN(NAME ip_01 LABELS gfortran llvm)
+
+RUN(NAME shifta_01 LABELS gfortran llvm)
+RUN(NAME shifta_02 LABELS gfortran llvm)
+
+RUN(NAME equivalence_01 LABELS gfortran)
+RUN(NAME equivalence_02 LABELS gfortran llvm)
+RUN(NAME equivalence_03 LABELS gfortran)
+RUN(NAME equivalence_04 LABELS gfortran llvm)
+RUN(NAME equivalence_05 LABELS gfortran)
+RUN(NAME equivalence_06 LABELS gfortran llvm)
+RUN(NAME equivalence_07 LABELS gfortran llvm)
+
+RUN(NAME fortran_primes_01 LABELS gfortran llvm)

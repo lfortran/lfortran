@@ -27,20 +27,10 @@
                                 (ExternalSymbol
                                     2
                                     dabs
-                                    229 dabs
+                                    6 dabs
                                     lfortran_intrinsic_math2
                                     []
                                     dabs
-                                    Private
-                                ),
-                            dcos:
-                                (ExternalSymbol
-                                    2
-                                    dcos
-                                    6 dcos
-                                    lfortran_intrinsic_math
-                                    []
-                                    dcos
                                     Private
                                 ),
                             dp:
@@ -114,7 +104,7 @@
                     )
                     (=
                         (Var 2 x)
-                        (IntrinsicFunction
+                        (IntrinsicScalarFunction
                             Cos
                             [(RealConstant
                                 9.500000
@@ -131,7 +121,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 2 x)
@@ -162,10 +152,10 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
-                                    (IntrinsicFunction
+                                    (IntrinsicScalarFunction
                                         Cos
                                         [(Var 2 a)]
                                         0
@@ -215,73 +205,92 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
-                                    (IntrinsicFunction
+                                    (IntrinsicScalarFunction
                                         Cos
                                         [(RealBinOp
-                                            (IntrinsicFunction
-                                                Cos
-                                                [(RealConstant
-                                                    1.500000
+                                            (Cast
+                                                (IntrinsicScalarFunction
+                                                    Cos
+                                                    [(RealConstant
+                                                        1.500000
+                                                        (Real 4)
+                                                    )]
+                                                    0
                                                     (Real 4)
-                                                )]
-                                                0
-                                                (Real 4)
+                                                    (RealConstant
+                                                        0.070737
+                                                        (Real 4)
+                                                    )
+                                                )
+                                                RealToReal
+                                                (Real 8)
                                                 (RealConstant
                                                     0.070737
-                                                    (Real 4)
+                                                    (Real 8)
                                                 )
                                             )
                                             Add
-                                            (Cast
-                                                (IntrinsicFunction
-                                                    Cos
-                                                    [(RealBinOp
-                                                        (Var 2 a)
-                                                        Add
-                                                        (IntrinsicFunction
-                                                            Cos
-                                                            [(Var 2 a)]
-                                                            0
-                                                            (Real 8)
-                                                            ()
-                                                        )
+                                            (IntrinsicScalarFunction
+                                                Cos
+                                                [(RealBinOp
+                                                    (Var 2 a)
+                                                    Add
+                                                    (IntrinsicScalarFunction
+                                                        Cos
+                                                        [(Var 2 a)]
+                                                        0
                                                         (Real 8)
                                                         ()
-                                                    )]
-                                                    0
+                                                    )
                                                     (Real 8)
                                                     ()
-                                                )
-                                                RealToReal
-                                                (Real 4)
+                                                )]
+                                                0
+                                                (Real 8)
                                                 ()
                                             )
-                                            (Real 4)
+                                            (Real 8)
                                             ()
                                         )]
                                         0
-                                        (Real 4)
+                                        (Real 8)
                                         ()
                                     )
                                     Sub
-                                    (RealConstant
-                                        0.716404
-                                        (Real 4)
+                                    (Cast
+                                        (RealConstant
+                                            0.716404
+                                            (Real 4)
+                                        )
+                                        RealToReal
+                                        (Real 8)
+                                        (RealConstant
+                                            0.716404
+                                            (Real 8)
+                                        )
                                     )
-                                    (Real 4)
+                                    (Real 8)
                                     ()
                                 )]
                                 0
-                                (Real 4)
+                                (Real 8)
                                 ()
                             )
                             Gt
-                            (RealConstant
-                                0.000000
-                                (Real 4)
+                            (Cast
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                RealToReal
+                                (Real 8)
+                                (RealConstant
+                                    0.000000
+                                    (Real 8)
+                                )
                             )
                             (Logical 4)
                             ()
@@ -293,12 +302,11 @@
                     )
                     (=
                         (Var 2 r1)
-                        (FunctionCall
-                            2 dcos
-                            ()
-                            [((Var 2 a))]
+                        (IntrinsicScalarFunction
+                            Cos
+                            [(Var 2 a)]
+                            0
                             (Real 8)
-                            ()
                             ()
                         )
                         ()
@@ -348,14 +356,10 @@
                         []
                     )]
                 ),
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
             iso_fortran_env:
                 (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
             lfortran_intrinsic_builtin:
                 (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math),
             lfortran_intrinsic_math2:
                 (IntrinsicModule lfortran_intrinsic_math2),
             lfortran_intrinsic_math3:

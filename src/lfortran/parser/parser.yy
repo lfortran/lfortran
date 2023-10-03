@@ -102,6 +102,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token TK_RPAREN ")"
 %token TK_LBRACKET "["
 %token TK_RBRACKET "]"
+%token TK_LBRACE "{"
+%token TK_RBRACE "}"
 %token TK_RBRACKET_OLD "/)"
 %token TK_PERCENT "%"
 %token TK_VBAR "|"
@@ -109,6 +111,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> TK_STRING
 %token <string> TK_COMMENT
 %token <string> TK_EOLCOMMENT
+%token <string> TK_PRAGMA
 
 %token TK_DBL_DOT ".."
 %token TK_DBL_COLON "::"
@@ -342,7 +345,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_TEAM
 %token <string> KW_TEAM_NUMBER
 %token <string> KW_REQUIREMENT
-%token <string> KW_REQUIRES
+%token <string> KW_REQUIRE
 %token <string> KW_TEMPLATE
 %token <string> KW_THEN
 %token <string> KW_TO
@@ -368,6 +371,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> module
 %type <ast> submodule
 %type <ast> block_data
+%type <ast> temp_decl
+%type <vec_ast> temp_decl_star
 %type <ast> decl
 %type <vec_ast> decl_star
 %type <ast> instantiate
@@ -376,10 +381,15 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> derived_type_decl
 %type <ast> template_decl
 %type <ast> requirement_decl
-%type <ast> requires_decl
+%type <ast> require_decl
+%type <vec_ast> unit_require_plus
+%type <ast> unit_require
 %type <ast> enum_decl
 %type <ast> program
+%type <ast> end_program
+%type <ast> id_opt
 %type <ast> subroutine
+%type <ast> end_subroutine
 %type <ast> procedure
 %type <ast> sub_or_func
 %type <vec_ast> sub_args
@@ -714,26 +724,37 @@ derived_type_decl
     ;
 
 template_decl
-    : KW_TEMPLATE id "(" id_list ")" sep decl_star
+    : KW_TEMPLATE id "(" id_list ")" sep temp_decl_star
         contains_block_opt KW_END KW_TEMPLATE sep {
             $$ = TEMPLATE($2, $4, $7, $8, @$); }
     ;
 
 requirement_decl
-    : KW_REQUIREMENT id "(" id_list ")" sep decl_star
+    : KW_REQUIREMENT id "(" id_list ")" sep temp_decl_star
         sub_or_func_star KW_END KW_REQUIREMENT sep {
             $$ = REQUIREMENT($2, $4, $7, $8, @$); }
     ;
 
-requires_decl
-    : KW_REQUIRES id "(" id_list ")" sep {
-        $$ = REQUIRES($2, $4, @$); }
+require_decl
+    : KW_REQUIRE "::" unit_require_plus sep {
+        $$ = REQUIRE($3, @$); }
     ;
 
-instantiate
-    : KW_INSTANTIATE id "(" use_symbol_list ")" "," KW_ONLY ":" use_symbol_list sep {
-        $$ = INSTANTIATE($2, $4, $9, @$); }
+unit_require_plus
+    : unit_require_plus "," unit_require { $$ = $1; LIST_ADD($$, $3); }
+    | unit_require { LIST_NEW($$); LIST_ADD($$, $1); }
     ;
+
+unit_require
+    : id "(" id_list ")" { $$ = UNIT_REQUIRE($1, $3, @$); }
+
+instantiate
+    : KW_INSTANTIATE id "(" use_symbol_list ")" sep {
+        $$ = INSTANTIATE1($2, $4, @$); }
+    | KW_INSTANTIATE id "(" use_symbol_list ")" "," KW_ONLY ":" use_symbol_list sep {
+        $$ = INSTANTIATE2($2, $4, $9, @$); }
+    ;
+
 
 end_type
     : KW_END_TYPE id_opt
@@ -834,13 +855,13 @@ proc_modifier
 program
     : KW_PROGRAM id sep use_statement_star implicit_statement_star decl_statements
         contains_block_opt end_program sep {
-      LLOC(@$, @9); $$ = PROGRAM($2, TRIVIA($3, $9, @$), $4, $5, $6, $7, @$); }
+      LLOC(@$, @8); $$ = PROGRAM($2, TRIVIA($3, $9, @$), $4, $5, $6, $7, $8, @$); }
     ;
 
 end_program
-    : KW_END_PROGRAM id_opt
-    | KW_ENDPROGRAM id_opt
-    | KW_END
+    : KW_END_PROGRAM id_opt { $$ = $2; }
+    | KW_ENDPROGRAM id_opt { $$ = $2; }
+    | KW_END { $$ = nullptr; }
     ;
 
 end_module
@@ -862,9 +883,9 @@ end_blockdata
     ;
 
 end_subroutine
-    : KW_END_SUBROUTINE id_opt
-    | KW_ENDSUBROUTINE id_opt
-    | KW_END
+    : KW_END_SUBROUTINE id_opt { $$ = $2; }
+    | KW_ENDSUBROUTINE id_opt { $$ = $2; }
+    | KW_END { $$ = nullptr; }
     ;
 
 end_procedure
@@ -909,14 +930,22 @@ subroutine
     import_statement_star implicit_statement_star decl_statements
         contains_block_opt
         end_subroutine sep {
-            LLOC(@$, @12); $$ = SUBROUTINE($2, $3, $4, TRIVIA($5, $12, @$), $6,
-                $7, $8, SPLIT_DECL(p.m_a, $9), SPLIT_STMT(p.m_a, $9), $10, @$); }
+            LLOC(@$, @11); $$ = SUBROUTINE($2, $3, $4, TRIVIA($5, $12, @$), $6,
+                $7, $8, SPLIT_DECL(p.m_a, $9), SPLIT_STMT(p.m_a, $9), $10, $11, @$); }
+    | KW_SUBROUTINE id "{" id_list "}" sub_args bind_opt
+    sep decl_statements end_subroutine sep {
+            LLOC(@$, @10); $$ = TEMPLATED_SUBROUTINE($2, $4, $6, $7,
+                TRIVIA($8, $11, @$), SPLIT_DECL(p.m_a, $9), SPLIT_STMT(p.m_a, $9), @$); }
     | fn_mod_plus KW_SUBROUTINE id sub_args bind_opt sep use_statement_star
     import_statement_star implicit_statement_star decl_statements
         contains_block_opt
         end_subroutine sep {
-            LLOC(@$, @13); $$ = SUBROUTINE1($1, $3, $4, $5, TRIVIA($6, $13, @$),
-                $7, $8, $9, SPLIT_DECL(p.m_a, $10), SPLIT_STMT(p.m_a, $10), $11, @$); }
+            LLOC(@$, @12); $$ = SUBROUTINE1($1, $3, $4, $5, TRIVIA($6, $13, @$),
+                $7, $8, $9, SPLIT_DECL(p.m_a, $10), SPLIT_STMT(p.m_a, $10), $11, $12, @$); }
+    | fn_mod_plus KW_SUBROUTINE id "{" id_list "}" sub_args bind_opt
+    sep decl_statements end_subroutine sep {
+            LLOC(@$, @11); $$ = TEMPLATED_SUBROUTINE1($1, $3, $5, $7, $8,
+                TRIVIA($9, $12, @$), SPLIT_DECL(p.m_a, $10), SPLIT_STMT(p.m_a, $10), @$); }
     ;
 
 procedure
@@ -952,6 +981,13 @@ function
         end_function sep {
             LLOC(@$, @15); $$ = FUNCTION0($2, $4, $6, $7, TRIVIA($8, $15, @$),
                 $9, $10, $11, SPLIT_DECL(p.m_a, $12), SPLIT_STMT(p.m_a, $12), $13, @$); }
+    | KW_FUNCTION id "{" id_list "}" "(" id_list_opt ")"
+        result_opt
+        bind_opt
+        sep decl_statements
+        end_function sep {
+            LLOC(@$, @13); $$ = TEMPLATED_FUNCTION0($2, $4, $7, $9, $10,
+                TRIVIA($11, $14, @$), SPLIT_DECL(p.m_a, $12), SPLIT_STMT(p.m_a, $12), @$); } 
     | fn_mod_plus KW_FUNCTION id "(" id_list_opt ")"
         sep use_statement_star import_statement_star implicit_statement_star decl_statements
         contains_block_opt
@@ -975,6 +1011,13 @@ function
         end_function sep {
             LLOC(@$, @16); $$ = FUNCTION($1, $3, $5, $7, $8, TRIVIA($9, $16, @$),
                 $10, $11, $12, SPLIT_DECL(p.m_a, $13), SPLIT_STMT(p.m_a, $13), $14, @$); }
+    | fn_mod_plus KW_FUNCTION id "{" id_list "}" "(" id_list_opt ")"
+        result_opt
+        bind_opt
+        sep decl_statements
+        end_function sep {
+            LLOC(@$, @14); $$ = TEMPLATED_FUNCTION($1, $3, $5, $8, $10, $11,
+                TRIVIA($12, $15, @$), SPLIT_DECL(p.m_a, $13), SPLIT_STMT(p.m_a, $13), @$); } 
     ;
 
 fn_mod_plus
@@ -991,9 +1034,23 @@ fn_mod
     | KW_RECURSIVE {  $$ = SIMPLE_ATTR(Recursive, @$); }
     ;
 
+temp_decl_star
+    : temp_decl_star temp_decl { $$ = $1; LIST_ADD($$, $2); }
+    | %empty { LIST_NEW($$); }
+    ;
+
+temp_decl
+    : var_decl
+    | interface_decl
+    | derived_type_decl
+    | require_decl
+    | instantiate
+    ;
+
 decl_star
     : decl_star decl { $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
+    ;
 
 decl
     : var_decl
@@ -1001,7 +1058,6 @@ decl
     | derived_type_decl
     | template_decl
     | requirement_decl
-    | requires_decl
     | enum_decl
     ;
 
@@ -1234,6 +1290,8 @@ var_decl
         LLOC(@$, @2); $$ = VAR_DECL_COMMON($2, TRIVIA_AFTER($3, @$), @$); }
     | KW_EQUIVALENCE equivalence_set_list sep {
         LLOC(@$, @2); $$ = VAR_DECL_EQUIVALENCE($2, TRIVIA_AFTER($3, @$), @$);}
+    | TK_PRAGMA sep {
+        LLOC(@$, @1); $$ = VAR_DECL_PRAGMA($1, TRIVIA_AFTER($2, @$), @$);}
     ;
 
 equivalence_set_list
@@ -1521,6 +1579,7 @@ decl_statement
     | enum_decl
     | statement
     | instantiate
+    | require_decl
     ;
 
 statement
@@ -1648,6 +1707,8 @@ subroutine_call
             $$ = SUBROUTINE_CALL2($2, @$); }
     | KW_CALL struct_member_star id {
             $$ = SUBROUTINE_CALL3($2, $3, @$); }
+    | KW_CALL id "{" use_symbol_list "}" "(" fnarray_arg_list_opt ")" {
+            $$ = SUBROUTINE_CALL4($2, $4, $7, @$); }
     ;
 
 print_statement
@@ -2206,6 +2267,7 @@ expr
     : id { $$ = $1; }
     | struct_member_star id { NAME1($$, $2, $1, @$); }
     | id "(" fnarray_arg_list_opt ")" { $$ = FUNCCALLORARRAY($1, $3, @$); }
+    | id "{" use_symbol_list "}" "(" fnarray_arg_list_opt ")" { $$ = FUNCCALLORARRAY5($1, $6, $3, @$); }
     | TK_STRING "(" fnarray_arg_list_opt ")" { $$ = SUBSTRING($1, $3, @$);}
     | struct_member_star id "(" fnarray_arg_list_opt ")" {
             $$ = FUNCCALLORARRAY2($1, $2, $4, @$); }
@@ -2350,8 +2412,8 @@ id_list
 
 // id?
 id_opt
-    : id
-    | %empty
+    : id { $$ = $1; }
+    | %empty { $$ = nullptr; }
     ;
 
 
@@ -2494,7 +2556,7 @@ id
     | KW_RECURSIVE { $$ = SYMBOL($1, @$); }
     | KW_REDUCE { $$ = SYMBOL($1, @$); }
     | KW_REQUIREMENT { $$ = SYMBOL($1, @$); }
-    | KW_REQUIRES { $$ = SYMBOL($1, @$); }
+    | KW_REQUIRE { $$ = SYMBOL($1, @$); }
     | KW_RESULT { $$ = SYMBOL($1, @$); }
     | KW_RETURN { $$ = SYMBOL($1, @$); }
     | KW_REWIND { $$ = SYMBOL($1, @$); }

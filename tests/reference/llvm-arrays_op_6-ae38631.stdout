@@ -540,7 +540,7 @@ loop.body4:                                       ; preds = %loop.head3
   %62 = call float @llvm.pow.f32(float %61, float 2.000000e+00)
   %63 = fptosi float %62 to i32
   %64 = sitofp i32 %63 to float
-  %65 = fcmp une float %55, %64
+  %65 = fcmp one float %55, %64
   br i1 %65, label %then, label %else
 
 then:                                             ; preds = %loop.body4
@@ -618,7 +618,7 @@ define i32 @main(i32 %0, i8** %1) {
   %__2_v = alloca i32, align 4
   %__3_t = alloca i32, align 4
   %__3_v = alloca i32, align 4
-  %__libasr__created__var__1__func_call_res = alloca [8 x float], align 4
+  %__libasr__created__var__0__func_call_res = alloca [8 x float], align 4
   %a = alloca [8 x float], align 4
   %b = alloca [8 x float], align 4
   %c = alloca [8 x float], align 4
@@ -762,7 +762,7 @@ loop.end6:                                        ; preds = %loop.head
   store i32 2, i32* %call_arg_value21, align 4
   store i32 1, i32* %call_arg_value22, align 4
   store i32 2, i32* %call_arg_value23, align 4
-  call void @asquare_a_b_c(float* %81, i32* %call_arg_value, i32* %call_arg_value7, i32* %call_arg_value8, i32* %call_arg_value9, i32* %call_arg_value10, i32* %call_arg_value11, float* %82, i32* %call_arg_value12, i32* %call_arg_value13, i32* %call_arg_value14, i32* %call_arg_value15, i32* %call_arg_value16, i32* %call_arg_value17, float* %83, i32* %call_arg_value18, i32* %call_arg_value19, i32* %call_arg_value20, i32* %call_arg_value21, i32* %call_arg_value22, i32* %call_arg_value23, [8 x float]* %__libasr__created__var__1__func_call_res)
+  call void @asquare_a_b_c(float* %81, i32* %call_arg_value, i32* %call_arg_value7, i32* %call_arg_value8, i32* %call_arg_value9, i32* %call_arg_value10, i32* %call_arg_value11, float* %82, i32* %call_arg_value12, i32* %call_arg_value13, i32* %call_arg_value14, i32* %call_arg_value15, i32* %call_arg_value16, i32* %call_arg_value17, float* %83, i32* %call_arg_value18, i32* %call_arg_value19, i32* %call_arg_value20, i32* %call_arg_value21, i32* %call_arg_value22, i32* %call_arg_value23, [8 x float]* %__libasr__created__var__0__func_call_res)
   br i1 true, label %then, label %else
 
 then:                                             ; preds = %loop.end6
@@ -853,14 +853,14 @@ loop.body45:                                      ; preds = %ifcont44
   %91 = load i32, i32* %__1_t, align 4
   %92 = add i32 %91, 1
   store i32 %92, i32* %__1_t, align 4
-  br i1 true, label %then47, label %else48
+  br i1 false, label %then47, label %else48
 
 then47:                                           ; preds = %loop.body45
   store i32 1, i32* %array_bound46, align 4
   br label %ifcont53
 
 else48:                                           ; preds = %loop.body45
-  br i1 false, label %then49, label %else50
+  br i1 true, label %then49, label %else50
 
 then49:                                           ; preds = %else48
   store i32 1, i32* %array_bound46, align 4
@@ -950,14 +950,14 @@ then73:                                           ; preds = %loop.body71
   br label %ifcont79
 
 else74:                                           ; preds = %loop.body71
-  br i1 true, label %then75, label %else76
+  br i1 false, label %then75, label %else76
 
 then75:                                           ; preds = %else74
   store i32 1, i32* %array_bound72, align 4
   br label %ifcont79
 
 else76:                                           ; preds = %else74
-  br i1 false, label %then77, label %else78
+  br i1 true, label %then77, label %else78
 
 then77:                                           ; preds = %else76
   store i32 1, i32* %array_bound72, align 4
@@ -1058,7 +1058,7 @@ loop.body97:                                      ; preds = %ifcont96
   %133 = sub i32 %126, 1
   %134 = mul i32 4, %133
   %135 = add i32 %132, %134
-  %136 = getelementptr [8 x float], [8 x float]* %__libasr__created__var__1__func_call_res, i32 0, i32 %135
+  %136 = getelementptr [8 x float], [8 x float]* %__libasr__created__var__0__func_call_res, i32 0, i32 %135
   %137 = load float, float* %136, align 4
   store float %137, float* %123, align 4
   %138 = load i32, i32* %__3_v, align 4

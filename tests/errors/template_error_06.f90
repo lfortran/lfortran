@@ -8,7 +8,7 @@ module template_error_06_m
   end requirement
 
   template struct_t(t)
-      requires r(t)
+      require :: r(t)
       private
       public :: tuple
 

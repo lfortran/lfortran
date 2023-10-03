@@ -279,7 +279,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "10.0 =="
                             (Character 1 7 ())
@@ -302,7 +301,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "49.0 =="
                             (Character 1 7 ())
@@ -325,7 +323,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "10.0 =="
                             (Character 1 7 ())

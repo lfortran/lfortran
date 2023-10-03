@@ -44,6 +44,8 @@ std::map<std::string, yytokentype> identifiers_map = {
     {"rparen", TK_RPAREN},
     {"lbracket", TK_LBRACKET},
     {"rbracket", TK_RBRACKET},
+    {"lbrace", TK_LBRACE},
+    {"rbace", TK_RBRACE},
     {"rbracket_old", TK_RBRACKET_OLD},
     {"percent", TK_PERCENT},
     {"vbar", TK_VBAR},
@@ -949,6 +951,11 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "dowhile(")) {
+            lex_dowhile(cur);
+            return true;
+        }
+
         if (next_is(cur, "selectrank(")) {
             lex_selectrank(cur);
             return true;
@@ -1289,6 +1296,18 @@ struct FixedFormRecursiveDescent {
                 break;
             }
         }
+    }
+
+    void lex_dowhile(unsigned char *&cur) {
+        auto end = cur; next_line(end);
+        push_token_advance(cur, "do");
+        push_token_advance(cur, "while");
+        tokenize_line(cur); // tokenize rest of line where `do while` starts
+        while (!next_is(cur, "enddo\n")) {
+            tokenize_line(cur);
+        }
+        push_token_advance(cur, "enddo");
+        tokenize_line(cur);
     }
 
     void lex_selectrank(unsigned char *&cur) {

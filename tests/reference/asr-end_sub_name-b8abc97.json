@@ -1,0 +1,13 @@
+{
+    "basename": "asr-end_sub_name-b8abc97",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/end_sub_name.f90",
+    "infile_hash": "e009a66d5776bac360c38e64071c0d20593c8162a0c40cbf5bf4e5c2",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-end_sub_name-b8abc97.stderr",
+    "stderr_hash": "8ae9de8fb9af77931f3d42b61fe8c02ed1ae3c97af115ef36c01cfec",
+    "returncode": 2
+}

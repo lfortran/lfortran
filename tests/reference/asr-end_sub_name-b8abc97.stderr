@@ -1,0 +1,9 @@
+syntax error: End subroutine name does not match subroutine name
+ --> tests/errors/end_sub_name.f90:1:1 - 7:22
+  |
+1 |    subroutine swap(x, y)
+  |    ^^^^^^^^^^^^^^^^^^^^^...
+...
+  |
+7 |    end subroutine reverse
+  | ...^^^^^^^^^^^^^^^^^^^^^^ 

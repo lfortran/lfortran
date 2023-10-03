@@ -8,7 +8,7 @@ module reverse_m
     end requirement
 
     template reverse_tmpl(t)
-        requires default_behavior(t)
+        require :: default_behavior(t)
         private
         public :: reverse
     contains
@@ -39,6 +39,8 @@ contains
         a = [1,2,3,4,5]
         call ireverse(a)
         print *, a
+        if (a(1) /= 5) error stop
+        if (a(5) /= 1) error stop
     end subroutine
 
 end module

@@ -59,7 +59,6 @@
                     int_01
                     []
                     [(Print
-                        ()
                         [(Cast
                             (Var 2 x)
                             RealToInteger

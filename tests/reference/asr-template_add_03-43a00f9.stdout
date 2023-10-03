@@ -676,7 +676,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(StringConstant
                                             "The result is "
                                             (Character 1 14 ())
@@ -695,7 +694,7 @@
                                     )
                                     (If
                                         (RealCompare
-                                            (IntrinsicFunction
+                                            (IntrinsicScalarFunction
                                                 Abs
                                                 [(RealBinOp
                                                     (FunctionCall

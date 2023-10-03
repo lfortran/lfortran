@@ -224,7 +224,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 message)]
                         ()
                         ()

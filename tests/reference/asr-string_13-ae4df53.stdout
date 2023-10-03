@@ -128,7 +128,6 @@
                         []
                     )
                     (Print
-                        ()
                         [(Var 2 ia0)
                         (Var 2 ia5)
                         (Var 2 ia9)]

@@ -1,0 +1,568 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            template_array_01b:
+                (Program
+                    (SymbolTable
+                        8
+                        {
+                            array_tmpl:
+                                (ExternalSymbol
+                                    8
+                                    array_tmpl
+                                    2 array_tmpl
+                                    template_array_01b_m
+                                    []
+                                    array_tmpl
+                                    Public
+                                ),
+                            r:
+                                (ExternalSymbol
+                                    8
+                                    r
+                                    2 r
+                                    template_array_01b_m
+                                    []
+                                    r
+                                    Public
+                                ),
+                            test_template:
+                                (ExternalSymbol
+                                    8
+                                    test_template
+                                    2 test_template
+                                    template_array_01b_m
+                                    []
+                                    test_template
+                                    Public
+                                )
+                        })
+                    template_array_01b
+                    [template_array_01b_m]
+                    [(SubroutineCall
+                        8 test_template
+                        ()
+                        []
+                        ()
+                    )]
+                ),
+            template_array_01b_m:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            array_tmpl:
+                                (Template
+                                    (SymbolTable
+                                        4
+                                        {
+                                            insert_t:
+                                                (Function
+                                                    (SymbolTable
+                                                        5
+                                                        {
+                                                            i:
+                                                                (Variable
+                                                                    5
+                                                                    i
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            lst:
+                                                                (Variable
+                                                                    5
+                                                                    lst
+                                                                    [n]
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Array
+                                                                        (TypeParameter
+                                                                            t
+                                                                        )
+                                                                        [((IntegerConstant 1 (Integer 4))
+                                                                        (Var 5 n))]
+                                                                        PointerToDataArray
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            n:
+                                                                (Variable
+                                                                    5
+                                                                    n
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            r:
+                                                                (Variable
+                                                                    5
+                                                                    r
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    insert_t
+                                                    (FunctionType
+                                                        [(Integer 4)
+                                                        (Array
+                                                            (TypeParameter
+                                                                t
+                                                            )
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (FunctionParam
+                                                                0
+                                                                (Integer 4)
+                                                                ()
+                                                            ))]
+                                                            PointerToDataArray
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                        )]
+                                                        (TypeParameter
+                                                            t
+                                                        )
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    []
+                                                    [(Var 5 n)
+                                                    (Var 5 lst)
+                                                    (Var 5 i)]
+                                                    [(=
+                                                        (ArrayItem
+                                                            (Var 5 lst)
+                                                            [(()
+                                                            (IntegerConstant 1 (Integer 4))
+                                                            ())]
+                                                            (TypeParameter
+                                                                t
+                                                            )
+                                                            ColMajor
+                                                            ()
+                                                        )
+                                                        (Var 5 i)
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 5 r)
+                                                        (ArrayItem
+                                                            (Var 5 lst)
+                                                            [(()
+                                                            (IntegerConstant 1 (Integer 4))
+                                                            ())]
+                                                            (TypeParameter
+                                                                t
+                                                            )
+                                                            ColMajor
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )]
+                                                    (Var 5 r)
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            t:
+                                                (Variable
+                                                    4
+                                                    t
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        t
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    array_tmpl
+                                    [t]
+                                    [(Require
+                                        r
+                                        [t]
+                                    )]
+                                ),
+                            r:
+                                (Requirement
+                                    (SymbolTable
+                                        3
+                                        {
+                                            t:
+                                                (Variable
+                                                    3
+                                                    t
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        t
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    r
+                                    [t]
+                                    []
+                                ),
+                            test_template:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            a:
+                                                (Variable
+                                                    6
+                                                    a
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 1 (Integer 4)))]
+                                                        FixedSizeArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            i:
+                                                (Variable
+                                                    6
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            insert_int:
+                                                (Function
+                                                    (SymbolTable
+                                                        7
+                                                        {
+                                                            i:
+                                                                (Variable
+                                                                    7
+                                                                    i
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            lst:
+                                                                (Variable
+                                                                    7
+                                                                    lst
+                                                                    [n]
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Array
+                                                                        (Integer 4)
+                                                                        [((IntegerConstant 1 (Integer 4))
+                                                                        (Var 7 n))]
+                                                                        PointerToDataArray
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            n:
+                                                                (Variable
+                                                                    7
+                                                                    n
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            r:
+                                                                (Variable
+                                                                    7
+                                                                    r
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    insert_int
+                                                    (FunctionType
+                                                        [(Integer 4)
+                                                        (Array
+                                                            (Integer 4)
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (FunctionParam
+                                                                0
+                                                                (Integer 4)
+                                                                ()
+                                                            ))]
+                                                            PointerToDataArray
+                                                        )
+                                                        (Integer 4)]
+                                                        (Integer 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    []
+                                                    [(Var 7 n)
+                                                    (Var 7 lst)
+                                                    (Var 7 i)]
+                                                    [(=
+                                                        (ArrayItem
+                                                            (Var 7 lst)
+                                                            [(()
+                                                            (IntegerConstant 1 (Integer 4))
+                                                            ())]
+                                                            (Integer 4)
+                                                            ColMajor
+                                                            ()
+                                                        )
+                                                        (Var 7 i)
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 7 r)
+                                                        (ArrayItem
+                                                            (Var 7 lst)
+                                                            [(()
+                                                            (IntegerConstant 1 (Integer 4))
+                                                            ())]
+                                                            (Integer 4)
+                                                            ColMajor
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )]
+                                                    (Var 7 r)
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            r:
+                                                (Variable
+                                                    6
+                                                    r
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    test_template
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    [insert_int]
+                                    []
+                                    [(=
+                                        (ArrayItem
+                                            (Var 6 a)
+                                            [(()
+                                            (IntegerConstant 1 (Integer 4))
+                                            ())]
+                                            (Integer 4)
+                                            ColMajor
+                                            ()
+                                        )
+                                        (IntegerConstant 0 (Integer 4))
+                                        ()
+                                    )
+                                    (=
+                                        (Var 6 i)
+                                        (IntegerConstant 1 (Integer 4))
+                                        ()
+                                    )
+                                    (Print
+                                        [(ArrayItem
+                                            (Var 6 a)
+                                            [(()
+                                            (IntegerConstant 1 (Integer 4))
+                                            ())]
+                                            (Integer 4)
+                                            ColMajor
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )
+                                    (=
+                                        (Var 6 r)
+                                        (FunctionCall
+                                            6 insert_int
+                                            ()
+                                            [((ArraySize
+                                                (Var 6 a)
+                                                ()
+                                                (Integer 4)
+                                                (IntegerConstant 1 (Integer 4))
+                                            ))
+                                            ((ArrayPhysicalCast
+                                                (Var 6 a)
+                                                FixedSizeArray
+                                                PointerToDataArray
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4)))]
+                                                    PointerToDataArray
+                                                )
+                                                ()
+                                            ))
+                                            ((Var 6 i))]
+                                            (Integer 4)
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                    )
+                                    (Print
+                                        [(ArrayItem
+                                            (Var 6 a)
+                                            [(()
+                                            (IntegerConstant 1 (Integer 4))
+                                            ())]
+                                            (Integer 4)
+                                            ColMajor
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    template_array_01b_m
+                    [template_array_01b_m]
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

@@ -45,13 +45,13 @@
                         },
                         "loc": {
                             "first": 0,
-                            "last": 78,
+                            "last": 77,
                             "first_filename": "tests/special_chars_json.f90",
                             "first_line": 1,
                             "first_column": 1,
                             "last_filename": "tests/special_chars_json.f90",
                             "last_line": 4,
-                            "last_column": 4
+                            "last_column": 3
                         }
                     },
                     "use": [],
@@ -99,25 +99,25 @@
                 },
                 "loc": {
                     "first": 0,
-                    "last": 78,
+                    "last": 77,
                     "first_filename": "tests/special_chars_json.f90",
                     "first_line": 1,
                     "first_column": 1,
                     "last_filename": "tests/special_chars_json.f90",
                     "last_line": 4,
-                    "last_column": 4
+                    "last_column": 3
                 }
             }
         ]
     },
     "loc": {
         "first": 0,
-        "last": 78,
+        "last": 77,
         "first_filename": "tests/special_chars_json.f90",
         "first_line": 1,
         "first_column": 1,
         "last_filename": "tests/special_chars_json.f90",
         "last_line": 4,
-        "last_column": 4
+        "last_column": 3
     }
 }

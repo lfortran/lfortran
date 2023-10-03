@@ -1,0 +1,13 @@
+{
+    "basename": "asr-pragma2-604d549",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/pragma2.f90",
+    "infile_hash": "c76c30115a39aa0c98b24173c8517df1fb525bf101023b12dc38ca3e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-pragma2-604d549.stdout",
+    "stdout_hash": "847c60b4c4a72acc9f03d41c075f751be1940b5ff510d90c9561253c",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

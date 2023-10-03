@@ -52,6 +52,7 @@
             ()
         )]
         []
+        []
     )
     (Module
         parameter_02_a
@@ -118,6 +119,7 @@
         [(SubroutineCall
             0
             a_proc
+            []
             []
             []
             []

@@ -31,6 +31,8 @@ lfortran_compile_runtime(lfortran_intrinsic_builtin builtin)
 lfortran_compile_runtime(lfortran_intrinsic_kind pure)
 lfortran_compile_runtime(lfortran_intrinsic_iso_fortran_env pure)
 
+lfortran_compile_runtime(lfortran_intrinsic_custom custom)
+
 lfortran_compile_runtime(lfortran_intrinsic_optimization builtin)
 add_dependencies(lfortran_intrinsic_optimization lfortran_intrinsic_iso_fortran_env)
 
@@ -79,6 +81,7 @@ add_dependencies(lfortran_intrinsic_bit lfortran_intrinsic_iso_fortran_env)
 install(
   FILES
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_builtin.mod
+  ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_custom.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_optimization.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_kind.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_iso_fortran_env.mod

@@ -23,7 +23,7 @@
                                     Required
                                     .false.
                                 ),
-                            associate_block_:
+                            associate_block:
                                 (AssociateBlock
                                     (SymbolTable
                                         3
@@ -63,7 +63,7 @@
                                                     .false.
                                                 )
                                         })
-                                    associate_block_
+                                    associate_block
                                     [(=
                                         (Var 3 z)
                                         (RealBinOp
@@ -107,7 +107,7 @@
                                                 ()
                                             )
                                             Mul
-                                            (IntrinsicFunction
+                                            (IntrinsicScalarFunction
                                                 Cos
                                                 [(Var 2 theta)]
                                                 0
@@ -124,7 +124,6 @@
                                         (Var 2 myreal)
                                     )
                                     (Print
-                                        ()
                                         [(RealBinOp
                                             (Var 2 a)
                                             Add
@@ -268,10 +267,9 @@
                         ()
                     )
                     (AssociateBlockCall
-                        2 associate_block_
+                        2 associate_block
                     )
                     (Print
-                        ()
                         [(Var 2 myreal)]
                         ()
                         ()

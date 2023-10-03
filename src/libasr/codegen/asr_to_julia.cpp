@@ -1,6 +1,7 @@
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
+#include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/diagnostics.h>
 #include <libasr/codegen/asr_to_julia.h>
 
@@ -501,7 +502,7 @@ public:
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t& x)
     {
-        global_scope = x.m_global_scope;
+        global_scope = x.m_symtab;
 
         // All loose statements must be converted to a function, so the items
         // must be empty:
@@ -518,10 +519,10 @@ public:
             std::vector<std::string> build_order
                 = ASRUtils::determine_module_dependencies(x);
             for (auto& item : build_order) {
-                LCOMPILERS_ASSERT(x.m_global_scope->get_scope().find(item)
-                                != x.m_global_scope->get_scope().end());
+                LCOMPILERS_ASSERT(x.m_symtab->get_scope().find(item)
+                                != x.m_symtab->get_scope().end());
                 if (startswith(item, "lfortran_intrinsic")) {
-                    ASR::symbol_t* mod = x.m_global_scope->get_symbol(item);
+                    ASR::symbol_t* mod = x.m_symtab->get_symbol(item);
                     visit_symbol(*mod);
                     unit_src += src;
                 }
@@ -529,7 +530,7 @@ public:
         }
 
         // Process procedures first:
-        for (auto& item : x.m_global_scope->get_scope()) {
+        for (auto& item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 visit_symbol(*item.second);
                 unit_src += src;
@@ -539,17 +540,17 @@ public:
         // Then do all the modules in the right order
         std::vector<std::string> build_order = ASRUtils::determine_module_dependencies(x);
         for (auto& item : build_order) {
-            LCOMPILERS_ASSERT(x.m_global_scope->get_scope().find(item)
-                            != x.m_global_scope->get_scope().end());
+            LCOMPILERS_ASSERT(x.m_symtab->get_scope().find(item)
+                            != x.m_symtab->get_scope().end());
             if (!startswith(item, "lfortran_intrinsic")) {
-                ASR::symbol_t* mod = x.m_global_scope->get_symbol(item);
+                ASR::symbol_t* mod = x.m_symtab->get_symbol(item);
                 visit_symbol(*mod);
                 unit_src += src;
             }
         }
 
         // Then the main program:
-        for (auto& item : x.m_global_scope->get_scope()) {
+        for (auto& item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Program_t>(*item.second)) {
                 visit_symbol(*item.second);
                 unit_src += src;
@@ -920,8 +921,8 @@ public:
         }
     }
 
-    void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t& /*x*/) {
-
+    void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t &x) {
+        this->visit_expr(*x.m_arg);
     }
 
     void visit_Allocate(const ASR::Allocate_t& x)
@@ -1809,18 +1810,6 @@ public:
         src = out;
     }
 
-    void visit_ArrayMatMul(const ASR::ArrayMatMul_t& x)
-    {
-        visit_expr(*x.m_matrix_a);
-        std::string left = std::move(src);
-        int left_precedence = last_expr_precedence;
-        visit_expr(*x.m_matrix_b);
-        std::string right = std::move(src);
-        int right_precedence = last_expr_precedence;
-        last_expr_precedence = julia_prec::Mul;
-        src = format_binop(left, "*", right, left_precedence, right_precedence);
-    }
-
     void visit_TupleLen(const ASR::TupleLen_t& x)
     {
         visit_expr(*x.m_arg);
@@ -1892,12 +1881,7 @@ public:
         src = out;
     }
 
-    #define SET_INTRINSIC_NAME(X, func_name)                             \
-        case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::X)) : { \
-            out += func_name; break;                                     \
-        }
-
-    void visit_IntrinsicFunction(const ASR::IntrinsicFunction_t &x) {
+    void visit_IntrinsicScalarFunction(const ASR::IntrinsicScalarFunction_t &x) {
         std::string out;
         LCOMPILERS_ASSERT(x.n_args == 1);
         visit_expr(*x.m_args[0]);
@@ -1915,10 +1899,40 @@ public:
             SET_INTRINSIC_NAME(Exp, "exp");
             SET_INTRINSIC_NAME(Exp2, "exp2");
             SET_INTRINSIC_NAME(Expm1, "expm1");
-            SET_INTRINSIC_NAME(Sum, "sum");
             default : {
                 throw LCompilersException("IntrinsicFunction: `"
                     + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)
+                    + "` is not implemented");
+            }
+        }
+        out += "(" + src + ")";
+        src = out;
+    }
+
+    #define SET_ARR_INTRINSIC_NAME(X, func_name)                                \
+        case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::X)) : {   \
+            visit_expr(*x.m_args[0]);                                           \
+            out += func_name; break;                                            \
+        }
+
+    void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t &x) {
+        std::string out;
+        switch (x.m_arr_intrinsic_id) {
+            SET_ARR_INTRINSIC_NAME(Sum, "sum");
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MatMul)) : {
+                visit_expr(*x.m_args[0]);
+                std::string left = std::move(src);
+                int left_precedence = last_expr_precedence;
+                visit_expr(*x.m_args[1]);
+                std::string right = std::move(src);
+                int right_precedence = last_expr_precedence;
+                last_expr_precedence = julia_prec::Mul;
+                src = format_binop(left, "*", right, left_precedence, right_precedence);
+                return;
+            }
+            default : {
+                throw LCompilersException("IntrinsicFunction: `"
+                    + ASRUtils::get_intrinsic_name(x.m_arr_intrinsic_id)
                     + "` is not implemented");
             }
         }

@@ -119,14 +119,13 @@
                     test
                     [foo2]
                     [(Print
-                        ()
                         [(Var 5 y)]
                         ()
                         ()
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 5 y)
@@ -162,14 +161,13 @@
                         ()
                     )
                     (Print
-                        ()
                         [(Var 5 y)]
                         ()
                         ()
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 5 y)

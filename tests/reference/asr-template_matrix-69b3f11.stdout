@@ -1,0 +1,2444 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            template_matrix:
+                (Program
+                    (SymbolTable
+                        19
+                        {
+                            elemental_oper:
+                                (ExternalSymbol
+                                    19
+                                    elemental_oper
+                                    2 elemental_oper
+                                    template_matrix_m
+                                    []
+                                    elemental_oper
+                                    Public
+                                ),
+                            matrix_t:
+                                (ExternalSymbol
+                                    19
+                                    matrix_t
+                                    2 matrix_t
+                                    template_matrix_m
+                                    []
+                                    matrix_t
+                                    Public
+                                ),
+                            mult_complex:
+                                (ExternalSymbol
+                                    19
+                                    mult_complex
+                                    2 mult_complex
+                                    template_matrix_m
+                                    []
+                                    mult_complex
+                                    Public
+                                ),
+                            mult_integer:
+                                (ExternalSymbol
+                                    19
+                                    mult_integer
+                                    2 mult_integer
+                                    template_matrix_m
+                                    []
+                                    mult_integer
+                                    Public
+                                ),
+                            plus_complex:
+                                (ExternalSymbol
+                                    19
+                                    plus_complex
+                                    2 plus_complex
+                                    template_matrix_m
+                                    []
+                                    plus_complex
+                                    Public
+                                ),
+                            plus_integer:
+                                (ExternalSymbol
+                                    19
+                                    plus_integer
+                                    2 plus_integer
+                                    template_matrix_m
+                                    []
+                                    plus_integer
+                                    Public
+                                ),
+                            test_template:
+                                (ExternalSymbol
+                                    19
+                                    test_template
+                                    2 test_template
+                                    template_matrix_m
+                                    []
+                                    test_template
+                                    Public
+                                )
+                        })
+                    template_matrix
+                    [template_matrix_m]
+                    [(SubroutineCall
+                        19 test_template
+                        ()
+                        []
+                        ()
+                    )]
+                ),
+            template_matrix_m:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            elemental_oper:
+                                (Requirement
+                                    (SymbolTable
+                                        3
+                                        {
+                                            op:
+                                                (Function
+                                                    (SymbolTable
+                                                        4
+                                                        {
+                                                            x:
+                                                                (Variable
+                                                                    4
+                                                                    x
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            y:
+                                                                (Variable
+                                                                    4
+                                                                    y
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            z:
+                                                                (Variable
+                                                                    4
+                                                                    z
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    op
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            t
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                        )]
+                                                        (TypeParameter
+                                                            t
+                                                        )
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .true.
+                                                    )
+                                                    []
+                                                    [(Var 4 x)
+                                                    (Var 4 y)]
+                                                    []
+                                                    (Var 4 z)
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            t:
+                                                (Variable
+                                                    3
+                                                    t
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        t
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    elemental_oper
+                                    [t
+                                    op]
+                                    []
+                                ),
+                            matrix_t:
+                                (Template
+                                    (SymbolTable
+                                        5
+                                        {
+                                            matmul_matrix:
+                                                (Function
+                                                    (SymbolTable
+                                                        10
+                                                        {
+                                                            1_matrix_elements:
+                                                                (ExternalSymbol
+                                                                    10
+                                                                    1_matrix_elements
+                                                                    8 elements
+                                                                    matrix
+                                                                    []
+                                                                    elements
+                                                                    Public
+                                                                ),
+                                                            i:
+                                                                (Variable
+                                                                    10
+                                                                    i
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            j:
+                                                                (Variable
+                                                                    10
+                                                                    j
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            k:
+                                                                (Variable
+                                                                    10
+                                                                    k
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            m_x:
+                                                                (Variable
+                                                                    10
+                                                                    m_x
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Struct
+                                                                        5 matrix
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            m_y:
+                                                                (Variable
+                                                                    10
+                                                                    m_y
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Struct
+                                                                        5 matrix
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            m_z:
+                                                                (Variable
+                                                                    10
+                                                                    m_z
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Struct
+                                                                        5 matrix
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            tmp:
+                                                                (Variable
+                                                                    10
+                                                                    tmp
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    matmul_matrix
+                                                    (FunctionType
+                                                        [(Struct
+                                                            5 matrix
+                                                        )
+                                                        (Struct
+                                                            5 matrix
+                                                        )
+                                                        (Struct
+                                                            5 matrix
+                                                        )]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    [times
+                                                    plus]
+                                                    [(Var 10 m_x)
+                                                    (Var 10 m_y)
+                                                    (Var 10 m_z)]
+                                                    [(DoLoop
+                                                        ()
+                                                        ((Var 10 i)
+                                                        (IntegerConstant 1 (Integer 4))
+                                                        (Var 5 n)
+                                                        ())
+                                                        [(DoLoop
+                                                            ()
+                                                            ((Var 10 j)
+                                                            (IntegerConstant 1 (Integer 4))
+                                                            (Var 5 n)
+                                                            ())
+                                                            [(=
+                                                                (Var 10 tmp)
+                                                                (FunctionCall
+                                                                    5 times
+                                                                    ()
+                                                                    [((ArrayItem
+                                                                        (StructInstanceMember
+                                                                            (Var 10 m_x)
+                                                                            10 1_matrix_elements
+                                                                            (Array
+                                                                                (TypeParameter
+                                                                                    t
+                                                                                )
+                                                                                [((IntegerConstant 1 (Integer 4))
+                                                                                (Var 5 n))
+                                                                                ((IntegerConstant 1 (Integer 4))
+                                                                                (Var 5 n))]
+                                                                                PointerToDataArray
+                                                                            )
+                                                                            ()
+                                                                        )
+                                                                        [(()
+                                                                        (Var 10 i)
+                                                                        ())
+                                                                        (()
+                                                                        (IntegerConstant 1 (Integer 4))
+                                                                        ())]
+                                                                        (TypeParameter
+                                                                            t
+                                                                        )
+                                                                        ColMajor
+                                                                        ()
+                                                                    ))
+                                                                    ((ArrayItem
+                                                                        (StructInstanceMember
+                                                                            (Var 10 m_y)
+                                                                            10 1_matrix_elements
+                                                                            (Array
+                                                                                (TypeParameter
+                                                                                    t
+                                                                                )
+                                                                                [((IntegerConstant 1 (Integer 4))
+                                                                                (Var 5 n))
+                                                                                ((IntegerConstant 1 (Integer 4))
+                                                                                (Var 5 n))]
+                                                                                PointerToDataArray
+                                                                            )
+                                                                            ()
+                                                                        )
+                                                                        [(()
+                                                                        (IntegerConstant 1 (Integer 4))
+                                                                        ())
+                                                                        (()
+                                                                        (Var 10 j)
+                                                                        ())]
+                                                                        (TypeParameter
+                                                                            t
+                                                                        )
+                                                                        ColMajor
+                                                                        ()
+                                                                    ))]
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    ()
+                                                                )
+                                                                ()
+                                                            )
+                                                            (DoLoop
+                                                                ()
+                                                                ((Var 10 k)
+                                                                (IntegerConstant 2 (Integer 4))
+                                                                (Var 5 n)
+                                                                ())
+                                                                [(=
+                                                                    (Var 10 tmp)
+                                                                    (FunctionCall
+                                                                        5 plus
+                                                                        ()
+                                                                        [((Var 10 tmp))
+                                                                        ((FunctionCall
+                                                                            5 times
+                                                                            ()
+                                                                            [((ArrayItem
+                                                                                (StructInstanceMember
+                                                                                    (Var 10 m_x)
+                                                                                    10 1_matrix_elements
+                                                                                    (Array
+                                                                                        (TypeParameter
+                                                                                            t
+                                                                                        )
+                                                                                        [((IntegerConstant 1 (Integer 4))
+                                                                                        (Var 5 n))
+                                                                                        ((IntegerConstant 1 (Integer 4))
+                                                                                        (Var 5 n))]
+                                                                                        PointerToDataArray
+                                                                                    )
+                                                                                    ()
+                                                                                )
+                                                                                [(()
+                                                                                (Var 10 i)
+                                                                                ())
+                                                                                (()
+                                                                                (Var 10 k)
+                                                                                ())]
+                                                                                (TypeParameter
+                                                                                    t
+                                                                                )
+                                                                                ColMajor
+                                                                                ()
+                                                                            ))
+                                                                            ((ArrayItem
+                                                                                (StructInstanceMember
+                                                                                    (Var 10 m_y)
+                                                                                    10 1_matrix_elements
+                                                                                    (Array
+                                                                                        (TypeParameter
+                                                                                            t
+                                                                                        )
+                                                                                        [((IntegerConstant 1 (Integer 4))
+                                                                                        (Var 5 n))
+                                                                                        ((IntegerConstant 1 (Integer 4))
+                                                                                        (Var 5 n))]
+                                                                                        PointerToDataArray
+                                                                                    )
+                                                                                    ()
+                                                                                )
+                                                                                [(()
+                                                                                (Var 10 k)
+                                                                                ())
+                                                                                (()
+                                                                                (Var 10 j)
+                                                                                ())]
+                                                                                (TypeParameter
+                                                                                    t
+                                                                                )
+                                                                                ColMajor
+                                                                                ()
+                                                                            ))]
+                                                                            (TypeParameter
+                                                                                t
+                                                                            )
+                                                                            ()
+                                                                            ()
+                                                                        ))]
+                                                                        (TypeParameter
+                                                                            t
+                                                                        )
+                                                                        ()
+                                                                        ()
+                                                                    )
+                                                                    ()
+                                                                )]
+                                                            )
+                                                            (=
+                                                                (ArrayItem
+                                                                    (StructInstanceMember
+                                                                        (Var 10 m_z)
+                                                                        10 1_matrix_elements
+                                                                        (Array
+                                                                            (TypeParameter
+                                                                                t
+                                                                            )
+                                                                            [((IntegerConstant 1 (Integer 4))
+                                                                            (Var 5 n))
+                                                                            ((IntegerConstant 1 (Integer 4))
+                                                                            (Var 5 n))]
+                                                                            PointerToDataArray
+                                                                        )
+                                                                        ()
+                                                                    )
+                                                                    [(()
+                                                                    (Var 10 i)
+                                                                    ())
+                                                                    (()
+                                                                    (Var 10 j)
+                                                                    ())]
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ColMajor
+                                                                    ()
+                                                                )
+                                                                (Var 10 tmp)
+                                                                ()
+                                                            )]
+                                                        )]
+                                                    )]
+                                                    ()
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            matrix:
+                                                (StructType
+                                                    (SymbolTable
+                                                        8
+                                                        {
+                                                            elements:
+                                                                (Variable
+                                                                    8
+                                                                    elements
+                                                                    [n]
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Array
+                                                                        (TypeParameter
+                                                                            t
+                                                                        )
+                                                                        [((IntegerConstant 1 (Integer 4))
+                                                                        (Var 5 n))
+                                                                        ((IntegerConstant 1 (Integer 4))
+                                                                        (Var 5 n))]
+                                                                        PointerToDataArray
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    matrix
+                                                    []
+                                                    [elements]
+                                                    Source
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    []
+                                                    ()
+                                                    ()
+                                                ),
+                                            n:
+                                                (Variable
+                                                    5
+                                                    n
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            plus:
+                                                (Function
+                                                    (SymbolTable
+                                                        6
+                                                        {
+                                                            x:
+                                                                (Variable
+                                                                    6
+                                                                    x
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            y:
+                                                                (Variable
+                                                                    6
+                                                                    y
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            z:
+                                                                (Variable
+                                                                    6
+                                                                    z
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    plus
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            t
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                        )]
+                                                        (TypeParameter
+                                                            t
+                                                        )
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .true.
+                                                    )
+                                                    []
+                                                    [(Var 6 x)
+                                                    (Var 6 y)]
+                                                    []
+                                                    (Var 6 z)
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            plus_matrix:
+                                                (Function
+                                                    (SymbolTable
+                                                        9
+                                                        {
+                                                            1_matrix_elements:
+                                                                (ExternalSymbol
+                                                                    9
+                                                                    1_matrix_elements
+                                                                    8 elements
+                                                                    matrix
+                                                                    []
+                                                                    elements
+                                                                    Public
+                                                                ),
+                                                            m_x:
+                                                                (Variable
+                                                                    9
+                                                                    m_x
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Struct
+                                                                        5 matrix
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            m_y:
+                                                                (Variable
+                                                                    9
+                                                                    m_y
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Struct
+                                                                        5 matrix
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            m_z:
+                                                                (Variable
+                                                                    9
+                                                                    m_z
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Struct
+                                                                        5 matrix
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    plus_matrix
+                                                    (FunctionType
+                                                        [(Struct
+                                                            5 matrix
+                                                        )
+                                                        (Struct
+                                                            5 matrix
+                                                        )
+                                                        (Struct
+                                                            5 matrix
+                                                        )]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    [plus]
+                                                    [(Var 9 m_x)
+                                                    (Var 9 m_y)
+                                                    (Var 9 m_z)]
+                                                    [(=
+                                                        (StructInstanceMember
+                                                            (Var 9 m_z)
+                                                            9 1_matrix_elements
+                                                            (Array
+                                                                (TypeParameter
+                                                                    t
+                                                                )
+                                                                [((IntegerConstant 1 (Integer 4))
+                                                                (Var 5 n))
+                                                                ((IntegerConstant 1 (Integer 4))
+                                                                (Var 5 n))]
+                                                                PointerToDataArray
+                                                            )
+                                                            ()
+                                                        )
+                                                        (ArrayBroadcast
+                                                            (FunctionCall
+                                                                5 plus
+                                                                ()
+                                                                [((StructInstanceMember
+                                                                    (Var 9 m_x)
+                                                                    9 1_matrix_elements
+                                                                    (Array
+                                                                        (TypeParameter
+                                                                            t
+                                                                        )
+                                                                        [((IntegerConstant 1 (Integer 4))
+                                                                        (Var 5 n))
+                                                                        ((IntegerConstant 1 (Integer 4))
+                                                                        (Var 5 n))]
+                                                                        PointerToDataArray
+                                                                    )
+                                                                    ()
+                                                                ))
+                                                                ((StructInstanceMember
+                                                                    (Var 9 m_y)
+                                                                    9 1_matrix_elements
+                                                                    (Array
+                                                                        (TypeParameter
+                                                                            t
+                                                                        )
+                                                                        [((IntegerConstant 1 (Integer 4))
+                                                                        (Var 5 n))
+                                                                        ((IntegerConstant 1 (Integer 4))
+                                                                        (Var 5 n))]
+                                                                        PointerToDataArray
+                                                                    )
+                                                                    ()
+                                                                ))]
+                                                                (TypeParameter
+                                                                    t
+                                                                )
+                                                                ()
+                                                                ()
+                                                            )
+                                                            (IntrinsicArrayFunction
+                                                                Shape
+                                                                [(StructInstanceMember
+                                                                    (Var 9 m_z)
+                                                                    9 1_matrix_elements
+                                                                    (Array
+                                                                        (TypeParameter
+                                                                            t
+                                                                        )
+                                                                        [((IntegerConstant 1 (Integer 4))
+                                                                        (Var 5 n))
+                                                                        ((IntegerConstant 1 (Integer 4))
+                                                                        (Var 5 n))]
+                                                                        PointerToDataArray
+                                                                    )
+                                                                    ()
+                                                                )]
+                                                                0
+                                                                (Array
+                                                                    (Integer 4)
+                                                                    [((IntegerConstant 1 (Integer 4))
+                                                                    (IntegerConstant 2 (Integer 4)))]
+                                                                    FixedSizeArray
+                                                                )
+                                                                ()
+                                                            )
+                                                            (Array
+                                                                (TypeParameter
+                                                                    t
+                                                                )
+                                                                [((IntegerConstant 1 (Integer 4))
+                                                                (Var 5 n))
+                                                                ((IntegerConstant 1 (Integer 4))
+                                                                (Var 5 n))]
+                                                                PointerToDataArray
+                                                            )
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )]
+                                                    ()
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            t:
+                                                (Variable
+                                                    5
+                                                    t
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        t
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            times:
+                                                (Function
+                                                    (SymbolTable
+                                                        7
+                                                        {
+                                                            x:
+                                                                (Variable
+                                                                    7
+                                                                    x
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            y:
+                                                                (Variable
+                                                                    7
+                                                                    y
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            z:
+                                                                (Variable
+                                                                    7
+                                                                    z
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    times
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            t
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                        )]
+                                                        (TypeParameter
+                                                            t
+                                                        )
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .true.
+                                                    )
+                                                    []
+                                                    [(Var 7 x)
+                                                    (Var 7 y)]
+                                                    []
+                                                    (Var 7 z)
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                )
+                                        })
+                                    matrix_t
+                                    [t
+                                    plus
+                                    times
+                                    n]
+                                    [(Require
+                                        elemental_oper
+                                        [t
+                                        plus]
+                                    )
+                                    (Require
+                                        elemental_oper
+                                        [t
+                                        times]
+                                    )]
+                                ),
+                            mult_complex:
+                                (Function
+                                    (SymbolTable
+                                        14
+                                        {
+                                            x:
+                                                (Variable
+                                                    14
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Complex 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            y:
+                                                (Variable
+                                                    14
+                                                    y
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Complex 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            z:
+                                                (Variable
+                                                    14
+                                                    z
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Complex 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    mult_complex
+                                    (FunctionType
+                                        [(Complex 4)
+                                        (Complex 4)]
+                                        (Complex 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 14 x)
+                                    (Var 14 y)]
+                                    [(=
+                                        (Var 14 z)
+                                        (ComplexBinOp
+                                            (Var 14 x)
+                                            Mul
+                                            (Var 14 y)
+                                            (Complex 4)
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 14 z)
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            mult_integer:
+                                (Function
+                                    (SymbolTable
+                                        12
+                                        {
+                                            x:
+                                                (Variable
+                                                    12
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            y:
+                                                (Variable
+                                                    12
+                                                    y
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            z:
+                                                (Variable
+                                                    12
+                                                    z
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    mult_integer
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 12 x)
+                                    (Var 12 y)]
+                                    [(=
+                                        (Var 12 z)
+                                        (IntegerBinOp
+                                            (Var 12 x)
+                                            Mul
+                                            (Var 12 y)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 12 z)
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            plus_complex:
+                                (Function
+                                    (SymbolTable
+                                        13
+                                        {
+                                            x:
+                                                (Variable
+                                                    13
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Complex 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            y:
+                                                (Variable
+                                                    13
+                                                    y
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Complex 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            z:
+                                                (Variable
+                                                    13
+                                                    z
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Complex 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    plus_complex
+                                    (FunctionType
+                                        [(Complex 4)
+                                        (Complex 4)]
+                                        (Complex 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 13 x)
+                                    (Var 13 y)]
+                                    [(=
+                                        (Var 13 z)
+                                        (ComplexBinOp
+                                            (Var 13 x)
+                                            Add
+                                            (Var 13 y)
+                                            (Complex 4)
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 13 z)
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            plus_integer:
+                                (Function
+                                    (SymbolTable
+                                        11
+                                        {
+                                            x:
+                                                (Variable
+                                                    11
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            y:
+                                                (Variable
+                                                    11
+                                                    y
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            z:
+                                                (Variable
+                                                    11
+                                                    z
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    plus_integer
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 11 x)
+                                    (Var 11 y)]
+                                    [(=
+                                        (Var 11 z)
+                                        (IntegerBinOp
+                                            (Var 11 x)
+                                            Add
+                                            (Var 11 y)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 11 z)
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            test_template:
+                                (Function
+                                    (SymbolTable
+                                        15
+                                        {
+                                            1_integer_matrix_elements:
+                                                (ExternalSymbol
+                                                    15
+                                                    1_integer_matrix_elements
+                                                    16 elements
+                                                    integer_matrix
+                                                    []
+                                                    elements
+                                                    Public
+                                                ),
+                                            integer_matrix:
+                                                (StructType
+                                                    (SymbolTable
+                                                        16
+                                                        {
+                                                            elements:
+                                                                (Variable
+                                                                    16
+                                                                    elements
+                                                                    [n]
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Array
+                                                                        (Integer 4)
+                                                                        [((IntegerConstant 1 (Integer 4))
+                                                                        (Var 15 n))
+                                                                        ((IntegerConstant 1 (Integer 4))
+                                                                        (Var 15 n))]
+                                                                        FixedSizeArray
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    integer_matrix
+                                                    []
+                                                    [elements]
+                                                    Source
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    []
+                                                    ()
+                                                    ()
+                                                ),
+                                            integer_mult_matrix:
+                                                (Function
+                                                    (SymbolTable
+                                                        18
+                                                        {
+                                                            1_integer_matrix_elements:
+                                                                (ExternalSymbol
+                                                                    18
+                                                                    1_integer_matrix_elements
+                                                                    16 elements
+                                                                    integer_matrix
+                                                                    []
+                                                                    elements
+                                                                    Public
+                                                                ),
+                                                            i:
+                                                                (Variable
+                                                                    18
+                                                                    i
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            j:
+                                                                (Variable
+                                                                    18
+                                                                    j
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            k:
+                                                                (Variable
+                                                                    18
+                                                                    k
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            m_x:
+                                                                (Variable
+                                                                    18
+                                                                    m_x
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Struct
+                                                                        15 integer_matrix
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            m_y:
+                                                                (Variable
+                                                                    18
+                                                                    m_y
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Struct
+                                                                        15 integer_matrix
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            m_z:
+                                                                (Variable
+                                                                    18
+                                                                    m_z
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Struct
+                                                                        15 integer_matrix
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            tmp:
+                                                                (Variable
+                                                                    18
+                                                                    tmp
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    integer_mult_matrix
+                                                    (FunctionType
+                                                        [(Struct
+                                                            15 integer_matrix
+                                                        )
+                                                        (Struct
+                                                            15 integer_matrix
+                                                        )
+                                                        (Struct
+                                                            15 integer_matrix
+                                                        )]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    [mult_integer
+                                                    plus_integer]
+                                                    [(Var 18 m_x)
+                                                    (Var 18 m_y)
+                                                    (Var 18 m_z)]
+                                                    [(DoLoop
+                                                        ()
+                                                        ((Var 18 i)
+                                                        (IntegerConstant 1 (Integer 4))
+                                                        (Var 15 n)
+                                                        ())
+                                                        [(DoLoop
+                                                            ()
+                                                            ((Var 18 j)
+                                                            (IntegerConstant 1 (Integer 4))
+                                                            (Var 15 n)
+                                                            ())
+                                                            [(=
+                                                                (Var 18 tmp)
+                                                                (FunctionCall
+                                                                    2 mult_integer
+                                                                    ()
+                                                                    [((ArrayItem
+                                                                        (StructInstanceMember
+                                                                            (Var 18 m_x)
+                                                                            18 1_integer_matrix_elements
+                                                                            (Array
+                                                                                (Integer 4)
+                                                                                [((IntegerConstant 1 (Integer 4))
+                                                                                (Var 15 n))
+                                                                                ((IntegerConstant 1 (Integer 4))
+                                                                                (Var 15 n))]
+                                                                                FixedSizeArray
+                                                                            )
+                                                                            ()
+                                                                        )
+                                                                        [(()
+                                                                        (Var 18 i)
+                                                                        ())
+                                                                        (()
+                                                                        (IntegerConstant 1 (Integer 4))
+                                                                        ())]
+                                                                        (Integer 4)
+                                                                        ColMajor
+                                                                        ()
+                                                                    ))
+                                                                    ((ArrayItem
+                                                                        (StructInstanceMember
+                                                                            (Var 18 m_y)
+                                                                            18 1_integer_matrix_elements
+                                                                            (Array
+                                                                                (Integer 4)
+                                                                                [((IntegerConstant 1 (Integer 4))
+                                                                                (Var 15 n))
+                                                                                ((IntegerConstant 1 (Integer 4))
+                                                                                (Var 15 n))]
+                                                                                FixedSizeArray
+                                                                            )
+                                                                            ()
+                                                                        )
+                                                                        [(()
+                                                                        (IntegerConstant 1 (Integer 4))
+                                                                        ())
+                                                                        (()
+                                                                        (Var 18 j)
+                                                                        ())]
+                                                                        (Integer 4)
+                                                                        ColMajor
+                                                                        ()
+                                                                    ))]
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    ()
+                                                                )
+                                                                ()
+                                                            )
+                                                            (DoLoop
+                                                                ()
+                                                                ((Var 18 k)
+                                                                (IntegerConstant 2 (Integer 4))
+                                                                (Var 15 n)
+                                                                ())
+                                                                [(=
+                                                                    (Var 18 tmp)
+                                                                    (FunctionCall
+                                                                        2 plus_integer
+                                                                        ()
+                                                                        [((Var 18 tmp))
+                                                                        ((FunctionCall
+                                                                            2 mult_integer
+                                                                            ()
+                                                                            [((ArrayItem
+                                                                                (StructInstanceMember
+                                                                                    (Var 18 m_x)
+                                                                                    18 1_integer_matrix_elements
+                                                                                    (Array
+                                                                                        (Integer 4)
+                                                                                        [((IntegerConstant 1 (Integer 4))
+                                                                                        (Var 15 n))
+                                                                                        ((IntegerConstant 1 (Integer 4))
+                                                                                        (Var 15 n))]
+                                                                                        FixedSizeArray
+                                                                                    )
+                                                                                    ()
+                                                                                )
+                                                                                [(()
+                                                                                (Var 18 i)
+                                                                                ())
+                                                                                (()
+                                                                                (Var 18 k)
+                                                                                ())]
+                                                                                (Integer 4)
+                                                                                ColMajor
+                                                                                ()
+                                                                            ))
+                                                                            ((ArrayItem
+                                                                                (StructInstanceMember
+                                                                                    (Var 18 m_y)
+                                                                                    18 1_integer_matrix_elements
+                                                                                    (Array
+                                                                                        (Integer 4)
+                                                                                        [((IntegerConstant 1 (Integer 4))
+                                                                                        (Var 15 n))
+                                                                                        ((IntegerConstant 1 (Integer 4))
+                                                                                        (Var 15 n))]
+                                                                                        FixedSizeArray
+                                                                                    )
+                                                                                    ()
+                                                                                )
+                                                                                [(()
+                                                                                (Var 18 k)
+                                                                                ())
+                                                                                (()
+                                                                                (Var 18 j)
+                                                                                ())]
+                                                                                (Integer 4)
+                                                                                ColMajor
+                                                                                ()
+                                                                            ))]
+                                                                            (Integer 4)
+                                                                            ()
+                                                                            ()
+                                                                        ))]
+                                                                        (Integer 4)
+                                                                        ()
+                                                                        ()
+                                                                    )
+                                                                    ()
+                                                                )]
+                                                            )
+                                                            (=
+                                                                (ArrayItem
+                                                                    (StructInstanceMember
+                                                                        (Var 18 m_z)
+                                                                        18 1_integer_matrix_elements
+                                                                        (Array
+                                                                            (Integer 4)
+                                                                            [((IntegerConstant 1 (Integer 4))
+                                                                            (Var 15 n))
+                                                                            ((IntegerConstant 1 (Integer 4))
+                                                                            (Var 15 n))]
+                                                                            FixedSizeArray
+                                                                        )
+                                                                        ()
+                                                                    )
+                                                                    [(()
+                                                                    (Var 18 i)
+                                                                    ())
+                                                                    (()
+                                                                    (Var 18 j)
+                                                                    ())]
+                                                                    (Integer 4)
+                                                                    ColMajor
+                                                                    ()
+                                                                )
+                                                                (Var 18 tmp)
+                                                                ()
+                                                            )]
+                                                        )]
+                                                    )]
+                                                    ()
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            integer_plus_matrix:
+                                                (Function
+                                                    (SymbolTable
+                                                        17
+                                                        {
+                                                            1_integer_matrix_elements:
+                                                                (ExternalSymbol
+                                                                    17
+                                                                    1_integer_matrix_elements
+                                                                    16 elements
+                                                                    integer_matrix
+                                                                    []
+                                                                    elements
+                                                                    Public
+                                                                ),
+                                                            m_x:
+                                                                (Variable
+                                                                    17
+                                                                    m_x
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Struct
+                                                                        15 integer_matrix
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            m_y:
+                                                                (Variable
+                                                                    17
+                                                                    m_y
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Struct
+                                                                        15 integer_matrix
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            m_z:
+                                                                (Variable
+                                                                    17
+                                                                    m_z
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Struct
+                                                                        15 integer_matrix
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    integer_plus_matrix
+                                                    (FunctionType
+                                                        [(Struct
+                                                            15 integer_matrix
+                                                        )
+                                                        (Struct
+                                                            15 integer_matrix
+                                                        )
+                                                        (Struct
+                                                            15 integer_matrix
+                                                        )]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    [plus_integer]
+                                                    [(Var 17 m_x)
+                                                    (Var 17 m_y)
+                                                    (Var 17 m_z)]
+                                                    [(=
+                                                        (StructInstanceMember
+                                                            (Var 17 m_z)
+                                                            17 1_integer_matrix_elements
+                                                            (Array
+                                                                (Integer 4)
+                                                                [((IntegerConstant 1 (Integer 4))
+                                                                (Var 15 n))
+                                                                ((IntegerConstant 1 (Integer 4))
+                                                                (Var 15 n))]
+                                                                FixedSizeArray
+                                                            )
+                                                            ()
+                                                        )
+                                                        (ArrayBroadcast
+                                                            (FunctionCall
+                                                                2 plus_integer
+                                                                ()
+                                                                [((StructInstanceMember
+                                                                    (Var 17 m_x)
+                                                                    17 1_integer_matrix_elements
+                                                                    (Array
+                                                                        (Integer 4)
+                                                                        [((IntegerConstant 1 (Integer 4))
+                                                                        (Var 15 n))
+                                                                        ((IntegerConstant 1 (Integer 4))
+                                                                        (Var 15 n))]
+                                                                        FixedSizeArray
+                                                                    )
+                                                                    ()
+                                                                ))
+                                                                ((StructInstanceMember
+                                                                    (Var 17 m_y)
+                                                                    17 1_integer_matrix_elements
+                                                                    (Array
+                                                                        (Integer 4)
+                                                                        [((IntegerConstant 1 (Integer 4))
+                                                                        (Var 15 n))
+                                                                        ((IntegerConstant 1 (Integer 4))
+                                                                        (Var 15 n))]
+                                                                        FixedSizeArray
+                                                                    )
+                                                                    ()
+                                                                ))]
+                                                                (Integer 4)
+                                                                ()
+                                                                ()
+                                                            )
+                                                            (IntrinsicArrayFunction
+                                                                Shape
+                                                                [(StructInstanceMember
+                                                                    (Var 17 m_z)
+                                                                    17 1_integer_matrix_elements
+                                                                    (Array
+                                                                        (Integer 4)
+                                                                        [((IntegerConstant 1 (Integer 4))
+                                                                        (Var 15 n))
+                                                                        ((IntegerConstant 1 (Integer 4))
+                                                                        (Var 15 n))]
+                                                                        FixedSizeArray
+                                                                    )
+                                                                    ()
+                                                                )]
+                                                                0
+                                                                (Array
+                                                                    (Integer 4)
+                                                                    [((IntegerConstant 1 (Integer 4))
+                                                                    (IntegerConstant 2 (Integer 4)))]
+                                                                    FixedSizeArray
+                                                                )
+                                                                ()
+                                                            )
+                                                            (Array
+                                                                (TypeParameter
+                                                                    t
+                                                                )
+                                                                [((IntegerConstant 1 (Integer 4))
+                                                                (Var 15 n))
+                                                                ((IntegerConstant 1 (Integer 4))
+                                                                (Var 15 n))]
+                                                                PointerToDataArray
+                                                            )
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )]
+                                                    ()
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            m1:
+                                                (Variable
+                                                    15
+                                                    m1
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        15 integer_matrix
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            m2:
+                                                (Variable
+                                                    15
+                                                    m2
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        15 integer_matrix
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            m3:
+                                                (Variable
+                                                    15
+                                                    m3
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        15 integer_matrix
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            m4:
+                                                (Variable
+                                                    15
+                                                    m4
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        15 integer_matrix
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            n:
+                                                (Variable
+                                                    15
+                                                    n
+                                                    []
+                                                    Local
+                                                    (IntegerConstant 2 (Integer 4))
+                                                    (IntegerConstant 2 (Integer 4))
+                                                    Parameter
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    test_template
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    [integer_plus_matrix
+                                    integer_mult_matrix]
+                                    []
+                                    [(=
+                                        (ArrayItem
+                                            (StructInstanceMember
+                                                (Var 15 m1)
+                                                15 1_integer_matrix_elements
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (Var 15 n))
+                                                    ((IntegerConstant 1 (Integer 4))
+                                                    (Var 15 n))]
+                                                    FixedSizeArray
+                                                )
+                                                ()
+                                            )
+                                            [(()
+                                            (IntegerConstant 1 (Integer 4))
+                                            ())
+                                            (()
+                                            (IntegerConstant 1 (Integer 4))
+                                            ())]
+                                            (Integer 4)
+                                            ColMajor
+                                            ()
+                                        )
+                                        (IntegerConstant 1 (Integer 4))
+                                        ()
+                                    )
+                                    (=
+                                        (ArrayItem
+                                            (StructInstanceMember
+                                                (Var 15 m1)
+                                                15 1_integer_matrix_elements
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (Var 15 n))
+                                                    ((IntegerConstant 1 (Integer 4))
+                                                    (Var 15 n))]
+                                                    FixedSizeArray
+                                                )
+                                                ()
+                                            )
+                                            [(()
+                                            (IntegerConstant 1 (Integer 4))
+                                            ())
+                                            (()
+                                            (IntegerConstant 2 (Integer 4))
+                                            ())]
+                                            (Integer 4)
+                                            ColMajor
+                                            ()
+                                        )
+                                        (IntegerConstant 0 (Integer 4))
+                                        ()
+                                    )
+                                    (=
+                                        (ArrayItem
+                                            (StructInstanceMember
+                                                (Var 15 m1)
+                                                15 1_integer_matrix_elements
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (Var 15 n))
+                                                    ((IntegerConstant 1 (Integer 4))
+                                                    (Var 15 n))]
+                                                    FixedSizeArray
+                                                )
+                                                ()
+                                            )
+                                            [(()
+                                            (IntegerConstant 2 (Integer 4))
+                                            ())
+                                            (()
+                                            (IntegerConstant 1 (Integer 4))
+                                            ())]
+                                            (Integer 4)
+                                            ColMajor
+                                            ()
+                                        )
+                                        (IntegerConstant 0 (Integer 4))
+                                        ()
+                                    )
+                                    (=
+                                        (ArrayItem
+                                            (StructInstanceMember
+                                                (Var 15 m1)
+                                                15 1_integer_matrix_elements
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (Var 15 n))
+                                                    ((IntegerConstant 1 (Integer 4))
+                                                    (Var 15 n))]
+                                                    FixedSizeArray
+                                                )
+                                                ()
+                                            )
+                                            [(()
+                                            (IntegerConstant 2 (Integer 4))
+                                            ())
+                                            (()
+                                            (IntegerConstant 2 (Integer 4))
+                                            ())]
+                                            (Integer 4)
+                                            ColMajor
+                                            ()
+                                        )
+                                        (IntegerConstant 1 (Integer 4))
+                                        ()
+                                    )
+                                    (=
+                                        (ArrayItem
+                                            (StructInstanceMember
+                                                (Var 15 m2)
+                                                15 1_integer_matrix_elements
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (Var 15 n))
+                                                    ((IntegerConstant 1 (Integer 4))
+                                                    (Var 15 n))]
+                                                    FixedSizeArray
+                                                )
+                                                ()
+                                            )
+                                            [(()
+                                            (IntegerConstant 1 (Integer 4))
+                                            ())
+                                            (()
+                                            (IntegerConstant 1 (Integer 4))
+                                            ())]
+                                            (Integer 4)
+                                            ColMajor
+                                            ()
+                                        )
+                                        (IntegerConstant 1 (Integer 4))
+                                        ()
+                                    )
+                                    (=
+                                        (ArrayItem
+                                            (StructInstanceMember
+                                                (Var 15 m2)
+                                                15 1_integer_matrix_elements
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (Var 15 n))
+                                                    ((IntegerConstant 1 (Integer 4))
+                                                    (Var 15 n))]
+                                                    FixedSizeArray
+                                                )
+                                                ()
+                                            )
+                                            [(()
+                                            (IntegerConstant 1 (Integer 4))
+                                            ())
+                                            (()
+                                            (IntegerConstant 2 (Integer 4))
+                                            ())]
+                                            (Integer 4)
+                                            ColMajor
+                                            ()
+                                        )
+                                        (IntegerConstant 2 (Integer 4))
+                                        ()
+                                    )
+                                    (=
+                                        (ArrayItem
+                                            (StructInstanceMember
+                                                (Var 15 m2)
+                                                15 1_integer_matrix_elements
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (Var 15 n))
+                                                    ((IntegerConstant 1 (Integer 4))
+                                                    (Var 15 n))]
+                                                    FixedSizeArray
+                                                )
+                                                ()
+                                            )
+                                            [(()
+                                            (IntegerConstant 2 (Integer 4))
+                                            ())
+                                            (()
+                                            (IntegerConstant 1 (Integer 4))
+                                            ())]
+                                            (Integer 4)
+                                            ColMajor
+                                            ()
+                                        )
+                                        (IntegerConstant 2 (Integer 4))
+                                        ()
+                                    )
+                                    (=
+                                        (ArrayItem
+                                            (StructInstanceMember
+                                                (Var 15 m2)
+                                                15 1_integer_matrix_elements
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (Var 15 n))
+                                                    ((IntegerConstant 1 (Integer 4))
+                                                    (Var 15 n))]
+                                                    FixedSizeArray
+                                                )
+                                                ()
+                                            )
+                                            [(()
+                                            (IntegerConstant 2 (Integer 4))
+                                            ())
+                                            (()
+                                            (IntegerConstant 2 (Integer 4))
+                                            ())]
+                                            (Integer 4)
+                                            ColMajor
+                                            ()
+                                        )
+                                        (IntegerConstant 1 (Integer 4))
+                                        ()
+                                    )
+                                    (SubroutineCall
+                                        15 integer_plus_matrix
+                                        ()
+                                        [((Var 15 m1))
+                                        ((Var 15 m2))
+                                        ((Var 15 m3))]
+                                        ()
+                                    )
+                                    (SubroutineCall
+                                        15 integer_mult_matrix
+                                        ()
+                                        [((Var 15 m2))
+                                        ((Var 15 m3))
+                                        ((Var 15 m4))]
+                                        ()
+                                    )
+                                    (Print
+                                        [(StructInstanceMember
+                                            (Var 15 m1)
+                                            15 1_integer_matrix_elements
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (Var 15 n))
+                                                ((IntegerConstant 1 (Integer 4))
+                                                (Var 15 n))]
+                                                FixedSizeArray
+                                            )
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )
+                                    (Print
+                                        [(StructInstanceMember
+                                            (Var 15 m2)
+                                            15 1_integer_matrix_elements
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (Var 15 n))
+                                                ((IntegerConstant 1 (Integer 4))
+                                                (Var 15 n))]
+                                                FixedSizeArray
+                                            )
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )
+                                    (Print
+                                        [(StructInstanceMember
+                                            (Var 15 m3)
+                                            15 1_integer_matrix_elements
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (Var 15 n))
+                                                ((IntegerConstant 1 (Integer 4))
+                                                (Var 15 n))]
+                                                FixedSizeArray
+                                            )
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )
+                                    (Print
+                                        [(StructInstanceMember
+                                            (Var 15 m4)
+                                            15 1_integer_matrix_elements
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (Var 15 n))
+                                                ((IntegerConstant 1 (Integer 4))
+                                                (Var 15 n))]
+                                                FixedSizeArray
+                                            )
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )]
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    template_matrix_m
+                    [template_matrix_m]
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

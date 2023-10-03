@@ -194,6 +194,16 @@ public:
             return ;
         }
 
+        // Avoid inlining if function call accepts a callback argument
+        for( size_t i = 0; i < x.n_args; i++ ) {
+            if( x.m_args[i].m_value &&
+                ASR::is_a<ASR::FunctionType_t>(
+                    *ASRUtils::type_get_past_pointer(
+                        ASRUtils::expr_type(x.m_args[i].m_value))) ) {
+                return ;
+            }
+        }
+
         // Clear up any local variables present in arg2value map
         // due to inlining other function calls
         arg2value.clear();
@@ -253,7 +263,9 @@ public:
             }
             ASR::Var_t* arg_var = ASR::down_cast<ASR::Var_t>(func_margs_i);
             // TODO: Expand to other symbol types, Function, Subroutine, ExternalSymbol
-            if( !ASR::is_a<ASR::Variable_t>(*(arg_var->m_v)) ) {
+            if( !ASR::is_a<ASR::Variable_t>(*(arg_var->m_v)) ||
+                 ASRUtils::is_character(*ASRUtils::symbol_type(arg_var->m_v)) ||
+                 ASRUtils::is_array(ASRUtils::symbol_type(arg_var->m_v)) ) {
                 arg2value.clear();
                 return ;
             }
@@ -288,7 +300,9 @@ public:
                 set_empty_block(current_scope, func->base.base.loc);
                 continue;
             }
-            if( !ASR::is_a<ASR::Variable_t>(*itr.second) ) {
+            if( !ASR::is_a<ASR::Variable_t>(*itr.second) ||
+                 ASRUtils::is_character(*ASRUtils::symbol_type(itr.second)) ||
+                 ASRUtils::is_array(ASRUtils::symbol_type(itr.second)) ) {
                 arg2value.clear();
                 return ;
             }
@@ -474,6 +488,10 @@ public:
         }
         function_result_var = nullptr;
         from_inline_function_call = false;
+    }
+
+    void visit_Character(const ASR::Character_t& /*x*/) {
+
     }
 
 };

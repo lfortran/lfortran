@@ -163,7 +163,6 @@
                     cond_02
                     []
                     [(Print
-                        ()
                         [(StringConstant
                             "ap /= bp"
                             (Character 1 8 ())
@@ -172,7 +171,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "cp /= dp"
                             (Character 1 8 ())
@@ -189,7 +187,6 @@
                             ()
                         )
                         [(Print
-                            ()
                             [(StringConstant
                                 "a == b"
                                 (Character 1 6 ())
@@ -198,7 +195,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(StringConstant
                                 "ap /= bp"
                                 (Character 1 8 ())
@@ -207,7 +203,6 @@
                             ()
                         )]
                         [(Print
-                            ()
                             [(StringConstant
                                 "ap == cp"
                                 (Character 1 8 ())
@@ -216,7 +211,6 @@
                             ()
                         )
                         (Print
-                            ()
                             [(StringConstant
                                 "cp /= dp"
                                 (Character 1 8 ())

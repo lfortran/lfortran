@@ -19,7 +19,7 @@ module sort_m
         private
         public :: sorted_order, sorted, sort
 
-        requires comparable(T, lt, gt)
+        require :: comparable(T, lt, gt)
 
         generic :: operator(<) => lt
         generic :: operator(>) => gt

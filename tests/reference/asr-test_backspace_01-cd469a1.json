@@ -2,11 +2,11 @@
     "basename": "asr-test_backspace_01-cd469a1",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/test_backspace_01.f90",
-    "infile_hash": "de6f3f0f35c1c420b6cc85cccf368da5959578ac5e0ac4142aa7d6d6",
+    "infile_hash": "951cbd3df9edfd9ca3e2005dc3cc09a6f6597e6e3ad00db4e2b1edb4",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-test_backspace_01-cd469a1.stdout",
-    "stdout_hash": "3dfa67f990362f2e8b910a4d5a7c4df3f28d7a1e2e5765c019315676",
+    "stdout_hash": "6d3ea622b0c7009d525abcc3fe9e90bc85162070b611d95983e826bd",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

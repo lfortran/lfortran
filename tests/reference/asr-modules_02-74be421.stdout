@@ -90,7 +90,6 @@
                                     []
                                     []
                                     [(Print
-                                        ()
                                         [(StringConstant
                                             "b()"
                                             (Character 1 3 ())
@@ -140,7 +139,6 @@
                                     []
                                     []
                                     [(Print
-                                        ()
                                         [(StringConstant
                                             "d()"
                                             (Character 1 3 ())
@@ -179,7 +177,6 @@
                                     []
                                     []
                                     [(Print
-                                        ()
                                         [(StringConstant
                                             "e()"
                                             (Character 1 3 ())

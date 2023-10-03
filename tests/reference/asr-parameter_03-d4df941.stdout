@@ -49,7 +49,6 @@
                     parameter_03
                     [lfortran_intrinsic_kind]
                     [(Print
-                        ()
                         [(Var 2 l_knd)]
                         ()
                         ()

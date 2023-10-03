@@ -86,7 +86,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "factor in a:"
                             (Character 1 12 ())
@@ -147,7 +146,6 @@
                     []
                     [(Var 4 factor)]
                     [(Print
-                        ()
                         [(StringConstant
                             "factor: "
                             (Character 1 8 ())

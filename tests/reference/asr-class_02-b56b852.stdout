@@ -282,7 +282,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(StringConstant
                                             "Circle: r = "
                                             (Character 1 12 ())

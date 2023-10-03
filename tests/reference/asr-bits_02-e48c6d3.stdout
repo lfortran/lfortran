@@ -112,19 +112,16 @@
                     lfortran_intrinsic_builtin
                     lfortran_intrinsic_bit]
                     [(Print
-                        ()
                         [(Var 2 block_size)]
                         ()
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 all_zeros)]
                         ()
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 all_ones)]
                         ()
                         ()

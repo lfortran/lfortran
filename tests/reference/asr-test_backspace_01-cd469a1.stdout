@@ -7,32 +7,16 @@
                     (SymbolTable
                         2
                         {
-                            i:
+                            line:
                                 (Variable
                                     2
-                                    i
-                                    []
-                                    Local
-                                    (IntegerConstant 0 (Integer 4))
-                                    (IntegerConstant 0 (Integer 4))
-                                    Save
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
-                            iostat:
-                                (Variable
-                                    2
-                                    iostat
+                                    line
                                     []
                                     Local
                                     ()
                                     ()
                                     Default
-                                    (Integer 4)
+                                    (Character 1 80 ())
                                     ()
                                     Source
                                     Public
@@ -60,66 +44,130 @@
                     []
                     [(FileOpen
                         0
+                        (IntegerConstant 10 (Integer 4))
+                        (StringConstant
+                            "file_01_data.txt"
+                            (Character 1 16 ())
+                        )
+                        (StringConstant
+                            "old"
+                            (Character 1 3 ())
+                        )
+                        ()
+                    )
+                    (FileRead
+                        0
                         (Var 2 u)
                         (StringConstant
-                            "tests.txt"
-                            (Character 1 9 ())
+                            "(A)"
+                            (Character 1 3 ())
                         )
                         ()
                         ()
+                        ()
+                        [(Var 2 line)]
                     )
-                    (WhileLoop
+                    (FileWrite
+                        0
                         ()
-                        (LogicalConstant
-                            .true.
-                            (Logical 4)
-                        )
-                        [(FileRead
-                            0
-                            (Var 2 u)
+                        ()
+                        ()
+                        ()
+                        [(StringFormat
+                            (StringConstant
+                                "(A)"
+                                (Character 1 3 ())
+                            )
+                            [(Var 2 line)]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
-                            ()
-                            ()
-                            ()
-                            [(Var 2 i)]
                         )]
-                    )
-                    (GoToTarget
-                        20
-                        20
+                        ()
+                        ()
                     )
                     (FileBackspace
-                        20
+                        0
                         (Var 2 u)
-                        (Var 2 iostat)
+                        ()
+                        ()
+                    )
+                    (FileRead
+                        0
+                        (Var 2 u)
+                        (StringConstant
+                            "(A)"
+                            (Character 1 3 ())
+                        )
+                        ()
+                        ()
+                        ()
+                        [(Var 2 line)]
+                    )
+                    (FileWrite
+                        0
+                        ()
+                        ()
+                        ()
+                        ()
+                        [(StringFormat
+                            (StringConstant
+                                "(A)"
+                                (Character 1 3 ())
+                            )
+                            [(StringConstant
+                                "Read and printed the same line again:"
+                                (Character 1 37 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (FileWrite
+                        0
+                        ()
+                        ()
+                        ()
+                        ()
+                        [(StringFormat
+                            (StringConstant
+                                "(A)"
+                                (Character 1 3 ())
+                            )
+                            [(Var 2 line)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
+                        ()
                         ()
                     )
                     (If
-                        (IntegerCompare
-                            (Var 2 iostat)
-                            Eq
-                            (IntegerConstant 0 (Integer 4))
+                        (StringCompare
+                            (Var 2 line)
+                            NotEq
+                            (StringConstant
+                                "10130"
+                                (Character 1 5 ())
+                            )
                             (Logical 4)
                             ()
                         )
-                        [(FileWrite
-                            0
-                            (Var 2 u)
-                            ()
-                            ()
-                            ()
-                            ()
-                            [(IntegerBinOp
-                                (Var 2 i)
-                                Add
-                                (IntegerConstant 1 (Integer 4))
-                                (Integer 4)
-                                ()
-                            )]
-                            ()
+                        [(ErrorStop
                             ()
                         )]
                         []
+                    )
+                    (FileClose
+                        0
+                        (Var 2 u)
+                        ()
+                        ()
+                        ()
+                        ()
                     )]
                 )
         })

@@ -12,7 +12,7 @@ module template_add_02_m
     end requirement
 
     template add_t(t, f)
-        requires r(t, f)
+        require :: r(t, f)
         private
         public :: add_generic
     contains

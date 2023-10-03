@@ -107,6 +107,7 @@
                 )]
                 []
                 []
+                []
             )]
         )
         (Requirement
@@ -115,10 +116,12 @@
             combine
             sconcat
             stimes]
-            [(Requires
-                semigroup
-                [t
-                combine]
+            [(Require
+                [(UnitRequire
+                    semigroup
+                    [t
+                    combine]
+                )]
             )]
             [(Function
                 sconcat
@@ -170,6 +173,7 @@
                     ())]
                     ()
                 )]
+                []
                 []
                 []
             )
@@ -243,6 +247,7 @@
                 )]
                 []
                 []
+                []
             )]
         )]
         [(Subroutine
@@ -255,6 +260,7 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            []
             []
             []
             []

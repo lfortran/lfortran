@@ -384,8 +384,8 @@
                                                                     x
                                                                     []
                                                                     Local
-                                                                    ()
-                                                                    ()
+                                                                    (IntegerConstant 1 (Integer 4))
+                                                                    (IntegerConstant 1 (Integer 4))
                                                                     Parameter
                                                                     (Integer 4)
                                                                     ()
@@ -400,8 +400,8 @@
                                                                     y
                                                                     []
                                                                     Local
-                                                                    ()
-                                                                    ()
+                                                                    (IntegerConstant 1 (Integer 4))
+                                                                    (IntegerConstant 1 (Integer 4))
                                                                     Parameter
                                                                     (Integer 4)
                                                                     ()
@@ -416,8 +416,8 @@
                                                                     z
                                                                     []
                                                                     Local
-                                                                    ()
-                                                                    ()
+                                                                    (IntegerConstant 1 (Integer 4))
+                                                                    (IntegerConstant 1 (Integer 4))
                                                                     Parameter
                                                                     (Integer 4)
                                                                     ()
@@ -1686,7 +1686,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(ArrayItem
                                             (Var 19 r)
                                             [(()
@@ -1703,7 +1702,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(ArrayItem
                                             (Var 19 r)
                                             [(()
@@ -1720,7 +1718,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(ArrayItem
                                             (Var 19 r)
                                             [(()
@@ -1737,7 +1734,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(ArrayItem
                                             (Var 19 r)
                                             [(()

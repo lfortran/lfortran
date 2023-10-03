@@ -21,6 +21,10 @@ filename = "../integration_tests/template_add_01b.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/template_add_01c.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/template_add_02.f90"
 asr = true
 
@@ -42,8 +46,12 @@ filename = "../integration_tests/template_add_01b.f90"
 asr = true
 
 [[test]]
-filename = "../integration_tests/template_travel.f90"
+filename = "../integration_tests/template_travel_01.f90"
 ast = true
+asr = true
+
+[[test]]
+filename = "../integration_tests/template_travel_02.f90"
 asr = true
 
 [[test]]
@@ -55,7 +63,15 @@ filename = "../integration_tests/template_array_01.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/template_array_01b.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/template_array_02.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/template_array_02b.f90"
 asr = true
 
 [[test]]
@@ -64,6 +80,10 @@ asr = true
 
 [[test]]
 filename = "../integration_tests/template_array_04.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/template_array_04b.f90"
 asr = true
 
 [[test]]
@@ -82,7 +102,19 @@ asr = true
 ast = true
 
 [[test]]
-filename = "../integration_tests/template_struct_01.f90"
+filename = "../integration_tests/template_matrix.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/template_vector.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/template_simple_01.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/template_simple_02.f90"
 asr = true
 
 [[test]]
@@ -432,6 +464,7 @@ ast = true
 asr = true
 llvm = true
 obj = true
+fortran = true
 
 [[test]]
 filename = "expr6.f90"
@@ -789,11 +822,6 @@ cpp = true
 julia = true
 
 [[test]]
-filename = "array2_derived.f90"
-asr = true
-llvm = true
-
-[[test]]
 filename = "array3.f90"
 tokens = true
 ast = true
@@ -840,6 +868,10 @@ asr = true
 [[test]]
 filename = "array13.f90"
 pass = "init_expr"
+
+[[test]]
+filename = "array14.f90"
+run = true
 
 [[test]]
 filename = "../integration_tests/arrays_01.f90"
@@ -1383,6 +1415,22 @@ ast_f90 = true
 [[test]]
 filename = "write2.f90"
 asr = true
+
+[[test]]
+filename = "write3.f90"
+llvm = true
+
+[[test]]
+filename = "write4.f90"
+run = true
+
+[[test]]
+filename = "write5.f90"
+run = true
+
+[[test]]
+filename = "write6.f90"
+run = true
 
 [[test]]
 filename = "read1.f90"
@@ -2021,6 +2069,11 @@ asr = true
 extrafiles = "../integration_tests/modules_34_module1a.f90, ../integration_tests/modules_34_module1.f90, ../integration_tests/modules_34_module2.f90, ../integration_tests/modules_34_module3.f90"
 
 [[test]]
+filename = "../integration_tests/modules_52.f90"
+asr = true
+extrafiles = "../integration_tests/modules_52_module3.f90, ../integration_tests/modules_52_module2.f90, ../integration_tests/modules_52_module1.f90"
+
+[[test]]
 filename = "../integration_tests/modules_36.f90"
 llvm = true
 
@@ -2107,6 +2160,10 @@ filename = "../integration_tests/string_12.f90"
 asr = true
 
 [[test]]
+filename = "errors/string_binop.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/parsing_01.f90"
 ast = true
 
@@ -2132,6 +2189,7 @@ ast = true
 cpp = true
 ast_f90 = true
 julia = true
+fortran = true
 
 [[test]]
 filename = "../integration_tests/expr_06.f90"
@@ -2804,6 +2862,10 @@ filename = "allow_implicit_interface.f90"
 asr_implicit_interface = true
 
 [[test]]
+filename = "allow_implicit_interface5.f90"
+asr_implicit_interface_and_typing = true
+
+[[test]]
 filename = "implicit_interface2.f90"
 asr_implicit_interface = true
 
@@ -2971,7 +3033,11 @@ filename = "fixed_form/contains1.f"
 ast = true
 
 [[test]]
-filename = "fixed_form/intrinsic_implicit.f"
+filename = "fixed_form/while_02_fixed_form.f"
+ast = true
+
+[[test]]
+filename = "intrinsic_implicit.f90"
 asr_implicit_interface_and_typing = true
 
 [[test]]
@@ -2986,13 +3052,13 @@ asr_implicit_interface = true
 [[test]]
 filename = "fixed_form_implicit_check.f"
 ast = true
-asr = true
+asr_implicit_interface_and_typing = true
 fixed_free_equal_asr = true
 
 [[test]]
 filename = "implicit_check.f90"
 ast = true
-asr = true
+asr_implicit_interface_and_typing = true
 fixed_free_equal_asr = true
 
 [[test]]
@@ -3003,7 +3069,7 @@ asr = true
 [[test]]
 filename = "fixed_form_implicit2.f"
 ast = true
-asr = true
+asr_implicit_interface_and_typing = true
 
 [[test]]
 filename = "fixed_form_call1.f"
@@ -3154,10 +3220,6 @@ filename = "character1.f90"
 asr_implicit_interface = true
 
 [[test]]
-filename = "write3.f90"
-llvm = true
-
-[[test]]
 filename = "../integration_tests/interface_12.f90"
 llvm = true
 
@@ -3258,6 +3320,22 @@ filename = "errors/array_02.f90"
 asr = true
 
 [[test]]
+filename = "errors/array_03.f90"
+asr = true
+
+[[test]]
+filename = "errors/array_04.f90"
+asr = true
+
+[[test]]
+filename = "errors/array_05.f90"
+asr = true
+
+[[test]]
+filename = "errors/array_06.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/where_02.f90"
 asr = true
 pass = "where"
@@ -3298,6 +3376,14 @@ filename = "errors/common1.f90"
 asr = true
 
 [[test]]
+filename = "errors/intrinsics1.f90"
+asr = true
+
+[[test]]
+filename = "errors/intrinsics_02.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/statement_01.f90"
 asr_implicit_interface_and_typing = true
 
@@ -3324,6 +3410,17 @@ asr_implicit_interface_and_typing = true
 [[test]]
 filename = "external5.f90"
 asr_implicit_interface_and_typing = true
+
+[[test]]
+filename = "pragma2.f90"
+ast = true
+asr = true
+asr_ignore_pragma = true
+c = true
+
+[[test]]
+filename = "../integration_tests/matmul_01.f90"
+asr = true
 
 [[test]]
 filename = "errors/external1.f90"
@@ -3408,3 +3505,19 @@ asr = true
 [[test]]
 filename = "../integration_tests/implicit_argument_casting_01.f90"
 asr_implicit_argument_casting = true
+
+[[test]]
+filename = "errors/end_sub_name.f90"
+asr = true
+
+[[test]]
+filename = "errors/end_program_name.f90"
+asr = true
+
+[[test]]
+filename = "errors/runtime_stacktrace_01.f90"
+run_with_dbg = true
+
+[[test]]
+filename = "../integration_tests/legacy_array_sections_01.f90"
+llvm = true

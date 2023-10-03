@@ -107,7 +107,6 @@
                     array_bound_1
                     []
                     [(Print
-                        ()
                         [(ArrayBound
                             (Var 2 a)
                             (IntegerConstant 1 (Integer 4))
@@ -133,7 +132,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(ArrayBound
                             (Var 2 a)
                             (IntegerConstant 1 (Integer 4))
@@ -159,7 +157,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(ArrayBound
                             (Var 2 b)
                             (IntegerConstant 1 (Integer 4))
@@ -192,7 +189,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(ArrayBound
                             (Var 2 b)
                             (IntegerConstant 1 (Integer 4))
@@ -225,7 +221,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(ArrayBound
                             (Var 2 c)
                             (IntegerConstant 1 (Integer 4))
@@ -244,7 +239,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(ArrayBound
                             (Var 2 c)
                             (IntegerConstant 1 (Integer 4))
@@ -263,7 +257,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(ArrayBound
                             (Var 2 d)
                             (IntegerConstant 1 (Integer 4))
@@ -275,7 +268,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(ArrayBound
                             (Var 2 d)
                             (IntegerConstant 1 (Integer 4))

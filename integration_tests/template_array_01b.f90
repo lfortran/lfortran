@@ -5,11 +5,11 @@ module template_array_01b_m
     public :: test_template
 
     requirement r(t)
-        type :: t; end type
+        type, deferred :: t
     end requirement
 
     template array_tmpl(t)
-        requires r(t)
+        require :: r(t)
         private
         public :: insert_t
     contains

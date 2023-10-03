@@ -21,7 +21,6 @@
                     intrinsics_12
                     []
                     [(Print
-                        ()
                         [(FunctionCall
                             2 kind
                             ()
@@ -34,7 +33,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 kind
                             ()
@@ -47,7 +45,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 kind
                             ()
@@ -60,7 +57,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 kind
                             ()
@@ -76,7 +72,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 kind
                             ()
@@ -92,7 +87,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 kind
                             ()
@@ -108,7 +102,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 kind
                             ()
@@ -124,7 +117,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             2 kind
                             ()

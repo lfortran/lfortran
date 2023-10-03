@@ -41,7 +41,6 @@
                     access_externally
                     [modules_11_module11]
                     [(Print
-                        ()
                         [(StringConstant
                             "j = "
                             (Character 1 4 ())
@@ -87,7 +86,6 @@
                                     []
                                     []
                                     [(Print
-                                        ()
                                         [(StringConstant
                                             "i = "
                                             (Character 1 4 ())

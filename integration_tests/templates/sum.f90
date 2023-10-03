@@ -14,7 +14,7 @@ module sum_m
     end requirement
 
     template sum_t(T, Tadd, Tzero)
-        requires R(T, Tadd, Tzero)
+        require :: R(T, Tadd, Tzero)
         private
         public :: sum_generic
     contains

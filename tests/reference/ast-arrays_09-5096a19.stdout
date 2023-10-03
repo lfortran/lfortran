@@ -39,6 +39,7 @@
                 0)]
                 []
                 []
+                []
             )
             (String
                 "Substring"
@@ -60,6 +61,7 @@
                 9
                 1
                 0)]
+                []
             ) (String
                 "string"
             ))

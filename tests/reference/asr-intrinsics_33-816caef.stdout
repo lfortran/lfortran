@@ -21,7 +21,6 @@
                     intrinsics_29
                     []
                     [(Print
-                        ()
                         [(StringConcat
                             (StringConcat
                                 (StringConstant

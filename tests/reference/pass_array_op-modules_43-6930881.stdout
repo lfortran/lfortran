@@ -103,21 +103,16 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            __libasr__created__var__0__logicalnot_unary_op_res:
+                                            __1_v:
                                                 (Variable
                                                     4
-                                                    __libasr__created__var__0__logicalnot_unary_op_res
+                                                    __1_v
                                                     []
                                                     Local
                                                     ()
                                                     ()
                                                     Default
-                                                    (Array
-                                                        (Logical 4)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 10 (Integer 4)))]
-                                                        FixedSizeArray
-                                                    )
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -255,7 +250,18 @@
                                             (Logical 4)
                                             ()
                                         )
-                                        [(DoLoop
+                                        [(=
+                                            (Var 4 __1_v)
+                                            (ArrayBound
+                                                (Var 4 exclude_source)
+                                                (IntegerConstant 1 (Integer 4))
+                                                (Integer 4)
+                                                LBound
+                                                ()
+                                            )
+                                            ()
+                                        )
+                                        (DoLoop
                                             ()
                                             ((Var 4 __1_t)
                                             (ArrayBound
@@ -289,7 +295,7 @@
                                                     (ArrayItem
                                                         (Var 4 exclude_source)
                                                         [(()
-                                                        (Var 4 __1_t)
+                                                        (Var 4 __1_v)
                                                         ())]
                                                         (Logical 4)
                                                         RowMajor
@@ -299,47 +305,14 @@
                                                     ()
                                                 )
                                                 ()
-                                            )]
-                                        )
-                                        (DoLoop
-                                            ()
-                                            ((Var 4 __1_t)
-                                            (ArrayBound
-                                                (Var 4 __libasr__created__var__0__logicalnot_unary_op_res)
-                                                (IntegerConstant 1 (Integer 4))
-                                                (Integer 4)
-                                                LBound
-                                                ()
                                             )
-                                            (ArrayBound
-                                                (Var 4 __libasr__created__var__0__logicalnot_unary_op_res)
-                                                (IntegerConstant 1 (Integer 4))
-                                                (Integer 4)
-                                                UBound
-                                                ()
-                                            )
-                                            ())
-                                            [(=
-                                                (ArrayItem
-                                                    (Var 4 __libasr__created__var__0__logicalnot_unary_op_res)
-                                                    [(()
-                                                    (Var 4 __1_t)
-                                                    ())]
-                                                    (Logical 4)
-                                                    RowMajor
-                                                    ()
-                                                )
-                                                (LogicalNot
-                                                    (ArrayItem
-                                                        (Var 4 exclude_source)
-                                                        [(()
-                                                        (Var 4 __1_t)
-                                                        ())]
-                                                        (Logical 4)
-                                                        RowMajor
-                                                        ()
-                                                    )
-                                                    (Logical 4)
+                                            (=
+                                                (Var 4 __1_v)
+                                                (IntegerBinOp
+                                                    (Var 4 __1_v)
+                                                    Add
+                                                    (IntegerConstant 1 (Integer 4))
+                                                    (Integer 4)
                                                     ()
                                                 )
                                                 ()
@@ -357,9 +330,10 @@
                                                             2 srcfile_t
                                                         )
                                                         [((IntegerConstant 1 (Integer 4))
-                                                        (ArraySize
-                                                            (Var 4 __libasr__created__var__0__logicalnot_unary_op_res)
-                                                            ()
+                                                        (IntegerBinOp
+                                                            (IntegerConstant 1 (Integer 4))
+                                                            Mul
+                                                            (IntegerConstant 10 (Integer 4))
                                                             (Integer 4)
                                                             ()
                                                         ))]
@@ -393,18 +367,10 @@
                                                                 2 srcfile_t
                                                             )
                                                             [((IntegerConstant 1 (Integer 4))
-                                                            (ArraySize
-                                                                (LogicalNot
-                                                                    (Var 4 exclude_source)
-                                                                    (Array
-                                                                        (Logical 4)
-                                                                        [((IntegerConstant 1 (Integer 4))
-                                                                        (IntegerConstant 10 (Integer 4)))]
-                                                                        FixedSizeArray
-                                                                    )
-                                                                    ()
-                                                                )
-                                                                ()
+                                                            (IntegerBinOp
+                                                                (IntegerConstant 1 (Integer 4))
+                                                                Mul
+                                                                (IntegerConstant 10 (Integer 4))
                                                                 (Integer 4)
                                                                 ()
                                                             ))]

@@ -131,23 +131,57 @@
                         )
                         [(=
                             (Var 2 a)
-                            (RealConstant
-                                1.500000
-                                (Real 4)
+                            (ArrayBroadcast
+                                (RealConstant
+                                    1.500000
+                                    (Real 4)
+                                )
+                                (ArrayConstant
+                                    [(IntegerConstant 2 (Integer 4))]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                (ArrayConstant
+                                    [(RealConstant
+                                        1.500000
+                                        (Real 4)
+                                    )
+                                    (RealConstant
+                                        1.500000
+                                        (Real 4)
+                                    )]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
                             )
                             ()
                         )]
                         []
                     )
                     (Print
-                        ()
                         [(Var 2 a)]
                         ()
                         ()
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (ArrayItem
@@ -186,7 +220,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (ArrayItem

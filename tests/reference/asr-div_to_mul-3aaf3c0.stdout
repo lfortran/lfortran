@@ -94,7 +94,7 @@
                     []
                     [(If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (RealBinOp
@@ -128,7 +128,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (RealBinOp
@@ -165,41 +165,51 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (RealBinOp
-                                        (Var 2 x)
-                                        Div
                                         (Cast
-                                            (RealConstant
-                                                2.000000
-                                                (Real 8)
-                                            )
+                                            (Var 2 x)
                                             RealToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                2.000000
-                                                (Real 4)
-                                            )
+                                            (Real 8)
+                                            ()
                                         )
-                                        (Real 4)
+                                        Div
+                                        (RealConstant
+                                            2.000000
+                                            (Real 8)
+                                        )
+                                        (Real 8)
                                         ()
                                     )
                                     Sub
-                                    (RealConstant
-                                        1.570000
-                                        (Real 4)
+                                    (Cast
+                                        (RealConstant
+                                            1.570000
+                                            (Real 4)
+                                        )
+                                        RealToReal
+                                        (Real 8)
+                                        (RealConstant
+                                            1.570000
+                                            (Real 8)
+                                        )
                                     )
-                                    (Real 4)
+                                    (Real 8)
                                     ()
                                 )]
                                 0
-                                (Real 4)
+                                (Real 8)
                                 ()
                             )
                             Gt
-                            (Var 2 eps)
+                            (Cast
+                                (Var 2 eps)
+                                RealToReal
+                                (Real 8)
+                                ()
+                            )
                             (Logical 4)
                             ()
                         )
@@ -210,7 +220,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (RealBinOp
@@ -253,7 +263,7 @@
                     (If
                         (RealCompare
                             (Cast
-                                (IntrinsicFunction
+                                (IntrinsicScalarFunction
                                     Abs
                                     [(IntegerBinOp
                                         (IntegerBinOp

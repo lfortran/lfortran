@@ -231,7 +231,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StructInstanceMember
                             (Var 8 b)
                             8 1_x_i
@@ -254,7 +253,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StructInstanceMember
                             (Var 8 b)
                             8 1_x_i
@@ -347,7 +345,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StructInstanceMember
                             (StructInstanceMember
                                 (StructInstanceMember
@@ -418,7 +415,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StructInstanceMember
                             (StructInstanceMember
                                 (StructInstanceMember

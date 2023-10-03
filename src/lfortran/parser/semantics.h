@@ -63,6 +63,28 @@ static inline char* name2char(const ast_t *n)
     return down_cast2<Name_t>(n)->m_id;
 }
 
+static inline bool streql(const char *s1, const char *s2)
+{
+#if defined(_MSC_VER)
+    return _stricmp(s1, s2) == 0;
+#else
+    return strcasecmp(s1, s2) == 0;
+#endif
+}
+
+static inline char* name2char_with_check(const ast_t *n1, const ast_t *n2,
+        Location &loc, std::string unit) {
+    char* n1c = name2char(n1);
+    if(n2) {
+        char* n2c = name2char(n2);
+        if (!streql(n1c, n2c)) {
+            throw LCompilers::LFortran::parser_local::ParserError(
+                "End " + unit + " name does not match " + unit + " name", loc);
+        }
+    }
+    return n1c;
+}
+
 template <typename T, astType type>
 static inline T** vec_cast(const Vec<ast_t*> &x) {
     T **s = (T**)x.p;
@@ -196,6 +218,29 @@ static inline LCompilers::LFortran::IntSuffix divide_int_by_2(
     n2.int_n.n /= 2;
     return n2;
 }
+
+static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
+        const LCompilers::Str &text, trivia_t *trivia)
+{
+    std::string t = text.str();
+    if (LCompilers::startswith(t, "!LF$")) {
+        if (LCompilers::startswith(t, "!LF$ ")) {
+            t = t.substr(5);
+            return make_DeclarationPragma_t(al, loc,
+                LCompilers::LFortran::AST::LFortranPragma, LCompilers::s2c(al, t),
+                trivia);
+        } else {
+            throw LCompilers::LFortran::parser_local::ParserError(
+                "The LFortran pragma !LF$ must be followed by a space", loc);
+        }
+    } else {
+        throw LCompilers::LFortran::parser_local::ParserError(
+            "Unsupported compiler directive (pragma)", loc);
+    }
+}
+
+#define VAR_DECL_PRAGMA(text, trivia, l) \
+        VAR_DECL_PRAGMA2(p.m_a, l, text, trivia_cast(trivia))
 
 #define VAR_DECL_EQUIVALENCE(args, trivia, l) make_Declaration_t(p.m_a, l, \
         nullptr, EQUIVALENCE(p.m_a, l, args.p, args.n), 1, \
@@ -809,7 +854,8 @@ char *str2str_null(Allocator &al, const LCompilers::Str &s) {
 
 
 ast_t* SUBROUTINE_CALL0(Allocator &al, struct_member_t* mem, size_t n,
-        const ast_t *id, const Vec<FnArg> &args, Location &l) {
+        const ast_t *id, const Vec<FnArg> &args,
+        const Vec<ast_t*> &temp_args, Location &l) {
     Vec<fnarg_t> v;
     v.reserve(al, args.size());
     Vec<keyword_t> v2;
@@ -825,16 +871,19 @@ ast_t* SUBROUTINE_CALL0(Allocator &al, struct_member_t* mem, size_t n,
         /*char* a_func*/ name2char(id),
         /*struct_member_t* a_member*/ mem, /*size_t n_member*/ n,
         /*expr_t** a_args*/ v.p, /*size_t n_args*/ v.size(),
-        /*keyword_t* a_keywords*/ v2.p, /*size_t n_keywords*/ v2.size(), nullptr);
+        /*keyword_t* a_keywords*/ v2.p, /*size_t n_keywords*/ v2.size(),
+        /*temp_args*/ USE_SYMBOLS(temp_args), /*n_temp_args*/ temp_args.size(), nullptr);
 }
 #define SUBROUTINE_CALL(name, args, l) SUBROUTINE_CALL0(p.m_a, \
-        nullptr, 0, name, args, l)
+        nullptr, 0, name, args, empty_vecast(), l)
 #define SUBROUTINE_CALL1(mem, name, args, l) SUBROUTINE_CALL0(p.m_a, \
-        mem.p, mem.n, name, args, l)
+        mem.p, mem.n, name, args, empty_vecast(), l)
 #define SUBROUTINE_CALL2(name, l) make_SubroutineCall_t(p.m_a, l, 0, \
-        name2char(name), nullptr, 0, nullptr, 0, nullptr, 0, nullptr)
+        name2char(name), nullptr, 0, nullptr, 0, nullptr, 0, nullptr, 0, nullptr)
 #define SUBROUTINE_CALL3(mem, name, l) make_SubroutineCall_t(p.m_a, l, 0, \
-        name2char(name), mem.p, mem.n, nullptr, 0, nullptr, 0, nullptr)
+        name2char(name), mem.p, mem.n, nullptr, 0, nullptr, 0, nullptr, 0, nullptr)
+#define SUBROUTINE_CALL4(name, temp_args, args, l) SUBROUTINE_CALL0(p.m_a, \
+        nullptr, 0, name, args, temp_args, l)
 
 ast_t* DEALLOCATE_STMT1(Allocator &al,
         const Vec<FnArg> &args, Location &l) {
@@ -1192,9 +1241,9 @@ Vec<ast_t*> empty_sync(Allocator &al) {
 #define EVENT_WAIT_KW_ARG(id, e, l) make_AttrEventWaitKwArg_t(p.m_a, l, \
         name2char(id), EXPR(e))
 
-#define SUBROUTINE(name, args, bind, trivia, use, import, implicit, decl, stmts, contains, l) \
+#define SUBROUTINE(name, args, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) \
     make_Subroutine_t(p.m_a, l, \
-        /*name*/ name2char(name), \
+        /*name*/ name2char_with_check(name, name_opt, l, "subroutine"), \
         /*args*/ ARGS(p.m_a, l, args), \
         /*n_args*/ args.size(), \
         /*m_attributes*/ nullptr, \
@@ -1212,10 +1261,12 @@ Vec<ast_t*> empty_sync(Allocator &al) {
         /*body*/ STMTS(stmts), \
         /*n_body*/ stmts.size(), \
         /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size())
+        /*n_contains*/ contains.size(), \
+        /*temp_args*/ nullptr, \
+        /*n_temp_args*/ 0)
 #define SUBROUTINE1(fn_mod, name, args, bind, trivia, use, import, implicit, \
-        decl, stmts, contains, l) make_Subroutine_t(p.m_a, l, \
-        /*name*/ name2char(name), \
+        decl, stmts, contains, name_opt, l) make_Subroutine_t(p.m_a, l, \
+        /*name*/ name2char_with_check(name, name_opt, l, "subroutine"), \
         /*args*/ ARGS(p.m_a, l, args), \
         /*n_args*/ args.size(), \
         /*m_attributes*/ VEC_CAST(fn_mod, decl_attribute), \
@@ -1233,7 +1284,9 @@ Vec<ast_t*> empty_sync(Allocator &al) {
         /*body*/ STMTS(stmts), \
         /*n_body*/ stmts.size(), \
         /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size())
+        /*n_contains*/ contains.size(), \
+        /*temp_args*/ nullptr, \
+        /*n_temp_args*/ 0)
 #define PROCEDURE(fn_mod, name, args, trivia, use, import, implicit, decl, stmts, contains, l) \
     make_Procedure_t(p.m_a, l, \
         /*name*/ name2char(name), \
@@ -1283,7 +1336,9 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
         /*body*/ STMTS(stmts), \
         /*n_body*/ stmts.size(), \
         /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size())
+        /*n_contains*/ contains.size(), \
+        /*temp_args*/ nullptr, \
+        /*n_temp_args*/ 0)
 #define FUNCTION0(name, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, l) make_Function_t(p.m_a, l, \
         /*name*/ name2char(name), \
         /*args*/ ARGS(p.m_a, l, args), \
@@ -1304,7 +1359,104 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
         /*body*/ STMTS(stmts), \
         /*n_body*/ stmts.size(), \
         /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size())
+        /*n_contains*/ contains.size(), \
+        /*temp_args*/ nullptr, \
+        /*n_temp_args*/ 0)
+
+#define TEMPLATED_FUNCTION(fn_type, name, temp_args, fn_args, return_var, bind, trivia, decl, stmts, l) \
+        make_Function_t(p.m_a, l, \
+        /*name*/ name2char(name), \
+        /*args*/ ARGS(p.m_a, l, fn_args), \
+        /*n_args*/ fn_args.size(), \
+        /*m_attributes*/ VEC_CAST(fn_type, decl_attribute), \
+        /*n_attributes*/ fn_type.size(), \
+        /*return_var*/ EXPR_OPT(return_var), \
+        /*bind*/ bind_opt(bind), \
+        trivia_cast(trivia), \
+        /*use*/ nullptr, \
+        /*n_use*/ 0, \
+        /*m_import*/ nullptr, \
+        /*n_import*/ 0, \
+        /*m_implicit*/ nullptr, \
+        /*n_implicit*/ 0, \
+        /*decl*/ DECLS(decl), \
+        /*n_decl*/ decl.size(), \
+        /*body*/ STMTS(stmts), \
+        /*n_body*/ stmts.size(), \
+        /*contains*/ nullptr, \
+        /*n_contains*/ 0, \
+        /*temp_args*/ REDUCE_ARGS(p.m_a, temp_args), \
+        /*n_temp_args*/ temp_args.size())
+#define TEMPLATED_FUNCTION0(name, temp_args, fn_args, return_var, bind, trivia, decl, stmts, l) \
+        make_Function_t(p.m_a, l, \
+        /*name*/ name2char(name), \
+        /*args*/ ARGS(p.m_a, l, fn_args), \
+        /*n_args*/ fn_args.size(), \
+        /*m_attributes*/ nullptr, \
+        /*n_attributes*/ 0, \
+        /*return_var*/ EXPR_OPT(return_var), \
+        /*bind*/ bind_opt(bind), \
+        trivia_cast(trivia), \
+        /*use*/ nullptr, \
+        /*n_use*/ 0, \
+        /*m_import*/ nullptr, \
+        /*n_import*/ 0, \
+        /*m_implicit*/ nullptr, \
+        /*n_implicit*/ 0, \
+        /*decl*/ DECLS(decl), \
+        /*n_decl*/ decl.size(), \
+        /*body*/ STMTS(stmts), \
+        /*n_body*/ stmts.size(), \
+        /*contains*/ nullptr, \
+        /*n_contains*/ 0, \
+        /*temp_args*/ REDUCE_ARGS(p.m_a, temp_args), \
+        /*n_temp_args*/ temp_args.size())
+#define TEMPLATED_SUBROUTINE(name, temp_args, fn_args, bind, trivia, decl, stmts, l) \
+        make_Subroutine_t(p.m_a, l, \
+        /*name*/ name2char(name), \
+        /*args*/ ARGS(p.m_a, l, fn_args), \
+        /*n_args*/ fn_args.size(), \
+        /*m_attributes*/ nullptr, \
+        /*n_attributes*/ 0, \
+        /*bind*/ bind_opt(bind), \
+        trivia_cast(trivia), \
+        /*use*/ nullptr, \
+        /*n_use*/ 0, \
+        /*m_import*/ nullptr, \
+        /*n_import*/ 0, \
+        /*m_implicit*/ nullptr, \
+        /*n_implicit*/ 0, \
+        /*decl*/ DECLS(decl), \
+        /*n_decl*/ decl.size(), \
+        /*body*/ STMTS(stmts), \
+        /*n_body*/ stmts.size(), \
+        /*contains*/ nullptr, \
+        /*n_contains*/ 0, \
+        /*temp_args*/ REDUCE_ARGS(p.m_a, temp_args), \
+        /*n_temp_args*/ temp_args.size())
+#define TEMPLATED_SUBROUTINE1(fn_type, name, temp_args, fn_args, bind, trivia, decl, stmts, l) \
+        make_Subroutine_t(p.m_a, l, \
+        /*name*/ name2char(name), \
+        /*args*/ ARGS(p.m_a, l, fn_args), \
+        /*n_args*/ fn_args.size(), \
+        /*m_attributes*/ VEC_CAST(fn_type, decl_attribute), \
+        /*n_attributes*/ fn_type.size(), \
+        /*bind*/ bind_opt(bind), \
+        trivia_cast(trivia), \
+        /*use*/ nullptr, \
+        /*n_use*/ 0, \
+        /*m_import*/ nullptr, \
+        /*n_import*/ 0, \
+        /*m_implicit*/ nullptr, \
+        /*n_implicit*/ 0, \
+        /*decl*/ DECLS(decl), \
+        /*n_decl*/ decl.size(), \
+        /*body*/ STMTS(stmts), \
+        /*n_body*/ stmts.size(), \
+        /*contains*/ nullptr, \
+        /*n_contains*/ 0, \
+        /*temp_args*/ REDUCE_ARGS(p.m_a, temp_args), \
+        /*n_temp_args*/ temp_args.size())
 
 Vec<ast_t*> SPLIT_DECL(Allocator &al, Vec<ast_t*> ast)
 {
@@ -1366,9 +1518,9 @@ return make_Program_t(al, a_loc,
 }
 
 
-#define PROGRAM(name, trivia, use, implicit, decl_stmts, contains, l) \
+#define PROGRAM(name, trivia, use, implicit, decl_stmts, contains, name_opt, l) \
     PROGRAM2(p.m_a, l, \
-        /*name*/ name2char(name), \
+        /*name*/ name2char_with_check(name, name_opt, l, "program"), \
         trivia_cast(trivia), \
         /*use*/ USES(use), \
         /*n_use*/ use.size(), \
@@ -1770,6 +1922,7 @@ ast_t* FUNCCALLORARRAY0(Allocator &al, const ast_t *id,
         const Vec<struct_member_t> &member,
         const Vec<FnArg> &args,
         const Vec<FnArg> &subargs,
+        const Vec<ast_t*> &temp_args,
         Location &l) {
     Vec<fnarg_t> v;
     v.reserve(al, args.size());
@@ -1792,17 +1945,19 @@ ast_t* FUNCCALLORARRAY0(Allocator &al, const ast_t *id,
         /* struct_member_t* */member.p, /* size_t */member.size(),
         /*fnarg_t* a_args*/ v.p, /*size_t n_args*/ v.size(),
         /*keyword_t* a_keywords*/ v2.p, /*size_t n_keywords*/ v2.size(),
-        /*fnarg_t* a_subargs*/ v1.p , /*size_t n_subargs*/ v1.size());
+        /*fnarg_t* a_subargs*/ v1.p , /*size_t n_subargs*/ v1.size(),
+        /*m_temp_args*/ USE_SYMBOLS(temp_args), /*n_temp_args*/ temp_args.size());
 }
-
 #define FUNCCALLORARRAY(id, args, l) FUNCCALLORARRAY0(p.m_a, id, empty5(), \
-        args, empty1(), l)
+        args, empty1(), empty_vecast(), l)
 #define FUNCCALLORARRAY2(members, id, args, l) FUNCCALLORARRAY0(p.m_a, id, \
-        members, args, empty1(), l)
+        members, args, empty1(), empty_vecast(), l)
 #define FUNCCALLORARRAY3(id, args, subargs, l) FUNCCALLORARRAY0(p.m_a, id, \
-        empty5(), args, subargs, l)
+        empty5(), args, subargs, empty_vecast(), l)
 #define FUNCCALLORARRAY4(mem, id, args, subargs, l) FUNCCALLORARRAY0(p.m_a, id, \
-        mem, args, subargs, l)
+        mem, args, subargs, empty_vecast(), l)
+#define FUNCCALLORARRAY5(id, args, temp_args, l) FUNCCALLORARRAY0(p.m_a, id, empty5(), \
+        args, empty1(), temp_args, l)
 
 ast_t* SUBSTRING_(Allocator &al, const LCompilers::Str &str,
         const Vec<FnArg> &args, Location &l) {
@@ -2046,10 +2201,17 @@ ast_t* TYPEPARAMETER0(Allocator &al,
         make_Requirement_t(p.m_a, l, name2char(name), \
         REDUCE_ARGS(p.m_a, namelist), namelist.size(), \
         DECLS(decl), decl.size(), CONTAINS(funcs), funcs.size())
-#define REQUIRES(name, namelist, l) \
-        make_Requires_t(p.m_a, l, name2char(name), \
+#define REQUIRE(require_list, l) \
+        make_Require_t(p.m_a, l, \
+        VEC_CAST(require_list, unit_require), require_list.size())
+#define UNIT_REQUIRE(name, namelist, l) \
+        make_UnitRequire_t(p.m_a, l, name2char(name), \
         REDUCE_ARGS(p.m_a, namelist), namelist.size())
-#define INSTANTIATE(name, args, syms, l) \
+#define INSTANTIATE1(name, args, l) \
+        make_Instantiate_t(p.m_a, l, name2char(name), \
+        USE_SYMBOLS(args), args.size(), \
+        nullptr, 0)
+#define INSTANTIATE2(name, args, syms, l) \
         make_Instantiate_t(p.m_a, l, name2char(name), \
         USE_SYMBOLS(args), args.size(), \
         USE_SYMBOLS(syms), syms.size())

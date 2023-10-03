@@ -60,7 +60,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 x)
                         (IntegerBinOp
                             (IntegerConstant 1 (Integer 4))

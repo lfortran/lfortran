@@ -2,6 +2,276 @@
     (SymbolTable
         1
         {
+            _lcompilers_optimization_flipsign_f32:
+                (Function
+                    (SymbolTable
+                        86
+                        {
+                            _lcompilers_optimization_flipsign_f32:
+                                (Variable
+                                    86
+                                    _lcompilers_optimization_flipsign_f32
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            signal:
+                                (Variable
+                                    86
+                                    signal
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            variable:
+                                (Variable
+                                    86
+                                    variable
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    _lcompilers_optimization_flipsign_f32
+                    (FunctionType
+                        [(Integer 4)
+                        (Real 4)]
+                        (Real 4)
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    []
+                    [(Var 86 signal)
+                    (Var 86 variable)]
+                    [(If
+                        (IntegerCompare
+                            (IntegerBinOp
+                                (Var 86 signal)
+                                Sub
+                                (IntegerBinOp
+                                    (IntegerConstant 2 (Integer 4))
+                                    Mul
+                                    (Cast
+                                        (RealBinOp
+                                            (Cast
+                                                (Var 86 signal)
+                                                IntegerToReal
+                                                (Real 4)
+                                                ()
+                                            )
+                                            Div
+                                            (Cast
+                                                (IntegerConstant 2 (Integer 4))
+                                                IntegerToReal
+                                                (Real 4)
+                                                ()
+                                            )
+                                            (Real 4)
+                                            ()
+                                        )
+                                        RealToInteger
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            Eq
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
+                            ()
+                        )
+                        [(=
+                            (Var 86 _lcompilers_optimization_flipsign_f32)
+                            (RealUnaryMinus
+                                (Var 86 variable)
+                                (Real 4)
+                                ()
+                            )
+                            ()
+                        )]
+                        [(=
+                            (Var 86 _lcompilers_optimization_flipsign_f32)
+                            (Var 86 variable)
+                            ()
+                        )]
+                    )]
+                    (Var 86 _lcompilers_optimization_flipsign_f32)
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            _lcompilers_optimization_flipsign_f321:
+                (Function
+                    (SymbolTable
+                        87
+                        {
+                            _lcompilers_optimization_flipsign_f321:
+                                (Variable
+                                    87
+                                    _lcompilers_optimization_flipsign_f321
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            signal:
+                                (Variable
+                                    87
+                                    signal
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            variable:
+                                (Variable
+                                    87
+                                    variable
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    _lcompilers_optimization_flipsign_f321
+                    (FunctionType
+                        [(Integer 4)
+                        (Real 4)]
+                        (Real 4)
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    []
+                    [(Var 87 signal)
+                    (Var 87 variable)]
+                    [(If
+                        (IntegerCompare
+                            (IntegerBinOp
+                                (Var 87 signal)
+                                Sub
+                                (IntegerBinOp
+                                    (IntegerConstant 2 (Integer 4))
+                                    Mul
+                                    (Cast
+                                        (RealBinOp
+                                            (Cast
+                                                (Var 87 signal)
+                                                IntegerToReal
+                                                (Real 4)
+                                                ()
+                                            )
+                                            Div
+                                            (Cast
+                                                (IntegerConstant 2 (Integer 4))
+                                                IntegerToReal
+                                                (Real 4)
+                                                ()
+                                            )
+                                            (Real 4)
+                                            ()
+                                        )
+                                        RealToInteger
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            Eq
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
+                            ()
+                        )
+                        [(=
+                            (Var 87 _lcompilers_optimization_flipsign_f321)
+                            (RealUnaryMinus
+                                (Var 87 variable)
+                                (Real 4)
+                                ()
+                            )
+                            ()
+                        )]
+                        [(=
+                            (Var 87 _lcompilers_optimization_flipsign_f321)
+                            (Var 87 variable)
+                            ()
+                        )]
+                    )]
+                    (Var 87 _lcompilers_optimization_flipsign_f321)
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
             flip_sign_dead_code:
                 (Program
                     (SymbolTable
@@ -181,16 +451,6 @@
                                     Required
                                     .false.
                                 ),
-                            flipsign@flipsigni32r32:
-                                (ExternalSymbol
-                                    2
-                                    flipsign@flipsigni32r32
-                                    87 flipsigni32r32
-                                    lfortran_intrinsic_optimization
-                                    []
-                                    flipsigni32r32
-                                    Private
-                                ),
                             modulo:
                                 (ExternalSymbol
                                     2
@@ -259,16 +519,22 @@
                         )
                         ()
                     )
-                    (SubroutineCall
-                        2 flipsign@flipsigni32r32
-                        1 flipsign
-                        [((Var 2 number))
-                        ((Var 2 x))]
+                    (=
+                        (Var 2 x)
+                        (FunctionCall
+                            1 _lcompilers_optimization_flipsign_f32
+                            1 _lcompilers_optimization_flipsign_f32
+                            [((Var 2 number))
+                            ((Var 2 x))]
+                            (Real 4)
+                            ()
+                            ()
+                        )
                         ()
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 2 x)
@@ -314,16 +580,22 @@
                         )
                         ()
                     )
-                    (SubroutineCall
-                        2 flipsign@flipsigni32r32
-                        1 flipsign
-                        [((Var 2 number))
-                        ((Var 2 x))]
+                    (=
+                        (Var 2 x)
+                        (FunctionCall
+                            1 _lcompilers_optimization_flipsign_f321
+                            1 _lcompilers_optimization_flipsign_f321
+                            [((Var 2 number))
+                            ((Var 2 x))]
+                            (Real 4)
+                            ()
+                            ()
+                        )
                         ()
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 2 x)
@@ -361,7 +633,6 @@
                             )
                         )
                         [(Print
-                            ()
                             [(StringConstant
                                 "ap == bp"
                                 (Character 1 8 ())
@@ -370,7 +641,6 @@
                             ()
                         )]
                         [(Print
-                            ()
                             [(StringConstant
                                 "ap /= bp"
                                 (Character 1 8 ())
@@ -391,7 +661,6 @@
                             )
                         )
                         [(Print
-                            ()
                             [(StringConstant
                                 "cp == dp"
                                 (Character 1 8 ())
@@ -400,7 +669,6 @@
                             ()
                         )]
                         [(Print
-                            ()
                             [(StringConstant
                                 "cp /= dp"
                                 (Character 1 8 ())
@@ -418,7 +686,6 @@
                             ()
                         )
                         [(Print
-                            ()
                             [(StringConstant
                                 "a == b"
                                 (Character 1 6 ())
@@ -438,7 +705,6 @@
                                 )
                             )
                             [(Print
-                                ()
                                 [(StringConstant
                                     "ap == bp"
                                     (Character 1 8 ())
@@ -447,7 +713,6 @@
                                 ()
                             )]
                             [(Print
-                                ()
                                 [(StringConstant
                                     "ap /= bp"
                                     (Character 1 8 ())
@@ -476,7 +741,6 @@
                                 )
                             )
                             [(Print
-                                ()
                                 [(StringConstant
                                     "ap == cp"
                                     (Character 1 8 ())
@@ -496,7 +760,6 @@
                                     )
                                 )
                                 [(Print
-                                    ()
                                     [(StringConstant
                                         "cp == dp"
                                         (Character 1 8 ())
@@ -505,7 +768,6 @@
                                     ()
                                 )]
                                 [(Print
-                                    ()
                                     [(StringConstant
                                         "cp /= dp"
                                         (Character 1 8 ())
@@ -523,7 +785,6 @@
                                     ()
                                 )
                                 [(Print
-                                    ()
                                     [(StringConstant
                                         "c == d"
                                         (Character 1 6 ())
@@ -536,16 +797,6 @@
                         )]
                     )]
                 ),
-            flipsign:
-                (ExternalSymbol
-                    1
-                    flipsign
-                    87 flipsign
-                    lfortran_intrinsic_optimization
-                    []
-                    flipsign
-                    Private
-                ),
             iso_fortran_env:
                 (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
             lfortran_intrinsic_builtin:
@@ -553,9 +804,7 @@
             lfortran_intrinsic_math2:
                 (IntrinsicModule lfortran_intrinsic_math2),
             lfortran_intrinsic_math3:
-                (IntrinsicModule lfortran_intrinsic_math3),
-            lfortran_intrinsic_optimization:
-                (IntrinsicModule lfortran_intrinsic_optimization)
+                (IntrinsicModule lfortran_intrinsic_math3)
         })
     []
 )

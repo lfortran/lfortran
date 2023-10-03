@@ -131,19 +131,16 @@
                                                     []
                                                     [(Var 4 z)]
                                                     [(Print
-                                                        ()
                                                         [(Var 4 z)]
                                                         ()
                                                         ()
                                                     )
                                                     (Print
-                                                        ()
                                                         [(Var 3 y)]
                                                         ()
                                                         ()
                                                     )
                                                     (Print
-                                                        ()
                                                         [(Var 3 yy)]
                                                         ()
                                                         ()
@@ -239,7 +236,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(StringConstant
                                             "b()"
                                             (Character 1 3 ())

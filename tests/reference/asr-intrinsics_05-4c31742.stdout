@@ -28,7 +28,7 @@
                     []
                     [(=
                         (Var 2 x)
-                        (IntrinsicFunction
+                        (IntrinsicScalarFunction
                             Sinh
                             [(RealConstant
                                 1.000000
@@ -44,14 +44,13 @@
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 x)]
                         ()
                         ()
                     )
                     (=
                         (Var 2 x)
-                        (IntrinsicFunction
+                        (IntrinsicScalarFunction
                             Cosh
                             [(RealConstant
                                 1.000000
@@ -67,14 +66,13 @@
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 x)]
                         ()
                         ()
                     )
                     (=
                         (Var 2 x)
-                        (IntrinsicFunction
+                        (IntrinsicScalarFunction
                             Tanh
                             [(RealConstant
                                 1.000000
@@ -90,7 +88,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 x)]
                         ()
                         ()

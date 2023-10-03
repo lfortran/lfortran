@@ -74,7 +74,7 @@ module template_array_03_m
 !
     template array_tmpl(t, plus_t, zero_t, mult_t)
 
-        requires operations(t, plus_t, zero_t, mult_t)
+        require :: operations(t, plus_t, zero_t, mult_t)
         private
         public :: mymatmul_t
 
@@ -84,7 +84,7 @@ module template_array_03_m
             integer, parameter, intent(in) :: i, j, k
             type(t), intent(in) :: a(i,j), b(j,k)
             type(t) :: r(i,k)
-            integer, parameter :: x, y, z
+            integer, parameter :: x = 1, y = 1, z = 1
             type(t) :: elem
             do x = 1, i
                 do z = 1, k

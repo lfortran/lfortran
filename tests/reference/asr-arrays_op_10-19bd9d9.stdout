@@ -68,7 +68,6 @@
                                     [solution]
                                     []
                                     [(Print
-                                        ()
                                         [(ArraySize
                                             (FunctionCall
                                                 2 solution
@@ -139,7 +138,6 @@
                                         (IntegerConstant 2 (Integer 4))
                                         ())
                                         [(Print
-                                            ()
                                             [(ArrayItem
                                                 (Var 3 x)
                                                 [(()

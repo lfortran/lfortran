@@ -32,7 +32,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StringConstant
                             ""
                             (Character 1 0 ())
@@ -51,12 +50,7 @@
                         ()
                         ()
                         ()
-                        ()
                         [(StringConstant
-                            ""
-                            (Character 1 0 ())
-                        )
-                        (StringConstant
                             "x is "
                             (Character 1 5 ())
                         )
@@ -65,7 +59,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StringConstant
                             ""
                             (Character 1 0 ())
@@ -83,12 +76,7 @@
                         ()
                         ()
                         ()
-                        ()
                         [(StringConstant
-                            ""
-                            (Character 1 0 ())
-                        )
-                        (StringConstant
                             "ok"
                             (Character 1 2 ())
                         )]

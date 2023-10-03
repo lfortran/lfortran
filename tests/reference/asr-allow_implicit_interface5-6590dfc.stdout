@@ -1,0 +1,214 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            klvnzo_:
+                (Function
+                    (SymbolTable
+                        2
+                        {
+                            kd:
+                                (Variable
+                                    2
+                                    kd
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            klvna:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            klvna_arg_0:
+                                                (Variable
+                                                    4
+                                                    klvna_arg_0
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            rt:
+                                                (Variable
+                                                    4
+                                                    rt
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    klvna
+                                    (FunctionType
+                                        [(Real 8)]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 4 klvna_arg_0)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            nt:
+                                (Variable
+                                    2
+                                    nt
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            rt:
+                                (Variable
+                                    2
+                                    rt
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            rt0:
+                                (Variable
+                                    2
+                                    rt0
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 8)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 8 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            zo:
+                                (Variable
+                                    2
+                                    zo
+                                    [nt]
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 8)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (Var 2 nt))]
+                                        PointerToDataArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    klvnzo_
+                    (FunctionType
+                        [(Integer 4)
+                        (Integer 4)]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    [klvna]
+                    [(Var 2 nt)
+                    (Var 2 kd)]
+                    [(SubroutineCall
+                        2 klvna
+                        ()
+                        [((Var 2 rt))]
+                        ()
+                    )
+                    (Return)]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            main:
+                (Program
+                    (SymbolTable
+                        3
+                        {
+                            
+                        })
+                    main
+                    []
+                    [(SubroutineCall
+                        1 klvnzo_
+                        ()
+                        [((IntegerConstant 5 (Integer 4)))
+                        ((IntegerConstant 8 (Integer 4)))]
+                        ()
+                    )]
+                )
+        })
+    []
+)

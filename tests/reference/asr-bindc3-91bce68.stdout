@@ -113,7 +113,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(PointerToCPtr
                             (Var 2 x)
                             (CPtr)
@@ -128,7 +127,6 @@
                         (Var 2 y)
                     )
                     (Print
-                        ()
                         [(PointerToCPtr
                             (Var 2 x)
                             (CPtr)

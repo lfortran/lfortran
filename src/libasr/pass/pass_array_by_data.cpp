@@ -93,10 +93,19 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             node_duplicator.allow_procedure_calls = true;
             SymbolTable* new_symtab = al.make_new<SymbolTable>(current_scope);
             ASRUtils::SymbolDuplicator symbol_duplicator(al);
+            // first duplicate the external symbols
+            // so they can be referenced by derived_type
             for( auto& item: x->m_symtab->get_scope() ) {
-                symbol_duplicator.duplicate_symbol(item.second, new_symtab);
+                if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                    symbol_duplicator.duplicate_symbol(item.second, new_symtab);
+                }
             }
-            Vec<ASR::expr_t*> new_args;
+            for( auto& item: x->m_symtab->get_scope() ) {
+                if (!ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                    symbol_duplicator.duplicate_symbol(item.second, new_symtab);
+                }
+            }
+          Vec<ASR::expr_t*> new_args;
             std::string suffix = "";
             new_args.reserve(al, x->n_args);
             ASR::expr_t* return_var = nullptr;
@@ -199,21 +208,21 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
 
             ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(*x);
             x->m_function_signature = ASRUtils::TYPE(ASRUtils::make_FunctionType_t_util(
-                al, func_type->base.base.loc, new_args.p, new_args.size(), x->m_return_var, func_type));
+                al, func_type->base.base.loc, new_args.p, new_args.size(), x->m_return_var, func_type, current_scope));
             x->m_args = new_args.p;
             x->n_args = new_args.size();
         }
 
         void visit_TranslationUnit(const ASR::TranslationUnit_t& x) {
             // Visit Module first so that all functions in it are updated
-            for (auto &a : x.m_global_scope->get_scope()) {
+            for (auto &a : x.m_symtab->get_scope()) {
                 if( ASR::is_a<ASR::Module_t>(*a.second) ) {
                     this->visit_symbol(*a.second);
                 }
             }
 
             // Visit all other symbols
-            for (auto &a : x.m_global_scope->get_scope()) {
+            for (auto &a : x.m_symtab->get_scope()) {
                 if( !ASR::is_a<ASR::Module_t>(*a.second) ) {
                     this->visit_symbol(*a.second);
                 }
@@ -228,13 +237,13 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             for( auto& item: xx.m_symtab->get_scope() ) {
                 if( ASR::is_a<ASR::Function_t>(*item.second) ) {
                     ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(item.second);
+                    pass_array_by_data_functions.push_back(subrout);
                     std::vector<size_t> arg_indices;
                     if( ASRUtils::is_pass_array_by_data_possible(subrout, arg_indices) ) {
                         ASR::symbol_t* sym = insert_new_procedure(subrout, arg_indices);
                         if( sym != nullptr ) {
                             ASR::Function_t* new_subrout = ASR::down_cast<ASR::Function_t>(sym);
                             edit_new_procedure_args(new_subrout, arg_indices);
-                            pass_array_by_data_functions.push_back(new_subrout);
                         }
                     }
                 }
@@ -294,8 +303,21 @@ class EditProcedureReplacer: public ASR::BaseExprReplacer<EditProcedureReplacer>
 
     void replace_Var(ASR::Var_t* x) {
         ASR::symbol_t* x_sym_ = x->m_v;
-        if ( v.proc2newproc.find(x_sym_) != v.proc2newproc.end() ) {
-            x->m_v = v.proc2newproc[x_sym_].first;
+        bool is_external = ASR::is_a<ASR::ExternalSymbol_t>(*x_sym_);
+        if ( v.proc2newproc.find(ASRUtils::symbol_get_past_external(x_sym_)) != v.proc2newproc.end() ) {
+            x->m_v = v.proc2newproc[ASRUtils::symbol_get_past_external(x_sym_)].first;
+            if( is_external ) {
+                ASR::ExternalSymbol_t* x_sym_ext = ASR::down_cast<ASR::ExternalSymbol_t>(x_sym_);
+                std::string new_func_sym_name = current_scope->get_unique_name(ASRUtils::symbol_name(
+                    ASRUtils::symbol_get_past_external(x_sym_)));
+                 ASR::symbol_t* new_func_sym_ = ASR::down_cast<ASR::symbol_t>(
+                    ASR::make_ExternalSymbol_t(v.al, x_sym_->base.loc, current_scope,
+                        s2c(v.al, new_func_sym_name), x->m_v, x_sym_ext->m_module_name,
+                        x_sym_ext->m_scope_names, x_sym_ext->n_scope_names, ASRUtils::symbol_name(x->m_v),
+                        x_sym_ext->m_access));
+                current_scope->add_symbol(new_func_sym_name, new_func_sym_);
+                x->m_v = new_func_sym_;
+            }
             return ;
         }
 

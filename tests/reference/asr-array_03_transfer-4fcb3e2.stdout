@@ -27,7 +27,6 @@
                     array_03_transfer
                     []
                     [(Print
-                        ()
                         [(BitCast
                             (Var 2 x)
                             (RealConstant

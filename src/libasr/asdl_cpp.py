@@ -1303,6 +1303,8 @@ class ExprBaseReplacerVisitor(ASDLVisitor):
                     self.emit("    self().replace_expr(x->m_%s[i]);"%(field.name), level)
                     self.emit("    current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level)
                     self.current_expr_copy_variable_count += 1
+                elif field.type == "ttype":
+                    self.emit("    self().replace_%s(x->m_%s[i]);" % (field.type, field.name), level)
                 self.emit("}", level)
             else:
                 if field.type != "symbol":
@@ -1682,6 +1684,8 @@ class PickleVisitorVisitor(ASDLVisitor):
                         self.emit('s.append(self().convert_intrinsic_id(x.m_%s));' % field.name, 2)
                     elif field.name == "impure_intrinsic_id":
                         self.emit('s.append(self().convert_impure_intrinsic_id(x.m_%s));' % field.name, 2)
+                    elif field.name == "arr_intrinsic_id":
+                        self.emit('s.append(self().convert_array_intrinsic_id(x.m_%s));' % field.name, 2)
                     else:
                         self.emit('s.append(std::to_string(x.m_%s));' % field.name, 2)
             elif field.type == "float" and not field.seq and not field.opt:

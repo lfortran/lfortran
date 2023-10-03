@@ -376,7 +376,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(FunctionCall
                             4 test_verify_intrinsic
                             ()

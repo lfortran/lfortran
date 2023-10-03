@@ -95,7 +95,6 @@
                     []
                     [(Var 2 dummy)]
                     [(Print
-                        ()
                         [(StringConstant
                             "Printed using subroutine call: "
                             (Character 1 31 ())
@@ -106,7 +105,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 2 dummy)
@@ -144,7 +143,6 @@
                         ()
                     )
                     (Print
-                        ()
                         [(StringConstant
                             "Printed using entry statement: "
                             (Character 1 31 ())
@@ -155,7 +153,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 2 dummy)
@@ -231,7 +229,6 @@
                     []
                     [(Var 4 dummy)]
                     [(Print
-                        ()
                         [(StringConstant
                             "Printed using entry statement: "
                             (Character 1 31 ())
@@ -242,7 +239,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 4 dummy)

@@ -12,48 +12,6 @@
                                     (SymbolTable
                                         3
                                         {
-                                            __libasr__created__var__0__func_call_res:
-                                                (Variable
-                                                    3
-                                                    __libasr__created__var__0__func_call_res
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Array
-                                                        (Real 4)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 2 (Integer 4)))]
-                                                        FixedSizeArray
-                                                    )
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            __libasr__created__var__1__func_call_res:
-                                                (Variable
-                                                    3
-                                                    __libasr__created__var__1__func_call_res
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Array
-                                                        (Real 4)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 2 (Integer 4)))]
-                                                        FixedSizeArray
-                                                    )
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
                                             i:
                                                 (Variable
                                                     3
@@ -109,16 +67,21 @@
                                     )
                                     [solution]
                                     []
-                                    [(SubroutineCall
-                                        2 solution
-                                        ()
-                                        [((Var 3 __libasr__created__var__0__func_call_res))]
-                                        ()
-                                    )
-                                    (Print
-                                        ()
+                                    [(Print
                                         [(ArraySize
-                                            (Var 3 __libasr__created__var__0__func_call_res)
+                                            (FunctionCall
+                                                2 solution
+                                                ()
+                                                []
+                                                (Array
+                                                    (Real 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 2 (Integer 4)))]
+                                                    FixedSizeArray
+                                                )
+                                                ()
+                                                ()
+                                            )
                                             ()
                                             (Integer 4)
                                             (IntegerConstant 2 (Integer 4))
@@ -126,18 +89,24 @@
                                         ()
                                         ()
                                     )
-                                    (SubroutineCall
-                                        2 solution
-                                        ()
-                                        [((Var 3 __libasr__created__var__1__func_call_res))]
-                                        ()
-                                    )
                                     (DoLoop
                                         ()
                                         ((Var 3 i)
                                         (IntegerConstant 1 (Integer 4))
                                         (ArraySize
-                                            (Var 3 __libasr__created__var__1__func_call_res)
+                                            (FunctionCall
+                                                2 solution
+                                                ()
+                                                []
+                                                (Array
+                                                    (Real 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 2 (Integer 4)))]
+                                                    FixedSizeArray
+                                                )
+                                                ()
+                                                ()
+                                            )
                                             ()
                                             (Integer 4)
                                             (IntegerConstant 2 (Integer 4))
@@ -169,7 +138,6 @@
                                         (IntegerConstant 2 (Integer 4))
                                         ())
                                         [(Print
-                                            ()
                                             [(ArrayItem
                                                 (Var 3 x)
                                                 [(()
@@ -225,7 +193,7 @@
                                                     4
                                                     x
                                                     []
-                                                    Out
+                                                    ReturnVar
                                                     ()
                                                     ()
                                                     Default
@@ -244,13 +212,13 @@
                                         })
                                     solution
                                     (FunctionType
-                                        [(Array
+                                        []
+                                        (Array
                                             (Real 4)
                                             [((IntegerConstant 1 (Integer 4))
                                             (IntegerConstant 2 (Integer 4)))]
                                             FixedSizeArray
-                                        )]
-                                        ()
+                                        )
                                         Source
                                         Implementation
                                         ()
@@ -263,7 +231,7 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 4 x)]
+                                    []
                                     [(=
                                         (Var 4 x)
                                         (ArrayConstant
@@ -285,7 +253,7 @@
                                         )
                                         ()
                                     )]
-                                    ()
+                                    (Var 4 x)
                                     Public
                                     .false.
                                     .false.

@@ -1,0 +1,39 @@
+(TranslationUnit
+    [(Program
+        pragma2
+        ()
+        []
+        []
+        [(DeclarationPragma
+            LFortranPragma
+            "attributes simd :: A"
+            ()
+        )
+        (Declaration
+            (AttrType
+                TypeReal
+                []
+                ()
+                ()
+                None
+            )
+            []
+            [(A
+            [(1
+            8
+            DimensionExpr)]
+            []
+            ()
+            None
+            ())]
+            ()
+        )]
+        [(=
+            0
+            A
+            1
+            ()
+        )]
+        []
+    )]
+)

@@ -55,7 +55,8 @@ cmake -DWITH_LLVM=yes -DCMAKE_INSTALL_PREFIX=`pwd`/inst .
 make -j8
 make install
 ```
-This will install the `lfortran` into the `inst/bin`.
+This will install `lfortran` into `inst/bin`.  It assumes that c++ and cc are available, which on Linux
+are typically the GNU C++/C compilers.
 
 ## Build From Git
 

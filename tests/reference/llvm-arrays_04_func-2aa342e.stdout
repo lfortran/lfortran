@@ -16,7 +16,7 @@ define float @abs(float* %a) {
   %r = alloca float, align 4
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @2, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
   %0 = load float, float* %a, align 4
-  %1 = fcmp ugt float %0, 0.000000e+00
+  %1 = fcmp ogt float %0, 0.000000e+00
   br i1 %1, label %then, label %else
 
 then:                                             ; preds = %.entry
@@ -26,7 +26,7 @@ then:                                             ; preds = %.entry
 
 else:                                             ; preds = %.entry
   %3 = load float, float* %a, align 4
-  %4 = fsub float 0.000000e+00, %3
+  %4 = fneg float %3
   store float %4, float* %r, align 4
   br label %ifcont
 
@@ -106,7 +106,7 @@ define i32 @main(i32 %0, i8** %1) {
   %8 = fsub float %7, 6.000000e+00
   store float %8, float* %call_arg_value2, align 4
   %9 = call float @abs(float* %call_arg_value2)
-  %10 = fcmp ugt float %9, 0x3EE4F8B580000000
+  %10 = fcmp ogt float %9, 0x3EE4F8B580000000
   br i1 %10, label %then, label %else
 
 then:                                             ; preds = %.entry

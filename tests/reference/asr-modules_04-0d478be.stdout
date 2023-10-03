@@ -32,7 +32,6 @@
                                     []
                                     []
                                     [(Print
-                                        ()
                                         [(StringConstant
                                             "priv = "
                                             (Character 1 7 ())
@@ -42,7 +41,6 @@
                                         ()
                                     )
                                     (Print
-                                        ()
                                         [(StringConstant
                                             "publ = "
                                             (Character 1 7 ())

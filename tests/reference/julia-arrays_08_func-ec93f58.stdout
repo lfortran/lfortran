@@ -23,14 +23,8 @@ function main()
     for i ∈ 1:length(x)
         x[i] = i
     end
-    copy_from_to(Int32(    for i ∈ 1:length(x)
-        x[i] = i
-    end
-), Int32(    for i ∈ 1:length(x)
-        x[i] = i
-    end
-))
-    r = verify(Int32(r), Int32(r))
+    copy_from_to(Int32(x), Int32(y))
+    r = verify(Int32(x), Int32(y))
     println(r)
     if !r
         println(Base.stderr, "ERROR STOP")

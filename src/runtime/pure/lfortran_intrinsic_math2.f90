@@ -94,19 +94,19 @@ end function
 
 elemental real(sp) function sabs(x) result(r)
 real(sp), intent(in) :: x
-if (x >= 0) then
+if (x > 0) then
     r = x
 else
-    r = -x
+    r = 0-x
 end if
 end function
 
 elemental real(dp) function dabs(x) result(r)
 real(dp), intent(in) :: x
-if (x >= 0) then
+if (x > 0) then
     r = x
 else
-    r = -x
+    r = 0-x
 end if
 end function
 

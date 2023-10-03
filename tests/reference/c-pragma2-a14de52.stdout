@@ -1,0 +1,32 @@
+
+#include <stdlib.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
+#include <lfortran_intrinsics.h>
+
+
+struct dimension_descriptor
+{
+    int32_t lower_bound, length;
+};
+
+struct r32
+{
+    float *data;
+    struct dimension_descriptor dims[32];
+    int32_t n_dims;
+    bool is_allocated;
+};
+
+
+
+
+// Implementations
+int main(int argc, char* argv[])
+{
+    _lpython_set_argv(argc, argv);
+    float a __attribute__ (( vector_size(sizeof(float) * 8) ));
+    a = {(float)(1), (float)(1), (float)(1), (float)(1), (float)(1), (float)(1), (float)(1), (float)(1)};
+    return 0;
+}

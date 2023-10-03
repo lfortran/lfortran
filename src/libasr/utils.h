@@ -62,11 +62,21 @@ struct CompilerOptions {
     bool emit_debug_info = false;
     bool emit_debug_line_column = false;
     bool verbose = false;
+    bool dump_all_passes = false;
     bool pass_cumulative = false;
     bool enable_cpython = false;
     bool enable_symengine = false;
     bool link_numpy = false;
     bool realloc_lhs = false;
+    bool module_name_mangling = false;
+    bool global_symbols_mangling = false;
+    bool intrinsic_symbols_mangling = false;
+    bool all_symbols_mangling = false;
+    bool bindc_mangling = false;
+    bool mangle_underscore = false;
+    bool run = false;
+    bool legacy_array_sections = false;
+    bool ignore_pragma = false;
     std::vector<std::string> import_paths;
     Platform platform;
 
@@ -94,10 +104,18 @@ namespace LCompilers {
         int64_t unroll_factor = 32; // for loop_unroll pass
         bool fast = false; // is fast flag enabled.
         bool verbose = false; // For developer debugging
+        bool dump_all_passes = false; // For developer debugging
         bool pass_cumulative = false; // Apply passes cumulatively
         bool disable_main = false;
         bool use_loop_variable_after_loop = false;
         bool realloc_lhs = false;
+        std::vector<int64_t> skip_optimization_func_instantiation;
+        bool module_name_mangling = false;
+        bool global_symbols_mangling = false;
+        bool intrinsic_symbols_mangling = false;
+        bool all_symbols_mangling = false;
+        bool bindc_mangling = false;
+        bool mangle_underscore = false;
     };
 
 }

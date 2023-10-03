@@ -70,10 +70,87 @@
                     []
                     [(=
                         (Var 2 a)
-                        (IntegerUnaryMinus
-                            (IntegerConstant 2 (Integer 4))
-                            (Integer 4)
-                            (IntegerConstant -2 (Integer 4))
+                        (ArrayBroadcast
+                            (IntegerUnaryMinus
+                                (IntegerConstant 2 (Integer 4))
+                                (Integer 4)
+                                (IntegerConstant -2 (Integer 4))
+                            )
+                            (ArrayConstant
+                                [(IntegerConstant 10 (Integer 4))]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
+                            )
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 10 (Integer 4)))]
+                                FixedSizeArray
+                            )
+                            (ArrayConstant
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 2 (Integer 4))
+                                    (Integer 4)
+                                    (IntegerConstant -2 (Integer 4))
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 2 (Integer 4))
+                                    (Integer 4)
+                                    (IntegerConstant -2 (Integer 4))
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 2 (Integer 4))
+                                    (Integer 4)
+                                    (IntegerConstant -2 (Integer 4))
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 2 (Integer 4))
+                                    (Integer 4)
+                                    (IntegerConstant -2 (Integer 4))
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 2 (Integer 4))
+                                    (Integer 4)
+                                    (IntegerConstant -2 (Integer 4))
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 2 (Integer 4))
+                                    (Integer 4)
+                                    (IntegerConstant -2 (Integer 4))
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 2 (Integer 4))
+                                    (Integer 4)
+                                    (IntegerConstant -2 (Integer 4))
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 2 (Integer 4))
+                                    (Integer 4)
+                                    (IntegerConstant -2 (Integer 4))
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 2 (Integer 4))
+                                    (Integer 4)
+                                    (IntegerConstant -2 (Integer 4))
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 2 (Integer 4))
+                                    (Integer 4)
+                                    (IntegerConstant -2 (Integer 4))
+                                )]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 10 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
+                            )
                         )
                         ()
                     )
@@ -105,10 +182,87 @@
                     )
                     (=
                         (Var 2 b)
-                        (IntegerUnaryMinus
-                            (IntegerConstant 3 (Integer 4))
-                            (Integer 4)
-                            (IntegerConstant -3 (Integer 4))
+                        (ArrayBroadcast
+                            (IntegerUnaryMinus
+                                (IntegerConstant 3 (Integer 4))
+                                (Integer 4)
+                                (IntegerConstant -3 (Integer 4))
+                            )
+                            (ArrayConstant
+                                [(IntegerConstant 10 (Integer 4))]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
+                            )
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 10 (Integer 4)))]
+                                FixedSizeArray
+                            )
+                            (ArrayConstant
+                                [(IntegerUnaryMinus
+                                    (IntegerConstant 3 (Integer 4))
+                                    (Integer 4)
+                                    (IntegerConstant -3 (Integer 4))
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 3 (Integer 4))
+                                    (Integer 4)
+                                    (IntegerConstant -3 (Integer 4))
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 3 (Integer 4))
+                                    (Integer 4)
+                                    (IntegerConstant -3 (Integer 4))
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 3 (Integer 4))
+                                    (Integer 4)
+                                    (IntegerConstant -3 (Integer 4))
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 3 (Integer 4))
+                                    (Integer 4)
+                                    (IntegerConstant -3 (Integer 4))
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 3 (Integer 4))
+                                    (Integer 4)
+                                    (IntegerConstant -3 (Integer 4))
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 3 (Integer 4))
+                                    (Integer 4)
+                                    (IntegerConstant -3 (Integer 4))
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 3 (Integer 4))
+                                    (Integer 4)
+                                    (IntegerConstant -3 (Integer 4))
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 3 (Integer 4))
+                                    (Integer 4)
+                                    (IntegerConstant -3 (Integer 4))
+                                )
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 3 (Integer 4))
+                                    (Integer 4)
+                                    (IntegerConstant -3 (Integer 4))
+                                )]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 10 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
+                            )
                         )
                         ()
                     )
@@ -127,12 +281,86 @@
                         )
                         [(=
                             (Var 2 b)
-                            (IntegerConstant 1 (Integer 4))
+                            (ArrayBroadcast
+                                (IntegerConstant 1 (Integer 4))
+                                (ArrayConstant
+                                    [(IntegerConstant 10 (Integer 4))]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 10 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                (ArrayConstant
+                                    [(IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 10 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                            )
                             ()
                         )]
                         [(=
                             (Var 2 b)
-                            (IntegerConstant 0 (Integer 4))
+                            (ArrayBroadcast
+                                (IntegerConstant 0 (Integer 4))
+                                (ArrayConstant
+                                    [(IntegerConstant 10 (Integer 4))]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 10 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                (ArrayConstant
+                                    [(IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 10 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                            )
                             ()
                         )]
                     )
@@ -151,12 +379,86 @@
                         )
                         [(=
                             (Var 2 b)
-                            (IntegerConstant 1 (Integer 4))
+                            (ArrayBroadcast
+                                (IntegerConstant 1 (Integer 4))
+                                (ArrayConstant
+                                    [(IntegerConstant 10 (Integer 4))]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 10 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                (ArrayConstant
+                                    [(IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 10 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                            )
                             ()
                         )]
                         [(=
                             (Var 2 b)
-                            (IntegerConstant 0 (Integer 4))
+                            (ArrayBroadcast
+                                (IntegerConstant 0 (Integer 4))
+                                (ArrayConstant
+                                    [(IntegerConstant 10 (Integer 4))]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 10 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                (ArrayConstant
+                                    [(IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 10 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                            )
                             ()
                         )]
                     )
@@ -175,19 +477,93 @@
                         )
                         [(=
                             (Var 2 b)
-                            (IntegerConstant 1 (Integer 4))
+                            (ArrayBroadcast
+                                (IntegerConstant 1 (Integer 4))
+                                (ArrayConstant
+                                    [(IntegerConstant 10 (Integer 4))]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 10 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                (ArrayConstant
+                                    [(IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 10 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                            )
                             ()
                         )]
                         [(=
                             (Var 2 b)
-                            (IntegerConstant 0 (Integer 4))
+                            (ArrayBroadcast
+                                (IntegerConstant 0 (Integer 4))
+                                (ArrayConstant
+                                    [(IntegerConstant 10 (Integer 4))]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 10 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                (ArrayConstant
+                                    [(IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 10 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                            )
                             ()
                         )]
                     )
                     (If
                         (RealCompare
                             (Cast
-                                (IntrinsicFunction
+                                (IntrinsicScalarFunction
                                     Abs
                                     [(IntegerBinOp
                                         (ArrayItem
@@ -228,7 +604,7 @@
                     (If
                         (RealCompare
                             (Cast
-                                (IntrinsicFunction
+                                (IntrinsicScalarFunction
                                     Abs
                                     [(IntegerBinOp
                                         (ArrayItem
@@ -275,7 +651,7 @@
                         [(If
                             (RealCompare
                                 (Cast
-                                    (IntrinsicFunction
+                                    (IntrinsicScalarFunction
                                         Abs
                                         [(IntegerBinOp
                                             (ArrayItem
@@ -323,7 +699,7 @@
                         [(If
                             (RealCompare
                                 (Cast
-                                    (IntrinsicFunction
+                                    (IntrinsicScalarFunction
                                         Abs
                                         [(IntegerBinOp
                                             (ArrayItem
@@ -363,13 +739,11 @@
                         )]
                     )
                     (Print
-                        ()
                         [(Var 2 b)]
                         ()
                         ()
                     )
                     (Print
-                        ()
                         [(Var 2 a)]
                         ()
                         ()

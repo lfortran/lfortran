@@ -18,6 +18,7 @@ set(SRC
     codegen/asr_to_cpp.cpp
     codegen/asr_to_c.cpp
     codegen/asr_to_julia.cpp
+    codegen/asr_to_fortran.cpp
     codegen/asr_to_py.cpp
     codegen/x86_assembler.cpp
     codegen/asr_to_x86.cpp
@@ -48,6 +49,7 @@ set(SRC
     pass/unused_functions.cpp
     pass/flip_sign.cpp
     pass/div_to_mul.cpp
+    pass/replace_symbolic.cpp
     pass/intrinsic_function.cpp
     pass/fma.cpp
     pass/loop_vectorise.cpp
@@ -60,6 +62,7 @@ set(SRC
     pass/pass_array_by_data.cpp
     pass/pass_list_expr.cpp
     pass/pass_compare.cpp
+    pass/unique_symbols.cpp
 
     asr_verify.cpp
     asr_utils.cpp
@@ -68,6 +71,7 @@ set(SRC
     string_utils.cpp
     asr_scopes.cpp
     modfile.cpp
+    pickle.cpp
     serialization.cpp
     utils2.cpp
 )

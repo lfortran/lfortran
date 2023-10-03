@@ -194,14 +194,13 @@
                         )]
                     )
                     (Print
-                        ()
                         [(Var 2 a)]
                         ()
                         ()
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (ArrayItem
@@ -240,7 +239,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicFunction
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
                                     (ArrayItem

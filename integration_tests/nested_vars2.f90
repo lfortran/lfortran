@@ -26,5 +26,6 @@ program nested_vars2_main
     integer :: x
     x = 5
     call h(x)
+    print *, x
     if (x /= 6) error stop
 end program
