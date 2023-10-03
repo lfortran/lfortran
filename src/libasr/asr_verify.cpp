@@ -896,7 +896,7 @@ public:
             }
         }
 
-        if ((current_symtab->get_counter() !=  ASRUtils::symbol_parent_symtab(x.m_name)->get_counter()) ||
+        if ((current_symtab->get_counter() !=  ASRUtils::symbol_parent_symtab(x.m_name)->get_counter() && !ASR::is_a<ASR::Variable_t>(*x.m_name)) ||
             (ASRUtils::symbol_parent_symtab(x.m_name)->parent == nullptr)) {
             ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_symtab->asr_owner);
 
