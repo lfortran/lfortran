@@ -1360,12 +1360,15 @@ public:
                             class_stmt->base.base.loc, ASRUtils::EXPR(ASR::make_Var_t(al,
                             class_stmt->base.base.loc, assoc_sym)), m_selector)) );
                     }
-                    transform_stmts(class_stmt_body, class_stmt->n_body, class_stmt->m_body);
                     std::string block_name = parent_scope->get_unique_name("~select_type_block_");
                     ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(
                                                     al, class_stmt->base.base.loc,
-                                                    current_scope, s2c(al, block_name), class_stmt_body.p,
-                                                    class_stmt_body.size()));
+                                                    current_scope, s2c(al, block_name),
+                                                    nullptr, 0));
+                    transform_stmts(class_stmt_body, class_stmt->n_body, class_stmt->m_body);
+                    ASR::Block_t* block_t_ = ASR::down_cast<ASR::Block_t>(block_sym);
+                    block_t_->m_body = class_stmt_body.p;
+                    block_t_->n_body = class_stmt_body.size();
                     parent_scope->add_symbol(block_name, block_sym);
                     Vec<ASR::stmt_t*> block_call_stmt;
                     block_call_stmt.reserve(al, 1);
@@ -1403,12 +1406,15 @@ public:
                             type_stmt_name->base.base.loc, ASRUtils::EXPR(ASR::make_Var_t(al,
                             type_stmt_name->base.base.loc, assoc_sym)), m_selector)) );
                     }
-                    transform_stmts(type_stmt_name_body, type_stmt_name->n_body, type_stmt_name->m_body);
                     std::string block_name = parent_scope->get_unique_name("~select_type_block_");
                     ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(
                                                     al, type_stmt_name->base.base.loc,
-                                                    current_scope, s2c(al, block_name), type_stmt_name_body.p,
-                                                    type_stmt_name_body.size()));
+                                                    current_scope, s2c(al, block_name),
+                                                    nullptr, 0));
+                    transform_stmts(type_stmt_name_body, type_stmt_name->n_body, type_stmt_name->m_body);
+                    ASR::Block_t* block_t_ = ASR::down_cast<ASR::Block_t>(block_sym);
+                    block_t_->m_body = type_stmt_name_body.p;
+                    block_t_->n_body = type_stmt_name_body.size();
                     parent_scope->add_symbol(block_name, block_sym);
                     Vec<ASR::stmt_t*> block_call_stmt;
                     block_call_stmt.reserve(al, 1);
@@ -1444,12 +1450,15 @@ public:
                             type_stmt_type->base.base.loc, ASRUtils::EXPR(ASR::make_Var_t(al,
                             type_stmt_type->base.base.loc, assoc_sym)), m_selector)) );
                     }
-                    transform_stmts(type_stmt_type_body, type_stmt_type->n_body, type_stmt_type->m_body);
                     std::string block_name = parent_scope->get_unique_name("~select_type_block_");
                     ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(
                                                     al, type_stmt_type->base.base.loc,
-                                                    current_scope, s2c(al, block_name), type_stmt_type_body.p,
-                                                    type_stmt_type_body.size()));
+                                                    current_scope, s2c(al, block_name),
+                                                    nullptr, 0));
+                    transform_stmts(type_stmt_type_body, type_stmt_type->n_body, type_stmt_type->m_body);
+                    ASR::Block_t* block_t_ = ASR::down_cast<ASR::Block_t>(block_sym);
+                    block_t_->m_body = type_stmt_type_body.p;
+                    block_t_->n_body = type_stmt_type_body.size();
                     parent_scope->add_symbol(block_name, block_sym);
                     Vec<ASR::stmt_t*> block_call_stmt;
                     block_call_stmt.reserve(al, 1);
@@ -2737,8 +2746,10 @@ public:
                 throw SemanticError("Symbol type not supported", x.base.base.loc);
             }
         }
-        if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->get_counter() && !ASR::is_a<ASR::Variable_t>(*final_sym)) {
-            current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym));
+        if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->get_counter()
+            && !ASR::is_a<ASR::Variable_t>(*final_sym)) {
+            // check if asr owner is associate block.
+            ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies);
         }
         ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
         if( f ) {
