@@ -2677,13 +2677,17 @@ public:
                 require_name + "' is not correct", x.base.base.loc);
         }
 
+        std::vector<std::string> primitives = {"integer"};
+
         SetChar args;
         args.reserve(al, x.n_namelist);
         for (size_t i=0; i<x.n_namelist; i++) {
             std::string requires_arg = to_lower(x.m_namelist[i]);
             std::string requirement_arg = req->m_args[i];
-            args.push_back(al, s2c(al, requires_arg));
-            if (std::find(current_procedure_args.begin(),
+            if (std::find(primitives.begin(),
+                          primitives.end(),
+                          requires_arg) == primitives.end() 
+                && std::find(current_procedure_args.begin(),
                           current_procedure_args.end(),
                           requires_arg) == current_procedure_args.end()) {
                 throw SemanticError("Parameter '" + std::string(x.m_namelist[i])
@@ -2698,6 +2702,7 @@ public:
                 current_scope->add_symbol(requires_arg, requires_arg_sym);
             }
 
+            args.push_back(al, s2c(al, requires_arg));
         }
 
         // adding custom operators
@@ -2747,7 +2752,7 @@ public:
                     reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
                     tmp = nullptr;
                 }
-            } else {    
+            } else {
                 this->visit_unit_decl2(*x.m_decl[i]);
             }
         }
@@ -3075,8 +3080,13 @@ public:
                 if (ASR::is_a<ASR::TypeParameter_t>(*t)) {
                     ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(t);
                     context_map[tp->m_param] = name;
-                    t = ASRUtils::TYPE(ASR::make_TypeParameter_t(al,
-                        tp->base.base.loc, s2c(al, name)));
+                    if (name.compare("integer") == 0) {
+                        t = ASRUtils::TYPE(ASR::make_Integer_t(al,
+                            tp->base.base.loc, 4));
+                    } else {
+                        t = ASRUtils::TYPE(ASR::make_TypeParameter_t(al,
+                            tp->base.base.loc, s2c(al, name)));
+                    }
                     t = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
                         t, tp_m_dims, tp_n_dims);
                 }
@@ -3106,8 +3116,14 @@ public:
                     if (ASR::is_a<ASR::TypeParameter_t>(*param_type)) {
                         ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(param_type);
                         if (context_map.find(tp->m_param) != context_map.end()) {
-                            param_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(
-                                al, tp->base.base.loc, s2c(al, context_map[tp->m_param])));
+                            std::string pt = context_map[tp->m_param];
+                            if (pt.compare("integer") == 0) {
+                                param_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
+                                    tp->base.base.loc, 4));
+                            } else {
+                                param_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(
+                                    al, tp->base.base.loc, s2c(al, context_map[tp->m_param])));
+                            }
                             if( tp_n_dims > 0 ) {
                                 param_type = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
                                     param_type, tp_m_dims, tp_n_dims);
@@ -3153,8 +3169,14 @@ public:
                     if (ASR::is_a<ASR::TypeParameter_t>(*return_type)) {
                         ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(return_type);
                         if (context_map.find(tp->m_param) != context_map.end()) {
-                            return_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(
-                                al, tp->base.base.loc, s2c(al, context_map[tp->m_param])));
+                            std::string pt = context_map[tp->m_param];
+                            if (pt.compare("integer") == 0) {
+                                return_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
+                                    tp->base.base.loc, 4));
+                            } else {
+                                return_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(
+                                    al, tp->base.base.loc, s2c(al, context_map[tp->m_param])));
+                            }
                             if( tp_n_dims > 0 ) {
                                 return_type = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
                                     return_type, tp_m_dims, tp_n_dims);

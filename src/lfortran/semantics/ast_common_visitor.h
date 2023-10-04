@@ -4927,8 +4927,12 @@ public:
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
         std::string var_name = to_lower(x.m_func);
         if (x.n_temp_args > 0) {
-            handle_templated(x.m_func, x.m_temp_args, x.n_temp_args, x.base.base.loc);
-            var_name = "__templated_" + var_name;
+            ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
+            bool is_nested = ASR::is_a<ASR::Template_t>(*ASRUtils::get_asr_owner(owner_sym));
+            handle_templated(x.m_func, is_nested, x.m_temp_args, x.n_temp_args, x.base.base.loc);
+            if (!is_nested) {
+                var_name = "__templated_" + var_name;
+            }
         }
         SymbolTable *scope = current_scope;
         ASR::symbol_t *v = nullptr;
@@ -5609,7 +5613,8 @@ public:
 
     }
 
-    void handle_templated(std::string name, AST::use_symbol_t** args, size_t n_args, const Location &loc) {
+    void handle_templated(std::string name, bool is_nested,
+            AST::use_symbol_t** args, size_t n_args, const Location &loc) {
         std::string func_name = name;
 
         ASR::symbol_t *sym0 = current_scope->resolve_symbol(func_name);
@@ -5856,35 +5861,48 @@ public:
                 throw SemanticError("Unsupported template argument", args[i]->base.loc);
             }
         }
-
+        
         ASR::symbol_t *s = temp->m_symtab->resolve_symbol(func_name);
-        std::string new_func_name = current_scope->get_unique_name("__asr_" + func_name);
+        std::string new_func_name = func_name;
+
+        if (!is_nested) {
+            new_func_name = current_scope->get_unique_name("__asr_" + func_name);
+        }
+
+        SymbolTable *target_scope = current_scope;
+
+        if (is_nested) {
+            target_scope = current_scope->parent;
+        }
+
         pass_instantiate_symbol(al, context_map, type_subs, symbol_subs,
-            current_scope, temp->m_symtab, new_func_name, s);
+            target_scope, temp->m_symtab, new_func_name, s);
         context_map[func_name] = new_func_name;
 
-        ASR::symbol_t *new_s = current_scope->get_symbol(new_func_name);
+        ASR::symbol_t *new_s = target_scope->get_symbol(new_func_name);
         ASR::Function_t *new_f = ASR::down_cast<ASR::Function_t>(new_s);
         pass_instantiate_function_body(al, context_map, type_subs, symbol_subs,
-            current_scope, temp->m_symtab, new_f, ASR::down_cast<ASR::Function_t>(s));
+            target_scope, temp->m_symtab, new_f, ASR::down_cast<ASR::Function_t>(s));
 
         // Build generic procedure if has not existed yet
-        std::string g_name = "__templated_" + func_name;
+        if (!is_nested) {
+            std::string g_name = "__templated_" + func_name;
 
-        Vec<ASR::symbol_t*> symbols;
-        if (current_scope->get_symbol(g_name) != nullptr) {
-            ASR::GenericProcedure_t *old_g = ASR::down_cast<ASR::GenericProcedure_t>(current_scope->get_symbol(g_name));
-            symbols.reserve(al, old_g->n_procs + 1);
-            for (size_t i=0; i<old_g->n_procs; i++) {
-                symbols.push_back(al, old_g->m_procs[i]);
+            Vec<ASR::symbol_t*> symbols;
+            if (current_scope->get_symbol(g_name) != nullptr) {
+                ASR::GenericProcedure_t *old_g = ASR::down_cast<ASR::GenericProcedure_t>(current_scope->get_symbol(g_name));
+                symbols.reserve(al, old_g->n_procs + 1);
+                for (size_t i=0; i<old_g->n_procs; i++) {
+                    symbols.push_back(al, old_g->m_procs[i]);
+                }
+            } else {
+                symbols.reserve(al, 1);
             }
-        } else {
-            symbols.reserve(al, 1);
+            symbols.push_back(al, new_s);
+            ASR::asr_t *g = ASR::make_GenericProcedure_t(al, loc,
+                current_scope, s2c(al, g_name), symbols.p, symbols.size(), ASR::Public);
+            current_scope->add_or_overwrite_symbol(g_name, ASR::down_cast<ASR::symbol_t>(g));
         }
-        symbols.push_back(al, new_s);
-        ASR::asr_t *g = ASR::make_GenericProcedure_t(al, loc,
-            current_scope, s2c(al, g_name), symbols.p, symbols.size(), ASR::Public);
-        current_scope->add_or_overwrite_symbol(g_name, ASR::down_cast<ASR::symbol_t>(g));
 
         context_map.clear();
     }
