@@ -901,7 +901,8 @@ public:
             ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_symtab->asr_owner);
 
             // check if asr owner is associate block.
-            if( ASR::is_a<ASR::AssociateBlock_t>(*asr_owner_sym) ) {
+            if( ASR::is_a<ASR::AssociateBlock_t>(*asr_owner_sym) ||
+                ASR::is_a<ASR::Block_t>(*asr_owner_sym) ) {
                 if (ASRUtils::symbol_parent_symtab(x.m_name)->get_counter() != current_symtab->parent->get_counter()) {
                     function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
                 }
