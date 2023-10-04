@@ -42,6 +42,13 @@ contains
         res = lhs / rhs
     end function
     
+    pure elemental function div_real(lhs, rhs) result(res)
+        real, intent(in) :: lhs
+        integer, intent(in) :: rhs
+        real :: res
+        res = lhs / rhs
+    end function
+
     pure function generic_sum {T, add, cast} (arr) result(res)
         require :: operator_r(T, T, T, add), cast_r(T, cast)
         type(T), intent(in) :: arr(:)
@@ -63,13 +70,12 @@ contains
         type(T), intent(in) :: arr(:)
         type(T) :: res
         integer :: n, i
-        res = generic_sum{T, add, cast}(arr)
-        !n = size(arr)
-        !if (n > 0) then
-        !    res = generic_sum{T, add, cast}(arr)
-        !else
-        !    res = cast(0)
-        !end if
+        n = size(arr)
+        if (n > 0) then
+            res = div(generic_sum{T, add, cast}(arr), n)
+        else
+            res = cast(0)
+        end if
     end function
 
     subroutine test_template()
@@ -80,6 +86,8 @@ contains
             a_r(i) = i
         end do
         s_i = generic_avg{integer, operator(+), cast_integer, div_integer}(a_i)
+        s_r = generic_avg{real, operator(+), cast_real, div_real}(a_r)
+        print *, s_i
     end subroutine
 
 end module
