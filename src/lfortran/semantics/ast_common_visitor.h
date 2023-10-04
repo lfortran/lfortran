@@ -5864,20 +5864,16 @@ public:
         
         ASR::symbol_t *s = temp->m_symtab->resolve_symbol(func_name);
         std::string new_func_name = func_name;
+        SymbolTable *target_scope = current_scope;
 
         if (!is_nested) {
             new_func_name = current_scope->get_unique_name("__asr_" + func_name);
-        }
-
-        SymbolTable *target_scope = current_scope;
-
-        if (is_nested) {
+        } else {
             target_scope = current_scope->parent;
         }
 
         pass_instantiate_symbol(al, context_map, type_subs, symbol_subs,
             target_scope, temp->m_symtab, new_func_name, s);
-        context_map[func_name] = new_func_name;
 
         ASR::symbol_t *new_s = target_scope->get_symbol(new_func_name);
         ASR::Function_t *new_f = ASR::down_cast<ASR::Function_t>(new_s);
