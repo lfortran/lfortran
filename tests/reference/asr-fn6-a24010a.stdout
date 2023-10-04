@@ -978,8 +978,8 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [len_trim
-                                                    trim]
+                                                    [trim
+                                                    len_trim]
                                                     [(Var 5 generic)]
                                                     [(SelectType
                                                         (Var 5 generic)
