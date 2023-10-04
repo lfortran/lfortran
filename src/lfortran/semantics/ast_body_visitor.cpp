@@ -53,6 +53,21 @@ public:
         from_block = true;
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        ASR::asr_t* block;
+        std::string name;
+        if (x.m_stmt_name) {
+            name = std::string(x.m_stmt_name);
+            block = ASR::make_Block_t(al, x.base.base.loc,
+                current_scope, x.m_stmt_name, nullptr, 0);
+        } else {
+            // TODO: Understand tests/block1.f90 to know if this is needed, otherwise
+            // it might be possible to allow x.m_stmt_name to be nullptr
+            name = parent_scope->get_unique_name("block");
+            block = ASR::make_Block_t(al, x.base.base.loc,
+                current_scope, s2c(al, name), nullptr, 0);
+        }
+        ASR::Block_t* block_t = ASR::down_cast<ASR::Block_t>(
+            ASR::down_cast<ASR::symbol_t>(block));
 
         for (size_t i=0; i<x.n_use; i++) {
             visit_unit_decl1(*x.m_use[i]);
@@ -64,21 +79,8 @@ public:
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
         transform_stmts(body, x.n_body, x.m_body);
-        ASR::asr_t* block;
-        std::string name;
-        if (x.m_stmt_name) {
-            name = std::string(x.m_stmt_name);
-            block = ASR::make_Block_t(al, x.base.base.loc,
-                                      current_scope, x.m_stmt_name,
-                                      body.p, body.size());
-        } else {
-            // TODO: Understand tests/block1.f90 to know if this is needed, otherwise
-            // it might be possible to allow x.m_stmt_name to be nullptr
-            name = parent_scope->get_unique_name("block");
-            block = ASR::make_Block_t(al, x.base.base.loc,
-                                      current_scope, s2c(al, name),
-                                      body.p, body.size());
-        }
+        block_t->m_body = body.p;
+        block_t->n_body = body.size();
         current_scope = parent_scope;
         current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(block));
         tmp = ASR::make_BlockCall_t(al, x.base.base.loc,  -1,
@@ -889,6 +891,9 @@ public:
 
     void visit_AssociateBlock(const AST::AssociateBlock_t& x) {
         SymbolTable* new_scope = al.make_new<SymbolTable>(current_scope);
+        std::string name = current_scope->get_unique_name("associate_block");
+        ASR::asr_t* associate_block = ASR::make_AssociateBlock_t(al, x.base.base.loc,
+                                        new_scope, s2c(al, name), nullptr, 0);
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
         for( size_t i = 0; i < x.n_syms; i++ ) {
@@ -949,10 +954,10 @@ public:
         current_scope = new_scope;
         transform_stmts(body, x.n_body, x.m_body);
         current_scope = current_scope_copy;
-        std::string name = current_scope->get_unique_name("associate_block");
-        ASR::asr_t* associate_block = ASR::make_AssociateBlock_t(al, x.base.base.loc,
-                                                                 new_scope, s2c(al, name),
-                                                                 body.p, body.size());
+        ASR::AssociateBlock_t* associate_block_t = ASR::down_cast<ASR::AssociateBlock_t>(
+            ASR::down_cast<ASR::symbol_t>(associate_block));
+        associate_block_t->m_body = body.p;
+        associate_block_t->n_body = body.size();
         current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(associate_block));
         tmp = ASR::make_AssociateBlockCall_t(al, x.base.base.loc, ASR::down_cast<ASR::symbol_t>(associate_block));
     }

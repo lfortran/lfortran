@@ -3511,13 +3511,15 @@ public:
         }
         if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter()) {
             // check if asr owner is associate block.
-            if(current_scope->asr_owner != nullptr && ASR::is_a<ASR::AssociateBlock_t>(* ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner)) ) {
-                    if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->parent->get_counter()) {
-                        current_function_dependencies.push_back(al, ASRUtils::symbol_name(v));
-                    }
-                } else {
+            if(current_scope->asr_owner != nullptr &&
+                (ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner)) ||
+                 ASR::is_a<ASR::Block_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner))) ) {
+                if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->parent->get_counter()) {
                     current_function_dependencies.push_back(al, ASRUtils::symbol_name(v));
                 }
+            } else {
+                current_function_dependencies.push_back(al, ASRUtils::symbol_name(v));
+            }
         }
         ASR::Module_t* v_module = ASRUtils::get_sym_module0(f2);
         if( v_module ) {
@@ -5653,7 +5655,7 @@ public:
                         }
                     }
                 }
-    
+
                 // if not found, then try to build a function for intrinsic operator
                 if (!found) {
                     if (f->n_args != 2) {
