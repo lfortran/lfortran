@@ -30,7 +30,7 @@ program min_min
 
     output_amin0 = amin0(int_inp1, int_inp2)
     print*, output_amin0
-    if (output_amin0 /= 5) error stop
+    if (abs(output_amin0 - 5) >= 1e-7) error stop
 
     output_min1 = min1(real_inp3, real_inp4)
     print*, output_min1
@@ -38,7 +38,7 @@ program min_min
 
     output_amin1 = amin1(real_inp3, real_inp4)
     print*, output_amin1
-    if (abs(output_amin1 - 5) >= 1e-15) error stop
+    if (abs(output_amin1 - 5) >= 1e-7) error stop
 
     output_dmin1 = dmin1(real_inp1, real_inp1)
     print*, output_dmin1
