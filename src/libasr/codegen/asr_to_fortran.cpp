@@ -878,14 +878,11 @@ public:
         std::string r = "size(" + s;
         if (x.m_dim) {
             r += ", ";
-            int dim = down_cast<ASR::Integer_t>(x.m_dim)->m_kind;
-            for(int i = 0; i < dim; i++) {
-                visit_expr(*x.m_dim);
-                r += s;
-                if (i < dim-1) r += ", ";
-            }
+            visit_expr(*x.m_dim);
+            r += s;
         }
         r += ")";
+        s = r;
     }
 
     void visit_ArrayBound(const ASR::ArrayBound_t &x) {
