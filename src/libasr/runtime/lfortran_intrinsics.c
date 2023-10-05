@@ -203,7 +203,7 @@ void handle_float(char* format, double val, char** result) {
     char int_str[64];
     sprintf(int_str, "%ld", integer_part);
     char dec_str[64];
-    sprintf(dec_str, "%f", decimal_part);
+    sprintf(dec_str, "%0.15lf", decimal_part);
     memmove(dec_str,dec_str+2,strlen(dec_str));
 
     char* dot_pos = strchr(format, '.');
@@ -262,7 +262,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     int integer_length = (integer_part == 0) ? 1 : (int)log10(llabs(integer_part)) + 1;
 
     char val_str[64];
-    sprintf(val_str, "%f", val);
+    sprintf(val_str, "%0.15lf", val);
 
     int i = strlen(val_str) - 1;
     while (val_str[i] == '0') {
@@ -279,10 +279,10 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
         memmove(val_str, val_str + 1, strlen(val_str));
     }
 
-    int decimal = -1;
+    int decimal = 1;
     while (val_str[0] == '0') {
         memmove(val_str, val_str + 1, strlen(val_str));
-        decimal++;
+        decimal--;
     }
 
     char* dot_pos = strchr(format, '.');
