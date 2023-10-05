@@ -873,7 +873,17 @@ public:
 
     // void visit_ArraySection(const ASR::ArraySection_t &x) {}
 
-    // void visit_ArraySize(const ASR::ArraySize_t &x) {}
+    void visit_ArraySize(const ASR::ArraySize_t &x) {
+        visit_expr(*x.m_v);
+        std::string r = "size(" + s;
+        if (x.m_dim) {
+            r += ", ";
+            visit_expr(*x.m_dim);
+            r += s;
+        }
+        r += ")";
+        s = r;
+    }
 
     void visit_ArrayBound(const ASR::ArrayBound_t &x) {
         std::string r = "";
