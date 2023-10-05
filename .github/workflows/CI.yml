@@ -168,17 +168,15 @@ jobs:
         run: |
             git clone https://github.com/scipy/scipy
             cd scipy
-            git remote add bkm https://github.com/bkmgit/scipy
-            git fetch bkm
-            git checkout -t bkm/patch-1
-            git checkout ffc3e11d5115225b070b446cc910a06afa8ed020
+            git remote add ondrej https://github.com/certik/scipy
+            git fetch ondrej
+            git checkout -t ondrej/merge_specfun_minpack_fitpack4
+            git checkout 84ac735ae7a4071aee5cb84067e89530d55e27e2
             micromamba env create -f environment.yml
             micromamba activate scipy-dev
             git submodule update --init
             mkdir lfortran-build/
             cd lfortran-build/
-            ls ../../src/runtime/
-            ls $HOME/src/runtime
             LIBRARY_PATH="`pwd`/../../src/runtime/"
             FC=$(pwd)/../../src/bin/lfortran cmake \
               -DCMAKE_Fortran_FLAGS=--verbose \
@@ -193,28 +191,24 @@ jobs:
         run: |
             cd scipy/
             micromamba activate scipy-dev
-            ls $LD_LIBRARY_PATH
+            cp ${{ github.workspace }}/src/runtime/liblfortran_runtime.*  $CONDA_PREFIX/lib
             python dev.py test -t scipy.special -v
-        env:
-            LD_LIBRARY_PATH: "$HOME/src/runtime/"
 
       - name: Test SciPy Minpack
         shell: bash -e -x -l {0}
         run: |
             cd scipy/
             micromamba activate scipy-dev
+            cp ${{ github.workspace }}/src/runtime/liblfortran_runtime.*  $CONDA_PREFIX/lib
             python dev.py test -t scipy.optimize -v
-        env:
-            LD_LIBRARY_PATH: "$HOME/src/runtime/"
 
       - name: Test SciPy Fitpack
         shell: bash -e -x -l {0}
         run: |
             cd scipy/
             micromamba activate scipy-dev
+            cp ${{ github.workspace }}/src/runtime/liblfortran_runtime.*  $CONDA_PREFIX/lib
             python dev.py test -t scipy.interpolate -v
-        env:
-            LD_LIBRARY_PATH: "$HOME/src/runtime/"
 
   build_to_wasm_and_upload:
     name: Build LFortran to WASM and Upload
