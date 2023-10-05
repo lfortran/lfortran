@@ -856,6 +856,11 @@ struct FixedFormRecursiveDescent {
         tokenize_line(cur);
     }
 
+    void lex_use(unsigned char *&cur) {
+        push_token_advance(cur, "use");
+        tokenize_line(cur);
+    }
+
     bool is_function_call(unsigned char *cur) {
         if (try_next(cur, "call")) {
             if (try_name(cur)) {
@@ -1031,6 +1036,11 @@ struct FixedFormRecursiveDescent {
 
         if (next_is(cur, "implicit")) {
             lex_implicit(cur);
+            return true;
+        }
+
+        if (next_is(cur, "use")) {
+            lex_use(cur);
             return true;
         }
 
