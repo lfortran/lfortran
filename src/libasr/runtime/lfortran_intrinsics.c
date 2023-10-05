@@ -311,6 +311,10 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
         }
     }
 
+    if (format[1] == 'S') {
+        scale = 1;
+        width++;
+    }
     char formatted_value[64] = "";
     int spaces = width - sign_width - decimal_digits - 6;
     if (scale > 1){
@@ -417,6 +421,7 @@ char** parse_fortran_format(char* format, int *count, int *item_start) {
             case 'e' :
             case 'f' :
                 start = index++;
+                if(format[index] == 'S') index++;
                 while (isdigit(format[index])) index++;
                 if (format[index] == '.') index++;
                 while (isdigit(format[index])) index++;
