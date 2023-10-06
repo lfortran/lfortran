@@ -394,7 +394,6 @@ public:
         r += "to";
         r += " ";
         r += x.m_variable;
-        r += s;
         r += "\n";
         s = r;
     }
