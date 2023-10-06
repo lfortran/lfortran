@@ -805,6 +805,8 @@ public:
     std::vector<std::string> active_entry_points;
     std::map<std::string, std::vector<AST::stmt_t*>> entry_point_mapping;
     std::vector<std::string> external_procedures;
+    std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions;
+    std::map<std::string, std::vector<int>> &entry_function_arguments_mapping;
     Vec<char*> data_member_names;
     SetChar current_function_dependencies;
     ASR::ttype_t* current_variable_type_;
@@ -831,12 +833,15 @@ public:
             std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
             std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
             std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
-            std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols)
+            std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
+            std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
+            std::map<std::string, std::vector<int>> &entry_function_arguments_mapping)
         : diag{diagnostics}, al{al}, compiler_options{compiler_options},
           current_scope{symbol_table}, implicit_mapping{implicit_mapping},
           common_variables_hash{common_variables_hash}, external_procedures_mapping{external_procedures_mapping},
-          current_variable_type_{nullptr},
-          instantiate_types{instantiate_types}, instantiate_symbols{instantiate_symbols} {
+          entry_functions{entry_functions},entry_function_arguments_mapping{entry_function_arguments_mapping},
+          current_variable_type_{nullptr}, instantiate_types{instantiate_types},
+          instantiate_symbols{instantiate_symbols} {
         current_module_dependencies.reserve(al, 4);
         enum_init_val = 0;
     }
