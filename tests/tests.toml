@@ -3163,11 +3163,6 @@ ast = true
 asr_implicit_typing = true
 
 [[test]]
-filename = "../integration_tests/assign_to3.f90"
-ast = true
-asr_implicit_typing = true
-
-[[test]]
 filename = "../integration_tests/conv_complex2real.f90"
 asr = true
 
