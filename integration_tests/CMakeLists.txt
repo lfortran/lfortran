@@ -918,6 +918,7 @@ RUN(NAME flush_01 LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
 
 RUN(NAME assign_to1 LABELS gfortran llvm)
 RUN(NAME assign_to2 LABELS gfortran llvm)
+RUN(NAME assign_to3 LABELS gfortran llvm fortran)
 
 RUN(NAME conv_complex2real LABELS gfortran llvm wasm)
 
