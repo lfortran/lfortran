@@ -1,0 +1,22 @@
+(TranslationUnit
+    [(Program
+        main
+        ()
+        []
+        []
+        []
+        [(Assign
+            0
+            15
+            k
+            ()
+        )
+        (Print
+            0
+            ()
+            [k]
+            ()
+        )]
+        []
+    )]
+)

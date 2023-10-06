@@ -1,0 +1,42 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            main:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            k:
+                                (Variable
+                                    2
+                                    k
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Optional
+                                    .false.
+                                )
+                        })
+                    main
+                    []
+                    [(=
+                        (Var 2 k)
+                        (IntegerConstant 15 (Integer 4))
+                        ()
+                    )
+                    (Print
+                        [(Var 2 k)]
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)

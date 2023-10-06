@@ -385,7 +385,19 @@ public:
 
     // void visit_ReAlloc(const ASR::ReAlloc_t &x) {}
 
-    // void visit_Assign(const ASR::Assign_t &x) {}
+    void visit_Assign(const ASR::Assign_t &x) {
+        std::string r;
+        r += "assign";
+        r += " ";
+        r += x.m_label;
+        r += " ";
+        r += "to";
+        r += " ";
+        r += x.m_variable;
+        r += s;
+        r += "\n";
+        s = r;
+    }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
         std::string r = indent;
