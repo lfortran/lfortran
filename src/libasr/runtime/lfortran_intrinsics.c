@@ -2277,8 +2277,8 @@ LFORTRAN_API void _lfortran_empty_read(int32_t unit_num) {
 
     if (!unit_file_bin) {
         // The contents of `c` are ignored
-        char c;
-        while (c != '\n') {
+        char c = fgetc(fp);
+        while (c != '\n' && c != EOF) {
             c = fgetc(fp);
         }
     }
