@@ -137,6 +137,12 @@ macro(RUN)
     cmake_parse_arguments(RUN "${options}" "${oneValueArgs}"
                         "${multiValueArgs}" ${ARGN} )
 
+    foreach(b ${RUN_LABELS})
+        if (NOT (b MATCHES "^(llvm|llvm2|llvm_rtlib|c|cpp|x86|wasm|gfortran|llvmImplicit|fortran)$"))
+            message(FATAL_ERROR "Unsupported backend: ${b}")
+        endif()
+    endforeach()
+
     set(RUN_FILE_NAME ${RUN_NAME})
 
     if (RUN_INCLUDE_PATH)
