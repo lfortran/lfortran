@@ -248,18 +248,18 @@ RUN(NAME if_05 LABELS gfortran llvm cpp wasm c)
 RUN(NAME while_01 LABELS gfortran llvm cpp x86 wasm c)
 RUN(NAME while_02 LABELS gfortran llvm cpp wasm c)
 
-RUN(NAME doloop_01 LABELS gfortran llvm c cpp x86 wasm)
-RUN(NAME doloop_02 LABELS gfortran llvm c cpp x86 wasm)
+RUN(NAME doloop_01 LABELS gfortran llvm c cpp x86 wasm fortran)
+RUN(NAME doloop_02 LABELS gfortran llvm c cpp x86 wasm fortran)
 RUN(NAME doloop_03 LABELS gfortran llvm c cpp wasm)
-RUN(NAME doloop_04 LABELS gfortran llvm) # uses goto target
+RUN(NAME doloop_04 LABELS gfortran llvm fortran) # uses goto target
 RUN(NAME doloop_05 LABELS gfortran llvm) # uses goto
-RUN(NAME doloop_06 LABELS gfortran llvm c cpp wasm)
-RUN(NAME doloop_07 LABELS gfortran llvm c cpp wasm)
-RUN(NAME doloop_08 LABELS gfortran llvm c cpp wasm NOFAST)
+RUN(NAME doloop_06 LABELS gfortran llvm c cpp wasm fortran)
+RUN(NAME doloop_07 LABELS gfortran llvm c cpp wasm fortan)
+RUN(NAME doloop_08 LABELS gfortran llvm c cpp wasm NOFAST fortran)
 RUN(NAME doloop_09 LABELS gfortran llvm) # nested subroutine
-RUN(NAME doloop_10 LABELS gfortran llvm wasm) # implicit cast loop variable
+RUN(NAME doloop_10 LABELS gfortran llvm wasm fortran) # implicit cast loop variable
 
-RUN(NAME cycle_and_exit1 LABELS gfortran llvm)
+RUN(NAME cycle_and_exit1 LABELS gfortran llvm fortran)
 RUN(NAME cycle_and_exit2 LABELS gfortran llvm)
 RUN(NAME cycle_and_exit3 LABELS gfortran llvm)
 RUN(NAME cycle_and_exit4 LABELS gfortran llvm)
@@ -1003,13 +1003,13 @@ RUN(NAME write_03 LABELS gfortran llvmImplicit NOFAST)
 RUN(NAME write_04 LABELS gfortran llvm)
 RUN(NAME write_05 LABELS gfortran llvm)
 
-RUN(NAME do_loop_01 LABELS gfortran llvm)
+RUN(NAME do_loop_01 LABELS gfortran llvm fortran)
 
 RUN(NAME array_01 LABELS gfortran llvm)
 RUN(NAME array_02 LABELS gfortran llvm wasm)
 
-RUN(NAME do_loop_02 LABELS gfortran llvm)
-RUN(NAME do_loop_03 LABELS gfortran llvm
+RUN(NAME do_loop_02 LABELS gfortran llvm fortran)
+RUN(NAME do_loop_03 LABELS gfortran llvm fortran
     EXTRA_ARGS --use-loop-variable-after-loop)
 RUN(NAME do_loop_04 LABELS llvm) # This test is not supported by gfortran, as it uses a loop variable after the loop ( bad code practice )
 
