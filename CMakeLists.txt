@@ -12,8 +12,13 @@ if (LFORTRAN_BUILD_ALL)
 endif()
 
 file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/version" LFORTRAN_VERSION)
+string(REGEX MATCH "^[^-]*" LFORTRAN_NO_TAG_VERSION ${LFORTRAN_VERSION} CACHE STRING "project version")
 
-project(lfortran LANGUAGES C CXX)
+project(lfortran
+        VERSION ${LFORTRAN_NO_TAG_VERSION}
+        DESCRIPTION "A modern open-source interactive Fortran compiler"
+        HOMEPAGE_URL "https://lfortran.org/"
+        LANGUAGES C CXX)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
