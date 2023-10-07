@@ -267,7 +267,11 @@ public:
             // to our new block
             builder->CreateBr(bb);
         }
+#if LLVM_VERSION_MAJOR >= 16
+        fn->insert(fn->end(), bb);
+#else
         fn->getBasicBlockList().push_back(bb);
+#endif
         builder->SetInsertPoint(bb);
     }
 
@@ -4878,7 +4882,11 @@ public:
         start_new_block(blockstart);
         llvm::BasicBlock *blockend = llvm::BasicBlock::Create(context, blockend_name);
         llvm::Function *fn = blockstart->getParent();
+#if LLVM_VERSION_MAJOR >= 16
+        fn->insert(fn->end(), blockend);
+#else
         fn->getBasicBlockList().push_back(blockend);
+#endif
         builder->SetInsertPoint(blockstart);
         loop_or_block_end.push_back(blockend);
         loop_or_block_end_names.push_back(blockend_name);
