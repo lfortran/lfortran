@@ -34,24 +34,28 @@ uint64_t static inline get_hash(ASR::asr_t *node)
 #define LFORTRAN_STMT_LABEL_TYPE(x) \
         case AST::stmtType::x: { return AST::down_cast<AST::x##_t>(f)->m_label; }
 
-#define ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies) if(current_scope->asr_owner != nullptr && \
-        (ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner)) || \
-            ASR::is_a<ASR::Block_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner))) ) { \
-        if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->parent->get_counter()) { \
-            current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym)); \
-        } \
-    } else { \
-        current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym)); \
+#define ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies) while(current_scope != nullptr) { \
+        if (ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner)) || \
+            ASR::is_a<ASR::Block_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner))) { \
+                current_scope = current_scope->parent; \
+            } else if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() == current_scope->get_counter()) { \
+                break; \
+            } else { \
+                current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym)); \
+                break; \
+            } \
     } \
 
-#define ADD_ASR_DEPENDENCIES_WITH_NAME(current_scope, final_sym, current_function_dependencies, dep_name) if(current_scope->asr_owner != nullptr && \
-        (ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner)) || \
-            ASR::is_a<ASR::Block_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner))) ) { \
-        if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->parent->get_counter()) { \
-            current_function_dependencies.push_back(al, dep_name); \
-        } \
-    } else { \
-        current_function_dependencies.push_back(al, dep_name); \
+#define ADD_ASR_DEPENDENCIES_WITH_NAME(current_scope, final_sym, current_function_dependencies, dep_name) while(current_scope != nullptr) { \
+        if (ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner)) || \
+            ASR::is_a<ASR::Block_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner))) { \
+                current_scope = current_scope->parent; \
+            } else if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() == current_scope->get_counter()) { \
+                break; \
+            } else { \
+                current_function_dependencies.push_back(al, dep_name); \
+                break; \
+            } \
     } \
 
 static inline int64_t stmt_label(AST::stmt_t *f)
