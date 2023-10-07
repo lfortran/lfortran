@@ -415,7 +415,7 @@ public:
     // void visit_Associate(const ASR::Associate_t &x) {}
 
     void visit_Cycle(const ASR::Cycle_t &/*x*/) {
-        s = indent + "continue\n";
+        s = indent + "cycle\n";
     }
 
     // void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {}
@@ -464,7 +464,7 @@ public:
         s += "\n";
     }
 
-    void visit_Exit(const ASR::Exit_t &x) {
+    void visit_Exit(const ASR::Exit_t &/*x*/) {
         std::string r;
         r += "call";
         r += " ";
