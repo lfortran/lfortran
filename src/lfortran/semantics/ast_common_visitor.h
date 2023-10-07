@@ -739,6 +739,18 @@ public:
         {"mod", {IntrinsicSignature({"mod"}, 1, 2)}},
     };
 
+    std::map<std::string, std::string> double_precision_intrinsics = {
+        {"dsinh", "sinh"},
+        {"dcosh", "cosh"},
+        {"dtanh", "tanh"},
+
+        {"dsin", "sin"},
+        {"dcos", "cos"},
+        {"dtan", "tan"},
+        {"datan2", "atan2"},
+
+        {"dsign", "sign"}
+    };
 
     ASR::asr_t *tmp;
     std::vector<ASR::asr_t *> tmp_vec;
@@ -4400,23 +4412,8 @@ public:
         return name2signature[var_name];
     }
 
-    void populate_double_precision_intrinsics(std::map<std::string, std::string> &double_precision_intrinsics) {
-        double_precision_intrinsics["dsinh"] = "sinh";
-        double_precision_intrinsics["dcosh"] = "cosh";
-        double_precision_intrinsics["dtanh"] = "tanh";
-
-        double_precision_intrinsics["dsin"] = "sin";
-        double_precision_intrinsics["dcos"] = "cos";
-        double_precision_intrinsics["dtan"] = "tan";
-        double_precision_intrinsics["datan2"] = "atan2";
-
-        double_precision_intrinsics["dsign"] = "sign";
-    }
-
     bool is_intrinsic_registry_function(std::string var_name) {
-        std::map<std::string, std::string> double_precision_intrinsics;
-        populate_double_precision_intrinsics(double_precision_intrinsics);
-        bool is_double_precision_intrinsic = double_precision_intrinsics.find(var_name) != double_precision_intrinsics.end();
+        bool is_double_precision_intrinsic = double_precision_intrinsics.count(var_name);
         if (intrinsic_procedures_as_asr_nodes.is_intrinsic_present_in_ASR(var_name) ||
             intrinsic_procedures_as_asr_nodes.is_kind_based_selection_required(var_name) ||
             ASRUtils::IntrinsicScalarFunctionRegistry::is_intrinsic_function(var_name) ||
@@ -4431,9 +4428,7 @@ public:
     ASR::symbol_t* intrinsic_as_node(const AST::FuncCallOrArray_t &x,
                                      bool& is_function) {
         std::string var_name = to_lower(x.m_func);
-        std::map<std::string, std::string> double_precision_intrinsics;
-        populate_double_precision_intrinsics(double_precision_intrinsics);
-        bool is_double_precision_intrinsic = double_precision_intrinsics.find(var_name) != double_precision_intrinsics.end();
+        bool is_double_precision_intrinsic = double_precision_intrinsics.count(var_name);
         if( is_intrinsic_registry_function(var_name)) {
             is_function = false;
             if (is_double_precision_intrinsic) {
