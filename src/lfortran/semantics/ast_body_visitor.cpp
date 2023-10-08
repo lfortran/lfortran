@@ -1597,6 +1597,9 @@ public:
                     arg = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, raw_type));
                 } else if (ASR::is_a<ASR::Logical_t>(*raw_type)) {
                     arg = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, false, raw_type));
+                } else if (ASR::is_a<ASR::Character_t>(*raw_type)) {
+                    ASR::ttype_t* character_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, 0, nullptr));
+                    arg = ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc, s2c(al, ""), character_type));
                 } else {
                     throw SemanticError("Argument type not supported yet", loc);
                 }
@@ -1746,6 +1749,8 @@ public:
         for (size_t i = 0; i < x.n_body; i++) {
             subroutine_stmt_vector.push_back(x.m_body[i]);
         }
+        Vec<ASR::stmt_t*> master_function_body; master_function_body.reserve(al, stmt_vector.size());
+        current_body = &master_function_body;
         SymbolTable* old_scope = current_scope;
         current_scope = master_function->m_symtab;
         visit_stmts_helper(subroutine_stmt_vector, stmt_vector, tmp_vector, original_function_name, master_function->m_return_var);
@@ -1756,7 +1761,6 @@ public:
             stmt_vector.push_back(go_to_target_stmt); go_to_target++;
             visit_stmts_helper(it.second, stmt_vector, tmp_vector, original_function_name, master_function->m_return_var);
         }
-        Vec<ASR::stmt_t*> master_function_body; master_function_body.reserve(al, stmt_vector.size());
         for (auto &it: stmt_vector) {
             master_function_body.push_back(al, it);
         }
