@@ -196,7 +196,7 @@ class ReplaceFunctionCallWithSubroutineCall:
                             is_allocatable = is_func_call_allocatable || is_result_var_allocatable;
                         }
                         n_dims_ = ASRUtils::extract_dimensions_from_ttype(result_var_type, m_dims_);
-                        is_created_result_var_type_dependent_on_local_vars = !ASRUtils::is_dimension_dependent_only_on_arguments(m_dims_, n_dims_);
+                        is_created_result_var_type_dependent_on_local_vars = !ASRUtils::is_dimension_dependent_only_on_arguments(m_dims_, n_dims_) && result_var_;
                         if( is_allocatable || is_created_result_var_type_dependent_on_local_vars ) {
                             result_var_type = ASRUtils::duplicate_type_with_empty_dims(al, result_var_type);
                             result_var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(
@@ -245,14 +245,18 @@ class ReplaceFunctionCallWithSubroutineCall:
                     vec_alloc.push_back(al, alloc_arg);
                     pass_result.push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(
                         al, loc, vec_alloc.p, 1, nullptr, nullptr, nullptr)));
-                } else if( is_created_result_var_type_dependent_on_local_vars ) {
+                } else if( !is_func_call_allocatable && is_created_result_var_type_dependent_on_local_vars ) {
                     Vec<ASR::dimension_t> alloc_dims;
                     alloc_dims.reserve(al, n_dims_);
                     for( size_t i = 0; i < n_dims_; i++ ) {
                         ASR::dimension_t alloc_dim;
                         alloc_dim.loc = loc;
                         alloc_dim.m_start = make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, 4, loc);
-                        alloc_dim.m_length = m_dims_[i].m_length;
+                        if( m_dims_[i].m_length ) {
+                            alloc_dim.m_length = m_dims_[i].m_length;
+                        } else {
+                            alloc_dim.m_length = ASRUtils::get_size(result_var, i + 1, al);
+                        }
                         alloc_dims.push_back(al, alloc_dim);
                     }
                     Vec<ASR::alloc_arg_t> alloc_args;
@@ -356,7 +360,8 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 return ;
             }
 
-            if( PassUtils::is_array(x.m_target) ) {
+            if( PassUtils::is_array(x.m_target)
+                    || ASR::is_a<ASR::ArraySection_t>(*x.m_target)) {
                 replacer.result_var = x.m_target;
                 ASR::expr_t* original_value = x.m_value;
                 resultvar2value[replacer.result_var] = original_value;
