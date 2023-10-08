@@ -756,7 +756,12 @@ public:
     // void visit_UnsignedIntegerBinOp(const ASR::UnsignedIntegerBinOp_t &x) {}
 
     void visit_RealConstant(const ASR::RealConstant_t &x) {
-        s = std::to_string(x.m_r);
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        if (kind >= 8) {
+            s = std::to_string(x.m_r) + "d0";
+        } else {
+            s = std::to_string(x.m_r);
+        }
         last_expr_precedence = 13;
     }
 
