@@ -7,6 +7,94 @@
                     (SymbolTable
                         3
                         {
+                            
+                        })
+                    prin
+                    (FunctionType
+                        []
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    [prini_main__lcompilers]
+                    []
+                    [(SubroutineCall
+                        1 prini_main__lcompilers
+                        1 prini_main__lcompilers
+                        [((IntegerConstant 2 (Integer 4)))]
+                        ()
+                    )]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            prini:
+                (Function
+                    (SymbolTable
+                        2
+                        {
+                            
+                        })
+                    prini
+                    (FunctionType
+                        []
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    [prini_main__lcompilers]
+                    []
+                    [(SubroutineCall
+                        1 prini_main__lcompilers
+                        1 prini_main__lcompilers
+                        [((IntegerConstant 1 (Integer 4)))]
+                        ()
+                    )]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            prini_main__lcompilers:
+                (Function
+                    (SymbolTable
+                        4
+                        {
+                            entry__lcompilers:
+                                (Variable
+                                    4
+                                    entry__lcompilers
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
                             messpr:
                                 (Function
                                     (SymbolTable
@@ -39,9 +127,9 @@
                                     ()
                                 )
                         })
-                    prin
+                    prini_main__lcompilers
                     (FunctionType
-                        []
+                        [(Integer 4)]
                         ()
                         Source
                         Implementation
@@ -55,77 +143,46 @@
                         .false.
                     )
                     [messpr]
-                    []
-                    [(SubroutineCall
-                        3 messpr
-                        ()
+                    [(Var 4 entry__lcompilers)]
+                    [(If
+                        (IntegerCompare
+                            (Var 4 entry__lcompilers)
+                            Eq
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
+                            ()
+                        )
+                        [(GoTo
+                            1
+                            1
+                        )]
                         []
-                        ()
                     )
-                    (Return)]
-                    ()
-                    Public
-                    .false.
-                    .false.
-                    ()
-                ),
-            prini:
-                (Function
-                    (SymbolTable
+                    (If
+                        (IntegerCompare
+                            (Var 4 entry__lcompilers)
+                            Eq
+                            (IntegerConstant 2 (Integer 4))
+                            (Logical 4)
+                            ()
+                        )
+                        [(GoTo
+                            2
+                            2
+                        )]
+                        []
+                    )
+                    (GoToTarget
+                        1
+                        1
+                    )
+                    (Return)
+                    (GoToTarget
                         2
-                        {
-                            messpr:
-                                (Function
-                                    (SymbolTable
-                                        4
-                                        {
-                                            
-                                        })
-                                    messpr
-                                    (FunctionType
-                                        []
-                                        ()
-                                        BindC
-                                        Interface
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                    )
-                                    []
-                                    []
-                                    []
-                                    ()
-                                    Public
-                                    .false.
-                                    .false.
-                                    ()
-                                )
-                        })
-                    prini
-                    (FunctionType
-                        []
-                        ()
-                        Source
-                        Implementation
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                        []
-                        .false.
+                        2
                     )
-                    [messpr]
-                    []
-                    [(Return)
                     (SubroutineCall
-                        2 messpr
+                        4 messpr
                         ()
                         []
                         ()

@@ -5,16 +5,16 @@
             entry_06:
                 (Program
                     (SymbolTable
-                        3
+                        5
                         {
                             mvndfn:
                                 (Function
                                     (SymbolTable
-                                        4
+                                        6
                                         {
                                             mvndfn:
                                                 (Variable
-                                                    4
+                                                    6
                                                     mvndfn
                                                     []
                                                     ReturnVar
@@ -30,7 +30,7 @@
                                                 ),
                                             w:
                                                 (Variable
-                                                    4
+                                                    6
                                                     w
                                                     []
                                                     Unspecified
@@ -71,9 +71,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 4 w)]
+                                    [(Var 6 w)]
                                     []
-                                    (Var 4 mvndfn)
+                                    (Var 6 mvndfn)
                                     Public
                                     .false.
                                     .false.
@@ -81,7 +81,7 @@
                                 ),
                             w:
                                 (Variable
-                                    3
+                                    5
                                     w
                                     []
                                     Local
@@ -109,10 +109,10 @@
                                 Abs
                                 [(RealBinOp
                                     (FunctionCall
-                                        3 mvndfn
+                                        5 mvndfn
                                         ()
                                         [((ArrayPhysicalCast
-                                            (Var 3 w)
+                                            (Var 5 w)
                                             FixedSizeArray
                                             DescriptorArray
                                             (Array
@@ -224,139 +224,18 @@
                         []
                         .false.
                     )
-                    []
+                    [mvndfn_main__lcompilers]
                     [(Var 2 w)]
                     [(=
-                        (ArrayItem
-                            (Var 2 w)
-                            [(()
-                            (IntegerConstant 1 (Integer 4))
-                            ())]
-                            (Real 8)
-                            ColMajor
-                            ()
-                        )
-                        (RealConstant
-                            10.900000
-                            (Real 8)
-                        )
-                        ()
-                    )
-                    (=
-                        (ArrayItem
-                            (Var 2 w)
-                            [(()
-                            (IntegerConstant 2 (Integer 4))
-                            ())]
-                            (Real 8)
-                            ColMajor
-                            ()
-                        )
-                        (RealConstant
-                            10.900000
-                            (Real 8)
-                        )
-                        ()
-                    )
-                    (If
-                        (RealCompare
-                            (IntrinsicScalarFunction
-                                Abs
-                                [(RealBinOp
-                                    (ArrayItem
-                                        (Var 2 w)
-                                        [(()
-                                        (IntegerConstant 1 (Integer 4))
-                                        ())]
-                                        (Real 8)
-                                        ColMajor
-                                        ()
-                                    )
-                                    Sub
-                                    (RealConstant
-                                        10.900000
-                                        (Real 8)
-                                    )
-                                    (Real 8)
-                                    ()
-                                )]
-                                0
-                                (Real 8)
-                                ()
-                            )
-                            Gt
-                            (Cast
-                                (RealConstant
-                                    0.000000
-                                    (Real 4)
-                                )
-                                RealToReal
-                                (Real 8)
-                                (RealConstant
-                                    0.000000
-                                    (Real 8)
-                                )
-                            )
-                            (Logical 4)
-                            ()
-                        )
-                        [(ErrorStop
-                            ()
-                        )]
-                        []
-                    )
-                    (If
-                        (RealCompare
-                            (IntrinsicScalarFunction
-                                Abs
-                                [(RealBinOp
-                                    (ArrayItem
-                                        (Var 2 w)
-                                        [(()
-                                        (IntegerConstant 2 (Integer 4))
-                                        ())]
-                                        (Real 8)
-                                        ColMajor
-                                        ()
-                                    )
-                                    Sub
-                                    (RealConstant
-                                        10.900000
-                                        (Real 8)
-                                    )
-                                    (Real 8)
-                                    ()
-                                )]
-                                0
-                                (Real 8)
-                                ()
-                            )
-                            Gt
-                            (Cast
-                                (RealConstant
-                                    0.000000
-                                    (Real 4)
-                                )
-                                RealToReal
-                                (Real 8)
-                                (RealConstant
-                                    0.000000
-                                    (Real 8)
-                                )
-                            )
-                            (Logical 4)
-                            ()
-                        )
-                        [(ErrorStop
-                            ()
-                        )]
-                        []
-                    )
-                    (=
                         (Var 2 mvndfn)
-                        (RealConstant
-                            1.200000
+                        (FunctionCall
+                            1 mvndfn_main__lcompilers
+                            1 mvndfn_main__lcompilers
+                            [((IntegerConstant 1 (Integer 4)))
+                            ((Var 2 w))]
                             (Real 8)
+                            ()
+                            ()
                         )
                         ()
                     )]
@@ -366,15 +245,47 @@
                     .false.
                     ()
                 ),
-            mvndnt:
+            mvndfn_main__lcompilers:
                 (Function
                     (SymbolTable
-                        5
+                        4
                         {
+                            entry__lcompilers:
+                                (Variable
+                                    4
+                                    entry__lcompilers
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
                             mvndfn:
                                 (Variable
-                                    5
+                                    4
                                     mvndfn
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            mvndfn_main__lcompilers:
+                                (Variable
+                                    4
+                                    mvndfn_main__lcompilers
                                     []
                                     ReturnVar
                                     ()
@@ -389,7 +300,7 @@
                                 ),
                             w:
                                 (Variable
-                                    5
+                                    4
                                     w
                                     []
                                     Unspecified
@@ -409,10 +320,16 @@
                                     .false.
                                 )
                         })
-                    mvndnt
+                    mvndfn_main__lcompilers
                     (FunctionType
-                        []
-                        ()
+                        [(Integer 4)
+                        (Array
+                            (Real 8)
+                            [(()
+                            ())]
+                            DescriptorArray
+                        )]
+                        (Real 8)
                         Source
                         Implementation
                         ()
@@ -425,10 +342,43 @@
                         .false.
                     )
                     []
-                    []
-                    [(=
+                    [(Var 4 entry__lcompilers)
+                    (Var 4 w)]
+                    [(If
+                        (IntegerCompare
+                            (Var 4 entry__lcompilers)
+                            Eq
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
+                            ()
+                        )
+                        [(GoTo
+                            1
+                            1
+                        )]
+                        []
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 4 entry__lcompilers)
+                            Eq
+                            (IntegerConstant 2 (Integer 4))
+                            (Logical 4)
+                            ()
+                        )
+                        [(GoTo
+                            2
+                            2
+                        )]
+                        []
+                    )
+                    (GoToTarget
+                        1
+                        1
+                    )
+                    (=
                         (ArrayItem
-                            (Var 5 w)
+                            (Var 4 w)
                             [(()
                             (IntegerConstant 1 (Integer 4))
                             ())]
@@ -444,7 +394,7 @@
                     )
                     (=
                         (ArrayItem
-                            (Var 5 w)
+                            (Var 4 w)
                             [(()
                             (IntegerConstant 2 (Integer 4))
                             ())]
@@ -464,7 +414,7 @@
                                 Abs
                                 [(RealBinOp
                                     (ArrayItem
-                                        (Var 5 w)
+                                        (Var 4 w)
                                         [(()
                                         (IntegerConstant 1 (Integer 4))
                                         ())]
@@ -511,7 +461,7 @@
                                 Abs
                                 [(RealBinOp
                                     (ArrayItem
-                                        (Var 5 w)
+                                        (Var 4 w)
                                         [(()
                                         (IntegerConstant 2 (Integer 4))
                                         ())]
@@ -553,14 +503,249 @@
                         []
                     )
                     (=
-                        (Var 5 mvndfn)
+                        (Var 4 mvndfn_main__lcompilers)
+                        (RealConstant
+                            1.200000
+                            (Real 8)
+                        )
+                        ()
+                    )
+                    (GoToTarget
+                        2
+                        2
+                    )
+                    (=
+                        (ArrayItem
+                            (Var 4 w)
+                            [(()
+                            (IntegerConstant 1 (Integer 4))
+                            ())]
+                            (Real 8)
+                            ColMajor
+                            ()
+                        )
+                        (RealConstant
+                            10.900000
+                            (Real 8)
+                        )
+                        ()
+                    )
+                    (=
+                        (ArrayItem
+                            (Var 4 w)
+                            [(()
+                            (IntegerConstant 2 (Integer 4))
+                            ())]
+                            (Real 8)
+                            ColMajor
+                            ()
+                        )
+                        (RealConstant
+                            10.900000
+                            (Real 8)
+                        )
+                        ()
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicScalarFunction
+                                Abs
+                                [(RealBinOp
+                                    (ArrayItem
+                                        (Var 4 w)
+                                        [(()
+                                        (IntegerConstant 1 (Integer 4))
+                                        ())]
+                                        (Real 8)
+                                        ColMajor
+                                        ()
+                                    )
+                                    Sub
+                                    (RealConstant
+                                        10.900000
+                                        (Real 8)
+                                    )
+                                    (Real 8)
+                                    ()
+                                )]
+                                0
+                                (Real 8)
+                                ()
+                            )
+                            Gt
+                            (Cast
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                RealToReal
+                                (Real 8)
+                                (RealConstant
+                                    0.000000
+                                    (Real 8)
+                                )
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicScalarFunction
+                                Abs
+                                [(RealBinOp
+                                    (ArrayItem
+                                        (Var 4 w)
+                                        [(()
+                                        (IntegerConstant 2 (Integer 4))
+                                        ())]
+                                        (Real 8)
+                                        ColMajor
+                                        ()
+                                    )
+                                    Sub
+                                    (RealConstant
+                                        10.900000
+                                        (Real 8)
+                                    )
+                                    (Real 8)
+                                    ()
+                                )]
+                                0
+                                (Real 8)
+                                ()
+                            )
+                            Gt
+                            (Cast
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                RealToReal
+                                (Real 8)
+                                (RealConstant
+                                    0.000000
+                                    (Real 8)
+                                )
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (=
+                        (Var 4 mvndfn_main__lcompilers)
                         (RealConstant
                             1.200000
                             (Real 8)
                         )
                         ()
                     )]
+                    (Var 4 mvndfn_main__lcompilers)
+                    Public
+                    .false.
+                    .false.
                     ()
+                ),
+            mvndnt:
+                (Function
+                    (SymbolTable
+                        3
+                        {
+                            mvndfn:
+                                (Variable
+                                    3
+                                    mvndfn
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            mvndnt:
+                                (Variable
+                                    3
+                                    mvndnt
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            w:
+                                (Variable
+                                    3
+                                    w
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (Array
+                                            (Real 8)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    mvndnt
+                    (FunctionType
+                        []
+                        (Real 8)
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    [mvndfn_main__lcompilers]
+                    []
+                    [(=
+                        (Var 3 mvndnt)
+                        (FunctionCall
+                            1 mvndfn_main__lcompilers
+                            1 mvndfn_main__lcompilers
+                            [((IntegerConstant 2 (Integer 4)))
+                            ((Var 3 w))]
+                            (Real 8)
+                            ()
+                            ()
+                        )
+                        ()
+                    )]
+                    (Var 3 mvndnt)
                     Public
                     .false.
                     .false.

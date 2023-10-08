@@ -79,6 +79,7 @@ public:
     std::map<std::string, std::map<std::string, std::map<std::string, Location>>> class_deferred_procedures;
     std::vector<std::string> assgn_proc_names;
     std::vector<std::pair<std::string,Location>> simd_variables;
+    std::map<std::string, std::vector<AST::arg_t>> entry_function_args;
     std::string dt_name;
     bool in_submodule = false;
     bool is_interface = false;
@@ -103,9 +104,11 @@ public:
         diag::Diagnostics &diagnostics, CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash, std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
         std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
-        std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols)
+        std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
+        std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
+        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping)
       : CommonVisitor(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                      instantiate_types, instantiate_symbols) {}
+                      instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping) {}
 
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
         if (!current_scope) {
@@ -561,6 +564,287 @@ public:
         mark_common_blocks_as_declared();
     }
 
+    bool subroutine_contains_entry_function(std::string subroutine_name, AST::stmt_t** body, size_t n_body) {
+        bool contains_entry_function = false;
+        for (size_t i=0; i<n_body; i++) {
+            if (AST::is_a<AST::Entry_t>(*body[i])) {
+                contains_entry_function = true;
+                AST::Entry_t* entry = AST::down_cast<AST::Entry_t>(body[i]);
+                std::string entry_name = to_lower(entry->m_name);
+                entry_functions[subroutine_name][entry_name] = std::vector<AST::stmt_t*>();
+                for(size_t i = 0; i < entry->n_args; i++) {
+                    entry_function_args[entry_name].push_back(entry->m_args[i]);
+                }
+            } else {
+                if (contains_entry_function) {
+                    for(auto &it: entry_functions[subroutine_name]) {
+                        it.second.push_back(body[i]);
+                    }
+                }
+            }
+        }
+        return contains_entry_function;
+    }
+
+    void update_duplicated_nodes(Allocator &al, SymbolTable *current_scope) {
+        class UpdateDuplicatedNodes : public PassUtils::PassVisitor<UpdateDuplicatedNodes>
+        {
+            public:
+            SymbolTable* scope = current_scope;
+            SymbolTable* correct_scope = nullptr;
+            UpdateDuplicatedNodes(Allocator &al) : PassVisitor(al, nullptr) {}
+
+            void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+                ASR::FunctionCall_t* func_call = (ASR::FunctionCall_t*)(&x);
+                if (scope->counter == correct_scope->counter) {
+                    std::string func_call_name = ASRUtils::symbol_name(func_call->m_name);
+                    ASR::symbol_t* sym = correct_scope->resolve_symbol(func_call_name);
+                    if (sym) {
+                        func_call->m_name = correct_scope->resolve_symbol(func_call_name);
+                    }
+                    std::string func_call_origin_name = ASRUtils::symbol_name(func_call->m_original_name);
+                    sym = correct_scope->resolve_symbol(func_call_origin_name);
+                    if (sym) {
+                        func_call->m_original_name = correct_scope->resolve_symbol(func_call_origin_name);
+                    }
+                }
+                for (size_t i=0; i<x.n_args; i++) {
+                    this->visit_call_arg(x.m_args[i]);
+                }
+                this->visit_ttype(*x.m_type);
+                if (x.m_value) {
+                    this->visit_expr(*x.m_value);
+                }
+                if (x.m_dt) {
+                    this->visit_expr(*x.m_dt);
+                }
+            }
+
+            void visit_Var(const ASR::Var_t& x) {
+                if (scope && scope->counter == correct_scope->counter) {
+                    ASR::Var_t* var = (ASR::Var_t*)(&x);
+                    ASR::symbol_t* sym = var->m_v;
+                    std::string sym_name = ASRUtils::symbol_name(sym);
+
+                    ASR::symbol_t* sym_in_scope = scope->resolve_symbol(sym_name);
+                    var->m_v = sym_in_scope;
+                }
+            }
+
+            void visit_Function(const ASR::Function_t& x) {
+                ASR::Function_t* func = (ASR::Function_t*)(&x);
+                SymbolTable* parent_scope = scope;
+                scope = func->m_symtab;
+                if (func->m_symtab->counter == correct_scope->counter) {
+                    for (size_t i = 0; i < func->n_body; i++) {
+                        this->visit_stmt(*func->m_body[i]);
+                    }
+                    if (func->m_return_var) {
+                        this->visit_expr(*func->m_return_var);
+                    }
+                }
+                scope = parent_scope;
+                for (auto &item: func->m_symtab->get_scope()) {
+                    this->visit_symbol(*item.second);
+                }
+            }
+        };
+
+        UpdateDuplicatedNodes v(al);
+        v.correct_scope = current_scope;
+        SymbolTable *tu_symtab = ASRUtils::get_tu_symtab(current_scope);
+        ASR::asr_t* asr_ = tu_symtab->asr_owner;
+        ASR::TranslationUnit_t* tu = ASR::down_cast2<ASR::TranslationUnit_t>(asr_);
+        v.visit_TranslationUnit(*tu);
+    }
+
+    void create_template_entry_function(const Location &loc, std::string function_name, std::vector<AST::arg_t> &vector_args,
+                                        bool is_master = false, bool is_function = false, std::string parent_function_name = "") {
+        SetChar current_function_dependencies_copy = current_function_dependencies;
+        current_function_dependencies.clear(al);
+
+        ASR::accessType s_access = dflt_access;
+        ASR::deftypeType deftype = ASR::deftypeType::Implementation;
+
+        SymbolTable *old_scope = current_scope;
+        SymbolTable *parent_scope = current_scope->parent;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+
+        ASRUtils::SymbolDuplicator symbol_duplicator(al);
+        for( auto& item: old_scope->get_scope() ) {
+            symbol_duplicator.duplicate_symbol(item.second, current_scope);
+        }
+
+        if (is_master) {
+            // Create integer variable "entry__lcompilers"
+            ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            ASR::symbol_t* entry_lcompilers_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al,
+                                                loc, current_scope, s2c(al, "entry__lcompilers"), nullptr, 0,
+                                                ASR::intentType::In, nullptr, nullptr, ASR::storage_typeType::Default,
+                                                int_type, nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required,
+                                                false));
+            current_scope->add_symbol("entry__lcompilers", entry_lcompilers_sym);
+        }
+
+        for (auto it: vector_args) {
+            char *arg = it.m_arg;
+            if (arg) {
+                current_procedure_args.push_back(to_lower(arg));
+            } else {
+                throw SemanticError("Alternate returns are not implemented yet",
+                    it.loc);
+            }
+        }
+
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, vector_args.size());
+        for (auto it: vector_args) {
+            char *arg = it.m_arg;
+            std::string arg_s = to_lower(arg);
+            if (current_scope->get_symbol(arg_s) == nullptr) {
+                if (compiler_options.implicit_typing) {
+                    ASR::ttype_t *t = implicit_dictionary[std::string(1, arg_s[0])];
+                    if (t == nullptr) {
+                        throw SemanticError("Dummy argument '" + arg_s + "' not defined", it.loc);
+                    }
+                    declare_implicit_variable2(it.loc, arg_s,
+                        ASRUtils::intent_unspecified, t);
+                } else {
+                    throw SemanticError("Dummy argument '" + arg_s + "' not defined", it.loc);
+                }
+            }
+            ASR::symbol_t *var = current_scope->get_symbol(arg_s);
+            args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, it.loc,
+                var)));
+        }
+
+        current_procedure_abi_type = ASR::abiType::Source;
+
+        SetChar func_deps;
+        func_deps.reserve(al, current_function_dependencies.size());
+        for( auto& itr: current_function_dependencies ) {
+            func_deps.push_back(al, s2c(al, itr));
+        }
+
+        ASR::symbol_t* return_var = current_scope->resolve_symbol(function_name);
+        ASR::expr_t* return_var_expr = nullptr;
+        if (return_var) {
+            return_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_var));
+        }
+        if (!return_var && is_function) {
+            // create return variable, with same type as parent function
+            ASR::symbol_t* parent_func_sym = current_scope->resolve_symbol(parent_function_name);
+            ASR::ttype_t* return_type = ASRUtils::symbol_type(parent_func_sym);
+            ASR::symbol_t* return_var_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al,
+                                                loc, current_scope, s2c(al, function_name), nullptr, 0,
+                                                ASR::intentType::ReturnVar, nullptr, nullptr, ASR::storage_typeType::Default,
+                                                return_type, nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required,
+                                                false));
+            current_scope->add_symbol(function_name, return_var_sym);
+            return_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_var_sym));
+        }
+
+        ASR::asr_t* tmp_ = ASRUtils::make_Function_t_util(
+            al, loc,
+            /* a_symtab */ current_scope,
+            /* a_name */ s2c(al, to_lower(function_name)),
+            func_deps.p, func_deps.size(),
+            /* a_args */ args.p,
+            /* n_args */ args.size(),
+            /* a_body */ nullptr,
+            /* n_body */ 0,
+            return_var_expr,
+            current_procedure_abi_type,
+            s_access, deftype, nullptr,
+            false, false, false, false, false,
+            nullptr, 0,
+            is_requirement, false, false);
+        parent_scope->add_symbol(function_name, ASR::down_cast<ASR::symbol_t>(tmp_));
+
+        for (auto &item: current_scope->get_scope()) {
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(current_scope->resolve_symbol(item.first));
+                update_duplicated_nodes(al, func->m_symtab);
+            } else if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(current_scope->resolve_symbol(item.first));
+                ASR::ttype_t* var_type = var->m_type;
+                if (var_type->type == ASR::ttypeType::Array) {
+                    ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(var_type);
+                    for (size_t i = 0; i < arr_type->n_dims; i++) {
+                        ASR::dimension_t dim = arr_type->m_dims[i];
+                        ASR::expr_t* dim_length = dim.m_length;
+                        if (dim_length && ASR::is_a<ASR::Var_t>(*dim_length)) {
+                            ASR::Var_t* dim_length_var = ASR::down_cast<ASR::Var_t>(dim_length);
+                            ASR::symbol_t* dim_length_sym = dim_length_var->m_v;
+                            std::string dim_length_sym_name = ASRUtils::symbol_name(dim_length_sym);
+                            ASR::symbol_t* dim_length_sym_in_scope = current_scope->resolve_symbol(dim_length_sym_name);
+                            if (dim_length_sym_in_scope) {
+                                dim_length_var->m_v = dim_length_sym_in_scope;
+                            }
+                        }
+                    }
+                }
+                // check if variable is in current current_procedure_args
+                if (std::find(current_procedure_args.begin(), current_procedure_args.end(), item.first) != current_procedure_args.end()) {
+                    // if yes, then make var->m_intent = ASR::intentType::Unspecified
+                    var->m_intent = ASR::intentType::Unspecified;
+                }
+            }
+        }
+        
+        current_scope = old_scope;
+        current_function_dependencies = current_function_dependencies_copy;
+        current_procedure_args.clear();
+    }
+
+    template <typename T>
+    std::vector<AST::arg_t> perform_argument_mapping(const T& x, std::string sym_name) {
+        // create master function
+        std::vector<std::string> arg_names;
+        for(size_t i = 0; i < x.n_args; i++) {
+            arg_names.push_back(x.m_args[i].m_arg);
+        }
+        for(auto &it: entry_functions[sym_name]) {
+            for(auto &arg: entry_function_args[it.first]) {
+                arg_names.push_back(arg.m_arg);
+            }
+        }
+        std::set<std::string> s(arg_names.begin(), arg_names.end());
+        std::vector<std::string> arg_names_unique(s.begin(), s.end());arg_names_unique.insert(arg_names_unique.begin(), "entry__lcompilers");
+
+        for (size_t i = 0; i < x.n_args; i++){
+            AST::arg_t arg = x.m_args[i];
+            // find index of arg in arg_names_unique
+            auto it = std::find(arg_names_unique.begin(), arg_names_unique.end(), arg.m_arg);
+            if (it != arg_names_unique.end()) {
+                int index = std::distance(arg_names_unique.begin(), it);
+                if (entry_function_arguments_mapping.find(sym_name) == entry_function_arguments_mapping.end()) {
+                    entry_function_arguments_mapping[sym_name] = std::vector<int>();
+                }
+                entry_function_arguments_mapping[sym_name].push_back(index);
+            }
+        }
+        for(auto &it: entry_functions[sym_name]) {
+            for(auto &arg: entry_function_args[it.first]) {
+                // find index of arg in arg_names_unique
+                auto it2 = std::find(arg_names_unique.begin(), arg_names_unique.end(), arg.m_arg);
+                if (it2 != arg_names_unique.end()) {
+                    int index = std::distance(arg_names_unique.begin(), it2);
+                    if (entry_function_arguments_mapping.find(it.first) == entry_function_arguments_mapping.end()) {
+                        entry_function_arguments_mapping[it.first] = std::vector<int>();
+                    }
+                    entry_function_arguments_mapping[it.first].push_back(index);
+                }
+            }
+        }
+        std::vector<AST::arg_t> master_args;
+        for (auto &arg: arg_names_unique) {
+            AST::arg_t a; a.loc = x.base.base.loc; a.m_arg = s2c(al, arg); master_args.push_back(a);
+        }
+
+        return master_args;
+    }
+
     void visit_Subroutine(const AST::Subroutine_t &x) {
         in_Subroutine = true;
         SetChar current_function_dependencies_copy = current_function_dependencies;
@@ -734,6 +1018,19 @@ public:
             is_requirement, false, false);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        if (subroutine_contains_entry_function(sym_name, x.m_body, x.n_body)) {
+            /* 
+                This subroutine contains an entry function, create
+                template function for each entry and a master function
+            */
+            for (auto &entry_function: entry_functions[sym_name]) {
+                create_template_entry_function(x.base.base.loc, entry_function.first, entry_function_args[entry_function.first], false, false, sym_name);
+            }
+            std::vector<AST::arg_t> master_args = perform_argument_mapping(x, sym_name);
+
+            create_template_entry_function(x.base.base.loc, sym_name+"_main__lcompilers", master_args, true, false, sym_name);
+        }
+        entry_function_args.clear();
         if (x.n_temp_args > 0) {
             current_scope = grandparent_scope;
         } else {
@@ -1106,6 +1403,18 @@ public:
             nullptr, 0, is_requirement, false, false);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        if (subroutine_contains_entry_function(sym_name, x.m_body, x.n_body)) {
+            /* 
+                This subroutine contains an entry function, create
+                template function for each entry and a master function
+            */
+            for (auto &entry_function: entry_functions[sym_name]) {
+                create_template_entry_function(x.base.base.loc, entry_function.first, entry_function_args[entry_function.first], false, true, sym_name);
+            }
+            std::vector<AST::arg_t> master_args = perform_argument_mapping(x, sym_name);
+
+            create_template_entry_function(x.base.base.loc, sym_name+"_main__lcompilers", master_args, true, true, sym_name);
+        }
         if (x.n_temp_args > 0) {
             current_scope = grandparent_scope;
         } else {
@@ -2955,10 +3264,12 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
         std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
-        std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols)
+        std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
+        std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
+        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping)
 {
     SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                         instantiate_types, instantiate_symbols);
+                         instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping);
     try {
         v.visit_TranslationUnit(ast);
     } catch (const SemanticError &e) {
