@@ -22,52 +22,6 @@
                                     Public
                                     Required
                                     .false.
-                                ),
-                            y:
-                                (Function
-                                    (SymbolTable
-                                        4
-                                        {
-                                            y_arg_0:
-                                                (Variable
-                                                    4
-                                                    y_arg_0
-                                                    []
-                                                    Unspecified
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    y
-                                    (FunctionType
-                                        [(Real 4)]
-                                        ()
-                                        BindC
-                                        Interface
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                    )
-                                    []
-                                    [(Var 4 y_arg_0)]
-                                    []
-                                    ()
-                                    Public
-                                    .false.
-                                    .false.
-                                    ()
                                 )
                         })
                     entry1
@@ -92,7 +46,7 @@
                         ()
                     )
                     (SubroutineCall
-                        2 y
+                        1 y
                         ()
                         [((Var 2 dummy))]
                         ()
@@ -135,19 +89,121 @@
                         []
                         .false.
                     )
-                    []
+                    [x_main__lcompilers]
                     [(Var 3 dummy)]
-                    [(Print
+                    [(SubroutineCall
+                        1 x_main__lcompilers
+                        1 x_main__lcompilers
+                        [((IntegerConstant 1 (Integer 4)))
+                        ((Var 3 dummy))]
+                        ()
+                    )]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            x_main__lcompilers:
+                (Function
+                    (SymbolTable
+                        5
+                        {
+                            dummy:
+                                (Variable
+                                    5
+                                    dummy
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            entry__lcompilers:
+                                (Variable
+                                    5
+                                    entry__lcompilers
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    x_main__lcompilers
+                    (FunctionType
+                        [(Integer 4)
+                        (Real 4)]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    []
+                    [(Var 5 entry__lcompilers)
+                    (Var 5 dummy)]
+                    [(If
+                        (IntegerCompare
+                            (Var 5 entry__lcompilers)
+                            Eq
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
+                            ()
+                        )
+                        [(GoTo
+                            1
+                            1
+                        )]
+                        []
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 5 entry__lcompilers)
+                            Eq
+                            (IntegerConstant 2 (Integer 4))
+                            (Logical 4)
+                            ()
+                        )
+                        [(GoTo
+                            2
+                            2
+                        )]
+                        []
+                    )
+                    (GoToTarget
+                        1
+                        1
+                    )
+                    (Print
                         [(StringConstant
                             "Printed using subroutine call: "
                             (Character 1 31 ())
                         )
-                        (Var 3 dummy)]
+                        (Var 5 dummy)]
                         ()
                         ()
                     )
                     (=
-                        (Var 3 dummy)
+                        (Var 5 dummy)
                         (RealConstant
                             5.000000
                             (Real 4)
@@ -155,12 +211,16 @@
                         ()
                     )
                     (Return)
+                    (GoToTarget
+                        2
+                        2
+                    )
                     (Print
                         [(StringConstant
                             "Printed using entry statement: "
                             (Character 1 31 ())
                         )
-                        (Var 3 dummy)]
+                        (Var 5 dummy)]
                         ()
                         ()
                     )
@@ -174,11 +234,11 @@
             y:
                 (Function
                     (SymbolTable
-                        5
+                        4
                         {
                             dummy:
                                 (Variable
-                                    5
+                                    4
                                     dummy
                                     []
                                     Unspecified
@@ -208,18 +268,15 @@
                         []
                         .false.
                     )
-                    []
-                    [(Var 5 dummy)]
-                    [(Print
-                        [(StringConstant
-                            "Printed using entry statement: "
-                            (Character 1 31 ())
-                        )
-                        (Var 5 dummy)]
+                    [x_main__lcompilers]
+                    [(Var 4 dummy)]
+                    [(SubroutineCall
+                        1 x_main__lcompilers
+                        1 x_main__lcompilers
+                        [((IntegerConstant 2 (Integer 4)))
+                        ((Var 4 dummy))]
                         ()
-                        ()
-                    )
-                    (Return)]
+                    )]
                     ()
                     Public
                     .false.
