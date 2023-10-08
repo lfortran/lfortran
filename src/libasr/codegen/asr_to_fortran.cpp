@@ -309,6 +309,9 @@ public:
             } case ASR::intentType::ReturnVar : {
                 r += ", intent(out)";
                 break;
+            } case ASR::intentType::Unspecified : {
+                // Pass
+                break;
             }
             default:
                 throw LCompilersException("Intent type is not handled");
