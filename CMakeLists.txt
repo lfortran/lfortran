@@ -136,6 +136,8 @@ set(WITH_TARGET_AARCH64 no CACHE BOOL "Enable target AARCH64")
 set(WITH_TARGET_X86 no CACHE BOOL "Enable target X86")
 set(WITH_TARGET_WASM no CACHE BOOL "Enable target WebAssembly")
 if (WITH_LLVM)
+    find_package(StaticZSTD REQUIRED)
+
     set(LFORTRAN_LLVM_COMPONENTS core support mcjit orcjit native asmparser asmprinter)
     find_package(LLVM REQUIRED)
     message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
