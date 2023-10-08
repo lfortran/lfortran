@@ -18,7 +18,8 @@ def run_cmd(cmd, cwd=None):
         exit(1)
 
 def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: bool,
-                update_reference: bool, no_color: bool, specific_backends=None,
+                skip_cpptranslate: bool, update_reference: bool,
+                no_color: bool, specific_backends=None,
                 excluded_backends=None) -> None:
     def is_included(backend):
         return test.get(backend, False) \
@@ -164,12 +165,15 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 extra_args)
 
     if ast_openmp:
-        run_test(
-            filename,
-            "ast_openmp",
-            "cpptranslate --show-ast-openmp {infile}",
-            filename,
-            update_reference)
+        if skip_cpptranslate:
+            log.info(f"{filename} * cpptranslate    SKIPPED as requested")
+        else:
+            run_test(
+                filename,
+                "ast_openmp",
+                "cpptranslate --show-ast-openmp {infile}",
+                filename,
+                update_reference)
 
     if asr:
         # run fixed form
