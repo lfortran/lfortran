@@ -466,11 +466,22 @@ public:
 
     // void visit_ForAllSingle(const ASR::ForAllSingle_t &x) {}
 
-    // void visit_GoTo(const ASR::GoTo_t &x) {}
+    void visit_GoTo(const ASR::GoTo_t &x) {
+        std::string r = indent;
+        r += "go to";
+        r += " ";
+        r += std::to_string(x.m_target_id);
+        r += "\n";
+        s = r;
+    }
 
-    void visit_GoToTarget(const ASR::GoToTarget_t &/*x*/) {
-        // Skip GoToTarget for now
-        s = "";
+    void visit_GoToTarget(const ASR::GoToTarget_t &x) {
+        std::string r = "";
+        r += std::to_string(x.m_id);
+        r += " ";
+        r += "continue";
+        r += "\n";
+        s = r;
     }
 
     void visit_If(const ASR::If_t &x) {
@@ -565,7 +576,12 @@ public:
         s = r;
     }
 
-    // void visit_Return(const ASR::Return_t &x) {}
+    void visit_Return(const ASR::Return_t &/*x*/) {
+        std::string r = indent;
+        r += "return";
+        r += "\n";
+        s = r;
+    }
 
     void visit_Select(const ASR::Select_t &x) {
         std::string r = indent;
