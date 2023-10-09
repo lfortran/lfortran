@@ -34,45 +34,6 @@ uint64_t static inline get_hash(ASR::asr_t *node)
 #define LFORTRAN_STMT_LABEL_TYPE(x) \
         case AST::stmtType::x: { return AST::down_cast<AST::x##_t>(f)->m_label; }
 
-#define ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies) bool is_parent = false; \
-    SymbolTable* temp_scope = current_scope; \
-    while(temp_scope->asr_owner != nullptr) { \
-        if (ASR::is_a<ASR::symbol_t>(*temp_scope->asr_owner) && \
-            (ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(temp_scope->asr_owner)) || \
-                ASR::is_a<ASR::Block_t>(*ASR::down_cast<ASR::symbol_t>(temp_scope->asr_owner)))) { \
-                temp_scope = temp_scope->parent; \
-            } else if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != temp_scope->get_counter()) { \
-                is_parent = false; \
-                break; \
-            } else if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() == temp_scope->get_counter()) { \
-                is_parent = true; \
-                break; \
-            } \
-    } \
-    if (!is_parent && !ASR::is_a<ASR::ExternalSymbol_t>(*final_sym)) { \
-        current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym)); \
-    } \
-
-
-#define ADD_ASR_DEPENDENCIES_WITH_NAME(current_scope, final_sym, current_function_dependencies, dep_name) bool is_parent = false; \
-    SymbolTable* temp_scope = current_scope; \
-    while(temp_scope->asr_owner != nullptr) { \
-        if (ASR::is_a<ASR::symbol_t>(*temp_scope->asr_owner) && \
-            (ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(temp_scope->asr_owner)) || \
-                ASR::is_a<ASR::Block_t>(*ASR::down_cast<ASR::symbol_t>(temp_scope->asr_owner)))) { \
-                temp_scope = temp_scope->parent; \
-            } else if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != temp_scope->get_counter()) { \
-                is_parent = false; \
-                break; \
-            } else if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() == temp_scope->get_counter()) { \
-                is_parent = true; \
-                break; \
-            } \
-    } \
-    if (!is_parent && !ASR::is_a<ASR::ExternalSymbol_t>(*final_sym)) { \
-        current_function_dependencies.push_back(al, dep_name); \
-    } \
-
 static inline int64_t stmt_label(AST::stmt_t *f)
 {
     switch (f->type) {

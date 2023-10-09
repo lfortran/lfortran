@@ -16,21 +16,30 @@
 
 #define ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies) bool is_parent = false; \
     SymbolTable* temp_scope = current_scope; \
-    while(temp_scope->asr_owner != nullptr) { \
-        if (ASR::is_a<ASR::symbol_t>(*temp_scope->asr_owner) && \
-            (ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(temp_scope->asr_owner)) || \
-                ASR::is_a<ASR::Block_t>(*ASR::down_cast<ASR::symbol_t>(temp_scope->asr_owner)))) { \
-                temp_scope = temp_scope->parent; \
-            } else if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != temp_scope->get_counter()) { \
-                is_parent = false; \
-                break; \
-            } else if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() == temp_scope->get_counter()) { \
-                is_parent = true; \
-                break; \
-            } \
+    while(temp_scope != nullptr && !is_parent) { \
+        if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() == temp_scope->get_counter() && \
+            ASR::is_a<ASR::symbol_t>(*temp_scope->asr_owner)) { \
+            is_parent = true; \
+            break; \
+        } \
+        temp_scope = temp_scope->parent; \
     } \
     if (!is_parent && !ASR::is_a<ASR::ExternalSymbol_t>(*final_sym)) { \
         current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym)); \
+    } \
+
+#define ADD_ASR_DEPENDENCIES_WITH_NAME(current_scope, final_sym, current_function_dependencies, dep_name) bool is_parent = false; \
+    SymbolTable* temp_scope = current_scope; \
+    while(temp_scope != nullptr && !is_parent) { \
+        if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() == temp_scope->get_counter() && \
+            ASR::is_a<ASR::symbol_t>(*temp_scope->asr_owner)) { \
+            is_parent = true; \
+            break; \
+        } \
+        temp_scope = temp_scope->parent; \
+    } \
+    if (!is_parent && !ASR::is_a<ASR::ExternalSymbol_t>(*final_sym)) { \
+        current_function_dependencies.push_back(al, dep_name); \
     } \
 
 namespace LCompilers  {
