@@ -414,7 +414,13 @@ public:
 
     // void visit_Associate(const ASR::Associate_t &x) {}
 
-    // void visit_Cycle(const ASR::Cycle_t &x) {}
+    void visit_Cycle(const ASR::Cycle_t &x) {
+        s = indent + "cycle";
+        if (x.m_stmt_name) {
+            s += " " + std::string(x.m_stmt_name);
+        }
+        s += "\n";
+    }
 
     // void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {}
 
@@ -435,6 +441,11 @@ public:
 
     void visit_DoLoop(const ASR::DoLoop_t &x) {
         std::string r = indent;
+        if (x.m_name) {
+            r += std::string(x.m_name);
+            r += " : ";
+        }
+
         r += "do ";
         visit_expr(*x.m_head.m_v);
         r += s;
@@ -452,7 +463,11 @@ public:
         r += "\n";
         visit_body(x, r);
         r += indent;
-        r += "end do\n";
+        r += "end do";
+        if (x.m_name) {
+            r += " " + std::string(x.m_name);
+        }
+        r += "\n";
         s = r;
     }
 
@@ -462,7 +477,13 @@ public:
         s += "\n";
     }
 
-    // void visit_Exit(const ASR::Exit_t &x) {}
+    void visit_Exit(const ASR::Exit_t &x) {
+        s = indent + "exit";
+        if (x.m_stmt_name) {
+            s += " " + std::string(x.m_stmt_name);
+        }
+        s += "\n";
+    }
 
     // void visit_ForAllSingle(const ASR::ForAllSingle_t &x) {}
 
@@ -640,6 +661,10 @@ public:
 
     void visit_WhileLoop(const ASR::WhileLoop_t &x) {
         std::string r = indent;
+        if (x.m_name) {
+            r += std::string(x.m_name);
+            r += " : ";
+        }
         r += "do while";
         r += " (";
         visit_expr(*x.m_test);
@@ -647,7 +672,11 @@ public:
         r += ")\n";
         visit_body(x, r);
         r += indent;
-        r += "end do\n";
+        r += "end do";
+        if (x.m_name) {
+            r += " " + std::string(x.m_name);
+        }
+        r += "\n";
         s = r;
     }
 

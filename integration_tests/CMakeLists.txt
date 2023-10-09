@@ -259,8 +259,8 @@ RUN(NAME doloop_08 LABELS gfortran llvm c cpp wasm NOFAST)
 RUN(NAME doloop_09 LABELS gfortran llvm) # nested subroutine
 RUN(NAME doloop_10 LABELS gfortran llvm wasm) # implicit cast loop variable
 
-RUN(NAME cycle_and_exit1 LABELS gfortran llvm)
-RUN(NAME cycle_and_exit2 LABELS gfortran llvm)
+RUN(NAME cycle_and_exit1 LABELS gfortran llvm fortran)
+RUN(NAME cycle_and_exit2 LABELS gfortran llvm fortran)
 RUN(NAME cycle_and_exit3 LABELS gfortran llvm)
 RUN(NAME cycle_and_exit4 LABELS gfortran llvm)
 
