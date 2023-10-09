@@ -475,7 +475,7 @@ public:
     }
 
     void visit_Exit(const ASR::Exit_t &x) {
-        s = indent + "exit";
+        s = indent + " exit";
         if (x.m_stmt_name) {
             s += " " + std::string(x.m_stmt_name);
         }
@@ -658,6 +658,10 @@ public:
 
     void visit_WhileLoop(const ASR::WhileLoop_t &x) {
         std::string r = indent;
+        if (x.m_name) {
+            r += std::string(x.m_name);
+            r += " : ";
+        }
         r += "do while";
         r += " (";
         visit_expr(*x.m_test);
@@ -665,7 +669,11 @@ public:
         r += ")\n";
         visit_body(x, r);
         r += indent;
-        r += "end do\n";
+        r += "end do";
+        if (x.m_name) {
+            r += " " + std::string(x.m_name);
+        }
+        r += "\n";
         s = r;
     }
 
