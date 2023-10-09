@@ -3541,7 +3541,6 @@ public:
                 if (result) {
                     return result;
                 } else {
-                    std::cout << "DownCast -> " << current_scope->resolve_symbol(f->m_name) << std::endl;
                     value = intrinsic_procedures.comptime_eval(f->m_name, al, loc, args);
                     char *mod = ASR::down_cast<ASR::ExternalSymbol_t>(
                         current_scope->resolve_symbol(f->m_name))->m_module_name;
