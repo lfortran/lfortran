@@ -211,8 +211,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [add_real
-                                                    slash_real]
+                                                    []
                                                     [(Var 23 d1)
                                                     (Var 23 t1)
                                                     (Var 23 d2)
@@ -356,8 +355,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [slash_real
-                                                    __asr_avg_s_from_t]
+                                                    [__asr_avg_s_from_t]
                                                     [(Var 21 d1)
                                                     (Var 21 s1)
                                                     (Var 21 d2)
@@ -503,8 +501,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [add_real
-                                                    slash_real]
+                                                    []
                                                     [(Var 20 d1)
                                                     (Var 20 t1)
                                                     (Var 20 d2)

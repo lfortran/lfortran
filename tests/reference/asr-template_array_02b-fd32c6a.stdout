@@ -822,8 +822,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [zero_integer
-                                                    add_integer]
+                                                    []
                                                     [(Var 16 n)
                                                     (Var 16 a)]
                                                     [(=

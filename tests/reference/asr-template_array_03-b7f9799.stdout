@@ -1412,9 +1412,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [zero_integer
-                                                    mult_integer
-                                                    add_integer]
+                                                    []
                                                     [(Var 20 i)
                                                     (Var 20 j)
                                                     (Var 20 k)

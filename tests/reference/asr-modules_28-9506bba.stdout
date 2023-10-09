@@ -546,7 +546,7 @@
                                         []
                                         .false.
                                     )
-                                    [git_target_branch]
+                                    []
                                     [(Var 9 self)]
                                     [(=
                                         (StructInstanceMember
