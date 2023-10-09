@@ -454,7 +454,6 @@ public:
         r += s;
         r += ", ";
         visit_expr(*x.m_head.m_end);
-
         r += s;
         if (x.m_head.m_increment) {
             r += ", ";
