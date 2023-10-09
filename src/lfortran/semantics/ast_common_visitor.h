@@ -795,6 +795,7 @@ public:
 
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping;
+    std::vector<ASR::stmt_t*> &data_structure;
 
     std::map<std::string, std::pair<bool,std::vector<ASR::expr_t*>>> common_block_dictionary;
     std::map<uint64_t, ASR::symbol_t*> &common_variables_hash;
@@ -833,13 +834,19 @@ public:
             std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
             std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
             std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
-            std::map<std::string, std::vector<int>> &entry_function_arguments_mapping)
+            std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
+            std::vector<ASR::stmt_t*> &data_structure)
         : diag{diagnostics}, al{al}, compiler_options{compiler_options},
           current_scope{symbol_table}, implicit_mapping{implicit_mapping},
           common_variables_hash{common_variables_hash}, external_procedures_mapping{external_procedures_mapping},
           entry_functions{entry_functions},entry_function_arguments_mapping{entry_function_arguments_mapping},
           current_variable_type_{nullptr}, instantiate_types{instantiate_types},
           instantiate_symbols{instantiate_symbols} {
+        : diag{diagnostics}, al{al}, compiler_options{compiler_options},
+          current_scope{symbol_table}, implicit_mapping{implicit_mapping},
+          common_variables_hash{common_variables_hash}, external_procedures_mapping{external_procedures_mapping},
+          current_variable_type_{nullptr},
+          instantiate_types{instantiate_types}, instantiate_symbols{instantiate_symbols}, data_structure{data_structure} {
         current_module_dependencies.reserve(al, 4);
         enum_init_val = 0;
     }
@@ -2058,30 +2065,16 @@ public:
                                 this->visit_expr(*eq2); 
                                 ASR::expr_t* asr_eq2 = ASRUtils::EXPR(tmp);
                                 //TODO: wrap this with "c_loc":
-
-                                
-                                
-
-                                Vec<ASR::expr_t*> args;
-                                args.reserve(al, 3);
-                                args.push_back(al, asr_eq1);
-//                                 // TODO: This currently passes SMALL(1), pass SMALL
-                                args.push_back(al, asr_eq2);
-//                                 // TODO: Pass `[2]`, the size of SMALL as the third argument
-
-                                ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, asr_eq1->base.loc, 4));
-                                ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_eq1->base.loc, 1, int32_type));
-                                ASR::expr_t* size_arg = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_eq1->base.loc, 2, int32_type));
-                                args.push_back(al, size_arg);
-//                                 // TODO: use c_f_pointer ASR node here, so it might not even be a subroutine call
-                                ASR::symbol_t* a_sym = current_scope->resolve_symbol("Var");
                                 ASR::ttype_t* arg_type = ASRUtils::type_get_past_allocatable(
                                             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(asr_eq1)));
-                                ASR::expr_t* cast_expr = ASRUtils::EXPR(ASR::make_Var_t(al, asr_eq1->base.loc, a_sym));
                                 ASR::ttype_t* pointer_type_ = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq1->base.loc, ASRUtils::type_get_past_array(arg_type)));
                                 ASR::asr_t* get_pointer = ASR::make_GetPointer_t(al, asr_eq1->base.loc, asr_eq1, pointer_type_, nullptr);
                                 ASR::ttype_t *cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, asr_eq1->base.loc));
                                 ASR::asr_t* pointer_to_cptr = ASR::make_PointerToCPtr_t(al, asr_eq1->base.loc, ASRUtils::EXPR(get_pointer), cptr, nullptr);
+
+                                ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, asr_eq1->base.loc, 4));
+                                ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_eq1->base.loc, 1, int32_type));
+                                ASR::expr_t* two = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_eq1->base.loc, 2, int32_type));
 
                                 Vec<ASR::dimension_t> dim;
                                 dim.reserve(al, 1);
@@ -2091,13 +2084,25 @@ public:
                                 dim_.loc = asr_eq1->base.loc;
                                 dim.push_back(al, dim_);
 
+                                Vec<ASR::expr_t*> args;
+                                args.reserve(al, 1);
+                                args.push_back(al, two);
+
                                 ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, asr_eq1->base.loc, int32_type, dim.p, dim.size(), ASR::array_physical_typeType::PointerToDataArray));
                                 ASR::asr_t* array_constant = ASRUtils::make_ArrayConstant_t_util(al, asr_eq1->base.loc, args.p, args.size(), array_type, ASR::arraystorageType::ColMajor);
+                              
+                                ASR::asr_t* c_f_pointer =ASR::make_CPtrToPointer_t(al, asr_eq1->base.loc, ASRUtils::EXPR(pointer_to_cptr), asr_eq2, ASRUtils::EXPR(array_constant), nullptr);
 
-                                ASR::asr_t* c_f_pointer =ASR::make_CPtrToPointer_t(al, asr_eq1->base.loc, ASRUtils::EXPR(pointer_to_cptr), cast_expr, ASRUtils::EXPR(array_constant), nullptr);
+                                ASR::stmt_t *stmt = ASRUtils::STMT(c_f_pointer);
+                                data_structure.push_back(stmt);
+
                                 
-                                // ASR::stmt_t *stmt = ASR::make_SubroutineCall_t(al, asr_eq1->base.loc,
-                                // ASR::symbol_t*(c_f_pointer), nullptr, args.p, args.n, nullptr)
+                                
+                              
+                                // LCOMPILERS_ASSERT(current_body != nullptr)
+                                // current_body->push_back(al, stmt);
+
+
 //                                 // Below is an example how CPtrToPointer needs to look like:
 
 //                                 /*
@@ -2141,8 +2146,8 @@ public:
 //                                 //   the first elements of the body
 //                                 // * also set the pointer and target (if present in ASR) in ASR for DMACH
 
-                                throw SemanticError("XX",
-                                    x.base.base.loc);
+                                // throw SemanticError("XX",
+                                //     x.base.base.loc);
                             } else {
                                 diag.semantic_warning_label(
                                     "This equivalence statement is not implemented yet, for now we will ignore it",

@@ -40,9 +40,10 @@ public:
             std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
             std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
             std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
-            std::map<std::string, std::vector<int>> &entry_function_arguments_mapping)
+            std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
+            std::vector<ASR::stmt_t*> &data_structure)
         : CommonVisitor(al, nullptr, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                        instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping),
+                        instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure),
         asr{unit}, from_block{false} {}
 
     void visit_Declaration(const AST::Declaration_t& x) {
@@ -1486,6 +1487,13 @@ public:
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
+        if(data_structure.size()>0){
+            // throw SemanticError("Data structure not supported in program", x.base.base.loc);
+            for(auto it: data_structure){
+                body.push_back(al, it);
+            }
+        }
+        
         transform_stmts(body, x.n_body, x.m_body);
         handle_format();
         ASR::stmt_t* impl_del = create_implicit_deallocate(x.base.base.loc);
@@ -3284,10 +3292,11 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
-        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping)
+        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
+        std::vector<ASR::stmt_t*> &data_structure)
 {
     BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                  instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping);
+                  instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure);
     try {
         b.is_body_visitor = true;
         b.visit_TranslationUnit(ast);
