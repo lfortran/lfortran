@@ -414,8 +414,12 @@ public:
 
     // void visit_Associate(const ASR::Associate_t &x) {}
 
-    void visit_Cycle(const ASR::Cycle_t &/*x*/) {
-        s = indent + "cycle\n";
+    void visit_Cycle(const ASR::Cycle_t &x) {
+        s = indent + "cycle";
+        if (x.m_stmt_name) {
+            s += " " + std::string(x.m_stmt_name);
+        }
+        s += "\n";
     }
 
     // void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {}
@@ -475,7 +479,7 @@ public:
     }
 
     void visit_Exit(const ASR::Exit_t &x) {
-        s = indent + " exit";
+        s = indent + "exit";
         if (x.m_stmt_name) {
             s += " " + std::string(x.m_stmt_name);
         }
