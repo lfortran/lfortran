@@ -464,13 +464,12 @@ public:
         s += "\n";
     }
 
-    void visit_Exit(const ASR::Exit_t &/*x*/) {
-        std::string r;
-        r += "call";
-        r += " ";
-        r += "exit";
-        r += "\n";
-        s = r;
+    void visit_Exit(const ASR::Exit_t &x) {
+        s = indent + "exit";
+        if (x.m_stmt_name) {
+            s += " " + std::string(x.m_stmt_name);
+        }
+        s += "\n";
     }
 
     // void visit_ForAllSingle(const ASR::ForAllSingle_t &x) {}
