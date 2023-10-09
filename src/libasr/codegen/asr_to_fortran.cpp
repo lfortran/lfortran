@@ -437,6 +437,12 @@ public:
 
     void visit_DoLoop(const ASR::DoLoop_t &x) {
         std::string r = indent;
+        if (x.m_name) {
+            if (x.m_head) {
+                r += " " + std::string(x.m_name);
+                r += " : ";
+            }
+        }
         r += "do ";
         visit_expr(*x.m_head.m_v);
         r += s;
