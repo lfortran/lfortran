@@ -1381,7 +1381,11 @@ namespace LCompilers {
             // to our new block
             builder->CreateBr(bb);
         }
+#if LLVM_VERSION_MAJOR >= 16
+        fn->insert(fn->end(), bb);
+#else
         fn->getBasicBlockList().push_back(bb);
+#endif
         builder->SetInsertPoint(bb);
     }
 

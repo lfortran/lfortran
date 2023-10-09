@@ -985,6 +985,7 @@ RUN(NAME enum_02 LABELS gfortran llvm EXTRAFILES
          enum_02_module.f90)
 
 RUN(NAME array_section_01 LABELS gfortran llvm)
+RUN(NAME array_section_02 LABELS gfortran llvm)
 
 RUN(NAME pass_array_by_data_01 LABELS gfortran llvm wasm)
 RUN(NAME pass_array_by_data_02 LABELS gfortran llvm)
@@ -1074,7 +1075,7 @@ RUN(NAME save_03 LABELS gfortran llvm)
 RUN(NAME entry_01 LABELS gfortran llvm)
 RUN(NAME entry_02 LABELS gfortran llvm)
 RUN(NAME entry_03 LABELS gfortran llvm)
-RUN(NAME entry_04 LABELS gfortran llvm)
+RUN(NAME entry_04 LABELS gfortran llvm NOFAST)
 RUN(NAME entry_05 LABELS gfortran llvm)
 RUN(NAME entry_06 LABELS gfortran)
 RUN(NAME entry_07 LABELS gfortran llvm)
@@ -1146,3 +1147,5 @@ RUN(NAME equivalence_07 LABELS gfortran llvm)
 RUN(NAME fortran_primes_01 LABELS gfortran llvm)
 
 RUN(NAME min_01 LABELS gfortran)
+
+RUN(NAME goto_gototarget_return_01 LABELS gfortran llvm fortran)

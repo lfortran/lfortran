@@ -249,7 +249,7 @@ public:
         for (size_t i = 0; i < x.n_args; i ++) {
             visit_expr(*x.m_args[i]);
             r += s;
-            if (i > x.n_args-1) r += ", ";
+            if (i < x.n_args-1) r += ", ";
         }
         r += ")";
         r += "\n";
@@ -308,6 +308,9 @@ public:
                 break;
             } case ASR::intentType::ReturnVar : {
                 r += ", intent(out)";
+                break;
+            } case ASR::intentType::Unspecified : {
+                // Pass
                 break;
             }
             default:
@@ -463,11 +466,22 @@ public:
 
     // void visit_ForAllSingle(const ASR::ForAllSingle_t &x) {}
 
-    // void visit_GoTo(const ASR::GoTo_t &x) {}
+    void visit_GoTo(const ASR::GoTo_t &x) {
+        std::string r = indent;
+        r += "go to";
+        r += " ";
+        r += std::to_string(x.m_target_id);
+        r += "\n";
+        s = r;
+    }
 
-    void visit_GoToTarget(const ASR::GoToTarget_t &/*x*/) {
-        // Skip GoToTarget for now
-        s = "";
+    void visit_GoToTarget(const ASR::GoToTarget_t &x) {
+        std::string r = "";
+        r += std::to_string(x.m_id);
+        r += " ";
+        r += "continue";
+        r += "\n";
+        s = r;
     }
 
     void visit_If(const ASR::If_t &x) {
@@ -562,7 +576,12 @@ public:
         s = r;
     }
 
-    // void visit_Return(const ASR::Return_t &x) {}
+    void visit_Return(const ASR::Return_t &/*x*/) {
+        std::string r = indent;
+        r += "return";
+        r += "\n";
+        s = r;
+    }
 
     void visit_Select(const ASR::Select_t &x) {
         std::string r = indent;
@@ -737,7 +756,12 @@ public:
     // void visit_UnsignedIntegerBinOp(const ASR::UnsignedIntegerBinOp_t &x) {}
 
     void visit_RealConstant(const ASR::RealConstant_t &x) {
-        s = std::to_string(x.m_r);
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        if (kind >= 8) {
+            s = std::to_string(x.m_r) + "d0";
+        } else {
+            s = std::to_string(x.m_r);
+        }
         last_expr_precedence = 13;
     }
 
