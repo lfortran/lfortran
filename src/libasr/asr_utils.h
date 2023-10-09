@@ -14,6 +14,25 @@
 
 #include <complex>
 
+#define ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies) bool is_parent = false; \
+    SymbolTable* temp_scope = current_scope; \
+    while(temp_scope->asr_owner != nullptr) { \
+        if (ASR::is_a<ASR::symbol_t>(*temp_scope->asr_owner) && \
+            (ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(temp_scope->asr_owner)) || \
+                ASR::is_a<ASR::Block_t>(*ASR::down_cast<ASR::symbol_t>(temp_scope->asr_owner)))) { \
+                temp_scope = temp_scope->parent; \
+            } else if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != temp_scope->get_counter()) { \
+                is_parent = false; \
+                break; \
+            } else if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() == temp_scope->get_counter()) { \
+                is_parent = true; \
+                break; \
+            } \
+    } \
+    if (!is_parent && !ASR::is_a<ASR::ExternalSymbol_t>(*final_sym)) { \
+        current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym)); \
+    } \
+
 namespace LCompilers  {
 
     namespace ASRUtils  {
@@ -3200,8 +3219,8 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
             default:
                 break;
         }
-        if (ASRUtils::symbol_parent_symtab(new_es) == current_scope->parent) {
-            current_function_dependencies.push_back(al, ASRUtils::symbol_name(new_es));
+        if (ASRUtils::symbol_parent_symtab(new_es)->get_counter() != current_scope->get_counter()) {
+            ADD_ASR_DEPENDENCIES(current_scope, new_es, current_function_dependencies);
         }
         ASRUtils::insert_module_dependency(new_es, al, current_module_dependencies);
         x->m_name = new_es;

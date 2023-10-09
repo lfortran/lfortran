@@ -11,6 +11,25 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 
+#define ADD_ASR_DEPENDENCIES_WITH_NAME(current_scope, final_sym, current_function_dependencies, dep_name) bool is_parent = false; \
+    SymbolTable* temp_scope = current_scope; \
+    while(temp_scope->asr_owner != nullptr) { \
+        if (ASR::is_a<ASR::symbol_t>(*temp_scope->asr_owner) && \
+            (ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(temp_scope->asr_owner)) || \
+                ASR::is_a<ASR::Block_t>(*ASR::down_cast<ASR::symbol_t>(temp_scope->asr_owner)))) { \
+                temp_scope = temp_scope->parent; \
+            } else if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != temp_scope->get_counter()) { \
+                is_parent = false; \
+                break; \
+            } else if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() == temp_scope->get_counter()) { \
+                is_parent = true; \
+                break; \
+            } \
+    } \
+    if (!is_parent && !ASR::is_a<ASR::ExternalSymbol_t>(*final_sym)) { \
+        current_function_dependencies.push_back(al, s2c(al, dep_name)); \
+    } \
+
 namespace LCompilers {
 
     namespace ASRUtils  {
@@ -617,8 +636,8 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                     }
                                 }
                             }
-                            if (ASRUtils::symbol_parent_symtab(a_name) == curr_scope->parent) {
-                                current_function_dependencies.push_back(al, s2c(al, matched_func_name));
+                            if (ASRUtils::symbol_parent_symtab(a_name)->get_counter() != curr_scope->get_counter()) {
+                                ADD_ASR_DEPENDENCIES_WITH_NAME(curr_scope, a_name, current_function_dependencies, matched_func_name);
                             }  
                             ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
                             ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al);
@@ -702,9 +721,9 @@ void process_overloaded_unary_minus_function(ASR::symbol_t* proc, ASR::expr_t* o
                     }
                 }
             }
-            if (ASRUtils::symbol_parent_symtab(a_name) == curr_scope->parent) {
-                current_function_dependencies.push_back(al, s2c(al, matched_func_name));
-            } 
+            if (ASRUtils::symbol_parent_symtab(a_name)->get_counter() != curr_scope->get_counter()) {
+                ADD_ASR_DEPENDENCIES_WITH_NAME(curr_scope, a_name, current_function_dependencies, matched_func_name);
+            }
             ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
             ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al);
             asr = ASRUtils::make_FunctionCall_t_util(al, loc, a_name, proc,
@@ -875,8 +894,8 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
             if( a_name == nullptr ) {
                 err("Unable to resolve matched subroutine for assignment overloading, " + matched_subrout_name, loc);
             }
-            if (ASRUtils::symbol_parent_symtab(a_name) == curr_scope->parent) {
-                current_function_dependencies.push_back(al, s2c(al, matched_subrout_name));
+            if (ASRUtils::symbol_parent_symtab(a_name)->get_counter() != curr_scope->get_counter()) {
+                ADD_ASR_DEPENDENCIES_WITH_NAME(curr_scope, a_name, current_function_dependencies, matched_subrout_name);
             }
             ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
             ASRUtils::set_absent_optional_arguments_to_null(a_args, subrout, al);
@@ -1017,8 +1036,8 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             } else {
                                 return_type = ASRUtils::expr_type(func->m_return_var);
                             }
-                            if (ASRUtils::symbol_parent_symtab(a_name) == curr_scope->parent) {
-                                current_function_dependencies.push_back(al, s2c(al, matched_func_name));
+                            if (ASRUtils::symbol_parent_symtab(a_name)->get_counter() != curr_scope->get_counter()) {
+                                ADD_ASR_DEPENDENCIES_WITH_NAME(curr_scope, a_name, current_function_dependencies, matched_func_name);
                             }
                             ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
                             ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al);

@@ -906,10 +906,10 @@ public:
             // check if asr owner is associate block.
             if( asr_owner_sym && (ASR::is_a<ASR::AssociateBlock_t>(*asr_owner_sym) ||
                 ASR::is_a<ASR::Block_t>(*asr_owner_sym)) ) {
-                if (ASRUtils::symbol_parent_symtab(x.m_name)->get_counter() != current_symtab->parent->get_counter()) {
+                if (ASRUtils::symbol_parent_symtab(x.m_name)->get_counter() != current_symtab->parent->get_counter() && !ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name)) {
                     function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
                 }
-            } else {
+            } else if (!ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name)) {
                 function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
             }
         }
@@ -1056,10 +1056,10 @@ public:
             // check if asr owner is associate block.
             if( asr_owner_sym && (ASR::is_a<ASR::AssociateBlock_t>(*asr_owner_sym) ||
                 ASR::is_a<ASR::Block_t>(*asr_owner_sym)) ) {
-                if (ASRUtils::symbol_parent_symtab(x.m_name)->get_counter() != current_symtab->parent->get_counter()) {
+                if (ASRUtils::symbol_parent_symtab(x.m_name)->get_counter() != current_symtab->parent->get_counter() && !ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name)) {
                     function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
                 }
-            } else {
+            } else if (!ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name)){
                 function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
             }
         }
