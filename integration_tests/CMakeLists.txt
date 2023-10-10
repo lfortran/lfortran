@@ -928,7 +928,7 @@ RUN(NAME assign_to3 LABELS gfortran llvm fortran)
 
 RUN(NAME conv_complex2real LABELS gfortran llvm wasm)
 
-RUN(NAME template_01 LABELS llvm wasm)
+RUN(NAME template_01 LABELS llvm wasm fortran)
 RUN(NAME template_02 LABELS llvm)
 RUN(NAME template_add_01 LABELS llvm wasm)
 RUN(NAME template_add_01b LABELS llvm wasm)
