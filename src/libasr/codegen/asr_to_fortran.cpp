@@ -890,9 +890,8 @@ public:
     // void visit_StringOrd(const ASR::StringOrd_t &x) {}
 
     void visit_StringChr(const ASR::StringChr_t &x) {
-        s = "char(";
         visit_expr(*x.m_arg);
-        s += ")";
+        s = "char(" + s + ")";
     }
 
     void visit_StringFormat(const ASR::StringFormat_t &x) {
