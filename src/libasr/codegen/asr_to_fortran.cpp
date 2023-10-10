@@ -875,11 +875,25 @@ public:
 
     // void visit_StringSection(const ASR::StringSection_t &x) {}
 
-    // void visit_StringCompare(const ASR::StringCompare_t &x) {}
+    void visit_StringCompare(const ASR::StringCompare_t &x) {
+        std::string r = "", m_op = cmpop2str(x.m_op);
+        int current_precedence = last_expr_precedence;
+        visit_expr_with_precedence(*x.m_left, current_precedence);
+        r += s;
+        r += m_op;
+        visit_expr_with_precedence(*x.m_right, current_precedence);
+        r += s;
+        last_expr_precedence = current_precedence;
+        s = r;
+    }
 
     // void visit_StringOrd(const ASR::StringOrd_t &x) {}
 
-    // void visit_StringChr(const ASR::StringChr_t &x) {}
+    void visit_StringChr(const ASR::StringChr_t &x) {
+        s = "char(";
+        visit_expr(*x.m_arg);
+        s += ")";
+    }
 
     void visit_StringFormat(const ASR::StringFormat_t &x) {
         std::string r = "";
