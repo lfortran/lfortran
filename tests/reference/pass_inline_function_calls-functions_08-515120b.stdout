@@ -51,10 +51,58 @@
                                     Required
                                     .false.
                                 ),
+                            a_f_f_real:
+                                (Variable
+                                    3
+                                    a_f_f_real
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
                             a_f_real:
                                 (Variable
                                     3
                                     a_f_real
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            a_f_real_f:
+                                (Variable
+                                    3
+                                    a_f_real_f
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            a_f_real_f_f_real:
+                                (Variable
+                                    3
+                                    a_f_real_f_f_real
                                     []
                                     Local
                                     ()
@@ -99,10 +147,58 @@
                                     Required
                                     .false.
                                 ),
+                            b_f_f_real:
+                                (Variable
+                                    3
+                                    b_f_f_real
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
                             b_f_real:
                                 (Variable
                                     3
                                     b_f_real
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            b_f_real_f:
+                                (Variable
+                                    3
+                                    b_f_real_f
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            b_f_real_f_f_real:
+                                (Variable
+                                    3
+                                    b_f_real_f_f_real
                                     []
                                     Local
                                     ()
@@ -652,6 +748,22 @@
                                     Required
                                     .false.
                                 ),
+                            x_f_f_real:
+                                (Variable
+                                    3
+                                    x_f_f_real
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
                             y:
                                 (Variable
                                     3
@@ -690,21 +802,60 @@
                         ()
                     )
                     (=
+                        (Var 3 a_f_real_f)
+                        (RealConstant
+                            0.000000
+                            (Real 4)
+                        )
+                        ()
+                    )
+                    (If
+                        (RealCompare
+                            (Var 3 a_f_real_f)
+                            Eq
+                            (RealConstant
+                                0.000000
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(=
+                            (Var 3 b_f_real_f)
+                            (RealConstant
+                                2.000000
+                                (Real 4)
+                            )
+                            ()
+                        )]
+                        [(=
+                            (Var 3 b_f_real_f)
+                            (RealBinOp
+                                (Var 3 a_f_real_f)
+                                Add
+                                (FunctionCall
+                                    3 f
+                                    ()
+                                    [((RealConstant
+                                        1.000000
+                                        (Real 4)
+                                    ))]
+                                    (Real 4)
+                                    ()
+                                    ()
+                                )
+                                (Real 4)
+                                ()
+                            )
+                            ()
+                        )]
+                    )
+                    (=
                         (Var 3 b_f)
                         (RealBinOp
                             (Var 3 a_f)
                             Add
-                            (FunctionCall
-                                3 f_real
-                                ()
-                                [((RealConstant
-                                    0.000000
-                                    (Real 4)
-                                ))]
-                                (Real 4)
-                                ()
-                                ()
-                            )
+                            (Var 3 b_f_real_f)
                             (Real 4)
                             ()
                         )
@@ -745,21 +896,92 @@
                             ()
                         )]
                         [(=
+                            (Var 3 a_f_f_real)
+                            (RealConstant
+                                1.000000
+                                (Real 4)
+                            )
+                            ()
+                        )
+                        (=
+                            (Var 3 x_f_f_real)
+                            (Cast
+                                (IntegerConstant 2 (Integer 4))
+                                IntegerToReal
+                                (Real 4)
+                                (RealConstant
+                                    2.000000
+                                    (Real 4)
+                                )
+                            )
+                            ()
+                        )
+                        (=
+                            (Var 3 a_f_real_f_f_real)
+                            (RealConstant
+                                0.000000
+                                (Real 4)
+                            )
+                            ()
+                        )
+                        (If
+                            (RealCompare
+                                (Var 3 a_f_real_f_f_real)
+                                Eq
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            [(=
+                                (Var 3 b_f_real_f_f_real)
+                                (RealConstant
+                                    2.000000
+                                    (Real 4)
+                                )
+                                ()
+                            )]
+                            [(=
+                                (Var 3 b_f_real_f_f_real)
+                                (RealBinOp
+                                    (Var 3 a_f_real_f_f_real)
+                                    Add
+                                    (FunctionCall
+                                        3 f
+                                        ()
+                                        [((RealConstant
+                                            1.000000
+                                            (Real 4)
+                                        ))]
+                                        (Real 4)
+                                        ()
+                                        ()
+                                    )
+                                    (Real 4)
+                                    ()
+                                )
+                                ()
+                            )]
+                        )
+                        (=
+                            (Var 3 b_f_f_real)
+                            (RealBinOp
+                                (Var 3 a_f_f_real)
+                                Add
+                                (Var 3 b_f_real_f_f_real)
+                                (Real 4)
+                                ()
+                            )
+                            ()
+                        )
+                        (=
                             (Var 3 b_f_real)
                             (RealBinOp
                                 (Var 3 a_f_real)
                                 Add
-                                (FunctionCall
-                                    3 f
-                                    ()
-                                    [((RealConstant
-                                        1.000000
-                                        (Real 4)
-                                    ))]
-                                    (Real 4)
-                                    ()
-                                    ()
-                                )
+                                (Var 3 b_f_f_real)
                                 (Real 4)
                                 ()
                             )
