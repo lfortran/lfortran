@@ -812,7 +812,17 @@ public:
         s = r;
     }
 
-    // void visit_RealBinOp(const ASR::RealBinOp_t &x) {}
+    void visit_RealBinOp(const ASR::RealBinOp_t &x) {
+        std::string r = "", m_op = binop2str(x.m_op);
+        int current_precedence = last_expr_precedence;
+        visit_expr_with_precedence(*x.m_left, current_precedence);
+        r += s;
+        r += m_op;
+        visit_expr_with_precedence(*x.m_right, current_precedence);
+        r += s;
+        last_expr_precedence = current_precedence;
+        s = r;
+    }
 
     // void visit_RealCopySign(const ASR::RealCopySign_t &x) {}
 
@@ -969,7 +979,17 @@ public:
 
     // void visit_ArrayPack(const ASR::ArrayPack_t &x) {}
 
-    // void visit_ArrayReshape(const ASR::ArrayReshape_t &x) {}
+    void visit_ArrayReshape(const ASR::ArrayReshape_t &x) {
+        std::string r;
+        r += "reshape(";
+        visit_expr(*x.m_array);
+        r += s;
+        r += ", ";
+        visit_expr(*x.m_shape);
+        r += s;
+        r += ")";
+        s = r;
+    }
 
     // void visit_ArrayAll(const ASR::ArrayAll_t &x) {}
 
@@ -1003,7 +1023,9 @@ public:
         visit_expr(*x.m_array);
     }
 
-    // void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t &x) {}
+    void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t &x) {
+        this->visit_expr(*x.m_arg);
+    }
 
     // void visit_ComplexRe(const ASR::ComplexRe_t &x) {}
 
