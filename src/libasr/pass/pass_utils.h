@@ -299,6 +299,8 @@ namespace LCompilers {
                 }
 
                 void visit_Module(const ASR::Module_t& x) {
+                    SymbolTable *parent_symtab = current_scope;
+                    current_scope = x.m_symtab;
                     ASR::Module_t& xx = const_cast<ASR::Module_t&>(x);
                     module_dependencies.n = 0;
                     module_dependencies.reserve(al, 1);
@@ -311,6 +313,7 @@ namespace LCompilers {
                     xx.n_dependencies = module_dependencies.size();
                     xx.m_dependencies = module_dependencies.p;
                     fill_module_dependencies = fill_module_dependencies_copy;
+                    current_scope = parent_symtab;
                 }
 
                 void visit_Variable(const ASR::Variable_t& x) {
@@ -333,9 +336,20 @@ namespace LCompilers {
 
                 void visit_FunctionCall(const ASR::FunctionCall_t& x) {
                     if (fill_function_dependencies) { 
-                        if (ASR::is_a<ASR::Function_t>(*x.m_name)) {
-                            process_dependency(x.m_name, function_dependencies, current_scope);
-                        }
+                            bool is_parent = false;
+                            SymbolTable* temp_scope = current_scope;
+                            while(temp_scope != nullptr && !is_parent) {
+                                if (ASRUtils::symbol_parent_symtab(x.m_name)->get_counter() == temp_scope->get_counter() &&
+                                    ASR::is_a<ASR::symbol_t>(*temp_scope->asr_owner)) {
+                                    is_parent = true;
+                                    break;
+                                }
+                                temp_scope = temp_scope->parent;
+                            }
+
+                            if (!ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) && !is_parent) {
+                                function_dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
+                            }
                     }
                     if( ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) &&
                         fill_module_dependencies ) {
@@ -349,10 +363,21 @@ namespace LCompilers {
 
                 void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
                     if (fill_function_dependencies) {
-                        if (ASR::is_a<ASR::Function_t>(*x.m_name)) {
-                            process_dependency(x.m_name, function_dependencies, current_scope);
+                            bool is_parent = false;
+                        SymbolTable* temp_scope = current_scope;
+                        while(temp_scope != nullptr && !is_parent) {
+                            if (ASRUtils::symbol_parent_symtab(x.m_name)->get_counter() == temp_scope->get_counter() &&
+                                ASR::is_a<ASR::symbol_t>(*temp_scope->asr_owner)) {
+                                is_parent = true;
+                                break;
+                            }
+                            temp_scope = temp_scope->parent;
                         }
-                    }
+
+                    if (!ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) && !is_parent) {
+                        function_dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
+                        }
+                     }
 
                     if( ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) &&
                         fill_module_dependencies ) {
@@ -365,10 +390,12 @@ namespace LCompilers {
                 }
 
                 void visit_BlockCall(const ASR::BlockCall_t& x) {
+                    SymbolTable *parent_symtab = current_scope;
                     ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
                     for (size_t i=0; i<block->n_body; i++) {
                         visit_stmt(*(block->m_body[i]));
                     }
+                    current_scope = parent_symtab;
                 }
 
                 void process_dependency(const ASR::symbol_t *x, SetChar& function_dependencies, SymbolTable* current_scope) {
