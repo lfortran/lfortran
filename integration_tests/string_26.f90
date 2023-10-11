@@ -1,4 +1,4 @@
-program string26
+program string_26
 character(len=3) :: s1, s2
 character(len=6) :: s
 s1 = "abc"
