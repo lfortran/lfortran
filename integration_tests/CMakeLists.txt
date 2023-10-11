@@ -502,7 +502,7 @@ RUN(NAME intrinsics_57 LABELS gfortran llvm)
 RUN(NAME intrinsics_58 LABELS gfortran llvm) # sign
 RUN(NAME intrinsics_59 LABELS gfortran llvm) # sign
 RUN(NAME intrinsics_60 LABELS gfortran llvm COPY_TO_BIN intrinsics_60_data.txt) # iachar for extended ascii
-RUN(NAME intrinsics_61 LABELS gfortran llvm) # char
+RUN(NAME intrinsics_61 LABELS gfortran llvm fortran) # char
 RUN(NAME intrinsics_62 LABELS gfortran llvm) # shape
 RUN(NAME intrinsics_63 LABELS gfortran llvm)
 RUN(NAME intrinsics_64 LABELS gfortran llvm wasm) # sign
@@ -820,6 +820,7 @@ RUN(NAME string_21 LABELS gfortran llvm)
 RUN(NAME string_22 LABELS gfortran llvm)
 RUN(NAME string_23 LABELS gfortran llvm)
 RUN(NAME string_24 LABELS gfortran llvm)
+RUN(NAME string_25 LABELS gfortran llvm fortran)
 
 RUN(NAME nested_01 LABELS gfortran llvm)
 RUN(NAME nested_02 LABELS gfortran llvm)
