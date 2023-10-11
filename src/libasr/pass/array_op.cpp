@@ -1556,6 +1556,165 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
             visit_AssignmentUtil(x);
             use_custom_loop_params = false;
         }
+        template <typename LOOP_BODY>
+        void create_do_loop(const Location& loc, ASR::expr_t* value_array, int var_rank, int result_rank,
+            Vec<ASR::expr_t*>& idx_vars, Vec<ASR::expr_t*>& loop_vars,
+            Vec<ASR::expr_t*>& idx_vars_value, std::vector<int>& loop_var_indices,
+            Vec<ASR::stmt_t*>& doloop_body, ASR::expr_t* op_expr, int op_expr_dim_offset,
+            LOOP_BODY loop_body) {
+            PassUtils::create_idx_vars(idx_vars_value, var_rank, loc, al, current_scope, "_v");
+            if( use_custom_loop_params ) {
+                PassUtils::create_idx_vars(idx_vars, loop_vars, loop_var_indices,
+                                        result_ubound, result_inc,
+                                        loc, al, current_scope, "_t");
+            } else {
+                PassUtils::create_idx_vars(idx_vars, result_rank, loc, al, current_scope, "_t");
+                loop_vars.from_pointer_n_copy(al, idx_vars.p, idx_vars.size());
+            }
+            ASR::stmt_t* doloop = nullptr;
+            LCOMPILERS_ASSERT(result_rank >= var_rank);
+            // LCOMPILERS_ASSERT(var_rank == (int) loop_vars.size());
+            ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int32_type));
+            if (var_rank == (int) loop_vars.size()) {
+                for( int i = var_rank - 1; i >= 0; i-- ) {
+                    // TODO: Add an If debug node to check if the lower and upper bounds of both the arrays are same.
+                    ASR::do_loop_head_t head;
+                    head.m_v = loop_vars[i];
+                    if( use_custom_loop_params ) {
+                        int j = loop_var_indices[i];
+                        head.m_start = result_lbound[j];
+                        head.m_end = result_ubound[j];
+                        head.m_increment = result_inc[j];
+                    } else {
+                        head.m_start = PassUtils::get_bound(value_array, i + 1, "lbound", al);
+                        head.m_end = PassUtils::get_bound(value_array, i + 1, "ubound", al);
+                        head.m_increment = nullptr;
+                    }
+                    head.loc = head.m_v->base.loc;
+                    doloop_body.reserve(al, 1);
+                    if( doloop == nullptr ) {
+                        loop_body();
+                    } else {
+                        if( var_rank > 0 ) {
+                            ASR::expr_t* idx_lb = PassUtils::get_bound(op_expr, i + op_expr_dim_offset, "lbound", al);
+                            ASR::stmt_t* set_to_one = ASRUtils::STMT(ASR::make_Assignment_t(
+                                al, loc, idx_vars_value[i+1], idx_lb, nullptr));
+                            doloop_body.push_back(al, set_to_one);
+                        }
+                        doloop_body.push_back(al, doloop);
+                    }
+                    if( var_rank > 0 ) {
+                        ASR::expr_t* inc_expr = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                            al, loc, idx_vars_value[i], ASR::binopType::Add, const_1, int32_type, nullptr));
+                        ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(
+                            al, loc, idx_vars_value[i], inc_expr, nullptr));
+                        doloop_body.push_back(al, assign_stmt);
+                    }
+                    doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head, doloop_body.p, doloop_body.size()));
+                }
+                if( var_rank > 0 ) {
+                    ASR::expr_t* idx_lb = PassUtils::get_bound(op_expr, 1, "lbound", al);
+                    ASR::stmt_t* set_to_one = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, idx_vars_value[0], idx_lb, nullptr));
+                    pass_result.push_back(al, set_to_one);
+                }
+                pass_result.push_back(al, doloop);
+            } else if (var_rank == 0) {
+                for( int i = loop_vars.size() - 1; i >= 0; i-- ) {
+                    // TODO: Add an If debug node to check if the lower and upper bounds of both the arrays are same.
+                    ASR::do_loop_head_t head;
+                    head.m_v = loop_vars[i];
+                    if( use_custom_loop_params ) {
+                        int j = loop_var_indices[i];
+                        head.m_start = result_lbound[j];
+                        head.m_end = result_ubound[j];
+                        head.m_increment = result_inc[j];
+                    } else {
+                        head.m_start = PassUtils::get_bound(value_array, i + 1, "lbound", al);
+                        head.m_end = PassUtils::get_bound(value_array, i + 1, "ubound", al);
+                        head.m_increment = nullptr;
+                    }
+                    head.loc = head.m_v->base.loc;
+                    doloop_body.reserve(al, 1);
+                    if( doloop == nullptr ) {
+                        loop_body();
+                    } else {
+                        doloop_body.push_back(al, doloop);
+                    }
+                    doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head, doloop_body.p, doloop_body.size()));
+                }
+                pass_result.push_back(al, doloop);
+            }
+
+        }
+
+        void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+            ASR::symbol_t* sym = x.m_original_name;
+            bool is_changed = false;
+            if (sym && ASR::is_a<ASR::ExternalSymbol_t>(*sym)) {
+                ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(sym);
+                std::string name = ext_sym->m_name;
+                std::string module_name = ext_sym->m_module_name;
+                if (module_name == "lfortran_intrinsic_math" && name == "random_number") {
+                    // iterate over args and check if any of them is an array
+                    ASR::expr_t* arg = nullptr;
+                    for (size_t i=0; i<x.n_args; i++) {
+                        if (ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_value))) {
+                            arg = x.m_args[i].m_value;
+                            break;
+                        }
+                    }
+                    if (arg) {
+                        /*
+                            real :: b(3)
+                            call random_number(b)
+                                To
+                            real :: b(3)
+                            do i=lbound(b,1),ubound(b,1)
+                                call random_number(b(i))
+                            end do
+                        */
+                        int var_rank = PassUtils::get_rank(arg);
+                        int result_rank = PassUtils::get_rank(arg);
+                        Vec<ASR::expr_t*> idx_vars, loop_vars, idx_vars_value;
+                        std::vector<int> loop_var_indices;
+                        Vec<ASR::stmt_t*> doloop_body;
+                        create_do_loop(arg->base.loc, arg, var_rank, result_rank, idx_vars,
+                        loop_vars, idx_vars_value, loop_var_indices, doloop_body,
+                        arg, 2,
+                        [=, &idx_vars_value, &idx_vars, &doloop_body]() {
+                            Vec<ASR::array_index_t> array_index; array_index.reserve(al, idx_vars.size());
+                            for( size_t i = 0; i < idx_vars.size(); i++ ) {
+                                ASR::array_index_t idx;
+                                idx.m_left = nullptr;
+                                idx.m_right = idx_vars_value[i];
+                                idx.m_step = nullptr;
+                                idx.loc = idx_vars_value[i]->base.loc;
+                                array_index.push_back(al, idx);
+                            }
+                            ASR::expr_t* array_item = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, x.base.base.loc,
+                                                    arg, array_index.p, array_index.size(), ASRUtils::type_get_past_array(ASRUtils::expr_type(arg)),
+                                                    ASR::arraystorageType::ColMajor, nullptr));
+                            Vec<ASR::call_arg_t> ref_args; ref_args.reserve(al, 1);
+                            ASR::call_arg_t ref_arg; ref_arg.loc = array_item->base.loc; ref_arg.m_value = array_item;
+                            ref_args.push_back(al, ref_arg);
+                            ASR::stmt_t* subroutine_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, x.base.base.loc,
+                                                    x.m_name, x.m_original_name, ref_args.p, ref_args.n, nullptr, nullptr, false));
+                            doloop_body.push_back(al, subroutine_call);
+                        });
+                        remove_original_statement = true;
+                        is_changed = true;
+                    }
+                }
+            }
+            if (!is_changed) {
+                for (size_t i=0; i<x.n_args; i++) {
+                    visit_call_arg(x.m_args[i]);
+                }
+                if (x.m_dt)
+                    visit_expr(*x.m_dt);
+            }
+        }
 
         void visit_Associate(const ASR::Associate_t& /*x*/) {
         }
