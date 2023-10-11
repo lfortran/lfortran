@@ -813,7 +813,8 @@ namespace Shape {
             const Location &loc, SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
             ASR::ttype_t *return_type, Vec<ASR::call_arg_t>& new_args, int64_t) {
         declare_basic_variables("_lcompilers_shape");
-        fill_func_arg("source", arg_types[0]);
+        fill_func_arg("source", ASRUtils::duplicate_type_with_empty_dims(al,
+            arg_types[0]));
         auto result = declare(fn_name, return_type, ReturnVar);
         int iter = extract_n_dims_from_ttype(arg_types[0]) + 1;
         auto i = declare("i", int32, Local);
