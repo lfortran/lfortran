@@ -862,7 +862,13 @@ public:
         last_expr_precedence = 13;
     }
 
-    // void visit_StringConcat(const ASR::StringConcat_t &x) {}
+    void visit_StringConcat(const ASR::StringConcat_t &x) {
+        this->visit_expr(*x.m_left);
+        std::string left = std::move(s);
+        this->visit_expr(*x.m_right);
+        std::string right = std::move(s);
+        s = left + "//" + right;
+    }
 
     // void visit_StringRepeat(const ASR::StringRepeat_t &x) {}
 

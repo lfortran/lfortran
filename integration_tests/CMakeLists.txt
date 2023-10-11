@@ -821,6 +821,7 @@ RUN(NAME string_22 LABELS gfortran llvm)
 RUN(NAME string_23 LABELS gfortran llvm)
 RUN(NAME string_24 LABELS gfortran llvm)
 RUN(NAME string_25 LABELS gfortran llvm fortran)
+RUN(NAME string_26 LABELS gfortran llvm fortran)
 
 RUN(NAME nested_01 LABELS gfortran llvm)
 RUN(NAME nested_02 LABELS gfortran llvm)
