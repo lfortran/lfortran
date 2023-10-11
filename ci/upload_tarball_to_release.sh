@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -ex
+
 lfortran_version=$(<version)
 
 cd ./dist
