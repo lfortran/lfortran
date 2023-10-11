@@ -203,6 +203,8 @@ void handle_float(char* format, double val, char** result) {
     char int_str[64];
     sprintf(int_str, "%ld", integer_part);
     char dec_str[64];
+    // TODO: This will work for up to `F20.15` but will fail for:
+    // print "(F40.34)", 1.23456789101112e-20_8
     sprintf(dec_str, "%0.15lf", decimal_part);
     memmove(dec_str,dec_str+2,strlen(dec_str));
 
