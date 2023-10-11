@@ -1,5 +1,6 @@
 #include <libasr/asr.h>
 #include <libasr/pass/intrinsic_function_registry.h>
+#include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/codegen/asr_to_c_cpp.h>
 #include <libasr/codegen/asr_to_fortran.h>
 
@@ -707,6 +708,7 @@ public:
         std::string out;
         switch (x.m_intrinsic_id) {
             SET_INTRINSIC_NAME(Abs, "abs");
+            SET_INTRINSIC_NAME(Exp, "exp");
             default : {
                 throw LCompilersException("IntrinsicScalarFunction: `"
                     + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)
@@ -719,7 +721,25 @@ public:
         s = out;
     }
 
-    // void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t &x) {}
+    #define SET_ARR_INTRINSIC_NAME(X, func_name)                                \
+        case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::X)) : {   \
+            visit_expr(*x.m_args[0]);                                           \
+            out += func_name; break;                                            \
+        }
+
+    void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t &x) {
+        std::string out;
+        switch (x.m_arr_intrinsic_id) {
+            SET_ARR_INTRINSIC_NAME(Sum, "sum");
+            default : {
+                throw LCompilersException("IntrinsicFunction: `"
+                    + ASRUtils::get_intrinsic_name(x.m_arr_intrinsic_id)
+                    + "` is not implemented");
+            }
+        }
+        out += "(" + s + ")";
+        s = out;
+    }
 
     // void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t &x) {}
 
@@ -812,7 +832,17 @@ public:
         s = r;
     }
 
-    // void visit_RealBinOp(const ASR::RealBinOp_t &x) {}
+    void visit_RealBinOp(const ASR::RealBinOp_t &x) {
+        std::string r = "", m_op = binop2str(x.m_op);
+        int current_precedence = last_expr_precedence;
+        visit_expr_with_precedence(*x.m_left, current_precedence);
+        r += s;
+        r += m_op;
+        visit_expr_with_precedence(*x.m_right, current_precedence);
+        r += s;
+        last_expr_precedence = current_precedence;
+        s = r;
+    }
 
     // void visit_RealCopySign(const ASR::RealCopySign_t &x) {}
 
