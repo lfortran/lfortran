@@ -1052,7 +1052,9 @@ public:
         visit_expr(*x.m_array);
     }
 
-    // void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t &x) {}
+    void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t &x) {
+        this->visit_expr(*x.m_arg);
+    }
 
     // void visit_ComplexRe(const ASR::ComplexRe_t &x) {}
 

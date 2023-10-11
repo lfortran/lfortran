@@ -405,7 +405,7 @@ RUN(NAME arrays_intrin_06 LABELS gfortran llvm) # minval
 RUN(NAME any_01 LABELS gfortran)
 RUN(NAME any_02 LABELS gfortran llvm NOFAST)
 RUN(NAME sum_01 LABELS gfortran llvm NOFAST)
-RUN(NAME sum_02 LABELS gfortran llvm)
+RUN(NAME sum_02 LABELS gfortran llvm fortran)
 RUN(NAME product_01 LABELS gfortran llvm NOFAST)
 RUN(NAME product_02 LABELS gfortran llvm)
 
