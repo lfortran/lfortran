@@ -209,7 +209,7 @@
                                         []
                                         .false.
                                     )
-                                    [g]
+                                    []
                                     [(Var 5 a)
                                     (Var 5 b)]
                                     [(SubroutineCall

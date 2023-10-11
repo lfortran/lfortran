@@ -4093,7 +4093,7 @@
                                         []
                                         .false.
                                     )
-                                    [kernel2]
+                                    []
                                     [(Var 5 a)
                                     (Var 5 b)
                                     (Var 5 c)]

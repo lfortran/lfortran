@@ -205,8 +205,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [zero_t
-                                                    plus_t]
+                                                    []
                                                     [(Var 14 a)]
                                                     [(=
                                                         (Var 14 r)

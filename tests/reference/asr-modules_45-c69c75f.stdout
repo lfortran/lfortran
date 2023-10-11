@@ -608,7 +608,7 @@
                                         []
                                         .false.
                                     )
-                                    [new_profile]
+                                    []
                                     [(Var 6 profile_name)
                                     (Var 6 compiler_name)
                                     (Var 6 os_type)

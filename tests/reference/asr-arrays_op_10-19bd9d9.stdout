@@ -65,7 +65,7 @@
                                         []
                                         .false.
                                     )
-                                    [solution]
+                                    []
                                     []
                                     [(Print
                                         [(ArraySize

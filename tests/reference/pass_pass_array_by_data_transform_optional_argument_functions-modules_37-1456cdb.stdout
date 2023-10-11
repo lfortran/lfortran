@@ -892,7 +892,7 @@
                                         []
                                         .false.
                                     )
-                                    [build_package_targets]
+                                    []
                                     [(Var 10 settings)]
                                     [(SubroutineCall
                                         2 build_package_targets

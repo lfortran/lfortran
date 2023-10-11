@@ -211,7 +211,7 @@
                                         []
                                         .false.
                                     )
-                                    [simps38_weights_dp]
+                                    []
                                     [(Var 4 x1)]
                                     [(Print
                                         [(FunctionCall

@@ -149,7 +149,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [f]
+                                                    []
                                                     [(Var 7 x)
                                                     (Var 7 y)]
                                                     [(=
@@ -255,7 +255,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [add_generic]
+                                                    []
                                                     [(Var 8 x)
                                                     (Var 8 y)]
                                                     [(=
@@ -685,7 +685,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [func_arg_real]
+                                                    []
                                                     [(Var 13 x)
                                                     (Var 13 y)]
                                                     [(=
@@ -793,7 +793,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [__asr_add_generic]
+                                                    []
                                                     [(Var 11 x)
                                                     (Var 11 y)]
                                                     [(=

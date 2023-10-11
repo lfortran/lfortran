@@ -139,7 +139,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [f]
+                                                    []
                                                     [(Var 7 x)
                                                     (Var 7 y)]
                                                     [(=
@@ -497,7 +497,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [~add_intrinsic_real]
+                                                    []
                                                     [(Var 10 x)
                                                     (Var 10 y)]
                                                     [(=

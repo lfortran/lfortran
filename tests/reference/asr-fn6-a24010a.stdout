@@ -247,7 +247,7 @@
                                         []
                                         .false.
                                     )
-                                    [msg_scalar]
+                                    []
                                     [(Var 6 where)
                                     (Var 6 g0)
                                     (Var 6 g1)

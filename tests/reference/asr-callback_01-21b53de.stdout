@@ -334,7 +334,7 @@
                                         []
                                         .false.
                                     )
-                                    [cb]
+                                    []
                                     [(Var 5 c)
                                     (Var 5 d)]
                                     [(Print

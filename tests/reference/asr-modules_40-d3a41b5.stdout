@@ -141,7 +141,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [resize]
+                                                    []
                                                     [(Var 6 de)
                                                     (Var 6 top)
                                                     (Var 6 stack)]

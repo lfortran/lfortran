@@ -239,7 +239,7 @@
                                         []
                                         .false.
                                     )
-                                    [len_string]
+                                    []
                                     [(Var 5 string)]
                                     []
                                     (Var 5 character_string)
@@ -524,7 +524,7 @@
                                         []
                                         .false.
                                     )
-                                    [compute_lps]
+                                    []
                                     [(Var 8 string)]
                                     [(Print
                                         [(FunctionCall
@@ -769,7 +769,7 @@
                                         []
                                         .false.
                                     )
-                                    [padl_char_pad_with]
+                                    []
                                     [(Var 12 string)
                                     (Var 12 output_length)]
                                     [(=
@@ -1082,7 +1082,7 @@
                                         []
                                         .false.
                                     )
-                                    [padl_char_pad_with]
+                                    []
                                     [(Var 10 string)
                                     (Var 10 output_length)]
                                     [(=
@@ -1280,7 +1280,7 @@
                                         []
                                         .false.
                                     )
-                                    [padl_char_pad_with]
+                                    []
                                     [(Var 11 string)
                                     (Var 11 output_length)
                                     (Var 11 pad_with)]

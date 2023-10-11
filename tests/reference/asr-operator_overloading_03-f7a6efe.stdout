@@ -640,7 +640,7 @@
                                         []
                                         .false.
                                     )
-                                    [less_than_inverse]
+                                    []
                                     [(Var 5 log1)
                                     (Var 5 log2)]
                                     [(=

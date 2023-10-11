@@ -1603,7 +1603,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [plus_t]
+                                                    []
                                                     [(Var 22 t)]
                                                     [(=
                                                         (Var 22 result)
@@ -1697,7 +1697,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [plus_t]
+                                                    []
                                                     [(Var 23 t)]
                                                     [(=
                                                         (Var 23 result)

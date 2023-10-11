@@ -383,7 +383,7 @@
                                         []
                                         .false.
                                     )
-                                    [cb]
+                                    []
                                     [(Var 5 c)
                                     (Var 5 d)
                                     (Var 5 res)]
