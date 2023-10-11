@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 
+lfortran_version=$(<version)
+
 cd ./dist
 
-lfortran_version=$(<version)
 
 RELEASE_ID=$(\
 curl -s 'https://api.github.com/repos/lfortran/lfortran/releases/latest' | \
