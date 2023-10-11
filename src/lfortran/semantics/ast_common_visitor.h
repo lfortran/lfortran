@@ -795,8 +795,7 @@ public:
 
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping;
-    std::vector<ASR::stmt_t*> &data_structure;
-
+    
     std::map<std::string, std::pair<bool,std::vector<ASR::expr_t*>>> common_block_dictionary;
     std::map<uint64_t, ASR::symbol_t*> &common_variables_hash;
 
@@ -825,6 +824,7 @@ public:
     std::map<std::string, std::string> context_map;     // TODO: refactor treatment of context map
     std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types;
     std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols;
+    std::vector<ASR::stmt_t*> &data_structure;
 
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
             diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
@@ -841,12 +841,7 @@ public:
           common_variables_hash{common_variables_hash}, external_procedures_mapping{external_procedures_mapping},
           entry_functions{entry_functions},entry_function_arguments_mapping{entry_function_arguments_mapping},
           current_variable_type_{nullptr}, instantiate_types{instantiate_types},
-          instantiate_symbols{instantiate_symbols} {
-        : diag{diagnostics}, al{al}, compiler_options{compiler_options},
-          current_scope{symbol_table}, implicit_mapping{implicit_mapping},
-          common_variables_hash{common_variables_hash}, external_procedures_mapping{external_procedures_mapping},
-          current_variable_type_{nullptr},
-          instantiate_types{instantiate_types}, instantiate_symbols{instantiate_symbols}, data_structure{data_structure} {
+          instantiate_symbols{instantiate_symbols}, data_structure{data_structure}{
         current_module_dependencies.reserve(al, 4);
         enum_init_val = 0;
     }
@@ -2091,11 +2086,12 @@ public:
 
                                 ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(asr_eq2);
                                 ASR::expr_t* array = array_item->m_v;
-                                // std::cout<<array->base<<'\n';
-                                
-                                // ASR::ttype_t* m_type = ASRUtils::make_Array_t_util(al, asr_eq2->base.loc, m_type, dims.p, dims.size(), ASR::array_physical_typeType::DescriptorArray);
-                                // ASR::asr_t* ptr = make_Pointer_t(al, asr_eq2->base.loc, m_type);
-                                // current_scope->add_or_overwrite_symbol("small", ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, asr_eq2->base.loc, current_scope, s2c(al, "small"), nullptr, 0, ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default, m_type, nullptr, ASR::abiType::BindC, ASR::accessType::Public, ASR::presenceType::Required, false)));
+                                ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(array);
+                                ASR::Variable_t *var__ = ASR::down_cast<ASR::Variable_t>(var->m_v);
+                                std::string name = var__->m_name;
+                                ASR::ttype_t* type = ASRUtils::make_Array_t_util(al, asr_eq2->base.loc, type, dim.p, dim.size(), ASR::abiType::BindC, false, ASR::array_physical_typeType::DescriptorArray, false, false);
+                                ASR::asr_t* ptr = make_Pointer_t(al, asr_eq2->base.loc, type);
+                                current_scope->add_or_overwrite_symbol(name, ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, asr_eq2->base.loc, current_scope, s2c(al, name), nullptr, 0, ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr, ASR::abiType::BindC, ASR::accessType::Public, ASR::presenceType::Required, false)));
 
                                 ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, asr_eq1->base.loc, int32_type, dim.p, dim.size(), ASR::array_physical_typeType::PointerToDataArray));
                                 
