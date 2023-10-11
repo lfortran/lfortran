@@ -1650,7 +1650,6 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
 
         void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
             ASR::symbol_t* sym = x.m_original_name;
-            bool is_changed = false;
             if (sym && ASR::is_a<ASR::ExternalSymbol_t>(*sym)) {
                 ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(sym);
                 std::string name = ext_sym->m_name;
@@ -1693,7 +1692,8 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                                 array_index.push_back(al, idx);
                             }
                             ASR::expr_t* array_item = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, x.base.base.loc,
-                                                    arg, array_index.p, array_index.size(), ASRUtils::type_get_past_array(ASRUtils::expr_type(arg)),
+                                                    arg, array_index.p, array_index.size(),
+                                                    ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(arg))),
                                                     ASR::arraystorageType::ColMajor, nullptr));
                             Vec<ASR::call_arg_t> ref_args; ref_args.reserve(al, 1);
                             ASR::call_arg_t ref_arg; ref_arg.loc = array_item->base.loc; ref_arg.m_value = array_item;
@@ -1703,17 +1703,14 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                             doloop_body.push_back(al, subroutine_call);
                         });
                         remove_original_statement = true;
-                        is_changed = true;
                     }
                 }
             }
-            if (!is_changed) {
-                for (size_t i=0; i<x.n_args; i++) {
-                    visit_call_arg(x.m_args[i]);
-                }
-                if (x.m_dt)
-                    visit_expr(*x.m_dt);
+            for (size_t i=0; i<x.n_args; i++) {
+                visit_call_arg(x.m_args[i]);
             }
+            if (x.m_dt)
+                visit_expr(*x.m_dt);
         }
 
         void visit_Associate(const ASR::Associate_t& /*x*/) {
