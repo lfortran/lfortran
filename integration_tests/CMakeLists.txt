@@ -188,8 +188,8 @@ RUN(NAME error_stop_02 FAIL LABELS llvm wasm llvm2 fortran)
 RUN(NAME stop_01 LABELS llvm wasm llvm2 c fortran)
 
 RUN(NAME print_01 LABELS gfortran llvm cpp llvm2 wasm fortran)
-RUN(NAME print_02 LABELS gfortran llvm llvm2 wasm fortran NOFAST)
-RUN(NAME print_03 LABELS gfortran llvm llvm2 wasm c fortran NOFAST)
+RUN(NAME print_02 LABELS gfortran llvm llvm2 wasm fortran)
+RUN(NAME print_03 LABELS gfortran llvm llvm2 wasm c fortran)
 RUN(NAME print_04 LABELS gfortran llvm llvm2 fortran)
 RUN(NAME print_arr_01 LABELS gfortran llvm llvm2 wasm c fortran)
 RUN(NAME print_arr_02 LABELS gfortran llvm llvm2 wasm c fortran)
@@ -213,7 +213,7 @@ RUN(NAME expr_08 LABELS gfortran llvm wasm c)
 RUN(NAME expr_09 LABELS gfortran llvm wasm c)
 RUN(NAME expr_10 LABELS gfortran llvm wasm c)
 RUN(NAME expr_12 LABELS gfortran llvm c) # it uses string compare
-RUN(NAME expr_13 LABELS gfortran llvm wasm c NOFAST)
+RUN(NAME expr_13 LABELS gfortran llvm wasm c)
 RUN(NAME expr_14 LABELS gfortran llvm wasm c)
 RUN(NAME expr_15 LABELS gfortran llvm wasm c)
 RUN(NAME expr_16 LABELS gfortran llvm wasm c)
@@ -255,12 +255,12 @@ RUN(NAME doloop_04 LABELS gfortran llvm) # uses goto target
 RUN(NAME doloop_05 LABELS gfortran llvm) # uses goto
 RUN(NAME doloop_06 LABELS gfortran llvm c cpp wasm)
 RUN(NAME doloop_07 LABELS gfortran llvm c cpp wasm)
-RUN(NAME doloop_08 LABELS gfortran llvm c cpp wasm NOFAST)
+RUN(NAME doloop_08 LABELS gfortran llvm c cpp wasm)
 RUN(NAME doloop_09 LABELS gfortran llvm) # nested subroutine
 RUN(NAME doloop_10 LABELS gfortran llvm wasm) # implicit cast loop variable
 
-RUN(NAME cycle_and_exit1 LABELS gfortran llvm)
-RUN(NAME cycle_and_exit2 LABELS gfortran llvm)
+RUN(NAME cycle_and_exit1 LABELS gfortran llvm fortran)
+RUN(NAME cycle_and_exit2 LABELS gfortran llvm fortran)
 RUN(NAME cycle_and_exit3 LABELS gfortran llvm)
 RUN(NAME cycle_and_exit4 LABELS gfortran llvm)
 
@@ -290,7 +290,7 @@ RUN(NAME functions_07 LABELS gfortran llvm)
 RUN(NAME functions_08 LABELS gfortran llvm)
 RUN(NAME functions_09 LABELS gfortran)
 RUN(NAME functions_10 LABELS gfortran)
-RUN(NAME functions_11 LABELS gfortran llvm wasm NOFAST)
+RUN(NAME functions_11 LABELS gfortran llvm wasm)
 RUN(NAME functions_13 LABELS gfortran)
 RUN(NAME functions_15 LABELS gfortran llvm)
 RUN(NAME functions_16 LABELS gfortran)
@@ -502,7 +502,7 @@ RUN(NAME intrinsics_57 LABELS gfortran llvm)
 RUN(NAME intrinsics_58 LABELS gfortran llvm) # sign
 RUN(NAME intrinsics_59 LABELS gfortran llvm) # sign
 RUN(NAME intrinsics_60 LABELS gfortran llvm COPY_TO_BIN intrinsics_60_data.txt) # iachar for extended ascii
-RUN(NAME intrinsics_61 LABELS gfortran llvm) # char
+RUN(NAME intrinsics_61 LABELS gfortran llvm fortran) # char
 RUN(NAME intrinsics_62 LABELS gfortran llvm) # shape
 RUN(NAME intrinsics_63 LABELS gfortran llvm)
 RUN(NAME intrinsics_64 LABELS gfortran llvm wasm) # sign
@@ -820,6 +820,8 @@ RUN(NAME string_21 LABELS gfortran llvm)
 RUN(NAME string_22 LABELS gfortran llvm)
 RUN(NAME string_23 LABELS gfortran llvm)
 RUN(NAME string_24 LABELS gfortran llvm)
+RUN(NAME string_25 LABELS gfortran llvm fortran)
+RUN(NAME string_26 LABELS gfortran llvm fortran)
 
 RUN(NAME nested_01 LABELS gfortran llvm)
 RUN(NAME nested_02 LABELS gfortran llvm)

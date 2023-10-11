@@ -556,9 +556,13 @@ jobs:
             export PATH="$(pwd)/../src/bin:$PATH"
             ./build.sh
 
-  test_llvm_10:
-    name: Test LLVM 10
+  test_llvm:
+    name: Test LLVM ${{ matrix.llvm-version }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        llvm-version: ["10", "14", "15", "16"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -566,140 +570,14 @@ jobs:
 
       - uses: mamba-org/setup-micromamba@v1
         with:
-          environment-file: ci/environment_linux_llvm10.yml
+          environment-file: ci/environment_linux_llvm.yml
           create-args: >-
-            python=3.10
+            llvmdev=${{ matrix.llvm-version }}
 
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
-
-      - name: Build Linux
-        shell: bash -e -l {0}
-        run: |
-            ./build0.sh
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
-
-      - name: Test Linux
-        shell: bash -e -l {0}
-        run: |
-            cd integration_tests
-            ./run_tests.py -b llvm
-            ./run_tests.py -b llvm -f
-
-  test_llvm_14:
-    name: Test LLVM 14
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v1
-        with:
-          environment-file: ci/environment_linux_llvm14.yml
-          create-args: >-
-            python=3.10
-
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
-
-      - name: Build Linux
-        shell: bash -e -l {0}
-        run: |
-            ./build0.sh
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
-
-      - name: Test Linux
-        shell: bash -e -l {0}
-        run: |
-            cd integration_tests
-            ./run_tests.py -b llvm
-            ./run_tests.py -b llvm -f
-
-  test_llvm_15:
-    name: Test LLVM 15
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v1
-        with:
-          environment-file: ci/environment_linux_llvm15.yml
-          create-args: >-
-            python=3.10
-
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
-
-      - name: Build Linux
-        shell: bash -e -l {0}
-        run: |
-            ./build0.sh
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
-
-      - name: Test Linux
-        shell: bash -e -l {0}
-        run: |
-            cd integration_tests
-            ./run_tests.py -b llvm llvmImplicit
-            ./run_tests.py -b llvm llvmImplicit -f
-
-  test_llvm_16:
-    name: Test LLVM 16
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v1
-        with:
-          environment-file: ci/environment_linux_llvm16.yml
-          create-args: >-
-            python=3.10
-
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
+          key: ${{ github.job }}-${{ matrix.llvm-version }}
 
       - name: Build Linux
         shell: bash -e -l {0}
@@ -949,6 +827,14 @@ jobs:
           ci/upload_tarball.sh
         env:
           SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }}
+
+      - name: Upload Tarball to Release
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        shell: bash -e -l {0}
+        run: |
+          ci/upload_tarball_to_release.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   upload_docs:
     name: Documentation

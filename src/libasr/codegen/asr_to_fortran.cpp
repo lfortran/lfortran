@@ -414,7 +414,13 @@ public:
 
     // void visit_Associate(const ASR::Associate_t &x) {}
 
-    // void visit_Cycle(const ASR::Cycle_t &x) {}
+    void visit_Cycle(const ASR::Cycle_t &x) {
+        s = indent + "cycle";
+        if (x.m_stmt_name) {
+            s += " " + std::string(x.m_stmt_name);
+        }
+        s += "\n";
+    }
 
     // void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {}
 
@@ -435,6 +441,11 @@ public:
 
     void visit_DoLoop(const ASR::DoLoop_t &x) {
         std::string r = indent;
+        if (x.m_name) {
+            r += std::string(x.m_name);
+            r += " : ";
+        }
+
         r += "do ";
         visit_expr(*x.m_head.m_v);
         r += s;
@@ -452,7 +463,11 @@ public:
         r += "\n";
         visit_body(x, r);
         r += indent;
-        r += "end do\n";
+        r += "end do";
+        if (x.m_name) {
+            r += " " + std::string(x.m_name);
+        }
+        r += "\n";
         s = r;
     }
 
@@ -462,7 +477,13 @@ public:
         s += "\n";
     }
 
-    // void visit_Exit(const ASR::Exit_t &x) {}
+    void visit_Exit(const ASR::Exit_t &x) {
+        s = indent + "exit";
+        if (x.m_stmt_name) {
+            s += " " + std::string(x.m_stmt_name);
+        }
+        s += "\n";
+    }
 
     // void visit_ForAllSingle(const ASR::ForAllSingle_t &x) {}
 
@@ -640,6 +661,10 @@ public:
 
     void visit_WhileLoop(const ASR::WhileLoop_t &x) {
         std::string r = indent;
+        if (x.m_name) {
+            r += std::string(x.m_name);
+            r += " : ";
+        }
         r += "do while";
         r += " (";
         visit_expr(*x.m_test);
@@ -647,7 +672,11 @@ public:
         r += ")\n";
         visit_body(x, r);
         r += indent;
-        r += "end do\n";
+        r += "end do";
+        if (x.m_name) {
+            r += " " + std::string(x.m_name);
+        }
+        r += "\n";
         s = r;
     }
 
@@ -833,7 +862,13 @@ public:
         last_expr_precedence = 13;
     }
 
-    // void visit_StringConcat(const ASR::StringConcat_t &x) {}
+    void visit_StringConcat(const ASR::StringConcat_t &x) {
+        this->visit_expr(*x.m_left);
+        std::string left = std::move(s);
+        this->visit_expr(*x.m_right);
+        std::string right = std::move(s);
+        s = left + "//" + right;
+    }
 
     // void visit_StringRepeat(const ASR::StringRepeat_t &x) {}
 
@@ -846,11 +881,24 @@ public:
 
     // void visit_StringSection(const ASR::StringSection_t &x) {}
 
-    // void visit_StringCompare(const ASR::StringCompare_t &x) {}
+    void visit_StringCompare(const ASR::StringCompare_t &x) {
+        std::string r = "", m_op = cmpop2str(x.m_op);
+        int current_precedence = last_expr_precedence;
+        visit_expr_with_precedence(*x.m_left, current_precedence);
+        r += s;
+        r += m_op;
+        visit_expr_with_precedence(*x.m_right, current_precedence);
+        r += s;
+        last_expr_precedence = current_precedence;
+        s = r;
+    }
 
     // void visit_StringOrd(const ASR::StringOrd_t &x) {}
 
-    // void visit_StringChr(const ASR::StringChr_t &x) {}
+    void visit_StringChr(const ASR::StringChr_t &x) {
+        visit_expr(*x.m_arg);
+        s = "char(" + s + ")";
+    }
 
     void visit_StringFormat(const ASR::StringFormat_t &x) {
         std::string r = "";
