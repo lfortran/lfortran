@@ -522,7 +522,6 @@ RUN(NAME intrinsics_76 LABELS gfortran llvm)
 RUN(NAME intrinsics_77 LABELS gfortran llvm NOFAST)
 RUN(NAME intrinsics_78 LABELS gfortran llvm wasm) # mod
 RUN(NAME intrinsics_79 LABELS gfortran llvm wasm) # Trailz
-RUN(NAME intrinsics_80 LABELS gfortran llvm fortran) # abs
 
 
 RUN(NAME parameter_01 LABELS gfortran)
@@ -897,8 +896,8 @@ RUN(NAME test_iso_c_binding LABELS gfortran llvm wasm)
 RUN(NAME test_iso_fortran_env LABELS gfortran llvm wasm)
 
 RUN(NAME abs_01 LABELS gfortran llvm wasm c fortran)
-RUN(NAME abs_02 LABELS gfortran llvm wasm)
-RUN(NAME abs_03 LABELS gfortran llvm wasm c)
+RUN(NAME abs_02 LABELS gfortran llvm wasm fortran)
+RUN(NAME abs_03 LABELS gfortran llvm wasm c fortran)
 RUN(NAME sqrt_01 LABELS gfortran llvm)
 RUN(NAME sqrt_02 LABELS gfortran llvm)
 RUN(NAME sin_01 LABELS gfortran llvm)
