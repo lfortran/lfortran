@@ -200,7 +200,8 @@ class ReplaceFunctionCallWithSubroutineCall:
                         if( is_allocatable || is_created_result_var_type_dependent_on_local_vars ) {
                             result_var_type = ASRUtils::duplicate_type_with_empty_dims(al, result_var_type);
                             result_var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(
-                                al, loc, ASRUtils::type_get_past_allocatable(result_var_type)));
+                                al, loc, ASRUtils::type_get_past_allocatable(
+                                ASRUtils::type_get_past_pointer(result_var_type))));
                         }
                     }
 

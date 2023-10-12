@@ -204,8 +204,8 @@ RUN(NAME cond_02 LABELS gfortran llvm wasm c fortran)
 
 RUN(NAME expr_01 FAIL LABELS gfortran llvm cpp x86 wasm c fortran)
 RUN(NAME expr_02 LABELS gfortran llvm cpp x86 wasm c fortran)
-RUN(NAME expr_03 LABELS gfortran llvm cpp x86 wasm c)
-RUN(NAME expr_04 LABELS gfortran llvm cpp wasm c)
+RUN(NAME expr_03 LABELS gfortran llvm cpp x86 wasm c fortran)
+RUN(NAME expr_04 LABELS gfortran llvm cpp wasm c fortran)
 RUN(NAME expr_05 LABELS gfortran llvm cpp c) # it contains pow, wasm supports only x**2
 RUN(NAME expr_06 LABELS gfortran llvm wasm c)
 RUN(NAME expr_07 LABELS gfortran llvm wasm c)
@@ -353,6 +353,7 @@ RUN(NAME arrays_op_21 LABELS gfortran llvm)
 RUN(NAME arrays_op_22 LABELS gfortran llvm)
 RUN(NAME arrays_op_23 LABELS gfortran llvm)
 RUN(NAME arrays_op_24 LABELS gfortran llvm)
+RUN(NAME arrays_op_25 LABELS gfortran llvm)
 RUN(NAME arrays_reshape_14 LABELS gfortran llvm)
 RUN(NAME arrays_reshape_15 LABELS gfortran llvm)
 RUN(NAME arrays_elemental_15 LABELS gfortran llvm)
@@ -405,7 +406,7 @@ RUN(NAME arrays_intrin_06 LABELS gfortran llvm) # minval
 RUN(NAME any_01 LABELS gfortran)
 RUN(NAME any_02 LABELS gfortran llvm NOFAST)
 RUN(NAME sum_01 LABELS gfortran llvm NOFAST)
-RUN(NAME sum_02 LABELS gfortran llvm)
+RUN(NAME sum_02 LABELS gfortran llvm fortran)
 RUN(NAME product_01 LABELS gfortran llvm NOFAST)
 RUN(NAME product_02 LABELS gfortran llvm)
 
@@ -503,7 +504,7 @@ RUN(NAME intrinsics_57 LABELS gfortran llvm)
 RUN(NAME intrinsics_58 LABELS gfortran llvm) # sign
 RUN(NAME intrinsics_59 LABELS gfortran llvm) # sign
 RUN(NAME intrinsics_60 LABELS gfortran llvm COPY_TO_BIN intrinsics_60_data.txt) # iachar for extended ascii
-RUN(NAME intrinsics_61 LABELS gfortran llvm) # char
+RUN(NAME intrinsics_61 LABELS gfortran llvm fortran) # char
 RUN(NAME intrinsics_62 LABELS gfortran llvm) # shape
 RUN(NAME intrinsics_63 LABELS gfortran llvm)
 RUN(NAME intrinsics_64 LABELS gfortran llvm wasm) # sign
@@ -821,6 +822,8 @@ RUN(NAME string_21 LABELS gfortran llvm)
 RUN(NAME string_22 LABELS gfortran llvm)
 RUN(NAME string_23 LABELS gfortran llvm)
 RUN(NAME string_24 LABELS gfortran llvm)
+RUN(NAME string_25 LABELS gfortran llvm fortran)
+RUN(NAME string_26 LABELS gfortran llvm fortran)
 
 RUN(NAME nested_01 LABELS gfortran llvm)
 RUN(NAME nested_02 LABELS gfortran llvm)
@@ -894,8 +897,8 @@ RUN(NAME test_iso_c_binding LABELS gfortran llvm wasm)
 RUN(NAME test_iso_fortran_env LABELS gfortran llvm wasm)
 
 RUN(NAME abs_01 LABELS gfortran llvm wasm c fortran)
-RUN(NAME abs_02 LABELS gfortran llvm wasm)
-RUN(NAME abs_03 LABELS gfortran llvm wasm c)
+RUN(NAME abs_02 LABELS gfortran llvm wasm fortran)
+RUN(NAME abs_03 LABELS gfortran llvm wasm c fortran)
 RUN(NAME sqrt_01 LABELS gfortran llvm)
 RUN(NAME sqrt_02 LABELS gfortran llvm)
 RUN(NAME sin_01 LABELS gfortran llvm)

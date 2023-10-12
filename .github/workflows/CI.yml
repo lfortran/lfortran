@@ -470,10 +470,14 @@ jobs:
         run: |
             git clone https://github.com/czgdp1807/dftatom.git
             cd dftatom
-            git checkout -t origin/lf9
-            git checkout e421613bc1c98313155f643e40f51510553f7512
+            git checkout -t origin/lf22
+            git checkout cc25712d59ffaf6052af297a308a53e85f48d197
             export PATH="$(pwd)/../src/bin:$PATH"
             make -f Makefile.manual
+            cd tests/lda
+            ./conv_lda
+            cd ../atom_U
+            ./F_atom_U
 
       - name: Test fastGPT
         shell: bash -e -x -l {0}
@@ -827,6 +831,14 @@ jobs:
           ci/upload_tarball.sh
         env:
           SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }}
+
+      - name: Upload Tarball to Release
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        shell: bash -e -l {0}
+        run: |
+          ci/upload_tarball_to_release.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   upload_docs:
     name: Documentation
