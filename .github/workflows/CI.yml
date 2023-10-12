@@ -187,7 +187,7 @@ jobs:
             cd ../
             python dev.py build
 
-      - name: Test SciPy Specfun
+      - name: Test SciPy Specfun and Amos
         shell: bash -e -x -l {0}
         run: |
             cd scipy/
@@ -207,13 +207,6 @@ jobs:
             cd scipy/
             micromamba activate scipy-dev
             python dev.py test -t scipy.interpolate -v
-        
-      - name: Test SciPy Amos
-        shell: bash -e -x -l {0}
-        run: |
-            cd scipy/
-            micromamba activate scipy-dev
-            python dev.py test -t scipy.special -v
 
   build_to_wasm_and_upload:
     name: Build LFortran to WASM and Upload
