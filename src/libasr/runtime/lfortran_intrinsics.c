@@ -203,14 +203,15 @@ void handle_float(char* format, double val, char** result) {
     char int_str[64];
     sprintf(int_str, "%ld", integer_part);
     char dec_str[64];
-    sprintf(dec_str, "%f", decimal_part);
+    // TODO: This will work for up to `F65.60` but will fail for:
+    // print "(F67.62)", 1.23456789101112e-62_8
+    sprintf(dec_str, "%.*lf", (60-integer_length), decimal_part);
     memmove(dec_str,dec_str+2,strlen(dec_str));
 
     char* dot_pos = strchr(format, '.');
+    decimal_digits = atoi(++dot_pos);
     width = atoi(format + 1);
     if (dot_pos != NULL) {
-        dot_pos++;
-        decimal_digits = atoi(dot_pos);
         if (width == 0) {
             if (decimal_digits == 0) {
                 width = integer_length + sign_width + 1;
@@ -235,11 +236,18 @@ void handle_float(char* format, double val, char** result) {
         for(int i=0;i<decimal_digits;i++){
             strcat(formatted_value, "0");
         }
-    } else if (decimal_digits < strlen(dec_str)) {
+    // TODO: figure out a way to round decimals with value < 1e-15
+    } else if (decimal_digits < strlen(dec_str) && decimal_digits <= 15) {
+        dec_str[15] = '\0';
+        int zeros = 0;
+        while(dec_str[zeros] == '0') zeros++;
         long long t = (long long)round((double)atoll(dec_str) / (long long)pow(10, (strlen(dec_str) - decimal_digits)));
         sprintf(dec_str, "%lld", t);
-        strncat(formatted_value, dec_str, decimal_digits);
+        int index = zeros;
+        while(index--) strcat(formatted_value, "0");
+        strncat(formatted_value, dec_str, decimal_digits - zeros);
     } else {
+        dec_str[decimal_digits] = '\0';
         strcat(formatted_value, dec_str);
         for(int i=0;i<decimal_digits - strlen(dec_str);i++){
             strcat(formatted_value, "0");
@@ -261,8 +269,18 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     int sign_width = (val < 0) ? 1 : 0;
     int integer_length = (integer_part == 0) ? 1 : (int)log10(llabs(integer_part)) + 1;
 
+    if (format[1] == 'S') {
+        scale = 1;
+    }
+    char *num_pos = format ,*dot_pos = strchr(format, '.');
+    decimal_digits = atoi(++dot_pos);
+    while(!isdigit(*num_pos)) num_pos++;
+    width = atoi(num_pos);
+
     char val_str[64];
-    sprintf(val_str, "%f", val);
+    // TODO: This will work for up to `E65.60` but will fail for:
+    // print "(E67.62)", 1.23456789101112e-62_8
+    sprintf(val_str, "%.*lf", (60-integer_length), val);
 
     int i = strlen(val_str) - 1;
     while (val_str[i] == '0') {
@@ -279,17 +297,13 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
         memmove(val_str, val_str + 1, strlen(val_str));
     }
 
-    int decimal = -1;
+    int decimal = 1;
     while (val_str[0] == '0') {
         memmove(val_str, val_str + 1, strlen(val_str));
-        decimal++;
+        decimal--;
     }
 
-    char* dot_pos = strchr(format, '.');
     if (dot_pos != NULL) {
-        dot_pos++;
-        width = atoi(format + 1);
-        decimal_digits = atoi(dot_pos);
         if (width == 0) {
             if (decimal_digits == 0) {
                 width = 14 + sign_width;
@@ -313,7 +327,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
 
     char formatted_value[64] = "";
     int spaces = width - sign_width - decimal_digits - 6;
-    if (scale > 1){
+    if (scale > 1) {
         decimal_digits -= scale - 1;
     }
     for (int i = 0; i < spaces; i++) {
@@ -328,26 +342,37 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
         for (int k = 0; k < abs(scale); k++) {
             strcat(formatted_value, "0");
         }
-        if (decimal_digits + scale < strlen(val_str) && val != 0) {
-            long long t = (long long)round((double)atoll(val_str) / (long long)pow(10, (strlen(val_str) - decimal_digits - scale)));
+        int zeros = 0;
+        while(val_str[zeros] == '0') zeros++;
+        // TODO: figure out a way to round decimals with value < 1e-15
+        if (decimal_digits + scale < strlen(val_str) && val != 0 && decimal_digits + scale - zeros<= 15) {
+            val_str[15] = '\0';
+            long long t = (long long)round((long double)atoll(val_str) / (long long)pow(10, (strlen(val_str) - decimal_digits - scale)));
             sprintf(val_str, "%lld", t);
+            int index = zeros;
+            while(index--) strcat(formatted_value, "0");
         }
-        strncat(formatted_value, val_str, decimal_digits + scale);
+        strncat(formatted_value, val_str, decimal_digits + scale - zeros);
     } else {
         strcat(formatted_value, substring(val_str, 0, scale));
         strcat(formatted_value, ".");
         char* new_str = substring(val_str, scale, strlen(val_str));
-        if (decimal_digits < strlen(new_str)) {
-            long long t = (long long)round((double)atoll(new_str) / (long long) pow(10, (strlen(new_str) - decimal_digits)));
+        int zeros = 0;
+        if (decimal_digits < strlen(new_str) && decimal_digits + scale <= 15) {
+            new_str[15] = '\0';
+            while(val_str[zeros] == '0') zeros++;
+            long long t = (long long)round((long double)atoll(new_str) / (long long) pow(10, (strlen(new_str) - decimal_digits)));
             sprintf(new_str, "%lld", t);
+            int index = zeros;
+            while(index--) strcat(formatted_value, "0");
         }
-        strcat(formatted_value, substring(new_str, 0, decimal_digits));
+        strcat(formatted_value, substring(new_str, 0, decimal_digits - zeros));
     }
 
     strcat(formatted_value, c);
 
     char exponent[12];
-    if (atoi(format + 1) == 0){
+    if (atoi(num_pos) == 0) {
         sprintf(exponent, "%+02d", (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
     } else {
         sprintf(exponent, "%+03d", (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
@@ -417,6 +442,7 @@ char** parse_fortran_format(char* format, int *count, int *item_start) {
             case 'e' :
             case 'f' :
                 start = index++;
+                if(tolower(format[index]) == 's') index++;
                 while (isdigit(format[index])) index++;
                 if (format[index] == '.') index++;
                 while (isdigit(format[index])) index++;
@@ -547,7 +573,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                     char* s = (char*)malloc(buffer_size * sizeof(char));
                     snprintf(s, buffer_size, "%%%s.%ss", str, str);
                     char* string = (char*)malloc((strlen(arg) + atoi(value) + 1) * sizeof(char));
-                    snprintf(string, (strlen(arg) + atoi(value) + 1),s, arg);
+                    sprintf(string,s, arg);
                     result = append_to_string(result, string);
                     free(s);
                     free(string);
