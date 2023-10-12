@@ -77,6 +77,7 @@ struct CompilerOptions {
     bool run = false;
     bool legacy_array_sections = false;
     bool ignore_pragma = false;
+    bool stack_arrays = false;
     std::vector<std::string> import_paths;
     Platform platform;
 
