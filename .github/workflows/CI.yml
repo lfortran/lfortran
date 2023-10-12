@@ -471,9 +471,8 @@ jobs:
             git clone https://github.com/czgdp1807/dftatom.git
             cd dftatom
             git checkout -t origin/lf26
-            git checkout be6ad0fe873fe52d3557306e6f600644f2ca4fef
+            git checkout 26ee7bf40db1eaa915e46003394f573457f7ba06
             export PATH="$(pwd)/../src/bin:$PATH"
-            ulimit -s 65520
             make -f Makefile.manual
             make -f Makefile.manual test
 
