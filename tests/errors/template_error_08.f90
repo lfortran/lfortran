@@ -1,4 +1,4 @@
-module template_add_01b_m
+module template_add_01b_m_e
     implicit none
     private
     public :: add_t
@@ -42,7 +42,7 @@ contains
 end module
 
 program template_add_01b
-use template_add_01b_m
+use template_add_01b_m_e
 implicit none
 
 call test_template()
