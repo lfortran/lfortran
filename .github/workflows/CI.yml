@@ -468,10 +468,10 @@ jobs:
       - name: Test dftatom
         shell: bash -e -x -l {0}
         run: |
-            git clone https://github.com/czgdp1807/dftatom.git
+            git clone https://github.com/certik/dftatom.git
             cd dftatom
-            git checkout -t origin/lf26
-            git checkout 26ee7bf40db1eaa915e46003394f573457f7ba06
+            git checkout -t origin/lf27
+            git checkout c1b5ccaa592961d7a3acf6b87b3c5059e543bc87
             export PATH="$(pwd)/../src/bin:$PATH"
             make -f Makefile.manual
             make -f Makefile.manual test
