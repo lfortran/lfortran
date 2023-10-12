@@ -2063,6 +2063,7 @@ int main(int argc, char *argv[])
         app.add_flag("--run", compiler_options.run, "Executes the generated binary when the `-o` option is specified");
         app.add_flag("--legacy-array-sections", compiler_options.legacy_array_sections, "Enables passing array items as sections if required");
         app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas");
+        app.add_flag("--stack-arrays", compiler_options.stack_arrays, "Allocate memory for arrays on stack");
 
         /*
         * Subcommands:
