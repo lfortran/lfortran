@@ -205,7 +205,7 @@ void handle_float(char* format, double val, char** result) {
     char dec_str[64];
     // TODO: This will work for up to `F65.60` but will fail for:
     // print "(F67.62)", 1.23456789101112e-62_8
-    sprintf(dec_str, "%.*lf", (60-integer_length), val);
+    sprintf(dec_str, "%.*lf", (60-integer_length), decimal_part);
     memmove(dec_str,dec_str+2,strlen(dec_str));
 
     char* dot_pos = strchr(format, '.');
