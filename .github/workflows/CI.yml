@@ -470,14 +470,11 @@ jobs:
         run: |
             git clone https://github.com/czgdp1807/dftatom.git
             cd dftatom
-            git checkout -t origin/lf22
-            git checkout cc25712d59ffaf6052af297a308a53e85f48d197
+            git checkout -t origin/lf26
+            git checkout 26ee7bf40db1eaa915e46003394f573457f7ba06
             export PATH="$(pwd)/../src/bin:$PATH"
             make -f Makefile.manual
-            cd tests/lda
-            ./conv_lda
-            cd ../atom_U
-            ./F_atom_U
+            make -f Makefile.manual test
 
       - name: Test fastGPT
         shell: bash -e -x -l {0}
