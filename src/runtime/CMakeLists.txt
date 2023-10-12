@@ -94,6 +94,6 @@ install(
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_sin.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_string.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_bit.mod
-  DESTINATION share/lfortran/lib
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}
   )
 

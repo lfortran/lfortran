@@ -54,6 +54,8 @@ jobs:
             echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
             echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
             echo "ENABLE_RUNTIME_STACKTRACE=yes" >> $GITHUB_ENV
+            echo "CMAKE_INSTALL_INCLUDEDIR=share/lfortran/lib" >> $GITHUB_ENV
+            echo "CMAKE_INSTALL_LIBDIR=share/lfortran/lib" >> $GITHUB_ENV
 
       - name: Build (Linux / macOS)
         shell: bash -e -l {0}
@@ -126,7 +128,9 @@ jobs:
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_INSTALL_LIBDIR=share/lfortran/lib \
+              -DCMAKE_INSTALL_INCLUDEDIR=share/lfortran/lib
 
             cmake --build . -j16 --target install
 
@@ -181,6 +185,8 @@ jobs:
             FC=$(pwd)/../../src/bin/lfortran cmake \
               -DCMAKE_Fortran_FLAGS=--verbose \
               -DLFORTRAN_RUNTIME_LIBRARY_PATH=$LIBRARY_PATH \
+              -DCMAKE_INSTALL_LIBDIR=share/lfortran/lib \
+              -DCMAKE_INSTALL_INCLUDEDIR=share/lfortran/lib \
               ..
             make install
             cp ${{ github.workspace }}/src/runtime/liblfortran_runtime.*  $CONDA_PREFIX/lib
@@ -319,7 +325,9 @@ jobs:
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_INSTALL_LIBDIR=share/lfortran/lib \
+              -DCMAKE_INSTALL_INCLUDEDIR=share/lfortran/lib
 
             cmake --build . -j16 --target install
 
@@ -366,7 +374,9 @@ jobs:
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_INSTALL_LIBDIR=share/lfortran/lib \
+              -DCMAKE_INSTALL_INCLUDEDIR=share/lfortran/lib
 
             cmake --build . -j16 --target install
 
@@ -413,7 +423,9 @@ jobs:
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_INSTALL_LIBDIR=share/lfortran/lib \
+              -DCMAKE_INSTALL_INCLUDEDIR=share/lfortran/lib
 
             cmake --build . -j16 --target install
 
@@ -592,7 +604,9 @@ jobs:
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_INSTALL_LIBDIR=share/lfortran/lib \
+              -DCMAKE_INSTALL_INCLUDEDIR=share/lfortran/lib
 
             cmake --build . -j16 --target install
 
@@ -694,7 +708,9 @@ jobs:
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_INSTALL_LIBDIR=share/lfortran/lib \
+              -DCMAKE_INSTALL_INCLUDEDIR=share/lfortran/lib
 
             cmake --build . -j16 --target install
 
@@ -736,7 +752,9 @@ jobs:
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_INSTALL_LIBDIR=share/lfortran/lib \
+              -DCMAKE_INSTALL_INCLUDEDIR=share/lfortran/lib
 
             cmake --build . -j16 --target install
 
@@ -781,7 +799,9 @@ jobs:
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_INSTALL_LIBDIR=share/lfortran/lib \
+              -DCMAKE_INSTALL_INCLUDEDIR=share/lfortran/lib
 
             cmake --build . -j16 --target install
 
@@ -866,7 +886,9 @@ jobs:
             -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
             -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
             -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
+            -DCMAKE_INSTALL_LIBDIR=share/lfortran/lib \
+            -DCMAKE_INSTALL_INCLUDEDIR=share/lfortran/lib
 
           ninja install
           ctest --output-on-failure
