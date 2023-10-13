@@ -731,9 +731,10 @@ public:
         std::string out;
         switch (x.m_arr_intrinsic_id) {
             SET_ARR_INTRINSIC_NAME(Sum, "sum");
+            SET_ARR_INTRINSIC_NAME(Shape, "shape");
             default : {
                 throw LCompilersException("IntrinsicFunction: `"
-                    + ASRUtils::get_intrinsic_name(x.m_arr_intrinsic_id)
+                    + ASRUtils::get_array_intrinsic_name(x.m_arr_intrinsic_id)
                     + "` is not implemented");
             }
         }
@@ -1018,7 +1019,17 @@ public:
 
     // void visit_ArrayPack(const ASR::ArrayPack_t &x) {}
 
-    // void visit_ArrayReshape(const ASR::ArrayReshape_t &x) {}
+    void visit_ArrayReshape(const ASR::ArrayReshape_t &x) {
+        std::string r;
+        r += "reshape(";
+        visit_expr(*x.m_array);
+        r += s;
+        r += ", ";
+        visit_expr(*x.m_shape);
+        r += s;
+        r += ")";
+        s = r;
+    }
 
     // void visit_ArrayAll(const ASR::ArrayAll_t &x) {}
 
