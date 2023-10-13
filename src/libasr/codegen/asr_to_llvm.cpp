@@ -200,6 +200,7 @@ public:
     std::unique_ptr<LLVMSetInterface> set_api_lp;
     std::unique_ptr<LLVMSetInterface> set_api_sc;
     std::unique_ptr<LLVMArrUtils::Descriptor> arr_descr;
+    std::vector<llvm::Value*> heap_arrays;
 
     ASRToLLVMVisitor(Allocator &al, llvm::LLVMContext &context, std::string infile,
         CompilerOptions &compiler_options_, diag::Diagnostics &diagnostics) :
@@ -227,7 +228,7 @@ public:
     set_api_sc(std::make_unique<LLVMSetSeparateChaining>(context, llvm_utils.get(), builder.get())),
     arr_descr(LLVMArrUtils::Descriptor::get_descriptor(context,
               builder.get(), llvm_utils.get(),
-              LLVMArrUtils::DESCR_TYPE::_SimpleCMODescriptor))
+              LLVMArrUtils::DESCR_TYPE::_SimpleCMODescriptor, compiler_options_, heap_arrays))
     {
         llvm_utils->tuple_api = tuple_api.get();
         llvm_utils->list_api = list_api.get();
@@ -445,11 +446,25 @@ public:
                     llvm::Value* dim_size = llvm_dims[r].second;
                     prod = builder->CreateMul(prod, dim_size);
                 }
-                llvm::Value* arr_first = builder->CreateAlloca(llvm_data_type, prod);
-                builder->CreateStore(arr_first, arr);
+                llvm::Value* arr_first = nullptr;
+                if( !compiler_options.stack_arrays ) {
+                    llvm::DataLayout data_layout(module.get());
+                    uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
+                    prod = builder->CreateMul(prod,
+                        llvm::ConstantInt::get(context, llvm::APInt(32, size)));
+                    llvm::Value* arr_first_i8 = LLVMArrUtils::lfortran_malloc(
+                        context, *module, *builder, prod);
+                    heap_arrays.push_back(arr_first_i8);
+                    arr_first = builder->CreateBitCast(
+                        arr_first_i8, llvm_data_type->getPointerTo());
+                } else {
+                    arr_first = builder->CreateAlloca(llvm_data_type, prod);
+                    builder->CreateStore(arr_first, arr);
+                }
             }
         } else {
-            arr_descr->fill_array_details(arr, llvm_data_type, n_dims, llvm_dims, reserve_data_memory);
+            arr_descr->fill_array_details(arr, llvm_data_type, n_dims,
+                llvm_dims, module.get(), reserve_data_memory);
         }
     }
 
@@ -2932,6 +2947,7 @@ public:
     }
 
     void visit_Program(const ASR::Program_t &x) {
+        heap_arrays.clear();
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
         bool is_dict_present_copy_lp = dict_api_lp->is_dict_present();
@@ -2996,6 +3012,9 @@ public:
         for (size_t i=0; i<x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
         }
+        for( auto& value: heap_arrays ) {
+            LLVM::lfortran_free(context, *module, *builder, value);
+        }
         llvm::Value *ret_val2 = llvm::ConstantInt::get(context,
             llvm::APInt(32, 0));
         builder->CreateRet(ret_val2);
@@ -3007,6 +3026,7 @@ public:
         // Finalize the debug info.
         if (compiler_options.emit_debug_info) DBuilder->finalize();
         current_scope = current_scope_copy;
+        heap_arrays.clear();
     }
 
     /*
@@ -3355,7 +3375,19 @@ public:
                         }
                         ptr_loads = ptr_loads_copy;
                     }
-                    llvm::AllocaInst *ptr = builder->CreateAlloca(type, array_size, v->m_name);
+                    llvm::Value *ptr = nullptr;
+                    if( !compiler_options.stack_arrays && array_size ) {
+                        llvm::DataLayout data_layout(module.get());
+                        uint64_t size = data_layout.getTypeAllocSize(type);
+                        array_size = builder->CreateMul(array_size,
+                            llvm::ConstantInt::get(context, llvm::APInt(32, size)));
+                        llvm::Value* ptr_i8 = LLVMArrUtils::lfortran_malloc(
+                            context, *module, *builder, array_size);
+                        heap_arrays.push_back(ptr_i8);
+                        ptr = builder->CreateBitCast(ptr_i8, type->getPointerTo());
+                    } else {
+                        ptr = builder->CreateAlloca(type, array_size, v->m_name);
+                    }
                     set_pointer_variable_to_null(llvm::ConstantPointerNull::get(
                         static_cast<llvm::PointerType*>(type)), ptr)
                     if( ASR::is_a<ASR::Struct_t>(
@@ -3395,7 +3427,7 @@ public:
                         int64_t alignment_value = -1;
                         if( ASRUtils::extract_value(struct_type->m_alignment, alignment_value) ) {
                             llvm::Align align(alignment_value);
-                            ptr->setAlignment(align);
+                            reinterpret_cast<llvm::AllocaInst*>(ptr)->setAlignment(align);
                         }
                     }
 
@@ -3553,6 +3585,7 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        heap_arrays.clear();
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
         bool is_dict_present_copy_lp = dict_api_lp->is_dict_present();
@@ -3581,6 +3614,7 @@ public:
         // Finalize the debug info.
         if (compiler_options.emit_debug_info) DBuilder->finalize();
         current_scope = current_scope_copy;
+        heap_arrays.clear();
     }
 
     void instantiate_function(const ASR::Function_t &x){
@@ -3728,9 +3762,15 @@ public:
                 ret_val2 = tmp;
                 }
             }
+            for( auto& value: heap_arrays ) {
+                LLVM::lfortran_free(context, *module, *builder, value);
+            }
             builder->CreateRet(ret_val2);
         } else {
             start_new_block(proc_return);
+            for( auto& value: heap_arrays ) {
+                LLVM::lfortran_free(context, *module, *builder, value);
+            }
             builder->CreateRetVoid();
         }
     }

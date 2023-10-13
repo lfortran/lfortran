@@ -4440,8 +4440,10 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
             }
         }
         if( ASRUtils::is_array(arg_type) && ASRUtils::is_array(orig_arg_type) ) {
-            ASR::Array_t* arg_array_t = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_const(arg_type));
-            ASR::Array_t* orig_arg_array_t = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_const(orig_arg_type));
+            ASR::Array_t* arg_array_t = ASR::down_cast<ASR::Array_t>(
+                ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_const(arg_type)));
+            ASR::Array_t* orig_arg_array_t = ASR::down_cast<ASR::Array_t>(
+                ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_const(orig_arg_type)));
             if( (arg_array_t->m_physical_type != orig_arg_array_t->m_physical_type) ||
                 (arg_array_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray &&
                  arg_array_t->m_physical_type == orig_arg_array_t->m_physical_type &&
