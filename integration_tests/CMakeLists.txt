@@ -1078,6 +1078,7 @@ RUN(NAME data_implied_do_04 LABELS gfortran llvm)
 RUN(NAME save_01 LABELS gfortran llvm)
 RUN(NAME save_02 LABELS gfortran llvm)
 RUN(NAME save_03 LABELS gfortran llvm)
+RUN(NAME save_04 LABELS gfortran llvm fortran)
 
 RUN(NAME entry_01 LABELS gfortran llvm)
 RUN(NAME entry_02 LABELS gfortran llvm)
