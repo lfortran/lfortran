@@ -170,8 +170,8 @@ jobs:
             cd scipy
             git remote add ondrej https://github.com/certik/scipy
             git fetch ondrej
-            git checkout -t ondrej/merge_specfun_minpack_fitpack_amos
-            git checkout 12b9e063cf17efdd7c4ce19c177e13e3d300294b
+            git checkout -t ondrej/merge_specfun_minpack_fitpack_amos_mach
+            git checkout 6356b9209b141eddf0a7041e861640b7658fadc3
             micromamba env create -f environment.yml
             micromamba activate scipy-dev
             git submodule update --init
@@ -187,7 +187,7 @@ jobs:
             cd ../
             python dev.py build
 
-      - name: Test SciPy Specfun and Amos
+      - name: Test SciPy Specfun, Amos and Mach
         shell: bash -e -x -l {0}
         run: |
             cd scipy/
