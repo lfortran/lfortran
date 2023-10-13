@@ -731,9 +731,10 @@ public:
         std::string out;
         switch (x.m_arr_intrinsic_id) {
             SET_ARR_INTRINSIC_NAME(Sum, "sum");
+            SET_ARR_INTRINSIC_NAME(Shape, "shape");
             default : {
                 throw LCompilersException("IntrinsicFunction: `"
-                    + ASRUtils::get_intrinsic_name(x.m_arr_intrinsic_id)
+                    + ASRUtils::get_array_intrinsic_name(x.m_arr_intrinsic_id)
                     + "` is not implemented");
             }
         }
