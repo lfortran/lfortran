@@ -317,6 +317,8 @@ public:
         }
         if (x.m_storage == ASR::storage_typeType::Parameter) {
             r += ", parameter";
+        } else if (x.m_storage == ASR::storage_typeType::Save) {
+            r += ", save";
         }
         if (is_a<ASR::Allocatable_t>(*x.m_type)) {
             r += ", allocatable";
