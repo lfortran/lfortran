@@ -7889,14 +7889,14 @@ public:
                                 // using alloca inside a loop, which would
                                 // run out of stack
                                 if( (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) ||
-                                    ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value))
+                                    (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value) && ASRUtils::is_array(arg_type)))
                                         && value->getType()->isPointerTy()) {
                                     value = CreateLoad(value);
                                 }
                                 if( !ASR::is_a<ASR::CPtr_t>(*arg_type) &&
                                     !(orig_arg && !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
                                       LLVM::is_llvm_pointer(*arg_type) &&
-                                      !ASRUtils::is_character(*orig_arg->m_type)) ) {
+                                      !ASRUtils::is_character(*orig_arg->m_type)) && !ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value) ) {
                                     llvm::BasicBlock &entry_block = builder->GetInsertBlock()->getParent()->getEntryBlock();
                                     llvm::IRBuilder<> builder0(context);
                                     builder0.SetInsertPoint(&entry_block, entry_block.getFirstInsertionPt());
