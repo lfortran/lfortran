@@ -5728,13 +5728,13 @@ public:
 
         ASR::symbol_t *s = temp->m_symtab->resolve_symbol(func_name);
         std::string new_func_name = current_scope->get_unique_name("__asr_" + func_name);
-        pass_instantiate_symbol(al, context_map, type_subs, symbol_subs,
+        instantiate_symbol(al, context_map, type_subs, symbol_subs,
             current_scope, temp->m_symtab, new_func_name, s);
         context_map[func_name] = new_func_name;
 
         ASR::symbol_t *new_s = current_scope->get_symbol(new_func_name);
         ASR::Function_t *new_f = ASR::down_cast<ASR::Function_t>(new_s);
-        pass_instantiate_function_body(al, context_map, type_subs, symbol_subs,
+        instantiate_body(al, context_map, type_subs, symbol_subs,
             current_scope, temp->m_symtab, new_f, ASR::down_cast<ASR::Function_t>(s));
 
         // Build generic procedure if has not existed yet

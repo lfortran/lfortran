@@ -2650,7 +2650,6 @@ public:
 
         current_scope = parent_scope;
         current_procedure_args.clear();
-        context_map.clear();
         is_requirement = false;
     }
 
@@ -2676,27 +2675,26 @@ public:
                 require_name + "' is not correct", x.base.base.loc);
         }
 
+        std::map<std::string, ASR::ttype_t*> type_subs;
+
         SetChar args;
         args.reserve(al, x.n_namelist);
+
         for (size_t i=0; i<x.n_namelist; i++) {
-            std::string requires_arg = to_lower(x.m_namelist[i]);
-            std::string requirement_arg = req->m_args[i];
-            args.push_back(al, s2c(al, requires_arg));
-            if (std::find(current_procedure_args.begin(),
-                          current_procedure_args.end(),
-                          requires_arg) == current_procedure_args.end()) {
+            std::string req_arg = to_lower(x.m_namelist[i]);
+            std::string req_param = req->m_args[i];
+
+            if (std::find(current_procedure_args.begin(), current_procedure_args.end(),
+                    req_arg) == current_procedure_args.end()) {
                 throw SemanticError("Parameter '" + std::string(x.m_namelist[i])
                     + "' was not declared", x.base.base.loc);
             }
 
-            ASR::symbol_t *requires_arg_sym = current_scope->resolve_symbol(requires_arg);
-            context_map[requirement_arg] = requires_arg;
-            if (!requires_arg_sym) {
-                ASR::symbol_t *requirement_arg_sym = (req->m_symtab)->get_symbol(requirement_arg);
-                requires_arg_sym = replace_symbol(requirement_arg_sym, requires_arg);
-                current_scope->add_symbol(requires_arg, requires_arg_sym);
-            }
+            ASR::symbol_t *param_sym = (req->m_symtab)->get_symbol(req_param);
+            rename_symbol(al, type_subs, current_scope, req_arg, param_sym);
 
+            context_map[req_param] = req_arg;
+            args.push_back(al, s2c(al, req_arg));
         }
 
         // adding custom operators
@@ -2723,6 +2721,8 @@ public:
 
         tmp = ASR::make_Require_t(al, x.base.base.loc, s2c(al, require_name),
             args.p, args.size());
+
+        context_map.clear();
     }
 
     void visit_Template(const AST::Template_t &x){
@@ -2771,7 +2771,6 @@ public:
 
         current_scope = parent_scope;
         current_procedure_args.clear();
-        context_map.clear();
 
         // needs to rebuild the context prior to visiting template
         class_procedures.clear();
@@ -3035,7 +3034,7 @@ public:
                 ASR::symbol_t *s = sym_pair.second;
                 std::string s_name = ASRUtils::symbol_name(s);
                 if (ASR::is_a<ASR::Function_t>(*s) && !ASRUtils::is_template_arg(sym, s_name)) {
-                    pass_instantiate_symbol(al, context_map, type_subs, symbol_subs,
+                    instantiate_symbol(al, context_map, type_subs, symbol_subs,
                         current_scope, temp->m_symtab, s_name, s);
                 }
             }
@@ -3049,7 +3048,7 @@ public:
                                         x.base.base.loc);
                 }
                 std::string new_sym_name = to_lower(use_symbol->m_local_rename);
-                pass_instantiate_symbol(al, context_map, type_subs, symbol_subs,
+                instantiate_symbol(al, context_map, type_subs, symbol_subs,
                     current_scope, temp->m_symtab, new_sym_name, s);
                 // TODO: can this be removed?
                 context_map[generic_name] = new_sym_name;
@@ -3060,137 +3059,6 @@ public:
         instantiate_symbols[x.base.base.loc.first] = symbol_subs;
 
         context_map.clear();
-    }
-
-    // TODO: give proper location to each symbol
-    ASR::symbol_t* replace_symbol(ASR::symbol_t* s, std::string name) {
-        switch (s->type) {
-            case ASR::symbolType::Variable: {
-                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(s);
-                ASR::ttype_t* t = ASRUtils::duplicate_type(al, v->m_type);
-                ASR::dimension_t* tp_m_dims = nullptr;
-                int tp_n_dims = ASRUtils::extract_dimensions_from_ttype(t, tp_m_dims);
-                t = ASRUtils::type_get_past_array(t);
-                if (ASR::is_a<ASR::TypeParameter_t>(*t)) {
-                    ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(t);
-                    context_map[tp->m_param] = name;
-                    t = ASRUtils::TYPE(ASR::make_TypeParameter_t(al,
-                        tp->base.base.loc, s2c(al, name)));
-                    t = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
-                        t, tp_m_dims, tp_n_dims);
-                }
-                ASR::asr_t* new_v = ASR::make_Variable_t(al, v->base.base.loc,
-                    current_scope, s2c(al, name), v->m_dependencies,
-                    v->n_dependencies, v->m_intent,
-                    v->m_symbolic_value, v->m_value, v->m_storage, t,
-                    v->m_type_declaration, v->m_abi, v->m_access,
-                    v->m_presence, v->m_value_attr);
-                return ASR::down_cast<ASR::symbol_t>(new_v);
-            }
-            case ASR::symbolType::Function: {
-                ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(s);
-                ASR::FunctionType_t* ftype = ASR::down_cast<ASR::FunctionType_t>(
-                    f->m_function_signature);
-                SymbolTable* new_scope = al.make_new<SymbolTable>(current_scope);
-
-                Vec<ASR::expr_t*> args;
-                args.reserve(al, f->n_args);
-                for (size_t i=0; i<f->n_args; i++) {
-                    ASR::Variable_t* param_var = ASR::down_cast<ASR::Variable_t>(
-                        (ASR::down_cast<ASR::Var_t>(f->m_args[i]))->m_v);
-                    ASR::ttype_t* param_type = ASRUtils::expr_type(f->m_args[i]);
-                    ASR::dimension_t* tp_m_dims = nullptr;
-                    int tp_n_dims = ASRUtils::extract_dimensions_from_ttype(param_type, tp_m_dims);
-                    param_type = ASRUtils::type_get_past_array(param_type);
-                    if (ASR::is_a<ASR::TypeParameter_t>(*param_type)) {
-                        ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(param_type);
-                        if (context_map.find(tp->m_param) != context_map.end()) {
-                            param_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(
-                                al, tp->base.base.loc, s2c(al, context_map[tp->m_param])));
-                            if( tp_n_dims > 0 ) {
-                                param_type = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
-                                    param_type, tp_m_dims, tp_n_dims);
-                            }
-                        }
-                    }
-
-                    Location loc = param_var->base.base.loc;
-                    std::string var_name = param_var->m_name;
-                    ASR::intentType s_intent = param_var->m_intent;
-                    ASR::expr_t *init_expr = nullptr;
-                    ASR::expr_t *value = nullptr;
-                    ASR::storage_typeType storage_type = param_var->m_storage;
-                    ASR::abiType abi_type = param_var->m_abi;
-                    ASR::symbol_t *type_decl = nullptr;
-                    ASR::accessType s_access = param_var->m_access;
-                    ASR::presenceType s_presence = param_var->m_presence;
-                    bool value_attr = param_var->m_value_attr;
-
-                    SetChar variable_dependencies_vec;
-                    variable_dependencies_vec.reserve(al, 1);
-                    ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, param_type);
-                    ASR::asr_t *v = ASR::make_Variable_t(al, loc, new_scope,
-                        s2c(al, var_name), variable_dependencies_vec.p,
-                        variable_dependencies_vec.size(),
-                        s_intent, init_expr, value, storage_type, param_type,
-                        type_decl, abi_type, s_access, s_presence, value_attr);
-
-                    new_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(v));
-                    ASR::symbol_t* var = new_scope->get_symbol(var_name);
-                    args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, f->base.base.loc, var)));
-                }
-
-                ASR::expr_t *new_return_var_ref = nullptr;
-                if (f->m_return_var != nullptr) {
-                    ASR::Variable_t *return_var = ASR::down_cast<ASR::Variable_t>(
-                        (ASR::down_cast<ASR::Var_t>(f->m_return_var))->m_v);
-                    std::string return_var_name = return_var->m_name;
-                    ASR::ttype_t *return_type = ASRUtils::expr_type(f->m_return_var);
-                    ASR::dimension_t* tp_m_dims = nullptr;
-                    int tp_n_dims = ASRUtils::extract_dimensions_from_ttype(return_type, tp_m_dims);
-                    return_type = ASRUtils::type_get_past_array(return_type);
-                    if (ASR::is_a<ASR::TypeParameter_t>(*return_type)) {
-                        ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(return_type);
-                        if (context_map.find(tp->m_param) != context_map.end()) {
-                            return_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(
-                                al, tp->base.base.loc, s2c(al, context_map[tp->m_param])));
-                            if( tp_n_dims > 0 ) {
-                                return_type = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
-                                    return_type, tp_m_dims, tp_n_dims);
-                            }
-                        }
-                    }
-                    SetChar variable_dependencies_vec;
-                    variable_dependencies_vec.reserve(al, 1);
-                    ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, return_type);
-                    ASR::asr_t *new_return_var = ASR::make_Variable_t(al, return_var->base.base.loc,
-                        new_scope, s2c(al, return_var_name),
-                        variable_dependencies_vec.p,
-                        variable_dependencies_vec.size(),
-                        return_var->m_intent, nullptr, nullptr,
-                        return_var->m_storage, return_type,
-                        return_var->m_type_declaration, return_var->m_abi,
-                        return_var->m_access, return_var->m_presence,
-                        return_var->m_value_attr);
-                    new_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(new_return_var));
-                    new_return_var_ref = ASRUtils::EXPR(ASR::make_Var_t(al, f->base.base.loc,
-                        new_scope->get_symbol(return_var_name)));
-                }
-
-                ASR::asr_t* new_f = ASRUtils::make_Function_t_util(al, f->base.base.loc,
-                    new_scope, s2c(al, name), f->m_dependencies, f->n_dependencies, args.p,
-                    args.size(), nullptr, 0, new_return_var_ref, ftype->m_abi, f->m_access,
-                    ftype->m_deftype, ftype->m_bindc_name, ftype->m_elemental, ftype->m_pure,
-                    ftype->m_module, ftype->m_inline, ftype->m_static,
-                    ftype->m_restrictions, ftype->n_restrictions,
-                    ftype->m_is_restriction, f->m_deterministic, f->m_side_effect_free);
-                return ASR::down_cast<ASR::symbol_t>(new_f);
-            }
-            default : {
-                std::string sym_name = ASRUtils::symbol_name(s);
-                throw SemanticError("Symbol not found " + sym_name, s->base.loc);
-            }
-        }
     }
 
     void visit_Enum(const AST::Enum_t &x) {
