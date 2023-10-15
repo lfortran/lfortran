@@ -7511,6 +7511,10 @@ public:
         printf_args.push_back(fmt_ptr);
         printf_args.insert(printf_args.end(), args.begin(), args.end());
         printf(context, *module, *builder, printf_args);
+        for (size_t i=0; i<x.n_values; i++) {
+            if (ASR::is_a<ASR::StringFormat_t>(*x.m_values[i]))
+                LLVM::lfortran_free(context, *module, *builder, args[i]);
+        }
     }
 
     void visit_Stop(const ASR::Stop_t &x) {
