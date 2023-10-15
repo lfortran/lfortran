@@ -4,6 +4,9 @@
 #endif // NOMINMAX
 #include <windows.h>
 #endif
+// https://stackoverflow.com/questions/10507264/how-to-use-macro-argument-as-string-literal#10507317
+#define VALUE(string) #string
+#define TO_LITERAL(string) VALUE(string)
 
 #include <fstream>
 
@@ -42,6 +45,10 @@ std::string get_runtime_library_dir()
 #ifdef HAVE_BUILD_TO_WASM
     return "asset_dir";
 #endif
+#ifdef LFORTRAN_RUNTIME_LIBRARY_INSTALL_DIR
+    std::string install_p = TO_LITERAL(LFORTRAN_RUNTIME_LIBRARY_INSTALL_DIR);
+    return install_p;
+#endif
     char *env_p = std::getenv("LFORTRAN_RUNTIME_LIBRARY_DIR");
     if (env_p) return env_p;
 
@@ -66,6 +73,10 @@ std::string get_runtime_library_dir()
 
 std::string get_runtime_library_header_dir()
 {
+#ifdef LFORTRAN_RUNTIME_LIBRARY_HEADER_INSTALL_DIR
+    std::string install_p = TO_LITERAL(LFORTRAN_RUNTIME_LIBRARY_HEADER_INSTALL_DIR);
+    return install_p;
+#endif
     char *env_p = std::getenv("LFORTRAN_RUNTIME_LIBRARY_HEADER_DIR");
     if (env_p) return env_p;
 
@@ -74,6 +85,10 @@ std::string get_runtime_library_header_dir()
 
 std::string get_runtime_library_c_header_dir()
 {
+#ifdef LFORTRAN_RUNTIME_LIBRARY_HEADER_INSTALL_DIR
+    	std::string install_p = TO_LITERAL(LFORTRAN_RUNTIME_LIBRARY_HEADER_INSTALL_DIR);
+    return install_p;
+#endif
     char *env_p = std::getenv("LFORTRAN_RUNTIME_LIBRARY_HEADER_DIR");
     if (env_p) return env_p;
 

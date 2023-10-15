@@ -38,6 +38,10 @@ if (WITH_JSON)
     )
 endif()
 add_library(lfortran_lib STATIC ${SRC})
+target_compile_definitions(lfortran_lib PRIVATE
+	LFORTRAN_RUNTIME_LIBRARY_INSTALL_DIR=${CMAKE_INSTALL_LIBDIR})
+target_compile_definitions(lfortran_lib PRIVATE
+	LFORTRAN_RUNTIME_LIBRARY_HEADER_INSTALL_DIR=${CMAKE_INSTALL_INCLUDEDIR}/lfortran/impure) 
 target_link_libraries(lfortran_lib asr lfortran_runtime_static)
 
 if (WITH_ZLIB)
