@@ -190,7 +190,6 @@ public:
         r += " ";
         r.append(x.m_name);
         r += "\n";
-        inc_indent();
         r += indent + "implicit none";
         r += "\n";
         for (auto &item : x.m_symtab->get_scope()) {
@@ -215,7 +214,6 @@ public:
                 r += s;
             }
         }
-        dec_indent();
         r += "end program";
         r += " ";
         r.append(x.m_name);
