@@ -190,7 +190,6 @@ public:
         r += " ";
         r.append(x.m_name);
         r += "\n";
-        inc_indent();
         r += indent + "implicit none";
         r += "\n";
         for (auto &item : x.m_symtab->get_scope()) {
@@ -215,7 +214,6 @@ public:
                 r += s;
             }
         }
-        dec_indent();
         r += "end program";
         r += " ";
         r.append(x.m_name);
@@ -319,6 +317,8 @@ public:
         }
         if (x.m_storage == ASR::storage_typeType::Parameter) {
             r += ", parameter";
+        } else if (x.m_storage == ASR::storage_typeType::Save) {
+            r += ", save";
         }
         if (is_a<ASR::Allocatable_t>(*x.m_type)) {
             r += ", allocatable";
