@@ -354,19 +354,23 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
         }
         strncat(formatted_value, val_str, decimal_digits + scale - zeros);
     } else {
-        strcat(formatted_value, substring(val_str, 0, scale));
+        char* temp = substring(val_str, 0, scale);
+        strcat(formatted_value, temp);
         strcat(formatted_value, ".");
         char* new_str = substring(val_str, scale, strlen(val_str));
         int zeros = 0;
         if (decimal_digits < strlen(new_str) && decimal_digits + scale <= 15) {
             new_str[15] = '\0';
-            while(val_str[zeros] == '0') zeros++;
+            zeros = strspn(new_str, "0");
             long long t = (long long)round((long double)atoll(new_str) / (long long) pow(10, (strlen(new_str) - decimal_digits)));
             sprintf(new_str, "%lld", t);
             int index = zeros;
             while(index--) strcat(formatted_value, "0");
         }
-        strcat(formatted_value, substring(new_str, 0, decimal_digits - zeros));
+        new_str[decimal_digits - zeros] = '\0';
+        strcat(formatted_value, new_str);
+        free(new_str);
+        free(temp);
     }
 
     strcat(formatted_value, c);
@@ -412,7 +416,7 @@ char** parse_fortran_format(char* format, int *count, int *item_start) {
             case ',' :
                 break;
             case '/' :
-                format_values_2[format_values_count++] = "/";
+                format_values_2[format_values_count++] = substring(format, index, index+1);
                 break;
             case '"' :
                 start = index++;
@@ -464,15 +468,19 @@ char** parse_fortran_format(char* format, int *count, int *item_start) {
                     index = index + 1;
                     format_values_2[format_values_count++] = substring(format, start, index + 1);
                 } else if (isdigit(format[index])) {
-                    char* fmt;
                     start = index;
                     while (isdigit(format[index])) index++;
-                    int repeat = atoi(substring(format, start, index));
+                    char* repeat_str = substring(format, start, index);
+                    int repeat = atoi(repeat_str);
+                    free(repeat_str);
+                    format_values_2 = (char**)realloc(format_values_2, (format_values_count + repeat + 1) * sizeof(char*));
                     if (format[index] == '(') {
                         start = index++;
                         while (format[index] != ')') index++;
-                        fmt = substring(format, start, index+1);
                         *item_start = format_values_count+1;
+                        for (int i = 0; i < repeat; i++) {
+                            format_values_2[format_values_count++] = substring(format, start, index+1);
+                        }
                     } else {
                         start = index++;
                         if (isdigit(format[index])) {
@@ -480,17 +488,10 @@ char** parse_fortran_format(char* format, int *count, int *item_start) {
                             if (format[index] == '.') index++;
                             while (isdigit(format[index])) index++;
                         }
-                        fmt = substring(format, start, index--);
-                    }
-                    ptr = (char**)realloc(format_values_2, (format_values_count + repeat + 1) * sizeof(char*));
-                    if (ptr == NULL) {
-                        perror("Memory allocation failed.\n");
-                        free(format_values_2);
-                    } else {
-                        format_values_2 = ptr;
-                    }
-                    for (int i = 0; i < repeat; i++) {
-                        format_values_2[format_values_count++] = fmt;
+                        for (int i = 0; i < repeat; i++) {
+                            format_values_2[format_values_count++] = substring(format, start, index);
+                        }
+                        index--;
                     }
                 }
         }
@@ -520,13 +521,13 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
     while (1) {
         int scale = 0;
         for (int i = item_start; i < format_values_count; i++) {
+            if(format_values[i] == NULL) continue;
             char* value = format_values[i];
 
             if (value[0] == '(' && value[strlen(value)-1] == ')') {
-                value = substring(value, 1, strlen(value)-1);
-                char** new_fmt_val = (char**)malloc(sizeof(char*));
+                value[strlen(value)-1] = '\0';
                 int new_fmt_val_count = 0;
-                new_fmt_val = parse_fortran_format(value,&new_fmt_val_count,&item_start_idx);
+                char** new_fmt_val = parse_fortran_format(++value,&new_fmt_val_count,&item_start_idx);
 
                 char** ptr = (char**)realloc(format_values, (format_values_count + new_fmt_val_count + 1) * sizeof(char*));
                 if (ptr == NULL) {
@@ -542,7 +543,9 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                     format_values[i + 1 + k] = new_fmt_val[k];
                 }
                 format_values_count = format_values_count + new_fmt_val_count;
-                format_values[i] = "";
+                free(format_values[i]);
+                format_values[i] = NULL;
+                free(new_fmt_val);
                 continue;
             }
 
@@ -552,12 +555,14 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 // Scale Factor nP
                 scale = atoi(&value[0]);
             } else if (value[0] == '-' && isdigit(value[1]) && tolower(value[2]) == 'p') {
-                scale = atoi(substring(value, 0, 2));
+                char temp[3] = {value[0],value[1],'\0'};
+                scale = atoi(temp);
             } else if ((value[0] == '\"' && value[strlen(value) - 1] == '\"') ||
                 (value[0] == '\'' && value[strlen(value) - 1] == '\'')) {
                 // String
                 value = substring(value, 1, strlen(value) - 1);
                 result = append_to_string(result, value);
+                free(value);
             } else if (tolower(value[0]) == 'a') {
                 // Character Editing (A[n])
                 if ( count == 0 ) break;
@@ -572,9 +577,10 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                     int buffer_size = 20;
                     char* s = (char*)malloc(buffer_size * sizeof(char));
                     snprintf(s, buffer_size, "%%%s.%ss", str, str);
-                    char* string = (char*)malloc((strlen(arg) + atoi(value) + 1) * sizeof(char));
+                    char* string = (char*)malloc((atoi(str) + 1) * sizeof(char));
                     sprintf(string,s, arg);
                     result = append_to_string(result, string);
+                    free(str);
                     free(s);
                     free(string);
                 }
@@ -618,6 +624,9 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
     }
 
     free(modified_input_string);
+    for (int i = 0;i<format_values_count;i++) {
+            free(format_values[i]);
+    }
     free(format_values);
     va_end(args);
     return result;
