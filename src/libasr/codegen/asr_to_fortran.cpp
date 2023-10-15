@@ -709,6 +709,8 @@ public:
         switch (x.m_intrinsic_id) {
             SET_INTRINSIC_NAME(Abs, "abs");
             SET_INTRINSIC_NAME(Exp, "exp");
+            SET_INTRINSIC_NAME(Max, "max");
+            SET_INTRINSIC_NAME(Min, "min");
             default : {
                 throw LCompilersException("IntrinsicScalarFunction: `"
                     + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)
@@ -901,7 +903,13 @@ public:
         s = left + "//" + right;
     }
 
-    // void visit_StringRepeat(const ASR::StringRepeat_t &x) {}
+    void visit_StringRepeat(const ASR::StringRepeat_t &x) {
+        visit_expr(*x.m_left);
+        std::string left = s;
+        visit_expr(*x.m_right);
+        std::string right = s;
+        s = "repeat(" + left + ", " + right + ")";
+    }
 
     void visit_StringLen(const ASR::StringLen_t &x) {
         visit_expr(*x.m_arg);
@@ -1067,9 +1075,15 @@ public:
         this->visit_expr(*x.m_arg);
     }
 
-    // void visit_ComplexRe(const ASR::ComplexRe_t &x) {}
+    void visit_ComplexRe(const ASR::ComplexRe_t &x) {
+        visit_expr(*x.m_arg);
+        s = "real(" + s + ")";
+    }
 
-    // void visit_ComplexIm(const ASR::ComplexIm_t &x) {}
+    void visit_ComplexIm(const ASR::ComplexIm_t &x) {
+        visit_expr(*x.m_arg);
+        s = "imag(" + s + ")";
+    }
 
     // void visit_CLoc(const ASR::CLoc_t &x) {}
 
@@ -1077,11 +1091,30 @@ public:
 
     // void visit_GetPointer(const ASR::GetPointer_t &x) {}
 
-    // void visit_IntegerBitLen(const ASR::IntegerBitLen_t &x) {}
+    void visit_IntegerBitLen(const ASR::IntegerBitLen_t &x) {
+        visit_expr(*x.m_a);
+        int arg_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        switch (arg_kind) {
+            case 1: s = "_lpython_bit_length1(" + s + ")"; break;
+            case 2: s = "_lpython_bit_length2(" + s + ")"; break;
+            case 4: s = "_lpython_bit_length4(" + s + ")"; break;
+            case 8: s = "_lpython_bit_length8(" + s + ")"; break;
+            default: {
+                throw LCompilersException("Unsupported Integer Kind: "
+                    + std::to_string(arg_kind));
+            }
+        }
+    }
 
-    // void visit_Ichar(const ASR::Ichar_t &x) {}
+    void visit_Ichar(const ASR::Ichar_t &x) {
+        visit_expr(*x.m_arg);
+        s = "ichar(" + s + ")";
+    }
 
-    // void visit_Iachar(const ASR::Iachar_t &x) {}
+    void visit_Iachar(const ASR::Iachar_t &x) {
+        visit_expr(*x.m_arg);
+        s = "iachar(" + s + ")";
+    }
 
     // void visit_SizeOfType(const ASR::SizeOfType_t &x) {}
 
@@ -1089,7 +1122,10 @@ public:
 
     // void visit_PointerAssociated(const ASR::PointerAssociated_t &x) {}
 
-    // void visit_IntrinsicFunctionSqrt(const ASR::IntrinsicFunctionSqrt_t &x) {}
+    void visit_IntrinsicFunctionSqrt(const ASR::IntrinsicFunctionSqrt_t &x) {
+        visit_expr(*x.m_arg);
+        s = "sqrt(" + s + ")";
+    }
 
     /******************************* Case Stmt ********************************/
     void visit_CaseStmt(const ASR::CaseStmt_t &x) {

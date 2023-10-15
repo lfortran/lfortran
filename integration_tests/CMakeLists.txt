@@ -803,8 +803,8 @@ RUN(NAME const_kind_02 LABELS gfortran llvm wasm)
 RUN(NAME const_array_01 LABELS gfortran llvm llvmStackArray)
 RUN(NAME const_array_02 LABELS gfortran llvm llvmStackArray)
 
-RUN(NAME string_01 LABELS gfortran llvm cpp wasm)
-RUN(NAME string_02 LABELS gfortran llvm wasm)
+RUN(NAME string_01 LABELS gfortran llvm cpp wasm fortran)
+RUN(NAME string_02 LABELS gfortran llvm wasm fortran)
 RUN(NAME string_03 LABELS gfortran llvm)
 RUN(NAME string_04 LABELS gfortran llvm)
 RUN(NAME string_05 LABELS gfortran llvm fortran)
@@ -814,12 +814,12 @@ RUN(NAME string_08 LABELS gfortran llvm)
 RUN(NAME string_09 LABELS gfortran llvm)
 RUN(NAME string_10 LABELS gfortran llvm)
 RUN(NAME string_11 LABELS gfortran llvm)
-RUN(NAME string_12 LABELS gfortran)
-RUN(NAME string_13 LABELS gfortran llvm)
+RUN(NAME string_12 LABELS gfortran fortran)
+RUN(NAME string_13 LABELS gfortran llvm fortran)
 RUN(NAME string_14 LABELS gfortran)
 RUN(NAME string_15 LABELS gfortran) # lge, lgt lle, llt
-RUN(NAME string_16 LABELS gfortran) # achar
-RUN(NAME string_19 LABELS gfortran) # achar
+RUN(NAME string_16 LABELS gfortran fortran) # achar
+RUN(NAME string_19 LABELS gfortran)
 RUN(NAME string_20 LABELS gfortran llvm)
 RUN(NAME string_21 LABELS gfortran llvm)
 RUN(NAME string_22 LABELS gfortran llvm)
