@@ -48,6 +48,7 @@
 #include <libasr/pass/transform_optional_argument_functions.h>
 #include <libasr/pass/nested_vars.h>
 #include <libasr/pass/unique_symbols.h>
+#include <libasr/pass/insert_deallocate.h>
 #include <libasr/pass/replace_print_struct_type.h>
 #include <libasr/asr_verify.h>
 #include <libasr/pickle.h>
@@ -100,7 +101,8 @@ namespace LCompilers {
             {"nested_vars", &pass_nested_vars},
             {"where", &pass_replace_where},
             {"print_struct_type", &pass_replace_print_struct_type},
-            {"unique_symbols", &pass_unique_symbols}
+            {"unique_symbols", &pass_unique_symbols},
+            {"insert_deallocate", &pass_insert_deallocate}
         };
 
         bool is_fast;
@@ -231,7 +233,8 @@ namespace LCompilers {
                 "inline_function_calls",
                 "unused_functions",
                 "transform_optional_argument_functions",
-                "unique_symbols"
+                "unique_symbols",
+                "insert_deallocate"
             };
 
             _with_optimization_passes = {
@@ -265,7 +268,8 @@ namespace LCompilers {
                 "fma",
                 "transform_optional_argument_functions",
                 "inline_function_calls",
-                "unique_symbols"
+                "unique_symbols",
+                "insert_deallocate"
             };
 
             // These are re-write passes which are already handled
