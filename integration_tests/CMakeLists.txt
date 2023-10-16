@@ -696,12 +696,12 @@ RUN(NAME types_17 LABELS gfortran llvm)
 RUN(NAME types_18 LABELS gfortran llvm wasm)
 RUN(NAME types_19 LABELS gfortran llvm wasm)
 
-RUN(NAME complex_01 LABELS gfortran llvm wasm)
+RUN(NAME complex_01 LABELS gfortran llvm wasm fortran)
 RUN(NAME complex_02 LABELS gfortran llvm wasm)
 RUN(NAME complex_03 LABELS llvm wasm)
 RUN(NAME complex_04 LABELS gfortran llvm wasm)
-RUN(NAME complex_05 LABELS gfortran llvm wasm)
-RUN(NAME complex_06 LABELS gfortran llvm wasm)
+RUN(NAME complex_05 LABELS gfortran llvm wasm fortran)
+RUN(NAME complex_06 LABELS gfortran llvm wasm fortran)
 RUN(NAME complex_07 LABELS gfortran) # cmplx
 RUN(NAME complex_08 LABELS gfortran) # conjg
 RUN(NAME complex_09 LABELS gfortran)

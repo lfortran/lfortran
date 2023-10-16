@@ -130,6 +130,11 @@ public:
                 r += std::to_string(down_cast<ASR::Real_t>(t)->m_kind);
                 r += ")";
                 break;
+	    } case ASR::ttypeType::Complex: {
+                r = "complex(";
+                r += std::to_string(down_cast<ASR::Complex_t>(t)->m_kind);
+                r += ")";
+                break;
             } case ASR::ttypeType::Character: {
                 ASR::Character_t *c = down_cast<ASR::Character_t>(t);
                 r = "character(len=";
@@ -698,7 +703,13 @@ public:
     /********************************** Expr **********************************/
     // void visit_IfExp(const ASR::IfExp_t &x) {}
 
-    // void visit_ComplexConstructor(const ASR::ComplexConstructor_t &x) {}
+    void visit_ComplexConstructor(const ASR::ComplexConstructor_t &x) {
+        visit_expr(*x.m_re);
+        std::string __re_ = s;
+        visit_expr(*x.m_im);
+        std::string __im_ = s;
+        s = "(" + __re_ + ", " + __im_ + ")";
+    }
 
     // void visit_NamedExpr(const ASR::NamedExpr_t &x) {}
 
@@ -732,6 +743,7 @@ public:
     void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t &x) {
         std::string out;
         switch (x.m_arr_intrinsic_id) {
+            SET_ARR_INTRINSIC_NAME(Any, "any");
             SET_ARR_INTRINSIC_NAME(Sum, "sum");
             SET_ARR_INTRINSIC_NAME(Shape, "shape");
             default : {
@@ -849,7 +861,11 @@ public:
 
     // void visit_RealCopySign(const ASR::RealCopySign_t &x) {}
 
-    // void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {}
+    void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {
+        std::string __re_ = std::to_string(x.m_re);
+        std::string __im_ = std::to_string(x.m_im);
+        s = "(" + __re_ + ", " + __im_ + ")";
+    }
 
     // void visit_ComplexUnaryMinus(const ASR::ComplexUnaryMinus_t &x) {}
 
@@ -1082,7 +1098,7 @@ public:
 
     void visit_ComplexIm(const ASR::ComplexIm_t &x) {
         visit_expr(*x.m_arg);
-        s = "imag(" + s + ")";
+        s = "aimag(" + s + ")";
     }
 
     // void visit_CLoc(const ASR::CLoc_t &x) {}
