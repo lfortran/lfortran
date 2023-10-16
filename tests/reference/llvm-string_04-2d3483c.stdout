@@ -435,6 +435,52 @@ else9:                                            ; preds = %ifcont7
   br label %ifcont10
 
 ifcont10:                                         ; preds = %else9, %then8
+  %302 = load %array*, %array** %greetings, align 8
+  %303 = getelementptr %array, %array* %302, i32 0, i32 0
+  %304 = load i8**, i8*** %303, align 8
+  %305 = ptrtoint i8** %304 to i64
+  %306 = icmp ne i64 %305, 0
+  br i1 %306, label %then11, label %else12
+
+then11:                                           ; preds = %ifcont10
+  %307 = getelementptr %array, %array* %302, i32 0, i32 0
+  %308 = load i8**, i8*** %307, align 8
+  %309 = alloca i8*, align 8
+  %310 = bitcast i8** %308 to i8*
+  store i8* %310, i8** %309, align 8
+  %311 = load i8*, i8** %309, align 8
+  call void (i8*, ...) @_lfortran_free(i8* %311)
+  %312 = getelementptr %array, %array* %302, i32 0, i32 0
+  store i8** null, i8*** %312, align 8
+  br label %ifcont13
+
+else12:                                           ; preds = %ifcont10
+  br label %ifcont13
+
+ifcont13:                                         ; preds = %else12, %then11
+  %313 = load %array*, %array** %user_data, align 8
+  %314 = getelementptr %array, %array* %313, i32 0, i32 0
+  %315 = load i8**, i8*** %314, align 8
+  %316 = ptrtoint i8** %315 to i64
+  %317 = icmp ne i64 %316, 0
+  br i1 %317, label %then14, label %else15
+
+then14:                                           ; preds = %ifcont13
+  %318 = getelementptr %array, %array* %313, i32 0, i32 0
+  %319 = load i8**, i8*** %318, align 8
+  %320 = alloca i8*, align 8
+  %321 = bitcast i8** %319 to i8*
+  store i8* %321, i8** %320, align 8
+  %322 = load i8*, i8** %320, align 8
+  call void (i8*, ...) @_lfortran_free(i8* %322)
+  %323 = getelementptr %array, %array* %313, i32 0, i32 0
+  store i8** null, i8*** %323, align 8
+  br label %ifcont16
+
+else15:                                           ; preds = %ifcont13
+  br label %ifcont16
+
+ifcont16:                                         ; preds = %else15, %then14
   ret i32 0
 }
 

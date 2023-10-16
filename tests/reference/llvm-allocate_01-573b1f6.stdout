@@ -1749,6 +1749,75 @@ else81:                                           ; preds = %ifcont79
   br label %ifcont82
 
 ifcont82:                                         ; preds = %else81, %then80
+  %655 = load %array*, %array** %a, align 8
+  %656 = getelementptr %array, %array* %655, i32 0, i32 0
+  %657 = load i32*, i32** %656, align 8
+  %658 = ptrtoint i32* %657 to i64
+  %659 = icmp ne i64 %658, 0
+  br i1 %659, label %then83, label %else84
+
+then83:                                           ; preds = %ifcont82
+  %660 = getelementptr %array, %array* %655, i32 0, i32 0
+  %661 = load i32*, i32** %660, align 8
+  %662 = alloca i8*, align 8
+  %663 = bitcast i32* %661 to i8*
+  store i8* %663, i8** %662, align 8
+  %664 = load i8*, i8** %662, align 8
+  call void (i8*, ...) @_lfortran_free(i8* %664)
+  %665 = getelementptr %array, %array* %655, i32 0, i32 0
+  store i32* null, i32** %665, align 8
+  br label %ifcont85
+
+else84:                                           ; preds = %ifcont82
+  br label %ifcont85
+
+ifcont85:                                         ; preds = %else84, %then83
+  %666 = load %array.0*, %array.0** %b, align 8
+  %667 = getelementptr %array.0, %array.0* %666, i32 0, i32 0
+  %668 = load float*, float** %667, align 8
+  %669 = ptrtoint float* %668 to i64
+  %670 = icmp ne i64 %669, 0
+  br i1 %670, label %then86, label %else87
+
+then86:                                           ; preds = %ifcont85
+  %671 = getelementptr %array.0, %array.0* %666, i32 0, i32 0
+  %672 = load float*, float** %671, align 8
+  %673 = alloca i8*, align 8
+  %674 = bitcast float* %672 to i8*
+  store i8* %674, i8** %673, align 8
+  %675 = load i8*, i8** %673, align 8
+  call void (i8*, ...) @_lfortran_free(i8* %675)
+  %676 = getelementptr %array.0, %array.0* %666, i32 0, i32 0
+  store float* null, float** %676, align 8
+  br label %ifcont88
+
+else87:                                           ; preds = %ifcont85
+  br label %ifcont88
+
+ifcont88:                                         ; preds = %else87, %then86
+  %677 = load %array.1*, %array.1** %c, align 8
+  %678 = getelementptr %array.1, %array.1* %677, i32 0, i32 0
+  %679 = load %complex_4*, %complex_4** %678, align 8
+  %680 = ptrtoint %complex_4* %679 to i64
+  %681 = icmp ne i64 %680, 0
+  br i1 %681, label %then89, label %else90
+
+then89:                                           ; preds = %ifcont88
+  %682 = getelementptr %array.1, %array.1* %677, i32 0, i32 0
+  %683 = load %complex_4*, %complex_4** %682, align 8
+  %684 = alloca i8*, align 8
+  %685 = bitcast %complex_4* %683 to i8*
+  store i8* %685, i8** %684, align 8
+  %686 = load i8*, i8** %684, align 8
+  call void (i8*, ...) @_lfortran_free(i8* %686)
+  %687 = getelementptr %array.1, %array.1* %677, i32 0, i32 0
+  store %complex_4* null, %complex_4** %687, align 8
+  br label %ifcont91
+
+else90:                                           ; preds = %ifcont88
+  br label %ifcont91
+
+ifcont91:                                         ; preds = %else90, %then89
   ret i32 0
 }
 
