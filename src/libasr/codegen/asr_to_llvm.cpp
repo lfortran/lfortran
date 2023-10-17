@@ -241,6 +241,14 @@ public:
         llvm_utils->set_api_sc = set_api_sc.get();
     }
 
+    llvm::AllocaInst* CreateAlloca(llvm::Type* type,
+        llvm::Value* size=nullptr, const std::string& Name="") {
+        llvm::BasicBlock &entry_block = builder->GetInsertBlock()->getParent()->getEntryBlock();
+        llvm::IRBuilder<> builder0(context);
+        builder0.SetInsertPoint(&entry_block, entry_block.getFirstInsertionPt());
+        return builder0.CreateAlloca(type, size, Name);
+    }
+
     llvm::Value* CreateLoad(llvm::Value *x) {
         return LLVM::CreateLoad(*builder, x);
     }
@@ -3148,7 +3156,7 @@ public:
 
     void allocate_array_members_of_struct_arrays(llvm::Value* ptr, ASR::ttype_t* v_m_type) {
         ASR::array_physical_typeType phy_type = ASRUtils::extract_physical_type(v_m_type);
-        llvm::Value* array_size = builder->CreateAlloca(
+        llvm::Value* array_size = CreateAlloca(
                 llvm::Type::getInt32Ty(context), nullptr, "array_size");
         switch( phy_type ) {
             case ASR::array_physical_typeType::FixedSizeArray: {
@@ -3167,7 +3175,7 @@ public:
                 LCOMPILERS_ASSERT(false);
             }
         }
-        llvm::Value* llvmi = builder->CreateAlloca(llvm::Type::getInt32Ty(context), nullptr, "i");
+        llvm::Value* llvmi = CreateAlloca(llvm::Type::getInt32Ty(context), nullptr, "i");
         LLVM::CreateStore(*builder,
             llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 0)), llvmi);
         create_loop(nullptr, [=]() {
@@ -5566,14 +5574,12 @@ public:
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right_val = tmp;
         llvm::Value *zero, *cond;
-        llvm::AllocaInst *result;
         if (ASRUtils::is_integer(*x.m_type)) {
             int a_kind = down_cast<ASR::Integer_t>(x.m_type)->m_kind;
             int init_value_bits = 8*a_kind;
             zero = llvm::ConstantInt::get(context,
                             llvm::APInt(init_value_bits, 0));
             cond = builder->CreateICmpEQ(left_val, zero);
-            result = builder->CreateAlloca(llvm_utils->getIntType(a_kind), nullptr);
         } else if (ASRUtils::is_real(*x.m_type)) {
             int a_kind = down_cast<ASR::Real_t>(x.m_type)->m_kind;
             int init_value_bits = 8*a_kind;
@@ -5584,39 +5590,25 @@ public:
                 zero = llvm::ConstantFP::get(context,
                                     llvm::APFloat((double)0));
             }
-            result = builder->CreateAlloca(llvm_utils->getFPType(a_kind), nullptr);
             cond = builder->CreateFCmpUEQ(left_val, zero);
         } else if (ASRUtils::is_character(*x.m_type)) {
             zero = llvm::Constant::getNullValue(character_type);
             cond = lfortran_str_cmp(left_val, zero, "_lpython_str_compare_eq");
-            result = builder->CreateAlloca(character_type, nullptr);
         } else if (ASRUtils::is_logical(*x.m_type)) {
             zero = llvm::ConstantInt::get(context,
                             llvm::APInt(1, 0));
             cond = builder->CreateICmpEQ(left_val, zero);
-            result = builder->CreateAlloca(llvm::Type::getInt1Ty(context), nullptr);
         } else {
             throw CodeGenError("Only Integer, Real, Strings and Logical types are supported "
             "in logical binary operation.", x.base.base.loc);
         }
         switch (x.m_op) {
             case ASR::logicalbinopType::And: {
-                llvm_utils->create_if_else(cond, [&, result, left_val]() {
-                    LLVM::CreateStore(*builder, left_val, result);
-                }, [&, result, right_val]() {
-                    LLVM::CreateStore(*builder, right_val, result);
-                });
-                tmp = LLVM::CreateLoad(*builder, result);
+                tmp = builder->CreateSelect(cond, left_val, right_val);
                 break;
             };
             case ASR::logicalbinopType::Or: {
-                llvm_utils->create_if_else(cond, [&, result, right_val]() {
-                    LLVM::CreateStore(*builder, right_val, result);
-
-                }, [&, result, left_val]() {
-                    LLVM::CreateStore(*builder, left_val, result);
-                });
-                tmp = LLVM::CreateLoad(*builder, result);
+                tmp = builder->CreateSelect(cond, right_val, left_val);
                 break;
             };
             case ASR::logicalbinopType::Xor: {
