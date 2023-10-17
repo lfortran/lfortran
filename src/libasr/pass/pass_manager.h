@@ -213,7 +213,6 @@ namespace LCompilers {
                 "implied_do_loops",
                 "class_constructor",
                 "pass_list_expr",
-                // "arr_slice", TODO: Remove ``arr_slice.cpp`` completely
                 "where",
                 "subroutine_from_function",
                 "array_op",
@@ -238,25 +237,26 @@ namespace LCompilers {
             };
 
             _with_optimization_passes = {
+                "nested_vars",
                 "global_stmts",
                 "init_expr",
                 "implied_do_loops",
                 "class_constructor",
-                "pass_array_by_data",
-                // "arr_slice", TODO: Remove ``arr_slice.cpp`` completely
+                "pass_list_expr",
+                "where",
                 "subroutine_from_function",
                 "array_op",
+                "symbolic",
                 "intrinsic_function",
                 "subroutine_from_function",
                 "array_op",
+                "pass_array_by_data",
                 "print_struct_type",
                 "print_arr",
                 "print_list_tuple",
                 "print_struct_type",
                 "loop_vectorise",
-                // "loop_unroll",
                 "array_dim_intrinsics_update",
-                "where",
                 "do_loops",
                 "forall",
                 "dead_code_removal",
