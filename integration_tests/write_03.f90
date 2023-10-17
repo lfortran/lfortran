@@ -6,7 +6,7 @@ ifmt = 10
 lll = 15
 line = "1234567890123456789001234567890"
 write( *, fmt = 9999 ) ifmt, line( 1: lll )
-9999 format( / 1x, a, / 1x, a )
+9999 format( i0, / a )
 end subroutine
 
 program write_03
