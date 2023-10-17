@@ -224,6 +224,16 @@
                         ()
                         ()
                     )
+                    (Print
+                        [(StringConstant
+                            "Printed using entry statement: "
+                            (Character 1 31 ())
+                        )
+                        (Var 5 dummy)]
+                        ()
+                        ()
+                    )
+                    (Return)
                     (Return)]
                     ()
                     Public
