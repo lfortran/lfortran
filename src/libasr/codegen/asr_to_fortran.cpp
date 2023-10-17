@@ -658,7 +658,30 @@ public:
         s = r;
     }
 
-    // void visit_Where(const ASR::Where_t &x) {}
+    void visit_Where(const ASR::Where_t &x) {
+        std::string r;
+        r = indent;
+        r += "where";
+        r += " ";
+        r += "(";
+        visit_expr(*x.m_test);
+        r += s;
+        r += ")\n";
+        visit_body(x, r);
+        for (size_t i = 0; i < x.n_orelse; i++) {
+            r += indent;
+            r += "else where";
+            r += "\n";
+            inc_indent();
+            visit_stmt(*x.m_orelse[i]);
+            r += s;
+            dec_indent();
+        }
+        r += indent;
+        r += "end where";
+        r += "\n";
+        s = r;
+    }
 
     void visit_WhileLoop(const ASR::WhileLoop_t &x) {
         std::string r = indent;
