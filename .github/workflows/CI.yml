@@ -468,7 +468,7 @@ jobs:
       - name: Test dftatom
         shell: bash -e -x -l {0}
         run: |
-            git clone https://github.com/certik/dftatom.git
+            git clone https://github.com/czgdp1807/dftatom.git
             cd dftatom
             git checkout -t origin/lf33
             git checkout b7d6fa705c1c1dd540bb7494c3240c4d29a35caf
