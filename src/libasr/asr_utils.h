@@ -2379,6 +2379,14 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
     }
 }
 
+inline std::string remove_trailing_white_spaces(std::string str) {
+    int end = str.size() - 1;
+    while (end >= 0 && std::isspace(str[end])) {
+        end--;
+    }
+    return str.substr(0, end + 1);
+}
+
 inline bool is_same_type_pointer(ASR::ttype_t* source, ASR::ttype_t* dest) {
     bool is_source_pointer = is_pointer(source), is_dest_pointer = is_pointer(dest);
     if( (!is_source_pointer && !is_dest_pointer) ||

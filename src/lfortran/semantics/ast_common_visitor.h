@@ -325,8 +325,8 @@ public:
                                     ASRUtils::expr_value(left))->m_s;
             char* right_value = ASR::down_cast<ASR::StringConstant_t>(
                                     ASRUtils::expr_value(right))->m_s;
-            std::string left_str = std::string(left_value);
-            std::string right_str = std::string(right_value);
+            std::string left_str = ASRUtils::remove_trailing_white_spaces(std::string(left_value));
+            std::string right_str = ASRUtils::remove_trailing_white_spaces(std::string(right_value));
             int8_t strcmp = left_str.compare(right_str);
             bool result;
             switch (asr_op) {
