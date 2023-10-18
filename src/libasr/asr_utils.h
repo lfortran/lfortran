@@ -2381,7 +2381,7 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
 
 inline std::string remove_trailing_white_spaces(std::string str) {
     int end = str.size() - 1;
-    while (end >= 0 && std::isspace(str[end])) {
+    while (end >= 0 && str[end] == ' ') {
         end--;
     }
     return str.substr(0, end + 1);
