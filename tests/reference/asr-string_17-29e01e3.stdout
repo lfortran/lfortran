@@ -236,7 +236,7 @@
                                         []
                                         .false.
                                     )
-                                    []
+                                    [len_string]
                                     [(Var 5 string)]
                                     [(If
                                         (FunctionCall

@@ -77,7 +77,7 @@
                                         []
                                         .false.
                                     )
-                                    []
+                                    [func2]
                                     [(Var 3 a)
                                     (Var 3 b)]
                                     [(=

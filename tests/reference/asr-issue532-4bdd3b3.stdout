@@ -98,7 +98,7 @@
                                         []
                                         .false.
                                     )
-                                    []
+                                    [sfloor]
                                     [(Var 4 x)
                                     (Var 4 y)]
                                     [(=

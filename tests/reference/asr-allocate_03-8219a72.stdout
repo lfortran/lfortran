@@ -209,7 +209,7 @@
                                         []
                                         .false.
                                     )
-                                    []
+                                    [f]
                                     [(Var 4 x)]
                                     [(Print
                                         [(ArrayItem
@@ -411,7 +411,7 @@
                                         []
                                         .false.
                                     )
-                                    []
+                                    [f]
                                     [(Var 5 c)]
                                     [(If
                                         (FunctionCall

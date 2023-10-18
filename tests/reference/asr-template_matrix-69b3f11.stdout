@@ -377,7 +377,8 @@
                                                         []
                                                         .false.
                                                     )
-                                                    []
+                                                    [times
+                                                    plus]
                                                     [(Var 10 m_x)
                                                     (Var 10 m_y)
                                                     (Var 10 m_z)]
@@ -831,7 +832,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    []
+                                                    [plus]
                                                     [(Var 9 m_x)
                                                     (Var 9 m_y)
                                                     (Var 9 m_z)]
@@ -1636,7 +1637,8 @@
                                                         []
                                                         .false.
                                                     )
-                                                    []
+                                                    [mult_integer
+                                                    plus_integer]
                                                     [(Var 18 m_x)
                                                     (Var 18 m_y)
                                                     (Var 18 m_z)]
@@ -1914,7 +1916,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    []
+                                                    [plus_integer]
                                                     [(Var 17 m_x)
                                                     (Var 17 m_y)
                                                     (Var 17 m_z)]

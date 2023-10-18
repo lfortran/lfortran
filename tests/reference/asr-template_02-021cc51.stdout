@@ -155,7 +155,7 @@
                                         []
                                         .false.
                                     )
-                                    []
+                                    [~neq_intrinsic_character]
                                     [(Var 12 vec)]
                                     [(=
                                         (Var 12 n)
@@ -494,7 +494,7 @@
                                         []
                                         .false.
                                     )
-                                    []
+                                    [~neq_intrinsic_integer]
                                     [(Var 10 vec)]
                                     [(=
                                         (Var 10 n)
@@ -1162,7 +1162,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    []
+                                                    [ne]
                                                     [(Var 7 vec)]
                                                     [(=
                                                         (Var 7 n)

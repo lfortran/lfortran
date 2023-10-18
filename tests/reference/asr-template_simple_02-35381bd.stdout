@@ -578,7 +578,8 @@
                                                         []
                                                         .false.
                                                     )
-                                                    []
+                                                    [cast
+                                                    add]
                                                     [(Var 12 arr)]
                                                     [(=
                                                         (Var 12 n)
@@ -960,7 +961,8 @@
                                                         []
                                                         .false.
                                                     )
-                                                    []
+                                                    [cast_integer
+                                                    ~add_intrinsic_integer]
                                                     [(Var 16 arr)]
                                                     [(=
                                                         (Var 16 n)
@@ -1136,7 +1138,8 @@
                                                         []
                                                         .false.
                                                     )
-                                                    []
+                                                    [cast_real
+                                                    ~add_intrinsic_real]
                                                     [(Var 18 arr)]
                                                     [(=
                                                         (Var 18 n)

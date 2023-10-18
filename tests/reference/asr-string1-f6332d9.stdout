@@ -165,7 +165,7 @@
                                         []
                                         .false.
                                     )
-                                    []
+                                    [f_string_cptr_n]
                                     [(Var 11 cptr)]
                                     [(=
                                         (Var 11 s)

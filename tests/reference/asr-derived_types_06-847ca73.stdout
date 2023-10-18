@@ -279,7 +279,7 @@
                                         []
                                         .false.
                                     )
-                                    []
+                                    [time_to_string]
                                     [(Var 12 lhs)
                                     (Var 12 rhs)]
                                     [(If

@@ -149,7 +149,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    []
+                                                    [f]
                                                     [(Var 7 x)
                                                     (Var 7 y)]
                                                     [(=
@@ -276,7 +276,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    []
+                                                    [f]
                                                     [(Var 8 x)
                                                     (Var 8 y)
                                                     (Var 8 z)]
@@ -731,7 +731,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    []
+                                                    [func_arg_int]
                                                     [(Var 11 x)
                                                     (Var 11 y)]
                                                     [(=
@@ -840,7 +840,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    []
+                                                    [func_arg_int]
                                                     [(Var 12 x)
                                                     (Var 12 y)
                                                     (Var 12 z)]

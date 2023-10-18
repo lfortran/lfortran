@@ -14,31 +14,23 @@
 
 #include <complex>
 
-#define ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies) bool is_parent = false; \
-    SymbolTable* temp_scope = current_scope; \
-    while(temp_scope != nullptr && !is_parent) { \
-        if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() == temp_scope->get_counter() && \
-            ASR::is_a<ASR::symbol_t>(*temp_scope->asr_owner)) { \
-            is_parent = true; \
-            break; \
-        } \
-        temp_scope = temp_scope->parent; \
+#define ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies) ASR::symbol_t* asr_owner_sym = nullptr; \
+    if(current_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) ) { \
+        asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner); \
     } \
-    if (!is_parent && !ASR::is_a<ASR::ExternalSymbol_t>(*final_sym)) { \
+    SymbolTable* temp_scope = current_scope; \
+    if (asr_owner_sym && temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(final_sym)->get_counter() && \
+            !ASR::is_a<ASR::AssociateBlock_t>(*asr_owner_sym) && !ASR::is_a<ASR::ExternalSymbol_t>(*final_sym)) { \
         current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym)); \
     } \
 
-#define ADD_ASR_DEPENDENCIES_WITH_NAME(current_scope, final_sym, current_function_dependencies, dep_name) bool is_parent = false; \
-    SymbolTable* temp_scope = current_scope; \
-    while(temp_scope != nullptr && !is_parent) { \
-        if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() == temp_scope->get_counter() && \
-            ASR::is_a<ASR::symbol_t>(*temp_scope->asr_owner)) { \
-            is_parent = true; \
-            break; \
-        } \
-        temp_scope = temp_scope->parent; \
+#define ADD_ASR_DEPENDENCIES_WITH_NAME(current_scope, final_sym, current_function_dependencies, dep_name) ASR::symbol_t* asr_owner_sym = nullptr; \
+    if(current_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) ) { \
+        asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner); \
     } \
-    if (!is_parent && !ASR::is_a<ASR::ExternalSymbol_t>(*final_sym)) { \
+    SymbolTable* temp_scope = current_scope; \
+    if (asr_owner_sym && temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(final_sym)->get_counter() && \
+            !ASR::is_a<ASR::AssociateBlock_t>(*asr_owner_sym) && !ASR::is_a<ASR::ExternalSymbol_t>(*final_sym)) { \
         current_function_dependencies.push_back(al, dep_name); \
     } \
 

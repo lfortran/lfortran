@@ -220,7 +220,7 @@
                                         []
                                         .false.
                                     )
-                                    []
+                                    [logical_gets_integer]
                                     [(Var 4 tf)
                                     (Var 4 i)]
                                     [(=

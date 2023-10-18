@@ -202,7 +202,7 @@
                                         []
                                         .false.
                                     )
-                                    []
+                                    [assign_string_char]
                                     [(Var 5 string)]
                                     [(=
                                         (Var 5 trimmed_string)

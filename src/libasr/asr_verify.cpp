@@ -442,7 +442,7 @@ public:
                                    x.m_name, x.base.base.loc);
 
         // Get the x parent symtab.
-        SymbolTable *sym = x.m_symtab->parent;
+        SymbolTable *sym = x.m_symtab;
 
         // Dependencies of the function should be from function's parent symbol table.
         for( size_t i = 0; i < x.n_dependencies; i++ ) {
@@ -896,20 +896,18 @@ public:
             }
         }
 
-        bool is_parent = false;
-        SymbolTable* temp_scope = current_symtab;
-        while(temp_scope != nullptr && !is_parent) {
-            if (ASRUtils::symbol_parent_symtab(x.m_name)->get_counter() == temp_scope->get_counter() &&
-                ASR::is_a<ASR::symbol_t>(*temp_scope->asr_owner)) {
-                is_parent = true;
-                break;
-            }
-            temp_scope = temp_scope->parent;
+        ASR::symbol_t* asr_owner_sym = nullptr;
+        if(current_symtab->asr_owner &&  ASR::is_a<ASR::symbol_t>(*current_symtab->asr_owner) ) {
+            asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_symtab->asr_owner);
         }
 
-        if (!ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) && !is_parent) {
+        SymbolTable* temp_scope = current_symtab;
+        
+        if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(x.m_name)->get_counter() &&
+            !ASR::is_a<ASR::AssociateBlock_t>(*asr_owner_sym) && !ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name)) {
             function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
         }
+
         if( ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) ) {
             ASR::ExternalSymbol_t* x_m_name = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
             if( x_m_name->m_external && ASR::is_a<ASR::Module_t>(*ASRUtils::get_asr_owner(x_m_name->m_external)) ) {
@@ -1042,19 +1040,15 @@ public:
     void visit_FunctionCall(const FunctionCall_t &x) {
         require(x.m_name,
             "FunctionCall::m_name must be present");
-        // Check x.m_name is from parent sym tab.
-        bool is_parent = false;
-        SymbolTable* temp_scope = current_symtab;
-        while(temp_scope != nullptr && !is_parent) {
-            if (ASRUtils::symbol_parent_symtab(x.m_name)->get_counter() == temp_scope->get_counter() &&
-                ASR::is_a<ASR::symbol_t>(*temp_scope->asr_owner)) {
-                is_parent = true;
-                break;
-            }
-            temp_scope = temp_scope->parent;
+        ASR::symbol_t* asr_owner_sym = nullptr;
+        if(current_symtab->asr_owner &&  ASR::is_a<ASR::symbol_t>(*current_symtab->asr_owner) ) {
+            asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_symtab->asr_owner);
         }
 
-        if (!ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) && !is_parent) {
+        SymbolTable* temp_scope = current_symtab;
+        
+        if (asr_owner_sym && temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(x.m_name)->get_counter() &&
+            !ASR::is_a<ASR::AssociateBlock_t>(*asr_owner_sym) && !ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name)) {
             function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
         }
 

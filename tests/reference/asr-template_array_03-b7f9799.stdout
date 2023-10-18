@@ -498,7 +498,9 @@
                                                         []
                                                         .false.
                                                     )
-                                                    []
+                                                    [zero_t
+                                                    mult_t
+                                                    plus_t]
                                                     [(Var 18 i)
                                                     (Var 18 j)
                                                     (Var 18 k)

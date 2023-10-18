@@ -3514,7 +3514,6 @@ public:
             }
         }
         if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter()) {
-            // check if asr owner is associate block.
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
         }
         ASR::Module_t* v_module = ASRUtils::get_sym_module0(f2);

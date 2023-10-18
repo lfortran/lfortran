@@ -355,7 +355,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    []
+                                                    [__asr_avg_s_from_t]
                                                     [(Var 21 d1)
                                                     (Var 21 s1)
                                                     (Var 21 d2)
@@ -1470,7 +1470,8 @@
                                                         []
                                                         .false.
                                                     )
-                                                    []
+                                                    [d_divided_by_s
+                                                    avg_s_from_t]
                                                     [(Var 17 d1)
                                                     (Var 17 s1)
                                                     (Var 17 d2)
@@ -1642,7 +1643,9 @@
                                                         []
                                                         .false.
                                                     )
-                                                    []
+                                                    [plus_d
+                                                    plus_t
+                                                    d_divided_by_t]
                                                     [(Var 16 d1)
                                                     (Var 16 t1)
                                                     (Var 16 d2)

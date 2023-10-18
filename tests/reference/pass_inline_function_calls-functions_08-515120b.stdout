@@ -328,7 +328,7 @@
                                         []
                                         .false.
                                     )
-                                    []
+                                    [f]
                                     [(Var 4 a)]
                                     [(=
                                         (Var 4 x)
@@ -542,7 +542,7 @@
                                         []
                                         .false.
                                     )
-                                    []
+                                    [f]
                                     [(Var 5 a)]
                                     [(If
                                         (RealCompare

@@ -430,7 +430,7 @@
                                         []
                                         .false.
                                     )
-                                    []
+                                    [modulo2]
                                     [(Var 4 c)
                                     (Var 4 op_code)]
                                     [(DoLoop

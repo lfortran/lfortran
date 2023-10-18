@@ -341,7 +341,7 @@
                                         []
                                         .false.
                                     )
-                                    []
+                                    [check_table]
                                     [(Var 8 table)
                                     (Var 8 ptr)
                                     (Var 8 stat)]

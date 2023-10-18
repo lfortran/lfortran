@@ -104,7 +104,7 @@
                                         []
                                         .false.
                                     )
-                                    []
+                                    [solution]
                                     []
                                     [(=
                                         (Var 3 reldiff)

@@ -358,7 +358,7 @@
                                         []
                                         .false.
                                     )
-                                    []
+                                    [check]
                                     [(Var 6 raw)]
                                     [(If
                                         (FunctionCall

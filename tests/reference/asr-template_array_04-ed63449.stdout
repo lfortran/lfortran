@@ -168,7 +168,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    []
+                                                    [swap]
                                                     [(Var 6 arr)]
                                                     [(DoLoop
                                                         ()
@@ -572,7 +572,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    []
+                                                    [__asr_swap]
                                                     [(Var 8 arr)]
                                                     [(DoLoop
                                                         ()

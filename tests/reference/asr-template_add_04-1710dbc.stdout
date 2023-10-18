@@ -175,7 +175,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    []
+                                                    [f]
                                                     [(Var 7 x)
                                                     (Var 7 y)]
                                                     [(=
@@ -782,7 +782,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    []
+                                                    [func_arg_real]
                                                     [(Var 11 x)
                                                     (Var 11 y)]
                                                     [(=

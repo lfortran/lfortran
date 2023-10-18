@@ -201,7 +201,7 @@
                                         []
                                         .false.
                                     )
-                                    []
+                                    [signr32]
                                     [(Var 4 a)]
                                     [(=
                                         (Var 4 b)

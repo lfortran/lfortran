@@ -525,7 +525,7 @@
                                         []
                                         .false.
                                     )
-                                    []
+                                    [build_package]
                                     [(Var 10 settings)]
                                     [(SubroutineCall
                                         2 build_package
