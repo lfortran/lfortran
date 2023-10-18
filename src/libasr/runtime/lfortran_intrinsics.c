@@ -1221,10 +1221,16 @@ LFORTRAN_API void _lfortran_strcpy(char** x, char *y, int8_t free_target)
 
 #define MIN(x, y) ((x < y) ? x : y)
 
+int strlen_without_trailing_space(char *str) {
+    int end = strlen(str) - 1;
+    while(end >= 0 && str[end] == ' ') end--;
+    return end + 1;
+}
+
 int str_compare(char **s1, char **s2)
 {
-    int s1_len = strlen(*s1);
-    int s2_len = strlen(*s2);
+    int s1_len = strlen_without_trailing_space(*s1);
+    int s2_len = strlen_without_trailing_space(*s2);
     int lim = MIN(s1_len, s2_len);
     int res = 0;
     int i ;
