@@ -369,6 +369,7 @@ loop.end:                                         ; preds = %loop.head
 then:                                             ; preds = %loop.end
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @22, i32 0, i32 0))
   call void @exit(i32 1)
+  call void (i8*, ...) @_lfortran_free(i8* %273)
   br label %ifcont
 
 else:                                             ; preds = %loop.end

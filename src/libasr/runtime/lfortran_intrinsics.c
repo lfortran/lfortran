@@ -1214,9 +1214,20 @@ LFORTRAN_API void _lfortran_strcat(char** s1, char** s2, char** dest)
 
 LFORTRAN_API void _lfortran_strcpy(char** x, char *y, int8_t free_target)
 {
-    if (*x && free_target) free((void *)*x);
-    *x = (char*) malloc((strlen(y) + 1) * sizeof(char));
-    strcpy(*x, y);
+    if (free_target) {
+        if (*x) {
+            free((void *)*x);
+        }
+        *x = (char *) malloc(strlen(y)*sizeof(char));
+        _lfortran_string_init(strlen(y)+1, *x);
+    }
+    for (size_t i = 0; i < strlen(*x); i ++) {
+        if (i < strlen(y)) {
+            x[0][i] = y[i];
+        } else {
+            x[0][i] = ' ';
+        }
+    }
 }
 
 #define MIN(x, y) ((x < y) ? x : y)
@@ -2341,8 +2352,10 @@ LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n)
 LFORTRAN_API void _lfortran_string_write(char **str, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    *str = (char *) malloc(strlen(*str)*sizeof(char));
-    vsprintf(*str, format, args);
+    char *s = (char *) malloc(strlen(*str)*sizeof(char));
+    vsprintf(s, format, args);
+    _lfortran_strcpy(str, s, 0);
+    free(s);
     va_end(args);
 }
 

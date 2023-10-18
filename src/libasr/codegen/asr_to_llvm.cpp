@@ -201,6 +201,8 @@ public:
     std::unique_ptr<LLVMSetInterface> set_api_sc;
     std::unique_ptr<LLVMArrUtils::Descriptor> arr_descr;
     std::vector<llvm::Value*> heap_arrays;
+    std::map<llvm::Value*, llvm::Value*> strings_to_be_allocated; // (array, size)
+    Vec<llvm::Value*> strings_to_be_deallocated;
 
     ASRToLLVMVisitor(Allocator &al, llvm::LLVMContext &context, std::string infile,
         CompilerOptions &compiler_options_, diag::Diagnostics &diagnostics) :
@@ -239,6 +241,7 @@ public:
         llvm_utils->dict_api_sc = dict_api_sc.get();
         llvm_utils->set_api_lp = set_api_lp.get();
         llvm_utils->set_api_sc = set_api_sc.get();
+        strings_to_be_deallocated.reserve(al, 1);
     }
 
     llvm::AllocaInst* CreateAlloca(llvm::Type* type,
@@ -581,6 +584,7 @@ public:
             nullptr);
         std::vector<llvm::Value*> args = {pleft_arg, pright_arg, presult};
         builder->CreateCall(fn, args);
+        strings_to_be_deallocated.push_back(al, CreateLoad(presult));
         return CreateLoad(presult);
     }
 
@@ -1076,9 +1080,14 @@ public:
         return free_fn;
     }
 
-    inline void call_lfortran_free_string(llvm::Function* fn) {
-        std::vector<llvm::Value*> args = {tmp};
-        builder->CreateCall(fn, args);
+    inline void call_lcompilers_free_strings() {
+        if (strings_to_be_deallocated.n > 0) {
+            llvm::Function* free_fn = _Deallocate();
+            for( auto &value: strings_to_be_deallocated ) {
+                builder->CreateCall(free_fn, {value});
+            }
+            strings_to_be_deallocated.reserve(al, 1);
+        }
     }
 
     llvm::Function* _Allocate(bool realloc_lhs) {
@@ -2268,6 +2277,7 @@ public:
                 p = CreateGEP(str, idx_vec);
             } else {
                 p = lfortran_str_item(str, idx);
+                strings_to_be_deallocated.push_back(al, p);
             }
             // TODO: Currently the string starts at the right location, but goes to the end of the original string.
             // We have to allocate a new string, copy it and add null termination.
@@ -2678,6 +2688,10 @@ public:
                     module->getNamedGlobal(x.m_name)->setInitializer(
                             llvm::Constant::getNullValue(character_type)
                         );
+                    ASR::Character_t *t = down_cast<ASR::Character_t>(x.m_type);
+                    LCOMPILERS_ASSERT(t->m_len >= 0);
+                    strings_to_be_allocated.insert(std::pair(ptr, llvm::ConstantInt::get(
+                        context, llvm::APInt(32, t->m_len+1))));
                 }
             }
             llvm_symtab[h] = ptr;
@@ -2956,6 +2970,7 @@ public:
 
     void visit_Program(const ASR::Program_t &x) {
         heap_arrays.clear();
+        strings_to_be_deallocated.reserve(al, 1);
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
         bool is_dict_present_copy_lp = dict_api_lp->is_dict_present();
@@ -3017,12 +3032,20 @@ public:
         }
 
         declare_vars(x);
+        for(auto &value: strings_to_be_allocated) {
+            llvm::Value *init_value = LLVM::lfortran_malloc(context, *module,
+                *builder, value.second);
+            string_init(context, *module, *builder, value.second, init_value);
+            builder->CreateStore(init_value, value.first);
+        }
         for (size_t i=0; i<x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
         }
         for( auto& value: heap_arrays ) {
             LLVM::lfortran_free(context, *module, *builder, value);
         }
+        call_lcompilers_free_strings();
+
         llvm::Value *ret_val2 = llvm::ConstantInt::get(context,
             llvm::APInt(32, 0));
         builder->CreateRet(ret_val2);
@@ -3035,6 +3058,7 @@ public:
         if (compiler_options.emit_debug_info) DBuilder->finalize();
         current_scope = current_scope_copy;
         heap_arrays.clear();
+        strings_to_be_deallocated.reserve(al, 1);
     }
 
     /*
@@ -3496,6 +3520,17 @@ public:
                             }
                         } else if (ASR::is_a<ASR::ArrayReshape_t>(*v->m_symbolic_value)) {
                             builder->CreateStore(LLVM::CreateLoad(*builder, init_value), target_var);
+                        } else if (is_a<ASR::Character_t>(*v->m_type) && !is_array_type) {
+                            ASR::Character_t *t = down_cast<ASR::Character_t>(v->m_type);
+                            llvm::Value *arg_size = llvm::ConstantInt::get(context,
+                                        llvm::APInt(32, t->m_len+1));
+                            llvm::Value *s_malloc = LLVM::lfortran_malloc(context, *module, *builder, arg_size);
+                            string_init(context, *module, *builder, arg_size, s_malloc);
+                            builder->CreateStore(s_malloc, target_var);
+                            tmp = lfortran_str_copy(target_var, init_value);
+                            if (v->m_intent == intent_local) {
+                                strings_to_be_deallocated.push_back(al, CreateLoad(target_var));
+                            }
                         } else {
                             builder->CreateStore(init_value, target_var);
                         }
@@ -3504,23 +3539,27 @@ public:
                             ASR::Character_t *t = down_cast<ASR::Character_t>(v->m_type);
                             target_var = ptr;
                             int strlen = t->m_len;
-                            if (strlen >= 0) {
-                                // Compile time length
-                                std::string empty(strlen, ' ');
-                                llvm::Value *init_value = builder->CreateGlobalStringPtr(s2c(al, empty));
+                            if (strlen >= 0 || strlen == -3) {
+                                llvm::Value *arg_size;
+                                if (strlen == -3) {
+                                    LCOMPILERS_ASSERT(t->m_len_expr)
+                                    this->visit_expr(*t->m_len_expr);
+                                    arg_size = builder->CreateAdd(tmp,
+                                        llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+                                } else {
+                                    // Compile time length
+                                    arg_size = llvm::ConstantInt::get(context,
+                                        llvm::APInt(32, strlen+1));
+                                }
+                                llvm::Value *init_value = LLVM::lfortran_malloc(context, *module, *builder, arg_size);
+                                string_init(context, *module, *builder, arg_size, init_value);
                                 builder->CreateStore(init_value, target_var);
+                                if (v->m_intent == intent_local) {
+                                    strings_to_be_deallocated.push_back(al, CreateLoad(target_var));
+                                }
                             } else if (strlen == -2) {
                                 // Allocatable string. Initialize to `nullptr` (unallocated)
                                 llvm::Value *init_value = llvm::Constant::getNullValue(type);
-                                builder->CreateStore(init_value, target_var);
-                            } else if (strlen == -3) {
-                                LCOMPILERS_ASSERT(t->m_len_expr)
-                                this->visit_expr(*t->m_len_expr);
-                                llvm::Value *arg_size = tmp;
-                                arg_size = builder->CreateAdd(arg_size, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
-                                // TODO: this temporary string is never deallocated (leaks memory)
-                                llvm::Value *init_value = LLVM::lfortran_malloc(context, *module, *builder, arg_size);
-                                string_init(context, *module, *builder, arg_size, init_value);
                                 builder->CreateStore(init_value, target_var);
                             } else {
                                 throw CodeGenError("Unsupported len value in ASR");
@@ -3594,6 +3633,7 @@ public:
 
     void visit_Function(const ASR::Function_t &x) {
         heap_arrays.clear();
+        strings_to_be_deallocated.reserve(al, 1);
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
         bool is_dict_present_copy_lp = dict_api_lp->is_dict_present();
@@ -3623,6 +3663,7 @@ public:
         if (compiler_options.emit_debug_info) DBuilder->finalize();
         current_scope = current_scope_copy;
         heap_arrays.clear();
+        strings_to_be_deallocated.reserve(al, 1);
     }
 
     void instantiate_function(const ASR::Function_t &x){
@@ -3773,12 +3814,14 @@ public:
             for( auto& value: heap_arrays ) {
                 LLVM::lfortran_free(context, *module, *builder, value);
             }
+            call_lcompilers_free_strings();
             builder->CreateRet(ret_val2);
         } else {
             start_new_block(proc_return);
             for( auto& value: heap_arrays ) {
                 LLVM::lfortran_free(context, *module, *builder, value);
             }
+            call_lcompilers_free_strings();
             builder->CreateRetVoid();
         }
     }
@@ -4381,6 +4424,7 @@ public:
             tmp = CreateLoad(tmp);
         }
         builder->CreateStore(tmp, str);
+        strings_to_be_deallocated.push_back(al, tmp);
     }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
@@ -4404,6 +4448,9 @@ public:
         bool is_value_struct = ASR::is_a<ASR::Struct_t>(*asr_value_type);
         if (ASR::is_a<ASR::StringSection_t>(*x.m_target)) {
             handle_StringSection_Assignment(x.m_target, x.m_value);
+            if (tmp == strings_to_be_deallocated.back()) {
+                strings_to_be_deallocated.erase(strings_to_be_deallocated.back());
+            }
             return;
         }
         if( is_target_list && is_value_list ) {
@@ -4649,7 +4696,14 @@ public:
                 if (lhs_is_string_arrayref && value->getType()->isPointerTy()) {
                     value = CreateLoad(value);
                 }
-                if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
+                if (ASR::is_a<ASR::FunctionCall_t>(*x.m_value) ||
+                    ASR::is_a<ASR::StringConcat_t>(*x.m_value) ||
+                    (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target)
+                        && ASRUtils::is_character(*target_type))) {
+                    builder->CreateStore(value, target);
+                    strings_to_be_deallocated.erase(strings_to_be_deallocated.back());
+                    return;
+                } else if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
                     ASR::Variable_t *asr_target = EXPR2VAR(x.m_target);
                     tmp = lfortran_str_copy(target, value,
                         ASR::is_a<ASR::Allocatable_t>(*asr_target->m_type));
@@ -5435,16 +5489,24 @@ public:
     }
 
     void visit_If(const ASR::If_t &x) {
+        llvm::Value **strings_to_be_deallocated_copy = strings_to_be_deallocated.p;
+        size_t n = strings_to_be_deallocated.n;
+        strings_to_be_deallocated.reserve(al, 1);
         this->visit_expr_wrapper(x.m_test, true);
-        llvm_utils->create_if_else(tmp, [=]() {
+        llvm_utils->create_if_else(tmp, [&]() {
             for (size_t i=0; i<x.n_body; i++) {
                 this->visit_stmt(*x.m_body[i]);
             }
-        }, [=]() {
+            call_lcompilers_free_strings();
+        }, [&]() {
             for (size_t i=0; i<x.n_orelse; i++) {
                 this->visit_stmt(*x.m_orelse[i]);
             }
+            call_lcompilers_free_strings();
         });
+        strings_to_be_deallocated.reserve(al, n);
+        strings_to_be_deallocated.n = n;
+        strings_to_be_deallocated.p = strings_to_be_deallocated_copy;
     }
 
     void visit_IfExp(const ASR::IfExp_t &x) {
@@ -5468,14 +5530,22 @@ public:
     //}
 
     void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+        llvm::Value **strings_to_be_deallocated_copy = strings_to_be_deallocated.p;
+        size_t n = strings_to_be_deallocated.n;
+        strings_to_be_deallocated.reserve(al, 1);
         create_loop(x.m_name, [=]() {
             this->visit_expr_wrapper(x.m_test, true);
+            call_lcompilers_free_strings();
             return tmp;
-        }, [=]() {
+        }, [&]() {
             for (size_t i=0; i<x.n_body; i++) {
                 this->visit_stmt(*x.m_body[i]);
             }
+            call_lcompilers_free_strings();
         });
+        strings_to_be_deallocated.reserve(al, n);
+        strings_to_be_deallocated.n = n;
+        strings_to_be_deallocated.p = strings_to_be_deallocated_copy;
     }
 
     bool case_insensitive_string_compare(const std::string& str1, const std::string& str2) {
@@ -5709,6 +5779,7 @@ public:
             tmp = CreateGEP(str, idx_vec);
         } else {
             tmp = lfortran_str_item(str, idx);
+            strings_to_be_deallocated.push_back(al, tmp);
         }
     }
 
@@ -5752,6 +5823,7 @@ public:
                 llvm::APInt(32, 1));
         }
         tmp = lfortran_str_slice(str, left, right, step, left_present, right_present);
+        strings_to_be_deallocated.push_back(al, tmp);
     }
 
     void visit_RealCopySign(const ASR::RealCopySign_t& x) {
@@ -8827,6 +8899,9 @@ public:
                     }
                 }
             }
+        }
+        if (ASRUtils::is_character(*x.m_type)) {
+            strings_to_be_deallocated.push_back(al, tmp);
         }
     }
 

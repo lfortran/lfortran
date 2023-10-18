@@ -1378,7 +1378,7 @@ namespace Merge {
         auto mask_arg = declare("mask", mask_type, In);
         args.push_back(al, mask_arg);
         // TODO: In case of Character type, set len of ReturnVar to len(tsource) expression
-        auto result = declare("merge", tsource_type, ReturnVar);
+        auto result = declare("merge", type_get_past_allocatable(return_type), ReturnVar);
 
         {
             Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
