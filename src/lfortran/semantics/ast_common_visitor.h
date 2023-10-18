@@ -1716,8 +1716,13 @@ public:
         }
     }
 
-    bool check_is_external(std::string sym) {
-        if (current_scope->asr_owner) {
+    bool check_is_external(std::string sym, SymbolTable* scope = nullptr) {
+        std::cout<<"sym: "<<sym<<"\n";
+        if (scope) {
+            std::cout<<"Here get_hash(scope->asr_owner): "<<get_hash(scope->asr_owner)<<"\n";
+            external_procedures = external_procedures_mapping[get_hash(scope->asr_owner)];
+        } else if (current_scope->asr_owner) {
+            std::cout<<"get_hash(current_scope->asr_owner): "<<get_hash(current_scope->asr_owner)<<"\n";
             external_procedures = external_procedures_mapping[get_hash(current_scope->asr_owner)];
         }
         return ( std::find(external_procedures.begin(), external_procedures.end(), sym) != external_procedures.end() );

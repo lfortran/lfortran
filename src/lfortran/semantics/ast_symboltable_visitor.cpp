@@ -671,8 +671,25 @@ public:
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
         ASRUtils::SymbolDuplicator symbol_duplicator(al);
+        std::vector<std::string> copy_external_procedure = external_procedures;
+        external_procedures.clear();
         for( auto& item: old_scope->get_scope() ) {
             symbol_duplicator.duplicate_symbol(item.second, current_scope);
+            std::cout<<"symbol: "<<item.first<<std::endl;
+            bool is_external = check_is_external(item.first, old_scope);
+            // print external_procedures_mapping
+            for (auto it: external_procedures_mapping) {
+                std::cout<<"Scope hash: "<<it.first<<std::endl;
+                for (auto it2: it.second) {
+                    std::cout<<"procedure: "<<it2<<std::endl;
+                }
+            }
+            if (is_external) {
+                std::cout<<"External procedure: "<<item.first<<std::endl;
+                external_procedures.push_back(item.first);
+                // remove it from old_scope 
+                old_scope->erase_symbol(item.first);
+            }
         }
 
         if (is_master) {
@@ -791,9 +808,15 @@ public:
                 }
             }
         }
-        
+
+        // populate the external_procedures_mapping
+        uint64_t hash = get_hash(tmp_);
+        std::cout<<"hash: "<<hash<<std::endl;
+        external_procedures_mapping[hash] = external_procedures;
+
         current_scope = old_scope;
         current_function_dependencies = current_function_dependencies_copy;
+        external_procedures = copy_external_procedure;
         current_procedure_args.clear();
     }
 

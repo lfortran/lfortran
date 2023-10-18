@@ -2306,6 +2306,7 @@ static inline void set_absent_optional_arguments_to_null(
             args.push_back(al, empty_arg);
         }
     }
+    std::cout<<"offset: "<<offset<<std::endl;
     LCOMPILERS_ASSERT(args.size() == (func->n_args - offset));
 }
 

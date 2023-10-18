@@ -2385,6 +2385,18 @@ public:
         ASR::symbol_t *original_sym;
         ASR::expr_t *v_expr = nullptr;
         bool is_external = check_is_external(sub_name);
+        if (!is_external) {
+            // there can be a chance that scope is new scope of master entry function
+            // Then check if it is external procedure by checking all the external_procedures_mapping
+
+            for(auto it: external_procedures_mapping) {
+                std::vector<std::string> external_procedures_copy = it.second;
+                if (std::find(external_procedures_copy.begin(), external_procedures_copy.end(), sub_name) != external_procedures_copy.end()) {
+                    is_external = true;
+                    break;
+                }
+            }
+        }
         // If this is a type bound procedure (in a class) it won't be in the
         // main symbol table. Need to check n_member.
         if (x.n_member >= 1) {
@@ -2399,8 +2411,12 @@ public:
         } else {
             original_sym = current_scope->resolve_symbol(sub_name);
         }
+        if (original_sym) std::cout<<"original_sym: "<<ASRUtils::symbol_name(original_sym)<<std::endl;
+        else std::cout<<"original_sym: nullptr"<<std::endl;
         if (!original_sym || (original_sym && is_external)) {
             original_sym = resolve_intrinsic_function(x.base.base.loc, sub_name);
+            if (original_sym) std::cout<<"Itthe original_sym: "<<ASRUtils::symbol_name(original_sym)<<std::endl;
+            else std::cout<<"Itthe original_sym: nullptr"<<std::endl;
             if (!original_sym && compiler_options.implicit_interface) {
                 ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8));
                 create_implicit_interface_function(x, sub_name, false, type);
@@ -2410,17 +2426,20 @@ public:
             // remove from external_procedures_mapping
             if (original_sym && is_external) {
                 erase_from_external_mapping(sub_name);
+                // ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface);
             }
 
             // Update arguments if the symbol belonged to a function
             ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
             if (ASR::is_a<ASR::Function_t>(*asr_owner_sym)) {
                 ASR::Function_t *current_function = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
+                std::cout<<"current_function->m_name: "<<current_function->m_name<<std::endl;
                 for (size_t i = 0; i < current_function->n_args; i++) {
                     if (ASR::is_a<ASR::Var_t>(*current_function->m_args[i])) {
                         ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(current_function->m_args[i]);
                         if (std::string(ASRUtils::symbol_name(var->m_v)) == sub_name) {
                             var->m_v = original_sym;
+                            std::cout<<"updating argument"<<std::endl;
                         }
                     }
                 }
@@ -2752,6 +2771,9 @@ public:
         current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym));
         ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
         if( f ) {
+            std::cout<<"f->m_name: "<<f->m_name<<"\n";
+            std::cout<<"args.size(): "<<args.size()<<"\n";
+            std::cout<<"f->n_args: "<<f->n_args<<"\n";
             ASRUtils::set_absent_optional_arguments_to_null(args, f, al, v_expr);
         }
         ASR::stmt_t* cast_stmt = nullptr;

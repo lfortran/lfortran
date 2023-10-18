@@ -103,7 +103,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(unit);
     if (compiler_options.dump_all_passes) {
         std::ofstream outfile ("pass_00_initial_asr.clj");
-        outfile << ";; Initial ASR\n" << pickle(*tu, false, true) << "\n";
+        outfile << ";; Initial ASR\n" << pickle(*tu, true, true) << "\n";
         outfile.close();
     }
 #if defined(WITH_LFORTRAN_ASSERT)
@@ -122,8 +122,8 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
         }
         if (compiler_options.rtlib) load_rtlib(al, *tu, compiler_options);
         if (compiler_options.dump_all_passes) {
-            std::ofstream outfile ("pass_00_initial_asr.clj");
-            outfile << ";; Initial ASR\n" << pickle(*tu, false, true) << "\n";
+            std::ofstream outfile ("pass_01_initial_asr.clj");
+            outfile << ";; Initial ASR\n" << pickle(*tu, true, true) << "\n";
             outfile.close();
         }
 #if defined(WITH_LFORTRAN_ASSERT)
