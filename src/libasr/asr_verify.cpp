@@ -904,7 +904,8 @@ public:
         SymbolTable* temp_scope = current_symtab;
         
         if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(x.m_name)->get_counter() &&
-            !ASR::is_a<ASR::AssociateBlock_t>(*asr_owner_sym) && !ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name)) {
+            !ASR::is_a<ASR::AssociateBlock_t>(*asr_owner_sym) && !ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) &&
+                !ASR::is_a<ASR::Variable_t>(*x.m_name)) {
             function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
         }
 
@@ -1048,7 +1049,8 @@ public:
         SymbolTable* temp_scope = current_symtab;
         
         if (asr_owner_sym && temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(x.m_name)->get_counter() &&
-            !ASR::is_a<ASR::AssociateBlock_t>(*asr_owner_sym) && !ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name)) {
+            !ASR::is_a<ASR::AssociateBlock_t>(*asr_owner_sym) && !ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) &&
+                !ASR::is_a<ASR::Variable_t>(*x.m_name)) {
             function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
         }
 
