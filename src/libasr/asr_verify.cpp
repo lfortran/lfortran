@@ -441,32 +441,19 @@ public:
         verify_unique_dependencies(x.m_dependencies, x.n_dependencies,
                                    x.m_name, x.base.base.loc);
 
-        // Get the x parent symtab.
-        SymbolTable *sym = x.m_symtab;
+        // Get the x symtab.
+        SymbolTable *x_symtab = x.m_symtab;
 
         // Dependencies of the function should be from function's parent symbol table.
         for( size_t i = 0; i < x.n_dependencies; i++ ) {
             std::string found_dep = x.m_dependencies[i];
 
             // Get the symbol of the found_dep.
-            ASR::symbol_t* dep_sym = sym->resolve_symbol(found_dep);
+            ASR::symbol_t* dep_sym = x_symtab->resolve_symbol(found_dep);
 
-            if (dep_sym == nullptr) {
-                // The symbol `dep_sym` is not in the parent symbol table. For
-                // now we allow one exception: it can also be in the global scope.
-                ASR::symbol_t* dep_sym_global = sym->resolve_symbol(found_dep);
-
-                if (dep_sym_global != nullptr && ASRUtils::symbol_parent_symtab(dep_sym_global)->parent == nullptr) {
-                    // This is a global scope symbol, which we allow for now
-                } else {
-                    // This is not a global scope symbol and not in the parent symbol table,
-                    // Return an error:
-                    require(dep_sym != nullptr,
+            require(dep_sym != nullptr,
                             "Dependency " + found_dep +  " is inside symbol table " + std::string(x.m_name));
-                }
-            }
         }
-
         // Check if there are unnecessary dependencies
         // present in the dependency list of the function
         for( size_t i = 0; i < x.n_dependencies; i++ ) {
