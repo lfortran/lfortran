@@ -1097,21 +1097,6 @@ public:
                 last_expr_precedence = 2;
                 break;
             }
-            case (ASR::cast_kindType::UnsignedIntegerToUnsignedInteger) : {
-                break;
-            }
-            case (ASR::cast_kindType::IntegerToUnsignedInteger) : {
-                break;
-            }
-            case (ASR::cast_kindType::RealToUnsignedInteger) : {
-                break;
-            }
-            case (ASR::cast_kindType::UnsignedIntegerToInteger) : {
-                break;
-            }
-            case (ASR::cast_kindType::UnsignedIntegerToReal) : {
-                break;
-            }
             case (ASR::cast_kindType::ComplexToComplex) : {
                 int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
                 switch (dest_kind) {
@@ -1153,39 +1138,56 @@ public:
                 break;
             }
             case (ASR::cast_kindType::LogicalToInteger) : {
+                s = "int(" + s + ")";
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::LogicalToCharacter) : {
+                s = "char(" + s + ")";
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::IntegerToLogical) : {
+                // Implicit conversion between integer -> logical
                 break;
             }
             case (ASR::cast_kindType::LogicalToReal) : {
+                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                switch (dest_kind) {
+                    case 4: r = "real(" + s + ", " + std::to_string(dest_kind) + ")"; break;
+                    case 8: r = "real(" + s + ", " + std::to_string(dest_kind) + ")"; break;
+                    default: throw CodeGenError("Cast LogicalToReal: Unsupported Kind " + std::to_string(dest_kind));
+                }
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::RealToLogical) : {
+                s = "(bool)(" + s + ")";
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::CharacterToLogical) : {
+                s = "(bool)(len(" + s + ") > 0)";
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::ComplexToLogical) : {
+                s = "(bool)(" + s + ")";
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::IntegerToCharacter) : {
+                s = "achar(" + s + ")";
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::CharacterToInteger) : {
+                s = "ichar(" + s + ")";
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::RealToCharacter) : {
-                break;
-            }
-            case (ASR::cast_kindType::CPtrToUnsignedInteger) : {
-                break;
-            }
-            case (ASR::cast_kindType::UnsignedIntegerToCPtr) : {
+                // TODO
                 break;
             }
             default : {
