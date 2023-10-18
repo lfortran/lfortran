@@ -122,8 +122,7 @@ class ReplaceFunctionCallWithSubroutineCall:
             bool& apply_again_):
         al(al_), result_counter(0), pass_result(pass_result_),
         resultvar2value(resultvar2value_), result_var(nullptr),
-        apply_again(apply_again_)
-        {}
+        apply_again(apply_again_) {}
 
         void replace_FunctionCall(ASR::FunctionCall_t* x) {
             // The following checks if the name of a function actually
@@ -244,6 +243,13 @@ class ReplaceFunctionCallWithSubroutineCall:
                     alloc_arg.m_dims = vec_dims.p;
                     alloc_arg.n_dims = vec_dims.n;
                     vec_alloc.push_back(al, alloc_arg);
+                    Vec<ASR::expr_t*> to_be_deallocated;
+                    to_be_deallocated.reserve(al, vec_alloc.size());
+                    for( size_t i = 0; i < vec_alloc.size(); i++ ) {
+                        to_be_deallocated.push_back(al, vec_alloc.p[i].m_a);
+                    }
+                    pass_result.push_back(al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
+                        al, loc, to_be_deallocated.p, to_be_deallocated.size())));
                     pass_result.push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(
                         al, loc, vec_alloc.p, 1, nullptr, nullptr, nullptr)));
                 } else if( !is_func_call_allocatable && is_created_result_var_type_dependent_on_local_vars ) {
@@ -270,6 +276,13 @@ class ReplaceFunctionCallWithSubroutineCall:
                     alloc_arg.m_dims = alloc_dims.p;
                     alloc_arg.n_dims = alloc_dims.size();
                     alloc_args.push_back(al, alloc_arg);
+                    Vec<ASR::expr_t*> to_be_deallocated;
+                    to_be_deallocated.reserve(al, alloc_args.size());
+                    for( size_t i = 0; i < alloc_args.size(); i++ ) {
+                        to_be_deallocated.push_back(al, alloc_args.p[i].m_a);
+                    }
+                    pass_result.push_back(al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
+                        al, loc, to_be_deallocated.p, to_be_deallocated.size())));
                     pass_result.push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al,
                         loc, alloc_args.p, alloc_args.size(), nullptr, nullptr, nullptr)));
                 }

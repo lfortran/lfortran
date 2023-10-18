@@ -33,4 +33,6 @@ print '("Hello")'
 print '( F13.3,1X,F9.6,1X, F0.2 )', r, s, t
 print '( F13.3,1X,F9.6,1X, F0.2 )', -r, -s, -t
 print '(1PE13.6)', p, q
+print '(F30.25)', 12345e-25
+print '("x:", F4.2, " y:", ES7.1)', 1.123, 4.456
 end program

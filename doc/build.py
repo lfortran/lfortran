@@ -26,7 +26,7 @@ from typing import List, Dict
 
 root = Path(__file__).parent
 """
-Make sure to run this script from the root of the documenation repository.
+Make sure to run this script from the root of the documentation repository.
 """
 
 template = """

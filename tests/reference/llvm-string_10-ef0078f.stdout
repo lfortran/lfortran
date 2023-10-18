@@ -57,228 +57,120 @@ define i32 @main(i32 %0, i8** %1) {
   store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @3, i32 0, i32 0), i8** %8, align 8
   %9 = call i1 @_lpython_str_compare_lte(i8** %7, i8** %8)
   %10 = icmp eq i1 %5, false
-  %11 = alloca i1, align 1
-  br i1 %10, label %then, label %else
-
-then:                                             ; preds = %.entry
-  store i1 %5, i1* %11, align 1
-  br label %ifcont
-
-else:                                             ; preds = %.entry
-  store i1 %9, i1* %11, align 1
-  br label %ifcont
-
-ifcont:                                           ; preds = %else, %then
-  %12 = load i1, i1* %11, align 1
-  %13 = load i8*, i8** %c, align 8
+  %11 = select i1 %10, i1 %5, i1 %9
+  %12 = load i8*, i8** %c, align 8
+  %13 = alloca i8*, align 8
+  store i8* %12, i8** %13, align 8
   %14 = alloca i8*, align 8
-  store i8* %13, i8** %14, align 8
-  %15 = alloca i8*, align 8
-  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0), i8** %15, align 8
-  %16 = call i1 @_lpython_str_compare_gte(i8** %14, i8** %15)
-  %17 = load i8*, i8** %c, align 8
+  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0), i8** %14, align 8
+  %15 = call i1 @_lpython_str_compare_gte(i8** %13, i8** %14)
+  %16 = load i8*, i8** %c, align 8
+  %17 = alloca i8*, align 8
+  store i8* %16, i8** %17, align 8
   %18 = alloca i8*, align 8
-  store i8* %17, i8** %18, align 8
-  %19 = alloca i8*, align 8
-  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @5, i32 0, i32 0), i8** %19, align 8
-  %20 = call i1 @_lpython_str_compare_lte(i8** %18, i8** %19)
-  %21 = icmp eq i1 %16, false
-  %22 = alloca i1, align 1
-  br i1 %21, label %then1, label %else2
-
-then1:                                            ; preds = %ifcont
-  store i1 %16, i1* %22, align 1
-  br label %ifcont3
-
-else2:                                            ; preds = %ifcont
-  store i1 %20, i1* %22, align 1
-  br label %ifcont3
-
-ifcont3:                                          ; preds = %else2, %then1
-  %23 = load i1, i1* %22, align 1
-  %24 = icmp eq i1 %12, false
-  %25 = alloca i1, align 1
-  br i1 %24, label %then4, label %else5
-
-then4:                                            ; preds = %ifcont3
-  store i1 %23, i1* %25, align 1
-  br label %ifcont6
-
-else5:                                            ; preds = %ifcont3
-  store i1 %12, i1* %25, align 1
-  br label %ifcont6
-
-ifcont6:                                          ; preds = %else5, %then4
-  %26 = load i1, i1* %25, align 1
-  store i1 %26, i1* %is_alpha, align 1
-  %27 = load i1, i1* %is_alpha, align 1
-  %28 = icmp eq i1 %27, false
-  %29 = select i1 %28, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @8, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @10, i32 0, i32 0), i8* %29, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0))
+  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @5, i32 0, i32 0), i8** %18, align 8
+  %19 = call i1 @_lpython_str_compare_lte(i8** %17, i8** %18)
+  %20 = icmp eq i1 %15, false
+  %21 = select i1 %20, i1 %15, i1 %19
+  %22 = icmp eq i1 %11, false
+  %23 = select i1 %22, i1 %21, i1 %11
+  store i1 %23, i1* %is_alpha, align 1
+  %24 = load i1, i1* %is_alpha, align 1
+  %25 = icmp eq i1 %24, false
+  %26 = select i1 %25, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @8, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @10, i32 0, i32 0), i8* %26, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0))
   call void @_lfortran_strcpy(i8** %c, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @11, i32 0, i32 0), i8 0)
-  %30 = load i8*, i8** %c, align 8
-  %31 = alloca i8*, align 8
-  store i8* %30, i8** %31, align 8
+  %27 = load i8*, i8** %c, align 8
+  %28 = alloca i8*, align 8
+  store i8* %27, i8** %28, align 8
+  %29 = alloca i8*, align 8
+  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0), i8** %29, align 8
+  %30 = call i1 @_lpython_str_compare_gte(i8** %28, i8** %29)
+  %31 = load i8*, i8** %c, align 8
   %32 = alloca i8*, align 8
-  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0), i8** %32, align 8
-  %33 = call i1 @_lpython_str_compare_gte(i8** %31, i8** %32)
-  %34 = load i8*, i8** %c, align 8
-  %35 = alloca i8*, align 8
-  store i8* %34, i8** %35, align 8
-  %36 = alloca i8*, align 8
-  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @13, i32 0, i32 0), i8** %36, align 8
-  %37 = call i1 @_lpython_str_compare_lte(i8** %35, i8** %36)
-  %38 = icmp eq i1 %33, false
-  %39 = alloca i1, align 1
-  br i1 %38, label %then7, label %else8
-
-then7:                                            ; preds = %ifcont6
-  store i1 %33, i1* %39, align 1
-  br label %ifcont9
-
-else8:                                            ; preds = %ifcont6
-  store i1 %37, i1* %39, align 1
-  br label %ifcont9
-
-ifcont9:                                          ; preds = %else8, %then7
-  %40 = load i1, i1* %39, align 1
+  store i8* %31, i8** %32, align 8
+  %33 = alloca i8*, align 8
+  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @13, i32 0, i32 0), i8** %33, align 8
+  %34 = call i1 @_lpython_str_compare_lte(i8** %32, i8** %33)
+  %35 = icmp eq i1 %30, false
+  %36 = select i1 %35, i1 %30, i1 %34
+  %37 = load i8*, i8** %c, align 8
+  %38 = alloca i8*, align 8
+  store i8* %37, i8** %38, align 8
+  %39 = alloca i8*, align 8
+  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @14, i32 0, i32 0), i8** %39, align 8
+  %40 = call i1 @_lpython_str_compare_gte(i8** %38, i8** %39)
   %41 = load i8*, i8** %c, align 8
   %42 = alloca i8*, align 8
   store i8* %41, i8** %42, align 8
   %43 = alloca i8*, align 8
-  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @14, i32 0, i32 0), i8** %43, align 8
-  %44 = call i1 @_lpython_str_compare_gte(i8** %42, i8** %43)
-  %45 = load i8*, i8** %c, align 8
-  %46 = alloca i8*, align 8
-  store i8* %45, i8** %46, align 8
-  %47 = alloca i8*, align 8
-  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @15, i32 0, i32 0), i8** %47, align 8
-  %48 = call i1 @_lpython_str_compare_lte(i8** %46, i8** %47)
-  %49 = icmp eq i1 %44, false
-  %50 = alloca i1, align 1
-  br i1 %49, label %then10, label %else11
-
-then10:                                           ; preds = %ifcont9
-  store i1 %44, i1* %50, align 1
-  br label %ifcont12
-
-else11:                                           ; preds = %ifcont9
-  store i1 %48, i1* %50, align 1
-  br label %ifcont12
-
-ifcont12:                                         ; preds = %else11, %then10
-  %51 = load i1, i1* %50, align 1
-  %52 = icmp eq i1 %40, false
-  %53 = alloca i1, align 1
-  br i1 %52, label %then13, label %else14
-
-then13:                                           ; preds = %ifcont12
-  store i1 %51, i1* %53, align 1
-  br label %ifcont15
-
-else14:                                           ; preds = %ifcont12
-  store i1 %40, i1* %53, align 1
-  br label %ifcont15
-
-ifcont15:                                         ; preds = %else14, %then13
-  %54 = load i1, i1* %53, align 1
-  store i1 %54, i1* %is_alpha, align 1
-  %55 = load i1, i1* %is_alpha, align 1
-  %56 = icmp eq i1 %55, false
-  %57 = select i1 %56, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @18, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @19, i32 0, i32 0)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @20, i32 0, i32 0), i8* %57, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @17, i32 0, i32 0))
+  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @15, i32 0, i32 0), i8** %43, align 8
+  %44 = call i1 @_lpython_str_compare_lte(i8** %42, i8** %43)
+  %45 = icmp eq i1 %40, false
+  %46 = select i1 %45, i1 %40, i1 %44
+  %47 = icmp eq i1 %36, false
+  %48 = select i1 %47, i1 %46, i1 %36
+  store i1 %48, i1* %is_alpha, align 1
+  %49 = load i1, i1* %is_alpha, align 1
+  %50 = icmp eq i1 %49, false
+  %51 = select i1 %50, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @18, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @19, i32 0, i32 0)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @20, i32 0, i32 0), i8* %51, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @17, i32 0, i32 0))
   call void @_lfortran_strcpy(i8** %c, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @21, i32 0, i32 0), i8 0)
-  %58 = load i8*, i8** %c, align 8
-  %59 = alloca i8*, align 8
-  store i8* %58, i8** %59, align 8
-  %60 = alloca i8*, align 8
-  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @22, i32 0, i32 0), i8** %60, align 8
-  %61 = call i1 @_lpython_str_compare_gte(i8** %59, i8** %60)
+  %52 = load i8*, i8** %c, align 8
+  %53 = alloca i8*, align 8
+  store i8* %52, i8** %53, align 8
+  %54 = alloca i8*, align 8
+  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @22, i32 0, i32 0), i8** %54, align 8
+  %55 = call i1 @_lpython_str_compare_gte(i8** %53, i8** %54)
+  %56 = load i8*, i8** %c, align 8
+  %57 = alloca i8*, align 8
+  store i8* %56, i8** %57, align 8
+  %58 = alloca i8*, align 8
+  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @23, i32 0, i32 0), i8** %58, align 8
+  %59 = call i1 @_lpython_str_compare_lte(i8** %57, i8** %58)
+  %60 = icmp eq i1 %55, false
+  %61 = select i1 %60, i1 %55, i1 %59
   %62 = load i8*, i8** %c, align 8
   %63 = alloca i8*, align 8
   store i8* %62, i8** %63, align 8
   %64 = alloca i8*, align 8
-  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @23, i32 0, i32 0), i8** %64, align 8
-  %65 = call i1 @_lpython_str_compare_lte(i8** %63, i8** %64)
-  %66 = icmp eq i1 %61, false
-  %67 = alloca i1, align 1
-  br i1 %66, label %then16, label %else17
+  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @24, i32 0, i32 0), i8** %64, align 8
+  %65 = call i1 @_lpython_str_compare_gte(i8** %63, i8** %64)
+  %66 = load i8*, i8** %c, align 8
+  %67 = alloca i8*, align 8
+  store i8* %66, i8** %67, align 8
+  %68 = alloca i8*, align 8
+  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @25, i32 0, i32 0), i8** %68, align 8
+  %69 = call i1 @_lpython_str_compare_lte(i8** %67, i8** %68)
+  %70 = icmp eq i1 %65, false
+  %71 = select i1 %70, i1 %65, i1 %69
+  %72 = icmp eq i1 %61, false
+  %73 = select i1 %72, i1 %71, i1 %61
+  store i1 %73, i1* %is_alpha, align 1
+  %74 = load i1, i1* %is_alpha, align 1
+  %75 = icmp eq i1 %74, false
+  %76 = select i1 %75, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @28, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @29, i32 0, i32 0)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @30, i32 0, i32 0), i8* %76, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @27, i32 0, i32 0))
+  %77 = load i8*, i8** %num, align 8
+  %78 = call i8* @_lfortran_str_slice_assign(i8* %77, i8* getelementptr inbounds ([4 x i8], [4 x i8]* @31, i32 0, i32 0), i32 0, i32 3, i32 1, i1 true, i1 true)
+  store i8* %78, i8** %num, align 8
+  %79 = load i8*, i8** %num, align 8
+  %80 = alloca i8*, align 8
+  store i8* %79, i8** %80, align 8
+  %81 = alloca i8*, align 8
+  store i8* getelementptr inbounds ([4 x i8], [4 x i8]* @32, i32 0, i32 0), i8** %81, align 8
+  %82 = call i1 @_lpython_str_compare_noteq(i8** %80, i8** %81)
+  br i1 %82, label %then, label %else
 
-then16:                                           ; preds = %ifcont15
-  store i1 %61, i1* %67, align 1
-  br label %ifcont18
-
-else17:                                           ; preds = %ifcont15
-  store i1 %65, i1* %67, align 1
-  br label %ifcont18
-
-ifcont18:                                         ; preds = %else17, %then16
-  %68 = load i1, i1* %67, align 1
-  %69 = load i8*, i8** %c, align 8
-  %70 = alloca i8*, align 8
-  store i8* %69, i8** %70, align 8
-  %71 = alloca i8*, align 8
-  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @24, i32 0, i32 0), i8** %71, align 8
-  %72 = call i1 @_lpython_str_compare_gte(i8** %70, i8** %71)
-  %73 = load i8*, i8** %c, align 8
-  %74 = alloca i8*, align 8
-  store i8* %73, i8** %74, align 8
-  %75 = alloca i8*, align 8
-  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @25, i32 0, i32 0), i8** %75, align 8
-  %76 = call i1 @_lpython_str_compare_lte(i8** %74, i8** %75)
-  %77 = icmp eq i1 %72, false
-  %78 = alloca i1, align 1
-  br i1 %77, label %then19, label %else20
-
-then19:                                           ; preds = %ifcont18
-  store i1 %72, i1* %78, align 1
-  br label %ifcont21
-
-else20:                                           ; preds = %ifcont18
-  store i1 %76, i1* %78, align 1
-  br label %ifcont21
-
-ifcont21:                                         ; preds = %else20, %then19
-  %79 = load i1, i1* %78, align 1
-  %80 = icmp eq i1 %68, false
-  %81 = alloca i1, align 1
-  br i1 %80, label %then22, label %else23
-
-then22:                                           ; preds = %ifcont21
-  store i1 %79, i1* %81, align 1
-  br label %ifcont24
-
-else23:                                           ; preds = %ifcont21
-  store i1 %68, i1* %81, align 1
-  br label %ifcont24
-
-ifcont24:                                         ; preds = %else23, %then22
-  %82 = load i1, i1* %81, align 1
-  store i1 %82, i1* %is_alpha, align 1
-  %83 = load i1, i1* %is_alpha, align 1
-  %84 = icmp eq i1 %83, false
-  %85 = select i1 %84, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @28, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @29, i32 0, i32 0)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @30, i32 0, i32 0), i8* %85, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @27, i32 0, i32 0))
-  %86 = load i8*, i8** %num, align 8
-  %87 = call i8* @_lfortran_str_slice_assign(i8* %86, i8* getelementptr inbounds ([4 x i8], [4 x i8]* @31, i32 0, i32 0), i32 0, i32 3, i32 1, i1 true, i1 true)
-  store i8* %87, i8** %num, align 8
-  %88 = load i8*, i8** %num, align 8
-  %89 = alloca i8*, align 8
-  store i8* %88, i8** %89, align 8
-  %90 = alloca i8*, align 8
-  store i8* getelementptr inbounds ([4 x i8], [4 x i8]* @32, i32 0, i32 0), i8** %90, align 8
-  %91 = call i1 @_lpython_str_compare_noteq(i8** %89, i8** %90)
-  br i1 %91, label %then25, label %else26
-
-then25:                                           ; preds = %ifcont24
+then:                                             ; preds = %.entry
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @33, i32 0, i32 0))
   call void @exit(i32 1)
-  br label %ifcont27
+  br label %ifcont
 
-else26:                                           ; preds = %ifcont24
-  br label %ifcont27
+else:                                             ; preds = %.entry
+  br label %ifcont
 
-ifcont27:                                         ; preds = %else26, %then25
+ifcont:                                           ; preds = %else, %then
   ret i32 0
 }
 

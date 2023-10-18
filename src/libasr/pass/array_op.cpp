@@ -95,8 +95,8 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
     result_lbound(result_lbound_), result_ubound(result_ubound_),
     result_inc(result_inc_), op_dims(nullptr), op_n_dims(0),
     op_expr(nullptr), resultvar2value(resultvar2value_),
-    realloc_lhs(realloc_lhs_), current_scope(nullptr), result_var(nullptr),
-    result_type(nullptr) {}
+    realloc_lhs(realloc_lhs_), current_scope(nullptr),
+    result_var(nullptr), result_type(nullptr) {}
 
     template <typename LOOP_BODY>
     void create_do_loop(const Location& loc, int var_rank, int result_rank,
@@ -258,7 +258,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         use_custom_loop_params = false;
     }
 
-    #define allocate_result_var(op_arg, op_dims_arg, op_n_dims_arg) if( ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(result_var)) || \
+    #define allocate_result_var(op_arg, op_dims_arg, op_n_dims_arg, result_var_created) if( ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(result_var)) || \
         ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(result_var)) ) { \
         bool is_dimension_empty = false; \
         for( int i = 0; i < op_n_dims_arg; i++ ) { \
@@ -302,6 +302,13 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             op_dims = alloc_dims.p; \
             op_n_dims = alloc_dims.size(); \
         } \
+        Vec<ASR::expr_t*> to_be_deallocated; \
+        to_be_deallocated.reserve(al, alloc_args.size()); \
+        for( size_t i = 0; i < alloc_args.size(); i++ ) { \
+            to_be_deallocated.push_back(al, alloc_args.p[i].m_a); \
+        } \
+        pass_result.push_back(al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t( \
+            al, loc, to_be_deallocated.p, to_be_deallocated.size()))); \
         pass_result.push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al, \
             loc, alloc_args.p, alloc_args.size(), nullptr, nullptr, nullptr))); \
     }
@@ -329,7 +336,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                     result_var_type, al, current_scope);
                 result_counter += 1;
                 if( allocate ) {
-                    allocate_result_var(arr_expr, arr_expr_dims, arr_expr_n_dims);
+                    allocate_result_var(arr_expr, arr_expr_dims, arr_expr_n_dims, true);
                 }
             }
 
@@ -736,7 +743,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                                 result_var_type, al, current_scope);
                 result_counter += 1;
                 if( allocate ) {
-                    allocate_result_var(left, left_dims, rank_left);
+                    allocate_result_var(left, left_dims, rank_left, true);
                 }
                 new_result_var_created = true;
             }
@@ -802,7 +809,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                                 result_var_type, al, current_scope);
                 result_counter += 1;
                 if( allocate ) {
-                    allocate_result_var(arr_expr, arr_expr_dims, arr_expr_n_dims);
+                    allocate_result_var(arr_expr, arr_expr_dims, arr_expr_n_dims, true);
                 }
                 new_result_var_created = true;
             }
@@ -1124,7 +1131,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             ASR::dimension_t* m_dims;
             int n_dims = ASRUtils::extract_dimensions_from_ttype(
                 ASRUtils::expr_type(first_array_operand), m_dims);
-            allocate_result_var(operand, m_dims, n_dims);
+            allocate_result_var(operand, m_dims, n_dims, true);
             result_var_created = true;
         }
         *current_expr = result_var;
@@ -1270,7 +1277,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 ASR::dimension_t* m_dims;
                 int n_dims = ASRUtils::extract_dimensions_from_ttype(
                     ASRUtils::expr_type(operand), m_dims);
-                allocate_result_var(operand, m_dims, n_dims);
+                allocate_result_var(operand, m_dims, n_dims, result_var_created);
                 *current_expr = result_var;
 
                 Vec<ASR::expr_t*> idx_vars, loop_vars, idx_vars_value;
@@ -1504,6 +1511,13 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                     alloc_arg.m_dims = vec_dims.p;
                     alloc_arg.n_dims = vec_dims.n;
                     vec_alloc.push_back(al, alloc_arg);
+                    Vec<ASR::expr_t*> to_be_deallocated;
+                    to_be_deallocated.reserve(al, vec_alloc.size());
+                    for( size_t i = 0; i < vec_alloc.size(); i++ ) {
+                        to_be_deallocated.push_back(al, vec_alloc.p[i].m_a);
+                    }
+                    pass_result.push_back(al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
+                        al, x.base.base.loc, to_be_deallocated.p, to_be_deallocated.size())));
                     pass_result.push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(
                         al, x.base.base.loc, vec_alloc.p, 1, nullptr, nullptr, nullptr)));
                     remove_original_statement = false;
