@@ -903,7 +903,8 @@ int emit_asm(const std::string &infile, CompilerOptions &compiler_options)
 int compile_to_object_file(const std::string &infile,
         const std::string &outfile,
         bool assembly,
-        CompilerOptions &compiler_options)
+        CompilerOptions &compiler_options,
+        LCompilers::PassManager& lpm)
 {
     std::string input = read_file(infile);
 
@@ -913,14 +914,6 @@ int compile_to_object_file(const std::string &infile,
 
     // Src -> AST -> ASR
     LCompilers::LocationManager lm;
-    LCompilers::PassManager lpm;
-    lpm.use_default_passes();
-
-    if (compiler_options.fast) {
-        lpm.use_optimization_passes();
-    } else {
-        lpm.do_not_use_optimization_passes();
-    }
 
     {
         LCompilers::LocationManager::FileLocations fl;
@@ -996,9 +989,10 @@ int compile_to_object_file(const std::string &infile,
 }
 
 int compile_to_assembly_file(const std::string &infile,
-    const std::string &outfile, CompilerOptions &compiler_options)
+    const std::string &outfile, CompilerOptions &compiler_options,
+    LCompilers::PassManager& lpm)
 {
-    return compile_to_object_file(infile, outfile, true, compiler_options);
+    return compile_to_object_file(infile, outfile, true, compiler_options, lpm);
 }
 #endif // HAVE_LFORTRAN_LLVM
 
@@ -2297,7 +2291,7 @@ int main(int argc, char *argv[])
         if (arg_S) {
             if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
-                return compile_to_assembly_file(arg_file, outfile, compiler_options);
+                return compile_to_assembly_file(arg_file, outfile, compiler_options, lfortran_pass_manager);
 #else
                 std::cerr << "The -S option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
                 return 1;
@@ -2313,7 +2307,7 @@ int main(int argc, char *argv[])
             if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
                 return compile_to_object_file(arg_file, outfile, false,
-                    compiler_options);
+                    compiler_options, lfortran_pass_manager);
 #else
                 std::cerr << "The -c option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
                 return 1;
@@ -2348,7 +2342,7 @@ int main(int argc, char *argv[])
             if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
                 err = compile_to_object_file(arg_file, tmp_o, false,
-                    compiler_options);
+                    compiler_options, lfortran_pass_manager);
 #else
                 std::cerr << "Compiling Fortran files to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
                 return 1;

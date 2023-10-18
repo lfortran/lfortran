@@ -190,7 +190,6 @@ public:
         r += " ";
         r.append(x.m_name);
         r += "\n";
-        inc_indent();
         r += indent + "implicit none";
         r += "\n";
         for (auto &item : x.m_symtab->get_scope()) {
@@ -215,7 +214,6 @@ public:
                 r += s;
             }
         }
-        dec_indent();
         r += "end program";
         r += " ";
         r.append(x.m_name);
@@ -319,6 +317,8 @@ public:
         }
         if (x.m_storage == ASR::storage_typeType::Parameter) {
             r += ", parameter";
+        } else if (x.m_storage == ASR::storage_typeType::Save) {
+            r += ", save";
         }
         if (is_a<ASR::Allocatable_t>(*x.m_type)) {
             r += ", allocatable";
@@ -658,7 +658,30 @@ public:
         s = r;
     }
 
-    // void visit_Where(const ASR::Where_t &x) {}
+    void visit_Where(const ASR::Where_t &x) {
+        std::string r;
+        r = indent;
+        r += "where";
+        r += " ";
+        r += "(";
+        visit_expr(*x.m_test);
+        r += s;
+        r += ")\n";
+        visit_body(x, r);
+        for (size_t i = 0; i < x.n_orelse; i++) {
+            r += indent;
+            r += "else where";
+            r += "\n";
+            inc_indent();
+            visit_stmt(*x.m_orelse[i]);
+            r += s;
+            dec_indent();
+        }
+        r += indent;
+        r += "end where";
+        r += "\n";
+        s = r;
+    }
 
     void visit_WhileLoop(const ASR::WhileLoop_t &x) {
         std::string r = indent;

@@ -190,11 +190,11 @@ ifcont21:                                         ; preds = %else20, %then19
   store i32 0, i32* %i, align 4
   br label %loop.head22
 
-loop.head22:                                      ; preds = %ifcont26, %ifcont21
+loop.head22:                                      ; preds = %loop.body23, %ifcont21
   %60 = load i32, i32* %i, align 4
   %61 = add i32 %60, 1
   %62 = icmp sle i32 %61, 3
-  br i1 %62, label %loop.body23, label %loop.end27
+  br i1 %62, label %loop.body23, label %loop.end24
 
 loop.body23:                                      ; preds = %loop.head22
   %63 = load i32, i32* %i, align 4
@@ -212,42 +212,43 @@ loop.body23:                                      ; preds = %loop.head22
   %74 = getelementptr [3 x i1], [3 x i1]* %a, i32 0, i32 %73
   %75 = load i1, i1* %74, align 1
   %76 = icmp eq i1 %75, false
-  %77 = alloca i1, align 1
-  br i1 %76, label %then24, label %else25
-
-then24:                                           ; preds = %loop.body23
-  store i1 %75, i1* %77, align 1
-  br label %ifcont26
-
-else25:                                           ; preds = %loop.body23
-  store i1 false, i1* %77, align 1
-  br label %ifcont26
-
-ifcont26:                                         ; preds = %else25, %then24
-  %78 = load i1, i1* %77, align 1
-  store i1 %78, i1* %69, align 1
+  %77 = select i1 %76, i1 %75, i1 false
+  store i1 %77, i1* %69, align 1
   br label %loop.head22
 
-loop.end27:                                       ; preds = %loop.head22
-  %79 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 0
-  %80 = load i1, i1* %79, align 1
-  br i1 %80, label %then28, label %else29
+loop.end24:                                       ; preds = %loop.head22
+  %78 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 0
+  %79 = load i1, i1* %78, align 1
+  br i1 %79, label %then25, label %else26
 
-then28:                                           ; preds = %loop.end27
+then25:                                           ; preds = %loop.end24
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @7, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont27
+
+else26:                                           ; preds = %loop.end24
+  br label %ifcont27
+
+ifcont27:                                         ; preds = %else26, %then25
+  %80 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 1
+  %81 = load i1, i1* %80, align 1
+  br i1 %81, label %then28, label %else29
+
+then28:                                           ; preds = %ifcont27
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @8, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont30
 
-else29:                                           ; preds = %loop.end27
+else29:                                           ; preds = %ifcont27
   br label %ifcont30
 
 ifcont30:                                         ; preds = %else29, %then28
-  %81 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 1
-  %82 = load i1, i1* %81, align 1
-  br i1 %82, label %then31, label %else32
+  %82 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 2
+  %83 = load i1, i1* %82, align 1
+  br i1 %83, label %then31, label %else32
 
 then31:                                           ; preds = %ifcont30
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @8, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @9, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont33
 
@@ -255,12 +256,29 @@ else32:                                           ; preds = %ifcont30
   br label %ifcont33
 
 ifcont33:                                         ; preds = %else32, %then31
-  %83 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 2
-  %84 = load i1, i1* %83, align 1
-  br i1 %84, label %then34, label %else35
+  %84 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 3
+  %85 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 0
+  %86 = load i1, i1* %85, align 1
+  %87 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 1
+  %88 = load i1, i1* %87, align 1
+  %89 = icmp eq i1 %86, false
+  %90 = select i1 %89, i1 %88, i1 %86
+  %91 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 2
+  %92 = load i1, i1* %91, align 1
+  %93 = icmp eq i1 %90, false
+  %94 = select i1 %93, i1 %92, i1 %90
+  %95 = getelementptr [3 x i1], [3 x i1]* %a, i32 0, i32 0
+  %96 = load i1, i1* %95, align 1
+  %97 = icmp eq i1 %94, false
+  %98 = select i1 %97, i1 %96, i1 %94
+  store i1 %98, i1* %84, align 1
+  %99 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 3
+  %100 = load i1, i1* %99, align 1
+  %101 = xor i1 %100, true
+  br i1 %101, label %then34, label %else35
 
 then34:                                           ; preds = %ifcont33
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @9, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @10, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont36
 
@@ -268,215 +286,149 @@ else35:                                           ; preds = %ifcont33
   br label %ifcont36
 
 ifcont36:                                         ; preds = %else35, %then34
-  %85 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 3
-  %86 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 0
-  %87 = load i1, i1* %86, align 1
-  %88 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 1
-  %89 = load i1, i1* %88, align 1
-  %90 = icmp eq i1 %87, false
-  %91 = alloca i1, align 1
-  br i1 %90, label %then37, label %else38
+  %102 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 3
+  %103 = getelementptr [3 x i1], [3 x i1]* %a, i32 0, i32 0
+  %104 = load i1, i1* %103, align 1
+  store i1 %104, i1* %102, align 1
+  %105 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 3
+  %106 = load i1, i1* %105, align 1
+  %107 = xor i1 %106, true
+  br i1 %107, label %then37, label %else38
 
 then37:                                           ; preds = %ifcont36
-  store i1 %89, i1* %91, align 1
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @11, i32 0, i32 0))
+  call void @exit(i32 1)
   br label %ifcont39
 
 else38:                                           ; preds = %ifcont36
-  store i1 %87, i1* %91, align 1
   br label %ifcont39
 
 ifcont39:                                         ; preds = %else38, %then37
-  %92 = load i1, i1* %91, align 1
-  %93 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 2
-  %94 = load i1, i1* %93, align 1
-  %95 = icmp eq i1 %92, false
-  %96 = alloca i1, align 1
-  br i1 %95, label %then40, label %else41
+  store i32 0, i32* %i, align 4
+  br label %loop.head40
 
-then40:                                           ; preds = %ifcont39
-  store i1 %94, i1* %96, align 1
-  br label %ifcont42
+loop.head40:                                      ; preds = %loop.end47, %ifcont39
+  %108 = load i32, i32* %i, align 4
+  %109 = add i32 %108, 1
+  %110 = icmp sle i32 %109, 2
+  br i1 %110, label %loop.body41, label %loop.end48
 
-else41:                                           ; preds = %ifcont39
-  store i1 %92, i1* %96, align 1
-  br label %ifcont42
+loop.body41:                                      ; preds = %loop.head40
+  %111 = load i32, i32* %i, align 4
+  %112 = add i32 %111, 1
+  store i32 %112, i32* %i, align 4
+  store i32 0, i32* %j, align 4
+  br label %loop.head42
 
-ifcont42:                                         ; preds = %else41, %then40
-  %97 = load i1, i1* %96, align 1
-  %98 = getelementptr [3 x i1], [3 x i1]* %a, i32 0, i32 0
-  %99 = load i1, i1* %98, align 1
-  %100 = icmp eq i1 %97, false
-  %101 = alloca i1, align 1
-  br i1 %100, label %then43, label %else44
+loop.head42:                                      ; preds = %ifcont46, %loop.body41
+  %113 = load i32, i32* %j, align 4
+  %114 = add i32 %113, 1
+  %115 = icmp sle i32 %114, 2
+  br i1 %115, label %loop.body43, label %loop.end47
 
-then43:                                           ; preds = %ifcont42
-  store i1 %99, i1* %101, align 1
-  br label %ifcont45
+loop.body43:                                      ; preds = %loop.head42
+  %116 = load i32, i32* %j, align 4
+  %117 = add i32 %116, 1
+  store i32 %117, i32* %j, align 4
+  %118 = load i32, i32* %i, align 4
+  %119 = load i32, i32* %j, align 4
+  %120 = add i32 %118, %119
+  %121 = load i32, i32* %i, align 4
+  %122 = load i32, i32* %j, align 4
+  %123 = add i32 %121, %122
+  %124 = udiv i32 %123, 2
+  %125 = mul i32 2, %124
+  %126 = sub i32 %120, %125
+  %127 = icmp eq i32 %126, 1
+  br i1 %127, label %then44, label %else45
 
-else44:                                           ; preds = %ifcont42
-  store i1 %97, i1* %101, align 1
-  br label %ifcont45
+then44:                                           ; preds = %loop.body43
+  %128 = load i32, i32* %i, align 4
+  %129 = load i32, i32* %j, align 4
+  %130 = sub i32 %128, 1
+  %131 = mul i32 1, %130
+  %132 = add i32 0, %131
+  %133 = sub i32 %129, 1
+  %134 = mul i32 2, %133
+  %135 = add i32 %132, %134
+  %136 = getelementptr [4 x i1], [4 x i1]* %c, i32 0, i32 %135
+  store i1 true, i1* %136, align 1
+  br label %ifcont46
 
-ifcont45:                                         ; preds = %else44, %then43
-  %102 = load i1, i1* %101, align 1
-  store i1 %102, i1* %85, align 1
-  %103 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 3
-  %104 = load i1, i1* %103, align 1
-  %105 = xor i1 %104, true
-  br i1 %105, label %then46, label %else47
+else45:                                           ; preds = %loop.body43
+  %137 = load i32, i32* %i, align 4
+  %138 = load i32, i32* %j, align 4
+  %139 = sub i32 %137, 1
+  %140 = mul i32 1, %139
+  %141 = add i32 0, %140
+  %142 = sub i32 %138, 1
+  %143 = mul i32 2, %142
+  %144 = add i32 %141, %143
+  %145 = getelementptr [4 x i1], [4 x i1]* %c, i32 0, i32 %144
+  store i1 false, i1* %145, align 1
+  br label %ifcont46
 
-then46:                                           ; preds = %ifcont45
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @10, i32 0, i32 0))
-  call void @exit(i32 1)
-  br label %ifcont48
+ifcont46:                                         ; preds = %else45, %then44
+  br label %loop.head42
 
-else47:                                           ; preds = %ifcont45
-  br label %ifcont48
+loop.end47:                                       ; preds = %loop.head42
+  br label %loop.head40
 
-ifcont48:                                         ; preds = %else47, %then46
-  %106 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 3
-  %107 = getelementptr [3 x i1], [3 x i1]* %a, i32 0, i32 0
-  %108 = load i1, i1* %107, align 1
-  store i1 %108, i1* %106, align 1
-  %109 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 3
-  %110 = load i1, i1* %109, align 1
-  %111 = xor i1 %110, true
-  br i1 %111, label %then49, label %else50
+loop.end48:                                       ; preds = %loop.head40
+  %146 = getelementptr [4 x i1], [4 x i1]* %c, i32 0, i32 0
+  %147 = load i1, i1* %146, align 1
+  br i1 %147, label %then49, label %else50
 
-then49:                                           ; preds = %ifcont48
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @11, i32 0, i32 0))
+then49:                                           ; preds = %loop.end48
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @12, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont51
 
-else50:                                           ; preds = %ifcont48
+else50:                                           ; preds = %loop.end48
   br label %ifcont51
 
 ifcont51:                                         ; preds = %else50, %then49
-  store i32 0, i32* %i, align 4
-  br label %loop.head52
+  %148 = getelementptr [4 x i1], [4 x i1]* %c, i32 0, i32 2
+  %149 = load i1, i1* %148, align 1
+  %150 = xor i1 %149, true
+  br i1 %150, label %then52, label %else53
 
-loop.head52:                                      ; preds = %loop.end59, %ifcont51
-  %112 = load i32, i32* %i, align 4
-  %113 = add i32 %112, 1
-  %114 = icmp sle i32 %113, 2
-  br i1 %114, label %loop.body53, label %loop.end60
-
-loop.body53:                                      ; preds = %loop.head52
-  %115 = load i32, i32* %i, align 4
-  %116 = add i32 %115, 1
-  store i32 %116, i32* %i, align 4
-  store i32 0, i32* %j, align 4
-  br label %loop.head54
-
-loop.head54:                                      ; preds = %ifcont58, %loop.body53
-  %117 = load i32, i32* %j, align 4
-  %118 = add i32 %117, 1
-  %119 = icmp sle i32 %118, 2
-  br i1 %119, label %loop.body55, label %loop.end59
-
-loop.body55:                                      ; preds = %loop.head54
-  %120 = load i32, i32* %j, align 4
-  %121 = add i32 %120, 1
-  store i32 %121, i32* %j, align 4
-  %122 = load i32, i32* %i, align 4
-  %123 = load i32, i32* %j, align 4
-  %124 = add i32 %122, %123
-  %125 = load i32, i32* %i, align 4
-  %126 = load i32, i32* %j, align 4
-  %127 = add i32 %125, %126
-  %128 = udiv i32 %127, 2
-  %129 = mul i32 2, %128
-  %130 = sub i32 %124, %129
-  %131 = icmp eq i32 %130, 1
-  br i1 %131, label %then56, label %else57
-
-then56:                                           ; preds = %loop.body55
-  %132 = load i32, i32* %i, align 4
-  %133 = load i32, i32* %j, align 4
-  %134 = sub i32 %132, 1
-  %135 = mul i32 1, %134
-  %136 = add i32 0, %135
-  %137 = sub i32 %133, 1
-  %138 = mul i32 2, %137
-  %139 = add i32 %136, %138
-  %140 = getelementptr [4 x i1], [4 x i1]* %c, i32 0, i32 %139
-  store i1 true, i1* %140, align 1
-  br label %ifcont58
-
-else57:                                           ; preds = %loop.body55
-  %141 = load i32, i32* %i, align 4
-  %142 = load i32, i32* %j, align 4
-  %143 = sub i32 %141, 1
-  %144 = mul i32 1, %143
-  %145 = add i32 0, %144
-  %146 = sub i32 %142, 1
-  %147 = mul i32 2, %146
-  %148 = add i32 %145, %147
-  %149 = getelementptr [4 x i1], [4 x i1]* %c, i32 0, i32 %148
-  store i1 false, i1* %149, align 1
-  br label %ifcont58
-
-ifcont58:                                         ; preds = %else57, %then56
-  br label %loop.head54
-
-loop.end59:                                       ; preds = %loop.head54
-  br label %loop.head52
-
-loop.end60:                                       ; preds = %loop.head52
-  %150 = getelementptr [4 x i1], [4 x i1]* %c, i32 0, i32 0
-  %151 = load i1, i1* %150, align 1
-  br i1 %151, label %then61, label %else62
-
-then61:                                           ; preds = %loop.end60
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @12, i32 0, i32 0))
-  call void @exit(i32 1)
-  br label %ifcont63
-
-else62:                                           ; preds = %loop.end60
-  br label %ifcont63
-
-ifcont63:                                         ; preds = %else62, %then61
-  %152 = getelementptr [4 x i1], [4 x i1]* %c, i32 0, i32 2
-  %153 = load i1, i1* %152, align 1
-  %154 = xor i1 %153, true
-  br i1 %154, label %then64, label %else65
-
-then64:                                           ; preds = %ifcont63
+then52:                                           ; preds = %ifcont51
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @13, i32 0, i32 0))
   call void @exit(i32 1)
-  br label %ifcont66
+  br label %ifcont54
 
-else65:                                           ; preds = %ifcont63
-  br label %ifcont66
+else53:                                           ; preds = %ifcont51
+  br label %ifcont54
 
-ifcont66:                                         ; preds = %else65, %then64
-  %155 = getelementptr [4 x i1], [4 x i1]* %c, i32 0, i32 1
-  %156 = load i1, i1* %155, align 1
-  %157 = xor i1 %156, true
-  br i1 %157, label %then67, label %else68
+ifcont54:                                         ; preds = %else53, %then52
+  %151 = getelementptr [4 x i1], [4 x i1]* %c, i32 0, i32 1
+  %152 = load i1, i1* %151, align 1
+  %153 = xor i1 %152, true
+  br i1 %153, label %then55, label %else56
 
-then67:                                           ; preds = %ifcont66
+then55:                                           ; preds = %ifcont54
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @14, i32 0, i32 0))
   call void @exit(i32 1)
-  br label %ifcont69
+  br label %ifcont57
 
-else68:                                           ; preds = %ifcont66
-  br label %ifcont69
+else56:                                           ; preds = %ifcont54
+  br label %ifcont57
 
-ifcont69:                                         ; preds = %else68, %then67
-  %158 = getelementptr [4 x i1], [4 x i1]* %c, i32 0, i32 3
-  %159 = load i1, i1* %158, align 1
-  br i1 %159, label %then70, label %else71
+ifcont57:                                         ; preds = %else56, %then55
+  %154 = getelementptr [4 x i1], [4 x i1]* %c, i32 0, i32 3
+  %155 = load i1, i1* %154, align 1
+  br i1 %155, label %then58, label %else59
 
-then70:                                           ; preds = %ifcont69
+then58:                                           ; preds = %ifcont57
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @15, i32 0, i32 0))
   call void @exit(i32 1)
-  br label %ifcont72
+  br label %ifcont60
 
-else71:                                           ; preds = %ifcont69
-  br label %ifcont72
+else59:                                           ; preds = %ifcont57
+  br label %ifcont60
 
-ifcont72:                                         ; preds = %else71, %then70
+ifcont60:                                         ; preds = %else59, %then58
   ret i32 0
 }
 
