@@ -366,7 +366,10 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
             long long t = (long long)round((long double)atoll(new_str) / (long long) pow(10, (strlen(new_str) - decimal_digits)));
             sprintf(new_str, "%lld", t);
             int index = zeros;
-            while(index--) sprintf(new_str, "0%s", new_str);
+            while(index--) {
+                memmove(new_str + 1, new_str, strlen(new_str)+1);
+                new_str[0] = '0';
+            }
         }
         new_str[decimal_digits] = '\0';
         strcat(formatted_value, new_str);
