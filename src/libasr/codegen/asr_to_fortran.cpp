@@ -1083,8 +1083,8 @@ public:
             case (ASR::cast_kindType::IntegerToReal) : {
                 int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
                 switch (dest_kind) {
-                    case 4: r = "real(" + s + ", " + std::to_string(dest_kind) + ")"; break;
-                    case 8: r = "real(" + s + ", " + std::to_string(dest_kind) + ")"; break;
+                    case 4: r = "real(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 8: r = "real(" + s + ", " + "kind=dest_kind" + ")"; break;
                     default: throw CodeGenError("Cast IntegerToReal: Unsupported Kind " + std::to_string(dest_kind));
                 }
                 last_expr_precedence = 2;
@@ -1093,8 +1093,8 @@ public:
             case (ASR::cast_kindType::RealToInteger) : {
                 int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
                 switch (dest_kind) {
-                    case 4: r = "int(" + s + ", " + std::to_string(dest_kind) + ")"; break;
-                    case 8: r = "int(" + s + ", " + std::to_string(dest_kind) + ")"; break;
+                    case 4: r = "int(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 8: r = "int(" + s + ", " + "kind=dest_kind" + ")"; break;
                     default: throw CodeGenError("Cast RealToInteger: Unsupported Kind " + std::to_string(dest_kind));
                 }
                 last_expr_precedence = 2;
@@ -1103,8 +1103,8 @@ public:
             case (ASR::cast_kindType::RealToReal) : {
                 int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
                 switch (dest_kind) {
-                    case 4: r = "real(" + s + ", " + std::to_string(dest_kind * 2) + ")"; break;
-                    case 8: r = "real(" + s + ", " + std::to_string(dest_kind / 2) + ")"; break;
+                    case 4: r = "real(" + s + ", " + "kind=dest_kind*2" + ")"; break;
+                    case 8: r = "real(" + s + ", " + "kind=dest_kind/2" + ")"; break;
                     default: throw CodeGenError("Cast RealToReal: Unsupported Kind " + std::to_string(dest_kind));
                 }
                 last_expr_precedence = 2;
@@ -1113,8 +1113,8 @@ public:
             case (ASR::cast_kindType::IntegerToInteger) : {
                 int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
                 switch (dest_kind) {
-                    case 4: r = "int(" + s + ", " + std::to_string(dest_kind * 2) + ")"; break;
-                    case 8: r = "int(" + s + ", " + std::to_string(dest_kind / 2) + ")"; break;
+                    case 4: r = "int(" + s + ", " + "kind=dest_kind*2" + ")"; break;
+                    case 8: r = "int(" + s + ", " + "kind=dest_kind/2" + ")"; break;
                     default: throw CodeGenError("Cast IntegerToInteger: Unsupported Kind " + std::to_string(dest_kind));
                 }
                 last_expr_precedence = 2;
@@ -1123,8 +1123,8 @@ public:
             case (ASR::cast_kindType::ComplexToComplex) : {
                 int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
                 switch (dest_kind) {
-                    case 4: r = "cmplx(" + s + ", " + std::to_string(dest_kind * 2) + ")"; break;
-                    case 8: r = "cmplx(" + s + ", " + std::to_string(dest_kind / 2) + ")"; break;
+                    case 4: r = "cmplx(" + s + ", " + "kind=dest_kind*2" + ")"; break;
+                    case 8: r = "cmplx(" + s + ", " + "kind=dest_kind/2" + ")"; break;
                     default: throw CodeGenError("Cast ComplexToComplex: Unsupported Kind " + std::to_string(dest_kind));
                 }
                 last_expr_precedence = 2;
@@ -1133,8 +1133,8 @@ public:
             case (ASR::cast_kindType::IntegerToComplex) : {
                 int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
                 switch (dest_kind) {
-                    case 4: r = "cmplx(" + s + ", " + "0.0" + ", " + std::to_string(dest_kind) + ")"; break;
-                    case 8: r = "cmplx(" + s + ", " + "0.0" + ", " + std::to_string(dest_kind) + ")"; break;
+                    case 4: r = "cmplx(" + s + ", " + "0.0" + ", " + "kind=dest_kind" + ")"; break;
+                    case 8: r = "cmplx(" + s + ", " + "0.0" + ", " + "kind=dest_kind" + ")"; break;
                     default: throw CodeGenError("Cast IntegerToComplex: Unsupported Kind " + std::to_string(dest_kind));
                 }
                 last_expr_precedence = 2;
@@ -1143,8 +1143,8 @@ public:
             case (ASR::cast_kindType::ComplexToReal) : {
                 int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
                 switch (dest_kind) {
-                    case 4: r = "real(" + s + ", " + std::to_string(dest_kind) + ")"; break;
-                    case 8: r = "real(" + s + ", " + std::to_string(dest_kind) + ")"; break;
+                    case 4: r = "real(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 8: r = "real(" + s + ", " + "kind=dest_kind" + ")"; break;
                     default: throw CodeGenError("Cast ComplexToReal: Unsupported Kind " + std::to_string(dest_kind));
                 }
                 last_expr_precedence = 2;
@@ -1153,8 +1153,8 @@ public:
             case (ASR::cast_kindType::RealToComplex) : {
                 int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
                 switch (dest_kind) {
-                    case 4: r = "cmplx(" + s + ", " + "0.0" + ", " + std::to_string(dest_kind) + ")"; break;
-                    case 8: r = "cmplx(" + s + ", " + "0.0" + ", " + std::to_string(dest_kind) + ")"; break;
+                    case 4: r = "cmplx(" + s + ", " + "0.0" + ", " + "kind=dest_kind" + ")"; break;
+                    case 8: r = "cmplx(" + s + ", " + "0.0" + ", " + "kind=dest_kind" + ")"; break;
                     default: throw CodeGenError("Cast IntegerToComplex: Unsupported Kind " + std::to_string(dest_kind));
                 }
                 last_expr_precedence = 2;
@@ -1177,8 +1177,8 @@ public:
             case (ASR::cast_kindType::LogicalToReal) : {
                 int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
                 switch (dest_kind) {
-                    case 4: r = "real(" + s + ", " + std::to_string(dest_kind) + ")"; break;
-                    case 8: r = "real(" + s + ", " + std::to_string(dest_kind) + ")"; break;
+                    case 4: r = "real(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 8: r = "real(" + s + ", " + "kind=dest_kind" + ")"; break;
                     default: throw CodeGenError("Cast LogicalToReal: Unsupported Kind " + std::to_string(dest_kind));
                 }
                 last_expr_precedence = 2;
@@ -1200,17 +1200,29 @@ public:
                 break;
             }
             case (ASR::cast_kindType::IntegerToCharacter) : {
-                s = "achar(" + s + ")";
+                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                switch (dest_kind) {
+                    case 1: s = "char(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 2: s = "char(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 4: s = "char(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 8: s = "char(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    default: throw CodeGenError("Cast IntegerToCharacter: Unsupported Kind " + \
+                                    std::to_string(dest_kind));
+                }
                 last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::CharacterToInteger) : {
-                s = "ichar(" + s + ")";
+                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                switch (dest_kind) {
+                    case 1: s = "ichar(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 2: s = "ichar(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 4: s = "ichar(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 8: s = "ichar(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    default: throw CodeGenError("Cast CharacterToInteger: Unsupported Kind " + \
+                                    std::to_string(dest_kind));
+                }
                 last_expr_precedence = 2;
-                break;
-            }
-            case (ASR::cast_kindType::RealToCharacter) : {
-                // TODO
                 break;
             }
             default : {
