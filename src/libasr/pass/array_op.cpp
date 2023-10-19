@@ -1707,7 +1707,8 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                             }
                             ASR::expr_t* array_item = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, x.base.base.loc,
                                                     arg, array_index.p, array_index.size(),
-                                                    ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(arg))),
+                                                    ASRUtils::type_get_past_array(ASRUtils::type_get_past_pointer(
+                                                        ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(arg)))),
                                                     ASR::arraystorageType::ColMajor, nullptr));
                             Vec<ASR::call_arg_t> ref_args; ref_args.reserve(al, 1);
                             ASR::call_arg_t ref_arg; ref_arg.loc = array_item->base.loc; ref_arg.m_value = array_item;
