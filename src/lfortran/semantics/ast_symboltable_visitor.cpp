@@ -673,7 +673,7 @@ public:
         ASRUtils::SymbolDuplicator symbol_duplicator(al);
         std::vector<std::string> copy_external_procedure = external_procedures;
         external_procedures.clear();
-        for( auto& item: old_scope->get_scope() ) {
+        for( auto item: old_scope->get_scope() ) {
             symbol_duplicator.duplicate_symbol(item.second, current_scope);
             std::cout<<"symbol: "<<item.first<<std::endl;
             bool is_external = check_is_external(item.first, old_scope);
@@ -1041,6 +1041,9 @@ public:
             is_requirement, false, false);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        // populate the external_procedures_mapping
+        uint64_t hash = get_hash(tmp);
+        external_procedures_mapping[hash] = external_procedures;
         if (subroutine_contains_entry_function(sym_name, x.m_body, x.n_body)) {
             /* 
                 This subroutine contains an entry function, create
@@ -1074,10 +1077,6 @@ public:
 
             implicit_dictionary.clear();
         }
-
-        // populate the external_procedures_mapping
-        uint64_t hash = get_hash(tmp);
-        external_procedures_mapping[hash] = external_procedures;
 
         current_function_dependencies = current_function_dependencies_copy;
         in_Subroutine = false;
