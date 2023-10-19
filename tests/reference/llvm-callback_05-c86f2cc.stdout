@@ -4,6 +4,7 @@ source_filename = "LFortran"
 @0 = private unnamed_addr constant [2 x i8] c" \00", align 1
 @1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @2 = private unnamed_addr constant [5 x i8] c"%d%s\00", align 1
+@main.x = internal global i32 0
 
 define void @__module_callback_05_px_call1(i32* %x) {
 .entry:
@@ -51,9 +52,8 @@ declare void @_lfortran_printf(i8*, ...)
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   call void @_lpython_set_argv(i32 %0, i8** %1)
-  %x = alloca i32, align 4
-  store i32 5, i32* %x, align 4
-  call void @__module_callback_05_px_call1(i32* %x)
+  store i32 5, i32* @main.x, align 4
+  call void @__module_callback_05_px_call1(i32* @main.x)
   ret i32 0
 }
 

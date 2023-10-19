@@ -106,9 +106,10 @@ public:
         std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
-        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping)
+        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
+        std::vector<ASR::stmt_t*> &data_structure)
       : CommonVisitor(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                      instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping) {}
+                      instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure) {}
 
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
         if (!current_scope) {
@@ -2676,13 +2677,17 @@ public:
                 require_name + "' is not correct", x.base.base.loc);
         }
 
+        std::vector<std::string> primitives = {"integer"};
+
         SetChar args;
         args.reserve(al, x.n_namelist);
         for (size_t i=0; i<x.n_namelist; i++) {
             std::string requires_arg = to_lower(x.m_namelist[i]);
             std::string requirement_arg = req->m_args[i];
-            args.push_back(al, s2c(al, requires_arg));
-            if (std::find(current_procedure_args.begin(),
+            if (std::find(primitives.begin(),
+                          primitives.end(),
+                          requires_arg) == primitives.end() 
+                && std::find(current_procedure_args.begin(),
                           current_procedure_args.end(),
                           requires_arg) == current_procedure_args.end()) {
                 throw SemanticError("Parameter '" + std::string(x.m_namelist[i])
@@ -2697,6 +2702,7 @@ public:
                 current_scope->add_symbol(requires_arg, requires_arg_sym);
             }
 
+            args.push_back(al, s2c(al, requires_arg));
         }
 
         // adding custom operators
@@ -2746,7 +2752,7 @@ public:
                     reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
                     tmp = nullptr;
                 }
-            } else {    
+            } else {
                 this->visit_unit_decl2(*x.m_decl[i]);
             }
         }
@@ -3074,8 +3080,13 @@ public:
                 if (ASR::is_a<ASR::TypeParameter_t>(*t)) {
                     ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(t);
                     context_map[tp->m_param] = name;
-                    t = ASRUtils::TYPE(ASR::make_TypeParameter_t(al,
-                        tp->base.base.loc, s2c(al, name)));
+                    if (name.compare("integer") == 0) {
+                        t = ASRUtils::TYPE(ASR::make_Integer_t(al,
+                            tp->base.base.loc, 4));
+                    } else {
+                        t = ASRUtils::TYPE(ASR::make_TypeParameter_t(al,
+                            tp->base.base.loc, s2c(al, name)));
+                    }
                     t = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
                         t, tp_m_dims, tp_n_dims);
                 }
@@ -3105,8 +3116,14 @@ public:
                     if (ASR::is_a<ASR::TypeParameter_t>(*param_type)) {
                         ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(param_type);
                         if (context_map.find(tp->m_param) != context_map.end()) {
-                            param_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(
-                                al, tp->base.base.loc, s2c(al, context_map[tp->m_param])));
+                            std::string pt = context_map[tp->m_param];
+                            if (pt.compare("integer") == 0) {
+                                param_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
+                                    tp->base.base.loc, 4));
+                            } else {
+                                param_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(
+                                    al, tp->base.base.loc, s2c(al, context_map[tp->m_param])));
+                            }
                             if( tp_n_dims > 0 ) {
                                 param_type = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
                                     param_type, tp_m_dims, tp_n_dims);
@@ -3152,8 +3169,14 @@ public:
                     if (ASR::is_a<ASR::TypeParameter_t>(*return_type)) {
                         ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(return_type);
                         if (context_map.find(tp->m_param) != context_map.end()) {
-                            return_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(
-                                al, tp->base.base.loc, s2c(al, context_map[tp->m_param])));
+                            std::string pt = context_map[tp->m_param];
+                            if (pt.compare("integer") == 0) {
+                                return_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
+                                    tp->base.base.loc, 4));
+                            } else {
+                                return_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(
+                                    al, tp->base.base.loc, s2c(al, context_map[tp->m_param])));
+                            }
                             if( tp_n_dims > 0 ) {
                                 return_type = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
                                     return_type, tp_m_dims, tp_n_dims);
@@ -3266,10 +3289,11 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
-        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping)
+        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
+        std::vector<ASR::stmt_t*> &data_structure)
 {
     SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                         instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping);
+                         instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure);
     try {
         v.visit_TranslationUnit(ast);
     } catch (const SemanticError &e) {

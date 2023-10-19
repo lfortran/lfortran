@@ -463,9 +463,32 @@ loop.end14:                                       ; preds = %loop.head9
   br label %loop.head7
 
 loop.end15:                                       ; preds = %loop.head7
+  %337 = load %array*, %array** %__libasr__created__var__0__real_bin_op_res, align 8
+  %338 = getelementptr %array, %array* %337, i32 0, i32 0
+  %339 = load float*, float** %338, align 8
+  %340 = ptrtoint float* %339 to i64
+  %341 = icmp ne i64 %340, 0
+  br i1 %341, label %then16, label %else17
+
+then16:                                           ; preds = %loop.end15
+  %342 = getelementptr %array, %array* %337, i32 0, i32 0
+  %343 = load float*, float** %342, align 8
+  %344 = alloca i8*, align 8
+  %345 = bitcast float* %343 to i8*
+  store i8* %345, i8** %344, align 8
+  %346 = load i8*, i8** %344, align 8
+  call void (i8*, ...) @_lfortran_free(i8* %346)
+  %347 = getelementptr %array, %array* %337, i32 0, i32 0
+  store float* null, float** %347, align 8
+  br label %ifcont18
+
+else17:                                           ; preds = %loop.end15
+  br label %ifcont18
+
+ifcont18:                                         ; preds = %else17, %then16
   br label %return
 
-return:                                           ; preds = %loop.end15
+return:                                           ; preds = %ifcont18
   ret void
 }
 

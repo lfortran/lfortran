@@ -40,9 +40,10 @@ public:
             std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
             std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
             std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
-            std::map<std::string, std::vector<int>> &entry_function_arguments_mapping)
+            std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
+            std::vector<ASR::stmt_t*> &data_structure)
         : CommonVisitor(al, nullptr, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                        instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping),
+                        instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure),
         asr{unit}, from_block{false} {}
 
     void visit_Declaration(const AST::Declaration_t& x) {
@@ -1486,6 +1487,12 @@ public:
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
+        if (data_structure.size()>0) {
+            for(auto it: data_structure) {
+                body.push_back(al, it);
+            }
+        }
+        
         transform_stmts(body, x.n_body, x.m_body);
         handle_format();
         ASR::stmt_t* impl_del = create_implicit_deallocate(x.base.base.loc);
@@ -2344,8 +2351,12 @@ public:
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
         std::string sub_name = to_lower(x.m_name);
         if (x.n_temp_args > 0) {
-            handle_templated(x.m_name, x.m_temp_args, x.n_temp_args, x.base.base.loc);
-            sub_name = "__templated_" + sub_name;
+            ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
+            bool is_nested = ASR::is_a<ASR::Template_t>(*ASRUtils::get_asr_owner(owner_sym));
+            handle_templated(x.m_name, is_nested, x.m_temp_args, x.n_temp_args, x.base.base.loc);
+            if (!is_nested) {
+                sub_name = "__templated_" + sub_name;
+            }
         }
         SymbolTable* scope = current_scope;
         ASR::symbol_t *original_sym;
@@ -3284,10 +3295,11 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
-        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping)
+        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
+        std::vector<ASR::stmt_t*> &data_structure)
 {
     BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                  instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping);
+                  instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure);
     try {
         b.is_body_visitor = true;
         b.visit_TranslationUnit(ast);

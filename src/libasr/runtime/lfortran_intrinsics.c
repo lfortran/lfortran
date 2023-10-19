@@ -269,9 +269,6 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     int sign_width = (val < 0) ? 1 : 0;
     int integer_length = (integer_part == 0) ? 1 : (int)log10(llabs(integer_part)) + 1;
 
-    if (format[1] == 'S') {
-        scale = 1;
-    }
     char *num_pos = format ,*dot_pos = strchr(format, '.');
     decimal_digits = atoi(++dot_pos);
     while(!isdigit(*num_pos)) num_pos++;
@@ -300,6 +297,10 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     int decimal = 1;
     while (val_str[0] == '0') {
         memmove(val_str, val_str + 1, strlen(val_str));
+        decimal--;
+    }
+    if (format[1] == 'S') {
+        scale = 1;
         decimal--;
     }
 
@@ -365,9 +366,12 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
             long long t = (long long)round((long double)atoll(new_str) / (long long) pow(10, (strlen(new_str) - decimal_digits)));
             sprintf(new_str, "%lld", t);
             int index = zeros;
-            while(index--) strcat(formatted_value, "0");
+            while(index--) {
+                memmove(new_str + 1, new_str, strlen(new_str)+1);
+                new_str[0] = '0';
+            }
         }
-        new_str[decimal_digits - zeros] = '\0';
+        new_str[decimal_digits] = '\0';
         strcat(formatted_value, new_str);
         free(new_str);
         free(temp);
