@@ -3418,7 +3418,18 @@ public:
                         heap_arrays.push_back(ptr_i8);
                         ptr = builder->CreateBitCast(ptr_i8, type->getPointerTo());
                     } else {
-                        ptr = builder->CreateAlloca(type, array_size, v->m_name);
+                        if (v->m_storage == ASR::storage_typeType::Save) {
+                            // TODO: prepend the function name to this variable
+                            std::string global_name = std::string("f.") + v->m_name;
+                            ptr = module->getOrInsertGlobal(global_name, type);
+                            llvm::GlobalVariable *gptr = module->getNamedGlobal(global_name);
+                            gptr->setLinkage(llvm::GlobalValue::InternalLinkage);
+                            // TODO: handle all types here, assuming integer for now:
+                            llvm::Constant* initialValue = llvm::ConstantInt::get(type, 0);
+                            gptr->setInitializer(initialValue);
+                        } else {
+                            ptr = builder->CreateAlloca(type, array_size, v->m_name);
+                        }
                     }
                     set_pointer_variable_to_null(llvm::ConstantPointerNull::get(
                         static_cast<llvm::PointerType*>(type)), ptr)
