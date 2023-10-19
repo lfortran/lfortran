@@ -1,7 +1,7 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-@f.x = internal global float 0.000000e+00
+@intrinsics_02.x = internal global float 0.000000e+00
 @0 = private unnamed_addr constant [2 x i8] c" \00", align 1
 @1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @2 = private unnamed_addr constant [18 x i8] c"%13.8e%s%23.17e%s\00", align 1
@@ -102,14 +102,14 @@ define i32 @main(i32 %0, i8** %1) {
   %call_arg_value1 = alloca float, align 4
   %call_arg_value = alloca float, align 4
   call void @_lpython_set_argv(i32 %0, i8** %1)
-  store float 0x3FEFEB7AA0000000, float* @f.x, align 4
+  store float 0x3FEFEB7AA0000000, float* @intrinsics_02.x, align 4
   %y = alloca double, align 8
   store double 0x3FEFEB7A9B2C6D8B, double* %y, align 8
-  %2 = load float, float* @f.x, align 4
+  %2 = load float, float* @intrinsics_02.x, align 4
   %3 = fpext float %2 to double
   %4 = load double, double* %y, align 8
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([18 x i8], [18 x i8]* @2, i32 0, i32 0), double %3, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), double %4, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
-  %5 = load float, float* @f.x, align 4
+  %5 = load float, float* @intrinsics_02.x, align 4
   %6 = fsub float %5, 0x3FEFEB7AA0000000
   store float %6, float* %call_arg_value, align 4
   %7 = call float @_lcompilers_abs_f32(float* %call_arg_value)
@@ -125,7 +125,7 @@ else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  %9 = call float @_lcompilers_sin_f32(float* @f.x)
+  %9 = call float @_lcompilers_sin_f32(float* @intrinsics_02.x)
   %10 = fsub float %9, 0x3FEAE238A0000000
   store float %10, float* %call_arg_value1, align 4
   %11 = call float @_lcompilers_abs_f32(float* %call_arg_value1)
@@ -169,8 +169,8 @@ else10:                                           ; preds = %ifcont8
 
 ifcont11:                                         ; preds = %else10, %then9
   %17 = call double @_lcompilers_sin_f64(double* %y)
-  %18 = load float, float* @f.x, align 4
-  %19 = call float @_lcompilers_sin_f32(float* @f.x)
+  %18 = load float, float* @intrinsics_02.x, align 4
+  %19 = call float @_lcompilers_sin_f32(float* @intrinsics_02.x)
   %20 = fadd float %18, %19
   store float %20, float* %call_arg_value12, align 4
   %21 = call float @_lcompilers_sin_f32(float* %call_arg_value12)
