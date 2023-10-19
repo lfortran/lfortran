@@ -4,9 +4,9 @@ source_filename = "LFortran"
 %complex_4 = type { float, float }
 %complex_8 = type { double, double }
 
-@f.u = internal global %complex_4 zeroinitializer
-@f.v = internal global %complex_8 zeroinitializer
-@f.zero = internal global %complex_8 zeroinitializer
+@complex_dp_param.u = internal global %complex_4 zeroinitializer
+@complex_dp_param.v = internal global %complex_8 zeroinitializer
+@complex_dp_param.zero = internal global %complex_8 zeroinitializer
 @0 = private unnamed_addr constant [2 x i8] c" \00", align 1
 @1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @2 = private unnamed_addr constant [32 x i8] c"(%f,%f)%s(%lf,%lf)%s(%lf,%lf)%s\00", align 1
@@ -24,22 +24,22 @@ define i32 @main(i32 %0, i8** %1) {
   store float 0x3FF0CCCCC0000000, float* %3, align 4
   store float 0x3FF0CCCCC0000000, float* %4, align 4
   %5 = load %complex_4, %complex_4* %2, align 4
-  store %complex_4 %5, %complex_4* @f.u, align 4
+  store %complex_4 %5, %complex_4* @complex_dp_param.u, align 4
   %6 = alloca %complex_8, align 8
   %7 = getelementptr %complex_8, %complex_8* %6, i32 0, i32 0
   %8 = getelementptr %complex_8, %complex_8* %6, i32 0, i32 1
   store double 1.050000e+00, double* %7, align 8
   store double 1.050000e+00, double* %8, align 8
   %9 = load %complex_8, %complex_8* %6, align 8
-  store %complex_8 %9, %complex_8* @f.v, align 8
+  store %complex_8 %9, %complex_8* @complex_dp_param.v, align 8
   %10 = alloca %complex_8, align 8
   %11 = getelementptr %complex_8, %complex_8* %10, i32 0, i32 0
   %12 = getelementptr %complex_8, %complex_8* %10, i32 0, i32 1
   store double 0.000000e+00, double* %11, align 8
   store double 0.000000e+00, double* %12, align 8
   %13 = load %complex_8, %complex_8* %10, align 8
-  store %complex_8 %13, %complex_8* @f.zero, align 8
-  %14 = load %complex_4, %complex_4* @f.u, align 4
+  store %complex_8 %13, %complex_8* @complex_dp_param.zero, align 8
+  %14 = load %complex_4, %complex_4* @complex_dp_param.u, align 4
   %15 = alloca %complex_4, align 8
   store %complex_4 %14, %complex_4* %15, align 4
   %16 = getelementptr %complex_4, %complex_4* %15, i32 0, i32 0
@@ -50,7 +50,7 @@ define i32 @main(i32 %0, i8** %1) {
   %20 = getelementptr %complex_4, %complex_4* %19, i32 0, i32 1
   %21 = load float, float* %20, align 4
   %22 = fpext float %21 to double
-  %23 = load %complex_8, %complex_8* @f.v, align 8
+  %23 = load %complex_8, %complex_8* @complex_dp_param.v, align 8
   %24 = alloca %complex_8, align 8
   store %complex_8 %23, %complex_8* %24, align 8
   %25 = getelementptr %complex_8, %complex_8* %24, i32 0, i32 0
@@ -59,7 +59,7 @@ define i32 @main(i32 %0, i8** %1) {
   store %complex_8 %23, %complex_8* %27, align 8
   %28 = getelementptr %complex_8, %complex_8* %27, i32 0, i32 1
   %29 = load double, double* %28, align 8
-  %30 = load %complex_8, %complex_8* @f.zero, align 8
+  %30 = load %complex_8, %complex_8* @complex_dp_param.zero, align 8
   %31 = alloca %complex_8, align 8
   store %complex_8 %30, %complex_8* %31, align 8
   %32 = getelementptr %complex_8, %complex_8* %31, i32 0, i32 0
