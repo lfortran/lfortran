@@ -3419,8 +3419,8 @@ public:
                         ptr = builder->CreateBitCast(ptr_i8, type->getPointerTo());
                     } else {
                         if (v->m_storage == ASR::storage_typeType::Save) {
-                            // TODO: prepend the function name to this variable
-                            std::string global_name = std::string("f.") + v->m_name;
+                            std::string parent_function_name = std::string(x.m_name);
+                            std::string global_name = parent_function_name+ "." + v->m_name;
                             ptr = module->getOrInsertGlobal(global_name, type);
                             llvm::GlobalVariable *gptr = module->getNamedGlobal(global_name);
                             gptr->setLinkage(llvm::GlobalValue::InternalLinkage);
