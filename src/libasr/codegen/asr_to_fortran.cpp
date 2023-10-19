@@ -1157,10 +1157,15 @@ public:
 
 };
 
-std::string asr_to_fortran(ASR::TranslationUnit_t &asr,
-        bool color, int indent) {
+Result<std::string> asr_to_fortran(ASR::TranslationUnit_t &asr,
+        diag::Diagnostics &diagnostics, bool color, int indent) {
     ASRToFortranVisitor v(color, indent);
-    v.visit_TranslationUnit(asr);
+    try {
+        v.visit_TranslationUnit(asr);
+    } catch (const CodeGenError &e) {
+        diagnostics.diagnostics.push_back(e.d);
+        return Error();
+    }
     return v.s;
 }
 
