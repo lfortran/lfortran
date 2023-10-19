@@ -3424,9 +3424,8 @@ public:
                             ptr = module->getOrInsertGlobal(global_name, type);
                             llvm::GlobalVariable *gptr = module->getNamedGlobal(global_name);
                             gptr->setLinkage(llvm::GlobalValue::InternalLinkage);
-                            // TODO: handle all types here, assuming integer for now:
-                            llvm::Constant* initialValue = llvm::ConstantInt::get(type, 0);
-                            gptr->setInitializer(initialValue);
+                            llvm::Constant *init_value = llvm::Constant::getNullValue(type);
+                            gptr->setInitializer(init_value);
                         } else {
                             ptr = builder->CreateAlloca(type, array_size, v->m_name);
                         }
