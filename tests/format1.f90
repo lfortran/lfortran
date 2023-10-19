@@ -36,4 +36,6 @@ print '(1PE13.6)', p, q
 print '(F30.25)', 12345e-25
 print '("x:", F4.2, " y:", ES7.1)', 1.123, 4.456
 print '("x:", ES10.2)', 0.999, 0.1
+print '("x:", ES15.5)', 0.102212
+
 end program
