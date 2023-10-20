@@ -2396,6 +2396,19 @@ public:
         ASR::symbol_t *original_sym;
         ASR::expr_t *v_expr = nullptr;
         bool is_external = check_is_external(sub_name);
+        bool sub_contain_entry_function = entry_functions.find(sub_name) != entry_functions.end();
+        if (!is_external && sub_contain_entry_function) {
+            // there can be a chance that scope is new scope of master entry function
+            // Then check if it is external procedure by checking all the external_procedures_mapping
+
+            for(auto it: external_procedures_mapping) {
+                std::vector<std::string> external_procedures_copy = it.second;
+                if (std::find(external_procedures_copy.begin(), external_procedures_copy.end(), sub_name) != external_procedures_copy.end()) {
+                    is_external = true;
+                    break;
+                }
+            }
+        }
         // If this is a type bound procedure (in a class) it won't be in the
         // main symbol table. Need to check n_member.
         if (x.n_member >= 1) {
