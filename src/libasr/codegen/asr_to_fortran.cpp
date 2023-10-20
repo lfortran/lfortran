@@ -558,11 +558,83 @@ public:
         s = r;
     }
 
-    // void visit_FileOpen(const ASR::FileOpen_t &x) {}
+    void visit_FileOpen(const ASR::FileOpen_t &x) {
+        std::string r;
+        r = indent;
+        r += "open";
+        r += "(";
+        if (x.m_newunit) {
+            visit_expr(*x.m_newunit);
+            r += s;
+        } else {
+            r += "*, ";
+        }
+        if (x.m_filename) {
+            r += ", ";
+            r += "file=";
+            visit_expr(*x.m_filename);
+            r += s;
+        }
+        if (x.m_status) {
+            r += ", ";
+            r += "status=";
+            visit_expr(*x.m_status);
+            r += s;
+        }
+        if (x.m_form) {
+            r += ", ";
+            r += "form=";
+            visit_expr(*x.m_form);
+            r += s;
+        }
+        r += ")";
+        r += "\n";
+        s = r;
+    }
 
-    // void visit_FileClose(const ASR::FileClose_t &x) {}
+    void visit_FileClose(const ASR::FileClose_t &x) {
+        std::string r;
+        r = indent;
+        r += "close";
+        r += "(";
+        if (x.m_unit) {
+            visit_expr(*x.m_unit);
+            r += s;
+        } else {
+            r += "*, ";
+        }
+        r += ")";
+        r += "\n";
+        s = r;
+    }
 
-    // void visit_FileRead(const ASR::FileRead_t &x) {}
+   void visit_FileRead(const ASR::FileRead_t &x) {
+        std::string r;
+        r = indent;
+        r += "read";
+        r += "(";
+        if (x.m_unit) {
+            visit_expr(*x.m_unit);
+            r += s;
+        } else {
+            r += "*, ";
+        }
+        if (x.m_fmt) {
+            r += ", ";
+            visit_expr(*x.m_fmt);
+            r += s;
+        } else {
+            r += ", *";
+        }
+        r += ") ";
+        for (size_t i = 0; i < x.n_values; i++) {
+            visit_expr(*x.m_values[i]);
+            r += s;
+            if (i < x.n_values - 1) r += ", ";
+        }
+        r += "\n";
+        s = r;
+    }
 
     // void visit_FileBackspace(const ASR::FileBackspace_t &x) {}
 
