@@ -616,15 +616,32 @@ public:
         if (x.m_unit) {
             visit_expr(*x.m_unit);
             r += s;
-        } else {
-            r += "*, ";
         }
         if (x.m_fmt) {
             r += ", ";
+            r += "fmt=";
             visit_expr(*x.m_fmt);
             r += s;
         } else {
             r += ", *";
+        }
+        if (x.m_iomsg) {
+            r += ", ";
+            r += "iomsg=";
+            visit_expr(*x.m_iomsg);
+            r += s;
+        }
+        if (x.m_iostat) {
+            r += ", ";
+            r += "iostat=";
+            visit_expr(*x.m_iostat);
+            r += s;
+        }
+        if (x.m_id) {
+            r += ", ";
+            r += "id=";
+            visit_expr(*x.m_id);
+            r += s;
         }
         r += ") ";
         for (size_t i = 0; i < x.n_values; i++) {
