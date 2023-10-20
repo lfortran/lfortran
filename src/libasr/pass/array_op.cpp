@@ -958,9 +958,22 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         bool result_var_created = false;
         if( rank_operand > 0 ) {
             if( result_var == nullptr ) {
+                bool allocate = false;
+                ASR::dimension_t *operand_dims = nullptr;
+                rank_operand = ASRUtils::extract_dimensions_from_ttype(
+                    ASRUtils::expr_type(operand), operand_dims);
+                ASR::ttype_t* result_var_type = get_result_type(x->m_type,
+                    operand_dims, rank_operand, loc, x->class_type, allocate);
+                if( allocate ) {
+                    result_var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
+                       ASRUtils::type_get_past_allocatable(result_var_type)));
+                }
                 result_var = PassUtils::create_var(result_counter, res_prefix,
-                                loc, operand, al, current_scope);
+                                loc, result_var_type, al, current_scope);
                 result_counter += 1;
+                if( allocate ) {
+                    allocate_result_var(operand, operand_dims, rank_operand, true);
+                }
                 result_var_created = true;
             }
             *current_expr = result_var;
