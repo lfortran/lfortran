@@ -672,8 +672,21 @@ public:
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
         ASRUtils::SymbolDuplicator symbol_duplicator(al);
-        for( auto& item: old_scope->get_scope() ) {
+        std::vector<std::string> copy_external_procedure = external_procedures;
+        external_procedures.clear();
+        std::vector<std::string> symbols_to_erase;
+        for( auto item: old_scope->get_scope() ) {
             symbol_duplicator.duplicate_symbol(item.second, current_scope);
+            bool is_external = check_is_external(item.first, old_scope);
+            if (is_external) {
+                external_procedures.push_back(item.first);
+                // remove it from old_scope
+                symbols_to_erase.push_back(item.first);
+            }
+        }
+
+        for (auto it: symbols_to_erase) {
+            old_scope->erase_symbol(it);
         }
 
         if (is_master) {
@@ -792,9 +805,14 @@ public:
                 }
             }
         }
-        
+
+        // populate the external_procedures_mapping
+        uint64_t hash = get_hash(tmp_);
+        external_procedures_mapping[hash] = external_procedures;
+
         current_scope = old_scope;
         current_function_dependencies = current_function_dependencies_copy;
+        external_procedures = copy_external_procedure;
         current_procedure_args.clear();
     }
 
@@ -1019,6 +1037,9 @@ public:
             is_requirement, false, false);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        // populate the external_procedures_mapping
+        uint64_t hash = get_hash(tmp);
+        external_procedures_mapping[hash] = external_procedures;
         if (subroutine_contains_entry_function(sym_name, x.m_body, x.n_body)) {
             /* 
                 This subroutine contains an entry function, create
@@ -1052,10 +1073,6 @@ public:
 
             implicit_dictionary.clear();
         }
-
-        // populate the external_procedures_mapping
-        uint64_t hash = get_hash(tmp);
-        external_procedures_mapping[hash] = external_procedures;
 
         current_function_dependencies = current_function_dependencies_copy;
         in_Subroutine = false;
@@ -1404,6 +1421,9 @@ public:
             nullptr, 0, is_requirement, false, false);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        // populate the external_procedures_mapping
+        uint64_t hash = get_hash(tmp);
+        external_procedures_mapping[hash] = external_procedures;
         if (subroutine_contains_entry_function(sym_name, x.m_body, x.n_body)) {
             /* 
                 This subroutine contains an entry function, create
@@ -1433,11 +1453,6 @@ public:
 
             implicit_dictionary.clear();
         }
-
-        // populate the external_procedures_mapping
-        uint64_t hash = get_hash(tmp);
-        external_procedures_mapping[hash] = external_procedures;
-
         current_function_dependencies = current_function_dependencies_copy;
         in_Subroutine = false;
         mark_common_blocks_as_declared();

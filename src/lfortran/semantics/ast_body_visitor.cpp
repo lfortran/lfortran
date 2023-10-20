@@ -1668,8 +1668,25 @@ public:
     }
 
     void visit_stmts_helper(std::vector<AST::stmt_t*> ast_stmt_vector, std::vector<ASR::stmt_t*> &stmt_vector,
-                            std::vector<ASR::asr_t*> &tmp_vec, std::string original_function_name, ASR::expr_t* return_var) {
+                            std::vector<ASR::asr_t*> &tmp_vec, std::string original_function_name, ASR::expr_t* return_var,
+                            std::vector<ASR::stmt_t*> &after_return_stmt_entry_function, bool is_last = false, bool is_main_function = false) {
+        bool return_encountered = false;
+        bool entry_encountered = false;
         for (auto &ast_stmt: ast_stmt_vector) {
+            int64_t label = stmt_label(ast_stmt);
+            if (label != 0) {
+                ASR::asr_t *l = ASR::make_GoToTarget_t(al, ast_stmt->base.loc, label,
+                                    s2c(al, std::to_string(label)));
+                // body.push_back(al, ASR::down_cast<ASR::stmt_t>(l));
+                if (return_encountered && is_last) {
+                    after_return_stmt_entry_function.push_back(ASRUtils::STMT(l));
+                } else {
+                    stmt_vector.push_back(ASRUtils::STMT(l));
+                }
+            }
+            if (ast_stmt->type == AST::stmtType::Entry) {
+                entry_encountered = true;
+            }
             this->visit_stmt(*ast_stmt);
             ASR::stmt_t* tmp_stmt = nullptr;
             if (tmp != nullptr) {
@@ -1699,10 +1716,22 @@ public:
                         }
                     }
                 }
-                stmt_vector.push_back(tmp_stmt);
-
-                if (tmp_stmt->type == ASR::stmtType::Return) {
+                if (is_main_function && return_encountered && !entry_encountered) {
+                    after_return_stmt_entry_function.push_back(tmp_stmt);
+                } else if (is_main_function && entry_encountered && return_encountered) {
                     break;
+                } else {
+                    stmt_vector.push_back(tmp_stmt);
+                }
+                if (!is_main_function) {
+                    if (return_encountered && is_last) {
+                        after_return_stmt_entry_function.push_back(tmp_stmt);
+                    } else {
+                        stmt_vector.push_back(tmp_stmt);
+                    }
+                }
+                if (tmp_stmt->type == ASR::stmtType::Return) {
+                    return_encountered = true;
                 }
             } else if (!tmp_vec.empty()) {
                 for(auto &x: tmp_vec) {
@@ -1721,7 +1750,7 @@ public:
         ASR::symbol_t* master_function_sym = current_scope->resolve_symbol(master_function_name);
         ASR::Function_t* master_function = ASR::down_cast<ASR::Function_t>(master_function_sym);
 
-        std::vector<ASR::asr_t*> tmp_vector; std::vector<ASR::stmt_t*> stmt_vector;
+        std::vector<ASR::asr_t*> tmp_vector; std::vector<ASR::stmt_t*> stmt_vector; std::vector<ASR::stmt_t*> after_return_stmt_entry_function;
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
 
@@ -1760,15 +1789,20 @@ public:
         current_body = &master_function_body;
         SymbolTable* old_scope = current_scope;
         current_scope = master_function->m_symtab;
-        visit_stmts_helper(subroutine_stmt_vector, stmt_vector, tmp_vector, original_function_name, master_function->m_return_var);
+        visit_stmts_helper(subroutine_stmt_vector, stmt_vector, tmp_vector, original_function_name, master_function->m_return_var, after_return_stmt_entry_function, false, true);
 
         // handle entry functions
         for (auto &it: entry_functions[original_function_name]) {
             go_to_target_stmt = ASRUtils::STMT(ASR::make_GoToTarget_t(al, loc, go_to_target, s2c(al, std::to_string(go_to_target))));
             stmt_vector.push_back(go_to_target_stmt); go_to_target++;
-            visit_stmts_helper(it.second, stmt_vector, tmp_vector, original_function_name, master_function->m_return_var);
+            // check if it is last entry function
+            bool is_last = it.first == entry_functions[original_function_name].rbegin()->first;
+            visit_stmts_helper(it.second, stmt_vector, tmp_vector, original_function_name, master_function->m_return_var, after_return_stmt_entry_function, is_last);
         }
         for (auto &it: stmt_vector) {
+            master_function_body.push_back(al, it);
+        }
+        for (auto &it: after_return_stmt_entry_function) {
             master_function_body.push_back(al, it);
         }
 
@@ -2362,6 +2396,19 @@ public:
         ASR::symbol_t *original_sym;
         ASR::expr_t *v_expr = nullptr;
         bool is_external = check_is_external(sub_name);
+        bool sub_contain_entry_function = entry_functions.find(sub_name) != entry_functions.end();
+        if (!is_external && sub_contain_entry_function) {
+            // there can be a chance that scope is new scope of master entry function
+            // Then check if it is external procedure by checking all the external_procedures_mapping
+
+            for(auto it: external_procedures_mapping) {
+                std::vector<std::string> external_procedures_copy = it.second;
+                if (std::find(external_procedures_copy.begin(), external_procedures_copy.end(), sub_name) != external_procedures_copy.end()) {
+                    is_external = true;
+                    break;
+                }
+            }
+        }
         // If this is a type bound procedure (in a class) it won't be in the
         // main symbol table. Need to check n_member.
         if (x.n_member >= 1) {
