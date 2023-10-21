@@ -3358,16 +3358,11 @@ public:
                     * can be passed as an argument in a function call in LLVM IR.
                     */
                     if( x.class_type == ASR::symbolType::Function) {
-                        std::uint32_t m_h;
                         std::string m_name = std::string(x.m_name);
-                        ASR::abiType abi_type = ASR::abiType::Source;
-                        bool is_v_arg = false;
-                        if( x.class_type == ASR::symbolType::Function ) {
-                            ASR::Function_t* _func = (ASR::Function_t*)(&(x.base));
-                            m_h = get_hash((ASR::asr_t*)_func);
-                            abi_type = ASRUtils::get_FunctionType(_func)->m_abi;
-                            is_v_arg = is_argument(v, _func->m_args, _func->n_args);
-                        }
+                        ASR::Function_t* _func = (ASR::Function_t*)(&(x.base));
+                        std::uint32_t m_h = get_hash((ASR::asr_t*)_func);
+                        ASR::abiType abi_type = ASRUtils::get_FunctionType(_func)->m_abi;
+                        bool is_v_arg = is_argument(v, _func->m_args, _func->n_args);
                         if( is_array_type && !is_list ) {
                             /* The first element in an array descriptor can be either of
                             * llvm::ArrayType or llvm::PointerType. However, a
