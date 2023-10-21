@@ -413,7 +413,13 @@ public:
         s = r;
     }
 
-    // void visit_Associate(const ASR::Associate_t &x) {}
+    void visit_Associate(const ASR::Associate_t &x) {
+        visit_expr(*x.m_target);
+        std::string t = std::move(s);
+        visit_expr(*x.m_value);
+        std::string v = std::move(s);
+        s = t + " => " + v + "\n";
+    }
 
     void visit_Cycle(const ASR::Cycle_t &x) {
         s = indent + "cycle";
@@ -1008,7 +1014,38 @@ public:
         last_expr_precedence = 13;
     }
 
-    // void visit_ArraySection(const ASR::ArraySection_t &x) {}
+    void visit_ArraySection(const ASR::ArraySection_t &x) {
+        std::string r = "";
+        visit_expr(*x.m_v);
+        r += s;
+        r += "(";
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (i > 0) {
+                r += ", ";
+            }
+            std::string left, right, step;
+            if (x.m_args[i].m_left) {
+                visit_expr(*x.m_args[i].m_left);
+                left = std::move(s);
+                r += left + ":";
+            }
+            if (x.m_args[i].m_right) {
+                visit_expr(*x.m_args[i].m_right);
+                right = std::move(s);
+                r += right;
+            }
+            if (x.m_args[i].m_step ) {
+                visit_expr(*x.m_args[i].m_step);
+                step = std::move(s);
+                if (step != "1") {
+                    r += ":" + step;
+                }
+            }
+        }
+        r += ")";
+        s = r;
+        last_expr_precedence = 13;
+    }
 
     void visit_ArraySize(const ASR::ArraySize_t &x) {
         visit_expr(*x.m_v);
