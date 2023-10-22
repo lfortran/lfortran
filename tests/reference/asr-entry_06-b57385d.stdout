@@ -534,6 +534,22 @@
                         (ArrayItem
                             (Var 4 w)
                             [(()
+                            (IntegerConstant 1 (Integer 4))
+                            ())]
+                            (Real 8)
+                            ColMajor
+                            ()
+                        )
+                        (RealConstant
+                            10.900000
+                            (Real 8)
+                        )
+                        ()
+                    )
+                    (=
+                        (ArrayItem
+                            (Var 4 w)
+                            [(()
                             (IntegerConstant 2 (Integer 4))
                             ())]
                             (Real 8)
@@ -545,6 +561,69 @@
                             (Real 8)
                         )
                         ()
+                    )
+                    (=
+                        (ArrayItem
+                            (Var 4 w)
+                            [(()
+                            (IntegerConstant 2 (Integer 4))
+                            ())]
+                            (Real 8)
+                            ColMajor
+                            ()
+                        )
+                        (RealConstant
+                            10.900000
+                            (Real 8)
+                        )
+                        ()
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicScalarFunction
+                                Abs
+                                [(RealBinOp
+                                    (ArrayItem
+                                        (Var 4 w)
+                                        [(()
+                                        (IntegerConstant 1 (Integer 4))
+                                        ())]
+                                        (Real 8)
+                                        ColMajor
+                                        ()
+                                    )
+                                    Sub
+                                    (RealConstant
+                                        10.900000
+                                        (Real 8)
+                                    )
+                                    (Real 8)
+                                    ()
+                                )]
+                                0
+                                (Real 8)
+                                ()
+                            )
+                            Gt
+                            (Cast
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                RealToReal
+                                (Real 8)
+                                (RealConstant
+                                    0.000000
+                                    (Real 8)
+                                )
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
                     )
                     (If
                         (RealCompare
@@ -639,6 +718,61 @@
                             ()
                         )]
                         []
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicScalarFunction
+                                Abs
+                                [(RealBinOp
+                                    (ArrayItem
+                                        (Var 4 w)
+                                        [(()
+                                        (IntegerConstant 2 (Integer 4))
+                                        ())]
+                                        (Real 8)
+                                        ColMajor
+                                        ()
+                                    )
+                                    Sub
+                                    (RealConstant
+                                        10.900000
+                                        (Real 8)
+                                    )
+                                    (Real 8)
+                                    ()
+                                )]
+                                0
+                                (Real 8)
+                                ()
+                            )
+                            Gt
+                            (Cast
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                RealToReal
+                                (Real 8)
+                                (RealConstant
+                                    0.000000
+                                    (Real 8)
+                                )
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (=
+                        (Var 4 mvndfn_main__lcompilers)
+                        (RealConstant
+                            1.200000
+                            (Real 8)
+                        )
+                        ()
                     )
                     (=
                         (Var 4 mvndfn_main__lcompilers)

@@ -795,7 +795,7 @@ public:
 
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping;
-    
+
     std::map<std::string, std::pair<bool,std::vector<ASR::expr_t*>>> common_block_dictionary;
     std::map<uint64_t, ASR::symbol_t*> &common_variables_hash;
 
@@ -1717,8 +1717,10 @@ public:
         }
     }
 
-    bool check_is_external(std::string sym) {
-        if (current_scope->asr_owner) {
+    bool check_is_external(std::string sym, SymbolTable* scope = nullptr) {
+        if (scope) {
+            external_procedures = external_procedures_mapping[get_hash(scope->asr_owner)];
+        } else if (current_scope->asr_owner) {
             external_procedures = external_procedures_mapping[get_hash(current_scope->asr_owner)];
         }
         return ( std::find(external_procedures.begin(), external_procedures.end(), sym) != external_procedures.end() );
@@ -2048,9 +2050,9 @@ public:
 
                                 this->visit_expr(*eq1);
                                 ASR::expr_t* asr_eq1 = ASRUtils::EXPR(tmp);
-                                this->visit_expr(*eq2); 
+                                this->visit_expr(*eq2);
                                 ASR::expr_t* asr_eq2 = ASRUtils::EXPR(tmp);
-                                
+
                                 ASR::ttype_t* arg_type = ASRUtils::type_get_past_allocatable(
                                             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(asr_eq1)));
                                 ASR::ttype_t* pointer_type_ = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq1->base.loc, ASRUtils::type_get_past_array(arg_type)));
@@ -2092,10 +2094,10 @@ public:
                                 type = ASRUtils::make_Array_t_util(al, asr_eq2->base.loc, type, dim2.p, dim2.size(), ASR::abiType::Source, false, ASR::array_physical_typeType::DescriptorArray, false, false);
                                 ASR::ttype_t* ptr = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq2->base.loc, type));
                                 var__->m_type = ptr;
-                                
+
                                 Vec<ASR::expr_t*> args;
                                 args.reserve(al, 1);
-                                args.push_back(al, size); 
+                                args.push_back(al, size);
 
                                 ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, asr_eq1->base.loc, int32_type, dim.p, dim.size(), ASR::array_physical_typeType::PointerToDataArray));
                                 ASR::asr_t* array_constant = ASRUtils::make_ArrayConstant_t_util(al, asr_eq1->base.loc, args.p, args.size(), array_type, ASR::arraystorageType::ColMajor);
@@ -2126,13 +2128,13 @@ public:
 
                         this->visit_expr(*eq01);
                         ASR::expr_t* asr_eq01 = ASRUtils::EXPR(tmp);
-                        this->visit_expr(*eq02); 
+                        this->visit_expr(*eq02);
                         ASR::expr_t* asr_eq02 = ASRUtils::EXPR(tmp);
                         this->visit_expr(*eq11);
                         ASR::expr_t* asr_eq11 = ASRUtils::EXPR(tmp);
                         this->visit_expr(*eq12);
                         ASR::expr_t* asr_eq12 = ASRUtils::EXPR(tmp);
-                        
+
                         ASR::ttype_t* arg_type = ASRUtils::type_get_past_allocatable(
                                     ASRUtils::type_get_past_pointer(ASRUtils::expr_type(asr_eq01)));
                         ASR::ttype_t* pointer_type_ = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq01->base.loc, ASRUtils::type_get_past_array(arg_type)));
@@ -3124,7 +3126,8 @@ public:
                     v_Var, args.p[0].m_right, type, arr_ref_val);
             } else {
                 return (ASR::asr_t*) replace_with_common_block_variables(ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
-                    v_Var, args.p, args.size(), ASRUtils::type_get_past_allocatable(type),
+                    v_Var, args.p, args.size(), ASRUtils::type_get_past_pointer(
+                        ASRUtils::type_get_past_allocatable(type)),
                     ASR::arraystorageType::ColMajor, arr_ref_val)));
             }
         } else {
@@ -5433,7 +5436,8 @@ public:
             } else if( ASRUtils::is_array(right_type) ) {
                 n_dims = ASRUtils::extract_dimensions_from_ttype(right_type, m_dims);
             }
-            dest_type = ASRUtils::make_Array_t_util(al, dest_type->base.loc, dest_type, m_dims, n_dims);
+            dest_type = ASRUtils::make_Array_t_util(al, dest_type->base.loc,
+                ASRUtils::type_get_past_pointer(dest_type), m_dims, n_dims);
             if( ASR::is_a<ASR::Allocatable_t>(*left_type) || ASR::is_a<ASR::Allocatable_t>(*right_type) ) {
                 dest_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, dest_type->base.loc, dest_type));
             }
@@ -5605,6 +5609,8 @@ public:
                                     + " " +  op_str + " " + ASRUtils::type_to_str(right_type), x.base.base.loc);
             }
             return;
+        } else if( overloaded == nullptr ) {
+            LCOMPILERS_ASSERT(false);
         }
 
         if (overloaded != nullptr) {
@@ -5772,7 +5778,7 @@ public:
                         }
                     }
                 }
-    
+
                 // if not found, then try to build a function for intrinsic operator
                 if (!found) {
                     if (f->n_args != 2) {

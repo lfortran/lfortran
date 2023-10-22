@@ -144,10 +144,37 @@ public:
                 r += ")";
                 break;
             } case ASR::ttypeType::Array: {
-                r = get_type(down_cast<ASR::Array_t>(t)->m_type);
+                ASR::Array_t* arr_type = down_cast<ASR::Array_t>(t);
+                std::string bounds = "";
+                for (size_t i = 0; i < arr_type->n_dims; i++) {
+                    if (i > 0) bounds += ", ";
+                    std::string start = "", len = "";
+                    if (arr_type->m_dims[i].m_start) {
+                        visit_expr(*arr_type->m_dims[i].m_start);
+                        start = s;
+                    }
+                    if (arr_type->m_dims[i].m_length) {
+                        visit_expr(*arr_type->m_dims[i].m_length);
+                        len = s;
+                    }
+
+                    if (len.length() == 0) {
+                        bounds += ":";
+                    } else {
+                        if (start.length() == 0 || start == "1") {
+                            bounds += len;
+                        } else {
+                            bounds += start + ":(" + start + ")+(" + len + ")-1";
+                        }
+                    }
+                }
+                r = get_type(arr_type->m_type) + ", dimension(" + bounds + ")";
                 break;
             } case ASR::ttypeType::Allocatable: {
-                r = get_type(down_cast<ASR::Allocatable_t>(t)->m_type);
+                r = get_type(down_cast<ASR::Allocatable_t>(t)->m_type) + ", allocatable";
+                break;
+            } case ASR::ttypeType::Pointer: {
+                r = get_type(down_cast<ASR::Pointer_t>(t)->m_type) + ", pointer";
                 break;
             }
             default:
@@ -192,9 +219,11 @@ public:
         r += "\n";
         r += indent + "implicit none";
         r += "\n";
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (is_a<ASR::Variable_t>(*item.second)) {
-                visit_symbol(*item.second);
+        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
+        for (auto &item : var_order) {
+            ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
+            if (is_a<ASR::Variable_t>(*var_sym)) {
+                visit_symbol(*var_sym);
                 r += s;
             }
         }
@@ -251,12 +280,18 @@ public:
             if (i < x.n_args-1) r += ", ";
         }
         r += ")";
+        if (x.m_return_var) {
+            visit_expr(*x.m_return_var);
+            r += " result(" + s + ")";
+        }
         r += "\n";
 
         inc_indent();
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (is_a<ASR::Variable_t>(*item.second)) {
-                visit_symbol(*item.second);
+        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
+        for (auto &item : var_order) {
+            ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
+            if (is_a<ASR::Variable_t>(*var_sym)) {
+                visit_symbol(*var_sym);
                 r += s;
             }
         }
@@ -306,7 +341,7 @@ public:
                 // Pass
                 break;
             } case ASR::intentType::ReturnVar : {
-                r += ", intent(out)";
+                // Pass
                 break;
             } case ASR::intentType::Unspecified : {
                 // Pass
@@ -320,27 +355,8 @@ public:
         } else if (x.m_storage == ASR::storage_typeType::Save) {
             r += ", save";
         }
-        if (is_a<ASR::Allocatable_t>(*x.m_type)) {
-            r += ", allocatable";
-
-        }
         r += " :: ";
         r.append(x.m_name);
-        ASR::ttype_t *x_m_type = ASRUtils::type_get_past_allocatable(x.m_type);
-        if (is_a<ASR::Array_t>(*x_m_type)) {
-            ASR::Array_t *arr = down_cast<ASR::Array_t>(x_m_type);
-            r += "(";
-            for (size_t i = 0; i < arr->n_dims; i++) {
-                if (arr->m_dims[i].m_length) {
-                    visit_expr(*arr->m_dims[i].m_length);
-                    r += s;
-                } else {
-                    r += ":";
-                }
-                if (i < arr->n_dims-1) r += ", ";
-            }
-            r += ")";
-        }
         if (x.m_value) {
             r += " = ";
             visit_expr(*x.m_value);
@@ -413,7 +429,13 @@ public:
         s = r;
     }
 
-    // void visit_Associate(const ASR::Associate_t &x) {}
+    void visit_Associate(const ASR::Associate_t &x) {
+        visit_expr(*x.m_target);
+        std::string t = std::move(s);
+        visit_expr(*x.m_value);
+        std::string v = std::move(s);
+        s = t + " => " + v + "\n";
+    }
 
     void visit_Cycle(const ASR::Cycle_t &x) {
         s = indent + "cycle";
@@ -816,7 +838,17 @@ public:
 
     // void visit_NamedExpr(const ASR::NamedExpr_t &x) {}
 
-    // void visit_FunctionCall(const ASR::FunctionCall_t &x) {}
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        std::string r = ASRUtils::symbol_name(x.m_name);
+        r += "(";
+        for (size_t i = 0; i < x.n_args; i ++) {
+            visit_expr(*x.m_args[i].m_value);
+            r += s;
+            if (i < x.n_args-1) r += ", ";
+        }
+        r += ")\n";
+        s = r;
+    }
 
     void visit_IntrinsicScalarFunction(const ASR::IntrinsicScalarFunction_t &x) {
         std::string out;
@@ -1099,7 +1131,38 @@ public:
         last_expr_precedence = 13;
     }
 
-    // void visit_ArraySection(const ASR::ArraySection_t &x) {}
+    void visit_ArraySection(const ASR::ArraySection_t &x) {
+        std::string r = "";
+        visit_expr(*x.m_v);
+        r += s;
+        r += "(";
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (i > 0) {
+                r += ", ";
+            }
+            std::string left, right, step;
+            if (x.m_args[i].m_left) {
+                visit_expr(*x.m_args[i].m_left);
+                left = std::move(s);
+                r += left + ":";
+            }
+            if (x.m_args[i].m_right) {
+                visit_expr(*x.m_args[i].m_right);
+                right = std::move(s);
+                r += right;
+            }
+            if (x.m_args[i].m_step ) {
+                visit_expr(*x.m_args[i].m_step);
+                step = std::move(s);
+                if (step != "1") {
+                    r += ":" + step;
+                }
+            }
+        }
+        r += ")";
+        s = r;
+        last_expr_precedence = 13;
+    }
 
     void visit_ArraySize(const ASR::ArraySize_t &x) {
         visit_expr(*x.m_v);

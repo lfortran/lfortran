@@ -358,6 +358,8 @@ RUN(NAME arrays_op_21 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_op_22 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_op_23 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_op_24 LABELS gfortran llvm llvmStackArray)
+RUN(NAME arrays_op_26 LABELS gfortran llvm llvmStackArray)
+RUN(NAME arrays_op_27 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_reshape_14 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_reshape_15 LABELS gfortran llvm fortran)
 RUN(NAME arrays_elemental_15 LABELS gfortran llvm llvmStackArray)
@@ -995,8 +997,8 @@ RUN(NAME enum_01 LABELS gfortran llvm)
 RUN(NAME enum_02 LABELS gfortran llvm EXTRAFILES
          enum_02_module.f90)
 
-RUN(NAME array_section_01 LABELS gfortran llvm llvmStackArray)
-RUN(NAME array_section_02 LABELS gfortran llvm llvmStackArray)
+RUN(NAME array_section_01 LABELS gfortran llvm llvmStackArray fortran)
+RUN(NAME array_section_02 LABELS gfortran llvm llvmStackArray fortran)
 
 RUN(NAME pass_array_by_data_01 LABELS gfortran llvm llvmStackArray wasm)
 RUN(NAME pass_array_by_data_02 LABELS gfortran llvm llvmStackArray)
@@ -1096,6 +1098,7 @@ RUN(NAME entry_08 LABELS gfortran llvm)
 RUN(NAME entry_09 LABELS gfortran llvm)
 RUN(NAME entry_10 LABELS gfortran llvm)
 RUN(NAME entry_11 LABELS gfortran llvm)
+RUN(NAME entry_12 LABELS gfortran llvm)
 
 RUN(NAME character_01 LABELS gfortran llvm)
 

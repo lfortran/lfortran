@@ -112,7 +112,8 @@ namespace LCompilers {
                                         arr_expr->base.loc, arr_expr,
                                         args.p, args.size(),
                                         ASRUtils::type_get_past_array(
-                                            ASRUtils::type_get_past_allocatable(array_ref_type)),
+                                            ASRUtils::type_get_past_pointer(
+                                                ASRUtils::type_get_past_allocatable(array_ref_type))),
                                         ASR::arraystorageType::RowMajor, nullptr));
             if( perform_cast ) {
                 LCOMPILERS_ASSERT(casted_type != nullptr);
@@ -143,7 +144,8 @@ namespace LCompilers {
                                         arr_expr->base.loc, arr_expr,
                                         args.p, args.size(),
                                         ASRUtils::type_get_past_array(
-                                            ASRUtils::type_get_past_allocatable(array_ref_type)),
+                                            ASRUtils::type_get_past_pointer(
+                                                ASRUtils::type_get_past_allocatable(array_ref_type))),
                                         ASR::arraystorageType::RowMajor, nullptr));
             if( perform_cast ) {
                 LCOMPILERS_ASSERT(casted_type != nullptr);

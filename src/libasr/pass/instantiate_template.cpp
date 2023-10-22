@@ -324,7 +324,8 @@ public:
         ASR::ttype_t *type = substitute_type(x->m_type);
 
         return ASRUtils::make_ArrayItem_t_util(al, x->base.base.loc, m_v, args.p, x->n_args,
-            ASRUtils::type_get_past_allocatable(type), x->m_storage_format, m_value);
+            ASRUtils::type_get_past_pointer(
+                ASRUtils::type_get_past_allocatable(type)), x->m_storage_format, m_value);
     }
 
     ASR::asr_t* duplicate_ArrayConstant(ASR::ArrayConstant_t *x) {
