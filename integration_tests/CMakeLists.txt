@@ -996,8 +996,8 @@ RUN(NAME enum_01 LABELS gfortran llvm)
 RUN(NAME enum_02 LABELS gfortran llvm EXTRAFILES
          enum_02_module.f90)
 
-RUN(NAME array_section_01 LABELS gfortran llvm llvmStackArray)
-RUN(NAME array_section_02 LABELS gfortran llvm llvmStackArray)
+RUN(NAME array_section_01 LABELS gfortran llvm llvmStackArray fortran)
+RUN(NAME array_section_02 LABELS gfortran llvm llvmStackArray fortran)
 
 RUN(NAME pass_array_by_data_01 LABELS gfortran llvm llvmStackArray wasm)
 RUN(NAME pass_array_by_data_02 LABELS gfortran llvm llvmStackArray)
