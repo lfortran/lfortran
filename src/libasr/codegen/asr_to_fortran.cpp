@@ -171,7 +171,7 @@ public:
                 r = get_type(arr_type->m_type) + ", dimension(" + bounds + ")";
                 break;
             } case ASR::ttypeType::Allocatable: {
-                r = get_type(down_cast<ASR::Allocatable_t>(t)->m_type);
+                r = get_type(down_cast<ASR::Allocatable_t>(t)->m_type) + ", allocatable";
                 break;
             } case ASR::ttypeType::Pointer: {
                 r = get_type(down_cast<ASR::Pointer_t>(t)->m_type) + ", pointer";
@@ -346,10 +346,6 @@ public:
             r += ", parameter";
         } else if (x.m_storage == ASR::storage_typeType::Save) {
             r += ", save";
-        }
-        if (is_a<ASR::Allocatable_t>(*x.m_type)) {
-            r += ", allocatable";
-
         }
         r += " :: ";
         r.append(x.m_name);
