@@ -747,7 +747,17 @@ public:
 
     // void visit_NamedExpr(const ASR::NamedExpr_t &x) {}
 
-    // void visit_FunctionCall(const ASR::FunctionCall_t &x) {}
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        std::string r = ASRUtils::symbol_name(x.m_name);
+        r += "(";
+        for (size_t i = 0; i < x.n_args; i ++) {
+            visit_expr(*x.m_args[i].m_value);
+            r += s;
+            if (i < x.n_args-1) r += ", ";
+        }
+        r += ")\n";
+        s = r;
+    }
 
     void visit_IntrinsicScalarFunction(const ASR::IntrinsicScalarFunction_t &x) {
         std::string out;
