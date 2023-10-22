@@ -280,6 +280,10 @@ public:
             if (i < x.n_args-1) r += ", ";
         }
         r += ")";
+        if (x.m_return_var) {
+            visit_expr(*x.m_return_var);
+            r += " result(" + s + ")";
+        }
         r += "\n";
 
         inc_indent();
@@ -337,7 +341,7 @@ public:
                 // Pass
                 break;
             } case ASR::intentType::ReturnVar : {
-                r += ", intent(out)";
+                // Pass
                 break;
             } case ASR::intentType::Unspecified : {
                 // Pass
