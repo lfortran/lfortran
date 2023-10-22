@@ -144,7 +144,31 @@ public:
                 r += ")";
                 break;
             } case ASR::ttypeType::Array: {
-                r = get_type(down_cast<ASR::Array_t>(t)->m_type);
+                ASR::Array_t* arr_type = down_cast<ASR::Array_t>(t);
+                std::string bounds = "";
+                for (size_t i = 0; i < arr_type->n_dims; i++) {
+                    if (i > 0) bounds += ", ";
+                    std::string start = "", len = "";
+                    if (arr_type->m_dims[i].m_start) {
+                        visit_expr(*arr_type->m_dims[i].m_start);
+                        start = s;
+                    }
+                    if (arr_type->m_dims[i].m_length) {
+                        visit_expr(*arr_type->m_dims[i].m_length);
+                        len = s;
+                    }
+
+                    if (len.length() == 0) {
+                        bounds += ":";
+                    } else {
+                        if (start.length() == 0 || start == "1") {
+                            bounds += len;
+                        } else {
+                            bounds += start + ":(" + start + ")+(" + len + ")-1";
+                        }
+                    }
+                }
+                r = get_type(arr_type->m_type) + ", dimension(" + bounds + ")";
                 break;
             } case ASR::ttypeType::Allocatable: {
                 r = get_type(down_cast<ASR::Allocatable_t>(t)->m_type);
@@ -329,21 +353,6 @@ public:
         }
         r += " :: ";
         r.append(x.m_name);
-        ASR::ttype_t *x_m_type = ASRUtils::type_get_past_allocatable(x.m_type);
-        if (is_a<ASR::Array_t>(*x_m_type)) {
-            ASR::Array_t *arr = down_cast<ASR::Array_t>(x_m_type);
-            r += "(";
-            for (size_t i = 0; i < arr->n_dims; i++) {
-                if (arr->m_dims[i].m_length) {
-                    visit_expr(*arr->m_dims[i].m_length);
-                    r += s;
-                } else {
-                    r += ":";
-                }
-                if (i < arr->n_dims-1) r += ", ";
-            }
-            r += ")";
-        }
         if (x.m_value) {
             r += " = ";
             visit_expr(*x.m_value);
