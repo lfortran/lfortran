@@ -149,6 +149,9 @@ public:
             } case ASR::ttypeType::Allocatable: {
                 r = get_type(down_cast<ASR::Allocatable_t>(t)->m_type);
                 break;
+            } case ASR::ttypeType::Pointer: {
+                r = get_type(down_cast<ASR::Pointer_t>(t)->m_type) + ", pointer";
+                break;
             }
             default:
                 throw LCompilersException("The type `"
