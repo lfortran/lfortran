@@ -267,6 +267,7 @@ RUN(NAME cycle_and_exit1 LABELS gfortran llvm fortran)
 RUN(NAME cycle_and_exit2 LABELS gfortran llvm fortran)
 RUN(NAME cycle_and_exit3 LABELS gfortran llvm)
 RUN(NAME cycle_and_exit4 LABELS gfortran llvm)
+RUN(NAME cycle_and_exit5 LABELS gfortran llvm)
 
 RUN(NAME goto_01 LABELS gfortran llvm)
 RUN(NAME goto_02 LABELS gfortran llvm)
