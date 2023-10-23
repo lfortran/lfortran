@@ -5867,7 +5867,7 @@ public:
                 throw SemanticError("Unsupported template argument", args[i]->base.loc);
             }
         }
-        
+
         ASR::symbol_t *s = temp->m_symtab->resolve_symbol(func_name);
         std::string new_func_name = func_name;
         SymbolTable *target_scope = current_scope;
