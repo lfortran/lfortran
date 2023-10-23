@@ -323,6 +323,8 @@ public:
         }
 
         // end
+        loop_head.pop_back();
+        loop_head_names.pop_back();
         loop_or_block_end.pop_back();
         loop_or_block_end_names.pop_back();
         start_new_block(loopend);
@@ -2969,6 +2971,10 @@ public:
     }
 
     void visit_Program(const ASR::Program_t &x) {
+        loop_head.clear();
+        loop_head_names.clear();
+        loop_or_block_end.clear();
+        loop_or_block_end_names.clear();
         heap_arrays.clear();
         strings_to_be_deallocated.reserve(al, 1);
         SymbolTable* current_scope_copy = current_scope;
@@ -3057,6 +3063,10 @@ public:
         // Finalize the debug info.
         if (compiler_options.emit_debug_info) DBuilder->finalize();
         current_scope = current_scope_copy;
+        loop_head.clear();
+        loop_head_names.clear();
+        loop_or_block_end.clear();
+        loop_or_block_end_names.clear();
         heap_arrays.clear();
         strings_to_be_deallocated.reserve(al, 1);
     }
@@ -3637,6 +3647,10 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        loop_head.clear();
+        loop_head_names.clear();
+        loop_or_block_end.clear();
+        loop_or_block_end_names.clear();
         heap_arrays.clear();
         strings_to_be_deallocated.reserve(al, 1);
         SymbolTable* current_scope_copy = current_scope;
@@ -3667,6 +3681,10 @@ public:
         // Finalize the debug info.
         if (compiler_options.emit_debug_info) DBuilder->finalize();
         current_scope = current_scope_copy;
+        loop_head.clear();
+        loop_head_names.clear();
+        loop_or_block_end.clear();
+        loop_or_block_end_names.clear();
         heap_arrays.clear();
         strings_to_be_deallocated.reserve(al, 1);
     }
