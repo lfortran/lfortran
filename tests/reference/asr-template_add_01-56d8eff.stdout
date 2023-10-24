@@ -873,8 +873,7 @@
                                         []
                                         .false.
                                     )
-                                    [add_real
-                                    add_integer]
+                                    []
                                     []
                                     [(=
                                         (Var 10 x)

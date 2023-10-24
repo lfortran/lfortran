@@ -919,8 +919,7 @@
                                         []
                                         .false.
                                     )
-                                    [add_integer
-                                    add_integer2]
+                                    []
                                     []
                                     [(=
                                         (Var 10 n1)

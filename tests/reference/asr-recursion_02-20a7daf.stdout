@@ -203,8 +203,7 @@
                                         []
                                         .false.
                                     )
-                                    [f
-                                    sub1]
+                                    [sub1]
                                     [(Var 3 f)
                                     (Var 3 iter)]
                                     [(=
@@ -435,8 +434,7 @@
                                         []
                                         .false.
                                     )
-                                    [getx
-                                    solver]
+                                    [solver]
                                     [(Var 5 y)
                                     (Var 5 iter)]
                                     [(=

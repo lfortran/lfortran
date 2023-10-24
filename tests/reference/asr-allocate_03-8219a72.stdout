@@ -411,8 +411,7 @@
                                         []
                                         .false.
                                     )
-                                    [allocated
-                                    f]
+                                    [f]
                                     [(Var 5 c)]
                                     [(If
                                         (FunctionCall

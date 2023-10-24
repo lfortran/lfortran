@@ -56,7 +56,7 @@
                                         []
                                         .false.
                                     )
-                                    [present]
+                                    []
                                     [(Var 3 name)]
                                     [(If
                                         (FunctionCall

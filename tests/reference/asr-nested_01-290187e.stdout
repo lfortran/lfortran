@@ -165,7 +165,7 @@
                                         []
                                         .false.
                                     )
-                                    [d]
+                                    []
                                     []
                                     [(Print
                                         [(StringConstant

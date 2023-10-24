@@ -129,8 +129,7 @@
                                         []
                                         .false.
                                     )
-                                    [filewrite_filedata
-                                    join_path]
+                                    []
                                     []
                                     [(SubroutineCall
                                         2 filewrite_filedata

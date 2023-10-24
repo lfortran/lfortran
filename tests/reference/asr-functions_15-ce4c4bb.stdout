@@ -102,7 +102,7 @@
                                         []
                                         .false.
                                     )
-                                    [present]
+                                    []
                                     [(Var 5 x)]
                                     [(=
                                         (Var 5 f)
@@ -420,7 +420,7 @@
                                         []
                                         .false.
                                     )
-                                    [present]
+                                    []
                                     [(Var 3 a)
                                     (Var 3 b)
                                     (Var 3 c)

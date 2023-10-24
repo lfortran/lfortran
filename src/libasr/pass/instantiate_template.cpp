@@ -429,9 +429,9 @@ public:
                 throw LCompilersException("Cannot handle instantiation for the function call " + call_name);
             }
         }
-
-        dependencies.push_back(al, ASRUtils::symbol_name(name));
-
+        if (ASRUtils::symbol_parent_symtab(name)->get_counter() != current_scope->get_counter() && !ASR::is_a<ASR::ExternalSymbol_t>(*name)) {
+            ADD_ASR_DEPENDENCIES(current_scope, name, dependencies);
+        }
         return ASRUtils::make_FunctionCall_t_util(al, x->base.base.loc, name, x->m_original_name,
             args.p, args.size(), type, value, dt);
     }
@@ -473,10 +473,10 @@ public:
                 throw LCompilersException("Cannot handle instantiation for the function call " + call_name);
             }
         }
-
-        dependencies.push_back(al, ASRUtils::symbol_name(name));
-
-        return ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc, name,
+        if (ASRUtils::symbol_parent_symtab(name)->get_counter() != current_scope->get_counter() && !ASR::is_a<ASR::ExternalSymbol_t>(*name)) {
+            ADD_ASR_DEPENDENCIES(current_scope, name, dependencies);
+        }
+        return ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc, name /* change this */,
             x->m_original_name, args.p, args.size(), dt, nullptr, false);
     }
 

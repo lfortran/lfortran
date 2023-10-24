@@ -114,7 +114,7 @@
                         []
                         .false.
                     )
-                    [sub2]
+                    []
                     [(Var 2 sub2)]
                     [(SubroutineCall
                         2 sub2

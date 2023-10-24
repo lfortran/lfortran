@@ -626,8 +626,7 @@
                                         []
                                         .false.
                                     )
-                                    [get_int_fst
-                                    get_int_snd]
+                                    []
                                     []
                                     [(=
                                         (StructInstanceMember

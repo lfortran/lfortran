@@ -1506,8 +1506,7 @@
                                         []
                                         .false.
                                     )
-                                    [generic_sum_integer
-                                    generic_sum_real]
+                                    []
                                     []
                                     [(DoLoop
                                         ()

@@ -737,8 +737,7 @@
                                         []
                                         .false.
                                     )
-                                    [present
-                                    ieor@ieor64]
+                                    []
                                     [(Var 4 input)
                                     (Var 4 seed)]
                                     [(If
@@ -1212,9 +1211,7 @@
                                         []
                                         .false.
                                     )
-                                    [len_trim
-                                    trim
-                                    verify_kind4]
+                                    []
                                     [(Var 6 line)]
                                     [(=
                                         (Var 6 name)
@@ -1494,7 +1491,7 @@
                                         []
                                         .false.
                                     )
-                                    [present]
+                                    []
                                     [(Var 7 strings)
                                     (Var 7 delim)]
                                     [(If

@@ -298,8 +298,7 @@
                                         []
                                         .false.
                                     )
-                                    [allocated
-                                    1_destroy]
+                                    []
                                     [(Var 6 self)]
                                     [(If
                                         (FunctionCall
@@ -591,7 +590,7 @@
                                         []
                                         .false.
                                     )
-                                    [allocated]
+                                    []
                                     [(Var 48 self)]
                                     [(If
                                         (FunctionCall

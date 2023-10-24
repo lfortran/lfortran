@@ -208,7 +208,7 @@
                                         []
                                         .false.
                                     )
-                                    [fun]
+                                    []
                                     [(Var 3 fun)
                                     (Var 3 x)]
                                     [(=
