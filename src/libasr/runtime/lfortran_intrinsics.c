@@ -269,9 +269,6 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     int sign_width = (val < 0) ? 1 : 0;
     int integer_length = (integer_part == 0) ? 1 : (int)log10(llabs(integer_part)) + 1;
 
-    if (format[1] == 'S') {
-        scale = 1;
-    }
     char *num_pos = format ,*dot_pos = strchr(format, '.');
     decimal_digits = atoi(++dot_pos);
     while(!isdigit(*num_pos)) num_pos++;
@@ -300,6 +297,10 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     int decimal = 1;
     while (val_str[0] == '0') {
         memmove(val_str, val_str + 1, strlen(val_str));
+        decimal--;
+    }
+    if (format[1] == 'S') {
+        scale = 1;
         decimal--;
     }
 
@@ -365,9 +366,12 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
             long long t = (long long)round((long double)atoll(new_str) / (long long) pow(10, (strlen(new_str) - decimal_digits)));
             sprintf(new_str, "%lld", t);
             int index = zeros;
-            while(index--) strcat(formatted_value, "0");
+            while(index--) {
+                memmove(new_str + 1, new_str, strlen(new_str)+1);
+                new_str[0] = '0';
+            }
         }
-        new_str[decimal_digits - zeros] = '\0';
+        new_str[decimal_digits] = '\0';
         strcat(formatted_value, new_str);
         free(new_str);
         free(temp);
@@ -1214,17 +1218,34 @@ LFORTRAN_API void _lfortran_strcat(char** s1, char** s2, char** dest)
 
 LFORTRAN_API void _lfortran_strcpy(char** x, char *y, int8_t free_target)
 {
-    if (*x && free_target) free((void *)*x);
-    *x = (char*) malloc((strlen(y) + 1) * sizeof(char));
-    strcpy(*x, y);
+    if (free_target) {
+        if (*x) {
+            free((void *)*x);
+        }
+        *x = (char *) malloc(strlen(y)*sizeof(char));
+        _lfortran_string_init(strlen(y)+1, *x);
+    }
+    for (size_t i = 0; i < strlen(*x); i ++) {
+        if (i < strlen(y)) {
+            x[0][i] = y[i];
+        } else {
+            x[0][i] = ' ';
+        }
+    }
 }
 
 #define MIN(x, y) ((x < y) ? x : y)
 
+int strlen_without_trailing_space(char *str) {
+    int end = strlen(str) - 1;
+    while(end >= 0 && str[end] == ' ') end--;
+    return end + 1;
+}
+
 int str_compare(char **s1, char **s2)
 {
-    int s1_len = strlen(*s1);
-    int s2_len = strlen(*s2);
+    int s1_len = strlen_without_trailing_space(*s1);
+    int s2_len = strlen_without_trailing_space(*s2);
     int lim = MIN(s1_len, s2_len);
     int res = 0;
     int i ;
@@ -2335,8 +2356,10 @@ LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n)
 LFORTRAN_API void _lfortran_string_write(char **str, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    *str = (char *) malloc(strlen(*str)*sizeof(char));
-    vsprintf(*str, format, args);
+    char *s = (char *) malloc(strlen(*str)*sizeof(char));
+    vsprintf(s, format, args);
+    _lfortran_strcpy(str, s, 0);
+    free(s);
     va_end(args);
 }
 

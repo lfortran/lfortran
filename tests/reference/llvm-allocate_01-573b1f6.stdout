@@ -701,9 +701,32 @@ else8:                                            ; preds = %ifcont
   br label %ifcont9
 
 ifcont9:                                          ; preds = %else8, %then7
+  %466 = load %array.1*, %array.1** %c_copy, align 8
+  %467 = getelementptr %array.1, %array.1* %466, i32 0, i32 0
+  %468 = load %complex_4*, %complex_4** %467, align 8
+  %469 = ptrtoint %complex_4* %468 to i64
+  %470 = icmp ne i64 %469, 0
+  br i1 %470, label %then10, label %else11
+
+then10:                                           ; preds = %ifcont9
+  %471 = getelementptr %array.1, %array.1* %466, i32 0, i32 0
+  %472 = load %complex_4*, %complex_4** %471, align 8
+  %473 = alloca i8*, align 8
+  %474 = bitcast %complex_4* %472 to i8*
+  store i8* %474, i8** %473, align 8
+  %475 = load i8*, i8** %473, align 8
+  call void (i8*, ...) @_lfortran_free(i8* %475)
+  %476 = getelementptr %array.1, %array.1* %466, i32 0, i32 0
+  store %complex_4* null, %complex_4** %476, align 8
+  br label %ifcont12
+
+else11:                                           ; preds = %ifcont9
+  br label %ifcont12
+
+ifcont12:                                         ; preds = %else11, %then10
   br label %return
 
-return:                                           ; preds = %ifcont9
+return:                                           ; preds = %ifcont12
   ret void
 }
 

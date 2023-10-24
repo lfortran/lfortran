@@ -556,7 +556,8 @@ namespace LCompilers {
                 array_ref_type = ASRUtils::duplicate_type(al, array_ref_type, &empty_dims);
                 ASR::expr_t* array_ref = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, arr_var->base.loc,
                                             arr_var, args.p, args.size(),
-                                            ASRUtils::type_get_past_allocatable(array_ref_type),
+                                            ASRUtils::type_get_past_pointer(
+                                                ASRUtils::type_get_past_allocatable(array_ref_type)),
                                             ASR::arraystorageType::RowMajor, nullptr));
                 if( ASR::is_a<ASR::ImpliedDoLoop_t>(*idoloop->m_values[i]) ) {
                     create_do_loop(al, ASR::down_cast<ASR::ImpliedDoLoop_t>(idoloop->m_values[i]),
@@ -738,7 +739,8 @@ namespace LCompilers {
                                                         target_section->base.base.loc,
                                                         target_section->m_v,
                                                         args.p, args.size(),
-                                                        ASRUtils::type_get_past_allocatable(array_ref_type),
+                                                        ASRUtils::type_get_past_pointer(
+                                                            ASRUtils::type_get_past_allocatable(array_ref_type)),
                                                         ASR::arraystorageType::RowMajor, nullptr));
                         ASR::expr_t* x_m_args_k = x->m_args[k];
                         if( perform_cast ) {

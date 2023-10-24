@@ -47,10 +47,12 @@ class InsertDeallocate: public ASR::CallReplacerOnExpressionsVisitor<InsertDeall
 
         void visit_Function(const ASR::Function_t& x) {
             visit_Symbol(x);
+            ASR::CallReplacerOnExpressionsVisitor<InsertDeallocate>::visit_Function(x);
         }
 
         void visit_Program(const ASR::Program_t& x) {
             visit_Symbol(x);
+            ASR::CallReplacerOnExpressionsVisitor<InsertDeallocate>::visit_Program(x);
         }
 
 };

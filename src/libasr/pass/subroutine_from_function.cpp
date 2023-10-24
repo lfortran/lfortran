@@ -195,7 +195,7 @@ class ReplaceFunctionCallWithSubroutineCall:
                             is_allocatable = is_func_call_allocatable || is_result_var_allocatable;
                         }
                         n_dims_ = ASRUtils::extract_dimensions_from_ttype(result_var_type, m_dims_);
-                        is_created_result_var_type_dependent_on_local_vars = !ASRUtils::is_dimension_dependent_only_on_arguments(m_dims_, n_dims_) && result_var_;
+                        is_created_result_var_type_dependent_on_local_vars = !ASRUtils::is_dimension_dependent_only_on_arguments(m_dims_, n_dims_);
                         if( is_allocatable || is_created_result_var_type_dependent_on_local_vars ) {
                             result_var_type = ASRUtils::duplicate_type_with_empty_dims(al, result_var_type);
                             result_var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(

@@ -144,10 +144,37 @@ public:
                 r += ")";
                 break;
             } case ASR::ttypeType::Array: {
-                r = get_type(down_cast<ASR::Array_t>(t)->m_type);
+                ASR::Array_t* arr_type = down_cast<ASR::Array_t>(t);
+                std::string bounds = "";
+                for (size_t i = 0; i < arr_type->n_dims; i++) {
+                    if (i > 0) bounds += ", ";
+                    std::string start = "", len = "";
+                    if (arr_type->m_dims[i].m_start) {
+                        visit_expr(*arr_type->m_dims[i].m_start);
+                        start = s;
+                    }
+                    if (arr_type->m_dims[i].m_length) {
+                        visit_expr(*arr_type->m_dims[i].m_length);
+                        len = s;
+                    }
+
+                    if (len.length() == 0) {
+                        bounds += ":";
+                    } else {
+                        if (start.length() == 0 || start == "1") {
+                            bounds += len;
+                        } else {
+                            bounds += start + ":(" + start + ")+(" + len + ")-1";
+                        }
+                    }
+                }
+                r = get_type(arr_type->m_type) + ", dimension(" + bounds + ")";
                 break;
             } case ASR::ttypeType::Allocatable: {
-                r = get_type(down_cast<ASR::Allocatable_t>(t)->m_type);
+                r = get_type(down_cast<ASR::Allocatable_t>(t)->m_type) + ", allocatable";
+                break;
+            } case ASR::ttypeType::Pointer: {
+                r = get_type(down_cast<ASR::Pointer_t>(t)->m_type) + ", pointer";
                 break;
             }
             default:
@@ -192,9 +219,11 @@ public:
         r += "\n";
         r += indent + "implicit none";
         r += "\n";
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (is_a<ASR::Variable_t>(*item.second)) {
-                visit_symbol(*item.second);
+        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
+        for (auto &item : var_order) {
+            ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
+            if (is_a<ASR::Variable_t>(*var_sym)) {
+                visit_symbol(*var_sym);
                 r += s;
             }
         }
@@ -251,12 +280,18 @@ public:
             if (i < x.n_args-1) r += ", ";
         }
         r += ")";
+        if (x.m_return_var) {
+            visit_expr(*x.m_return_var);
+            r += " result(" + s + ")";
+        }
         r += "\n";
 
         inc_indent();
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (is_a<ASR::Variable_t>(*item.second)) {
-                visit_symbol(*item.second);
+        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
+        for (auto &item : var_order) {
+            ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
+            if (is_a<ASR::Variable_t>(*var_sym)) {
+                visit_symbol(*var_sym);
                 r += s;
             }
         }
@@ -306,7 +341,7 @@ public:
                 // Pass
                 break;
             } case ASR::intentType::ReturnVar : {
-                r += ", intent(out)";
+                // Pass
                 break;
             } case ASR::intentType::Unspecified : {
                 // Pass
@@ -320,27 +355,8 @@ public:
         } else if (x.m_storage == ASR::storage_typeType::Save) {
             r += ", save";
         }
-        if (is_a<ASR::Allocatable_t>(*x.m_type)) {
-            r += ", allocatable";
-
-        }
         r += " :: ";
         r.append(x.m_name);
-        ASR::ttype_t *x_m_type = ASRUtils::type_get_past_allocatable(x.m_type);
-        if (is_a<ASR::Array_t>(*x_m_type)) {
-            ASR::Array_t *arr = down_cast<ASR::Array_t>(x_m_type);
-            r += "(";
-            for (size_t i = 0; i < arr->n_dims; i++) {
-                if (arr->m_dims[i].m_length) {
-                    visit_expr(*arr->m_dims[i].m_length);
-                    r += s;
-                } else {
-                    r += ":";
-                }
-                if (i < arr->n_dims-1) r += ", ";
-            }
-            r += ")";
-        }
         if (x.m_value) {
             r += " = ";
             visit_expr(*x.m_value);
@@ -413,7 +429,13 @@ public:
         s = r;
     }
 
-    // void visit_Associate(const ASR::Associate_t &x) {}
+    void visit_Associate(const ASR::Associate_t &x) {
+        visit_expr(*x.m_target);
+        std::string t = std::move(s);
+        visit_expr(*x.m_value);
+        std::string v = std::move(s);
+        s = t + " => " + v + "\n";
+    }
 
     void visit_Cycle(const ASR::Cycle_t &x) {
         s = indent + "cycle";
@@ -725,7 +747,17 @@ public:
 
     // void visit_NamedExpr(const ASR::NamedExpr_t &x) {}
 
-    // void visit_FunctionCall(const ASR::FunctionCall_t &x) {}
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        std::string r = ASRUtils::symbol_name(x.m_name);
+        r += "(";
+        for (size_t i = 0; i < x.n_args; i ++) {
+            visit_expr(*x.m_args[i].m_value);
+            r += s;
+            if (i < x.n_args-1) r += ", ";
+        }
+        r += ")\n";
+        s = r;
+    }
 
     void visit_IntrinsicScalarFunction(const ASR::IntrinsicScalarFunction_t &x) {
         std::string out;
@@ -1008,7 +1040,38 @@ public:
         last_expr_precedence = 13;
     }
 
-    // void visit_ArraySection(const ASR::ArraySection_t &x) {}
+    void visit_ArraySection(const ASR::ArraySection_t &x) {
+        std::string r = "";
+        visit_expr(*x.m_v);
+        r += s;
+        r += "(";
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (i > 0) {
+                r += ", ";
+            }
+            std::string left, right, step;
+            if (x.m_args[i].m_left) {
+                visit_expr(*x.m_args[i].m_left);
+                left = std::move(s);
+                r += left + ":";
+            }
+            if (x.m_args[i].m_right) {
+                visit_expr(*x.m_args[i].m_right);
+                right = std::move(s);
+                r += right;
+            }
+            if (x.m_args[i].m_step ) {
+                visit_expr(*x.m_args[i].m_step);
+                step = std::move(s);
+                if (step != "1") {
+                    r += ":" + step;
+                }
+            }
+        }
+        r += ")";
+        s = r;
+        last_expr_precedence = 13;
+    }
 
     void visit_ArraySize(const ASR::ArraySize_t &x) {
         visit_expr(*x.m_v);
@@ -1077,8 +1140,167 @@ public:
     // void visit_OverloadedUnaryMinus(const ASR::OverloadedUnaryMinus_t &x) {}
 
     void visit_Cast(const ASR::Cast_t &x) {
-        // TODO
+        std::string r;
         visit_expr(*x.m_arg);
+        switch (x.m_kind) {
+            case (ASR::cast_kindType::IntegerToReal) : {
+                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                switch (dest_kind) {
+                    case 1: r = "real(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 2: r = "real(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 4: r = "real(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 8: r = "real(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    default: throw CodeGenError("Cast IntegerToReal: Unsupported Kind " + std::to_string(dest_kind));
+                }
+                last_expr_precedence = 2;
+                break;
+            }
+            case (ASR::cast_kindType::RealToInteger) : {
+                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                switch (dest_kind) {
+                    case 1: r = "int(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 2: r = "int(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 4: r = "int(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 8: r = "int(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    default: throw CodeGenError("Cast RealToInteger: Unsupported Kind " + std::to_string(dest_kind));
+                }
+                last_expr_precedence = 2;
+                break;
+            }
+            case (ASR::cast_kindType::RealToReal) : {
+                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                switch (dest_kind) {
+                    case 1: r = "real(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 2: r = "real(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 4: r = "real(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 8: r = "real(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    default: throw CodeGenError("Cast RealToReal: Unsupported Kind " + std::to_string(dest_kind));
+                }
+                last_expr_precedence = 2;
+                break;
+            }
+            case (ASR::cast_kindType::IntegerToInteger) : {
+                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                switch (dest_kind) {
+                    case 1: r = "int(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 2: r = "int(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 4: r = "int(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 8: r = "int(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    default: throw CodeGenError("Cast IntegerToInteger: Unsupported Kind " + std::to_string(dest_kind));
+                }
+                last_expr_precedence = 2;
+                break;
+            }
+            case (ASR::cast_kindType::ComplexToComplex) : {
+                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                switch (dest_kind) {
+                    case 4: r = "cmplx(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 8: r = "cmplx(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    default: throw CodeGenError("Cast ComplexToComplex: Unsupported Kind " + std::to_string(dest_kind));
+                }
+                last_expr_precedence = 2;
+                break;
+            }
+            case (ASR::cast_kindType::IntegerToComplex) : {
+                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                switch (dest_kind) {
+                    case 4: r = "cmplx(" + s + ", " + "0.0" + ", " + "kind=dest_kind" + ")"; break;
+                    case 8: r = "cmplx(" + s + ", " + "0.0" + ", " + "kind=dest_kind" + ")"; break;
+                    default: throw CodeGenError("Cast IntegerToComplex: Unsupported Kind " + std::to_string(dest_kind));
+                }
+                last_expr_precedence = 2;
+                break;
+            }
+            case (ASR::cast_kindType::ComplexToReal) : {
+                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                switch (dest_kind) {
+                    case 4: r = "real(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 8: r = "real(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    default: throw CodeGenError("Cast ComplexToReal: Unsupported Kind " + std::to_string(dest_kind));
+                }
+                last_expr_precedence = 2;
+                break;
+            }
+            case (ASR::cast_kindType::RealToComplex) : {
+                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                switch (dest_kind) {
+                    case 4: r = "cmplx(" + s + ", " + "0.0" + ", " + "kind=dest_kind" + ")"; break;
+                    case 8: r = "cmplx(" + s + ", " + "0.0" + ", " + "kind=dest_kind" + ")"; break;
+                    default: throw CodeGenError("Cast IntegerToComplex: Unsupported Kind " + std::to_string(dest_kind));
+                }
+                last_expr_precedence = 2;
+                break;
+            }
+            case (ASR::cast_kindType::LogicalToInteger) : {
+                s = "int(" + s + ")";
+                last_expr_precedence = 2;
+                break;
+            }
+            case (ASR::cast_kindType::LogicalToCharacter) : {
+                s = "char(" + s + ")";
+                last_expr_precedence = 2;
+                break;
+            }
+            case (ASR::cast_kindType::IntegerToLogical) : {
+                // Implicit conversion between integer -> logical
+                break;
+            }
+            case (ASR::cast_kindType::LogicalToReal) : {
+                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                switch (dest_kind) {
+                    case 4: r = "real(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 8: r = "real(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    default: throw CodeGenError("Cast LogicalToReal: Unsupported Kind " + std::to_string(dest_kind));
+                }
+                last_expr_precedence = 2;
+                break;
+            }
+            case (ASR::cast_kindType::RealToLogical) : {
+                s = "(bool)(" + s + ")";
+                last_expr_precedence = 2;
+                break;
+            }
+            case (ASR::cast_kindType::CharacterToLogical) : {
+                s = "(bool)(len(" + s + ") > 0)";
+                last_expr_precedence = 2;
+                break;
+            }
+            case (ASR::cast_kindType::ComplexToLogical) : {
+                s = "(bool)(" + s + ")";
+                last_expr_precedence = 2;
+                break;
+            }
+            case (ASR::cast_kindType::IntegerToCharacter) : {
+                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                switch (dest_kind) {
+                    case 1: s = "char(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 2: s = "char(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 4: s = "char(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 8: s = "char(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    default: throw CodeGenError("Cast IntegerToCharacter: Unsupported Kind " + \
+                                    std::to_string(dest_kind));
+                }
+                last_expr_precedence = 2;
+                break;
+            }
+            case (ASR::cast_kindType::CharacterToInteger) : {
+                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                switch (dest_kind) {
+                    case 1: s = "ichar(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 2: s = "ichar(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 4: s = "ichar(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    case 8: s = "ichar(" + s + ", " + "kind=dest_kind" + ")"; break;
+                    default: throw CodeGenError("Cast CharacterToInteger: Unsupported Kind " + \
+                                    std::to_string(dest_kind));
+                }
+                last_expr_precedence = 2;
+                break;
+            }
+            default : {
+                throw CodeGenError("Cast kind " + std::to_string(x.m_kind) + " not implemented",
+                    x.base.base.loc);
+            }
+        }
     }
 
     void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t &x) {
@@ -1157,10 +1379,15 @@ public:
 
 };
 
-std::string asr_to_fortran(ASR::TranslationUnit_t &asr,
-        bool color, int indent) {
+Result<std::string> asr_to_fortran(ASR::TranslationUnit_t &asr,
+        diag::Diagnostics &diagnostics, bool color, int indent) {
     ASRToFortranVisitor v(color, indent);
-    v.visit_TranslationUnit(asr);
+    try {
+        v.visit_TranslationUnit(asr);
+    } catch (const CodeGenError &e) {
+        diagnostics.diagnostics.push_back(e.d);
+        return Error();
+    }
     return v.s;
 }
 
