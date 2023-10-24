@@ -718,8 +718,13 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         result_var = nullptr;
         this->replace_expr(x->m_left);
         ASR::expr_t* left = *current_expr;
-        left_dims = op_dims;
-        rank_left = op_n_dims;
+        if (!is_a<ASR::ArraySize_t>(*x->m_left)) {
+            left_dims = op_dims;
+            rank_left = op_n_dims;
+        } else {
+            left_dims = nullptr;
+            rank_left = 0;
+        }
         current_expr = current_expr_copy_35;
 
         ASR::expr_t** current_expr_copy_36 = current_expr;
@@ -730,8 +735,13 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         result_var = nullptr;
         this->replace_expr(x->m_right);
         ASR::expr_t* right = *current_expr;
-        right_dims = op_dims;
-        rank_right = op_n_dims;
+        if (!is_a<ASR::ArraySize_t>(*x->m_right)) {
+            right_dims = op_dims;
+            rank_right = op_n_dims;
+        } else {
+            right_dims = nullptr;
+            rank_right = 0;
+        }
         current_expr = current_expr_copy_36;
 
         op_dims = op_dims_copy;
