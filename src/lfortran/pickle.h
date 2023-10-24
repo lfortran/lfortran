@@ -20,8 +20,8 @@ namespace LCompilers::LFortran {
     std::string pickle_tree(AST::TranslationUnit_t &ast, bool colors=true);
 
     // Print Json structure
-    std::string pickle_json(AST::ast_t &ast, LocationManager &lm);
-    std::string pickle_json(AST::TranslationUnit_t &ast, LocationManager &lm);
+    std::string pickle_json(AST::ast_t &ast, LocationManager &lm, bool no_loc=false);
+    std::string pickle_json(AST::TranslationUnit_t &ast, LocationManager &lm, bool no_loc=false);
 
 } // namespace LCompilers::LFortran
 
