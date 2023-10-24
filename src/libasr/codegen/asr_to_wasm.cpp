@@ -3209,6 +3209,7 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr,
     pass_options.always_run = true;
     pass_options.verbose = co.verbose;
     pass_options.dump_all_passes = co.dump_all_passes;
+    pass_options.use_loop_variable_after_loop = co.use_loop_variable_after_loop;
     std::vector<std::string> passes = {"pass_array_by_data", "array_op",
                 "implied_do_loops", "print_arr", "do_loops", "select_case",
                 "intrinsic_function", "nested_vars", "unused_functions"};
