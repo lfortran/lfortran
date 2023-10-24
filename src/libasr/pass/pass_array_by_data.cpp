@@ -606,8 +606,9 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
         // and hence we will need calling the original function
         // and not the new one. WASM backend should be supporting
         // such cases for the following to be removed.
-        void visit_Program(const ASR::Program_t& x) {
-            ASR::Program_t& xx = const_cast<ASR::Program_t&>(x);
+        template <typename T>
+        void visit_Unit(const T& x) {
+            T& xx = const_cast<T&>(x);
             current_scope = xx.m_symtab;
 
             std::vector<std::string> to_be_erased;
@@ -625,23 +626,16 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
             }
         }
 
+        void visit_TranslationUnit(const ASR::TranslationUnit_t& x) {
+            visit_Unit(x);
+        }
+
+        void visit_Program(const ASR::Program_t& x) {
+            visit_Unit(x);
+        }
+
         void visit_Function(const ASR::Function_t& x) {
-            ASR::Function_t& xx = const_cast<ASR::Function_t&>(x);
-            current_scope = xx.m_symtab;
-
-            std::vector<std::string> to_be_erased;
-
-            for( auto& item: current_scope->get_scope() ) {
-                if( v.proc2newproc.find(item.second) != v.proc2newproc.end() &&
-                    not_to_be_erased.find(item.second) == not_to_be_erased.end() ) {
-                    LCOMPILERS_ASSERT(item.first == ASRUtils::symbol_name(item.second))
-                    to_be_erased.push_back(item.first);
-                }
-            }
-
-            for (auto &item: to_be_erased) {
-                current_scope->erase_symbol(item);
-            }
+            visit_Unit(x);
         }
 
 };
