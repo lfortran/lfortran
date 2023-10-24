@@ -532,6 +532,7 @@ RUN(NAME intrinsics_76 LABELS gfortran llvm)
 RUN(NAME intrinsics_77 LABELS gfortran llvm NOFAST)
 RUN(NAME intrinsics_78 LABELS gfortran llvm wasm) # mod
 RUN(NAME intrinsics_79 LABELS gfortran llvm wasm) # Trailz
+RUN(NAME intrinsics_80 LABELS gfortran llvm) # sum
 
 
 RUN(NAME parameter_01 LABELS gfortran)
