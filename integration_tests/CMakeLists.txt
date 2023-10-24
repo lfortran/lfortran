@@ -643,6 +643,7 @@ RUN(NAME where_02 LABELS gfortran llvm NOFAST fortran)
 RUN(NAME where_03 LABELS gfortran llvm NOFAST)
 RUN(NAME where_04 LABELS gfortran) # TODO: Fix this test #1631
 RUN(NAME where_05 LABELS gfortran llvm NOFAST)
+RUN(NAME where_06 LABELS gfortran llvm)
 
 RUN(NAME forallloop_01 LABELS gfortran)
 
