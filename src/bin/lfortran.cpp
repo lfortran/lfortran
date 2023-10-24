@@ -678,6 +678,7 @@ int emit_asr(const std::string &infile,
     pass_options.intrinsic_symbols_mangling = compiler_options.intrinsic_symbols_mangling;
     pass_options.bindc_mangling = compiler_options.bindc_mangling;
     pass_options.mangle_underscore = compiler_options.mangle_underscore;
+    pass_options.use_loop_variable_after_loop = compiler_options.use_loop_variable_after_loop;
 
     pass_manager.apply_passes(al, asr, pass_options, diagnostics);
     if (compiler_options.tree) {
