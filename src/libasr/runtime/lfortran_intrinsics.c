@@ -1976,7 +1976,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
         access_mode = "rb";
         unit_file_bin = true;
     } else {
-        printf("Error: FORM specifier in OPEN statement has invalid value '%s'\n", status);
+        printf("Error: FORM specifier in OPEN statement has invalid value '%s'\n", form);
         exit(1);
     }
 
