@@ -764,15 +764,6 @@ require_id
     | KW_OPERATOR "(" "/)" { $$ = DECL_OP(OPERATOR(DIV, @$), @$); }
     | TK_NAME { $$ = ATTR_NAME($1, @$); }
 
-/*
-instantiate
-    : KW_INSTANTIATE id "(" use_symbol_list ")" sep {
-        $$ = INSTANTIATE1($2, $4, @$); }
-    | KW_INSTANTIATE id "(" use_symbol_list ")" "," KW_ONLY ":" use_symbol_list sep {
-        $$ = INSTANTIATE2($2, $4, $9, @$); }
-    ;
-*/
-
 instantiate
     : KW_INSTANTIATE id "(" require_id_list ")" sep {
         $$ = INSTANTIATE1($2, $4, @$); }
@@ -1731,7 +1722,7 @@ subroutine_call
             $$ = SUBROUTINE_CALL2($2, @$); }
     | KW_CALL struct_member_star id {
             $$ = SUBROUTINE_CALL3($2, $3, @$); }
-    | KW_CALL id "{" use_symbol_list "}" "(" fnarray_arg_list_opt ")" {
+    | KW_CALL id "{" require_id_list "}" "(" fnarray_arg_list_opt ")" {
             $$ = SUBROUTINE_CALL4($2, $4, $7, @$); }
     ;
 
@@ -2291,7 +2282,7 @@ expr
     : id { $$ = $1; }
     | struct_member_star id { NAME1($$, $2, $1, @$); }
     | id "(" fnarray_arg_list_opt ")" { $$ = FUNCCALLORARRAY($1, $3, @$); }
-    | id "{" use_symbol_list "}" "(" fnarray_arg_list_opt ")" { $$ = FUNCCALLORARRAY5($1, $6, $3, @$); }
+    | id "{" require_id_list "}" "(" fnarray_arg_list_opt ")" { $$ = FUNCCALLORARRAY5($1, $6, $3, @$); }
     | TK_STRING "(" fnarray_arg_list_opt ")" { $$ = SUBSTRING($1, $3, @$);}
     | struct_member_star id "(" fnarray_arg_list_opt ")" {
             $$ = FUNCCALLORARRAY2($1, $2, $4, @$); }

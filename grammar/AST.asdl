@@ -69,7 +69,6 @@ unit_decl2
     | Template(identifier name, identifier* namelist, unit_decl2* decl,
         program_unit* contains)
     | Enum(decl_attribute* attr, trivia? trivia, unit_decl2* items)
-    --| Instantiate(identifier name, use_symbol* args, use_symbol* symbols)
     | Instantiate(identifier name, decl_attribute* args, use_symbol* symbols)
     | Requirement(identifier name, identifier* namelist, unit_decl2* decl,
         program_unit* funcs)
@@ -147,7 +146,7 @@ stmt
     | Rewind(int label, expr* args, keyword* kwargs, trivia? trivia)
     | Stop(int label, expr? code, expr? quiet, trivia? trivia)
     | SubroutineCall(int label, identifier name, struct_member* member,
-            fnarg* args, keyword* keywords, use_symbol* temp_args, trivia? trivia)
+            fnarg* args, keyword* keywords, decl_attribute* temp_args, trivia? trivia)
     | SyncAll(int label, event_attribute* stat, trivia? trivia)
     | SyncImages(int label, expr? image_set, symbol sym,
             event_attribute* stat, trivia? trivia)
@@ -202,7 +201,7 @@ expr
     | DefUnaryOp(string op, expr operand)
     | Compare(expr left, cmpop op, expr right)
     | FuncCallOrArray(identifier func, struct_member* member,
-        fnarg* args, keyword* keywords, fnarg* subargs, use_symbol* temp_args)
+        fnarg* args, keyword* keywords, fnarg* subargs, decl_attribute* temp_args)
     | CoarrayRef(identifier name, struct_member* member,
         fnarg* args, keyword* fnkw, coarrayarg* coargs, keyword* cokw)
     | ArrayInitializer(decl_attribute? vartype, identifier? classtype, expr* args)
