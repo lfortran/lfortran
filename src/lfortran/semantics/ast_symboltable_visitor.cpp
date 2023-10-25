@@ -2692,24 +2692,38 @@ public:
         }
 
         std::map<std::string, ASR::ttype_t*> type_subs;
-        // std::vector<std::string> primitives = {"integer"};
 
         SetChar args;
         args.reserve(al, x.n_namelist);
 
-        /*
         for (size_t i=0; i<x.n_namelist; i++) {
-            std::string req_arg = to_lower(x.m_namelist[i]);
+            AST::decl_attribute_t *attr = x.m_namelist[i];
             std::string req_param = req->m_args[i];
+            std::string req_arg = "";
 
-            if (std::find(primitives.begin(),
-                          primitives.end(),
-                          req_arg) == primitives.end()
-                && std::find(current_procedure_args.begin(),
-                          current_procedure_args.end(),
-                          req_arg) == current_procedure_args.end()) {
-                throw SemanticError("Parameter '" + std::string(x.m_namelist[i])
-                    + "' was not declared", x.base.base.loc);
+            if (AST::is_a<AST::AttrNamelist_t>(*attr)) {
+                AST::AttrNamelist_t *attr_name = AST::down_cast<AST::AttrNamelist_t>(attr);
+                req_arg = to_lower(attr_name->m_name);
+                
+                if (std::find(current_procedure_args.begin(),
+                        current_procedure_args.end(),
+                        req_arg) == current_procedure_args.end()) {
+                    throw SemanticError("Parameter '" + req_arg
+                        + "' was not declared", x.base.base.loc);
+                }
+            } else if (AST::is_a<AST::AttrType_t>(*attr)) {
+                AST::AttrType_t *attr_type = AST::down_cast<AST::AttrType_t>(attr);
+
+                Vec<ASR::dimension_t> dims;
+                dims.reserve(al, 0);
+                ASR::symbol_t *type_declaration;
+                ASR::ttype_t *ttype = determine_type(attr_type->base.base.loc, req_param,
+                    attr, false, false, dims, type_declaration, current_procedure_abi_type);
+
+                req_arg = ASRUtils::type_to_str(ttype);
+                type_subs[req_param] = ttype;
+            } else {
+                throw LCompilersException("Unsupported decl_attribute for require decl.");
             }
 
             ASR::symbol_t *param_sym = (req->m_symtab)->get_symbol(req_param);
@@ -2718,17 +2732,6 @@ public:
             context_map[req_param] = req_arg;
             args.push_back(al, s2c(al, req_arg));
         }
-        */
-
-        for (size_t i=0; i<x.n_namelist; i++) {
-            AST::decl_attribute_t *attr = x.m_namelist[i];
-            if (AST::is_a<AST::AttrNamelist_t>(*attr)) {
-                AST::AttrNamelist_t *attr_name = AST::down_cast<AST::AttrNamelist_t>(attr);
-                std::cout << attr_name->m_name << std::endl;
-            }
-        }
-
-        LCOMPILERS_ASSERT(false);
 
         // adding custom operators
         for (auto &item: req->m_symtab->get_scope()) {

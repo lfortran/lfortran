@@ -50,10 +50,16 @@ public:
 
         if (ASR::is_a<ASR::TypeParameter_t>(*t)) {
             ASR::TypeParameter_t *tp = ASR::down_cast<ASR::TypeParameter_t>(t);
-            t = ASRUtils::make_Array_t_util(al, tp->base.base.loc, ASRUtils::TYPE(
-                    ASR::make_TypeParameter_t(al, tp->base.base.loc,
-                    s2c(al, new_sym_name))), tp_m_dims, tp_n_dims);
-            type_subs[tp->m_param] = t;
+            if (type_subs.find(tp->m_param) != type_subs.end()) {
+                t = ASRUtils::make_Array_t_util(al, tp->base.base.loc, 
+                        ASRUtils::duplicate_type(al, type_subs[tp->m_param]),
+                        tp_m_dims, tp_n_dims);
+            } else {
+                t = ASRUtils::make_Array_t_util(al, tp->base.base.loc, ASRUtils::TYPE(
+                        ASR::make_TypeParameter_t(al, tp->base.base.loc,
+                        s2c(al, new_sym_name))), tp_m_dims, tp_n_dims);
+                type_subs[tp->m_param] = t;
+            }
         }
 
         if (current_scope->get_symbol(new_sym_name)) {

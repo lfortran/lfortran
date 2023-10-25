@@ -5261,7 +5261,6 @@ public:
             if (x.n_member >= 1) {
                 tmp = create_FunctionCallWithASTNode(x, v, args_with_mdt);
             } else {
-                std::cout << var_name << std::endl;
                 tmp = create_FunctionCallWithASTNode(x, v, args);
             }
         } else {
