@@ -2046,6 +2046,7 @@ int main(int argc, char *argv[])
         app.add_flag("--interactive-parse", compiler_options.interactive, "Use interactive parse");
         app.add_flag("--verbose", compiler_options.verbose, "Print debugging statements");
         app.add_flag("--dump-all-passes", compiler_options.dump_all_passes, "Apply all the passes and dump the ASR into a file");
+        app.add_flag("--dump-all-passes-fortran", compiler_options.dump_fortran, "Apply all passes and dump the ASR after each pass into fortran file");
         app.add_flag("--cumulative", compiler_options.pass_cumulative, "Apply all the passes cumulatively till the given pass");
         app.add_flag("--realloc-lhs", compiler_options.realloc_lhs, "Reallocate left hand side automatically");
         app.add_flag("--module-mangling", compiler_options.module_name_mangling, "Mangles the module name");
@@ -2135,6 +2136,10 @@ int main(int argc, char *argv[])
 
         if( compiler_options.fast ) {
             lfortran_pass_manager.use_optimization_passes();
+        }
+
+        if (compiler_options.dump_fortran) {
+            arg_backend = "fortran";
         }
 
         if (fmt) {
