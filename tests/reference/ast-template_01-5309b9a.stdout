@@ -119,8 +119,12 @@
             [(Require
                 [(UnitRequire
                     semigroup
-                    [t
-                    combine]
+                    [(AttrNamelist
+                        t
+                    )
+                    (AttrNamelist
+                        combine
+                    )]
                 )]
             )]
             [(Function

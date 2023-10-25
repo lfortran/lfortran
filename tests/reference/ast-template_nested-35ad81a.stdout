@@ -115,8 +115,12 @@
             [(Require
                 [(UnitRequire
                     R
-                    [T
-                    F]
+                    [(AttrNamelist
+                        T
+                    )
+                    (AttrNamelist
+                        F
+                    )]
                 )]
             )
             (Declaration
@@ -359,13 +363,15 @@
             []
             [(Instantiate
                 add_t
-                [(UseSymbol
-                    real
+                [(AttrType
+                    TypeReal
+                    []
                     ()
+                    ()
+                    None
                 )
-                (UseSymbol
+                (AttrNamelist
                     func_arg_real
-                    ()
                 )]
                 [(UseSymbol
                     call_add_generic
