@@ -1964,7 +1964,8 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
         printf("Runtime error: Unhandled type status=`scratch`\n");
         exit(1);
     } else {
-        printf("Error: STATUS specifier in OPEN statement has invalid value '%s'\n", status);
+        printf("Runtime error: STATUS specifier in OPEN statement has "
+            "invalid value '%s'\n", status);
         exit(1);
     }
 
@@ -1976,15 +1977,15 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
         access_mode = "rb";
         unit_file_bin = true;
     } else {
-        printf("Error: FORM specifier in OPEN statement has invalid value '%s'\n", form);
+        printf("Runtime error: FORM specifier in OPEN statement has "
+            "invalid value '%s'\n", form);
         exit(1);
     }
 
-    FILE *fd;
-    fd = fopen(f_name, access_mode);
+    FILE *fd = fopen(f_name, access_mode);
     if (!fd)
     {
-        printf("Error in opening the file!\n");
+        printf("Runtime error: Error in opening the file!\n");
         perror(f_name);
         exit(1);
     }
