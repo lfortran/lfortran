@@ -1924,44 +1924,68 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
     if (form == NULL) {
         form = "formatted";
     }
-
-    if (streql(status, "old") ||
-        streql(status, "new") ||
-        streql(status, "replace") ||
-        streql(status, "scratch") ||
-        streql(status, "unknown")) {
-        // TODO: status can be one of the above. We need to support it
-        /*
-            "old" (file must already exist), If it does not exist, the open operation will fail
-            "new" (file does not exist and will be created)
-            "replace" (file will be created, replacing any existing file)
-            "scratch" (temporary file will be deleted when closed)
-            "unknown" (it is not known whether the file exists)
-        */
+    bool file_exists[1] = {false};
+    _lfortran_inquire(f_name, file_exists, -1, NULL);
+    char *access_mode = NULL;
+    /*
+     STATUS=`specifier` in the OPEN statement
+     The following are the available specifiers:
+     * "old"     (file must already exist)
+     * "new"     (file does not exist and will be created)
+     * "scratch" (temporary file will be deleted when closed)
+     * "replace" (file will be created, replacing any existing file)
+     * "unknown" (it is not known whether the file exists)
+     */
+    if (streql(status, "old")) {
+        if (!*file_exists) {
+            printf("Runtime error: File `%s` does not exists!\nCannot open a "
+                "file with the `status=old`\n", f_name);
+            exit(1);
+        }
+        access_mode = "r+";
+    } else if (streql(status, "new")) {
+        if (*file_exists) {
+            printf("Runtime error: File `%s` exists!\nCannot open a file with "
+                "the `status=new`\n", f_name);
+            exit(1);
+        }
+        access_mode = "w+";
+    } else if (streql(status, "replace")) {
+        access_mode = "w+";
+    } else if (streql(status, "unknown")) {
+        if (!*file_exists) {
+            FILE *fd = fopen(f_name, "w");
+            if (fd) {
+                fclose(fd);
+            }
+        }
+        access_mode = "r+";
+    } else if (streql(status, "scratch")) {
+        printf("Runtime error: Unhandled type status=`scratch`\n");
+        exit(1);
     } else {
-        printf("Error: STATUS specifier in OPEN statement has invalid value '%s'\n", status);
+        printf("Runtime error: STATUS specifier in OPEN statement has "
+            "invalid value '%s'\n", status);
         exit(1);
     }
 
-    char *access_mode = NULL;
     bool unit_file_bin;
-
     if (streql(form, "formatted")) {
-        access_mode = "r";
         unit_file_bin = false;
     } else if (streql(form, "unformatted")) {
+        // TODO: Handle unformatted write to a file
         access_mode = "rb";
         unit_file_bin = true;
     } else {
-        printf("Error: FORM specifier in OPEN statement has invalid value '%s'\n", status);
+        printf("Runtime error: FORM specifier in OPEN statement has "
+            "invalid value '%s'\n", form);
         exit(1);
     }
 
-    FILE *fd;
-    fd = fopen(f_name, access_mode);
+    FILE *fd = fopen(f_name, access_mode);
     if (!fd)
     {
-        printf("Error in opening the file!\n");
+        printf("Runtime error: Error in opening the file!\n");
         perror(f_name);
         exit(1);
     }
@@ -2158,6 +2182,10 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
     } else {
         fscanf(filep, "%s", *p);
     }
+    if (streql(*p, "")) {
+        printf("Runtime error: End of file!\n");
+        exit(1);
+    }
 }
 
 LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num)
@@ -2351,6 +2379,23 @@ LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n)
     int x = fread(c, 1, n, (FILE*)fd);
     c[x] = '\0';
     return c;
+}
+
+LFORTRAN_API void _lfortran_file_write(int32_t unit_num, const char *format, ...)
+{
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+    if (!filep) {
+        filep = stdout;
+    }
+    if (unit_file_bin) {
+        printf("Binary content is not handled by write(..)\n");
+        exit(1);
+    }
+    va_list args;
+    va_start(args, format);
+    vfprintf(filep, format, args);
+    va_end(args);
 }
 
 LFORTRAN_API void _lfortran_string_write(char **str, const char *format, ...) {
