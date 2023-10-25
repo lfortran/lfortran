@@ -4125,10 +4125,13 @@ public:
         builder0.SetInsertPoint(&entry_block, entry_block.getFirstInsertionPt());
         llvm::AllocaInst *res = builder0.CreateAlloca(
             llvm::Type::getInt1Ty(context), nullptr, "is_associated");
-        ASR::Variable_t *p = EXPR2VAR(x.m_ptr);
-        uint32_t value_h = get_hash((ASR::asr_t*)p);
-        llvm::Value *ptr = llvm_symtab[value_h], *nptr;
-        ptr = CreateLoad(ptr);
+        ASR::ttype_t* p_type = ASRUtils::expr_type(x.m_ptr);
+        llvm::Value *ptr, *nptr;
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 1;
+        visit_expr_wrapper(x.m_ptr, true);
+        ptr = tmp;
+        ptr_loads = ptr_loads_copy;
         if( ASR::is_a<ASR::CPtr_t>(*ASRUtils::expr_type(x.m_ptr)) &&
             x.m_tgt && ASR::is_a<ASR::CPtr_t>(*ASRUtils::expr_type(x.m_tgt)) ) {
             int64_t ptr_loads_copy = ptr_loads;
@@ -4172,7 +4175,7 @@ public:
                 ptr = builder->CreatePtrToInt(ptr, llvm_utils->getIntType(8, false));
                 builder->CreateStore(builder->CreateICmpEQ(ptr, nptr), res);
             } else {
-                llvm::Type* value_type = llvm_utils->get_type_from_ttype_t_util(p->m_type, module.get());
+                llvm::Type* value_type = llvm_utils->get_type_from_ttype_t_util(p_type, module.get());
                 nptr = llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(value_type));
                 nptr = builder->CreatePtrToInt(nptr, llvm_utils->getIntType(8, false));
                 ptr = builder->CreatePtrToInt(ptr, llvm_utils->getIntType(8, false));
