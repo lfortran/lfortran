@@ -2182,6 +2182,10 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
     } else {
         fscanf(filep, "%s", *p);
     }
+    if (streql(*p, "")) {
+        printf("Runtime error: End of file!\n");
+        exit(1);
+    }
 }
 
 LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num)
