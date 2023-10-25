@@ -17,6 +17,7 @@
 #include <libasr/string_utils.h>
 #include <lfortran/utils.h>
 #include <libasr/pass/pass_utils.h>
+#include <libasr/codegen/asr_to_fortran.h>
 #include <libasr/pickle.h>
 
 namespace LCompilers::LFortran {
@@ -31,7 +32,7 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
-        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping, 
+        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::vector<ASR::stmt_t*> &data_structure);
 
 Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
@@ -109,6 +110,16 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
         outfile << ";; Initial ASR\n" << pickle(*tu, false, true) << "\n";
         outfile.close();
     }
+    if (compiler_options.dump_fortran) {
+        LCompilers::Result<std::string> fortran_code = LCompilers::asr_to_fortran(*tu, diagnostics, false, 4);
+        if (!fortran_code.ok) {
+            LCOMPILERS_ASSERT(diagnostics.has_error());
+            throw LCompilersException("Fortran code could not be generated after symbol_table_visitor");
+        }
+        std::ofstream outfile ("pass_00_initial_asr1.f90");
+        outfile << "! Initial ASR\n" << fortran_code.result << "\n";
+        outfile.close();
+    }
 #if defined(WITH_LFORTRAN_ASSERT)
     if (!asr_verify(*tu, true, diagnostics)) {
         return Error();
@@ -127,6 +138,16 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
         if (compiler_options.dump_all_passes) {
             std::ofstream outfile ("pass_00_initial_asr.clj");
             outfile << ";; Initial ASR\n" << pickle(*tu, false, true) << "\n";
+            outfile.close();
+        }
+        if (compiler_options.dump_fortran) {
+            LCompilers::Result<std::string> fortran_code = LCompilers::asr_to_fortran(*tu, diagnostics, false, 4);
+            if (!fortran_code.ok) {
+                LCOMPILERS_ASSERT(diagnostics.has_error());
+                throw LCompilersException("Fortran code could not be generated after body_visitor");
+            }
+            std::ofstream outfile ("pass_00_initial_asr2.f90");
+            outfile << "! Initial ASR\n" << fortran_code.result << "\n";
             outfile.close();
         }
 #if defined(WITH_LFORTRAN_ASSERT)
