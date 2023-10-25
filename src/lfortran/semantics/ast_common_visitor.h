@@ -6271,8 +6271,17 @@ public:
             ASR::expr_t **expr_list, size_t n) {
         std::vector<std::string> result;
         for (size_t i=0; i < n; i++) {
-            ASR::Variable_t *v = ASRUtils::EXPR2VAR(expr_list[i]);
-            result.push_back(v->m_name);
+            ASR::symbol_t* sym_i = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(expr_list[i])->m_v);
+            if( ASR::is_a<ASR::Variable_t>(*sym_i) ) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_i);
+                result.push_back(v->m_name);
+            } else if( ASR::is_a<ASR::Function_t>(*sym_i) ) {
+                ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(sym_i);
+                result.push_back(f->m_name);
+            } else {
+                LCOMPILERS_ASSERT(false);
+            }
         }
         return result;
     }
