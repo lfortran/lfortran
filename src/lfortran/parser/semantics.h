@@ -286,6 +286,9 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
             down_cast<decl_attribute_t>(attr), \
             nullptr, None)
 
+#define ATTR_NAME(id, l) make_AttrNamelist_t \
+            (p.m_a, l, id.c_str(p.m_a))
+
 #define IMPORT0(x, trivia, l) make_Import_t( \
             p.m_a, l, \
             nullptr, 0, \
@@ -2204,9 +2207,12 @@ ast_t* TYPEPARAMETER0(Allocator &al,
 #define REQUIRE(require_list, l) \
         make_Require_t(p.m_a, l, \
         VEC_CAST(require_list, unit_require), require_list.size())
+/*#define UNIT_REQUIRE(name, namelist, l) \
+        make_UnitRequire_t(p.m_a, l, name2char(name), \
+        REDUCE_ARGS(p.m_a, namelist), namelist.size())*/
 #define UNIT_REQUIRE(name, namelist, l) \
         make_UnitRequire_t(p.m_a, l, name2char(name), \
-        REDUCE_ARGS(p.m_a, namelist), namelist.size())
+        VEC_CAST(namelist, decl_attribute), namelist.size())
 #define INSTANTIATE1(name, args, l) \
         make_Instantiate_t(p.m_a, l, name2char(name), \
         USE_SYMBOLS(args), args.size(), \

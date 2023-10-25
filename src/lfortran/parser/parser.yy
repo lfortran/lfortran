@@ -384,6 +384,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> require_decl
 %type <vec_ast> unit_require_plus
 %type <ast> unit_require
+%type <vec_ast> require_id_list
+%type <ast> require_id
 %type <ast> enum_decl
 %type <ast> program
 %type <ast> end_program
@@ -745,8 +747,20 @@ unit_require_plus
     | unit_require { LIST_NEW($$); LIST_ADD($$, $1); }
     ;
 
+//unit_require
+//    : id "(" id_list ")" { $$ = UNIT_REQUIRE($1, $3, @$); }
+
 unit_require
-    : id "(" id_list ")" { $$ = UNIT_REQUIRE($1, $3, @$); }
+    : id "(" require_id_list ")" { $$ = UNIT_REQUIRE($1, $3, @$); }
+
+require_id_list
+    : require_id_list "," require_id { $$ = $1; LIST_ADD($$, $3); }
+    | require_id { LIST_NEW($$); LIST_ADD($$, $1); }
+
+require_id
+    : KW_INTEGER { $$ = ATTR_TYPE(Integer, @$); }
+    | KW_LOGICAL { $$ = ATTR_TYPE(Logical, @$); }
+    | TK_NAME { $$ = ATTR_NAME($1, @$); }
 
 instantiate
     : KW_INSTANTIATE id "(" use_symbol_list ")" sep {

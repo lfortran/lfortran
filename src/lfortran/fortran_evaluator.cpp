@@ -535,7 +535,7 @@ Result<std::string> FortranEvaluator::get_fortran(const std::string &code,
     Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
     symbol_table = old_symbol_table;
     if (asr.ok) {
-        return asr_to_fortran(*asr.result);
+        return asr_to_fortran(*asr.result, diagnostics, false, 4);
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return asr.error;

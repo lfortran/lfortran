@@ -112,7 +112,8 @@ namespace LCompilers {
                                         arr_expr->base.loc, arr_expr,
                                         args.p, args.size(),
                                         ASRUtils::type_get_past_array(
-                                            ASRUtils::type_get_past_allocatable(array_ref_type)),
+                                            ASRUtils::type_get_past_pointer(
+                                                ASRUtils::type_get_past_allocatable(array_ref_type))),
                                         ASR::arraystorageType::RowMajor, nullptr));
             if( perform_cast ) {
                 LCOMPILERS_ASSERT(casted_type != nullptr);
@@ -143,7 +144,8 @@ namespace LCompilers {
                                         arr_expr->base.loc, arr_expr,
                                         args.p, args.size(),
                                         ASRUtils::type_get_past_array(
-                                            ASRUtils::type_get_past_allocatable(array_ref_type)),
+                                            ASRUtils::type_get_past_pointer(
+                                                ASRUtils::type_get_past_allocatable(array_ref_type))),
                                         ASR::arraystorageType::RowMajor, nullptr));
             if( perform_cast ) {
                 LCOMPILERS_ASSERT(casted_type != nullptr);
@@ -868,8 +870,8 @@ namespace LCompilers {
             ASR::expr_t *c=loop.m_head.m_increment;
             ASR::expr_t *cond = nullptr;
             ASR::stmt_t *inc_stmt = nullptr;
-            ASR::stmt_t *stmt1 = nullptr;
-            ASR::stmt_t *stmt_add_c = nullptr;
+            ASR::stmt_t *loop_init_stmt = nullptr;
+            ASR::stmt_t *stmt_add_c_after_loop = nullptr;
             if( !a && !b && !c ) {
                 int a_kind = 4;
                 if( loop.m_head.m_v ) {
@@ -960,12 +962,12 @@ namespace LCompilers {
                 int a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(target));
                 ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind));
 
-                stmt1 = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
+                loop_init_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
                     ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, a,
                             ASR::binopType::Sub, c, type, nullptr)), nullptr));
                 if (use_loop_variable_after_loop) {
-                    stmt_add_c = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
-                        ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, a,
+                    stmt_add_c_after_loop = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
+                        ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
                                 ASR::binopType::Add, c, type, nullptr)), nullptr));
                 }
 
@@ -987,16 +989,16 @@ namespace LCompilers {
             for (size_t i=0; i<loop.n_body; i++) {
                 body.push_back(al, loop.m_body[i]);
             }
-            ASR::stmt_t *stmt2 = ASRUtils::STMT(ASR::make_WhileLoop_t(al, loc,
+            ASR::stmt_t *while_loop_stmt = ASRUtils::STMT(ASR::make_WhileLoop_t(al, loc,
                 loop.m_name, cond, body.p, body.size()));
             Vec<ASR::stmt_t*> result;
             result.reserve(al, 2);
-            if( stmt1 ) {
-                result.push_back(al, stmt1);
+            if( loop_init_stmt ) {
+                result.push_back(al, loop_init_stmt);
             }
-            result.push_back(al, stmt2);
-            if (stmt_add_c && use_loop_variable_after_loop) {
-                result.push_back(al, stmt_add_c);
+            result.push_back(al, while_loop_stmt);
+            if (stmt_add_c_after_loop && use_loop_variable_after_loop) {
+                result.push_back(al, stmt_add_c_after_loop);
             }
 
             return result;

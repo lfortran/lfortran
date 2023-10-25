@@ -453,6 +453,7 @@ pragma_type
     | OMPPragma
 
 unit_require
-    = UnitRequire(identifier name, identifier* namelist)
+    = UnitRequire(identifier name, decl_attribute* namelist)
+-- = UnitRequire(identifier name, identifier* namelist)
 
 }

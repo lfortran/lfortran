@@ -106,9 +106,10 @@ public:
         std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
-        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping)
+        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
+        std::vector<ASR::stmt_t*> &data_structure)
       : CommonVisitor(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                      instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping) {}
+                      instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure) {}
 
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
         if (!current_scope) {
@@ -671,8 +672,21 @@ public:
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
         ASRUtils::SymbolDuplicator symbol_duplicator(al);
-        for( auto& item: old_scope->get_scope() ) {
+        std::vector<std::string> copy_external_procedure = external_procedures;
+        external_procedures.clear();
+        std::vector<std::string> symbols_to_erase;
+        for( auto item: old_scope->get_scope() ) {
             symbol_duplicator.duplicate_symbol(item.second, current_scope);
+            bool is_external = check_is_external(item.first, old_scope);
+            if (is_external) {
+                external_procedures.push_back(item.first);
+                // remove it from old_scope
+                symbols_to_erase.push_back(item.first);
+            }
+        }
+
+        for (auto it: symbols_to_erase) {
+            old_scope->erase_symbol(it);
         }
 
         if (is_master) {
@@ -791,9 +805,14 @@ public:
                 }
             }
         }
-        
+
+        // populate the external_procedures_mapping
+        uint64_t hash = get_hash(tmp_);
+        external_procedures_mapping[hash] = external_procedures;
+
         current_scope = old_scope;
         current_function_dependencies = current_function_dependencies_copy;
+        external_procedures = copy_external_procedure;
         current_procedure_args.clear();
     }
 
@@ -1018,6 +1037,9 @@ public:
             is_requirement, false, false);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        // populate the external_procedures_mapping
+        uint64_t hash = get_hash(tmp);
+        external_procedures_mapping[hash] = external_procedures;
         if (subroutine_contains_entry_function(sym_name, x.m_body, x.n_body)) {
             /* 
                 This subroutine contains an entry function, create
@@ -1051,10 +1073,6 @@ public:
 
             implicit_dictionary.clear();
         }
-
-        // populate the external_procedures_mapping
-        uint64_t hash = get_hash(tmp);
-        external_procedures_mapping[hash] = external_procedures;
 
         current_function_dependencies = current_function_dependencies_copy;
         in_Subroutine = false;
@@ -1403,6 +1421,9 @@ public:
             nullptr, 0, is_requirement, false, false);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        // populate the external_procedures_mapping
+        uint64_t hash = get_hash(tmp);
+        external_procedures_mapping[hash] = external_procedures;
         if (subroutine_contains_entry_function(sym_name, x.m_body, x.n_body)) {
             /* 
                 This subroutine contains an entry function, create
@@ -1432,11 +1453,6 @@ public:
 
             implicit_dictionary.clear();
         }
-
-        // populate the external_procedures_mapping
-        uint64_t hash = get_hash(tmp);
-        external_procedures_mapping[hash] = external_procedures;
-
         current_function_dependencies = current_function_dependencies_copy;
         in_Subroutine = false;
         mark_common_blocks_as_declared();
@@ -2676,16 +2692,22 @@ public:
         }
 
         std::map<std::string, ASR::ttype_t*> type_subs;
+        // std::vector<std::string> primitives = {"integer"};
 
         SetChar args;
         args.reserve(al, x.n_namelist);
 
+        /*
         for (size_t i=0; i<x.n_namelist; i++) {
             std::string req_arg = to_lower(x.m_namelist[i]);
             std::string req_param = req->m_args[i];
 
-            if (std::find(current_procedure_args.begin(), current_procedure_args.end(),
-                    req_arg) == current_procedure_args.end()) {
+            if (std::find(primitives.begin(),
+                          primitives.end(),
+                          req_arg) == primitives.end()
+                && std::find(current_procedure_args.begin(),
+                          current_procedure_args.end(),
+                          req_arg) == current_procedure_args.end()) {
                 throw SemanticError("Parameter '" + std::string(x.m_namelist[i])
                     + "' was not declared", x.base.base.loc);
             }
@@ -2696,6 +2718,17 @@ public:
             context_map[req_param] = req_arg;
             args.push_back(al, s2c(al, req_arg));
         }
+        */
+
+        for (size_t i=0; i<x.n_namelist; i++) {
+            AST::decl_attribute_t *attr = x.m_namelist[i];
+            if (AST::is_a<AST::AttrNamelist_t>(*attr)) {
+                AST::AttrNamelist_t *attr_name = AST::down_cast<AST::AttrNamelist_t>(attr);
+                std::cout << attr_name->m_name << std::endl;
+            }
+        }
+
+        LCOMPILERS_ASSERT(false);
 
         // adding custom operators
         for (auto &item: req->m_symtab->get_scope()) {
@@ -2746,7 +2779,7 @@ public:
                     reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
                     tmp = nullptr;
                 }
-            } else {    
+            } else {
                 this->visit_unit_decl2(*x.m_decl[i]);
             }
         }
@@ -3134,10 +3167,11 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
-        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping)
+        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
+        std::vector<ASR::stmt_t*> &data_structure)
 {
     SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                         instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping);
+                         instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure);
     try {
         v.visit_TranslationUnit(ast);
     } catch (const SemanticError &e) {

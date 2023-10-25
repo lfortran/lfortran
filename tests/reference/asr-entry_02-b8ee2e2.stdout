@@ -298,6 +298,15 @@
                         ()
                         ()
                     )
+                    (Print
+                        [(StringConstant
+                            "Printed using entry statement: "
+                            (Character 1 31 ())
+                        )
+                        (Var 4 dummy)]
+                        ()
+                        ()
+                    )
                     (If
                         (RealCompare
                             (IntrinsicScalarFunction
@@ -329,6 +338,38 @@
                         )]
                         []
                     )
+                    (If
+                        (RealCompare
+                            (IntrinsicScalarFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 4 dummy)
+                                    Sub
+                                    (RealConstant
+                                        5.000000
+                                        (Real 4)
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000000
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Return)
                     (Return)]
                     ()
                     Public
