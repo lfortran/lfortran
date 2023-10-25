@@ -2381,6 +2381,23 @@ LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n)
     return c;
 }
 
+LFORTRAN_API void _lfortran_file_write(int32_t unit_num, const char *format, ...)
+{
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+    if (!filep) {
+        filep = stdout;
+    }
+    if (unit_file_bin) {
+        printf("Binary content is not handled by write(..)\n");
+        exit(1);
+    }
+    va_list args;
+    va_start(args, format);
+    vfprintf(filep, format, args);
+    va_end(args);
+}
+
 LFORTRAN_API void _lfortran_string_write(char **str, const char *format, ...) {
     va_list args;
     va_start(args, format);
