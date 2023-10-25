@@ -1924,32 +1924,55 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
     if (form == NULL) {
         form = "formatted";
     }
-
-    if (streql(status, "old") ||
-        streql(status, "new") ||
-        streql(status, "replace") ||
-        streql(status, "scratch") ||
-        streql(status, "unknown")) {
-        // TODO: status can be one of the above. We need to support it
-        /*
-            "old" (file must already exist), If it does not exist, the open operation will fail
-            "new" (file does not exist and will be created)
-            "replace" (file will be created, replacing any existing file)
-            "scratch" (temporary file will be deleted when closed)
-            "unknown" (it is not known whether the file exists)
-        */
+    bool file_exists[1] = {false};
+    _lfortran_inquire(f_name, file_exists, -1, NULL);
+    char *access_mode = NULL;
+    /*
+     STATUS=`specifier` in the OPEN statement
+     The following are the available specifiers:
+     * "old"     (file must already exist)
+     * "new"     (file does not exist and will be created)
+     * "scratch" (temporary file will be deleted when closed)
+     * "replace" (file will be created, replacing any existing file)
+     * "unknown" (it is not known whether the file exists)
+     */
+    if (streql(status, "old")) {
+        if (!*file_exists) {
+            printf("Runtime error: File `%s` does not exists!\nCannot open a "
+                "file with the `status=old`\n", f_name);
+            exit(1);
+        }
+        access_mode = "r+";
+    } else if (streql(status, "new")) {
+        if (*file_exists) {
+            printf("Runtime error: File `%s` exists!\nCannot open a file with "
+                "the `status=new`\n", f_name);
+            exit(1);
+        }
+        access_mode = "w+";
+    } else if (streql(status, "replace")) {
+        access_mode = "w+";
+    } else if (streql(status, "unknown")) {
+        if (!*file_exists) {
+            FILE *fd = fopen(f_name, "w");
+            if (fd) {
+                fclose(fd);
+            }
+        }
+        access_mode = "r+";
+    } else if (streql(status, "scratch")) {
+        printf("Runtime error: Unhandled type status=`scratch`\n");
+        exit(1);
     } else {
         printf("Error: STATUS specifier in OPEN statement has invalid value '%s'\n", status);
         exit(1);
     }
 
-    char *access_mode = NULL;
     bool unit_file_bin;
-
     if (streql(form, "formatted")) {
-        access_mode = "r";
         unit_file_bin = false;
     } else if (streql(form, "unformatted")) {
+        // TODO: Handle unformatted write to a file
         access_mode = "rb";
         unit_file_bin = true;
     } else {
