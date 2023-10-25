@@ -41,6 +41,7 @@ struct CompilerOptions {
     bool use_colors = true;
     bool indent = true;
     bool json = false;
+    bool no_loc = false;
     bool tree = false;
     bool visualize = false;
     bool fast = false;
