@@ -2207,12 +2207,10 @@ ast_t* TYPEPARAMETER0(Allocator &al,
 #define REQUIRE(require_list, l) \
         make_Require_t(p.m_a, l, \
         VEC_CAST(require_list, unit_require), require_list.size())
-/*#define UNIT_REQUIRE(name, namelist, l) \
-        make_UnitRequire_t(p.m_a, l, name2char(name), \
-        REDUCE_ARGS(p.m_a, namelist), namelist.size())*/
 #define UNIT_REQUIRE(name, namelist, l) \
         make_UnitRequire_t(p.m_a, l, name2char(name), \
         VEC_CAST(namelist, decl_attribute), namelist.size())
+/*
 #define INSTANTIATE1(name, args, l) \
         make_Instantiate_t(p.m_a, l, name2char(name), \
         USE_SYMBOLS(args), args.size(), \
@@ -2220,6 +2218,15 @@ ast_t* TYPEPARAMETER0(Allocator &al,
 #define INSTANTIATE2(name, args, syms, l) \
         make_Instantiate_t(p.m_a, l, name2char(name), \
         USE_SYMBOLS(args), args.size(), \
+        USE_SYMBOLS(syms), syms.size())
+*/
+#define INSTANTIATE1(name, args, l) \
+        make_Instantiate_t(p.m_a, l, name2char(name), \
+        VEC_CAST(args, decl_attribute), args.size(), \
+        nullptr, 0)
+#define INSTANTIATE2(name, args, syms, l) \
+        make_Instantiate_t(p.m_a, l, name2char(name), \
+        VEC_CAST(args, decl_attribute), args.size(), \
         USE_SYMBOLS(syms), syms.size())
 
 #define DERIVED_TYPE_PROC(attr, syms, trivia, l) make_DerivedTypeProc_t(p.m_a, l, \

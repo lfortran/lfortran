@@ -747,9 +747,6 @@ unit_require_plus
     | unit_require { LIST_NEW($$); LIST_ADD($$, $1); }
     ;
 
-//unit_require
-//    : id "(" id_list ")" { $$ = UNIT_REQUIRE($1, $3, @$); }
-
 unit_require
     : id "(" require_id_list ")" { $$ = UNIT_REQUIRE($1, $3, @$); }
 
@@ -760,15 +757,28 @@ require_id_list
 require_id
     : KW_INTEGER { $$ = ATTR_TYPE(Integer, @$); }
     | KW_LOGICAL { $$ = ATTR_TYPE(Logical, @$); }
+    | KW_REAL { $$ = ATTR_TYPE(Real, @$); }
+    | KW_COMPLEX { $$ = ATTR_TYPE(Complex, @$); }
+    | KW_CHARACTER { $$ = ATTR_TYPE(Character, @$); }
+    | KW_OPERATOR "(" operator_type ")" { $$ = DECL_OP($3, @$); }
+    | KW_OPERATOR "(" "/)" { $$ = DECL_OP(OPERATOR(DIV, @$), @$); }
     | TK_NAME { $$ = ATTR_NAME($1, @$); }
 
+/*
 instantiate
     : KW_INSTANTIATE id "(" use_symbol_list ")" sep {
         $$ = INSTANTIATE1($2, $4, @$); }
     | KW_INSTANTIATE id "(" use_symbol_list ")" "," KW_ONLY ":" use_symbol_list sep {
         $$ = INSTANTIATE2($2, $4, $9, @$); }
     ;
+*/
 
+instantiate
+    : KW_INSTANTIATE id "(" require_id_list ")" sep {
+        $$ = INSTANTIATE1($2, $4, @$); }
+    | KW_INSTANTIATE id "(" require_id_list ")" "," KW_ONLY ":" use_symbol_list sep {
+        $$ = INSTANTIATE2($2, $4, $9, @$); }
+    ;
 
 end_type
     : KW_END_TYPE id_opt

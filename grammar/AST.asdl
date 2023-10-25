@@ -69,7 +69,8 @@ unit_decl2
     | Template(identifier name, identifier* namelist, unit_decl2* decl,
         program_unit* contains)
     | Enum(decl_attribute* attr, trivia? trivia, unit_decl2* items)
-    | Instantiate(identifier name, use_symbol* args, use_symbol* symbols)
+    --| Instantiate(identifier name, use_symbol* args, use_symbol* symbols)
+    | Instantiate(identifier name, decl_attribute* args, use_symbol* symbols)
     | Requirement(identifier name, identifier* namelist, unit_decl2* decl,
         program_unit* funcs)
     | Require(unit_require* reqs)
@@ -454,6 +455,5 @@ pragma_type
 
 unit_require
     = UnitRequire(identifier name, decl_attribute* namelist)
--- = UnitRequire(identifier name, identifier* namelist)
 
 }
