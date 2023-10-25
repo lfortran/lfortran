@@ -1506,6 +1506,7 @@ public:
                 body.push_back(al, it);
             }
         }
+        data_structure.clear();
         
         transform_stmts(body, x.n_body, x.m_body);
         handle_format();
@@ -1879,6 +1880,12 @@ public:
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
         body.reserve(al, x.n_body);
+        if (data_structure.size()>0) {
+            for(auto it: data_structure) {
+                body.push_back(al, it);
+            }
+        }
+        data_structure.clear();
         transform_stmts(body, x.n_body, x.m_body);
         handle_format();
         SetChar func_deps;
@@ -1945,6 +1952,12 @@ public:
         }
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
+        if (data_structure.size()>0) {
+            for(auto it: data_structure) {
+                body.push_back(al, it);
+            }
+        }
+        data_structure.clear();
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
         transform_stmts(body, x.n_body, x.m_body);
