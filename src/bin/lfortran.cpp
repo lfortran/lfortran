@@ -687,7 +687,7 @@ int emit_asr(const std::string &infile,
     } else if (compiler_options.json) {
         std::cout << LCompilers::pickle_json(*asr, lm, compiler_options.no_loc, with_intrinsic_modules) << std::endl;
     } else if (compiler_options.visualize) {
-        std::string astr_data_json = LCompilers::pickle_json(*asr, lm, with_intrinsic_modules);
+        std::string astr_data_json = LCompilers::pickle_json(*asr, lm, compiler_options.no_loc, with_intrinsic_modules);
         return visualize_json(astr_data_json, compiler_options.platform);
     } else {
         std::cout << LCompilers::pickle(*asr, compiler_options.use_colors, compiler_options.indent,

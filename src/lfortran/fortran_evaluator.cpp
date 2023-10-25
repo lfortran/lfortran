@@ -224,7 +224,7 @@ Result<std::string> FortranEvaluator::get_asr(const std::string &code,
         if (compiler_options.tree) {
             return pickle_tree(*asr.result, compiler_options.use_colors);
         } else if (compiler_options.json) {
-            return pickle_json(*asr.result, lm);
+            return pickle_json(*asr.result, lm, compiler_options.no_loc, false);
         }
         return pickle(*asr.result,
             compiler_options.use_colors, compiler_options.indent);
