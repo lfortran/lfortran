@@ -2392,6 +2392,9 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, const char *format, ...
     FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &file_name);
     if (!filep) {
         filep = stdout;
+    } else {
+        // Clear the file contents
+        fclose(fopen(file_name, "w"));
     }
     if (unit_file_bin) {
         printf("Binary content is not handled by write(..)\n");
