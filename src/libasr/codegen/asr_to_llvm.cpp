@@ -7337,6 +7337,21 @@ public:
             std::vector<std::string> fmt;
             std::string runtime_func_name;
             bool is_string = ASRUtils::is_character(*expr_type(x.m_unit));
+            llvm::Value *sep = nullptr;
+            llvm::Value *end = nullptr;
+
+            if (x.m_separator) {
+                this->visit_expr_wrapper(x.m_separator, true);
+                sep = tmp;
+            } else {
+                sep = builder->CreateGlobalStringPtr(" ");
+            }
+            if (x.m_end) {
+                this->visit_expr_wrapper(x.m_end, true);
+                end = tmp;
+            } else {
+                end = builder->CreateGlobalStringPtr("\n");
+            }
 
             int ptr_loads_copy = ptr_loads;
             if ( is_string ) {
@@ -7356,7 +7371,7 @@ public:
 
             size_t n_values = x.n_values; ASR::expr_t **m_values = x.m_values;
             // TODO: Handle String Formatting
-            if (n_values>0 && is_a<ASR::StringFormat_t>(*m_values[0])) {
+            if (n_values>0 && is_a<ASR::StringFormat_t>(*m_values[0]) && is_string) {
                 n_values = down_cast<ASR::StringFormat_t>(m_values[0])->n_args;
                 m_values = down_cast<ASR::StringFormat_t>(m_values[0])->m_args;
             }
@@ -7365,8 +7380,16 @@ public:
                     throw CodeGenError("Only integer type is "
                         "supported for string write(..) for now");
                 }
+                if (i != 0 && !is_string) {
+                    fmt.push_back("%s");
+                    args.push_back(sep);
+                }
                 compute_fmt_specifier_and_arg(fmt, args, m_values[i],
                     x.base.base.loc);
+            }
+            if ( !is_string ) {
+                fmt.push_back("%s");
+                args.push_back(end);
             }
             std::string fmt_str;
             for (auto &s: fmt) fmt_str += s;
