@@ -7331,60 +7331,60 @@ public:
     }
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
-        if (x.m_unit) {
-            std::vector<llvm::Value *> args;
-            std::vector<llvm::Type *> args_type;
-            std::vector<std::string> fmt;
-            std::string runtime_func_name;
-            bool is_string = ASRUtils::is_character(*expr_type(x.m_unit));
-
-            int ptr_loads_copy = ptr_loads;
-            if ( is_string ) {
-                ptr_loads = 0;
-                runtime_func_name = "_lfortran_string_write";
-                args_type.push_back(character_type->getPointerTo());
-            } else if ( ASRUtils::is_integer(*expr_type(x.m_unit)) ) {
-                ptr_loads = 1;
-                runtime_func_name = "_lfortran_file_write";
-                args_type.push_back(llvm::Type::getInt32Ty(context));
-            } else {
-                throw CodeGenError("Unsupported type for `unit` in write(..)");
-            }
-            this->visit_expr_wrapper(x.m_unit);
-            ptr_loads = ptr_loads_copy;
-            args.push_back(tmp); // unit_value
-
-            size_t n_values = x.n_values; ASR::expr_t **m_values = x.m_values;
-            // TODO: Handle String Formatting
-            if (n_values>0 && is_a<ASR::StringFormat_t>(*m_values[0])) {
-                n_values = down_cast<ASR::StringFormat_t>(m_values[0])->n_args;
-                m_values = down_cast<ASR::StringFormat_t>(m_values[0])->m_args;
-            }
-            for (size_t i=0; i<n_values; i++) {
-                if ( is_string && !ASRUtils::is_integer(*expr_type(m_values[i])) ) {
-                    throw CodeGenError("Only integer type is "
-                        "supported for string write(..) for now");
-                }
-                compute_fmt_specifier_and_arg(fmt, args, m_values[i],
-                    x.base.base.loc);
-            }
-            std::string fmt_str;
-            for (auto &s: fmt) fmt_str += s;
-            llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(fmt_str);
-            args.insert(args.begin()+1, fmt_ptr);
-
-            llvm::Function *fn = module->getFunction(runtime_func_name);
-            if (!fn) {
-                args_type.push_back(llvm::Type::getInt8PtrTy(context));
-                llvm::FunctionType *function_type = llvm::FunctionType::get(
-                        llvm::Type::getVoidTy(context), args_type, true);
-                fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, runtime_func_name, *module);
-            }
-            tmp = builder->CreateCall(fn, args);
-        } else {
+        if (x.m_unit == nullptr) {
             handle_print(x);
+            return;
         }
+        std::vector<llvm::Value *> args;
+        std::vector<llvm::Type *> args_type;
+        std::vector<std::string> fmt;
+        std::string runtime_func_name;
+        bool is_string = ASRUtils::is_character(*expr_type(x.m_unit));
+
+        int ptr_loads_copy = ptr_loads;
+        if ( is_string ) {
+            ptr_loads = 0;
+            runtime_func_name = "_lfortran_string_write";
+            args_type.push_back(character_type->getPointerTo());
+        } else if ( ASRUtils::is_integer(*expr_type(x.m_unit)) ) {
+            ptr_loads = 1;
+            runtime_func_name = "_lfortran_file_write";
+            args_type.push_back(llvm::Type::getInt32Ty(context));
+        } else {
+            throw CodeGenError("Unsupported type for `unit` in write(..)");
+        }
+        this->visit_expr_wrapper(x.m_unit);
+        ptr_loads = ptr_loads_copy;
+        args.push_back(tmp); // unit_value
+
+        size_t n_values = x.n_values; ASR::expr_t **m_values = x.m_values;
+        // TODO: Handle String Formatting
+        if (n_values>0 && is_a<ASR::StringFormat_t>(*m_values[0])) {
+            n_values = down_cast<ASR::StringFormat_t>(m_values[0])->n_args;
+            m_values = down_cast<ASR::StringFormat_t>(m_values[0])->m_args;
+        }
+        for (size_t i=0; i<n_values; i++) {
+            if ( is_string && !ASRUtils::is_integer(*expr_type(m_values[i])) ) {
+                throw CodeGenError("Only integer type is "
+                    "supported for string write(..) for now");
+            }
+            compute_fmt_specifier_and_arg(fmt, args, m_values[i],
+                x.base.base.loc);
+        }
+        std::string fmt_str;
+        for (auto &s: fmt) fmt_str += s;
+        llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(fmt_str);
+        args.insert(args.begin()+1, fmt_ptr);
+
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            args_type.push_back(llvm::Type::getInt8PtrTy(context));
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), args_type, true);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+        }
+        tmp = builder->CreateCall(fn, args);
     }
 
     // It appends the format specifier and arg based on the type of expression
