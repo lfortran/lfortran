@@ -7338,6 +7338,9 @@ public:
         std::vector<llvm::Value *> args;
         std::vector<llvm::Type *> args_type;
         std::vector<std::string> fmt;
+        llvm::Value *sep = nullptr;
+        llvm::Value *end = nullptr;
+        llvm::Value *unit = nullptr;
         std::string runtime_func_name;
         bool is_string = ASRUtils::is_character(*expr_type(x.m_unit));
 
@@ -7355,11 +7358,23 @@ public:
         }
         this->visit_expr_wrapper(x.m_unit);
         ptr_loads = ptr_loads_copy;
-        args.push_back(tmp); // unit_value
+        unit = tmp;
 
+        if (x.m_separator) {
+            this->visit_expr_wrapper(x.m_separator, true);
+            sep = tmp;
+        } else {
+            sep = builder->CreateGlobalStringPtr(" ");
+        }
+        if (x.m_end) {
+            this->visit_expr_wrapper(x.m_end, true);
+            end = tmp;
+        } else {
+            end = builder->CreateGlobalStringPtr("\n");
+        }
         size_t n_values = x.n_values; ASR::expr_t **m_values = x.m_values;
         // TODO: Handle String Formatting
-        if (n_values>0 && is_a<ASR::StringFormat_t>(*m_values[0])) {
+        if (n_values > 0 && is_a<ASR::StringFormat_t>(*m_values[0]) && is_string) {
             n_values = down_cast<ASR::StringFormat_t>(m_values[0])->n_args;
             m_values = down_cast<ASR::StringFormat_t>(m_values[0])->m_args;
         }
@@ -7368,14 +7383,27 @@ public:
                 throw CodeGenError("Only integer type is "
                     "supported for string write(..) for now");
             }
+            if (i != 0 && !is_string) {
+                fmt.push_back("%s");
+                args.push_back(sep);
+            }
             compute_fmt_specifier_and_arg(fmt, args, m_values[i],
                 x.base.base.loc);
         }
+        if (!is_string) {
+            fmt.push_back("%s");
+            args.push_back(end);
+        }
         std::string fmt_str;
-        for (auto &s: fmt) fmt_str += s;
+        for (size_t i=0; i<fmt.size(); i++) {
+            fmt_str += fmt[i];
+        }
         llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(fmt_str);
-        args.insert(args.begin()+1, fmt_ptr);
 
+        std::vector<llvm::Value *> printf_args;
+        printf_args.push_back(unit);
+        printf_args.push_back(fmt_ptr);
+        printf_args.insert(printf_args.end(), args.begin(), args.end());
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
             args_type.push_back(llvm::Type::getInt8PtrTy(context));
@@ -7384,7 +7412,7 @@ public:
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, *module);
         }
-        tmp = builder->CreateCall(fn, args);
+        tmp = builder->CreateCall(fn, printf_args);
     }
 
     // It appends the format specifier and arg based on the type of expression
