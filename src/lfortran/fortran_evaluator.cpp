@@ -527,7 +527,8 @@ Result<std::string> FortranEvaluator::get_julia(const std::string &code,
 }
 
 Result<std::string> FortranEvaluator::get_fortran(const std::string &code,
-    LocationManager &lm, diag::Diagnostics &diagnostics)
+    LocationManager &lm, LCompilers::PassManager &pass_manager,
+    diag::Diagnostics &diagnostics)
 {
     // SRC -> AST -> ASR -> Fortran
     SymbolTable *old_symbol_table = symbol_table;
@@ -538,7 +539,6 @@ Result<std::string> FortranEvaluator::get_fortran(const std::string &code,
         Allocator al(64*1024*1024);
         if (compiler_options.dump_fortran) {
             LCompilers::PassOptions pass_options;
-            LCompilers::PassManager pass_manager;
             pass_options.runtime_library_dir = compiler_options.runtime_library_dir;
             pass_options.mod_files_dir = compiler_options.mod_files_dir;
             pass_options.include_dirs = compiler_options.include_dirs;
