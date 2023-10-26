@@ -11,6 +11,7 @@ namespace LCompilers {
             diag::Diagnostics &diagnostics,
             llvm::LLVMContext &context, Allocator &al,
             LCompilers::PassManager& pass_manager,
+            LocationManager& lm,
             CompilerOptions &compiler_options,
             const std::string &run_fn,
             const std::string &infile);

@@ -82,7 +82,7 @@ public:
         LocationManager &lm, LCompilers::PassManager& pass_manager,
         diag::Diagnostics &diagnostics);
     Result<std::unique_ptr<LLVMModule>> get_llvm3(ASR::TranslationUnit_t &asr,
-        LCompilers::PassManager& pass_manager,
+        LCompilers::PassManager& pass_manager, LocationManager& lm,
         diag::Diagnostics &diagnostics, const std::string &infile);
     Result<std::string> get_asm(const std::string &code,
         LocationManager &lm,
@@ -102,7 +102,7 @@ public:
         diag::Diagnostics &diagnostics, int64_t default_lower_bound);
     Result<std::string> get_c3(ASR::TranslationUnit_t &asr,
         diag::Diagnostics &diagnostics, LCompilers::PassManager& pass_manager,
-        int64_t default_lower_bound);
+        LocationManager& lm, int64_t default_lower_bound);
     Result<std::string> get_julia(const std::string &code,
         LocationManager &lm, diag::Diagnostics &diagnostics);
     Result<std::string> get_fortran(const std::string &code,

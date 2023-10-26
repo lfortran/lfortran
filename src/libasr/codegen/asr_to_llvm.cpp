@@ -9188,6 +9188,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         diag::Diagnostics &diagnostics,
         llvm::LLVMContext &context, Allocator &al,
         LCompilers::PassManager& pass_manager,
+        LCompilers::LocationManager& lm,
         CompilerOptions &co, const std::string &run_fn,
         const std::string &infile)
 {
@@ -9223,7 +9224,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     pass_options.intrinsic_symbols_mangling = co.intrinsic_symbols_mangling;
     pass_options.bindc_mangling = co.bindc_mangling;
     pass_options.mangle_underscore = co.mangle_underscore;
-    pass_manager.apply_passes(al, &asr, pass_options, diagnostics);
+    pass_manager.apply_passes(al, &asr, pass_options, diagnostics, lm);
 
     // Uncomment for debugging the ASR after the transformation
     // std::cout << LCompilers::pickle(asr, true, false, false) << std::endl;

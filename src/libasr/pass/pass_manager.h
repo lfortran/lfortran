@@ -114,7 +114,7 @@ namespace LCompilers {
 
         void apply_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                            std::vector<std::string>& passes, PassOptions &pass_options,
-                           [[maybe_unused]] diag::Diagnostics &diagnostics) {
+                           [[maybe_unused]] diag::Diagnostics &diagnostics, LocationManager &lm) {
             if (pass_options.pass_cumulative) {
                 int _pass_max_idx = -1, _opt_max_idx = -1;
                 for (std::string &current_pass: passes) {
@@ -160,6 +160,22 @@ namespace LCompilers {
                 if (pass_options.dump_all_passes) {
                     std::string str_i = std::to_string(i+1);
                     if ( i < 9 )  str_i = "0" + str_i;
+                    if (pass_options.json) {
+                        std::ofstream outfile ("pass_json_" + str_i + "_" + passes[i] + ".json");
+                        outfile << pickle_json(*asr, lm, false, false) << "\n";
+                        outfile.close();
+                    }
+                    if (pass_options.tree) {
+                        std::ofstream outfile ("pass_tree_" + str_i + "_" + passes[i] + ".txt");
+                        outfile << pickle_tree(*asr, false, false) << "\n";
+                        outfile.close();
+                    }
+                    if (pass_options.visualize) {
+                        std::string json = pickle_json(*asr, lm, false, false);
+                        std::ofstream outfile ("pass_viz_" + str_i + "_" + passes[i] + ".html");
+                        outfile << generate_visualize_html(json) << "\n";
+                        outfile.close();
+                    }
                     std::ofstream outfile ("pass_" + str_i + "_" + passes[i] + ".clj");
                     outfile << ";; ASR after applying the pass: " << passes[i]
                         << "\n" << pickle(*asr, false, true) << "\n";
@@ -308,18 +324,18 @@ namespace LCompilers {
 
         void apply_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                           PassOptions& pass_options,
-                          diag::Diagnostics &diagnostics) {
+                          diag::Diagnostics &diagnostics, LocationManager &lm) {
             if( !_user_defined_passes.empty() ) {
                 pass_options.fast = true;
                 apply_passes(al, asr, _user_defined_passes, pass_options,
-                    diagnostics);
+                    diagnostics, lm);
             } else if( apply_default_passes ) {
                 pass_options.fast = is_fast;
                 if( is_fast ) {
                     apply_passes(al, asr, _with_optimization_passes, pass_options,
-                        diagnostics);
+                        diagnostics, lm);
                 } else {
-                    apply_passes(al, asr, _passes, pass_options, diagnostics);
+                    apply_passes(al, asr, _passes, pass_options, diagnostics, lm);
                 }
             }
         }
