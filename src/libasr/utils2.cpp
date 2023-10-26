@@ -7,6 +7,7 @@
 #include <fstream>
 #include <filesystem>
 #include <random>
+#include <sstream>
 
 #include <libasr/exception.h>
 #include <libasr/utils.h>
@@ -64,7 +65,12 @@ bool present(char** const v, size_t n, const std::string name) {
 
 int visualize_json(std::string &astr_data_json, LCompilers::Platform os) {
     using namespace LCompilers;
-    std::string file_loc = LCompilers::generate_visualize_html(astr_data_json);
+    std::hash<std::string> hasher;
+    std::string file_name = "visualize" + std::to_string(hasher(astr_data_json)) + ".html";
+    std::ofstream out;
+    out.open(file_name);
+    out << LCompilers::generate_visualize_html(astr_data_json);
+    out.close();
     std::string open_cmd = "";
     switch (os) {
         case Linux: open_cmd = "xdg-open"; break;
@@ -73,10 +79,10 @@ int visualize_json(std::string &astr_data_json, LCompilers::Platform os) {
         case macOS_ARM: open_cmd = "open"; break;
         default:
             std::cerr << "Unsupported Platform " << pf2s(os) <<std::endl;
-            std::cerr << "Please open file " << file_loc << " manually" <<std::endl;
+            std::cerr << "Please open file " << file_name << " manually" <<std::endl;
             return 11;
     }
-    std::string cmd = open_cmd + " " + file_loc;
+    std::string cmd = open_cmd + " " + file_name;
     int err = system(cmd.data());
     if (err) {
         std::cout << "The command '" + cmd + "' failed." << std::endl;
@@ -86,10 +92,7 @@ int visualize_json(std::string &astr_data_json, LCompilers::Platform os) {
 }
 
 std::string generate_visualize_html(std::string &astr_data_json) {
-    std::hash<std::string> hasher;
-    std::ofstream out;
-    std::string file_name = "visualize" + std::to_string(hasher(astr_data_json)) + ".html";
-    out.open(file_name);
+    std::stringstream out;
     out << R"(<!DOCTYPE html>
 <html>
 <head>
@@ -235,7 +238,7 @@ ReactDOM.render(<MyApp />, document.body);
 </body>
 
 </html>)";
-    return file_name;
+    return out.str();
 }
 
 std::string pf2s(Platform p) {
