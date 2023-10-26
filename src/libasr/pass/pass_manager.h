@@ -177,7 +177,7 @@ namespace LCompilers {
                     std::string str_i = std::to_string(i+1);
                     if ( i < 9 )  str_i = "0" + str_i;
                     std::ofstream outfile ("pass_" + str_i + "_" + passes[i] + ".f90");
-                    outfile << "! ASR after applying the pass: " << passes[i]
+                    outfile << "! Fortran code after applying the pass: " << passes[i]
                         << "\n" << fortran_code.result << "\n";
                     outfile.close();
                 }
