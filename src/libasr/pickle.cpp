@@ -214,7 +214,6 @@ public:
             }
             dec_indent(); s.append("\n" + indtd);
             s.append("}");
-            s.append(",\n" + indtd);
             append_location(s, x.base.base.loc.first, x.base.base.loc.last);
             dec_indent(); s.append("\n" + indtd);
             s.append("}");
