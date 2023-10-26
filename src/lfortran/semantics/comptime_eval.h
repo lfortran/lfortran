@@ -876,13 +876,31 @@ TRIG2(sqrt, dsqrt)
 
     static ASR::expr_t *eval_selected_int_kind(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
+        /*
+            GFortran output:
+            R =            1 selected_int_kind(R)           1
+            R =            2 selected_int_kind(R)           1
+            R =            3 selected_int_kind(R)           2
+            R =            4 selected_int_kind(R)           2
+            R =            5 selected_int_kind(R)           4
+            R =            6 selected_int_kind(R)           4
+            R =            7 selected_int_kind(R)           4
+            R =            8 selected_int_kind(R)           4
+            R =            9 selected_int_kind(R)           4
+            R =           10 selected_int_kind(R)           8
+            R =           11 selected_int_kind(R)           8
+        */
         ASR::expr_t* real_expr = args[0];
         ASR::ttype_t* real_type = ASRUtils::expr_type(real_expr);
         if (ASR::is_a<ASR::Integer_t>(*real_type)) {
             int64_t R = ASR::down_cast<ASR::IntegerConstant_t>(
                 ASRUtils::expr_value(real_expr))->m_n;
             int a_kind = 4;
-            if (R < 10) {
+            if (R < 3) {
+                a_kind = 1;
+            } else if (R < 5) {
+                a_kind = 2;
+            } else if (R < 10) {
                 a_kind = 4;
             } else {
                 a_kind = 8;
