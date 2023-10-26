@@ -106,29 +106,6 @@ std::string get_kokkos_dir()
     throw LCompilers::LCompilersException("LFORTRAN_KOKKOS_DIR is not defined");
 }
 
-int visualize_json(std::string &astr_data_json, LCompilers::Platform os) {
-    using namespace LCompilers;
-    std::string file_loc = LCompilers::LFortran::generate_visualize_html(astr_data_json);
-    std::string open_cmd = "";
-    switch (os) {
-        case Linux: open_cmd = "xdg-open"; break;
-        case Windows: open_cmd = "start"; break;
-        case macOS_Intel:
-        case macOS_ARM: open_cmd = "open"; break;
-        default:
-            std::cerr << "Unsupported Platform " << pf2s(os) <<std::endl;
-            std::cerr << "Please open file " << file_loc << " manually" <<std::endl;
-            return 11;
-    }
-    std::string cmd = open_cmd + " " + file_loc;
-    int err = system(cmd.data());
-    if (err) {
-        std::cout << "The command '" + cmd + "' failed." << std::endl;
-        return 11;
-    }
-    return 0;
-}
-
 #ifdef HAVE_LFORTRAN_LLVM
 
 void section(const std::string &s)

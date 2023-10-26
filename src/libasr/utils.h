@@ -21,6 +21,8 @@ std::string pf2s(Platform);
 Platform get_platform();
 
 std::string get_unique_ID();
+int visualize_json(std::string &astr_data_json, LCompilers::Platform os);
+std::string generate_visualize_html(std::string &astr_data_json);
 
 struct CompilerOptions {
     std::filesystem::path mod_files_dir;
