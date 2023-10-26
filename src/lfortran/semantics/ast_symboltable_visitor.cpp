@@ -1007,14 +1007,17 @@ public:
         if (parent_scope->get_symbol(sym_name) != nullptr) {
             ASR::symbol_t *f1 = ASRUtils::symbol_get_past_external(
                 parent_scope->get_symbol(sym_name));
-            ASR::Function_t *f2 = nullptr;
-            if( ASR::is_a<ASR::Function_t>(*f1) ) {
-                f2 = ASR::down_cast<ASR::Function_t>(f1);
-            }
-            if ((f1->type == ASR::symbolType::ExternalSymbol && in_submodule) ||
-                ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::Interactive ||
-                ASRUtils::get_FunctionType(f2)->m_deftype == ASR::deftypeType::Interface) {
-                // Previous declaration will be shadowed
+            if (ASR::is_a<ASR::Function_t>(*f1)) {
+                ASR::Function_t* f2 = ASR::down_cast<ASR::Function_t>(f1);
+                if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::Interactive ||
+                    ASRUtils::get_FunctionType(f2)->m_deftype == ASR::deftypeType::Interface) {
+                    // Previous declaration will be shadowed
+                    parent_scope->erase_symbol(sym_name);
+                } else {
+                    throw SemanticError("Subroutine already defined", tmp->loc);
+                }
+            } else if (compiler_options.implicit_typing && ASR::is_a<ASR::Variable_t>(*f1)) {
+                // function previously added as variable due to implicit typing
                 parent_scope->erase_symbol(sym_name);
             } else {
                 throw SemanticError("Subroutine already defined", tmp->loc);
@@ -1388,13 +1391,18 @@ public:
 
         if (parent_scope->get_symbol(sym_name) != nullptr) {
             ASR::symbol_t *f1 = parent_scope->get_symbol(sym_name);
-            ASR::Function_t *f2 = nullptr;
-            if( f1->type == ASR::symbolType::Function ) {
-                f2 = ASR::down_cast<ASR::Function_t>(f1);
-            }
-            if ((f1->type == ASR::symbolType::ExternalSymbol && in_submodule) ||
-                ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::Interactive) {
-                // Previous declaration will be shadowed
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*f1) && in_submodule) {
+                parent_scope->erase_symbol(sym_name);
+            } else if (ASR::is_a<ASR::Function_t>(*f1)) {
+                ASR::Function_t* f2 = ASR::down_cast<ASR::Function_t>(f1);
+                if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::Interactive) {
+                    // Previous declaration will be shadowed
+                    parent_scope->erase_symbol(sym_name);
+                } else {
+                    throw SemanticError("Function already defined", tmp->loc);
+                }
+            } else if (compiler_options.implicit_typing && ASR::is_a<ASR::Variable_t>(*f1)) {
+                // function previously added as variable due to implicit typing
                 parent_scope->erase_symbol(sym_name);
             } else {
                 throw SemanticError("Function already defined", tmp->loc);
