@@ -976,10 +976,10 @@ public:
 
     void visit_StringRepeat(const ASR::StringRepeat_t &x) {
         visit_expr(*x.m_left);
-        std::string left = s;
+        std::string str = s;
         visit_expr(*x.m_right);
-        std::string right = s;
-        s = "repeat(" + left + ", " + right + ")";
+        std::string n = s;
+        s = "repeat(" + str + ", " + n + ")";
     }
 
     void visit_StringLen(const ASR::StringLen_t &x) {
