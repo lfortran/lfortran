@@ -1180,3 +1180,5 @@ RUN(NAME fortran_primes_01 LABELS gfortran llvm)
 RUN(NAME min_01 LABELS gfortran)
 
 RUN(NAME goto_gototarget_return_01 LABELS gfortran llvm fortran)
+
+RUN(NAME selected_int_kind_01 LABELS gfortran llvm)
