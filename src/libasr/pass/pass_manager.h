@@ -160,6 +160,22 @@ namespace LCompilers {
                 if (pass_options.dump_all_passes) {
                     std::string str_i = std::to_string(i+1);
                     if ( i < 9 )  str_i = "0" + str_i;
+                    if (pass_options.json) {
+                        std::ofstream outfile ("pass_json_" + str_i + "_" + passes[i] + ".json");
+                        outfile << pickle_json(*asr, lm, false, false) << "\n";
+                        outfile.close();
+                    }
+                    if (pass_options.tree) {
+                        std::ofstream outfile ("pass_tree_" + str_i + "_" + passes[i] + ".txt");
+                        outfile << pickle_tree(*asr, false, false) << "\n";
+                        outfile.close();
+                    }
+                    if (pass_options.visualize) {
+                        std::string json = pickle_json(*asr, lm, false, false);
+                        std::ofstream outfile ("pass_viz_" + str_i + "_" + passes[i] + ".html");
+                        outfile << generate_visualize_html(json) << "\n";
+                        outfile.close();
+                    }
                     std::ofstream outfile ("pass_" + str_i + "_" + passes[i] + ".clj");
                     outfile << ";; ASR after applying the pass: " << passes[i]
                         << "\n" << pickle(*asr, false, true) << "\n";

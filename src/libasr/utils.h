@@ -122,6 +122,9 @@ namespace LCompilers {
         bool all_symbols_mangling = false;
         bool bindc_mangling = false;
         bool mangle_underscore = false;
+        bool json = false;
+        bool visualize = false;
+        bool tree = false;
     };
 
 }
