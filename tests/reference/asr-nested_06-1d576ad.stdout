@@ -112,7 +112,7 @@
                                         []
                                         .false.
                                     )
-                                    [c]
+                                    []
                                     [(Var 3 x)]
                                     [(Print
                                         [(StringConstant

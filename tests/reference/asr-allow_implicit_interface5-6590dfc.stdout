@@ -176,7 +176,7 @@
                         []
                         .false.
                     )
-                    [klvna]
+                    []
                     [(Var 2 nt)
                     (Var 2 kd)]
                     [(SubroutineCall

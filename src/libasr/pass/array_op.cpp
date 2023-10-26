@@ -718,8 +718,13 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         result_var = nullptr;
         this->replace_expr(x->m_left);
         ASR::expr_t* left = *current_expr;
-        left_dims = op_dims;
-        rank_left = op_n_dims;
+        if (!is_a<ASR::ArraySize_t>(*x->m_left)) {
+            left_dims = op_dims;
+            rank_left = op_n_dims;
+        } else {
+            left_dims = nullptr;
+            rank_left = 0;
+        }
         current_expr = current_expr_copy_35;
 
         ASR::expr_t** current_expr_copy_36 = current_expr;
@@ -730,8 +735,13 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         result_var = nullptr;
         this->replace_expr(x->m_right);
         ASR::expr_t* right = *current_expr;
-        right_dims = op_dims;
-        rank_right = op_n_dims;
+        if (!is_a<ASR::ArraySize_t>(*x->m_right)) {
+            right_dims = op_dims;
+            rank_right = op_n_dims;
+        } else {
+            right_dims = nullptr;
+            rank_right = 0;
+        }
         current_expr = current_expr_copy_36;
 
         op_dims = op_dims_copy;
@@ -744,6 +754,17 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         bool new_result_var_created = false;
 
         if( rank_left == 0 && rank_right == 0 ) {
+            if( result_var != nullptr ) {
+                ASR::stmt_t* auxiliary_assign_stmt_ = nullptr;
+                std::string name = current_scope->get_unique_name(
+                    "__libasr_created_scalar_auxiliary_variable");
+                *current_expr = PassUtils::create_auxiliary_variable_for_expr(
+                    *current_expr, name, al, current_scope, auxiliary_assign_stmt_);
+                LCOMPILERS_ASSERT(auxiliary_assign_stmt_ != nullptr);
+                pass_result.push_back(al, auxiliary_assign_stmt_);
+                resultvar2value[result_var] = *current_expr;
+                replace_Var(ASR::down_cast<ASR::Var_t>(*current_expr));
+            }
             return ;
         }
 

@@ -363,6 +363,7 @@ RUN(NAME arrays_op_24 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_op_26 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_op_27 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_op_28 LABELS gfortran llvm llvmStackArray)
+RUN(NAME arrays_op_29 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_reshape_14 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_reshape_15 LABELS gfortran llvm fortran)
 RUN(NAME arrays_elemental_15 LABELS gfortran llvm llvmStackArray)
@@ -532,6 +533,7 @@ RUN(NAME intrinsics_76 LABELS gfortran llvm)
 RUN(NAME intrinsics_77 LABELS gfortran llvm NOFAST)
 RUN(NAME intrinsics_78 LABELS gfortran llvm wasm) # mod
 RUN(NAME intrinsics_79 LABELS gfortran llvm wasm) # Trailz
+RUN(NAME intrinsics_80 LABELS gfortran llvm) # sum
 
 
 RUN(NAME parameter_01 LABELS gfortran)
@@ -643,6 +645,7 @@ RUN(NAME where_02 LABELS gfortran llvm NOFAST fortran)
 RUN(NAME where_03 LABELS gfortran llvm NOFAST)
 RUN(NAME where_04 LABELS gfortran) # TODO: Fix this test #1631
 RUN(NAME where_05 LABELS gfortran llvm NOFAST)
+RUN(NAME where_06 LABELS gfortran llvm)
 
 RUN(NAME forallloop_01 LABELS gfortran)
 
@@ -778,6 +781,7 @@ RUN(NAME allocate_12 LABELS gfortran llvm
 RUN(NAME allocate_13 LABELS gfortran llvm)
 RUN(NAME allocate_14 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs)
+RUN(NAME allocate_15 LABELS gfortran llvm)
 RUN(NAME block_01 LABELS gfortran llvm)
 RUN(NAME block_02 LABELS gfortran)
 RUN(NAME block_03 LABELS gfortran llvm)
@@ -886,6 +890,7 @@ RUN(NAME file_12       LABELS gfortran llvm COPY_TO_BIN file_12_data.txt)
 RUN(NAME file_13       LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
 RUN(NAME file_14       LABELS gfortran llvm COPY_TO_BIN file_08.txt)
 RUN(NAME file_15       LABELS gfortran llvm COPY_TO_BIN file_03_data.txt)
+RUN(NAME file_16       LABELS gfortran llvm)
 RUN(NAME inquire_01    LABELS gfortran llvm)
 RUN(NAME test_backspace_01 LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
 
@@ -1104,6 +1109,7 @@ RUN(NAME entry_11 LABELS gfortran llvm)
 RUN(NAME entry_12 LABELS gfortran llvm)
 
 RUN(NAME character_01 LABELS gfortran llvm)
+RUN(NAME character_02 LABELS gfortran llvm)
 
 RUN(NAME c_ptr_01 LABELS gfortran llvm)
 
@@ -1165,6 +1171,7 @@ RUN(NAME equivalence_04 LABELS gfortran llvm)
 RUN(NAME equivalence_05 LABELS gfortran llvm)
 RUN(NAME equivalence_06 LABELS gfortran llvm)
 RUN(NAME equivalence_07 LABELS gfortran llvm)
+RUN(NAME equivalence_08 LABELS gfortran llvm)
 
 RUN(NAME fortran_primes_01 LABELS gfortran llvm)
 

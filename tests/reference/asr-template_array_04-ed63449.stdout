@@ -659,7 +659,7 @@
                                         []
                                         .false.
                                     )
-                                    [ireverse]
+                                    []
                                     []
                                     [(=
                                         (Var 7 a)

@@ -157,7 +157,7 @@
                                         []
                                         .false.
                                     )
-                                    [f]
+                                    []
                                     [(Var 3 res)
                                     (Var 3 a)
                                     (Var 3 b)

@@ -353,8 +353,7 @@
                         []
                         .false.
                     )
-                    [alnorm
-                    dgetrf]
+                    []
                     []
                     [(=
                         (Var 2 zero)

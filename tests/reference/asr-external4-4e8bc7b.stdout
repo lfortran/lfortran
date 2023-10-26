@@ -216,9 +216,7 @@
                         []
                         .false.
                     )
-                    [dqk15w
-                    f
-                    dlog]
+                    []
                     [(Var 2 f)]
                     [(SubroutineCall
                         2 dqk15w

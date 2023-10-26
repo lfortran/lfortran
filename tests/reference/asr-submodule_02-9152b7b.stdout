@@ -392,7 +392,7 @@
                                         []
                                         .false.
                                     )
-                                    [sqrt@ssqrt]
+                                    []
                                     [(Var 10 a)
                                     (Var 10 b)]
                                     [(=
@@ -598,7 +598,7 @@
                                         []
                                         .false.
                                     )
-                                    [sqrt@ssqrt]
+                                    []
                                     [(Var 11 a)
                                     (Var 11 b)
                                     (Var 11 distance)]

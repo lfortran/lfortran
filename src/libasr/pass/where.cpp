@@ -112,6 +112,9 @@ public:
         *current_expr = new_expr;
     }
 
+    void replace_Array(ASR::Array_t */*x*/) {
+        // pass
+    }
 };
 
 class VarVisitor : public ASR::CallReplacerOnExpressionsVisitor<VarVisitor>

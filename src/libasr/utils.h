@@ -41,6 +41,7 @@ struct CompilerOptions {
     bool use_colors = true;
     bool indent = true;
     bool json = false;
+    bool no_loc = false;
     bool tree = false;
     bool visualize = false;
     bool fast = false;
@@ -63,6 +64,7 @@ struct CompilerOptions {
     bool emit_debug_line_column = false;
     bool verbose = false;
     bool dump_all_passes = false;
+    bool dump_fortran = false;
     bool pass_cumulative = false;
     bool enable_cpython = false;
     bool enable_symengine = false;
@@ -106,6 +108,7 @@ namespace LCompilers {
         bool fast = false; // is fast flag enabled.
         bool verbose = false; // For developer debugging
         bool dump_all_passes = false; // For developer debugging
+        bool dump_fortran = false; // For developer debugging
         bool pass_cumulative = false; // Apply passes cumulatively
         bool disable_main = false;
         bool use_loop_variable_after_loop = false;

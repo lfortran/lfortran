@@ -2116,8 +2116,7 @@
                                         []
                                         .false.
                                     )
-                                    [integer_plus_matrix
-                                    integer_mult_matrix]
+                                    []
                                     []
                                     [(=
                                         (ArrayItem

@@ -287,7 +287,7 @@
                                         []
                                         .false.
                                     )
-                                    [1_to_string]
+                                    []
                                     [(Var 5 package)]
                                     [(AssociateBlockCall
                                         5 associate_block
@@ -394,7 +394,7 @@
                                         []
                                         .false.
                                     )
-                                    [1_to_string]
+                                    []
                                     [(Var 12 self)]
                                     [(SubroutineCall
                                         12 1_to_string

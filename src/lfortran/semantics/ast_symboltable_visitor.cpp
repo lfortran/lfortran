@@ -184,6 +184,15 @@ public:
                         char_type->m_len_expr = expr;
                         char_type->m_len = -3;
                         if( expr->type == ASR::exprType::FunctionCall ) {
+                            ASR::FunctionCall_t *call = ASR::down_cast<ASR::FunctionCall_t>(expr);
+                            for(size_t i = 0; i < call->n_args; i ++) {
+                                if (ASR::is_a<ASR::Var_t>(*call->m_args[i].m_value)) {
+                                    ASR::Variable_t *v = ASRUtils::EXPR2VAR(call->m_args[i].m_value);
+                                    if (v->m_storage == ASR::storage_typeType::Parameter) {
+                                        call->m_args[i].m_value = v->m_value;
+                                    }
+                                }
+                            }
                             if( data->sym_type == (int64_t) ASR::symbolType::Function ) {
                                 ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
                                     ASR::down_cast<ASR::symbol_t>(data->scope->asr_owner));
@@ -1041,7 +1050,7 @@ public:
         uint64_t hash = get_hash(tmp);
         external_procedures_mapping[hash] = external_procedures;
         if (subroutine_contains_entry_function(sym_name, x.m_body, x.n_body)) {
-            /* 
+            /*
                 This subroutine contains an entry function, create
                 template function for each entry and a master function
             */
@@ -1425,7 +1434,7 @@ public:
         uint64_t hash = get_hash(tmp);
         external_procedures_mapping[hash] = external_procedures;
         if (subroutine_contains_entry_function(sym_name, x.m_body, x.n_body)) {
-            /* 
+            /*
                 This subroutine contains an entry function, create
                 template function for each entry and a master function
             */
@@ -2617,7 +2626,7 @@ public:
                     reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
                     tmp = nullptr;
                 }
-            } else {    
+            } else {
                 this->visit_unit_decl2(*x.m_decl[i]);
             }
         }

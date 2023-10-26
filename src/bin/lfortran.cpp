@@ -678,15 +678,16 @@ int emit_asr(const std::string &infile,
     pass_options.intrinsic_symbols_mangling = compiler_options.intrinsic_symbols_mangling;
     pass_options.bindc_mangling = compiler_options.bindc_mangling;
     pass_options.mangle_underscore = compiler_options.mangle_underscore;
+    pass_options.use_loop_variable_after_loop = compiler_options.use_loop_variable_after_loop;
 
     pass_manager.apply_passes(al, asr, pass_options, diagnostics);
     if (compiler_options.tree) {
         std::cout << LCompilers::pickle_tree(*asr,
             compiler_options.use_colors) << std::endl;
     } else if (compiler_options.json) {
-        std::cout << LCompilers::pickle_json(*asr, lm, with_intrinsic_modules) << std::endl;
+        std::cout << LCompilers::pickle_json(*asr, lm, compiler_options.no_loc, with_intrinsic_modules) << std::endl;
     } else if (compiler_options.visualize) {
-        std::string astr_data_json = LCompilers::pickle_json(*asr, lm, with_intrinsic_modules);
+        std::string astr_data_json = LCompilers::pickle_json(*asr, lm, compiler_options.no_loc, with_intrinsic_modules);
         return visualize_json(astr_data_json, compiler_options.platform);
     } else {
         std::cout << LCompilers::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
@@ -2013,6 +2014,7 @@ int main(int argc, char *argv[])
         app.add_flag("--no-indent", arg_no_indent, "Turn off Indented print ASR/AST");
         app.add_flag("--tree", compiler_options.tree, "Tree structure print ASR/AST");
         app.add_flag("--json", compiler_options.json, "Print ASR/AST Json format");
+        app.add_flag("--no-loc", compiler_options.no_loc, "Skip location information in ASR/AST Json format");
         app.add_flag("--visualize", compiler_options.visualize, "Print ASR/AST Visualization");
         app.add_option("--pass", arg_pass, "Apply the ASR pass and show ASR (implies --show-asr)");
         app.add_option("--skip-pass", skip_pass, "Skip an ASR pass in default pipeline");
@@ -2046,6 +2048,7 @@ int main(int argc, char *argv[])
         app.add_flag("--interactive-parse", compiler_options.interactive, "Use interactive parse");
         app.add_flag("--verbose", compiler_options.verbose, "Print debugging statements");
         app.add_flag("--dump-all-passes", compiler_options.dump_all_passes, "Apply all the passes and dump the ASR into a file");
+        app.add_flag("--dump-all-passes-fortran", compiler_options.dump_fortran, "Apply all passes and dump the ASR after each pass into fortran file");
         app.add_flag("--cumulative", compiler_options.pass_cumulative, "Apply all the passes cumulatively till the given pass");
         app.add_flag("--realloc-lhs", compiler_options.realloc_lhs, "Reallocate left hand side automatically");
         app.add_flag("--module-mangling", compiler_options.module_name_mangling, "Mangles the module name");
@@ -2135,6 +2138,10 @@ int main(int argc, char *argv[])
 
         if( compiler_options.fast ) {
             lfortran_pass_manager.use_optimization_passes();
+        }
+
+        if (compiler_options.dump_fortran) {
+            arg_backend = "fortran";
         }
 
         if (fmt) {
