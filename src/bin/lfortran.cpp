@@ -660,6 +660,9 @@ int emit_asr(const std::string &infile,
     pass_options.json = compiler_options.json;
     pass_options.visualize = compiler_options.visualize;
 
+    if (compiler_options.dump_all_passes) {
+        pass_manager.use_default_passes();
+    }
     pass_manager.apply_passes(al, asr, pass_options, diagnostics, lm);
     if (compiler_options.tree) {
         std::cout << LCompilers::pickle_tree(*asr,
