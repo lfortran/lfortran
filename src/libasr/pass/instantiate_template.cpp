@@ -305,8 +305,6 @@ public:
         return new_x;
     }
 
-
-
     ASR::asr_t* duplicate_Var(ASR::Var_t *x) {
         std::string sym_name = ASRUtils::symbol_name(x->m_v);
         ASR::symbol_t* sym = duplicate_symbol(x->m_v);
@@ -326,7 +324,8 @@ public:
         ASR::ttype_t *type = substitute_type(x->m_type);
 
         return ASRUtils::make_ArrayItem_t_util(al, x->base.base.loc, m_v, args.p, x->n_args,
-            ASRUtils::type_get_past_allocatable(type), x->m_storage_format, m_value);
+            ASRUtils::type_get_past_pointer(
+                ASRUtils::type_get_past_allocatable(type)), x->m_storage_format, m_value);
     }
 
     ASR::asr_t* duplicate_ArrayConstant(ASR::ArrayConstant_t *x) {
@@ -414,11 +413,11 @@ public:
             name = current_scope->resolve_symbol(context_map[call_name]);
         } else if (ASRUtils::is_generic_function(name)) {
             ASR::symbol_t *search_sym = current_scope->resolve_symbol(call_name);
-            if (search_sym != nullptr) {
+            if (search_sym != nullptr && ASR::is_a<ASR::Function_t>(*search_sym)) {
                 name = search_sym;
             } else {
                 ASR::symbol_t* name2 = ASRUtils::symbol_get_past_external(name);
-                std::string nested_func_name = current_scope->get_unique_name("__asr_" + call_name, false);
+                std::string nested_func_name = func_scope->get_unique_name("__asr_" + call_name, false);
                 SymbolInstantiator nested(al, context_map, type_subs, symbol_subs, func_scope, template_scope, nested_func_name);
                 name = nested.instantiate_symbol(name2);
                 name = nested.instantiate_body(ASR::down_cast<ASR::Function_t>(name), ASR::down_cast<ASR::Function_t>(name2));
@@ -430,9 +429,9 @@ public:
                 throw LCompilersException("Cannot handle instantiation for the function call " + call_name);
             }
         }
-
-        dependencies.push_back(al, ASRUtils::symbol_name(name));
-
+        if (ASRUtils::symbol_parent_symtab(name)->get_counter() != current_scope->get_counter() && !ASR::is_a<ASR::ExternalSymbol_t>(*name)) {
+            ADD_ASR_DEPENDENCIES(current_scope, name, dependencies);
+        }
         return ASRUtils::make_FunctionCall_t_util(al, x->base.base.loc, name, x->m_original_name,
             args.p, args.size(), type, value, dt);
     }
@@ -474,10 +473,10 @@ public:
                 throw LCompilersException("Cannot handle instantiation for the function call " + call_name);
             }
         }
-
-        dependencies.push_back(al, ASRUtils::symbol_name(name));
-
-        return ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc, name,
+        if (ASRUtils::symbol_parent_symtab(name)->get_counter() != current_scope->get_counter() && !ASR::is_a<ASR::ExternalSymbol_t>(*name)) {
+            ADD_ASR_DEPENDENCIES(current_scope, name, dependencies);
+        }
+        return ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc, name /* change this */,
             x->m_original_name, args.p, args.size(), dt, nullptr, false);
     }
 
@@ -488,6 +487,14 @@ public:
         ASR::symbol_t *s = duplicate_symbol(x->m_m);
         return ASR::make_StructInstanceMember_t(al, x->base.base.loc,
             v, s, t, value);
+    }
+
+    ASR::asr_t* duplicate_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t *x) {
+        ASR::expr_t *arg = duplicate_expr(x->m_arg);
+        ASR::ttype_t *ttype = substitute_type(x->m_type);
+        ASR::expr_t *value = duplicate_expr(x->m_value);
+        return ASR::make_ArrayPhysicalCast_t(al, x->base.base.loc,
+            arg, x->m_old, x->m_new, ttype, value);
     }
 
     ASR::ttype_t* substitute_type(ASR::ttype_t *ttype) {

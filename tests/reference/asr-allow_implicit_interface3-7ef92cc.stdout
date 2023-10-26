@@ -135,7 +135,7 @@
                         []
                         .false.
                     )
-                    [lsame]
+                    []
                     [(Var 2 uplo)]
                     [(=
                         (Var 2 info)

@@ -546,7 +546,7 @@
                                         []
                                         .false.
                                     )
-                                    [git_target_branch]
+                                    []
                                     [(Var 13 self)]
                                     [(=
                                         (StructInstanceMember
@@ -878,7 +878,7 @@
                                         []
                                         .false.
                                     )
-                                    [new_dependencies]
+                                    []
                                     [(Var 6 self)
                                     (Var 6 table)
                                     (Var 6 error)]

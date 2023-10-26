@@ -452,8 +452,7 @@
                                         []
                                         .false.
                                     )
-                                    [len_trim
-                                    trim]
+                                    []
                                     [(Var 3 s)]
                                     [(=
                                         (Var 3 r)

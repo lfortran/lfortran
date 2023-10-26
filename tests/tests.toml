@@ -118,13 +118,16 @@ filename = "../integration_tests/template_simple_02.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/template_simple_03.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/test_backspace_01.f90"
 asr = true
 
 [[test]]
 filename = "subroutine2.f90"
 ast = true
-julia = true
 
 [[test]]
 filename = "subroutine3.f90"
@@ -551,6 +554,10 @@ ast = true
 [[test]]
 filename = "../integration_tests/submodule_02.f90"
 asr = true
+
+[[test]]
+filename = "../integration_tests/sum_02.f90"
+llvm = true
 
 [[test]]
 filename = "program1.f90"
@@ -1653,6 +1660,10 @@ ast_f90 = true
 filename = "../integration_tests/format_02.f90"
 ast = true
 ast_f90 = true
+
+[[test]]
+filename = "format1.f90"
+run = true
 
 [[test]]
 filename = "interop/mod1-14.mod"

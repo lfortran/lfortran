@@ -147,7 +147,7 @@
                         []
                         .false.
                     )
-                    [max@dmax_3args]
+                    []
                     []
                     [(=
                         (Var 2 s)

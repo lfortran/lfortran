@@ -324,7 +324,7 @@
                                         []
                                         .false.
                                     )
-                                    [check_proc]
+                                    []
                                     []
                                     [(SubroutineCall
                                         2 check_proc

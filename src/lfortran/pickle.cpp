@@ -226,14 +226,15 @@ public:
     }
 };
 
-std::string pickle_json(LFortran::AST::ast_t &ast, LocationManager &lm) {
+std::string pickle_json(LFortran::AST::ast_t &ast, LocationManager &lm, bool no_loc) {
     ASTJsonVisitor v(lm);
+    v.no_loc = no_loc;
     v.visit_ast(ast);
     return v.get_str();
 }
 
-std::string pickle_json(LFortran::AST::TranslationUnit_t &ast, LocationManager &lm) {
-    return pickle_json((LFortran::AST::ast_t &)ast, lm);
+std::string pickle_json(LFortran::AST::TranslationUnit_t &ast, LocationManager &lm, bool no_loc) {
+    return pickle_json((LFortran::AST::ast_t &)ast, lm, no_loc);
 }
 
 } // namespace LCompilers::LFortran

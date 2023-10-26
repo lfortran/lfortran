@@ -12,7 +12,6 @@
 #include <lfortran/utils.h>
 #include <lfortran/semantics/comptime_eval.h>
 #include <libasr/pass/instantiate_template.h>
-
 #include <string>
 #include <unordered_set>
 #include <queue>
@@ -325,8 +324,8 @@ public:
                                     ASRUtils::expr_value(left))->m_s;
             char* right_value = ASR::down_cast<ASR::StringConstant_t>(
                                     ASRUtils::expr_value(right))->m_s;
-            std::string left_str = std::string(left_value);
-            std::string right_str = std::string(right_value);
+            std::string left_str = ASRUtils::remove_trailing_white_spaces(std::string(left_value));
+            std::string right_str = ASRUtils::remove_trailing_white_spaces(std::string(right_value));
             int8_t strcmp = left_str.compare(right_str);
             bool result;
             switch (asr_op) {
@@ -825,6 +824,7 @@ public:
     std::map<std::string, std::string> context_map;     // TODO: refactor treatment of context map
     std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types;
     std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols;
+    std::vector<ASR::stmt_t*> &data_structure;
 
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
             diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
@@ -834,13 +834,14 @@ public:
             std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
             std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
             std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
-            std::map<std::string, std::vector<int>> &entry_function_arguments_mapping)
+            std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
+            std::vector<ASR::stmt_t*> &data_structure)
         : diag{diagnostics}, al{al}, compiler_options{compiler_options},
           current_scope{symbol_table}, implicit_mapping{implicit_mapping},
           common_variables_hash{common_variables_hash}, external_procedures_mapping{external_procedures_mapping},
           entry_functions{entry_functions},entry_function_arguments_mapping{entry_function_arguments_mapping},
           current_variable_type_{nullptr}, instantiate_types{instantiate_types},
-          instantiate_symbols{instantiate_symbols} {
+          instantiate_symbols{instantiate_symbols}, data_structure{data_structure} {
         current_module_dependencies.reserve(al, 4);
         enum_init_val = 0;
     }
@@ -1716,8 +1717,10 @@ public:
         }
     }
 
-    bool check_is_external(std::string sym) {
-        if (current_scope->asr_owner) {
+    bool check_is_external(std::string sym, SymbolTable* scope = nullptr) {
+        if (scope) {
+            external_procedures = external_procedures_mapping[get_hash(scope->asr_owner)];
+        } else if (current_scope->asr_owner) {
             external_procedures = external_procedures_mapping[get_hash(current_scope->asr_owner)];
         }
         return ( std::find(external_procedures.begin(), external_procedures.end(), sym) != external_procedures.end() );
@@ -2038,11 +2041,141 @@ public:
                         }
                     }
                 } else if (AST::is_a<AST::AttrEquivalence_t>(*x.m_attributes[i])) {
-                    diag.semantic_warning_label(
-                        "Equivalence statement is not implemented yet, for now we will ignore it",
-                        {x.base.base.loc},
-                        "ignored for now"
-                    );
+                    AST::AttrEquivalence_t *eq = AST::down_cast<AST::AttrEquivalence_t>(x.m_attributes[i]);
+                    if (eq->n_args == 1) {
+                        if (eq->m_args[0].n_set_list == 2) {
+                            AST::expr_t *eq1 = eq->m_args[0].m_set_list[0];
+                            AST::expr_t *eq2 = eq->m_args[0].m_set_list[1];
+                            if (AST::is_a<AST::FuncCallOrArray_t>(*eq1) && AST::is_a<AST::FuncCallOrArray_t>(*eq2)) {
+
+                                this->visit_expr(*eq1);
+                                ASR::expr_t* asr_eq1 = ASRUtils::EXPR(tmp);
+                                this->visit_expr(*eq2);
+                                ASR::expr_t* asr_eq2 = ASRUtils::EXPR(tmp);
+
+                                ASR::ttype_t* arg_type = ASRUtils::type_get_past_allocatable(
+                                            ASRUtils::type_get_past_pointer(ASRUtils::expr_type(asr_eq1)));
+                                ASR::ttype_t* pointer_type_ = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq1->base.loc, ASRUtils::type_get_past_array(arg_type)));
+                                ASR::asr_t* get_pointer = ASR::make_GetPointer_t(al, asr_eq1->base.loc, asr_eq1, pointer_type_, nullptr);
+                                ASR::ttype_t *cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, asr_eq1->base.loc));
+                                ASR::asr_t* pointer_to_cptr = ASR::make_PointerToCPtr_t(al, asr_eq1->base.loc, ASRUtils::EXPR(get_pointer), cptr, nullptr);
+
+                                ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, asr_eq1->base.loc, 4));
+                                ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_eq1->base.loc, 1, int32_type));
+
+                                Vec<ASR::dimension_t> dim;
+                                dim.reserve(al, 1);
+                                ASR::dimension_t dim_;
+                                dim_.m_start = one;
+                                dim_.m_length = one;
+                                dim_.loc = asr_eq1->base.loc;
+                                dim.push_back(al, dim_);
+
+                                Vec<ASR::dimension_t> dim2;
+                                dim2.reserve(al, 1);
+                                ASR::dimension_t dim2_;
+                                dim2_.m_start = nullptr;
+                                dim2_.m_length = nullptr;
+                                dim2_.loc = asr_eq1->base.loc;
+                                dim2.push_back(al, dim2_);
+
+                                ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(asr_eq2);
+                                ASR::expr_t* array = array_item->m_v;
+                                ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(array);
+                                ASR::Variable_t *var__ = ASR::down_cast<ASR::Variable_t>(var->m_v);
+                                std::string name = var__->m_name;
+                                ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(var__->m_type);
+                                ASR::dimension_t* m_dim = arr->m_dims;
+                                ASR::dimension_t dim_1 = m_dim[0];
+                                ASR::expr_t* len = dim_1.m_length;
+                                ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(len);
+                                ASR::expr_t* size = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_eq1->base.loc, ic->m_n, int32_type));
+                                ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Integer_t(al, asr_eq2->base.loc, 4));
+                                type = ASRUtils::make_Array_t_util(al, asr_eq2->base.loc, type, dim2.p, dim2.size(), ASR::abiType::Source, false, ASR::array_physical_typeType::DescriptorArray, false, false);
+                                ASR::ttype_t* ptr = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq2->base.loc, type));
+                                var__->m_type = ptr;
+
+                                Vec<ASR::expr_t*> args;
+                                args.reserve(al, 1);
+                                args.push_back(al, size);
+
+                                ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, asr_eq1->base.loc, int32_type, dim.p, dim.size(), ASR::array_physical_typeType::PointerToDataArray));
+                                ASR::asr_t* array_constant = ASRUtils::make_ArrayConstant_t_util(al, asr_eq1->base.loc, args.p, args.size(), array_type, ASR::arraystorageType::ColMajor);
+                                ASR::asr_t* c_f_pointer = ASR::make_CPtrToPointer_t(al, asr_eq1->base.loc, ASRUtils::EXPR(pointer_to_cptr), ASR::down_cast<ASR::ArrayItem_t>(asr_eq2)->m_v, ASRUtils::EXPR(array_constant), nullptr);
+
+                                ASR::stmt_t *stmt = ASRUtils::STMT(c_f_pointer);
+                                data_structure.push_back(stmt);
+
+                            } else {
+                                diag.semantic_warning_label(
+                                    "This equivalence statement is not implemented yet, for now we will ignore it",
+                                    {x.base.base.loc},
+                                    "ignored for now"
+                                );
+                            }
+                        } else {
+                            diag.semantic_warning_label(
+                                "This equivalence statement is not implemented yet, for now we will ignore it",
+                                {x.base.base.loc},
+                                "ignored for now"
+                            );
+                        }
+                    } else if (eq->n_args == 2) {
+                        AST::expr_t *eq01 = eq->m_args[0].m_set_list[0];
+                        AST::expr_t *eq02 = eq->m_args[0].m_set_list[1];
+                        AST::expr_t *eq11 = eq->m_args[1].m_set_list[0];
+                        AST::expr_t *eq12 = eq->m_args[1].m_set_list[1];
+
+                        this->visit_expr(*eq01);
+                        ASR::expr_t* asr_eq01 = ASRUtils::EXPR(tmp);
+                        this->visit_expr(*eq02);
+                        ASR::expr_t* asr_eq02 = ASRUtils::EXPR(tmp);
+                        this->visit_expr(*eq11);
+                        ASR::expr_t* asr_eq11 = ASRUtils::EXPR(tmp);
+                        this->visit_expr(*eq12);
+                        ASR::expr_t* asr_eq12 = ASRUtils::EXPR(tmp);
+
+                        ASR::ttype_t* arg_type = ASRUtils::type_get_past_allocatable(
+                                    ASRUtils::type_get_past_pointer(ASRUtils::expr_type(asr_eq01)));
+                        ASR::ttype_t* pointer_type_ = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq01->base.loc, ASRUtils::type_get_past_array(arg_type)));
+                        ASR::asr_t* get_pointer = ASR::make_GetPointer_t(al, asr_eq01->base.loc, asr_eq01, pointer_type_, nullptr);
+                        ASR::ttype_t *cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, asr_eq01->base.loc));
+                        ASR::asr_t* pointer_to_cptr = ASR::make_PointerToCPtr_t(al, asr_eq01->base.loc, ASRUtils::EXPR(get_pointer), cptr, nullptr);
+
+                        arg_type = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(ASRUtils::expr_type(asr_eq12)));
+                        pointer_type_ = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq12->base.loc, ASRUtils::type_get_past_array(arg_type)));
+                        get_pointer = ASR::make_GetPointer_t(al, asr_eq12->base.loc, asr_eq12, pointer_type_, nullptr);
+                        cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, asr_eq12->base.loc));
+                        ASR::asr_t* pointer_to_cptr2 = ASR::make_PointerToCPtr_t(al, asr_eq12->base.loc, ASRUtils::EXPR(get_pointer), cptr, nullptr);
+
+                        ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(asr_eq02);
+                        ASR::Variable_t *var__ = ASR::down_cast<ASR::Variable_t>(var->m_v);
+                        ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Integer_t(al, asr_eq02->base.loc, 4));
+                        ASR::ttype_t* ptr = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq02->base.loc, type));
+                        var__->m_type = ptr;
+
+                        var = ASR::down_cast<ASR::Var_t>(asr_eq11);
+                        var__ = ASR::down_cast<ASR::Variable_t>(var->m_v);
+                        type = ASRUtils::TYPE(ASR::make_Real_t(al, asr_eq11->base.loc, 4));
+                        ptr = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq11->base.loc, type));
+                        var__->m_type = ptr;
+
+                        ASR::asr_t* c_f_pointer = ASR::make_CPtrToPointer_t(al, asr_eq01->base.loc, ASRUtils::EXPR(pointer_to_cptr),asr_eq02, nullptr, nullptr);
+                        ASR::stmt_t *stmt = ASRUtils::STMT(c_f_pointer);
+                        data_structure.push_back(stmt);
+
+                        c_f_pointer = ASR::make_CPtrToPointer_t(al, asr_eq12->base.loc, ASRUtils::EXPR(pointer_to_cptr2),asr_eq11, nullptr, nullptr);
+                        stmt = ASRUtils::STMT(c_f_pointer);
+                        data_structure.push_back(stmt);
+
+                    } else {
+                        diag.semantic_warning_label(
+                            "This equivalence statement is not implemented yet, for now we will ignore it",
+                            {x.base.base.loc},
+                            "ignored for now"
+                        );
+                    }
                 } else {
                     throw SemanticError("Attribute declaration not supported",
                         x.base.base.loc);
@@ -2993,7 +3126,8 @@ public:
                     v_Var, args.p[0].m_right, type, arr_ref_val);
             } else {
                 return (ASR::asr_t*) replace_with_common_block_variables(ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
-                    v_Var, args.p, args.size(), ASRUtils::type_get_past_allocatable(type),
+                    v_Var, args.p, args.size(), ASRUtils::type_get_past_pointer(
+                        ASRUtils::type_get_past_allocatable(type)),
                     ASR::arraystorageType::ColMajor, arr_ref_val)));
             }
         } else {
@@ -3306,7 +3440,9 @@ public:
                 }
             }
         }
-        current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym));
+        if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->get_counter()) {
+            ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies);
+        }
         ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
         return ASRUtils::make_FunctionCall_t_util(al, loc,
@@ -3363,7 +3499,9 @@ public:
         } else {
             type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
         }
-        current_function_dependencies.push_back(al, ASRUtils::symbol_name(v));
+        if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter()) {
+            ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
+        }
         ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al, v_expr);
         return ASRUtils::make_FunctionCall_t_util(al, loc,
@@ -3402,7 +3540,9 @@ public:
                 type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
                 type = handle_return_type(type, loc, args, func);
             }
-            current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym));
+            if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->get_counter()) {
+                ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies);
+            }
             ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
             ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
             return ASRUtils::make_FunctionCall_t_util(al, loc,
@@ -3450,14 +3590,18 @@ public:
                 type = handle_return_type(type, loc, args, func);
             }
             if (cp_s != nullptr) {
-                current_function_dependencies.push_back(al, ASRUtils::symbol_name(cp_s));
+                if (ASRUtils::symbol_parent_symtab(cp_s)->get_counter() != current_scope->get_counter()) {
+                    ADD_ASR_DEPENDENCIES(current_scope, cp_s, current_function_dependencies);
+                }
                 ASRUtils::insert_module_dependency(cp_s, al, current_module_dependencies);
                 ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
                 return ASRUtils::make_FunctionCall_t_util(al, loc,
                     cp_s, v, args.p, args.size(), type,
                     nullptr, nullptr);
             } else {
-                current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym));
+                if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->get_counter()) {
+                    ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies);
+                }
                 ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
                 ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
                 return ASRUtils::make_FunctionCall_t_util(al, loc,
@@ -3503,8 +3647,9 @@ public:
                 }
             }
         }
-
-        current_function_dependencies.push_back(al, ASRUtils::symbol_name(v));
+        if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter()) {
+            ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
+        }
         ASR::Module_t* v_module = ASRUtils::get_sym_module0(f2);
         if( v_module ) {
             current_module_dependencies.push_back(al, v_module->m_name);
@@ -3519,7 +3664,9 @@ public:
                 Vec<ASR::call_arg_t>& args, ASR::symbol_t *v) {
         ASR::FunctionType_t* func = ASR::down_cast<ASR::FunctionType_t>(ASRUtils::symbol_type(v));
         ASR::ttype_t *return_type = func->m_return_var_type;
-        current_function_dependencies.push_back(al, ASRUtils::symbol_name(v));
+        if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter()) {
+            ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
+        }
         // TODO: Uncomment later
         // ASRUtils::set_absent_optional_arguments_to_null(args, ASR::down_cast<ASR::Function_t>(v), al);
         return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
@@ -4368,8 +4515,10 @@ public:
                 current_module_dependencies.push_back(al, module_name);
             }
         }
+        if (ASRUtils::symbol_parent_symtab(function)->get_counter() != current_scope->get_counter()) {
+            ADD_ASR_DEPENDENCIES_WITH_NAME(current_scope, function, current_function_dependencies, s2c(al, function_name));
 
-        current_function_dependencies.push_back(al, s2c(al, function_name));
+        }
         ASRUtils::insert_module_dependency(function, al, current_module_dependencies);
         return ASRUtils::make_FunctionCall_t_util(al, x.base.base.loc, function, nullptr, func_args.p,
             func_args.size(), type, nullptr, nullptr);
@@ -4796,8 +4945,12 @@ public:
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
         std::string var_name = to_lower(x.m_func);
         if (x.n_temp_args > 0) {
-            handle_templated(x.m_func, x.m_temp_args, x.n_temp_args, x.base.base.loc);
-            var_name = "__templated_" + var_name;
+            ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
+            bool is_nested = ASR::is_a<ASR::Template_t>(*ASRUtils::get_asr_owner(owner_sym));
+            handle_templated(x.m_func, is_nested, x.m_temp_args, x.n_temp_args, x.base.base.loc);
+            if (!is_nested) {
+                var_name = "__templated_" + var_name;
+            }
         }
         SymbolTable *scope = current_scope;
         ASR::symbol_t *v = nullptr;
@@ -5298,7 +5451,8 @@ public:
             } else if( ASRUtils::is_array(right_type) ) {
                 n_dims = ASRUtils::extract_dimensions_from_ttype(right_type, m_dims);
             }
-            dest_type = ASRUtils::make_Array_t_util(al, dest_type->base.loc, dest_type, m_dims, n_dims);
+            dest_type = ASRUtils::make_Array_t_util(al, dest_type->base.loc,
+                ASRUtils::type_get_past_pointer(dest_type), m_dims, n_dims);
             if( ASR::is_a<ASR::Allocatable_t>(*left_type) || ASR::is_a<ASR::Allocatable_t>(*right_type) ) {
                 dest_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, dest_type->base.loc, dest_type));
             }
@@ -5470,6 +5624,8 @@ public:
                                     + " " +  op_str + " " + ASRUtils::type_to_str(right_type), x.base.base.loc);
             }
             return;
+        } else if( overloaded == nullptr ) {
+            LCOMPILERS_ASSERT(false);
         }
 
         if (overloaded != nullptr) {
@@ -5478,7 +5634,8 @@ public:
 
     }
 
-    void handle_templated(std::string name, AST::use_symbol_t** args, size_t n_args, const Location &loc) {
+    void handle_templated(std::string name, bool is_nested,
+            AST::use_symbol_t** args, size_t n_args, const Location &loc) {
         std::string func_name = name;
 
         ASR::symbol_t *sym0 = current_scope->resolve_symbol(func_name);
@@ -5636,7 +5793,7 @@ public:
                         }
                     }
                 }
-    
+
                 // if not found, then try to build a function for intrinsic operator
                 if (!found) {
                     if (f->n_args != 2) {
@@ -5727,33 +5884,42 @@ public:
         }
 
         ASR::symbol_t *s = temp->m_symtab->resolve_symbol(func_name);
-        std::string new_func_name = current_scope->get_unique_name("__asr_" + func_name);
-        pass_instantiate_symbol(al, context_map, type_subs, symbol_subs,
-            current_scope, temp->m_symtab, new_func_name, s);
-        context_map[func_name] = new_func_name;
+        std::string new_func_name = func_name;
+        SymbolTable *target_scope = current_scope;
 
-        ASR::symbol_t *new_s = current_scope->get_symbol(new_func_name);
+        if (!is_nested) {
+            new_func_name = current_scope->get_unique_name("__asr_" + func_name);
+        } else {
+            target_scope = current_scope->parent;
+        }
+
+        pass_instantiate_symbol(al, context_map, type_subs, symbol_subs,
+            target_scope, temp->m_symtab, new_func_name, s);
+
+        ASR::symbol_t *new_s = target_scope->get_symbol(new_func_name);
         ASR::Function_t *new_f = ASR::down_cast<ASR::Function_t>(new_s);
         pass_instantiate_function_body(al, context_map, type_subs, symbol_subs,
-            current_scope, temp->m_symtab, new_f, ASR::down_cast<ASR::Function_t>(s));
+            target_scope, temp->m_symtab, new_f, ASR::down_cast<ASR::Function_t>(s));
 
         // Build generic procedure if has not existed yet
-        std::string g_name = "__templated_" + func_name;
+        if (!is_nested) {
+            std::string g_name = "__templated_" + func_name;
 
-        Vec<ASR::symbol_t*> symbols;
-        if (current_scope->get_symbol(g_name) != nullptr) {
-            ASR::GenericProcedure_t *old_g = ASR::down_cast<ASR::GenericProcedure_t>(current_scope->get_symbol(g_name));
-            symbols.reserve(al, old_g->n_procs + 1);
-            for (size_t i=0; i<old_g->n_procs; i++) {
-                symbols.push_back(al, old_g->m_procs[i]);
+            Vec<ASR::symbol_t*> symbols;
+            if (current_scope->get_symbol(g_name) != nullptr) {
+                ASR::GenericProcedure_t *old_g = ASR::down_cast<ASR::GenericProcedure_t>(current_scope->get_symbol(g_name));
+                symbols.reserve(al, old_g->n_procs + 1);
+                for (size_t i=0; i<old_g->n_procs; i++) {
+                    symbols.push_back(al, old_g->m_procs[i]);
+                }
+            } else {
+                symbols.reserve(al, 1);
             }
-        } else {
-            symbols.reserve(al, 1);
+            symbols.push_back(al, new_s);
+            ASR::asr_t *g = ASR::make_GenericProcedure_t(al, loc,
+                current_scope, s2c(al, g_name), symbols.p, symbols.size(), ASR::Public);
+            current_scope->add_or_overwrite_symbol(g_name, ASR::down_cast<ASR::symbol_t>(g));
         }
-        symbols.push_back(al, new_s);
-        ASR::asr_t *g = ASR::make_GenericProcedure_t(al, loc,
-            current_scope, s2c(al, g_name), symbols.p, symbols.size(), ASR::Public);
-        current_scope->add_or_overwrite_symbol(g_name, ASR::down_cast<ASR::symbol_t>(g));
 
         context_map.clear();
     }
@@ -5855,7 +6021,9 @@ public:
                         } else {
                             return_type = ASRUtils::expr_type(func->m_return_var);
                         }
-                        current_function_dependencies.push_back(al, s2c(al, matched_func_name));
+                        if (sym != nullptr && ASRUtils::symbol_parent_symtab(sym)->get_counter() != current_scope->get_counter()) {
+                            ADD_ASR_DEPENDENCIES_WITH_NAME(current_scope, sym, current_function_dependencies, s2c(al, matched_func_name));
+                        }
                         ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
                         ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al);
                         tmp = ASRUtils::make_FunctionCall_t_util(al, x.base.base.loc,
@@ -6103,8 +6271,17 @@ public:
             ASR::expr_t **expr_list, size_t n) {
         std::vector<std::string> result;
         for (size_t i=0; i < n; i++) {
-            ASR::Variable_t *v = ASRUtils::EXPR2VAR(expr_list[i]);
-            result.push_back(v->m_name);
+            ASR::symbol_t* sym_i = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(expr_list[i])->m_v);
+            if( ASR::is_a<ASR::Variable_t>(*sym_i) ) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_i);
+                result.push_back(v->m_name);
+            } else if( ASR::is_a<ASR::Function_t>(*sym_i) ) {
+                ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(sym_i);
+                result.push_back(f->m_name);
+            } else {
+                LCOMPILERS_ASSERT(false);
+            }
         }
         return result;
     }

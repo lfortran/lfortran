@@ -142,7 +142,7 @@
                         []
                         .false.
                     )
-                    [messpr]
+                    []
                     [(Var 4 entry__lcompilers)]
                     [(If
                         (IntegerCompare
@@ -187,6 +187,13 @@
                         []
                         ()
                     )
+                    (SubroutineCall
+                        4 messpr
+                        ()
+                        []
+                        ()
+                    )
+                    (Return)
                     (Return)]
                     ()
                     Public

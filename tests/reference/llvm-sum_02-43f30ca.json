@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-sum_02-43f30ca",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/sum_02.f90",
+    "infile_hash": "99dc9086a01665c1606aec1aa22300d8a20e19be0d336247d3cbc93a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-sum_02-43f30ca.stdout",
+    "stdout_hash": "44086c47f9e4d6909193384822c3da645a77fecd75fe29cf10001676",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

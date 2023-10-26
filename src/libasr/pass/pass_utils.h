@@ -262,6 +262,7 @@ namespace LCompilers {
                 bool fill_function_dependencies;
                 bool fill_module_dependencies;
                 bool fill_variable_dependencies;
+                SymbolTable* current_scope;
 
             public:
 
@@ -273,10 +274,13 @@ namespace LCompilers {
                     function_dependencies.n = 0;
                     module_dependencies.n = 0;
                     variable_dependencies.n = 0;
+                    current_scope = nullptr;
                 }
 
                 void visit_Function(const ASR::Function_t& x) {
                     ASR::Function_t& xx = const_cast<ASR::Function_t&>(x);
+                    SymbolTable* current_scope_copy = current_scope;
+                    current_scope = xx.m_symtab;
                     SetChar function_dependencies_copy;
                     function_dependencies_copy.from_pointer_n_copy(al, function_dependencies.p, function_dependencies.size());
                     function_dependencies.n = 0;
@@ -291,9 +295,12 @@ namespace LCompilers {
                         function_dependencies_copy.p,
                         function_dependencies_copy.size()
                     );
+                    current_scope = current_scope_copy;
                 }
 
                 void visit_Module(const ASR::Module_t& x) {
+                    SymbolTable *parent_symtab = current_scope;
+                    current_scope = x.m_symtab;
                     ASR::Module_t& xx = const_cast<ASR::Module_t&>(x);
                     module_dependencies.n = 0;
                     module_dependencies.reserve(al, 1);
@@ -306,6 +313,7 @@ namespace LCompilers {
                     xx.n_dependencies = module_dependencies.size();
                     xx.m_dependencies = module_dependencies.p;
                     fill_module_dependencies = fill_module_dependencies_copy;
+                    current_scope = parent_symtab;
                 }
 
                 void visit_Variable(const ASR::Variable_t& x) {
@@ -327,8 +335,19 @@ namespace LCompilers {
                 }
 
                 void visit_FunctionCall(const ASR::FunctionCall_t& x) {
-                    if( fill_function_dependencies ) {
-                        function_dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
+                    if (fill_function_dependencies) { 
+                        ASR::symbol_t* asr_owner_sym = nullptr;
+                        if (current_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
+                            asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
+                        }
+
+                        SymbolTable* temp_scope = current_scope;
+
+                        if (asr_owner_sym && temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(x.m_name)->get_counter() &&
+                            !ASR::is_a<ASR::AssociateBlock_t>(*asr_owner_sym) && !ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) &&
+                                !ASR::is_a<ASR::Variable_t>(*x.m_name)) {
+                            function_dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
+                        }
                     }
                     if( ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) &&
                         fill_module_dependencies ) {
@@ -341,9 +360,21 @@ namespace LCompilers {
                 }
 
                 void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
-                    if( fill_function_dependencies ) {
-                        function_dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
+                    if (fill_function_dependencies) {
+                        ASR::symbol_t* asr_owner_sym = nullptr;
+                        if (current_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
+                            asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
+                        }
+
+                        SymbolTable* temp_scope = current_scope;
+
+                        if (asr_owner_sym && temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(x.m_name)->get_counter() &&
+                            !ASR::is_a<ASR::AssociateBlock_t>(*asr_owner_sym) && !ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) &&
+                                !ASR::is_a<ASR::Variable_t>(*x.m_name)) {
+                            function_dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
+                        }
                     }
+
                     if( ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) &&
                         fill_module_dependencies ) {
                         ASR::ExternalSymbol_t* x_m_name = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
@@ -355,10 +386,36 @@ namespace LCompilers {
                 }
 
                 void visit_BlockCall(const ASR::BlockCall_t& x) {
+                    SymbolTable *parent_symtab = current_scope;
                     ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
                     for (size_t i=0; i<block->n_body; i++) {
                         visit_stmt(*(block->m_body[i]));
                     }
+                    current_scope = parent_symtab;
+                }
+
+                void visit_AssociateBlock(const ASR::AssociateBlock_t& x) {
+                    SymbolTable *parent_symtab = current_scope;
+                    current_scope = x.m_symtab;
+                    for (auto &a : x.m_symtab->get_scope()) {
+                        this->visit_symbol(*a.second);
+                    }
+                    for (size_t i=0; i<x.n_body; i++) {
+                        visit_stmt(*x.m_body[i]);
+                    }
+                    current_scope = parent_symtab;
+                }
+
+                void visit_Block(const ASR::Block_t& x) {
+                    SymbolTable *parent_symtab = current_scope;
+                    current_scope = x.m_symtab;
+                    for (auto &a : x.m_symtab->get_scope()) {
+                        this->visit_symbol(*a.second);
+                    }
+                    for (size_t i=0; i<x.n_body; i++) {
+                        visit_stmt(*x.m_body[i]);
+                    }
+                    current_scope = parent_symtab;
                 }
         };
 
@@ -499,7 +556,8 @@ namespace LCompilers {
                 array_ref_type = ASRUtils::duplicate_type(al, array_ref_type, &empty_dims);
                 ASR::expr_t* array_ref = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, arr_var->base.loc,
                                             arr_var, args.p, args.size(),
-                                            ASRUtils::type_get_past_allocatable(array_ref_type),
+                                            ASRUtils::type_get_past_pointer(
+                                                ASRUtils::type_get_past_allocatable(array_ref_type)),
                                             ASR::arraystorageType::RowMajor, nullptr));
                 if( ASR::is_a<ASR::ImpliedDoLoop_t>(*idoloop->m_values[i]) ) {
                     create_do_loop(al, ASR::down_cast<ASR::ImpliedDoLoop_t>(idoloop->m_values[i]),
@@ -681,7 +739,8 @@ namespace LCompilers {
                                                         target_section->base.base.loc,
                                                         target_section->m_v,
                                                         args.p, args.size(),
-                                                        ASRUtils::type_get_past_allocatable(array_ref_type),
+                                                        ASRUtils::type_get_past_pointer(
+                                                            ASRUtils::type_get_past_allocatable(array_ref_type)),
                                                         ASR::arraystorageType::RowMajor, nullptr));
                         ASR::expr_t* x_m_args_k = x->m_args[k];
                         if( perform_cast ) {

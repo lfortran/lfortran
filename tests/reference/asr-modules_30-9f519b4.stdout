@@ -338,7 +338,7 @@
                                         []
                                         .false.
                                     )
-                                    [default_executable]
+                                    []
                                     [(Var 10 package)
                                     (Var 10 root)]
                                     [(Allocate

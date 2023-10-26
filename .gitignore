@@ -97,6 +97,7 @@ src/libasr/libasr.a.*
 *.o.tmp.cpp
 *.tmp.f90
 *.clj
+pass_*.f90
 *_lines.txt
 *_ldd.txt
 *_lines.dat.txt

@@ -120,8 +120,7 @@
                                         []
                                         .false.
                                     )
-                                    [allocated
-                                    toml_parse@toml_parse_string]
+                                    []
                                     [(Var 3 input)]
                                     [(If
                                         (FunctionCall

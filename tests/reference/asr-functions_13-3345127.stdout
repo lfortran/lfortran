@@ -44,7 +44,7 @@
                                         []
                                         .false.
                                     )
-                                    [scan_kind4]
+                                    []
                                     []
                                     [(If
                                         (IntegerCompare
@@ -207,7 +207,7 @@
                                         []
                                         .false.
                                     )
-                                    [verify_kind4]
+                                    []
                                     []
                                     [(If
                                         (IntegerCompare

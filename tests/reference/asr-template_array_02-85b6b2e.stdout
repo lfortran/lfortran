@@ -780,8 +780,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [zero_integer
-                                                    add_integer]
+                                                    []
                                                     [(Var 16 a)]
                                                     [(=
                                                         (Var 16 r)
@@ -874,7 +873,7 @@
                                         []
                                         .false.
                                     )
-                                    [mysum_integer]
+                                    []
                                     []
                                     [(DoLoop
                                         ()

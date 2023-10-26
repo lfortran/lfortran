@@ -279,9 +279,7 @@
                                         []
                                         .false.
                                     )
-                                    [allocated
-                                    1_to_string
-                                    time_to_string]
+                                    [time_to_string]
                                     [(Var 12 lhs)
                                     (Var 12 rhs)]
                                     [(If
@@ -606,7 +604,7 @@
                                         []
                                         .false.
                                     )
-                                    [present]
+                                    []
                                     [(Var 13 hour)
                                     (Var 13 minute)
                                     (Var 13 second)
@@ -869,9 +867,7 @@
                                         []
                                         .false.
                                     )
-                                    [allocated
-                                    trim
-                                    len_trim]
+                                    []
                                     [(Var 14 lhs)
                                     (Var 14 rhs)]
                                     [(If

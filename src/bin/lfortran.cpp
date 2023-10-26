@@ -678,15 +678,16 @@ int emit_asr(const std::string &infile,
     pass_options.intrinsic_symbols_mangling = compiler_options.intrinsic_symbols_mangling;
     pass_options.bindc_mangling = compiler_options.bindc_mangling;
     pass_options.mangle_underscore = compiler_options.mangle_underscore;
+    pass_options.use_loop_variable_after_loop = compiler_options.use_loop_variable_after_loop;
 
     pass_manager.apply_passes(al, asr, pass_options, diagnostics);
     if (compiler_options.tree) {
         std::cout << LCompilers::pickle_tree(*asr,
             compiler_options.use_colors) << std::endl;
     } else if (compiler_options.json) {
-        std::cout << LCompilers::pickle_json(*asr, lm, with_intrinsic_modules) << std::endl;
+        std::cout << LCompilers::pickle_json(*asr, lm, compiler_options.no_loc, with_intrinsic_modules) << std::endl;
     } else if (compiler_options.visualize) {
-        std::string astr_data_json = LCompilers::pickle_json(*asr, lm, with_intrinsic_modules);
+        std::string astr_data_json = LCompilers::pickle_json(*asr, lm, compiler_options.no_loc, with_intrinsic_modules);
         return visualize_json(astr_data_json, compiler_options.platform);
     } else {
         std::cout << LCompilers::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
@@ -779,7 +780,8 @@ int emit_julia(const std::string &infile, CompilerOptions &compiler_options)
     }
 }
 
-int emit_fortran(const std::string &infile, CompilerOptions &compiler_options) {
+int emit_fortran(const std::string &infile,  LCompilers::PassManager &pass_manager,
+        CompilerOptions &compiler_options) {
     std::string input = read_file(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
@@ -791,7 +793,8 @@ int emit_fortran(const std::string &infile, CompilerOptions &compiler_options) {
         lm.files.push_back(fl);
         lm.file_ends.push_back(input.size());
     }
-    LCompilers::Result<std::string> src = fe.get_fortran(input, lm, diagnostics);
+    LCompilers::Result<std::string> src = fe.get_fortran(input, lm, pass_manager,
+        diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (src.ok) {
         std::cout << src.result;
@@ -903,7 +906,8 @@ int emit_asm(const std::string &infile, CompilerOptions &compiler_options)
 int compile_to_object_file(const std::string &infile,
         const std::string &outfile,
         bool assembly,
-        CompilerOptions &compiler_options)
+        CompilerOptions &compiler_options,
+        LCompilers::PassManager& lpm)
 {
     std::string input = read_file(infile);
 
@@ -913,14 +917,6 @@ int compile_to_object_file(const std::string &infile,
 
     // Src -> AST -> ASR
     LCompilers::LocationManager lm;
-    LCompilers::PassManager lpm;
-    lpm.use_default_passes();
-
-    if (compiler_options.fast) {
-        lpm.use_optimization_passes();
-    } else {
-        lpm.do_not_use_optimization_passes();
-    }
 
     {
         LCompilers::LocationManager::FileLocations fl;
@@ -996,9 +992,10 @@ int compile_to_object_file(const std::string &infile,
 }
 
 int compile_to_assembly_file(const std::string &infile,
-    const std::string &outfile, CompilerOptions &compiler_options)
+    const std::string &outfile, CompilerOptions &compiler_options,
+    LCompilers::PassManager& lpm)
 {
-    return compile_to_object_file(infile, outfile, true, compiler_options);
+    return compile_to_object_file(infile, outfile, true, compiler_options, lpm);
 }
 #endif // HAVE_LFORTRAN_LLVM
 
@@ -1441,6 +1438,7 @@ int compile_to_object_file_c(const std::string &infile,
 
 int compile_to_binary_fortran(const std::string &infile,
         const std::string &outfile,
+        LCompilers::PassManager &pass_manager,
         CompilerOptions &compiler_options) {
     std::string input = read_file(infile);
 
@@ -1453,7 +1451,8 @@ int compile_to_binary_fortran(const std::string &infile,
         lm.files.push_back(fl);
         lm.file_ends.push_back(input.size());
     }
-    LCompilers::Result<std::string> src = fe.get_fortran(input, lm, diagnostics);
+    LCompilers::Result<std::string> src = fe.get_fortran(input, lm, pass_manager,
+        diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (!src.ok) {
         LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -2019,6 +2018,7 @@ int main(int argc, char *argv[])
         app.add_flag("--no-indent", arg_no_indent, "Turn off Indented print ASR/AST");
         app.add_flag("--tree", compiler_options.tree, "Tree structure print ASR/AST");
         app.add_flag("--json", compiler_options.json, "Print ASR/AST Json format");
+        app.add_flag("--no-loc", compiler_options.no_loc, "Skip location information in ASR/AST Json format");
         app.add_flag("--visualize", compiler_options.visualize, "Print ASR/AST Visualization");
         app.add_option("--pass", arg_pass, "Apply the ASR pass and show ASR (implies --show-asr)");
         app.add_option("--skip-pass", skip_pass, "Skip an ASR pass in default pipeline");
@@ -2052,6 +2052,7 @@ int main(int argc, char *argv[])
         app.add_flag("--interactive-parse", compiler_options.interactive, "Use interactive parse");
         app.add_flag("--verbose", compiler_options.verbose, "Print debugging statements");
         app.add_flag("--dump-all-passes", compiler_options.dump_all_passes, "Apply all the passes and dump the ASR into a file");
+        app.add_flag("--dump-all-passes-fortran", compiler_options.dump_fortran, "Apply all passes and dump the ASR after each pass into fortran file");
         app.add_flag("--cumulative", compiler_options.pass_cumulative, "Apply all the passes cumulatively till the given pass");
         app.add_flag("--realloc-lhs", compiler_options.realloc_lhs, "Reallocate left hand side automatically");
         app.add_flag("--module-mangling", compiler_options.module_name_mangling, "Mangles the module name");
@@ -2141,6 +2142,10 @@ int main(int argc, char *argv[])
 
         if( compiler_options.fast ) {
             lfortran_pass_manager.use_optimization_passes();
+        }
+
+        if (compiler_options.dump_fortran) {
+            arg_backend = "fortran";
         }
 
         if (fmt) {
@@ -2292,12 +2297,12 @@ int main(int argc, char *argv[])
             return emit_julia(arg_file, compiler_options);
         }
         if (show_fortran) {
-            return emit_fortran(arg_file, compiler_options);
+            return emit_fortran(arg_file, lfortran_pass_manager, compiler_options);
         }
         if (arg_S) {
             if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
-                return compile_to_assembly_file(arg_file, outfile, compiler_options);
+                return compile_to_assembly_file(arg_file, outfile, compiler_options, lfortran_pass_manager);
 #else
                 std::cerr << "The -S option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
                 return 1;
@@ -2313,7 +2318,7 @@ int main(int argc, char *argv[])
             if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
                 return compile_to_object_file(arg_file, outfile, false,
-                    compiler_options);
+                    compiler_options, lfortran_pass_manager);
 #else
                 std::cerr << "The -c option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
                 return 1;
@@ -2329,7 +2334,8 @@ int main(int argc, char *argv[])
             } else if (backend == Backend::wasm) {
                 return compile_to_binary_wasm(arg_file, outfile, time_report, compiler_options);
             } else if (backend == Backend::fortran) {
-                return compile_to_binary_fortran(arg_file, outfile, compiler_options);
+                return compile_to_binary_fortran(arg_file, outfile, lfortran_pass_manager,
+                    compiler_options);
             } else {
                 throw LCompilers::LCompilersException("Unsupported backend.");
             }
@@ -2348,7 +2354,7 @@ int main(int argc, char *argv[])
             if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
                 err = compile_to_object_file(arg_file, tmp_o, false,
-                    compiler_options);
+                    compiler_options, lfortran_pass_manager);
 #else
                 std::cerr << "Compiling Fortran files to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
                 return 1;
@@ -2360,7 +2366,8 @@ int main(int argc, char *argv[])
                 err = compile_to_object_file_c(arg_file, tmp_o,
                         false, rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
             } else if (backend == Backend::fortran) {
-                err = compile_to_binary_fortran(arg_file, tmp_o, compiler_options);
+                err = compile_to_binary_fortran(arg_file, tmp_o, lfortran_pass_manager,
+                    compiler_options);
             } else {
                 throw LCompilers::LCompilersException("Backend not supported");
             }

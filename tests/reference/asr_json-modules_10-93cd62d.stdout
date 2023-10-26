@@ -90,9 +90,7 @@
                                                 "last_column": 18
                                             }
                                         },
-                                        "dependencies": [
-                                            "my_other_proc"
-                                        ],
+                                        "dependencies": [],
                                         "args": [],
                                         "body": [
                                             {

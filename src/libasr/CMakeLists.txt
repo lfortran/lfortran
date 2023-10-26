@@ -63,6 +63,7 @@ set(SRC
     pass/pass_list_expr.cpp
     pass/pass_compare.cpp
     pass/unique_symbols.cpp
+    pass/insert_deallocate.cpp
 
     asr_verify.cpp
     asr_utils.cpp

@@ -86,7 +86,7 @@
                         []
                         .false.
                     )
-                    [f]
+                    []
                     [(Var 2 f)
                     (Var 2 n)]
                     [(SubroutineCall

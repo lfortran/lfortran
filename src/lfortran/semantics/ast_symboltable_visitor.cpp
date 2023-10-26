@@ -106,9 +106,10 @@ public:
         std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
-        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping)
+        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
+        std::vector<ASR::stmt_t*> &data_structure)
       : CommonVisitor(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                      instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping) {}
+                      instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure) {}
 
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
         if (!current_scope) {
@@ -183,6 +184,15 @@ public:
                         char_type->m_len_expr = expr;
                         char_type->m_len = -3;
                         if( expr->type == ASR::exprType::FunctionCall ) {
+                            ASR::FunctionCall_t *call = ASR::down_cast<ASR::FunctionCall_t>(expr);
+                            for(size_t i = 0; i < call->n_args; i ++) {
+                                if (ASR::is_a<ASR::Var_t>(*call->m_args[i].m_value)) {
+                                    ASR::Variable_t *v = ASRUtils::EXPR2VAR(call->m_args[i].m_value);
+                                    if (v->m_storage == ASR::storage_typeType::Parameter) {
+                                        call->m_args[i].m_value = v->m_value;
+                                    }
+                                }
+                            }
                             if( data->sym_type == (int64_t) ASR::symbolType::Function ) {
                                 ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
                                     ASR::down_cast<ASR::symbol_t>(data->scope->asr_owner));
@@ -671,8 +681,21 @@ public:
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
         ASRUtils::SymbolDuplicator symbol_duplicator(al);
-        for( auto& item: old_scope->get_scope() ) {
+        std::vector<std::string> copy_external_procedure = external_procedures;
+        external_procedures.clear();
+        std::vector<std::string> symbols_to_erase;
+        for( auto item: old_scope->get_scope() ) {
             symbol_duplicator.duplicate_symbol(item.second, current_scope);
+            bool is_external = check_is_external(item.first, old_scope);
+            if (is_external) {
+                external_procedures.push_back(item.first);
+                // remove it from old_scope
+                symbols_to_erase.push_back(item.first);
+            }
+        }
+
+        for (auto it: symbols_to_erase) {
+            old_scope->erase_symbol(it);
         }
 
         if (is_master) {
@@ -791,9 +814,14 @@ public:
                 }
             }
         }
-        
+
+        // populate the external_procedures_mapping
+        uint64_t hash = get_hash(tmp_);
+        external_procedures_mapping[hash] = external_procedures;
+
         current_scope = old_scope;
         current_function_dependencies = current_function_dependencies_copy;
+        external_procedures = copy_external_procedure;
         current_procedure_args.clear();
     }
 
@@ -979,14 +1007,17 @@ public:
         if (parent_scope->get_symbol(sym_name) != nullptr) {
             ASR::symbol_t *f1 = ASRUtils::symbol_get_past_external(
                 parent_scope->get_symbol(sym_name));
-            ASR::Function_t *f2 = nullptr;
-            if( ASR::is_a<ASR::Function_t>(*f1) ) {
-                f2 = ASR::down_cast<ASR::Function_t>(f1);
-            }
-            if ((f1->type == ASR::symbolType::ExternalSymbol && in_submodule) ||
-                ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::Interactive ||
-                ASRUtils::get_FunctionType(f2)->m_deftype == ASR::deftypeType::Interface) {
-                // Previous declaration will be shadowed
+            if (ASR::is_a<ASR::Function_t>(*f1)) {
+                ASR::Function_t* f2 = ASR::down_cast<ASR::Function_t>(f1);
+                if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::Interactive ||
+                    ASRUtils::get_FunctionType(f2)->m_deftype == ASR::deftypeType::Interface) {
+                    // Previous declaration will be shadowed
+                    parent_scope->erase_symbol(sym_name);
+                } else {
+                    throw SemanticError("Subroutine already defined", tmp->loc);
+                }
+            } else if (compiler_options.implicit_typing && ASR::is_a<ASR::Variable_t>(*f1)) {
+                // function previously added as variable due to implicit typing
                 parent_scope->erase_symbol(sym_name);
             } else {
                 throw SemanticError("Subroutine already defined", tmp->loc);
@@ -1018,8 +1049,11 @@ public:
             is_requirement, false, false);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        // populate the external_procedures_mapping
+        uint64_t hash = get_hash(tmp);
+        external_procedures_mapping[hash] = external_procedures;
         if (subroutine_contains_entry_function(sym_name, x.m_body, x.n_body)) {
-            /* 
+            /*
                 This subroutine contains an entry function, create
                 template function for each entry and a master function
             */
@@ -1051,10 +1085,6 @@ public:
 
             implicit_dictionary.clear();
         }
-
-        // populate the external_procedures_mapping
-        uint64_t hash = get_hash(tmp);
-        external_procedures_mapping[hash] = external_procedures;
 
         current_function_dependencies = current_function_dependencies_copy;
         in_Subroutine = false;
@@ -1361,13 +1391,18 @@ public:
 
         if (parent_scope->get_symbol(sym_name) != nullptr) {
             ASR::symbol_t *f1 = parent_scope->get_symbol(sym_name);
-            ASR::Function_t *f2 = nullptr;
-            if( f1->type == ASR::symbolType::Function ) {
-                f2 = ASR::down_cast<ASR::Function_t>(f1);
-            }
-            if ((f1->type == ASR::symbolType::ExternalSymbol && in_submodule) ||
-                ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::Interactive) {
-                // Previous declaration will be shadowed
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*f1) && in_submodule) {
+                parent_scope->erase_symbol(sym_name);
+            } else if (ASR::is_a<ASR::Function_t>(*f1)) {
+                ASR::Function_t* f2 = ASR::down_cast<ASR::Function_t>(f1);
+                if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::Interactive) {
+                    // Previous declaration will be shadowed
+                    parent_scope->erase_symbol(sym_name);
+                } else {
+                    throw SemanticError("Function already defined", tmp->loc);
+                }
+            } else if (compiler_options.implicit_typing && ASR::is_a<ASR::Variable_t>(*f1)) {
+                // function previously added as variable due to implicit typing
                 parent_scope->erase_symbol(sym_name);
             } else {
                 throw SemanticError("Function already defined", tmp->loc);
@@ -1403,8 +1438,11 @@ public:
             nullptr, 0, is_requirement, false, false);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        // populate the external_procedures_mapping
+        uint64_t hash = get_hash(tmp);
+        external_procedures_mapping[hash] = external_procedures;
         if (subroutine_contains_entry_function(sym_name, x.m_body, x.n_body)) {
-            /* 
+            /*
                 This subroutine contains an entry function, create
                 template function for each entry and a master function
             */
@@ -1432,11 +1470,6 @@ public:
 
             implicit_dictionary.clear();
         }
-
-        // populate the external_procedures_mapping
-        uint64_t hash = get_hash(tmp);
-        external_procedures_mapping[hash] = external_procedures;
-
         current_function_dependencies = current_function_dependencies_copy;
         in_Subroutine = false;
         mark_common_blocks_as_declared();
@@ -2601,7 +2634,7 @@ public:
                     reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
                     tmp = nullptr;
                 }
-            } else {    
+            } else {
                 this->visit_unit_decl2(*x.m_decl[i]);
             }
         }
@@ -2676,13 +2709,17 @@ public:
                 require_name + "' is not correct", x.base.base.loc);
         }
 
+        std::vector<std::string> primitives = {"integer"};
+
         SetChar args;
         args.reserve(al, x.n_namelist);
         for (size_t i=0; i<x.n_namelist; i++) {
             std::string requires_arg = to_lower(x.m_namelist[i]);
             std::string requirement_arg = req->m_args[i];
-            args.push_back(al, s2c(al, requires_arg));
-            if (std::find(current_procedure_args.begin(),
+            if (std::find(primitives.begin(),
+                          primitives.end(),
+                          requires_arg) == primitives.end()
+                && std::find(current_procedure_args.begin(),
                           current_procedure_args.end(),
                           requires_arg) == current_procedure_args.end()) {
                 throw SemanticError("Parameter '" + std::string(x.m_namelist[i])
@@ -2697,6 +2734,7 @@ public:
                 current_scope->add_symbol(requires_arg, requires_arg_sym);
             }
 
+            args.push_back(al, s2c(al, requires_arg));
         }
 
         // adding custom operators
@@ -2746,7 +2784,7 @@ public:
                     reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
                     tmp = nullptr;
                 }
-            } else {    
+            } else {
                 this->visit_unit_decl2(*x.m_decl[i]);
             }
         }
@@ -3074,8 +3112,13 @@ public:
                 if (ASR::is_a<ASR::TypeParameter_t>(*t)) {
                     ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(t);
                     context_map[tp->m_param] = name;
-                    t = ASRUtils::TYPE(ASR::make_TypeParameter_t(al,
-                        tp->base.base.loc, s2c(al, name)));
+                    if (name.compare("integer") == 0) {
+                        t = ASRUtils::TYPE(ASR::make_Integer_t(al,
+                            tp->base.base.loc, 4));
+                    } else {
+                        t = ASRUtils::TYPE(ASR::make_TypeParameter_t(al,
+                            tp->base.base.loc, s2c(al, name)));
+                    }
                     t = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
                         t, tp_m_dims, tp_n_dims);
                 }
@@ -3105,8 +3148,14 @@ public:
                     if (ASR::is_a<ASR::TypeParameter_t>(*param_type)) {
                         ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(param_type);
                         if (context_map.find(tp->m_param) != context_map.end()) {
-                            param_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(
-                                al, tp->base.base.loc, s2c(al, context_map[tp->m_param])));
+                            std::string pt = context_map[tp->m_param];
+                            if (pt.compare("integer") == 0) {
+                                param_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
+                                    tp->base.base.loc, 4));
+                            } else {
+                                param_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(
+                                    al, tp->base.base.loc, s2c(al, context_map[tp->m_param])));
+                            }
                             if( tp_n_dims > 0 ) {
                                 param_type = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
                                     param_type, tp_m_dims, tp_n_dims);
@@ -3152,8 +3201,14 @@ public:
                     if (ASR::is_a<ASR::TypeParameter_t>(*return_type)) {
                         ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(return_type);
                         if (context_map.find(tp->m_param) != context_map.end()) {
-                            return_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(
-                                al, tp->base.base.loc, s2c(al, context_map[tp->m_param])));
+                            std::string pt = context_map[tp->m_param];
+                            if (pt.compare("integer") == 0) {
+                                return_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
+                                    tp->base.base.loc, 4));
+                            } else {
+                                return_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(
+                                    al, tp->base.base.loc, s2c(al, context_map[tp->m_param])));
+                            }
                             if( tp_n_dims > 0 ) {
                                 return_type = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
                                     return_type, tp_m_dims, tp_n_dims);
@@ -3266,10 +3321,11 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
-        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping)
+        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
+        std::vector<ASR::stmt_t*> &data_structure)
 {
     SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                         instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping);
+                         instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure);
     try {
         v.visit_TranslationUnit(ast);
     } catch (const SemanticError &e) {

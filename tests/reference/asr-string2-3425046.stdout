@@ -111,7 +111,7 @@
                                         []
                                         .false.
                                     )
-                                    [f_string@f_string~genericprocedure]
+                                    []
                                     []
                                     [(=
                                         (Var 17 tempfile)
@@ -214,7 +214,7 @@
                                         []
                                         .false.
                                     )
-                                    [f_string@f_string_cptr]
+                                    []
                                     []
                                     [(WhileLoop
                                         ()
@@ -441,8 +441,7 @@
                                         []
                                         .false.
                                     )
-                                    [f_string_cptr_n
-                                    c_strlen]
+                                    [f_string_cptr_n]
                                     [(Var 6 cptr)]
                                     [(=
                                         (Var 6 s)

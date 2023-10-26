@@ -162,7 +162,7 @@
                                         []
                                         .false.
                                     )
-                                    [1_update_dependency]
+                                    []
                                     [(Var 7 settings)]
                                     [(SubroutineCall
                                         7 1_update_dependency

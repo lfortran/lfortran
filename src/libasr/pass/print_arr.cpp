@@ -126,7 +126,8 @@ public:
         }
     }
 
-    ASR::stmt_t* create_formatstmt(std::vector<ASR::expr_t*> &print_body, ASR::StringFormat_t* format, const Location &loc, ASR::stmtType _type) {
+    ASR::stmt_t* create_formatstmt(std::vector<ASR::expr_t*> &print_body, ASR::StringFormat_t* format, const Location &loc, ASR::stmtType _type,
+        ASR::expr_t* unit = nullptr, ASR::expr_t* separator = nullptr, ASR::expr_t* end = nullptr) {
         Vec<ASR::expr_t*> body;
         body.reserve(al, print_body.size());
         for (size_t j=0; j<print_body.size(); j++) {
@@ -143,8 +144,8 @@ public:
             statement = ASRUtils::STMT(ASR::make_Print_t(al, loc,
             print_args.p, print_args.size(), nullptr, nullptr));
         } else if (_type == ASR::stmtType::FileWrite) {
-            statement = ASRUtils::STMT(ASR::make_FileWrite_t(al, loc, 0, nullptr,
-                nullptr, nullptr, nullptr, print_args.p, print_args.size(), nullptr, nullptr));
+            statement = ASRUtils::STMT(ASR::make_FileWrite_t(al, loc, 0, unit,
+                nullptr, nullptr, nullptr, print_args.p, print_args.size(), separator, end));
         }
         print_body.clear();
         return statement;
@@ -251,7 +252,7 @@ public:
         }
     }
 
-    ASR::stmt_t* write_array_using_doloop(ASR::expr_t *arr_expr, ASR::StringFormat_t* format, const Location &loc) {
+    ASR::stmt_t* write_array_using_doloop(ASR::expr_t *arr_expr, ASR::StringFormat_t* format, ASR::expr_t* unit, const Location &loc) {
         int n_dims = PassUtils::get_rank(arr_expr);
         Vec<ASR::expr_t*> idx_vars;
         PassUtils::create_idx_vars(idx_vars, n_dims, loc, al, current_scope);
@@ -261,7 +262,7 @@ public:
         ASR::expr_t *empty_space = ASRUtils::EXPR(ASR::make_StringConstant_t(
             al, loc, s2c(al, ""), str_type_len));
         ASR::stmt_t* empty_file_write_endl = ASRUtils::STMT(ASR::make_FileWrite_t(al, loc,
-                                            0, nullptr, nullptr, nullptr, nullptr,nullptr, 0, nullptr, nullptr));
+                                            0, unit, nullptr, nullptr, nullptr,nullptr, 0, nullptr, nullptr));
         for( int i = n_dims - 1; i >= 0; i-- ) {
             ASR::do_loop_head_t head;
             head.m_v = idx_vars[i];
@@ -285,10 +286,10 @@ public:
                     format_args.reserve(al, 1);
                     format_args.push_back(al, string_format);
                     write_stmt = ASRUtils::STMT(ASR::make_FileWrite_t(
-                        al, loc, i, nullptr, nullptr, nullptr, nullptr, format_args.p, format_args.size(), nullptr, empty_space));
+                        al, loc, i, unit, nullptr, nullptr, nullptr, format_args.p, format_args.size(), nullptr, empty_space));
                 } else {
                     write_stmt = ASRUtils::STMT(ASR::make_FileWrite_t(
-                        al, loc, i, nullptr, nullptr, nullptr, nullptr, print_args.p, print_args.size(), nullptr, nullptr));
+                        al, loc, i, unit, nullptr, nullptr, nullptr, print_args.p, print_args.size(), nullptr, nullptr));
                 }
                 doloop_body.push_back(al, write_stmt);
             } else {
@@ -317,7 +318,7 @@ public:
         std::vector<ASR::expr_t*> write_body;
         ASR::stmt_t* write_stmt;
         ASR::stmt_t* empty_file_write_endl = ASRUtils::STMT(ASR::make_FileWrite_t(al, x.base.base.loc,
-                                            x.m_label, nullptr, nullptr, nullptr, nullptr, nullptr, 0, nullptr, nullptr));
+                                            x.m_label, x.m_unit, nullptr, nullptr, nullptr, nullptr, 0, nullptr, nullptr));
         if(x.m_values && x.m_values[0] != nullptr && ASR::is_a<ASR::StringFormat_t>(*x.m_values[0])){
             ASR::StringFormat_t* format = ASR::down_cast<ASR::StringFormat_t>(x.m_values[0]);
             for (size_t i=0; i<format->n_args; i++) {
@@ -326,10 +327,10 @@ public:
                         print_fixed_sized_array(format->m_args[i], write_body, x.base.base.loc);
                     } else {
                         if (write_body.size() > 0) {
-                            write_stmt = create_formatstmt(write_body, format, x.base.base.loc, ASR::stmtType::FileWrite);
+                            write_stmt = create_formatstmt(write_body, format, x.base.base.loc, ASR::stmtType::FileWrite, x.m_unit, x.m_separator, x.m_end);
                             pass_result.push_back(al, write_stmt);
                         }
-                        write_stmt = write_array_using_doloop(format->m_args[i],format, x.base.base.loc);
+                        write_stmt = write_array_using_doloop(format->m_args[i], format, x.m_unit, x.base.base.loc);
                         pass_result.push_back(al, write_stmt);
                         pass_result.push_back(al, empty_file_write_endl);
                     }
@@ -338,7 +339,7 @@ public:
                 }
             }
             if (write_body.size() > 0) {
-                write_stmt = create_formatstmt(write_body, format, x.base.base.loc, ASR::stmtType::FileWrite);
+                write_stmt = create_formatstmt(write_body, format, x.base.base.loc, ASR::stmtType::FileWrite, x.m_unit, x.m_separator, x.m_end);
                 pass_result.push_back(al, write_stmt);
             }
             return;
@@ -352,7 +353,7 @@ public:
                     print_args_apart_from_arrays(write_body, x);
                     pass_result.push_back(al, empty_file_write_endl);
                 }
-                write_stmt = write_array_using_doloop(x.m_values[i], nullptr, x.base.base.loc);
+                write_stmt = write_array_using_doloop(x.m_values[i], nullptr, x.m_unit, x.base.base.loc);
                 pass_result.push_back(al, write_stmt);
                 pass_result.push_back(al, empty_file_write_endl);
             } else {

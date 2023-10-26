@@ -131,7 +131,7 @@
                                         []
                                         .false.
                                     )
-                                    [len_trim]
+                                    []
                                     [(Var 4 message)
                                     (Var 4 context)]
                                     [(If

@@ -40,9 +40,10 @@ public:
             std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
             std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
             std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
-            std::map<std::string, std::vector<int>> &entry_function_arguments_mapping)
+            std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
+            std::vector<ASR::stmt_t*> &data_structure)
         : CommonVisitor(al, nullptr, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                        instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping),
+                        instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure),
         asr{unit}, from_block{false} {}
 
     void visit_Declaration(const AST::Declaration_t& x) {
@@ -55,6 +56,21 @@ public:
         from_block = true;
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        ASR::asr_t* block;
+        std::string name;
+        if (x.m_stmt_name) {
+            name = std::string(x.m_stmt_name);
+            block = ASR::make_Block_t(al, x.base.base.loc,
+                current_scope, x.m_stmt_name, nullptr, 0);
+        } else {
+            // TODO: Understand tests/block1.f90 to know if this is needed, otherwise
+            // it might be possible to allow x.m_stmt_name to be nullptr
+            name = parent_scope->get_unique_name("block");
+            block = ASR::make_Block_t(al, x.base.base.loc,
+                current_scope, s2c(al, name), nullptr, 0);
+        }
+        ASR::Block_t* block_t = ASR::down_cast<ASR::Block_t>(
+            ASR::down_cast<ASR::symbol_t>(block));
 
         for (size_t i=0; i<x.n_use; i++) {
             visit_unit_decl1(*x.m_use[i]);
@@ -66,21 +82,8 @@ public:
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
         transform_stmts(body, x.n_body, x.m_body);
-        ASR::asr_t* block;
-        std::string name;
-        if (x.m_stmt_name) {
-            name = std::string(x.m_stmt_name);
-            block = ASR::make_Block_t(al, x.base.base.loc,
-                                      current_scope, x.m_stmt_name,
-                                      body.p, body.size());
-        } else {
-            // TODO: Understand tests/block1.f90 to know if this is needed, otherwise
-            // it might be possible to allow x.m_stmt_name to be nullptr
-            name = parent_scope->get_unique_name("block");
-            block = ASR::make_Block_t(al, x.base.base.loc,
-                                      current_scope, s2c(al, name),
-                                      body.p, body.size());
-        }
+        block_t->m_body = body.p;
+        block_t->n_body = body.size();
         current_scope = parent_scope;
         current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(block));
         tmp = ASR::make_BlockCall_t(al, x.base.base.loc,  -1,
@@ -811,6 +814,9 @@ public:
 
     void visit_AssociateBlock(const AST::AssociateBlock_t& x) {
         SymbolTable* new_scope = al.make_new<SymbolTable>(current_scope);
+        std::string name = current_scope->get_unique_name("associate_block");
+        ASR::asr_t* associate_block = ASR::make_AssociateBlock_t(al, x.base.base.loc,
+                                        new_scope, s2c(al, name), nullptr, 0);
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
         for( size_t i = 0; i < x.n_syms; i++ ) {
@@ -871,10 +877,10 @@ public:
         current_scope = new_scope;
         transform_stmts(body, x.n_body, x.m_body);
         current_scope = current_scope_copy;
-        std::string name = current_scope->get_unique_name("associate_block");
-        ASR::asr_t* associate_block = ASR::make_AssociateBlock_t(al, x.base.base.loc,
-                                                                 new_scope, s2c(al, name),
-                                                                 body.p, body.size());
+        ASR::AssociateBlock_t* associate_block_t = ASR::down_cast<ASR::AssociateBlock_t>(
+            ASR::down_cast<ASR::symbol_t>(associate_block));
+        associate_block_t->m_body = body.p;
+        associate_block_t->n_body = body.size();
         current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(associate_block));
         tmp = ASR::make_AssociateBlockCall_t(al, x.base.base.loc, ASR::down_cast<ASR::symbol_t>(associate_block));
     }
@@ -1277,12 +1283,15 @@ public:
                             class_stmt->base.base.loc, ASRUtils::EXPR(ASR::make_Var_t(al,
                             class_stmt->base.base.loc, assoc_sym)), m_selector)) );
                     }
-                    transform_stmts(class_stmt_body, class_stmt->n_body, class_stmt->m_body);
                     std::string block_name = parent_scope->get_unique_name("~select_type_block_");
                     ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(
                                                     al, class_stmt->base.base.loc,
-                                                    current_scope, s2c(al, block_name), class_stmt_body.p,
-                                                    class_stmt_body.size()));
+                                                    current_scope, s2c(al, block_name),
+                                                    nullptr, 0));
+                    transform_stmts(class_stmt_body, class_stmt->n_body, class_stmt->m_body);
+                    ASR::Block_t* block_t_ = ASR::down_cast<ASR::Block_t>(block_sym);
+                    block_t_->m_body = class_stmt_body.p;
+                    block_t_->n_body = class_stmt_body.size();
                     parent_scope->add_symbol(block_name, block_sym);
                     Vec<ASR::stmt_t*> block_call_stmt;
                     block_call_stmt.reserve(al, 1);
@@ -1320,12 +1329,15 @@ public:
                             type_stmt_name->base.base.loc, ASRUtils::EXPR(ASR::make_Var_t(al,
                             type_stmt_name->base.base.loc, assoc_sym)), m_selector)) );
                     }
-                    transform_stmts(type_stmt_name_body, type_stmt_name->n_body, type_stmt_name->m_body);
                     std::string block_name = parent_scope->get_unique_name("~select_type_block_");
                     ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(
                                                     al, type_stmt_name->base.base.loc,
-                                                    current_scope, s2c(al, block_name), type_stmt_name_body.p,
-                                                    type_stmt_name_body.size()));
+                                                    current_scope, s2c(al, block_name),
+                                                    nullptr, 0));
+                    transform_stmts(type_stmt_name_body, type_stmt_name->n_body, type_stmt_name->m_body);
+                    ASR::Block_t* block_t_ = ASR::down_cast<ASR::Block_t>(block_sym);
+                    block_t_->m_body = type_stmt_name_body.p;
+                    block_t_->n_body = type_stmt_name_body.size();
                     parent_scope->add_symbol(block_name, block_sym);
                     Vec<ASR::stmt_t*> block_call_stmt;
                     block_call_stmt.reserve(al, 1);
@@ -1361,12 +1373,15 @@ public:
                             type_stmt_type->base.base.loc, ASRUtils::EXPR(ASR::make_Var_t(al,
                             type_stmt_type->base.base.loc, assoc_sym)), m_selector)) );
                     }
-                    transform_stmts(type_stmt_type_body, type_stmt_type->n_body, type_stmt_type->m_body);
                     std::string block_name = parent_scope->get_unique_name("~select_type_block_");
                     ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(
                                                     al, type_stmt_type->base.base.loc,
-                                                    current_scope, s2c(al, block_name), type_stmt_type_body.p,
-                                                    type_stmt_type_body.size()));
+                                                    current_scope, s2c(al, block_name),
+                                                    nullptr, 0));
+                    transform_stmts(type_stmt_type_body, type_stmt_type->n_body, type_stmt_type->m_body);
+                    ASR::Block_t* block_t_ = ASR::down_cast<ASR::Block_t>(block_sym);
+                    block_t_->m_body = type_stmt_type_body.p;
+                    block_t_->n_body = type_stmt_type_body.size();
                     parent_scope->add_symbol(block_name, block_sym);
                     Vec<ASR::stmt_t*> block_call_stmt;
                     block_call_stmt.reserve(al, 1);
@@ -1486,6 +1501,13 @@ public:
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
+        if (data_structure.size()>0) {
+            for(auto it: data_structure) {
+                body.push_back(al, it);
+            }
+        }
+        data_structure.clear();
+        
         transform_stmts(body, x.n_body, x.m_body);
         handle_format();
         ASR::stmt_t* impl_del = create_implicit_deallocate(x.base.base.loc);
@@ -1661,8 +1683,25 @@ public:
     }
 
     void visit_stmts_helper(std::vector<AST::stmt_t*> ast_stmt_vector, std::vector<ASR::stmt_t*> &stmt_vector,
-                            std::vector<ASR::asr_t*> &tmp_vec, std::string original_function_name, ASR::expr_t* return_var) {
+                            std::vector<ASR::asr_t*> &tmp_vec, std::string original_function_name, ASR::expr_t* return_var,
+                            std::vector<ASR::stmt_t*> &after_return_stmt_entry_function, bool is_last = false, bool is_main_function = false) {
+        bool return_encountered = false;
+        bool entry_encountered = false;
         for (auto &ast_stmt: ast_stmt_vector) {
+            int64_t label = stmt_label(ast_stmt);
+            if (label != 0) {
+                ASR::asr_t *l = ASR::make_GoToTarget_t(al, ast_stmt->base.loc, label,
+                                    s2c(al, std::to_string(label)));
+                // body.push_back(al, ASR::down_cast<ASR::stmt_t>(l));
+                if (return_encountered && is_last) {
+                    after_return_stmt_entry_function.push_back(ASRUtils::STMT(l));
+                } else {
+                    stmt_vector.push_back(ASRUtils::STMT(l));
+                }
+            }
+            if (ast_stmt->type == AST::stmtType::Entry) {
+                entry_encountered = true;
+            }
             this->visit_stmt(*ast_stmt);
             ASR::stmt_t* tmp_stmt = nullptr;
             if (tmp != nullptr) {
@@ -1692,10 +1731,22 @@ public:
                         }
                     }
                 }
-                stmt_vector.push_back(tmp_stmt);
-
-                if (tmp_stmt->type == ASR::stmtType::Return) {
+                if (is_main_function && return_encountered && !entry_encountered) {
+                    after_return_stmt_entry_function.push_back(tmp_stmt);
+                } else if (is_main_function && entry_encountered && return_encountered) {
                     break;
+                } else {
+                    stmt_vector.push_back(tmp_stmt);
+                }
+                if (!is_main_function) {
+                    if (return_encountered && is_last) {
+                        after_return_stmt_entry_function.push_back(tmp_stmt);
+                    } else {
+                        stmt_vector.push_back(tmp_stmt);
+                    }
+                }
+                if (tmp_stmt->type == ASR::stmtType::Return) {
+                    return_encountered = true;
                 }
             } else if (!tmp_vec.empty()) {
                 for(auto &x: tmp_vec) {
@@ -1714,7 +1765,7 @@ public:
         ASR::symbol_t* master_function_sym = current_scope->resolve_symbol(master_function_name);
         ASR::Function_t* master_function = ASR::down_cast<ASR::Function_t>(master_function_sym);
 
-        std::vector<ASR::asr_t*> tmp_vector; std::vector<ASR::stmt_t*> stmt_vector;
+        std::vector<ASR::asr_t*> tmp_vector; std::vector<ASR::stmt_t*> stmt_vector; std::vector<ASR::stmt_t*> after_return_stmt_entry_function;
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
 
@@ -1753,15 +1804,20 @@ public:
         current_body = &master_function_body;
         SymbolTable* old_scope = current_scope;
         current_scope = master_function->m_symtab;
-        visit_stmts_helper(subroutine_stmt_vector, stmt_vector, tmp_vector, original_function_name, master_function->m_return_var);
+        visit_stmts_helper(subroutine_stmt_vector, stmt_vector, tmp_vector, original_function_name, master_function->m_return_var, after_return_stmt_entry_function, false, true);
 
         // handle entry functions
         for (auto &it: entry_functions[original_function_name]) {
             go_to_target_stmt = ASRUtils::STMT(ASR::make_GoToTarget_t(al, loc, go_to_target, s2c(al, std::to_string(go_to_target))));
             stmt_vector.push_back(go_to_target_stmt); go_to_target++;
-            visit_stmts_helper(it.second, stmt_vector, tmp_vector, original_function_name, master_function->m_return_var);
+            // check if it is last entry function
+            bool is_last = it.first == entry_functions[original_function_name].rbegin()->first;
+            visit_stmts_helper(it.second, stmt_vector, tmp_vector, original_function_name, master_function->m_return_var, after_return_stmt_entry_function, is_last);
         }
         for (auto &it: stmt_vector) {
+            master_function_body.push_back(al, it);
+        }
+        for (auto &it: after_return_stmt_entry_function) {
             master_function_body.push_back(al, it);
         }
 
@@ -1824,6 +1880,12 @@ public:
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
         body.reserve(al, x.n_body);
+        if (data_structure.size()>0) {
+            for(auto it: data_structure) {
+                body.push_back(al, it);
+            }
+        }
+        data_structure.clear();
         transform_stmts(body, x.n_body, x.m_body);
         handle_format();
         SetChar func_deps;
@@ -1890,6 +1952,12 @@ public:
         }
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
+        if (data_structure.size()>0) {
+            for(auto it: data_structure) {
+                body.push_back(al, it);
+            }
+        }
+        data_structure.clear();
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
         transform_stmts(body, x.n_body, x.m_body);
@@ -2344,13 +2412,30 @@ public:
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
         std::string sub_name = to_lower(x.m_name);
         if (x.n_temp_args > 0) {
-            handle_templated(x.m_name, x.m_temp_args, x.n_temp_args, x.base.base.loc);
-            sub_name = "__templated_" + sub_name;
+            ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
+            bool is_nested = ASR::is_a<ASR::Template_t>(*ASRUtils::get_asr_owner(owner_sym));
+            handle_templated(x.m_name, is_nested, x.m_temp_args, x.n_temp_args, x.base.base.loc);
+            if (!is_nested) {
+                sub_name = "__templated_" + sub_name;
+            }
         }
         SymbolTable* scope = current_scope;
         ASR::symbol_t *original_sym;
         ASR::expr_t *v_expr = nullptr;
         bool is_external = check_is_external(sub_name);
+        bool sub_contain_entry_function = entry_functions.find(sub_name) != entry_functions.end();
+        if (!is_external && sub_contain_entry_function) {
+            // there can be a chance that scope is new scope of master entry function
+            // Then check if it is external procedure by checking all the external_procedures_mapping
+
+            for(auto it: external_procedures_mapping) {
+                std::vector<std::string> external_procedures_copy = it.second;
+                if (std::find(external_procedures_copy.begin(), external_procedures_copy.end(), sub_name) != external_procedures_copy.end()) {
+                    is_external = true;
+                    break;
+                }
+            }
+        }
         // If this is a type bound procedure (in a class) it won't be in the
         // main symbol table. Need to check n_member.
         if (x.n_member >= 1) {
@@ -2715,7 +2800,11 @@ public:
                 throw SemanticError("Symbol type not supported", x.base.base.loc);
             }
         }
-        current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym));
+        if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->get_counter()
+            && !ASR::is_a<ASR::Variable_t>(*final_sym)) {
+            // check if asr owner is associate block.
+            ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies);
+        }
         ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
         if( f ) {
             ASRUtils::set_absent_optional_arguments_to_null(args, f, al, v_expr);
@@ -3284,10 +3373,11 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
-        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping)
+        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
+        std::vector<ASR::stmt_t*> &data_structure)
 {
     BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                  instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping);
+                  instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure);
     try {
         b.is_body_visitor = true;
         b.visit_TranslationUnit(ast);

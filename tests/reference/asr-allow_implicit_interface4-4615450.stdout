@@ -163,8 +163,7 @@
                         []
                         .false.
                     )
-                    [dqk15w
-                    f]
+                    []
                     [(Var 2 f)]
                     [(SubroutineCall
                         2 dqk15w
@@ -383,8 +382,7 @@
                         []
                         .false.
                     )
-                    [sub2
-                    c]
+                    []
                     [(Var 3 f)]
                     [(SubroutineCall
                         3 sub2

@@ -630,8 +630,7 @@
                                         []
                                         .false.
                                     )
-                                    [len_string
-                                    char@char_string]
+                                    []
                                     [(Var 9 string)]
                                     [(Print
                                         [(FunctionCall
@@ -770,8 +769,7 @@
                                         []
                                         .false.
                                     )
-                                    [imax
-                                    padl_char_pad_with]
+                                    [padl_char_pad_with]
                                     [(Var 12 string)
                                     (Var 12 output_length)]
                                     [(=
@@ -965,7 +963,7 @@
                                         []
                                         .false.
                                     )
-                                    [max@imax]
+                                    []
                                     [(Var 13 string)
                                     (Var 13 output_length)
                                     (Var 13 pad_with)]
@@ -1084,10 +1082,7 @@
                                         []
                                         .false.
                                     )
-                                    [len_string
-                                    char@char_string
-                                    imax
-                                    padl_char_pad_with]
+                                    [padl_char_pad_with]
                                     [(Var 10 string)
                                     (Var 10 output_length)]
                                     [(=
@@ -1285,10 +1280,7 @@
                                         []
                                         .false.
                                     )
-                                    [len_string
-                                    char@char_string
-                                    imax
-                                    padl_char_pad_with]
+                                    [padl_char_pad_with]
                                     [(Var 11 string)
                                     (Var 11 output_length)
                                     (Var 11 pad_with)]

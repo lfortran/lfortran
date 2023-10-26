@@ -193,7 +193,7 @@
                                         []
                                         .false.
                                     )
-                                    [allocated]
+                                    []
                                     [(Var 4 sources)]
                                     [(Allocate
                                         [((Var 4 dir_sources)
