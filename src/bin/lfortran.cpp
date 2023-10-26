@@ -106,29 +106,6 @@ std::string get_kokkos_dir()
     throw LCompilers::LCompilersException("LFORTRAN_KOKKOS_DIR is not defined");
 }
 
-int visualize_json(std::string &astr_data_json, LCompilers::Platform os) {
-    using namespace LCompilers;
-    std::string file_loc = LCompilers::LFortran::generate_visualize_html(astr_data_json);
-    std::string open_cmd = "";
-    switch (os) {
-        case Linux: open_cmd = "xdg-open"; break;
-        case Windows: open_cmd = "start"; break;
-        case macOS_Intel:
-        case macOS_ARM: open_cmd = "open"; break;
-        default:
-            std::cerr << "Unsupported Platform " << pf2s(os) <<std::endl;
-            std::cerr << "Please open file " << file_loc << " manually" <<std::endl;
-            return 11;
-    }
-    std::string cmd = open_cmd + " " + file_loc;
-    int err = system(cmd.data());
-    if (err) {
-        std::cout << "The command '" + cmd + "' failed." << std::endl;
-        return 11;
-    }
-    return 0;
-}
-
 #ifdef HAVE_LFORTRAN_LLVM
 
 void section(const std::string &s)
@@ -679,8 +656,14 @@ int emit_asr(const std::string &infile,
     pass_options.bindc_mangling = compiler_options.bindc_mangling;
     pass_options.mangle_underscore = compiler_options.mangle_underscore;
     pass_options.use_loop_variable_after_loop = compiler_options.use_loop_variable_after_loop;
+    pass_options.tree = compiler_options.tree;
+    pass_options.json = compiler_options.json;
+    pass_options.visualize = compiler_options.visualize;
 
-    pass_manager.apply_passes(al, asr, pass_options, diagnostics);
+    if (compiler_options.dump_all_passes) {
+        pass_manager.use_default_passes();
+    }
+    pass_manager.apply_passes(al, asr, pass_options, diagnostics, lm);
     if (compiler_options.tree) {
         std::cout << LCompilers::pickle_tree(*asr,
             compiler_options.use_colors) << std::endl;
@@ -745,7 +728,7 @@ int emit_c(const std::string &infile,
     LCompilers::ASR::TranslationUnit_t* asr = r.result;
 
     LCompilers::Result<std::string> c_result = fe.get_c3(*asr, diagnostics,
-                                                pass_manager, 1);
+                                                pass_manager, lm, 1);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (c_result.ok) {
         std::cout << c_result.result;
@@ -968,7 +951,7 @@ int compile_to_object_file(const std::string &infile,
 #endif
     }
     LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
-        res = fe.get_llvm3(*asr, lpm, diagnostics, infile);
+        res = fe.get_llvm3(*asr, lpm, lm, diagnostics, infile);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (res.ok) {
         m = std::move(res.result);
@@ -1195,7 +1178,7 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
         diagnostics.diagnostics.clear();
         auto t1 = std::chrono::high_resolution_clock::now();
         LCompilers::Result<int>
-            result = LCompilers::asr_to_wasm(*asr, al, outfile, time_report, diagnostics, compiler_options);
+            result = LCompilers::asr_to_wasm(*asr, al, outfile, time_report, diagnostics, compiler_options, lm);
         auto t2 = std::chrono::high_resolution_clock::now();
         time_asr_to_wasm = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
@@ -1403,7 +1386,7 @@ int compile_to_object_file_c(const std::string &infile,
     std::string src;
     diagnostics.diagnostics.clear();
     LCompilers::Result<std::string> res
-        = fe.get_c3(*asr, diagnostics, pass_manager, 1);
+        = fe.get_c3(*asr, diagnostics, pass_manager, lm, 1);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (res.ok) {
         src = res.result;

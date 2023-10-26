@@ -98,6 +98,8 @@ src/libasr/libasr.a.*
 *.tmp.f90
 *.clj
 pass_*.f90
+pass_json_*.json
+pass_tree_*.txt
 *_lines.txt
 *_ldd.txt
 *_lines.dat.txt
