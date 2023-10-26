@@ -106,7 +106,8 @@ public:
     Result<std::string> get_julia(const std::string &code,
         LocationManager &lm, diag::Diagnostics &diagnostics);
     Result<std::string> get_fortran(const std::string &code,
-        LocationManager &lm, diag::Diagnostics &diagnostics);
+        LocationManager &lm,  LCompilers::PassManager &pass_manager,
+        diag::Diagnostics &diagnostics);
     Result<std::string> get_fmt(const std::string &code, LocationManager &lm,
         diag::Diagnostics &diagnostics);
 
