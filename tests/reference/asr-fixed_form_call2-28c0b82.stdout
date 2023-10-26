@@ -119,7 +119,7 @@
                         []
                         .false.
                     )
-                    [prinf]
+                    []
                     [(Var 2 m)]
                     [(=
                         (Var 2 a)

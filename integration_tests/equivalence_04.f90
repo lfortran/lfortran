@@ -18,4 +18,4 @@ program equivalence_04
     dmach(2) = 5.7_8
     if(large(1) /= -858993459) error stop
     if(large(2) /= 1075236044) error stop
-    end
+end program

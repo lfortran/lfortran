@@ -431,7 +431,7 @@
                                         []
                                         .false.
                                     )
-                                    [insert_int]
+                                    []
                                     []
                                     [(=
                                         (ArrayItem

@@ -106,7 +106,7 @@
                         []
                         .false.
                     )
-                    [kind]
+                    []
                     [(Var 2 n)
                     (Var 2 a)]
                     [(=

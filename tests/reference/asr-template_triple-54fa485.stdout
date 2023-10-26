@@ -195,7 +195,7 @@
                                         []
                                         .false.
                                     )
-                                    [max@imax]
+                                    []
                                     [(Var 5 x)
                                     (Var 5 y)]
                                     [(=
@@ -689,7 +689,7 @@
                                         []
                                         .false.
                                     )
-                                    [max@smax]
+                                    []
                                     [(Var 13 x)
                                     (Var 13 y)]
                                     [(=
@@ -1961,7 +1961,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [add_integer]
+                                                    []
                                                     [(Var 26 t)]
                                                     [(=
                                                         (Var 26 result)
@@ -2043,7 +2043,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [add_integer]
+                                                    []
                                                     [(Var 27 t)]
                                                     [(=
                                                         (Var 27 result)
@@ -2088,8 +2088,7 @@
                                         []
                                         .false.
                                     )
-                                    [triple_add_l
-                                    triple_add_r]
+                                    []
                                     []
                                     [(=
                                         (Var 25 tal)
@@ -2225,7 +2224,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [max_real]
+                                                    []
                                                     [(Var 32 t)]
                                                     [(=
                                                         (Var 32 result)
@@ -2307,7 +2306,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [max_real]
+                                                    []
                                                     [(Var 33 t)]
                                                     [(=
                                                         (Var 33 result)
@@ -2352,8 +2351,7 @@
                                         []
                                         .false.
                                     )
-                                    [triple_max_l
-                                    triple_max_r]
+                                    []
                                     []
                                     [(=
                                         (Var 31 tmaxl)
@@ -2495,7 +2493,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [minus_real]
+                                                    []
                                                     [(Var 29 t)]
                                                     [(=
                                                         (Var 29 result)
@@ -2577,7 +2575,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [minus_real]
+                                                    []
                                                     [(Var 30 t)]
                                                     [(=
                                                         (Var 30 result)
@@ -2622,8 +2620,7 @@
                                         []
                                         .false.
                                     )
-                                    [triple_minus_l
-                                    triple_minus_r]
+                                    []
                                     []
                                     [(=
                                         (Var 28 tml)

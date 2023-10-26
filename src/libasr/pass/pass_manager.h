@@ -50,6 +50,7 @@
 #include <libasr/pass/unique_symbols.h>
 #include <libasr/pass/insert_deallocate.h>
 #include <libasr/pass/replace_print_struct_type.h>
+#include <libasr/codegen/asr_to_fortran.h>
 #include <libasr/asr_verify.h>
 #include <libasr/pickle.h>
 
@@ -162,6 +163,22 @@ namespace LCompilers {
                     std::ofstream outfile ("pass_" + str_i + "_" + passes[i] + ".clj");
                     outfile << ";; ASR after applying the pass: " << passes[i]
                         << "\n" << pickle(*asr, false, true) << "\n";
+                    outfile.close();
+                }
+                if (pass_options.dump_fortran) {
+                    LCompilers::Result<std::string> fortran_code = asr_to_fortran(*asr, diagnostics, false, 4);
+                    if (!fortran_code.ok) {
+                        LCOMPILERS_ASSERT(diagnostics.has_error());
+                        throw LCompilersException("Fortran code could not be generated after pass: "
+                        + passes[i]);
+                    } else {
+
+                    }
+                    std::string str_i = std::to_string(i+1);
+                    if ( i < 9 )  str_i = "0" + str_i;
+                    std::ofstream outfile ("pass_" + str_i + "_" + passes[i] + ".f90");
+                    outfile << "! ASR after applying the pass: " << passes[i]
+                        << "\n" << fortran_code.result << "\n";
                     outfile.close();
                 }
 #if defined(WITH_LFORTRAN_ASSERT)

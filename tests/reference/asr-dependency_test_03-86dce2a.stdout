@@ -61,7 +61,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [get_command_argument]
+                                                    []
                                                     []
                                                     [(SubroutineCall
                                                         6 get_command_argument
@@ -94,7 +94,7 @@
                                         []
                                         .false.
                                     )
-                                    [default_help]
+                                    []
                                     []
                                     [(SubroutineCall
                                         5 default_help

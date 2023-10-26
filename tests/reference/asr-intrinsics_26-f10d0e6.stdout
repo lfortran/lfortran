@@ -165,7 +165,7 @@
                                         []
                                         .false.
                                     )
-                                    [btest@btest32]
+                                    []
                                     [(Var 3 x)
                                     (Var 3 num_bits)]
                                     [(=

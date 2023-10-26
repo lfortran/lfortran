@@ -1514,8 +1514,7 @@
                                         []
                                         .false.
                                     )
-                                    [__asr_generic_sum
-                                    __asr_generic_sum1]
+                                    []
                                     []
                                     [(DoLoop
                                         ()

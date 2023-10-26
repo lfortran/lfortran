@@ -92,7 +92,7 @@
                         []
                         .false.
                     )
-                    [dimag@zaimag]
+                    []
                     [(Var 2 z)
                     (Var 2 i)]
                     [(=

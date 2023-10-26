@@ -451,7 +451,6 @@
                                         .false.
                                     )
                                     [swap
-                                    less
                                     quicksort]
                                     [(Var 6 list)
                                     (Var 6 idx)
@@ -961,8 +960,7 @@
                                         []
                                         .false.
                                     )
-                                    [present
-                                    quicksort]
+                                    [quicksort]
                                     [(Var 5 list)
                                     (Var 5 idx)
                                     (Var 5 compare)]

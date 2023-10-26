@@ -75,7 +75,7 @@
                         []
                         .false.
                     )
-                    [dimag@zaimag]
+                    []
                     []
                     [(If
                         (RealCompare

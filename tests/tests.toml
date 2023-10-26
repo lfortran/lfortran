@@ -128,7 +128,6 @@ asr = true
 [[test]]
 filename = "subroutine2.f90"
 ast = true
-julia = true
 
 [[test]]
 filename = "subroutine3.f90"

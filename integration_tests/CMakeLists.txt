@@ -262,11 +262,13 @@ RUN(NAME doloop_07 LABELS gfortran llvm c cpp wasm)
 RUN(NAME doloop_08 LABELS gfortran llvm c cpp wasm)
 RUN(NAME doloop_09 LABELS gfortran llvm) # nested subroutine
 RUN(NAME doloop_10 LABELS gfortran llvm wasm) # implicit cast loop variable
+RUN(NAME doloop_11 LABELS gfortran llvm wasm EXTRA_ARGS --use-loop-variable-after-loop)
 
 RUN(NAME cycle_and_exit1 LABELS gfortran llvm fortran)
 RUN(NAME cycle_and_exit2 LABELS gfortran llvm fortran)
 RUN(NAME cycle_and_exit3 LABELS gfortran llvm)
 RUN(NAME cycle_and_exit4 LABELS gfortran llvm)
+RUN(NAME cycle_and_exit5 LABELS gfortran llvm)
 
 RUN(NAME goto_01 LABELS gfortran llvm)
 RUN(NAME goto_02 LABELS gfortran llvm)
@@ -360,6 +362,8 @@ RUN(NAME arrays_op_23 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_op_24 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_op_26 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_op_27 LABELS gfortran llvm llvmStackArray)
+RUN(NAME arrays_op_28 LABELS gfortran llvm llvmStackArray)
+RUN(NAME arrays_op_29 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_reshape_14 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_reshape_15 LABELS gfortran llvm fortran)
 RUN(NAME arrays_elemental_15 LABELS gfortran llvm llvmStackArray)
@@ -529,6 +533,7 @@ RUN(NAME intrinsics_76 LABELS gfortran llvm)
 RUN(NAME intrinsics_77 LABELS gfortran llvm NOFAST)
 RUN(NAME intrinsics_78 LABELS gfortran llvm wasm) # mod
 RUN(NAME intrinsics_79 LABELS gfortran llvm wasm) # Trailz
+RUN(NAME intrinsics_80 LABELS gfortran llvm) # sum
 
 
 RUN(NAME parameter_01 LABELS gfortran)
@@ -640,6 +645,7 @@ RUN(NAME where_02 LABELS gfortran llvm NOFAST fortran)
 RUN(NAME where_03 LABELS gfortran llvm NOFAST)
 RUN(NAME where_04 LABELS gfortran) # TODO: Fix this test #1631
 RUN(NAME where_05 LABELS gfortran llvm NOFAST)
+RUN(NAME where_06 LABELS gfortran llvm)
 
 RUN(NAME forallloop_01 LABELS gfortran)
 
@@ -677,6 +683,7 @@ RUN(NAME implicit_interface_13 LABELS gfortran llvmImplicit NOFAST)
 RUN(NAME implicit_interface_14 LABELS gfortran) # ! TODO: fix this test
 
 RUN(NAME implicit_typing_01 LABELS gfortran llvmImplicit)
+RUN(NAME implicit_typing_02 LABELS gfortran llvmImplicit)
 
 RUN(NAME generic_name_01 LABELS gfortran llvm)
 
@@ -775,6 +782,7 @@ RUN(NAME allocate_12 LABELS gfortran llvm
 RUN(NAME allocate_13 LABELS gfortran llvm)
 RUN(NAME allocate_14 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs)
+RUN(NAME allocate_15 LABELS gfortran llvm)
 RUN(NAME block_01 LABELS gfortran llvm)
 RUN(NAME block_02 LABELS gfortran)
 RUN(NAME block_03 LABELS gfortran llvm)
@@ -871,9 +879,9 @@ RUN(NAME return_04 LABELS gfortran llvm wasm)
 RUN(NAME file_01       LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
 RUN(NAME file_02       LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
 RUN(NAME file_03       LABELS gfortran llvm fortran COPY_TO_BIN file_03_data.txt)
-RUN(NAME file_04       LABELS gfortran llvm fortran NOFAST COPY_TO_BIN file_04_data.dat)
-RUN(NAME file_05       LABELS gfortran llvm fortran NOFAST COPY_TO_BIN file_05_data.dat)
-RUN(NAME file_06       LABELS gfortran llvm fortran NOFAST COPY_TO_BIN file_06_data.dat)
+RUN(NAME file_04       LABELS gfortran llvm COPY_TO_BIN file_04_data.dat)
+RUN(NAME file_05       LABELS gfortran llvm COPY_TO_BIN file_05_data.dat)
+RUN(NAME file_06       LABELS gfortran llvm COPY_TO_BIN file_06_data.dat)
 RUN(NAME file_07       LABELS gfortran llvm COPY_TO_BIN file_07_data.dat)
 RUN(NAME file_08       LABELS gfortran llvm fortran COPY_TO_BIN file_08.txt)
 RUN(NAME file_09       LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
@@ -883,6 +891,9 @@ RUN(NAME file_12       LABELS gfortran llvm COPY_TO_BIN file_12_data.txt)
 RUN(NAME file_13       LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
 RUN(NAME file_14       LABELS gfortran llvm COPY_TO_BIN file_08.txt)
 RUN(NAME file_15       LABELS gfortran llvm fortran COPY_TO_BIN file_03_data.txt)
+RUN(NAME file_16       LABELS gfortran llvm)
+RUN(NAME file_17       LABELS gfortran llvm)
+
 RUN(NAME inquire_01    LABELS gfortran llvm)
 RUN(NAME test_backspace_01 LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
 
@@ -1101,6 +1112,7 @@ RUN(NAME entry_11 LABELS gfortran llvm)
 RUN(NAME entry_12 LABELS gfortran llvm)
 
 RUN(NAME character_01 LABELS gfortran llvm)
+RUN(NAME character_02 LABELS gfortran llvm)
 
 RUN(NAME c_ptr_01 LABELS gfortran llvm)
 
@@ -1162,6 +1174,7 @@ RUN(NAME equivalence_04 LABELS gfortran llvm)
 RUN(NAME equivalence_05 LABELS gfortran llvm)
 RUN(NAME equivalence_06 LABELS gfortran llvm)
 RUN(NAME equivalence_07 LABELS gfortran llvm)
+RUN(NAME equivalence_08 LABELS gfortran llvm)
 
 RUN(NAME fortran_primes_01 LABELS gfortran llvm)
 

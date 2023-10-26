@@ -423,7 +423,7 @@
                                         []
                                         .false.
                                     )
-                                    [collect_used_modules]
+                                    []
                                     []
                                     [(Allocate
                                         [((Var 5 modules_used)

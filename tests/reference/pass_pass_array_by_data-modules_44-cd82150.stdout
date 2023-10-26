@@ -154,7 +154,7 @@
                                         []
                                         .false.
                                     )
-                                    [warnwrite_data]
+                                    []
                                     [(Var 8 settings)]
                                     [(=
                                         (Var 8 littlefile)

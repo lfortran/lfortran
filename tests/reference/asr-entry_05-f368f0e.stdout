@@ -414,7 +414,7 @@
                                         []
                                         .false.
                                     )
-                                    [max@dmax]
+                                    []
                                     [(Var 6 zx)]
                                     [(=
                                         (Var 6 ftol_return_var_name)

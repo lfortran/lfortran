@@ -267,7 +267,7 @@
                                         []
                                         .false.
                                     )
-                                    [1_circle_area]
+                                    []
                                     [(Var 5 this)]
                                     [(=
                                         (Var 5 area)
@@ -365,7 +365,7 @@
                                         []
                                         .false.
                                     )
-                                    [1_circle_print]
+                                    []
                                     []
                                     [(=
                                         (Var 6 c)

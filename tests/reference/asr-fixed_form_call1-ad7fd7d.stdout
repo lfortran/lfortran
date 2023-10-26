@@ -205,7 +205,7 @@
                         []
                         .false.
                     )
-                    [prinf]
+                    []
                     [(Var 2 m)
                     (Var 2 n)
                     (Var 2 w)

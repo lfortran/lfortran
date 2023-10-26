@@ -9,4 +9,4 @@ program equivalence_05
     rmach = 5.6_8
     if(small(1) /= 1085485875) error stop
     if(small(2) /= 99) error stop
-    end
+end program

@@ -103,7 +103,7 @@
                                         []
                                         .false.
                                     )
-                                    [1_log_io_error]
+                                    []
                                     [(Var 4 self)
                                     (Var 4 filename)
                                     (Var 4 unit)]
