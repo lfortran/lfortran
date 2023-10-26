@@ -11,9 +11,7 @@ program write_05
     x1 = x1 * x2
     x2 = x1 + x2
     write(s, "(i0, i0)") x1, x2
-    ! TODO Handle string length
-    ! Check with GFortran to see the difference
-    ! if (len(s) /= 24) error stop
-    if (trim(s) /= "408442") error stop
+    if (len(s) /= 24) error stop
+    if (s /= "408442") error stop
 
 end program write_05
