@@ -171,8 +171,6 @@ namespace LCompilers {
                         LCOMPILERS_ASSERT(diagnostics.has_error());
                         throw LCompilersException("Fortran code could not be generated after pass: "
                         + passes[i]);
-                    } else {
-
                     }
                     std::string str_i = std::to_string(i+1);
                     if ( i < 9 )  str_i = "0" + str_i;
