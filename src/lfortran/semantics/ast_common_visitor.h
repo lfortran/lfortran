@@ -5889,12 +5889,12 @@ public:
             target_scope = current_scope->parent;
         }
 
-        pass_instantiate_symbol(al, context_map, type_subs, symbol_subs,
+        instantiate_symbol(al, context_map, type_subs, symbol_subs,
             target_scope, temp->m_symtab, new_func_name, s);
 
         ASR::symbol_t *new_s = target_scope->get_symbol(new_func_name);
         ASR::Function_t *new_f = ASR::down_cast<ASR::Function_t>(new_s);
-        pass_instantiate_function_body(al, context_map, type_subs, symbol_subs,
+        instantiate_function_body(al, context_map, type_subs, symbol_subs,
             target_scope, temp->m_symtab, new_f, ASR::down_cast<ASR::Function_t>(s));
 
         // Build generic procedure if has not existed yet

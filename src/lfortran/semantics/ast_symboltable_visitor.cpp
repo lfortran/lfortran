@@ -2673,7 +2673,6 @@ public:
 
         current_scope = parent_scope;
         current_procedure_args.clear();
-        context_map.clear();
         is_requirement = false;
     }
 
@@ -2699,23 +2698,25 @@ public:
                 require_name + "' is not correct", x.base.base.loc);
         }
 
+        std::map<std::string, ASR::ttype_t*> type_subs;
         std::vector<std::string> primitives = {"integer"};
 
         SetChar args;
         args.reserve(al, x.n_namelist);
         for (size_t i=0; i<x.n_namelist; i++) {
-            std::string requires_arg = to_lower(x.m_namelist[i]);
-            std::string requirement_arg = req->m_args[i];
+            std::string req_arg = to_lower(x.m_namelist[i]);
+            std::string req_param = req->m_args[i];
             if (std::find(primitives.begin(),
                           primitives.end(),
-                          requires_arg) == primitives.end()
+                          req_arg) == primitives.end()
                 && std::find(current_procedure_args.begin(),
                           current_procedure_args.end(),
-                          requires_arg) == current_procedure_args.end()) {
+                          req_arg) == current_procedure_args.end()) {
                 throw SemanticError("Parameter '" + std::string(x.m_namelist[i])
                     + "' was not declared", x.base.base.loc);
             }
 
+            /*
             ASR::symbol_t *requires_arg_sym = current_scope->resolve_symbol(requires_arg);
             context_map[requirement_arg] = requires_arg;
             if (!requires_arg_sym) {
@@ -2723,8 +2724,24 @@ public:
                 requires_arg_sym = replace_symbol(requirement_arg_sym, requires_arg);
                 current_scope->add_symbol(requires_arg, requires_arg_sym);
             }
+            */
 
-            args.push_back(al, s2c(al, requires_arg));
+            ASR::symbol_t *param_sym = (req->m_symtab)->get_symbol(req_param);
+
+            if (std::find(primitives.begin(),
+                          primitives.end(),
+                          req_arg) != primitives.end()) {
+                if (req_arg.compare("integer") == 0) {
+                    type_subs[req_param] = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                } else {
+                    throw LCompilersException("Unsupported type for require statements.");
+                }
+            }
+
+            rename_symbol(al, type_subs, current_scope, req_arg, param_sym);
+
+            context_map[req_param] = req_arg;
+            args.push_back(al, s2c(al, req_arg));
         }
 
         // adding custom operators
@@ -2751,6 +2768,8 @@ public:
 
         tmp = ASR::make_Require_t(al, x.base.base.loc, s2c(al, require_name),
             args.p, args.size());
+
+        context_map.clear();
     }
 
     void visit_Template(const AST::Template_t &x){
@@ -3063,7 +3082,7 @@ public:
                 ASR::symbol_t *s = sym_pair.second;
                 std::string s_name = ASRUtils::symbol_name(s);
                 if (ASR::is_a<ASR::Function_t>(*s) && !ASRUtils::is_template_arg(sym, s_name)) {
-                    pass_instantiate_symbol(al, context_map, type_subs, symbol_subs,
+                    instantiate_symbol(al, context_map, type_subs, symbol_subs,
                         current_scope, temp->m_symtab, s_name, s);
                 }
             }
@@ -3077,7 +3096,7 @@ public:
                                         x.base.base.loc);
                 }
                 std::string new_sym_name = to_lower(use_symbol->m_local_rename);
-                pass_instantiate_symbol(al, context_map, type_subs, symbol_subs,
+                instantiate_symbol(al, context_map, type_subs, symbol_subs,
                     current_scope, temp->m_symtab, new_sym_name, s);
                 // TODO: can this be removed?
                 context_map[generic_name] = new_sym_name;
