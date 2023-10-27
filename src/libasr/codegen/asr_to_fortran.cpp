@@ -750,10 +750,10 @@ public:
 
     void visit_ComplexConstructor(const ASR::ComplexConstructor_t &x) {
         visit_expr(*x.m_re);
-        std::string __re_ = s;
+        std::string re = s;
         visit_expr(*x.m_im);
-        std::string __im_ = s;
-        s = "(" + __re_ + ", " + __im_ + ")";
+        std::string im = s;
+        s = "(" + re + ", " + im + ")";
     }
 
     // void visit_NamedExpr(const ASR::NamedExpr_t &x) {}
@@ -917,9 +917,9 @@ public:
     // void visit_RealCopySign(const ASR::RealCopySign_t &x) {}
 
     void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {
-        std::string __re_ = std::to_string(x.m_re);
-        std::string __im_ = std::to_string(x.m_im);
-        s = "(" + __re_ + ", " + __im_ + ")";
+        std::string re = std::to_string(x.m_re);
+        std::string im = std::to_string(x.m_im);
+        s = "(" + re + ", " + im + ")";
     }
 
     // void visit_ComplexUnaryMinus(const ASR::ComplexUnaryMinus_t &x) {}
@@ -975,9 +975,9 @@ public:
     }
 
     void visit_StringRepeat(const ASR::StringRepeat_t &x) {
-        visit_expr(*x.m_left);
+        this->visit_expr(*x.m_left);
         std::string str = s;
-        visit_expr(*x.m_right);
+        this->visit_expr(*x.m_right);
         std::string n = s;
         s = "repeat(" + str + ", " + n + ")";
     }
@@ -1354,17 +1354,7 @@ public:
 
     void visit_IntegerBitLen(const ASR::IntegerBitLen_t &x) {
         visit_expr(*x.m_a);
-        int arg_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-        switch (arg_kind) {
-            case 1: s = "_lpython_bit_length1(" + s + ")"; break;
-            case 2: s = "_lpython_bit_length2(" + s + ")"; break;
-            case 4: s = "_lpython_bit_length4(" + s + ")"; break;
-            case 8: s = "_lpython_bit_length8(" + s + ")"; break;
-            default: {
-                throw LCompilersException("Unsupported Integer Kind: "
-                    + std::to_string(arg_kind));
-            }
-        }
+        s = "bit_size(" + s + ")";
     }
 
     void visit_Ichar(const ASR::Ichar_t &x) {
