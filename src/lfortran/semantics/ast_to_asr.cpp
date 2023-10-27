@@ -51,10 +51,6 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
 
 void load_rtlib(Allocator &al, ASR::TranslationUnit_t &tu, CompilerOptions &compiler_options) {
     SymbolTable *tu_symtab = tu.m_symtab;
-    LCompilers::PassOptions pass_options;
-    pass_options.runtime_library_dir = compiler_options.runtime_library_dir;
-    pass_options.mod_files_dir = compiler_options.mod_files_dir;
-    pass_options.include_dirs = compiler_options.include_dirs;
     const std::string m_kind = "lfortran_intrinsic_kind";
     const std::string m_builtin = "lfortran_intrinsic_builtin";
     const std::string m_trig = "lfortran_intrinsic_trig";
@@ -73,7 +69,7 @@ void load_rtlib(Allocator &al, ASR::TranslationUnit_t &tu, CompilerOptions &comp
         loc.last = 1;
         try {
             ASRUtils::load_module(al, tu_symtab, module_name,
-                    loc, true, pass_options, true,
+                    loc, true, compiler_options.po, true,
                     [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }
                     );
         } catch (const SemanticError &e) {
@@ -105,12 +101,12 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
         return res.error;
     }
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(unit);
-    if (compiler_options.dump_all_passes) {
+    if (compiler_options.po.dump_all_passes) {
         std::ofstream outfile ("pass_00_initial_asr_01.clj");
         outfile << ";; ASR after SymbolTable Visitor\n" << pickle(*tu, false, true) << "\n";
         outfile.close();
     }
-    if (compiler_options.dump_fortran) {
+    if (compiler_options.po.dump_fortran) {
         LCompilers::Result<std::string> fortran_code = LCompilers::asr_to_fortran(*tu, diagnostics, false, 4);
         if (!fortran_code.ok) {
             LCOMPILERS_ASSERT(diagnostics.has_error());
@@ -135,12 +131,12 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
             return res.error;
         }
         if (compiler_options.rtlib) load_rtlib(al, *tu, compiler_options);
-        if (compiler_options.dump_all_passes) {
+        if (compiler_options.po.dump_all_passes) {
             std::ofstream outfile ("pass_00_initial_asr_02.clj");
             outfile << ";; Initial ASR after Body Visitor\n" << pickle(*tu, false, true) << "\n";
             outfile.close();
         }
-        if (compiler_options.dump_fortran) {
+        if (compiler_options.po.dump_fortran) {
             LCompilers::Result<std::string> fortran_code = LCompilers::asr_to_fortran(*tu, diagnostics, false, 4);
             if (!fortran_code.ok) {
                 LCOMPILERS_ASSERT(diagnostics.has_error());

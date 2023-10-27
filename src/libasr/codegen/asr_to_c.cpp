@@ -19,7 +19,7 @@
 #include <utility>
 
 #define CHECK_FAST_C(compiler_options, x)                         \
-        if (compiler_options.fast && x.m_value != nullptr) {    \
+        if (compiler_options.po.fast && x.m_value != nullptr) {    \
             visit_expr(*x.m_value);                             \
             return;                                             \
         }                                                       \

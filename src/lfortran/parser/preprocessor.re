@@ -346,8 +346,8 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
                 std::vector<std::filesystem::path> include_dirs;
                 include_dirs.push_back(parent_path(lm.files.back().in_filename));
                 include_dirs.insert(include_dirs.end(),
-                                    compiler_options.include_dirs.begin(),
-                                    compiler_options.include_dirs.end());
+                                    compiler_options.po.include_dirs.begin(),
+                                    compiler_options.po.include_dirs.end());
                 bool file_found = false;
                 std::string include = "";
                 if (is_relative_path(filename)) {

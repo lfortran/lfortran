@@ -9206,25 +9206,11 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     skip_optimization_func_instantiation.push_back(static_cast<int64_t>(
                     ASRUtils::IntrinsicScalarFunctions::SignFromValue));
 
-    pass_options.runtime_library_dir = co.runtime_library_dir;
-    pass_options.mod_files_dir = co.mod_files_dir;
-    pass_options.include_dirs = co.include_dirs;
-    pass_options.run_fun = run_fn;
-    pass_options.always_run = false;
-    pass_options.verbose = co.verbose;
-    pass_options.dump_all_passes = co.dump_all_passes;
-    pass_options.use_loop_variable_after_loop = co.use_loop_variable_after_loop;
-    pass_options.realloc_lhs = co.realloc_lhs;
-    pass_options.skip_optimization_func_instantiation = skip_optimization_func_instantiation;
+    co.po.run_fun = run_fn;
+    co.po.always_run = false;
+    co.po.skip_optimization_func_instantiation = skip_optimization_func_instantiation;
     pass_manager.rtlib = co.rtlib;
-
-    pass_options.all_symbols_mangling = co.all_symbols_mangling;
-    pass_options.module_name_mangling = co.module_name_mangling;
-    pass_options.global_symbols_mangling = co.global_symbols_mangling;
-    pass_options.intrinsic_symbols_mangling = co.intrinsic_symbols_mangling;
-    pass_options.bindc_mangling = co.bindc_mangling;
-    pass_options.mangle_underscore = co.mangle_underscore;
-    pass_manager.apply_passes(al, &asr, pass_options, diagnostics, lm);
+    pass_manager.apply_passes(al, &asr, co.po, diagnostics, lm);
 
     // Uncomment for debugging the ASR after the transformation
     // std::cout << LCompilers::pickle(asr, true, false, false) << std::endl;
