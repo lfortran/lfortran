@@ -106,8 +106,8 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     }
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(unit);
     if (compiler_options.dump_all_passes) {
-        std::ofstream outfile ("pass_00_initial_asr.clj");
-        outfile << ";; Initial ASR\n" << pickle(*tu, false, true) << "\n";
+        std::ofstream outfile ("pass_00_initial_asr_01.clj");
+        outfile << ";; ASR after SymbolTable Visitor\n" << pickle(*tu, false, true) << "\n";
         outfile.close();
     }
     if (compiler_options.dump_fortran) {
@@ -116,8 +116,8 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
             LCOMPILERS_ASSERT(diagnostics.has_error());
             throw LCompilersException("Fortran code could not be generated after symbol_table_visitor");
         }
-        std::ofstream outfile ("pass_00_initial_asr1.f90");
-        outfile << "! Initial ASR\n" << fortran_code.result << "\n";
+        std::ofstream outfile ("pass_00_initial_code_01.f90");
+        outfile << "! Fortran code after SymbolTable Visitor\n" << fortran_code.result << "\n";
         outfile.close();
     }
 #if defined(WITH_LFORTRAN_ASSERT)
@@ -136,8 +136,8 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
         }
         if (compiler_options.rtlib) load_rtlib(al, *tu, compiler_options);
         if (compiler_options.dump_all_passes) {
-            std::ofstream outfile ("pass_00_initial_asr.clj");
-            outfile << ";; Initial ASR\n" << pickle(*tu, false, true) << "\n";
+            std::ofstream outfile ("pass_00_initial_asr_02.clj");
+            outfile << ";; Initial ASR after Body Visitor\n" << pickle(*tu, false, true) << "\n";
             outfile.close();
         }
         if (compiler_options.dump_fortran) {
@@ -146,8 +146,8 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
                 LCOMPILERS_ASSERT(diagnostics.has_error());
                 throw LCompilersException("Fortran code could not be generated after body_visitor");
             }
-            std::ofstream outfile ("pass_00_initial_asr2.f90");
-            outfile << "! Initial ASR\n" << fortran_code.result << "\n";
+            std::ofstream outfile ("pass_00_initial_code_02.f90");
+            outfile << "! Fortran code after Body Visitor\n" << fortran_code.result << "\n";
             outfile.close();
         }
 #if defined(WITH_LFORTRAN_ASSERT)

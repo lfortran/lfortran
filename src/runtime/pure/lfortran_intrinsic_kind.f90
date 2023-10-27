@@ -32,7 +32,11 @@ end function
 
 integer function selected_int_kind(R) result(res)
 integer, intent(in) :: R
-if (R < 10) then
+if (R < 3) then
+    res = 1
+else if (R < 5) then
+    res = 2
+else if (R < 10) then
     res = 4
 else
     res = 8

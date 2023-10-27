@@ -130,6 +130,11 @@ public:
                 r += std::to_string(down_cast<ASR::Real_t>(t)->m_kind);
                 r += ")";
                 break;
+	    } case ASR::ttypeType::Complex: {
+                r = "complex(";
+                r += std::to_string(down_cast<ASR::Complex_t>(t)->m_kind);
+                r += ")";
+                break;
             } case ASR::ttypeType::Character: {
                 ASR::Character_t *c = down_cast<ASR::Character_t>(t);
                 r = "character(len=";
@@ -834,7 +839,13 @@ public:
     /********************************** Expr **********************************/
     // void visit_IfExp(const ASR::IfExp_t &x) {}
 
-    // void visit_ComplexConstructor(const ASR::ComplexConstructor_t &x) {}
+    void visit_ComplexConstructor(const ASR::ComplexConstructor_t &x) {
+        visit_expr(*x.m_re);
+        std::string re = s;
+        visit_expr(*x.m_im);
+        std::string im = s;
+        s = "(" + re + ", " + im + ")";
+    }
 
     // void visit_NamedExpr(const ASR::NamedExpr_t &x) {}
 
@@ -855,6 +866,8 @@ public:
         switch (x.m_intrinsic_id) {
             SET_INTRINSIC_NAME(Abs, "abs");
             SET_INTRINSIC_NAME(Exp, "exp");
+            SET_INTRINSIC_NAME(Max, "max");
+            SET_INTRINSIC_NAME(Min, "min");
             default : {
                 throw LCompilersException("IntrinsicScalarFunction: `"
                     + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)
@@ -876,6 +889,7 @@ public:
     void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t &x) {
         std::string out;
         switch (x.m_arr_intrinsic_id) {
+            SET_ARR_INTRINSIC_NAME(Any, "any");
             SET_ARR_INTRINSIC_NAME(Sum, "sum");
             SET_ARR_INTRINSIC_NAME(Shape, "shape");
             default : {
@@ -993,7 +1007,11 @@ public:
 
     // void visit_RealCopySign(const ASR::RealCopySign_t &x) {}
 
-    // void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {}
+    void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {
+        std::string re = std::to_string(x.m_re);
+        std::string im = std::to_string(x.m_im);
+        s = "(" + re + ", " + im + ")";
+    }
 
     // void visit_ComplexUnaryMinus(const ASR::ComplexUnaryMinus_t &x) {}
 
@@ -1047,7 +1065,13 @@ public:
         s = left + "//" + right;
     }
 
-    // void visit_StringRepeat(const ASR::StringRepeat_t &x) {}
+    void visit_StringRepeat(const ASR::StringRepeat_t &x) {
+        this->visit_expr(*x.m_left);
+        std::string str = s;
+        this->visit_expr(*x.m_right);
+        std::string n = s;
+        s = "repeat(" + str + ", " + n + ")";
+    }
 
     void visit_StringLen(const ASR::StringLen_t &x) {
         visit_expr(*x.m_arg);
@@ -1403,9 +1427,15 @@ public:
         this->visit_expr(*x.m_arg);
     }
 
-    // void visit_ComplexRe(const ASR::ComplexRe_t &x) {}
+    void visit_ComplexRe(const ASR::ComplexRe_t &x) {
+        visit_expr(*x.m_arg);
+        s = "real(" + s + ")";
+    }
 
-    // void visit_ComplexIm(const ASR::ComplexIm_t &x) {}
+    void visit_ComplexIm(const ASR::ComplexIm_t &x) {
+        visit_expr(*x.m_arg);
+        s = "aimag(" + s + ")";
+    }
 
     // void visit_CLoc(const ASR::CLoc_t &x) {}
 
@@ -1413,11 +1443,20 @@ public:
 
     // void visit_GetPointer(const ASR::GetPointer_t &x) {}
 
-    // void visit_IntegerBitLen(const ASR::IntegerBitLen_t &x) {}
+    void visit_IntegerBitLen(const ASR::IntegerBitLen_t &x) {
+        visit_expr(*x.m_a);
+        s = "bit_size(" + s + ")";
+    }
 
-    // void visit_Ichar(const ASR::Ichar_t &x) {}
+    void visit_Ichar(const ASR::Ichar_t &x) {
+        visit_expr(*x.m_arg);
+        s = "ichar(" + s + ")";
+    }
 
-    // void visit_Iachar(const ASR::Iachar_t &x) {}
+    void visit_Iachar(const ASR::Iachar_t &x) {
+        visit_expr(*x.m_arg);
+        s = "iachar(" + s + ")";
+    }
 
     // void visit_SizeOfType(const ASR::SizeOfType_t &x) {}
 
@@ -1425,7 +1464,10 @@ public:
 
     // void visit_PointerAssociated(const ASR::PointerAssociated_t &x) {}
 
-    // void visit_IntrinsicFunctionSqrt(const ASR::IntrinsicFunctionSqrt_t &x) {}
+    void visit_IntrinsicFunctionSqrt(const ASR::IntrinsicFunctionSqrt_t &x) {
+        visit_expr(*x.m_arg);
+        s = "sqrt(" + s + ")";
+    }
 
     /******************************* Case Stmt ********************************/
     void visit_CaseStmt(const ASR::CaseStmt_t &x) {

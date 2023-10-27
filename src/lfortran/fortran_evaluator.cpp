@@ -108,7 +108,7 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
 
     // ASR -> LLVM
     Result<std::unique_ptr<LLVMModule>> res3 = get_llvm3(*asr,
-        pass_manager, diagnostics, lm.files.back().in_filename);
+        pass_manager, lm, diagnostics, lm.files.back().in_filename);
     std::unique_ptr<LCompilers::LLVMModule> m;
     if (res3.ok) {
         m = std::move(res3.result);
@@ -310,7 +310,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm2(
     if (!asr.ok) {
         return asr.error;
     }
-    Result<std::unique_ptr<LLVMModule>> res = get_llvm3(*asr.result, pass_manager,
+    Result<std::unique_ptr<LLVMModule>> res = get_llvm3(*asr.result, pass_manager, lm,
         diagnostics, lm.files.back().in_filename);
     if (res.ok) {
 #ifdef HAVE_LFORTRAN_LLVM
@@ -328,10 +328,10 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm2(
 Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
 #ifdef HAVE_LFORTRAN_LLVM
     ASR::TranslationUnit_t &asr, LCompilers::PassManager& pass_manager,
-    diag::Diagnostics &diagnostics
+    LocationManager& lm, diag::Diagnostics &diagnostics
 #else
     ASR::TranslationUnit_t &/*asr*/, LCompilers::PassManager &/*pass_manager*/,
-    diag::Diagnostics &/*diagnostics*/
+    LocationManager &/*lm*/, diag::Diagnostics &/*diagnostics*/
 #endif
 , const std::string &infile)
 {
@@ -356,7 +356,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     std::unique_ptr<LCompilers::LLVMModule> m;
     Result<std::unique_ptr<LCompilers::LLVMModule>> res
         = asr_to_llvm(asr, diagnostics,
-            e->get_context(), al, pass_manager,
+            e->get_context(), al, pass_manager, lm,
             compiler_options, run_fn, infile);
     if (res.ok) {
         m = std::move(res.result);
@@ -410,7 +410,7 @@ Result<Vec<uint8_t>> FortranEvaluator::get_wasm(const std::string &code,
     Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
     symbol_table = old_symbol_table;
     if (asr.ok) {
-        return asr_to_wasm_bytes_stream(*asr.result, al, diagnostics, compiler_options);
+        return asr_to_wasm_bytes_stream(*asr.result, al, diagnostics, compiler_options, lm);
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return asr.error;
@@ -483,7 +483,8 @@ Result<std::string> FortranEvaluator::get_c2(ASR::TranslationUnit_t &asr,
 }
 
 Result<std::string> FortranEvaluator::get_c3(ASR::TranslationUnit_t &asr,
-        diag::Diagnostics &diagnostics, LCompilers::PassManager& pass_manager, int64_t default_lower_bound)
+        diag::Diagnostics &diagnostics, LCompilers::PassManager &pass_manager,
+        LocationManager &lm, int64_t default_lower_bound)
 {
     // ASR -> ASR pass
     Allocator al(64*1024*1024);
@@ -505,7 +506,7 @@ Result<std::string> FortranEvaluator::get_c3(ASR::TranslationUnit_t &asr,
     pass_options.bindc_mangling = compiler_options.bindc_mangling;
     pass_options.mangle_underscore = compiler_options.mangle_underscore;
     pass_manager.skip_c_passes();
-    pass_manager.apply_passes(al, &asr, pass_options, diagnostics);
+    pass_manager.apply_passes(al, &asr, pass_options, diagnostics, lm);
     // ASR pass -> C
     return asr_to_c(al, asr, diagnostics, compiler_options, default_lower_bound);
 }
@@ -527,7 +528,8 @@ Result<std::string> FortranEvaluator::get_julia(const std::string &code,
 }
 
 Result<std::string> FortranEvaluator::get_fortran(const std::string &code,
-    LocationManager &lm, diag::Diagnostics &diagnostics)
+    LocationManager &lm, LCompilers::PassManager &pass_manager,
+    diag::Diagnostics &diagnostics)
 {
     // SRC -> AST -> ASR -> Fortran
     SymbolTable *old_symbol_table = symbol_table;
@@ -538,7 +540,6 @@ Result<std::string> FortranEvaluator::get_fortran(const std::string &code,
         Allocator al(64*1024*1024);
         if (compiler_options.dump_fortran) {
             LCompilers::PassOptions pass_options;
-            LCompilers::PassManager pass_manager;
             pass_options.runtime_library_dir = compiler_options.runtime_library_dir;
             pass_options.mod_files_dir = compiler_options.mod_files_dir;
             pass_options.include_dirs = compiler_options.include_dirs;
@@ -559,7 +560,7 @@ Result<std::string> FortranEvaluator::get_fortran(const std::string &code,
             pass_options.dump_fortran = compiler_options.dump_fortran;
 
             pass_manager.use_default_passes();
-            pass_manager.apply_passes(al, asr.result, pass_options, diagnostics);
+            pass_manager.apply_passes(al, asr.result, pass_options, diagnostics, lm);
         }
         return asr_to_fortran(*asr.result, diagnostics, false, 4);
     } else {
