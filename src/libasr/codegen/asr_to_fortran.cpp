@@ -588,6 +588,8 @@ public:
         if (x.m_newunit) {
             visit_expr(*x.m_newunit);
             r += s;
+        } else {
+            throw CodeGenError("open() function must be called with a file unit number");
         }
         if (x.m_filename) {
             r += ", ";
@@ -620,6 +622,8 @@ public:
         if (x.m_unit) {
             visit_expr(*x.m_unit);
             r += s;
+        } else {
+            throw CodeGenError("close() function must be called with a file unit number");
         }
         r += ")";
         r += "\n";
