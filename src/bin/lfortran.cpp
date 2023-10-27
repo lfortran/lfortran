@@ -407,8 +407,8 @@ int emit_prescan(const std::string &infile, CompilerOptions &compiler_options)
     std::vector<std::filesystem::path> include_dirs;
     include_dirs.push_back(LCompilers::parent_path(lm.files.back().in_filename));
     include_dirs.insert(include_dirs.end(),
-                          compiler_options.include_dirs.begin(),
-                          compiler_options.include_dirs.end());
+                          compiler_options.po.include_dirs.begin(),
+                          compiler_options.po.include_dirs.end());
     std::string prescan = LCompilers::LFortran::prescan(input, lm,
         compiler_options.fixed_form, include_dirs);
     std::cout << prescan << std::endl;
@@ -434,8 +434,8 @@ int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOpti
         std::vector<std::filesystem::path> include_dirs;
         include_dirs.push_back(LCompilers::parent_path(lm.files.back().in_filename));
         include_dirs.insert(include_dirs.end(),
-                            compiler_options.include_dirs.begin(),
-                            compiler_options.include_dirs.end());
+                            compiler_options.po.include_dirs.begin(),
+                            compiler_options.po.include_dirs.end());
         input = LCompilers::LFortran::prescan(input, lm,
             compiler_options.fixed_form, include_dirs);
     }
@@ -477,7 +477,7 @@ int emit_ast(const std::string &infile, CompilerOptions &compiler_options)
     LCompilers::Result<std::string> r = fe.get_ast(input, lm, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (r.ok) {
-        if (compiler_options.visualize) {
+        if (compiler_options.po.visualize) {
             return visualize_json(r.result, compiler_options.platform);
         }
         std::cout << r.result << std::endl;
@@ -638,39 +638,20 @@ int emit_asr(const std::string &infile,
     LCompilers::ASR::TranslationUnit_t* asr = r.result;
 
     Allocator al(64*1024*1024);
-    LCompilers::PassOptions pass_options;
-    pass_options.runtime_library_dir = compiler_options.runtime_library_dir;
-    pass_options.mod_files_dir = compiler_options.mod_files_dir;
-    pass_options.include_dirs = compiler_options.include_dirs;
+    compiler_options.po.always_run = true;
+    compiler_options.po.run_fun = "f";
 
-    pass_options.always_run = true;
-    pass_options.run_fun = "f";
-    pass_options.verbose = compiler_options.verbose;
-    pass_options.dump_all_passes = compiler_options.dump_all_passes;
-    pass_options.pass_cumulative = compiler_options.pass_cumulative;
-    pass_options.realloc_lhs = compiler_options.realloc_lhs;
-    pass_options.all_symbols_mangling = compiler_options.all_symbols_mangling;
-    pass_options.module_name_mangling = compiler_options.module_name_mangling;
-    pass_options.global_symbols_mangling = compiler_options.global_symbols_mangling;
-    pass_options.intrinsic_symbols_mangling = compiler_options.intrinsic_symbols_mangling;
-    pass_options.bindc_mangling = compiler_options.bindc_mangling;
-    pass_options.mangle_underscore = compiler_options.mangle_underscore;
-    pass_options.use_loop_variable_after_loop = compiler_options.use_loop_variable_after_loop;
-    pass_options.tree = compiler_options.tree;
-    pass_options.json = compiler_options.json;
-    pass_options.visualize = compiler_options.visualize;
-
-    if (compiler_options.dump_all_passes) {
+    if (compiler_options.po.dump_all_passes) {
         pass_manager.use_default_passes();
     }
-    pass_manager.apply_passes(al, asr, pass_options, diagnostics, lm);
-    if (compiler_options.tree) {
+    pass_manager.apply_passes(al, asr, compiler_options.po, diagnostics, lm);
+    if (compiler_options.po.tree) {
         std::cout << LCompilers::pickle_tree(*asr,
             compiler_options.use_colors) << std::endl;
-    } else if (compiler_options.json) {
-        std::cout << LCompilers::pickle_json(*asr, lm, compiler_options.no_loc, with_intrinsic_modules) << std::endl;
-    } else if (compiler_options.visualize) {
-        std::string astr_data_json = LCompilers::pickle_json(*asr, lm, compiler_options.no_loc, with_intrinsic_modules);
+    } else if (compiler_options.po.json) {
+        std::cout << LCompilers::pickle_json(*asr, lm, compiler_options.po.no_loc, with_intrinsic_modules) << std::endl;
+    } else if (compiler_options.po.visualize) {
+        std::string astr_data_json = LCompilers::pickle_json(*asr, lm, compiler_options.po.no_loc, with_intrinsic_modules);
         return visualize_json(astr_data_json, compiler_options.platform);
     } else {
         std::cout << LCompilers::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
@@ -821,7 +802,7 @@ int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
             LCOMPILERS_ASSERT(LCompilers::asr_verify(u, true, diagnostics));
 
 	    std::filesystem::path filename { std::string(m->m_name) + ".mod" };
-            std::filesystem::path fullpath = compiler_options.mod_files_dir / filename;
+            std::filesystem::path fullpath = compiler_options.po.mod_files_dir / filename;
             {
                 std::ofstream out;
 		out.open(fullpath, std::ofstream::out | std::ofstream::binary);
@@ -960,7 +941,7 @@ int compile_to_object_file(const std::string &infile,
         return 5;
     }
 
-    if (compiler_options.fast) {
+    if (compiler_options.po.fast) {
         e.opt(*m->m_m);
     }
 
@@ -1744,7 +1725,7 @@ namespace wasm {
 #define INITIALIZE_VARS CompilerOptions compiler_options; \
                         compiler_options.use_colors = true; \
                         compiler_options.indent = true; \
-                        compiler_options.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir(); \
+                        compiler_options.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir(); \
                         LCompilers::FortranEvaluator fe(compiler_options); \
                         LCompilers::LocationManager lm; \
                         LCompilers::diag::Diagnostics diagnostics; \
@@ -1773,7 +1754,7 @@ EMSCRIPTEN_KEEPALIVE char* emit_ast_from_source(char *input) {
 
 EMSCRIPTEN_KEEPALIVE char* emit_ast_json_from_source(char *input) {
     INITIALIZE_VARS;
-    compiler_options.json = true;
+    compiler_options.po.json = true;
     LCompilers::FortranEvaluator fe2(compiler_options);
     LCompilers::Result<std::string> r = fe2.get_ast(input, lm, diagnostics);
     out = diagnostics.render(lm, compiler_options);
@@ -1791,7 +1772,7 @@ EMSCRIPTEN_KEEPALIVE char* emit_asr_from_source(char *input) {
 
 EMSCRIPTEN_KEEPALIVE char* emit_asr_json_from_source(char *input) {
     INITIALIZE_VARS;
-    compiler_options.json = true;
+    compiler_options.po.json = true;
     LCompilers::FortranEvaluator fe2(compiler_options);
     LCompilers::Result<std::string> r = fe2.get_asr(input, lm, diagnostics);
     out = diagnostics.render(lm, compiler_options);
@@ -1960,7 +1941,7 @@ int main(int argc, char *argv[])
         std::vector<std::string> f_flags;
 
         CompilerOptions compiler_options;
-        compiler_options.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+        compiler_options.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
         std::string rtlib_c_header_dir = LCompilers::LFortran::get_runtime_library_c_header_dir();
 
         LCompilers::PassManager lfortran_pass_manager;
@@ -1976,8 +1957,8 @@ int main(int argc, char *argv[])
         app.add_flag("-E", arg_E, "Preprocess only; do not compile, assemble or link");
         app.add_option("-l", arg_l, "Link library option");
         app.add_option("-L", arg_L, "Library path option");
-        app.add_option("-I", compiler_options.include_dirs, "Include path")->allow_extra_args(false);
-        app.add_option("-J", compiler_options.mod_files_dir, "Where to save mod files");
+        app.add_option("-I", compiler_options.po.include_dirs, "Include path")->allow_extra_args(false);
+        app.add_option("-J", compiler_options.po.mod_files_dir, "Where to save mod files");
         app.add_flag("-g", compiler_options.emit_debug_info, "Compile with debugging information");
         app.add_flag("--debug-with-line-column", compiler_options.emit_debug_line_column,
             "Convert the linear location info into line + column in the debugging information");
@@ -1999,10 +1980,10 @@ int main(int argc, char *argv[])
         app.add_flag("--show-ast-f90", show_ast_f90, "Show Fortran from AST for the given file and exit");
         app.add_flag("--no-color", arg_no_color, "Turn off colored AST/ASR");
         app.add_flag("--no-indent", arg_no_indent, "Turn off Indented print ASR/AST");
-        app.add_flag("--tree", compiler_options.tree, "Tree structure print ASR/AST");
-        app.add_flag("--json", compiler_options.json, "Print ASR/AST Json format");
-        app.add_flag("--no-loc", compiler_options.no_loc, "Skip location information in ASR/AST Json format");
-        app.add_flag("--visualize", compiler_options.visualize, "Print ASR/AST Visualization");
+        app.add_flag("--tree", compiler_options.po.tree, "Tree structure print ASR/AST");
+        app.add_flag("--json", compiler_options.po.json, "Print ASR/AST Json format");
+        app.add_flag("--no-loc", compiler_options.po.no_loc, "Skip location information in ASR/AST Json format");
+        app.add_flag("--visualize", compiler_options.po.visualize, "Print ASR/AST Visualization");
         app.add_option("--pass", arg_pass, "Apply the ASR pass and show ASR (implies --show-asr)");
         app.add_option("--skip-pass", skip_pass, "Skip an ASR pass in default pipeline");
         app.add_flag("--show-llvm", show_llvm, "Show LLVM IR for the given file and exit");
@@ -2023,8 +2004,8 @@ int main(int argc, char *argv[])
         app.add_flag("--openmp", compiler_options.openmp, "Enable openmp");
         app.add_flag("--generate-object-code", compiler_options.generate_object_code, "Generate object code into .o files");
         app.add_flag("--rtlib", compiler_options.rtlib, "Include the full runtime library in the LLVM output");
-        app.add_flag("--use-loop-variable-after-loop", compiler_options.use_loop_variable_after_loop, "Allow using loop variable after the loop");
-        app.add_flag("--fast", compiler_options.fast, "Best performance (disable strict standard compliance)");
+        app.add_flag("--use-loop-variable-after-loop", compiler_options.po.use_loop_variable_after_loop, "Allow using loop variable after the loop");
+        app.add_flag("--fast", compiler_options.po.fast, "Best performance (disable strict standard compliance)");
         app.add_flag("--link-with-gcc", link_with_gcc, "Calls GCC for linking instead of clang");
         app.add_option("--target", compiler_options.target, "Generate code for the given target")->capture_default_str();
         app.add_flag("--print-targets", print_targets, "Print the registered targets");
@@ -2033,17 +2014,17 @@ int main(int argc, char *argv[])
         app.add_flag("--implicit-argument-casting", compiler_options.implicit_argument_casting, "Allow implicit argument casting");
         app.add_flag("--print-leading-space", compiler_options.print_leading_space, "Print leading white space if format is unspecified");
         app.add_flag("--interactive-parse", compiler_options.interactive, "Use interactive parse");
-        app.add_flag("--verbose", compiler_options.verbose, "Print debugging statements");
-        app.add_flag("--dump-all-passes", compiler_options.dump_all_passes, "Apply all the passes and dump the ASR into a file");
-        app.add_flag("--dump-all-passes-fortran", compiler_options.dump_fortran, "Apply all passes and dump the ASR after each pass into fortran file");
-        app.add_flag("--cumulative", compiler_options.pass_cumulative, "Apply all the passes cumulatively till the given pass");
-        app.add_flag("--realloc-lhs", compiler_options.realloc_lhs, "Reallocate left hand side automatically");
-        app.add_flag("--module-mangling", compiler_options.module_name_mangling, "Mangles the module name");
-        app.add_flag("--global-mangling", compiler_options.global_symbols_mangling, "Mangles all the global symbols");
-        app.add_flag("--intrinsic-mangling", compiler_options.intrinsic_symbols_mangling, "Mangles all the intrinsic symbols");
-        app.add_flag("--all-mangling", compiler_options.all_symbols_mangling, "Mangles all possible symbols");
-        app.add_flag("--bindc-mangling", compiler_options.bindc_mangling, "Mangles functions with abi bind(c)");
-        app.add_flag("--mangle-underscore", compiler_options.mangle_underscore, "Mangles with underscore");
+        app.add_flag("--verbose", compiler_options.po.verbose, "Print debugging statements");
+        app.add_flag("--dump-all-passes", compiler_options.po.dump_all_passes, "Apply all the passes and dump the ASR into a file");
+        app.add_flag("--dump-all-passes-fortran", compiler_options.po.dump_fortran, "Apply all passes and dump the ASR after each pass into fortran file");
+        app.add_flag("--cumulative", compiler_options.po.pass_cumulative, "Apply all the passes cumulatively till the given pass");
+        app.add_flag("--realloc-lhs", compiler_options.po.realloc_lhs, "Reallocate left hand side automatically");
+        app.add_flag("--module-mangling", compiler_options.po.module_name_mangling, "Mangles the module name");
+        app.add_flag("--global-mangling", compiler_options.po.global_symbols_mangling, "Mangles all the global symbols");
+        app.add_flag("--intrinsic-mangling", compiler_options.po.intrinsic_symbols_mangling, "Mangles all the intrinsic symbols");
+        app.add_flag("--all-mangling", compiler_options.po.all_symbols_mangling, "Mangles all possible symbols");
+        app.add_flag("--bindc-mangling", compiler_options.po.bindc_mangling, "Mangles functions with abi bind(c)");
+        app.add_flag("--mangle-underscore", compiler_options.po.mangle_underscore, "Mangles with underscore");
         app.add_flag("--run", compiler_options.run, "Executes the generated binary when the `-o` option is specified");
         app.add_flag("--legacy-array-sections", compiler_options.legacy_array_sections, "Enables passing array items as sections if required");
         app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas");
@@ -2123,11 +2104,11 @@ int main(int argc, char *argv[])
             }
         }
 
-        if( compiler_options.fast ) {
+        if( compiler_options.po.fast ) {
             lfortran_pass_manager.use_optimization_passes();
         }
 
-        if (compiler_options.dump_fortran) {
+        if (compiler_options.po.dump_fortran) {
             arg_backend = "fortran";
         }
 

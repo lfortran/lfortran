@@ -417,14 +417,9 @@ public:
                                             false, false);
         current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
         if( x.class_type == AST::modType::Submodule ) {
-            LCompilers::PassOptions pass_options;
-            pass_options.runtime_library_dir = compiler_options.runtime_library_dir;
-            pass_options.mod_files_dir = compiler_options.mod_files_dir;
-            pass_options.include_dirs = compiler_options.include_dirs;
-
             ASR::symbol_t* submod_parent = (ASR::symbol_t*)(ASRUtils::load_module(al, global_scope,
                                                 parent_name, x.base.base.loc, false,
-                                                pass_options, true,
+                                                compiler_options.po, true,
                                                 [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }
                                                 ));
             ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(submod_parent);
@@ -2489,17 +2484,12 @@ public:
 
         ASR::symbol_t *t = current_scope->resolve_symbol(msym);
         if (!t) {
-            LCompilers::PassOptions pass_options;
-            pass_options.runtime_library_dir = compiler_options.runtime_library_dir;
-            pass_options.mod_files_dir = compiler_options.mod_files_dir;
-            pass_options.include_dirs = compiler_options.include_dirs;
-
             SymbolTable *tu_symtab = current_scope;
             while (tu_symtab->parent != nullptr) {
                 tu_symtab = tu_symtab->parent;
             }
             t = (ASR::symbol_t*)(ASRUtils::load_module(al, tu_symtab,
-                msym, x.base.base.loc, false, pass_options, true,
+                msym, x.base.base.loc, false, compiler_options.po, true,
                 [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }
                 ));
         }

@@ -171,10 +171,10 @@ Result<std::string> FortranEvaluator::get_ast(const std::string &code,
     Result<LFortran::AST::TranslationUnit_t*> ast = get_ast2(code, lm,
         diagnostics);
     if (ast.ok) {
-        if (compiler_options.tree) {
+        if (compiler_options.po.tree) {
             return LFortran::pickle_tree(*ast.result, compiler_options.use_colors);
-        } else if (compiler_options.json || compiler_options.visualize) {
-            return LFortran::pickle_json(*ast.result, lm, compiler_options.no_loc);
+        } else if (compiler_options.po.json || compiler_options.po.visualize) {
+            return LFortran::pickle_json(*ast.result, lm, compiler_options.po.no_loc);
         }
         return LFortran::pickle(*ast.result, compiler_options.use_colors,
             compiler_options.indent);
@@ -201,8 +201,8 @@ Result<LFortran::AST::TranslationUnit_t*> FortranEvaluator::get_ast2(
         std::vector<std::filesystem::path> include_dirs;
         include_dirs.push_back(parent_path(lm.files.back().in_filename));
         include_dirs.insert(include_dirs.end(),
-                            compiler_options.include_dirs.begin(),
-                            compiler_options.include_dirs.end());
+                            compiler_options.po.include_dirs.begin(),
+                            compiler_options.po.include_dirs.end());
         tmp = LFortran::prescan(*code, lm, compiler_options.fixed_form, include_dirs);
         code = &tmp;
     }
@@ -221,10 +221,10 @@ Result<std::string> FortranEvaluator::get_asr(const std::string &code,
 {
     Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
     if (asr.ok) {
-        if (compiler_options.tree) {
+        if (compiler_options.po.tree) {
             return pickle_tree(*asr.result, compiler_options.use_colors);
-        } else if (compiler_options.json) {
-            return pickle_json(*asr.result, lm, compiler_options.no_loc, false);
+        } else if (compiler_options.po.json) {
+            return pickle_json(*asr.result, lm, compiler_options.po.no_loc, false);
         }
         return pickle(*asr.result,
             compiler_options.use_colors, compiler_options.indent);
@@ -365,7 +365,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
         return res.error;
     }
 
-    if (compiler_options.fast) {
+    if (compiler_options.po.fast) {
         e->opt(*m->m_m);
     }
 
@@ -488,25 +488,10 @@ Result<std::string> FortranEvaluator::get_c3(ASR::TranslationUnit_t &asr,
 {
     // ASR -> ASR pass
     Allocator al(64*1024*1024);
-    LCompilers::PassOptions pass_options;
-    pass_options.runtime_library_dir = compiler_options.runtime_library_dir;
-    pass_options.mod_files_dir = compiler_options.mod_files_dir;
-    pass_options.include_dirs = compiler_options.include_dirs;
-
-    pass_options.always_run = false;
-    pass_options.run_fun = "f";
-    pass_options.verbose = compiler_options.verbose;
-    pass_options.dump_all_passes = compiler_options.dump_all_passes;
-    pass_options.pass_cumulative = compiler_options.pass_cumulative;
-    pass_options.realloc_lhs = compiler_options.realloc_lhs;
-    pass_options.all_symbols_mangling = compiler_options.all_symbols_mangling;
-    pass_options.module_name_mangling = compiler_options.module_name_mangling;
-    pass_options.global_symbols_mangling = compiler_options.global_symbols_mangling;
-    pass_options.intrinsic_symbols_mangling = compiler_options.intrinsic_symbols_mangling;
-    pass_options.bindc_mangling = compiler_options.bindc_mangling;
-    pass_options.mangle_underscore = compiler_options.mangle_underscore;
+    compiler_options.po.always_run = false;
+    compiler_options.po.run_fun = "f";
     pass_manager.skip_c_passes();
-    pass_manager.apply_passes(al, &asr, pass_options, diagnostics, lm);
+    pass_manager.apply_passes(al, &asr, compiler_options.po, diagnostics, lm);
     // ASR pass -> C
     return asr_to_c(al, asr, diagnostics, compiler_options, default_lower_bound);
 }
@@ -538,29 +523,12 @@ Result<std::string> FortranEvaluator::get_fortran(const std::string &code,
     symbol_table = old_symbol_table;
     if (asr.ok) {
         Allocator al(64*1024*1024);
-        if (compiler_options.dump_fortran) {
-            LCompilers::PassOptions pass_options;
-            pass_options.runtime_library_dir = compiler_options.runtime_library_dir;
-            pass_options.mod_files_dir = compiler_options.mod_files_dir;
-            pass_options.include_dirs = compiler_options.include_dirs;
-
-            pass_options.always_run = true;
-            pass_options.run_fun = "f";
-            pass_options.verbose = compiler_options.verbose;
-            pass_options.dump_all_passes = compiler_options.dump_all_passes;
-            pass_options.pass_cumulative = compiler_options.pass_cumulative;
-            pass_options.realloc_lhs = compiler_options.realloc_lhs;
-            pass_options.all_symbols_mangling = compiler_options.all_symbols_mangling;
-            pass_options.module_name_mangling = compiler_options.module_name_mangling;
-            pass_options.global_symbols_mangling = compiler_options.global_symbols_mangling;
-            pass_options.intrinsic_symbols_mangling = compiler_options.intrinsic_symbols_mangling;
-            pass_options.bindc_mangling = compiler_options.bindc_mangling;
-            pass_options.mangle_underscore = compiler_options.mangle_underscore;
-            pass_options.use_loop_variable_after_loop = compiler_options.use_loop_variable_after_loop;
-            pass_options.dump_fortran = compiler_options.dump_fortran;
+        if (compiler_options.po.dump_fortran) {
+            compiler_options.po.always_run = true;
+            compiler_options.po.run_fun = "f";
 
             pass_manager.use_default_passes();
-            pass_manager.apply_passes(al, asr.result, pass_options, diagnostics, lm);
+            pass_manager.apply_passes(al, asr.result, compiler_options.po, diagnostics, lm);
         }
         return asr_to_fortran(*asr.result, diagnostics, false, 4);
     } else {

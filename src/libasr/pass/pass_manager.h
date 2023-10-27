@@ -111,6 +111,7 @@ namespace LCompilers {
         bool c_skip_pass; // This will contain the passes that are to be skipped in C
 
         public:
+        bool rtlib=false;
 
         void apply_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                            std::vector<std::string>& passes, PassOptions &pass_options,
@@ -207,8 +208,6 @@ namespace LCompilers {
                 }
             }
         }
-
-        bool rtlib=false;
 
         void _parse_pass_arg(std::string& arg, std::vector<std::string>& passes) {
             if (arg == "") return;
