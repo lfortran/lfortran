@@ -604,11 +604,10 @@ public:
         } else {
             r += "*";
         }
-        r += ", ";
         for (size_t i = 0; i < x.n_values; i++) {
+            r += ", ";
             visit_expr(*x.m_values[i]);
             r += s;
-            if (i < x.n_values-1) r += ", ";
         }
         r += "\n";
         s = r;
