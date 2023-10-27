@@ -585,11 +585,102 @@ public:
         s = r;
     }
 
-    // void visit_FileOpen(const ASR::FileOpen_t &x) {}
+    void visit_FileOpen(const ASR::FileOpen_t &x) {
+        std::string r;
+        r = indent;
+        r += "open";
+        r += "(";
+        if (x.m_newunit) {
+            visit_expr(*x.m_newunit);
+            r += s;
+        } else {
+            throw CodeGenError("open() function must be called with a file unit number");
+        }
+        if (x.m_filename) {
+            r += ", ";
+            r += "file=";
+            visit_expr(*x.m_filename);
+            r += s;
+        }
+        if (x.m_status) {
+            r += ", ";
+            r += "status=";
+            visit_expr(*x.m_status);
+            r += s;
+        }
+        if (x.m_form) {
+            r += ", ";
+            r += "form=";
+            visit_expr(*x.m_form);
+            r += s;
+        }
+        r += ")";
+        r += "\n";
+        s = r;
+    }
 
-    // void visit_FileClose(const ASR::FileClose_t &x) {}
+    void visit_FileClose(const ASR::FileClose_t &x) {
+        std::string r;
+        r = indent;
+        r += "close";
+        r += "(";
+        if (x.m_unit) {
+            visit_expr(*x.m_unit);
+            r += s;
+        } else {
+            throw CodeGenError("close() function must be called with a file unit number");
+        }
+        r += ")";
+        r += "\n";
+        s = r;
+    }
 
-    // void visit_FileRead(const ASR::FileRead_t &x) {}
+   void visit_FileRead(const ASR::FileRead_t &x) {
+        std::string r;
+        r = indent;
+        r += "read";
+        r += "(";
+        if (x.m_unit) {
+            visit_expr(*x.m_unit);
+            r += s;
+        } else {
+            r += "*";
+        }
+        if (x.m_fmt) {
+            r += ", ";
+            r += "fmt=";
+            visit_expr(*x.m_fmt);
+            r += s;
+        } else {
+            r += ", *";
+        }
+        if (x.m_iomsg) {
+            r += ", ";
+            r += "iomsg=";
+            visit_expr(*x.m_iomsg);
+            r += s;
+        }
+        if (x.m_iostat) {
+            r += ", ";
+            r += "iostat=";
+            visit_expr(*x.m_iostat);
+            r += s;
+        }
+        if (x.m_id) {
+            r += ", ";
+            r += "id=";
+            visit_expr(*x.m_id);
+            r += s;
+        }
+        r += ") ";
+        for (size_t i = 0; i < x.n_values; i++) {
+            visit_expr(*x.m_values[i]);
+            r += s;
+            if (i < x.n_values - 1) r += ", ";
+        }
+        r += "\n";
+        s = r;
+    }
 
     // void visit_FileBackspace(const ASR::FileBackspace_t &x) {}
 
