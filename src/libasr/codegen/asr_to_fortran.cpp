@@ -588,8 +588,6 @@ public:
         if (x.m_newunit) {
             visit_expr(*x.m_newunit);
             r += s;
-        } else {
-            r += "*";
         }
         if (x.m_filename) {
             r += ", ";
@@ -622,8 +620,6 @@ public:
         if (x.m_unit) {
             visit_expr(*x.m_unit);
             r += s;
-        } else {
-            r += "*";
         }
         r += ")";
         r += "\n";
