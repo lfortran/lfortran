@@ -707,7 +707,7 @@ public:
                 if (ASR::is_a<ASR::Function_t>(*s) && !ASRUtils::is_template_arg(sym, s_name)) {
                     ASR::Function_t *new_f = ASR::down_cast<ASR::Function_t>(
                         current_scope->resolve_symbol(s_name));
-                    pass_instantiate_function_body(al, context_map, type_subs, symbol_subs,
+                    instantiate_function_body(al, context_map, type_subs, symbol_subs,
                         current_scope, temp->m_symtab, new_f, ASR::down_cast<ASR::Function_t>(s));
                 }
             }
@@ -721,7 +721,7 @@ public:
                 if (ASR::is_a<ASR::Function_t>(*s)) {
                     ASR::Function_t *new_f = ASR::down_cast<ASR::Function_t>(
                         current_scope->resolve_symbol(new_s_name));
-                    pass_instantiate_function_body(al, context_map, type_subs, symbol_subs, current_scope,
+                    instantiate_function_body(al, context_map, type_subs, symbol_subs, current_scope,
                         temp->m_symtab, new_f, ASR::down_cast<ASR::Function_t>(s));
                 } else if (ASR::is_a<ASR::StructType_t>(*s)) {
                     ASR::StructType_t *new_st = ASR::down_cast<ASR::StructType_t>(
@@ -733,7 +733,7 @@ public:
                             ASR::Function_t *temp_f = ASR::down_cast<ASR::Function_t>(
                                 temp->m_symtab->resolve_symbol(proc->m_name));
                             ASR::Function_t *new_f = ASR::down_cast<ASR::Function_t>(proc->m_proc);
-                            pass_instantiate_function_body(al, context_map, type_subs, symbol_subs, current_scope,
+                            instantiate_function_body(al, context_map, type_subs, symbol_subs, current_scope,
                                 temp_f->m_symtab, new_f, temp_f);
                         }
                     }
