@@ -593,7 +593,7 @@ public:
         std::string r = indent;
         r += "print";
         r += " ";
-        if (x.m_values[0] && is_a<ASR::StringFormat_t>(*x.m_values[0])) {
+        if (x.n_values > 0 && is_a<ASR::StringFormat_t>(*x.m_values[0])) {
             ASR::StringFormat_t *sf = down_cast<ASR::StringFormat_t>(x.m_values[0]);
             visit_expr(*sf->m_fmt);
             if (is_a<ASR::StringConstant_t>(*sf->m_fmt)
@@ -724,7 +724,7 @@ public:
         if (!x.m_unit) {
             r += "*, ";
         }
-        if (x.m_values[0] && is_a<ASR::StringFormat_t>(*x.m_values[0])) {
+        if (x.n_values > 0 && is_a<ASR::StringFormat_t>(*x.m_values[0])) {
             ASR::StringFormat_t *sf = down_cast<ASR::StringFormat_t>(x.m_values[0]);
             visit_expr(*sf->m_fmt);
             if (is_a<ASR::StringConstant_t>(*sf->m_fmt)
