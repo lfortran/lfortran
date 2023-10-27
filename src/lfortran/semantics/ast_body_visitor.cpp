@@ -1688,15 +1688,29 @@ public:
         bool return_encountered = false;
         bool entry_encountered = false;
         for (auto &ast_stmt: ast_stmt_vector) {
+            bool is_pushed = false;
             int64_t label = stmt_label(ast_stmt);
             if (label != 0) {
                 ASR::asr_t *l = ASR::make_GoToTarget_t(al, ast_stmt->base.loc, label,
                                     s2c(al, std::to_string(label)));
                 // body.push_back(al, ASR::down_cast<ASR::stmt_t>(l));
-                if (return_encountered && is_last) {
+                if (is_main_function && return_encountered && !entry_encountered) {
                     after_return_stmt_entry_function.push_back(ASRUtils::STMT(l));
+                    is_pushed = true;
+                } else if (is_main_function && entry_encountered && return_encountered) {
+                    break;
                 } else {
                     stmt_vector.push_back(ASRUtils::STMT(l));
+                    is_pushed = true;
+                }
+                if (!is_main_function && !is_pushed) {
+                    if (return_encountered && is_last) {
+                        after_return_stmt_entry_function.push_back(ASRUtils::STMT(l));
+                        is_pushed = true;
+                    } else {
+                        stmt_vector.push_back(ASRUtils::STMT(l));
+                        is_pushed = true;
+                    }
                 }
             }
             if (ast_stmt->type == AST::stmtType::Entry) {
@@ -1733,12 +1747,14 @@ public:
                 }
                 if (is_main_function && return_encountered && !entry_encountered) {
                     after_return_stmt_entry_function.push_back(tmp_stmt);
+                    is_pushed = true;
                 } else if (is_main_function && entry_encountered && return_encountered) {
                     break;
                 } else {
                     stmt_vector.push_back(tmp_stmt);
+                    is_pushed = true;
                 }
-                if (!is_main_function) {
+                if (!is_main_function && !is_pushed) {
                     if (return_encountered && is_last) {
                         after_return_stmt_entry_function.push_back(tmp_stmt);
                     } else {
