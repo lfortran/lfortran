@@ -615,7 +615,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
 
 int emit_asr(const std::string &infile,
     LCompilers::PassManager& pass_manager,
-    bool with_intrinsic_modules, CompilerOptions &compiler_options)
+    CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
 
@@ -646,13 +646,13 @@ int emit_asr(const std::string &infile,
         std::cout << LCompilers::pickle_tree(*asr,
             compiler_options.use_colors) << std::endl;
     } else if (compiler_options.po.json) {
-        std::cout << LCompilers::pickle_json(*asr, lm, compiler_options.po.no_loc, with_intrinsic_modules) << std::endl;
+        std::cout << LCompilers::pickle_json(*asr, lm, compiler_options.po.no_loc, compiler_options.po.with_intrinsic_mods) << std::endl;
     } else if (compiler_options.po.visualize) {
-        std::string astr_data_json = LCompilers::pickle_json(*asr, lm, compiler_options.po.no_loc, with_intrinsic_modules);
+        std::string astr_data_json = LCompilers::pickle_json(*asr, lm, compiler_options.po.no_loc, compiler_options.po.with_intrinsic_mods);
         return visualize_json(astr_data_json, compiler_options.platform);
     } else {
         std::cout << LCompilers::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
-                with_intrinsic_modules) << std::endl;
+                compiler_options.po.with_intrinsic_mods) << std::endl;
     }
     return 0;
 }
@@ -1896,7 +1896,6 @@ int main(int argc, char *argv[])
         bool show_tokens = false;
         bool show_ast = false;
         bool show_asr = false;
-        bool with_intrinsic_modules = false;
         bool show_ast_f90 = false;
         std::string arg_pass;
         bool arg_no_color = false;
@@ -1969,7 +1968,7 @@ int main(int argc, char *argv[])
         app.add_flag("--show-tokens", show_tokens, "Show tokens for the given file and exit");
         app.add_flag("--show-ast", show_ast, "Show AST for the given file and exit");
         app.add_flag("--show-asr", show_asr, "Show ASR for the given file and exit");
-        app.add_flag("--with-intrinsic-mods", with_intrinsic_modules, "Show intrinsic modules in ASR");
+        app.add_flag("--with-intrinsic-mods", compiler_options.po.with_intrinsic_mods, "Show intrinsic modules in ASR");
         app.add_flag("--show-ast-f90", show_ast_f90, "Show Fortran from AST for the given file and exit");
         app.add_flag("--no-color", arg_no_color, "Turn off colored AST/ASR");
         app.add_flag("--no-indent", arg_no_indent, "Turn off Indented print ASR/AST");
@@ -2217,7 +2216,7 @@ int main(int argc, char *argv[])
         lfortran_pass_manager.parse_pass_arg(arg_pass, skip_pass);
         if (show_asr) {
             return emit_asr(arg_file, lfortran_pass_manager,
-                    with_intrinsic_modules, compiler_options);
+                    compiler_options);
         }
         lfortran_pass_manager.use_default_passes();
         if (show_llvm) {

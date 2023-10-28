@@ -103,7 +103,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(unit);
     if (compiler_options.po.dump_all_passes) {
         std::ofstream outfile ("pass_00_initial_asr_01.clj");
-        outfile << ";; ASR after SymbolTable Visitor\n" << pickle(*tu, false, true) << "\n";
+        outfile << ";; ASR after SymbolTable Visitor\n" << pickle(*tu, false, true, compiler_options.po.with_intrinsic_mods) << "\n";
         outfile.close();
     }
     if (compiler_options.po.dump_fortran) {
@@ -133,7 +133,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
         if (compiler_options.rtlib) load_rtlib(al, *tu, compiler_options);
         if (compiler_options.po.dump_all_passes) {
             std::ofstream outfile ("pass_00_initial_asr_02.clj");
-            outfile << ";; Initial ASR after Body Visitor\n" << pickle(*tu, false, true) << "\n";
+            outfile << ";; Initial ASR after Body Visitor\n" << pickle(*tu, false, true, compiler_options.po.with_intrinsic_mods) << "\n";
             outfile.close();
         }
         if (compiler_options.po.dump_fortran) {

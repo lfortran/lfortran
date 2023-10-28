@@ -163,23 +163,23 @@ namespace LCompilers {
                     if ( i < 9 )  str_i = "0" + str_i;
                     if (pass_options.json) {
                         std::ofstream outfile ("pass_json_" + str_i + "_" + passes[i] + ".json");
-                        outfile << pickle_json(*asr, lm, false, false) << "\n";
+                        outfile << pickle_json(*asr, lm, pass_options.no_loc, pass_options.with_intrinsic_mods) << "\n";
                         outfile.close();
                     }
                     if (pass_options.tree) {
                         std::ofstream outfile ("pass_tree_" + str_i + "_" + passes[i] + ".txt");
-                        outfile << pickle_tree(*asr, false, false) << "\n";
+                        outfile << pickle_tree(*asr, false, pass_options.with_intrinsic_mods) << "\n";
                         outfile.close();
                     }
                     if (pass_options.visualize) {
-                        std::string json = pickle_json(*asr, lm, false, false);
+                        std::string json = pickle_json(*asr, lm, pass_options.no_loc, pass_options.with_intrinsic_mods);
                         std::ofstream outfile ("pass_viz_" + str_i + "_" + passes[i] + ".html");
                         outfile << generate_visualize_html(json) << "\n";
                         outfile.close();
                     }
                     std::ofstream outfile ("pass_" + str_i + "_" + passes[i] + ".clj");
                     outfile << ";; ASR after applying the pass: " << passes[i]
-                        << "\n" << pickle(*asr, false, true) << "\n";
+                        << "\n" << pickle(*asr, false, true, pass_options.with_intrinsic_mods) << "\n";
                     outfile.close();
                 }
                 if (pass_options.dump_fortran) {
