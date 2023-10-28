@@ -53,6 +53,7 @@ struct PassOptions {
     bool no_loc = false;
     bool visualize = false;
     bool tree = false;
+    bool with_intrinsic_mods = false;
 };
 
 struct CompilerOptions {
