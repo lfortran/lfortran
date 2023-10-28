@@ -513,8 +513,7 @@ Result<std::string> FortranEvaluator::get_julia(const std::string &code,
 }
 
 Result<std::string> FortranEvaluator::get_fortran(const std::string &code,
-    LocationManager &lm, LCompilers::PassManager &pass_manager,
-    diag::Diagnostics &diagnostics)
+    LocationManager &lm, diag::Diagnostics &diagnostics)
 {
     // SRC -> AST -> ASR -> Fortran
     SymbolTable *old_symbol_table = symbol_table;
@@ -522,14 +521,6 @@ Result<std::string> FortranEvaluator::get_fortran(const std::string &code,
     Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
     symbol_table = old_symbol_table;
     if (asr.ok) {
-        Allocator al(64*1024*1024);
-        if (compiler_options.po.dump_fortran) {
-            compiler_options.po.always_run = true;
-            compiler_options.po.run_fun = "f";
-
-            pass_manager.use_default_passes();
-            pass_manager.apply_passes(al, asr.result, compiler_options.po, diagnostics, lm);
-        }
         return asr_to_fortran(*asr.result, diagnostics, false, 4);
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())

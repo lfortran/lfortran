@@ -641,9 +641,6 @@ int emit_asr(const std::string &infile,
     compiler_options.po.always_run = true;
     compiler_options.po.run_fun = "f";
 
-    if (compiler_options.po.dump_all_passes) {
-        pass_manager.use_default_passes();
-    }
     pass_manager.apply_passes(al, asr, compiler_options.po, diagnostics, lm);
     if (compiler_options.po.tree) {
         std::cout << LCompilers::pickle_tree(*asr,
@@ -744,8 +741,7 @@ int emit_julia(const std::string &infile, CompilerOptions &compiler_options)
     }
 }
 
-int emit_fortran(const std::string &infile,  LCompilers::PassManager &pass_manager,
-        CompilerOptions &compiler_options) {
+int emit_fortran(const std::string &infile, CompilerOptions &compiler_options) {
     std::string input = read_file(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
@@ -757,8 +753,7 @@ int emit_fortran(const std::string &infile,  LCompilers::PassManager &pass_manag
         lm.files.push_back(fl);
         lm.file_ends.push_back(input.size());
     }
-    LCompilers::Result<std::string> src = fe.get_fortran(input, lm, pass_manager,
-        diagnostics);
+    LCompilers::Result<std::string> src = fe.get_fortran(input, lm, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (src.ok) {
         std::cout << src.result;
@@ -1402,7 +1397,6 @@ int compile_to_object_file_c(const std::string &infile,
 
 int compile_to_binary_fortran(const std::string &infile,
         const std::string &outfile,
-        LCompilers::PassManager &pass_manager,
         CompilerOptions &compiler_options) {
     std::string input = read_file(infile);
 
@@ -1415,8 +1409,7 @@ int compile_to_binary_fortran(const std::string &infile,
         lm.files.push_back(fl);
         lm.file_ends.push_back(input.size());
     }
-    LCompilers::Result<std::string> src = fe.get_fortran(input, lm, pass_manager,
-        diagnostics);
+    LCompilers::Result<std::string> src = fe.get_fortran(input, lm, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (!src.ok) {
         LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -2108,10 +2101,6 @@ int main(int argc, char *argv[])
             lfortran_pass_manager.use_optimization_passes();
         }
 
-        if (compiler_options.po.dump_fortran) {
-            arg_backend = "fortran";
-        }
-
         if (fmt) {
             if (CLI::NonexistentPath(arg_fmt_file).empty())
                 throw LCompilers::LCompilersException("File does not exist: " + arg_fmt_file);
@@ -2261,7 +2250,7 @@ int main(int argc, char *argv[])
             return emit_julia(arg_file, compiler_options);
         }
         if (show_fortran) {
-            return emit_fortran(arg_file, lfortran_pass_manager, compiler_options);
+            return emit_fortran(arg_file, compiler_options);
         }
         if (arg_S) {
             if (backend == Backend::llvm) {
@@ -2298,8 +2287,7 @@ int main(int argc, char *argv[])
             } else if (backend == Backend::wasm) {
                 return compile_to_binary_wasm(arg_file, outfile, time_report, compiler_options);
             } else if (backend == Backend::fortran) {
-                return compile_to_binary_fortran(arg_file, outfile, lfortran_pass_manager,
-                    compiler_options);
+                return compile_to_binary_fortran(arg_file, outfile, compiler_options);
             } else {
                 throw LCompilers::LCompilersException("Unsupported backend.");
             }
@@ -2330,8 +2318,7 @@ int main(int argc, char *argv[])
                 err = compile_to_object_file_c(arg_file, tmp_o,
                         false, rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
             } else if (backend == Backend::fortran) {
-                err = compile_to_binary_fortran(arg_file, tmp_o, lfortran_pass_manager,
-                    compiler_options);
+                err = compile_to_binary_fortran(arg_file, tmp_o, compiler_options);
             } else {
                 throw LCompilers::LCompilersException("Backend not supported");
             }
