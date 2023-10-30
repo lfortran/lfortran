@@ -3448,6 +3448,8 @@ namespace IntrinsicScalarFunctionRegistry {
                  id_ == IntrinsicScalarFunctions::Exp ||
                  id_ == IntrinsicScalarFunctions::Exp2 ||
                  id_ == IntrinsicScalarFunctions::Expm1 ||
+                 id_ == IntrinsicScalarFunctions::Min ||
+                 id_ == IntrinsicScalarFunctions::Max ||
                  id_ == IntrinsicScalarFunctions::SymbolicSymbol);
     }
 
