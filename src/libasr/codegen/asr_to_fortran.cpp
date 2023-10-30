@@ -682,17 +682,110 @@ public:
         s = r;
     }
 
-    // void visit_FileBackspace(const ASR::FileBackspace_t &x) {}
+    void visit_FileBackspace(const ASR::FileBackspace_t &x) {
+        std::string r = indent;
+        r += "backspace";
+        r += "(";
+        if (x.m_unit) {
+            visit_expr(*x.m_unit);
+            r += s;
+        } else {
+            r += "*";
+        }
+        if (x.m_iostat) {
+            r += ", ";
+            r += "iostat=";
+            visit_expr(*x.m_iostat);
+            r += s;
+        }
+        if (x.m_err) {
+            r += ", ";
+            r += "err=";
+            visit_expr(*x.m_err);
+            r += s;
+        }
+        r += ")";
+        r += "\n";
+        s = r;
+    }
 
-    // void visit_FileRewind(const ASR::FileRewind_t &x) {}
+    void visit_FileRewind(const ASR::FileRewind_t &x) {
+        std::string r = indent;
+        r += "rewind";
+        r += "(";
+        if (x.m_unit) {
+            visit_expr(*x.m_unit);
+            r += s;
+        } else {
+            r += "*";
+        }
+        if (x.m_iostat) {
+            r += ", ";
+            r += "iostat=";
+            visit_expr(*x.m_iostat);
+            r += s;
+        }
+        if (x.m_err) {
+            r += ", ";
+            r += "err=";
+            visit_expr(*x.m_err);
+            r += s;
+        }
+        r += ")";
+        r += "\n";
+        s = r;
+    }
 
-    // void visit_FileInquire(const ASR::FileInquire_t &x) {}
+    void visit_FileInquire(const ASR::FileInquire_t &x) {
+        std::string r = indent;
+        r += "inquire";
+        r += "(";
+        if (x.m_unit) {
+            visit_expr(*x.m_unit);
+            r += s;
+        }
+        if (x.m_file) {
+            r += "file=";
+            visit_expr(*x.m_file);
+            r += s;
+        }
+        if (x.m_iostat) {
+            r += ", ";
+            r += "iostat=";
+            visit_expr(*x.m_iostat);
+            r += s;
+        }
+        if (x.m_err) {
+            r += ", ";
+            r += "err=";
+            visit_expr(*x.m_err);
+            r += s;
+        }
+        if (x.m_exist) {
+            r += ", ";
+            r += "exist=";
+            visit_expr(*x.m_exist);
+            r += s;
+        }
+        if (x.m_iolength) {
+            r += "iolength=";
+            visit_expr(*x.m_iolength);
+            r += s;
+        }
+        r += ")";
+        r += "\n";
+        s = r;
+    }
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
         std::string r = indent;
         r += "write";
         r += "(";
-        if (!x.m_unit) {
+        if (x.m_unit) {
+            visit_expr(*x.m_unit);
+            r += s;
+            r += ", ";
+        } else {
             r += "*, ";
         }
         if (x.m_values[0] && is_a<ASR::StringFormat_t>(*x.m_values[0])) {
@@ -824,7 +917,38 @@ public:
 
     // void visit_Nullify(const ASR::Nullify_t &x) {}
 
-    // void visit_Flush(const ASR::Flush_t &x) {}
+    void visit_Flush(const ASR::Flush_t &x) {
+        std::string r = indent;
+        r += "flush";
+        r += "(";
+        if (x.m_unit) {
+            visit_expr(*x.m_unit);
+            r += s;
+        } else {
+            r += "*";
+        }
+        if (x.m_err) {
+            r += ", ";
+            r += "err=";
+            visit_expr(*x.m_err);
+            r += s;
+        }
+        if (x.m_iomsg) {
+            r += ", ";
+            r += "iomsg=";
+            visit_expr(*x.m_err);
+            r += s;
+        }
+        if (x.m_iostat) {
+            r += ", ";
+            r += "iostat=";
+            visit_expr(*x.m_iostat);
+            r += s;
+        }
+        r += ")";
+        r += "\n";
+        s = r;
+    }
 
     // void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {}
 
