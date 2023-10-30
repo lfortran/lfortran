@@ -1141,6 +1141,18 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             at_least_one_array = at_least_one_array || array_mask[iarg];
         }
         if (!at_least_one_array) {
+            if (result_var) {
+                // Scalar arguments
+                ASR::stmt_t* auxiliary_assign_stmt_ = nullptr;
+                std::string name = current_scope->get_unique_name(
+                    "__libasr_created_scalar_auxiliary_variable");
+                *current_expr = PassUtils::create_auxiliary_variable_for_expr(
+                    *current_expr, name, al, current_scope, auxiliary_assign_stmt_);
+                LCOMPILERS_ASSERT(auxiliary_assign_stmt_ != nullptr);
+                pass_result.push_back(al, auxiliary_assign_stmt_);
+                resultvar2value[result_var] = *current_expr;
+                replace_Var(ASR::down_cast<ASR::Var_t>(*current_expr));
+            }
             return ;
         }
         std::string res_prefix = "_elemental_func_call_res";
