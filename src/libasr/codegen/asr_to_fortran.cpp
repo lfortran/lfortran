@@ -37,6 +37,7 @@ public:
     // in the Fortran 2018 standard
     int last_expr_precedence;
     std::string format_string;
+    std::string tu_functions;
 
     // Used for importing struct type inside interface
     bool is_interface = false;
@@ -260,21 +261,25 @@ public:
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Module_t>(*item.second)) {
                 visit_symbol(*item.second);
-            r += s;
+                r += s;
+                r += "\n";
             }
         }
 
+        tu_functions = "";
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
                 visit_symbol(*item.second);
-            r += s;
+                tu_functions += s;
+                tu_functions += "\n";
             }
         }
 
+        // Main program
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Program_t>(*item.second)) {
                 visit_symbol(*item.second);
-            r += s;
+                r += s;
             }
         }
         s = r;
@@ -337,7 +342,16 @@ public:
                 }
                 visit_symbol(*item.second);
                 r += s;
+                r += "\n";
             }
+        }
+        if (tu_functions.size() > 0) {
+            if (prepend_contains_keyword) {
+                r += "\n";
+                r += "contains";
+                r += "\n\n";
+            }
+            r += tu_functions;
         }
         r += "end program";
         r += " ";
