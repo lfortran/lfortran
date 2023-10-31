@@ -2352,7 +2352,7 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, ch
     va_end(args);
 }
 
-LFORTRAN_API void _lfortran_empty_read(int32_t unit_num) {
+LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat) {
     bool unit_file_bin;
     FILE* fp = get_file_pointer_from_unit(unit_num, &unit_file_bin);
     if (!fp) {
@@ -2365,6 +2365,14 @@ LFORTRAN_API void _lfortran_empty_read(int32_t unit_num) {
         char c = fgetc(fp);
         while (c != '\n' && c != EOF) {
             c = fgetc(fp);
+        }
+
+        if (feof(fp)) {
+            *iostat = -1;
+        } else if (ferror(fp)) {
+            *iostat = 1;
+        } else {
+            *iostat = 0;
         }
     }
 }

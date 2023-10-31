@@ -7160,14 +7160,15 @@ public:
             if (!fn) {
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
                         llvm::Type::getVoidTy(context), {
-                            llvm::Type::getInt32Ty(context)
+                            llvm::Type::getInt32Ty(context),
+                            llvm::Type::getInt32Ty(context)->getPointerTo()
                         }, false);
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, runtime_func_name,
                             *module);
             }
             this->visit_expr_wrapper(x.m_unit, true);
-            builder->CreateCall(fn, {unit_val});
+            builder->CreateCall(fn, {unit_val, iostat});
         }
     }
 
