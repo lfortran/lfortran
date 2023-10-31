@@ -2038,6 +2038,7 @@ int main(int argc, char *argv[])
         app.add_flag("--intrinsic-mangling", compiler_options.po.intrinsic_symbols_mangling, "Mangles all the intrinsic symbols");
         app.add_flag("--all-mangling", compiler_options.po.all_symbols_mangling, "Mangles all possible symbols");
         app.add_flag("--bindc-mangling", compiler_options.po.bindc_mangling, "Mangles functions with abi bind(c)");
+        app.add_flag("--apply-fortran-mangling", compiler_options.po.fortran_mangling, "Mangle symbols with Fortran supported syntax");
         app.add_flag("--mangle-underscore", compiler_options.po.mangle_underscore, "Mangles with underscore");
         app.add_flag("--run", compiler_options.run, "Executes the generated binary when the `-o` option is specified");
         app.add_flag("--legacy-array-sections", compiler_options.legacy_array_sections, "Enables passing array items as sections if required");
