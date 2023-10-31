@@ -590,40 +590,40 @@ public:
         r = indent;
         r += "open";
         r += "(";
-        bool visit = false;
+        bool prefix_comma = false;
         if (x.m_newunit) {
             visit_expr(*x.m_newunit);
             r += s;
-            visit = true;
+            prefix_comma = true;
         } else {
             throw CodeGenError("open() function must be called with a file unit number");
         }
         if (x.m_filename) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "file=";
             visit_expr(*x.m_filename);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_status) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "status=";
             visit_expr(*x.m_status);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_form) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "form=";
             visit_expr(*x.m_form);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         r += ")";
         r += "\n";
@@ -697,31 +697,31 @@ public:
         std::string r = indent;
         r += "backspace";
         r += "(";
-        bool visit = false;
+        bool prefix_comma = false;
         if (x.m_unit) {
             visit_expr(*x.m_unit);
             r += s;
-            visit = true;
+            prefix_comma = true;
         } else {
             throw CodeGenError("backspace() function must be called with a file unit number");
         }
         if (x.m_iostat) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "iostat=";
             visit_expr(*x.m_iostat);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_err) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "err=";
             visit_expr(*x.m_err);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         r += ")";
         r += "\n";
@@ -732,31 +732,31 @@ public:
         std::string r = indent;
         r += "rewind";
         r += "(";
-        bool visit = false;
+        bool prefix_comma = false;
         if (x.m_unit) {
             visit_expr(*x.m_unit);
             r += s;
-            visit = true;
+            prefix_comma = true;
         } else {
             throw CodeGenError("rewind() function must be called with a file unit number");
         }
         if (x.m_iostat) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "iostat=";
             visit_expr(*x.m_iostat);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_err) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "err=";
             visit_expr(*x.m_err);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         r += ")";
         r += "\n";
@@ -767,272 +767,272 @@ public:
         std::string r = indent;
         r += "inquire";
         r += " (";
-        bool visit = false;
+        bool prefix_comma = false;
         if (x.m_unit) {
             visit_expr(*x.m_unit);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_file) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "file=";
             visit_expr(*x.m_file);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_iostat) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "iostat=";
             visit_expr(*x.m_iostat);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_err) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "err=";
             visit_expr(*x.m_err);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_exist) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "exist=";
             visit_expr(*x.m_exist);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_opened) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "opened=";
             visit_expr(*x.m_opened);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_number) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "number=";
             visit_expr(*x.m_number);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_named) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "named=";
             visit_expr(*x.m_named);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_name) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "name=";
             visit_expr(*x.m_name);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_access) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "access=";
             visit_expr(*x.m_access);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_sequential) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "sequential=";
             visit_expr(*x.m_sequential);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_direct) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "direct=";
             visit_expr(*x.m_direct);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_form) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "form=";
             visit_expr(*x.m_form);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_formatted) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "formatted=";
             visit_expr(*x.m_formatted);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_unformatted) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "unformatted=";
             visit_expr(*x.m_unformatted);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_recl) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "recl=";
             visit_expr(*x.m_recl);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_nextrec) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "nextrec=";
             visit_expr(*x.m_nextrec);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_blank) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "blank=";
             visit_expr(*x.m_blank);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_position) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "position=";
             visit_expr(*x.m_position);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_action) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "action=";
             visit_expr(*x.m_action);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_read) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "read=";
             visit_expr(*x.m_read);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_write) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "write=";
             visit_expr(*x.m_write);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_readwrite) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "readwrite=";
             visit_expr(*x.m_readwrite);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_delim) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "delim=";
             visit_expr(*x.m_delim);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_pad) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "pad=";
             visit_expr(*x.m_pad);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_flen) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "flen=";
             visit_expr(*x.m_flen);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_blocksize) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "blocksize=";
             visit_expr(*x.m_blocksize);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_convert) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "convert=";
             visit_expr(*x.m_convert);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_carriagecontrol) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "carriagecontrol=";
             visit_expr(*x.m_carriagecontrol);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_iolength) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "iolength=";
             visit_expr(*x.m_iolength);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         r += ")";
         r += "\n";
@@ -1183,40 +1183,40 @@ public:
         std::string r = indent;
         r += "flush";
         r += "(";
-        bool visit = false;
+        bool prefix_comma = false;
         if (x.m_unit) {
             visit_expr(*x.m_unit);
             r += s;
-            visit = true;
+            prefix_comma = true;
         } else {
             throw CodeGenError("flush() function must be called with a file unit number");
         }
         if (x.m_err) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "err=";
             visit_expr(*x.m_err);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_iomsg) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "iomsg=";
             visit_expr(*x.m_err);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         if (x.m_iostat) {
-            if (visit) {
+            if (prefix_comma) {
                 r += ", ";
             }
             r += "iostat=";
             visit_expr(*x.m_iostat);
             r += s;
-            visit = true;
+            prefix_comma = true;
         }
         r += ")";
         r += "\n";
