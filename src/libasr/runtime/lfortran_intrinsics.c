@@ -9,10 +9,13 @@
 #include <float.h>
 #include <limits.h>
 #include <ctype.h>
-#include <unistd.h>
 
 #if defined(_MSC_VER)
 #  include <winsock2.h>
+#  include <io.h>
+#  define ftruncate _chsize_s
+#else
+#  include <unistd.h>
 #endif
 
 #include <libasr/runtime/lfortran_intrinsics.h>
