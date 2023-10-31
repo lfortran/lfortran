@@ -809,12 +809,111 @@ public:
             r += s;
             visit = true;
         }
+        if (x.m_opened) {
+            if (visit) {
+                r += ", ";
+            }
+            r += "opened=";
+            visit_expr(*x.m_opened);
+            r += s;
+            visit = true;
+        }
+        if (x.m_number) {
+            if (visit) {
+                r += ", ";
+            }
+            r += "number=";
+            visit_expr(*x.m_number);
+            r += s;
+            visit = true;
+        }
+        if (x.m_named) {
+            if (visit) {
+                r += ", ";
+            }
+            r += "named=";
+            visit_expr(*x.m_named);
+            r += s;
+            visit = true;
+        }
+        if (x.m_name) {
+            if (visit) {
+                r += ", ";
+            }
+            r += "name=";
+            visit_expr(*x.m_name);
+            r += s;
+            visit = true;
+        }
+        if (x.m_access) {
+            if (visit) {
+                r += ", ";
+            }
+            r += "access=";
+            visit_expr(*x.m_access);
+            r += s;
+            visit = true;
+        }
+        if (x.m_sequential) {
+            if (visit) {
+                r += ", ";
+            }
+            r += "sequential=";
+            visit_expr(*x.m_sequential);
+            r += s;
+            visit = true;
+        }
+        if (x.m_direct) {
+            if (visit) {
+                r += ", ";
+            }
+            r += "direct=";
+            visit_expr(*x.m_direct);
+            r += s;
+            visit = true;
+        }
         if (x.m_form) {
             if (visit) {
                 r += ", ";
             }
             r += "form=";
             visit_expr(*x.m_form);
+            r += s;
+            visit = true;
+        }
+        if (x.m_position) {
+            if (visit) {
+                r += ", ";
+            }
+            r += "position=";
+            visit_expr(*x.m_position);
+            r += s;
+            visit = true;
+        }
+        if (x.m_action) {
+            if (visit) {
+                r += ", ";
+            }
+            r += "action=";
+            visit_expr(*x.m_action);
+            r += s;
+            visit = true;
+        }
+        if (x.m_read) {
+            if (visit) {
+                r += ", ";
+            }
+            r += "read=";
+            visit_expr(*x.m_read);
+            r += s;
+            visit = true;
+        }
+        if (x.m_write) {
+            if (visit) {
+                r += ", ";
+            }
+            r += "write=";
+            visit_expr(*x.m_write);
             r += s;
             visit = true;
         }
