@@ -590,29 +590,40 @@ public:
         r = indent;
         r += "open";
         r += "(";
+        bool visit = false;
         if (x.m_newunit) {
             visit_expr(*x.m_newunit);
             r += s;
+            visit = true;
         } else {
             throw CodeGenError("open() function must be called with a file unit number");
         }
         if (x.m_filename) {
-            r += ", ";
+            if (visit) {
+                r += ", ";
+            }
             r += "file=";
             visit_expr(*x.m_filename);
             r += s;
+            visit = true;
         }
         if (x.m_status) {
-            r += ", ";
+            if (visit) {
+                r += ", ";
+            }
             r += "status=";
             visit_expr(*x.m_status);
             r += s;
+            visit = true;
         }
         if (x.m_form) {
-            r += ", ";
+            if (visit) {
+                r += ", ";
+            }
             r += "form=";
             visit_expr(*x.m_form);
             r += s;
+            visit = true;
         }
         r += ")";
         r += "\n";
@@ -686,23 +697,31 @@ public:
         std::string r = indent;
         r += "backspace";
         r += "(";
+        bool visit = false;
         if (x.m_unit) {
             visit_expr(*x.m_unit);
             r += s;
+            visit = true;
         } else {
-            r += "*";
+            throw CodeGenError("backspace() function must be called with a file unit number");
         }
         if (x.m_iostat) {
-            r += ", ";
+            if (visit) {
+                r += ", ";
+            }
             r += "iostat=";
             visit_expr(*x.m_iostat);
             r += s;
+            visit = true;
         }
         if (x.m_err) {
-            r += ", ";
+            if (visit) {
+                r += ", ";
+            }
             r += "err=";
             visit_expr(*x.m_err);
             r += s;
+            visit = true;
         }
         r += ")";
         r += "\n";
@@ -713,23 +732,31 @@ public:
         std::string r = indent;
         r += "rewind";
         r += "(";
+        bool visit = false;
         if (x.m_unit) {
             visit_expr(*x.m_unit);
             r += s;
+            visit = true;
         } else {
-            r += "*";
+            throw CodeGenError("rewind() function must be called with a file unit number");
         }
         if (x.m_iostat) {
-            r += ", ";
+            if (visit) {
+                r += ", ";
+            }
             r += "iostat=";
             visit_expr(*x.m_iostat);
             r += s;
+            visit = true;
         }
         if (x.m_err) {
-            r += ", ";
+            if (visit) {
+                r += ", ";
+            }
             r += "err=";
             visit_expr(*x.m_err);
             r += s;
+            visit = true;
         }
         r += ")";
         r += "\n";
@@ -739,38 +766,66 @@ public:
     void visit_FileInquire(const ASR::FileInquire_t &x) {
         std::string r = indent;
         r += "inquire";
-        r += "(";
+        r += " (";
+        bool visit = false;
         if (x.m_unit) {
             visit_expr(*x.m_unit);
             r += s;
+            visit = true;
         }
         if (x.m_file) {
+            if (visit) {
+                r += ", ";
+            }
             r += "file=";
             visit_expr(*x.m_file);
             r += s;
+            visit = true;
         }
         if (x.m_iostat) {
-            r += ", ";
+            if (visit) {
+                r += ", ";
+            }
             r += "iostat=";
             visit_expr(*x.m_iostat);
             r += s;
+            visit = true;
         }
         if (x.m_err) {
-            r += ", ";
+            if (visit) {
+                r += ", ";
+            }
             r += "err=";
             visit_expr(*x.m_err);
             r += s;
+            visit = true;
         }
         if (x.m_exist) {
-            r += ", ";
+            if (visit) {
+                r += ", ";
+            }
             r += "exist=";
             visit_expr(*x.m_exist);
             r += s;
+            visit = true;
+        }
+        if (x.m_form) {
+            if (visit) {
+                r += ", ";
+            }
+            r += "form=";
+            visit_expr(*x.m_form);
+            r += s;
+            visit = true;
         }
         if (x.m_iolength) {
+            if (visit) {
+                r += ", ";
+            }
             r += "iolength=";
             visit_expr(*x.m_iolength);
             r += s;
+            visit = true;
         }
         r += ")";
         r += "\n";
@@ -921,29 +976,40 @@ public:
         std::string r = indent;
         r += "flush";
         r += "(";
+        bool visit = false;
         if (x.m_unit) {
             visit_expr(*x.m_unit);
             r += s;
+            visit = true;
         } else {
-            r += "*";
+            throw CodeGenError("flush() function must be called with a file unit number");
         }
         if (x.m_err) {
-            r += ", ";
+            if (visit) {
+                r += ", ";
+            }
             r += "err=";
             visit_expr(*x.m_err);
             r += s;
+            visit = true;
         }
         if (x.m_iomsg) {
-            r += ", ";
+            if (visit) {
+                r += ", ";
+            }
             r += "iomsg=";
             visit_expr(*x.m_err);
             r += s;
+            visit = true;
         }
         if (x.m_iostat) {
-            r += ", ";
+            if (visit) {
+                r += ", ";
+            }
             r += "iostat=";
             visit_expr(*x.m_iostat);
             r += s;
+            visit = true;
         }
         r += ")";
         r += "\n";
