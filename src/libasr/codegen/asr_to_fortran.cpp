@@ -747,7 +747,18 @@ public:
         s += "\n";
     }
 
-    // void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {}
+    void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {
+        std::string r = indent;
+        r += "deallocate(";
+        for (size_t i = 0; i < x.n_vars; i ++) {
+            visit_expr(*x.m_vars[i]);
+            r += s;
+            if (i < x.n_vars-1) r += ", ";
+        }
+        r += ")";
+        r += "\n";
+        s = r;
+    }
 
     void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t &x) {
         std::string r = indent;
