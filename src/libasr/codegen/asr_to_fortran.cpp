@@ -137,6 +137,15 @@ public:
         }
     }
 
+    void handle_line_truncation(std::string &r, int i_level, int line_length=80) {
+        int line_segments_count = r.size()/line_length;
+        for (int i = 1; i <= line_segments_count; i ++) {
+            int index = r.find_last_of(',', line_length*i);
+            r.insert(index + 2, "&\n" + indent +
+                std::string(i_level*indent_spaces, ' '));
+        }
+    }
+
     std::string get_type(const ASR::ttype_t *t) {
         std::string r = "";
         switch (t->type) {
@@ -460,6 +469,7 @@ public:
             if (i < x.n_args-1) r += ", ";
         }
         r += ")";
+        handle_line_truncation(r, 2);
         if (type->m_abi == ASR::abiType::BindC) {
             r += " bind(c";
             if (type->m_bindc_name) {
@@ -1059,6 +1069,7 @@ public:
             if (i < x.n_args-1) r += ", ";
         }
         r += ")\n";
+        handle_line_truncation(r, 1);
         s = r;
     }
 
