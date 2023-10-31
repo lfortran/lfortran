@@ -881,6 +881,51 @@ public:
             r += s;
             visit = true;
         }
+        if (x.m_formatted) {
+            if (visit) {
+                r += ", ";
+            }
+            r += "formatted=";
+            visit_expr(*x.m_formatted);
+            r += s;
+            visit = true;
+        }
+        if (x.m_unformatted) {
+            if (visit) {
+                r += ", ";
+            }
+            r += "unformatted=";
+            visit_expr(*x.m_unformatted);
+            r += s;
+            visit = true;
+        }
+        if (x.m_recl) {
+            if (visit) {
+                r += ", ";
+            }
+            r += "recl=";
+            visit_expr(*x.m_recl);
+            r += s;
+            visit = true;
+        }
+        if (x.m_nextrec) {
+            if (visit) {
+                r += ", ";
+            }
+            r += "nextrec=";
+            visit_expr(*x.m_nextrec);
+            r += s;
+            visit = true;
+        }
+        if (x.m_blank) {
+            if (visit) {
+                r += ", ";
+            }
+            r += "blank=";
+            visit_expr(*x.m_blank);
+            r += s;
+            visit = true;
+        }
         if (x.m_position) {
             if (visit) {
                 r += ", ";
@@ -914,6 +959,69 @@ public:
             }
             r += "write=";
             visit_expr(*x.m_write);
+            r += s;
+            visit = true;
+        }
+        if (x.m_readwrite) {
+            if (visit) {
+                r += ", ";
+            }
+            r += "readwrite=";
+            visit_expr(*x.m_readwrite);
+            r += s;
+            visit = true;
+        }
+        if (x.m_delim) {
+            if (visit) {
+                r += ", ";
+            }
+            r += "delim=";
+            visit_expr(*x.m_delim);
+            r += s;
+            visit = true;
+        }
+        if (x.m_pad) {
+            if (visit) {
+                r += ", ";
+            }
+            r += "pad=";
+            visit_expr(*x.m_pad);
+            r += s;
+            visit = true;
+        }
+        if (x.m_flen) {
+            if (visit) {
+                r += ", ";
+            }
+            r += "flen=";
+            visit_expr(*x.m_flen);
+            r += s;
+            visit = true;
+        }
+        if (x.m_blocksize) {
+            if (visit) {
+                r += ", ";
+            }
+            r += "blocksize=";
+            visit_expr(*x.m_blocksize);
+            r += s;
+            visit = true;
+        }
+        if (x.m_convert) {
+            if (visit) {
+                r += ", ";
+            }
+            r += "convert=";
+            visit_expr(*x.m_convert);
+            r += s;
+            visit = true;
+        }
+        if (x.m_carriagecontrol) {
+            if (visit) {
+                r += ", ";
+            }
+            r += "carriagecontrol=";
+            visit_expr(*x.m_carriagecontrol);
             r += s;
             visit = true;
         }
