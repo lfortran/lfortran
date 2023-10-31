@@ -1205,7 +1205,7 @@ public:
                 r += ", ";
             }
             r += "iomsg=";
-            visit_expr(*x.m_err);
+            visit_expr(*x.m_iomsg);
             r += s;
             prefix_comma = true;
         }
