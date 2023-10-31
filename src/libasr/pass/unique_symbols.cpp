@@ -472,12 +472,26 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
 
 void pass_unique_symbols(Allocator &al, ASR::TranslationUnit_t &unit,
     const LCompilers::PassOptions& pass_options) {
+    /*
+     * This pass is applied iff the following options are passed; otherwise, return
+     * MANGLING_OPTION="--all-mangling"
+     * MANGLING_OPTION="--module-mangling"
+     * MANGLING_OPTION="--global-mangling"
+     * MANGLING_OPTION="--intrinsic-mangling"
+     * COMPILER_SPECIFIC_OPTION="--generate-object-code" // LFortran
+     * COMPILER_SPECIFIC_OPTION="--separate-compilation" // LPython
+     * Usage:
+     *    `$MANGLING_OPTION $COMPILER_SPECIFIC_OPTION`
+     * The following are used by LFortran, Usage:
+     *    `$MANGLING_OPTION --mangle-underscore [$COMPILER_SPECIFIC_OPTION]`
+     */
     bool any_present = (pass_options.module_name_mangling || pass_options.global_symbols_mangling ||
                     pass_options.intrinsic_symbols_mangling || pass_options.all_symbols_mangling || pass_options.bindc_mangling);
     if (pass_options.mangle_underscore) {
         lcompilers_unique_ID = "";
     }
     if (!any_present || ( !pass_options.mangle_underscore && lcompilers_unique_ID.empty() )) {
+        // `--mangle-underscore` doesn't require `lcompilers_unique_ID`
         return;
     }
     SymbolRenameVisitor v(pass_options.module_name_mangling,
