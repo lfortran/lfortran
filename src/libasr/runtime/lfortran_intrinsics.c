@@ -9,6 +9,7 @@
 #include <float.h>
 #include <limits.h>
 #include <ctype.h>
+#include <unistd.h>
 
 #if defined(_MSC_VER)
 #  include <winsock2.h>
@@ -2396,6 +2397,8 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, const char *format, ...
     va_start(args, format);
     vfprintf(filep, format, args);
     va_end(args);
+
+    ftruncate(fileno(filep), ftell(filep));
 }
 
 LFORTRAN_API void _lfortran_string_write(char **str, const char *format, ...) {
