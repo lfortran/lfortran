@@ -491,7 +491,8 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al,
     int result_dims = extract_n_dims_from_ttype(return_type);
     ASR::expr_t* return_var = nullptr;
     if( result_dims > 0 ) {
-        fill_func_arg("result", return_type)
+        ASR::expr_t *result = declare("result", return_type, Out);
+        args.push_back(al, result);
     } else if( result_dims == 0 ) {
         return_var = declare("result", return_type, ReturnVar);
     }
