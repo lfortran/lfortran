@@ -1245,6 +1245,12 @@ public:
 
     void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
         s = std::to_string(x.m_n);
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        if (kind != 4) {
+            // We skip this for default kind
+            s += "_";
+            s += std::to_string(kind);
+        }
         last_expr_precedence = Precedence::Ext;
     }
 
