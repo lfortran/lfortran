@@ -208,6 +208,12 @@ public:
             } case ASR::ttypeType::Pointer: {
                 r = get_type(down_cast<ASR::Pointer_t>(t)->m_type) + ", pointer";
                 break;
+            } case ASR::ttypeType::Struct: {
+                ASR::Struct_t* struct_type = down_cast<ASR::Struct_t>(t);
+                r = "type(";
+                r += ASRUtils::symbol_name(struct_type->m_derived_type);
+                r += ")";
+                break;
             }
             default:
                 throw LCompilersException("The type `"
