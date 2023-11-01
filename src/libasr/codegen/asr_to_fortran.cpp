@@ -968,7 +968,7 @@ public:
             r += s;
             if (i < x.n_args-1) r += ", ";
         }
-        r += ")\n";
+        r += ")";
         s = r;
     }
 
