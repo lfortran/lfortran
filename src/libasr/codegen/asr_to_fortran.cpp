@@ -1110,7 +1110,18 @@ public:
         s = "len(" + s + ")";
     }
 
-    // void visit_StringItem(const ASR::StringItem_t &x) {}
+    void visit_StringItem(const ASR::StringItem_t &x) {
+        std::string r = "";
+        this->visit_expr(*x.m_arg);
+        r += s;
+        r += "(";
+        this->visit_expr(*x.m_idx);
+        r += s;
+        r += ":";
+        r += s;
+        r += ")";
+        s = r;
+    }
 
     // void visit_StringSection(const ASR::StringSection_t &x) {}
 
