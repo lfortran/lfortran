@@ -1405,13 +1405,26 @@ public:
         }
 
         bool is_elemental = false;
-        for(size_t i = 0; i < x.n_attributes && !is_elemental; i++) {
-            AST::decl_attribute_t* func_attr = x.m_attributes[i];
-            if( AST::is_a<AST::SimpleAttribute_t>(*func_attr) ) {
-                AST::SimpleAttribute_t* simple_func_attr = AST::down_cast<AST::SimpleAttribute_t>(func_attr);
-                is_elemental = is_elemental || simple_func_attr->m_attr == AST::simple_attributeType::AttrElemental;
+        bool is_pure = false;
+        for(size_t i = 0; i < x.n_attributes; i++) {
+            switch( x.m_attributes[i]->type ) {
+                case AST::decl_attributeType::SimpleAttribute: {
+                    AST::SimpleAttribute_t* simple_attr = AST::down_cast<AST::SimpleAttribute_t>(
+                        x.m_attributes[i]);
+                    if( simple_attr->m_attr == AST::simple_attributeType::AttrPure ) {
+                        is_pure = true;
+                    } else if( simple_attr->m_attr == AST::simple_attributeType::AttrElemental ) {
+                        is_elemental = true;
+                    }
+                    break;
+                }
+                default: {
+                    // pass
+                    break;
+                }
             }
         }
+
 
         SetChar func_deps;
         func_deps.reserve(al, current_function_dependencies.size());
@@ -1429,7 +1442,7 @@ public:
             /* n_body */ 0,
             /* a_return_var */ ASRUtils::EXPR(return_var_ref),
             current_procedure_abi_type, s_access, deftype,
-            bindc_name, is_elemental, false, false, false, false,
+            bindc_name, is_elemental, is_pure, false, false, false,
             nullptr, 0, is_requirement, false, false);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
