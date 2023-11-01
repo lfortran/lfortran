@@ -353,6 +353,10 @@ public:
 
     void visit_Function(const ASR::Function_t &x) {
         std::string r = indent;
+        ASR::FunctionType_t *type = ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature);
+        if (type->m_elemental) {
+            r += "elemental ";
+        }
         if (x.m_return_var) {
             r += "function";
         } else {
