@@ -315,6 +315,13 @@ public:
         }
         r += indent + "implicit none";
         r += "\n";
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::GenericProcedure_t>(*item.second)) {
+                visit_symbol(*item.second);
+                r += s;
+
+            }
+        }
         std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
         for (auto &item : var_order) {
             ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
@@ -391,7 +398,25 @@ public:
         s = r;
     }
 
-    // void visit_GenericProcedure(const ASR::GenericProcedure_t &x) {}
+    void visit_GenericProcedure(const ASR::GenericProcedure_t &x) {
+        std::string r = indent;
+        r += "interface ";
+        r.append(x.m_name);
+        r += "\n";
+        inc_indent();
+        r += indent;
+        r += "module procedure ";
+        for (size_t i = 0; i < x.n_procs; i++) {
+            r += ASRUtils::symbol_name(x.m_procs[i]);
+            if (i < x.n_procs-1) r += ", ";
+        }
+        dec_indent();
+        r += "\n";
+        r += "end interface ";
+        r.append(x.m_name);
+        r += "\n";
+        s = r;
+    }
 
     // void visit_CustomOperator(const ASR::CustomOperator_t &x) {}
 
