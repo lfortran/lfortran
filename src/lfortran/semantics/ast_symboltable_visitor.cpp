@@ -1039,7 +1039,7 @@ public:
             nullptr,
             current_procedure_abi_type,
             s_access, deftype, bindc_name,
-            is_pure, is_module, false, false, false,
+            false, is_pure, is_module, false, false,
             nullptr, 0,
             is_requirement, false, false);
         handle_save();
