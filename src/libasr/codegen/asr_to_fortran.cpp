@@ -473,7 +473,26 @@ public:
         s += "\n";
     }
 
-    // void visit_StructType(const ASR::StructType_t &x) {}
+    void visit_StructType(const ASR::StructType_t &x) {
+        std::string r = indent;
+        r += "type :: ";
+        r.append(x.m_name);
+        r += "\n";
+        inc_indent();
+        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
+        for (auto &item : var_order) {
+            ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
+            if (is_a<ASR::Variable_t>(*var_sym)) {
+                visit_symbol(*var_sym);
+                r += s;
+            }
+        }
+        dec_indent();
+        r += "end type ";
+        r.append(x.m_name);
+        r += "\n";
+        s = r;
+    }
 
     // void visit_EnumType(const ASR::EnumType_t &x) {}
 
