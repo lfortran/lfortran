@@ -9,6 +9,19 @@ using LCompilers::ASR::down_cast;
 
 namespace LCompilers {
 
+enum Precedence {
+    Eqv = 2,
+    NEqv = 2,
+    Or = 3,
+    And = 4,
+    CmpOp = 6,
+    Add = 8,
+    Sub = 8,
+    Mul = 10,
+    Div = 10,
+    Pow = 11,
+};
+
 class ASRToFortranVisitor : public ASR::BaseVisitor<ASRToFortranVisitor>
 {
 public:
@@ -50,19 +63,19 @@ public:
     std::string binop2str(const ASR::binopType type) {
         switch (type) {
             case (ASR::binopType::Add) : {
-                last_expr_precedence = 8;
+                last_expr_precedence = Precedence::Add;
                 return " + ";
             } case (ASR::binopType::Sub) : {
-                last_expr_precedence = 8;
+                last_expr_precedence = Precedence::Sub;
                 return " - ";
             } case (ASR::binopType::Mul) : {
-                last_expr_precedence = 10;
+                last_expr_precedence = Precedence::Mul;
                 return "*";
             } case (ASR::binopType::Div) : {
-                last_expr_precedence = 10;
+                last_expr_precedence = Precedence::Div;
                 return "/";
             } case (ASR::binopType::Pow) : {
-                last_expr_precedence = 11;
+                last_expr_precedence = Precedence::Pow;
                 return "**";
             } default : {
                 throw LCompilersException("Binop type not implemented");
@@ -71,7 +84,7 @@ public:
     }
 
     std::string cmpop2str(const ASR::cmpopType type) {
-        last_expr_precedence = 6;
+        last_expr_precedence = Precedence::CmpOp;
         switch (type) {
             case (ASR::cmpopType::Eq)    : return " == ";
             case (ASR::cmpopType::NotEq) : return " /= ";
@@ -86,16 +99,16 @@ public:
     std::string logicalbinop2str(const ASR::logicalbinopType type) {
         switch (type) {
             case (ASR::logicalbinopType::And) : {
-                last_expr_precedence = 4;
+                last_expr_precedence = Precedence::And;
                 return " .and. ";
             } case (ASR::logicalbinopType::Or) : {
-                last_expr_precedence = 3;
+                last_expr_precedence = Precedence::Or;
                 return " .or. ";
             } case (ASR::logicalbinopType::Eqv) : {
-                last_expr_precedence = 2;
+                last_expr_precedence = Precedence::Eqv;
                 return " .eqv. ";
             } case (ASR::logicalbinopType::NEqv) : {
-                last_expr_precedence = 2;
+                last_expr_precedence = Precedence::NEqv;
                 return " .neqv. ";
             } default : {
                 throw LCompilersException("Logicalbinop type not implemented");
