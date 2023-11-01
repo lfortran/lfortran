@@ -1232,9 +1232,33 @@ public:
         s = r;
     }
 
-    // void visit_ArrayTranspose(const ASR::ArrayTranspose_t &x) {}
+    void visit_ArrayTranspose(const ASR::ArrayTranspose_t &x) {
+        std::string r;
+        r += "transpose";
+        r += "(";
+        visit_expr(*x.m_matrix);
+        r += s;
+        r += ")";
+        s = r;
+    }
 
-    // void visit_ArrayPack(const ASR::ArrayPack_t &x) {}
+    void visit_ArrayPack(const ASR::ArrayPack_t &x) {
+        std::string r;
+        r += "pack";
+        r += "(";
+        visit_expr(*x.m_array);
+        r += s;
+        r += ", ";
+        visit_expr(*x.m_mask);
+        r += s;
+        if (x.m_vector) {
+            r += ", ";
+            visit_expr(*x.m_vector);
+            r += s;
+        }
+        r += ")";
+        s = r;
+    }
 
     void visit_ArrayReshape(const ASR::ArrayReshape_t &x) {
         std::string r;
@@ -1248,7 +1272,15 @@ public:
         s = r;
     }
 
-    // void visit_ArrayAll(const ASR::ArrayAll_t &x) {}
+    void visit_ArrayAll(const ASR::ArrayAll_t &x) {
+        std::string r;
+        r += "all";
+        r += "(";
+        visit_expr(*x.m_mask);
+        r += s;
+        r += ")";
+        s = r;
+    }
 
     // void visit_BitCast(const ASR::BitCast_t &x) {}
 
