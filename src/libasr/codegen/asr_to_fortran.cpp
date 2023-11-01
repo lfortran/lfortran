@@ -301,7 +301,30 @@ public:
         r += " ";
         r.append(x.m_name);
         r += "\n";
+        r += indent + "implicit none";
+        r += "\n";
+        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
+        for (auto &item : var_order) {
+            ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
+            if (is_a<ASR::Variable_t>(*var_sym)) {
+                visit_symbol(*var_sym);
+                r += s;
+            }
+        }
 
+        bool prepend_contains_keyword = true;
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::Function_t>(*item.second)) {
+                if (prepend_contains_keyword) {
+                    prepend_contains_keyword = false;
+                    r += "\n";
+                    r += "contains";
+                    r += "\n\n";
+                }
+                visit_symbol(*item.second);
+                r += s;
+            }
+        }
         r += "end module";
         r += " ";
         r.append(x.m_name);
