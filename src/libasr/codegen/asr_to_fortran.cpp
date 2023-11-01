@@ -1608,8 +1608,7 @@ public:
     }
 
     void visit_ArrayReshape(const ASR::ArrayReshape_t &x) {
-        std::string r;
-        r += "reshape(";
+        std::string r = "reshape(";
         visit_expr(*x.m_array);
         r += s;
         r += ", ";
