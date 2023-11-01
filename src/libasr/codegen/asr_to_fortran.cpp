@@ -956,7 +956,12 @@ public:
     // void visit_NamedExpr(const ASR::NamedExpr_t &x) {}
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-        std::string r = ASRUtils::symbol_name(x.m_name);
+        std::string r = "";
+        if (x.m_original_name) {
+            r += ASRUtils::symbol_name(x.m_original_name);
+        } else {
+            r += ASRUtils::symbol_name(x.m_name);
+        }
         r += "(";
         for (size_t i = 0; i < x.n_args; i ++) {
             visit_expr(*x.m_args[i].m_value);
