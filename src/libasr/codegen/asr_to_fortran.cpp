@@ -376,19 +376,41 @@ public:
                 r += s;
             }
         }
-
-        bool prepend_contains_keyword = true;
+        std::vector<std::string> func_name;
+        std::vector<std::string> interface_func_name;
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
-                if (prepend_contains_keyword) {
-                    prepend_contains_keyword = false;
-                    r += "\n";
-                    r += "contains";
-                    r += "\n\n";
+                ASR::Function_t *f = down_cast<ASR::Function_t>(item.second);
+                if (ASRUtils::get_FunctionType(f)->m_deftype == ASR::deftypeType::Interface) {
+                    interface_func_name.push_back(item.first);
+                } else {
+                    func_name.push_back(item.first);
                 }
-                visit_symbol(*item.second);
-                r += s;
             }
+        }
+        for (size_t i = 0; i < interface_func_name.size(); i++) {
+            if (i == 0) {
+                r += "interface\n";
+                inc_indent();
+            }
+            visit_symbol(*x.m_symtab->get_symbol(interface_func_name[i]));
+            r += s;
+            if (i < interface_func_name.size() - 1) {
+                r += "\n";
+            } else {
+                dec_indent();
+                r += "end interface\n";
+            }
+        }
+        for (size_t i = 0; i < func_name.size(); i++) {
+            if (i == 0) {
+                r += "\n";
+                r += "contains";
+                r += "\n\n";
+            }
+            visit_symbol(*x.m_symtab->get_symbol(func_name[i]));
+            r += s;
+            if (i < func_name.size()) r += "\n";
         }
         r += "end module";
         r += " ";
@@ -400,11 +422,6 @@ public:
     void visit_Function(const ASR::Function_t &x) {
         std::string r = indent;
         ASR::FunctionType_t *type = ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature);
-        if (type->m_deftype == ASR::deftypeType::Interface) {
-            r += "interface\n";
-            inc_indent();
-            r += indent;
-        }
         if (type->m_pure) {
             r += "pure ";
         }
@@ -459,9 +476,20 @@ public:
         // Interface
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
-                visit_symbol(*item.second);
-                r += s;
-                r += "\n";
+                ASR::Function_t *f = down_cast<ASR::Function_t>(item.second);
+                if (ASRUtils::get_FunctionType(f)->m_deftype == ASR::deftypeType::Interface) {
+                    r += indent;
+                    r += "interface\n";
+                    inc_indent();
+                    visit_symbol(*item.second);
+                    r += s;
+                    r += "\n";
+                    dec_indent();
+                    r += indent;
+                    r += "end interface\n";
+                } else {
+                    throw CodeGenError("Nested Function is not handled yet");
+                }
             }
         }
 
@@ -477,11 +505,6 @@ public:
         r += " ";
         r.append(x.m_name);
         r += "\n";
-        if (type->m_deftype == ASR::deftypeType::Interface) {
-            dec_indent();
-            r += indent;
-            r += "end interface\n";
-        }
         s = r;
     }
 
