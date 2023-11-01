@@ -1085,7 +1085,18 @@ public:
 
     // void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t &x) {}
 
-    // void visit_StructTypeConstructor(const ASR::StructTypeConstructor_t &x) {}
+    void visit_StructTypeConstructor(const ASR::StructTypeConstructor_t &x) {
+        std::string r = indent;
+        r += ASRUtils::symbol_name(x.m_dt_sym);
+        r += "(";
+        for(size_t i = 0; i < x.n_args; i++) {
+            visit_expr(*x.m_args[i].m_value);
+            r += s;
+            if (i < x.n_args - 1) r += ", ";
+        }
+        r += ")";
+        s = r;
+    }
 
     // void visit_EnumTypeConstructor(const ASR::EnumTypeConstructor_t &x) {}
 
