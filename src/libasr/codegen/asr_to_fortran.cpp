@@ -262,6 +262,12 @@ public:
         r += " ";
         r.append(x.m_name);
         r += "\n";
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                visit_symbol(*item.second);
+                r += s;
+            }
+        }
         r += indent + "implicit none";
         r += "\n";
         std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
@@ -301,6 +307,12 @@ public:
         r += " ";
         r.append(x.m_name);
         r += "\n";
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                visit_symbol(*item.second);
+                r += s;
+            }
+        }
         r += indent + "implicit none";
         r += "\n";
         std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
@@ -383,7 +395,14 @@ public:
 
     // void visit_CustomOperator(const ASR::CustomOperator_t &x) {}
 
-    // void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {}
+    void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
+        s = indent;
+        s += "use ";
+        s.append(x.m_module_name);
+        s += ", only: ";
+        s.append(x.m_original_name);
+        s += "\n";
+    }
 
     // void visit_StructType(const ASR::StructType_t &x) {}
 
