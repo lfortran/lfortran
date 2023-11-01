@@ -1203,7 +1203,17 @@ public:
         handle_compare(x);
     }
 
-    // void visit_ComplexBinOp(const ASR::ComplexBinOp_t &x) {}
+    void visit_ComplexBinOp(const ASR::ComplexBinOp_t &x) {
+        std::string r = "", m_op = binop2str(x.m_op);
+        int current_precedence = last_expr_precedence;
+        visit_expr_with_precedence(*x.m_left, current_precedence);
+        r += s;
+        r += m_op;
+        visit_expr_with_precedence(*x.m_right, current_precedence);
+        r += s;
+        last_expr_precedence = current_precedence;
+        s = r;
+    }
 
     void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
         s = ".";
