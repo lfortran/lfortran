@@ -38,6 +38,10 @@ public:
     int last_expr_precedence;
     std::string format_string;
 
+    // Used for importing struct type inside interface
+    bool is_interface = false;
+    std::vector<std::string> import_struct_type;
+
 public:
     ASRToFortranVisitor(bool _use_colors, int _indent)
         : use_colors{_use_colors}, indent_level{0},
@@ -210,9 +214,15 @@ public:
                 break;
             } case ASR::ttypeType::Struct: {
                 ASR::Struct_t* struct_type = down_cast<ASR::Struct_t>(t);
+                std::string struct_name = ASRUtils::symbol_name(struct_type->m_derived_type);
                 r = "type(";
-                r += ASRUtils::symbol_name(struct_type->m_derived_type);
+                r += struct_name;
                 r += ")";
+                if (std::find(import_struct_type.begin(), import_struct_type.end(),
+                        struct_name) == import_struct_type.end() && is_interface) {
+                    // Push unique struct names;
+                    import_struct_type.push_back(struct_name);
+                }
                 break;
             }
             default:
@@ -391,6 +401,7 @@ public:
         for (size_t i = 0; i < interface_func_name.size(); i++) {
             if (i == 0) {
                 r += "interface\n";
+                is_interface = true;
                 inc_indent();
             }
             visit_symbol(*x.m_symtab->get_symbol(interface_func_name[i]));
@@ -399,6 +410,7 @@ public:
                 r += "\n";
             } else {
                 dec_indent();
+                is_interface = false;
                 r += "end interface\n";
             }
         }
@@ -463,14 +475,31 @@ public:
         r += "\n";
 
         inc_indent();
-        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
-        for (auto &item : var_order) {
-            if (return_var.size() && item == return_var) continue;
-            ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
-            if (is_a<ASR::Variable_t>(*var_sym)) {
-                visit_symbol(*var_sym);
-                r += s;
+        {
+            std::string variable_declaration;
+            std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
+            for (auto &item : var_order) {
+                if (return_var.size() && item == return_var) continue;
+                ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
+                if (is_a<ASR::Variable_t>(*var_sym)) {
+                    visit_symbol(*var_sym);
+                    variable_declaration += s;
+                }
             }
+            for (size_t i = 0; i < import_struct_type.size(); i ++) {
+                if (i == 0) {
+                    r += indent;
+                    r += "import ";
+                }
+                r += import_struct_type[i];
+                if (i < import_struct_type.size() - 1) {
+                    r += ", ";
+                } else {
+                    r += "\n";
+                }
+            }
+            import_struct_type.clear();
+            r += variable_declaration;
         }
 
         // Interface
@@ -478,6 +507,7 @@ public:
             if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *f = down_cast<ASR::Function_t>(item.second);
                 if (ASRUtils::get_FunctionType(f)->m_deftype == ASR::deftypeType::Interface) {
+                    is_interface = true;
                     r += indent;
                     r += "interface\n";
                     inc_indent();
@@ -487,6 +517,7 @@ public:
                     dec_indent();
                     r += indent;
                     r += "end interface\n";
+                    is_interface = false;
                 } else {
                     throw CodeGenError("Nested Function is not handled yet");
                 }
