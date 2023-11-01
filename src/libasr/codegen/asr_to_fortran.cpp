@@ -14,12 +14,15 @@ enum Precedence {
     NEqv = 2,
     Or = 3,
     And = 4,
+    Not = 5,
     CmpOp = 6,
     Add = 8,
     Sub = 8,
+    UnaryMinus = 9,
     Mul = 10,
     Div = 10,
     Pow = 11,
+    Ext = 13,
 };
 
 class ASRToFortranVisitor : public ASR::BaseVisitor<ASRToFortranVisitor>
@@ -927,7 +930,7 @@ public:
 
     void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
         s = std::to_string(x.m_n);
-        last_expr_precedence = 13;
+        last_expr_precedence = Precedence::Ext;
     }
 
     // void visit_IntegerBOZ(const ASR::IntegerBOZ_t &x) {}
@@ -937,7 +940,7 @@ public:
     void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t &x) {
         visit_expr_with_precedence(*x.m_arg, 9);
         s = "-" + s;
-        last_expr_precedence = 9;
+        last_expr_precedence = Precedence::UnaryMinus;
     }
 
     void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
@@ -985,13 +988,13 @@ public:
         } else {
             s = std::to_string(x.m_r);
         }
-        last_expr_precedence = 13;
+        last_expr_precedence = Precedence::Ext;
     }
 
     void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t &x) {
         visit_expr_with_precedence(*x.m_arg, 9);
         s = "-" + s;
-        last_expr_precedence = 9;
+        last_expr_precedence = Precedence::UnaryMinus;
     }
 
     void visit_RealCompare(const ASR::RealCompare_t &x) {
@@ -1040,13 +1043,13 @@ public:
             s += "false";
         }
         s += ".";
-        last_expr_precedence = 13;
+        last_expr_precedence = Precedence::Ext;
     }
 
     void visit_LogicalNot(const ASR::LogicalNot_t &x) {
         visit_expr_with_precedence(*x.m_arg, 5);
         s = ".not. " + s;
-        last_expr_precedence = 5;
+        last_expr_precedence = Precedence::Not;
     }
 
     // void visit_LogicalCompare(const ASR::LogicalCompare_t &x) {}
@@ -1067,7 +1070,7 @@ public:
         s = "\"";
         s.append(x.m_s);
         s += "\"";
-        last_expr_precedence = 13;
+        last_expr_precedence = Precedence::Ext;
     }
 
     void visit_StringConcat(const ASR::StringConcat_t &x) {
@@ -1134,7 +1137,7 @@ public:
 
     void visit_Var(const ASR::Var_t &x) {
         s = ASRUtils::symbol_name(x.m_v);
-        last_expr_precedence = 13;
+        last_expr_precedence = Precedence::Ext;
     }
 
     // void visit_FunctionParam(const ASR::FunctionParam_t &x) {}
@@ -1148,7 +1151,7 @@ public:
         }
         r += "]";
         s = r;
-        last_expr_precedence = 13;
+        last_expr_precedence = Precedence::Ext;
     }
 
     void visit_ArrayItem(const ASR::ArrayItem_t &x) {
@@ -1165,7 +1168,7 @@ public:
         }
         r += ")";
         s = r;
-        last_expr_precedence = 13;
+        last_expr_precedence = Precedence::Ext;
     }
 
     void visit_ArraySection(const ASR::ArraySection_t &x) {
@@ -1198,7 +1201,7 @@ public:
         }
         r += ")";
         s = r;
-        last_expr_precedence = 13;
+        last_expr_precedence = Precedence::Ext;
     }
 
     void visit_ArraySize(const ASR::ArraySize_t &x) {
