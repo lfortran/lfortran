@@ -154,7 +154,18 @@ public:
             } case ASR::ttypeType::Character: {
                 ASR::Character_t *c = down_cast<ASR::Character_t>(t);
                 r = "character(len=";
-                r += std::to_string(c->m_len);
+                if(c->m_len > 0) {
+                    r += std::to_string(c->m_len);
+                } else {
+                    if (c->m_len == -1) {
+                        r += "*";
+                    } else if (c->m_len == -2) {
+                        r += ":";
+                    } else if (c->m_len == -3) {
+                        visit_expr(*c->m_len_expr);
+                        r += s;
+                    }
+                }
                 r += ", kind=";
                 r += std::to_string(c->m_kind);
                 r += ")";
