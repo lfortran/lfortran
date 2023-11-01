@@ -400,10 +400,24 @@ public:
     void visit_Function(const ASR::Function_t &x) {
         std::string r = indent;
         ASR::FunctionType_t *type = ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature);
+        if (type->m_deftype == ASR::deftypeType::Interface) {
+            r += "interface\n";
+            inc_indent();
+            r += indent;
+        }
+        if (type->m_pure) {
+            r += "pure ";
+        }
         if (type->m_elemental) {
             r += "elemental ";
         }
+        std::string return_var = "";
         if (x.m_return_var) {
+            LCOMPILERS_ASSERT(is_a<ASR::Var_t>(*x.m_return_var));
+            visit_expr(*x.m_return_var);
+            return_var = s;
+            r += get_type(ASRUtils::expr_type(x.m_return_var));
+            r += " ";
             r += "function";
         } else {
             r += "subroutine";
@@ -417,19 +431,37 @@ public:
             if (i < x.n_args-1) r += ", ";
         }
         r += ")";
-        if (x.m_return_var) {
-            visit_expr(*x.m_return_var);
-            r += " result(" + s + ")";
+        if (type->m_abi == ASR::abiType::BindC) {
+            r += " bind(c";
+            if (type->m_bindc_name) {
+                r += ", name = \"";
+                r += type->m_bindc_name;
+                r += "\"";
+            }
+            r += ")";
+        }
+        if (x.m_return_var && strcmp(x.m_name, return_var.c_str())) {
+            r += " result(" + return_var + ")";
         }
         r += "\n";
 
         inc_indent();
         std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
         for (auto &item : var_order) {
+            if (return_var.size() && item == return_var) continue;
             ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
             if (is_a<ASR::Variable_t>(*var_sym)) {
                 visit_symbol(*var_sym);
                 r += s;
+            }
+        }
+
+        // Interface
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::Function_t>(*item.second)) {
+                visit_symbol(*item.second);
+                r += s;
+                r += "\n";
             }
         }
 
@@ -445,6 +477,11 @@ public:
         r += " ";
         r.append(x.m_name);
         r += "\n";
+        if (type->m_deftype == ASR::deftypeType::Interface) {
+            dec_indent();
+            r += indent;
+            r += "end interface\n";
+        }
         s = r;
     }
 
