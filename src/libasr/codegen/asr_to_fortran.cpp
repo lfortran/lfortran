@@ -1159,7 +1159,18 @@ public:
     // void visit_Expr(const ASR::Expr_t &x) {}
 
     /********************************** Expr **********************************/
-    // void visit_IfExp(const ASR::IfExp_t &x) {}
+    void visit_IfExp(const ASR::IfExp_t &x) {
+        std::string r = "";
+        visit_expr(*x.m_test);
+        r += s;
+        r += " ? ";
+        visit_expr(*x.m_body);
+        r += s;
+        r += " : ";
+        visit_expr(*x.m_orelse);
+        r += s;
+        s = r;
+    }
 
     void visit_ComplexConstructor(const ASR::ComplexConstructor_t &x) {
         visit_expr(*x.m_re);
