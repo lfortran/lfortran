@@ -471,12 +471,16 @@ public:
     // void visit_CustomOperator(const ASR::CustomOperator_t &x) {}
 
     void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
-        s = indent;
-        s += "use ";
-        s.append(x.m_module_name);
-        s += ", only: ";
-        s.append(x.m_original_name);
-        s += "\n";
+        ASR::symbol_t *sym = down_cast<ASR::symbol_t>(
+            ASRUtils::symbol_parent_symtab(x.m_external)->asr_owner);
+        if (!is_a<ASR::StructType_t>(*sym)) {
+            s = indent;
+            s += "use ";
+            s.append(x.m_module_name);
+            s += ", only: ";
+            s.append(x.m_original_name);
+            s += "\n";
+        }
     }
 
     void visit_StructType(const ASR::StructType_t &x) {
