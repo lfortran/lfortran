@@ -1454,7 +1454,14 @@ public:
 
     // void visit_BitCast(const ASR::BitCast_t &x) {}
 
-    // void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {}
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
+        std::string r;
+        visit_expr(*x.m_v);
+        r += s;
+        r += "%";
+        r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_m));
+        s = r;
+    }
 
     // void visit_StructStaticMember(const ASR::StructStaticMember_t &x) {}
 
