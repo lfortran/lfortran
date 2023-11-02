@@ -147,11 +147,45 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
         This function updates `sub2` to use the new symbol `c` that is now a function, not a variable.
         Along with this, it also updates the args of `sub2` to use the new symbol `c` instead of the old one.
     */
-    class UpdateArgsVisitor : public PassUtils::PassVisitor<UpdateArgsVisitor>
+
+    class ArgsReplacer : public ASR::BaseExprReplacer<ArgsReplacer> {
+    public:
+        Allocator &al;
+        ASR::symbol_t* new_sym;
+
+        ArgsReplacer(Allocator &al_) : al(al_) {}
+
+        ASR::symbol_t* fetch_sym(ASR::symbol_t* arg_sym_underlying) {
+            ASR::symbol_t* sym = nullptr;
+            if (ASR::is_a<ASR::Variable_t>(*arg_sym_underlying)) {
+                ASR::Variable_t* arg_variable = ASR::down_cast<ASR::Variable_t>(arg_sym_underlying);
+                std::string arg_variable_name = std::string(arg_variable->m_name);
+                sym = arg_variable->m_parent_symtab->get_symbol(arg_variable_name);
+            } else if (ASR::is_a<ASR::Function_t>(*arg_sym_underlying)) {
+                ASR::Function_t* arg_function = ASR::down_cast<ASR::Function_t>(arg_sym_underlying);
+                std::string arg_function_name = std::string(arg_function->m_name);
+                sym = arg_function->m_symtab->parent->get_symbol(arg_function_name);
+            }
+            return sym;
+        }
+
+        void replace_Var(ASR::Var_t* x) {
+            *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc, new_sym));
+        }
+    };
+
+    class ArgsVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArgsVisitor>
     {
         public:
         SymbolTable* scope = current_scope;
-        UpdateArgsVisitor(Allocator &al) : PassVisitor(al, nullptr) {}
+        ArgsReplacer replacer;
+        ArgsVisitor(Allocator &al_) : replacer(al_) {}
+
+        void call_replacer_(ASR::symbol_t* new_sym) {
+            replacer.current_expr = current_expr;
+            replacer.new_sym = new_sym;
+            replacer.replace_expr(*current_expr);
+        }
 
         ASR::symbol_t* fetch_sym(ASR::symbol_t* arg_sym_underlying) {
             ASR::symbol_t* sym = nullptr;
@@ -178,7 +212,10 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
                     ASR::symbol_t* arg_sym_underlying = ASRUtils::symbol_get_past_external(arg_sym);
                     ASR::symbol_t* sym = fetch_sym(arg_sym_underlying);
                     if (sym != arg_sym) {
-                        subrout_call->m_args[j].m_value = ASRUtils::EXPR(ASR::make_Var_t(al, arg_expr->base.loc, sym));
+                        ASR::expr_t** current_expr_copy = current_expr;
+                        current_expr = const_cast<ASR::expr_t**>(&(subrout_call->m_args[j].m_value));
+                        this->call_replacer_(sym);
+                        current_expr = current_expr_copy;
                     }
                 }
             }
@@ -194,7 +231,10 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
                     ASR::symbol_t* arg_sym_underlying = ASRUtils::symbol_get_past_external(arg_sym);
                     ASR::symbol_t* sym = fetch_sym(arg_sym_underlying);
                     if (sym != arg_sym) {
-                        func->m_args[i] = ASRUtils::EXPR(ASR::make_Var_t(al, arg_expr->base.loc, sym));
+                        ASR::expr_t** current_expr_copy = current_expr;
+                        current_expr = const_cast<ASR::expr_t**>(&(func->m_args[i]));
+                        this->call_replacer_(sym);
+                        current_expr = current_expr_copy;
                     }
                 }
             }
@@ -211,7 +251,7 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
     };
 
     if (implicit_interface) {
-        UpdateArgsVisitor v(al);
+        ArgsVisitor v(al);
         SymbolTable *tu_symtab = ASRUtils::get_tu_symtab(current_scope);
         ASR::asr_t* asr_ = tu_symtab->asr_owner;
         ASR::TranslationUnit_t* tu = ASR::down_cast2<ASR::TranslationUnit_t>(asr_);
