@@ -1233,13 +1233,8 @@ public:
     }
 
     void visit_ArrayTranspose(const ASR::ArrayTranspose_t &x) {
-        std::string r;
-        r += "transpose";
-        r += "(";
         visit_expr(*x.m_matrix);
-        r += s;
-        r += ")";
-        s = r;
+        s = "transpose(" + s + ")";
     }
 
     void visit_ArrayPack(const ASR::ArrayPack_t &x) {
@@ -1278,6 +1273,11 @@ public:
         r += "(";
         visit_expr(*x.m_mask);
         r += s;
+        if (x.m_dim) {
+            r += "[, ";
+            visit_expr(*x.m_dim);
+            r += "]";
+        }
         r += ")";
         s = r;
     }
