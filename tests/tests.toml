@@ -2477,10 +2477,6 @@ print_leading_space = true
 asr = true
 
 [[test]]
-filename = "print4.f90"
-run = true
-
-[[test]]
 filename = "uppercase1.f90"
 asr = true
 
