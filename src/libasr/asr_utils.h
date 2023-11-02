@@ -1701,6 +1701,9 @@ void extract_module_python(const ASR::TranslationUnit_t &m,
         std::string module_name);
 
 static inline bool is_external_sym_changed(ASR::symbol_t* original_sym, ASR::symbol_t* external_sym) {
+    if (!ASR::is_a<ASR::Function_t>(*original_sym) || !ASR::is_a<ASR::Function_t>(*external_sym)) {
+        return false;
+    }
     ASR::Function_t* original_func = ASR::down_cast<ASR::Function_t>(original_sym);
     ASR::Function_t* external_func = ASR::down_cast<ASR::Function_t>(external_sym);
     bool same_number_of_args = original_func->n_args == external_func->n_args;
