@@ -1274,9 +1274,8 @@ public:
         visit_expr(*x.m_mask);
         r += s;
         if (x.m_dim) {
-            r += "[, ";
             visit_expr(*x.m_dim);
-            r += "]";
+            r += s;
         }
         r += ")";
         s = r;
