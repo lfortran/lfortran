@@ -4458,23 +4458,6 @@ public:
         return ASR::make_StringChr_t(al, x.base.base.loc, arg, type, char_value);
     }
 
-    ASR::asr_t* create_IntrinsicFunctionSqrt(const AST::FuncCallOrArray_t& x) {
-        Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names;
-        handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, "sqrt");
-        ASR::expr_t *arg = args[0];
-        int64_t kind_value = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(arg));
-        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, kind_value));
-        ASR::expr_t* sqrt_value = nullptr;
-        ASR::expr_t* arg_value = ASRUtils::expr_value(arg);
-        if( arg_value ) {
-            double rv = ASR::down_cast<ASR::RealConstant_t>(arg_value)->m_r;
-            sqrt_value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc,
-                                std::sqrt(rv), type));
-        }
-        return ASR::make_IntrinsicFunctionSqrt_t(al, x.base.base.loc, arg, type, sqrt_value);
-    }
-
     ASR::asr_t* create_ScanVerify_util(const AST::FuncCallOrArray_t& x, std::string func_name) {
         ASR::expr_t *string, *set, *back, *kind;
         ASR::ttype_t *type;
@@ -4670,8 +4653,6 @@ public:
                 tmp = create_NullPointerConstant(x);
             } else if( var_name == "associated" ) {
                 tmp = create_Associated(x);
-            } else if( var_name == "_lfortran_sqrt" ) {
-                tmp = create_IntrinsicFunctionSqrt(x);
             } else if( var_name == "all" ) {
                 tmp = create_ArrayAll(x);
             } else {
