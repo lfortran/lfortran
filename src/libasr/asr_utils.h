@@ -1700,7 +1700,17 @@ void extract_module_python(const ASR::TranslationUnit_t &m,
         std::vector<std::pair<std::string, ASR::Module_t*>>& children_modules,
         std::string module_name);
 
-void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_interface);
+static inline bool is_external_sym_changed(ASR::symbol_t* original_sym, ASR::symbol_t* external_sym) {
+    ASR::Function_t* original_func = ASR::down_cast<ASR::Function_t>(original_sym);
+    ASR::Function_t* external_func = ASR::down_cast<ASR::Function_t>(external_sym);
+    bool same_number_of_args = original_func->n_args == external_func->n_args;
+    // TODO: Check if the arguments are the same
+    return !(same_number_of_args);
+}
+
+void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_interface,
+        std::map<std::string, ASR::symbol_t*> changed_external_function_symbol);
+
 
 ASR::Module_t* extract_module(const ASR::TranslationUnit_t &m);
 
@@ -3644,6 +3654,11 @@ class SymbolDuplicator {
         if( new_return_var ) {
             node_duplicator.success = true;
             new_return_var = node_duplicator.duplicate_expr(function->m_return_var);
+            if (ASR::is_a<ASR::Var_t>(*new_return_var)) {
+                ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(new_return_var);
+                std::string var_sym_name = ASRUtils::symbol_name(var->m_v);
+                new_return_var = ASRUtils::EXPR(make_Var_t(al, var->base.base.loc, function_symtab->get_symbol(var_sym_name)));
+            }
             if( !node_duplicator.success ) {
                 return nullptr;
             }
