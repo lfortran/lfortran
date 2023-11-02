@@ -9163,19 +9163,25 @@ public:
         //ASR::expr_t* fmt_value = ASRUtils::expr_value(x.m_fmt);
         // if (fmt_value) ...
         if (x.m_kind == ASR::string_format_kindType::FormatFortran) {
-            std::vector<llvm::Value *> args;
+            std::vector<llvm::Value *> args, printargs;
             int size = x.n_args;
             llvm::Value *count = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), size);
-            args.push_back(count);
+            printargs.push_back(count);
             visit_expr(*x.m_fmt);
-            args.push_back(tmp);
-
+            printargs.push_back(tmp);
+            std::vector<std::string> fmt;
             for (size_t i=0; i<x.n_args; i++) {
-                std::vector<std::string>fmt;
                 //  Use the function to compute the args, but ignore the format
                 compute_fmt_specifier_and_arg(fmt, args, x.m_args[i], x.base.base.loc);
             }
-            tmp = string_format_fortran(context, *module, *builder, args);
+            std::string fmt_str;
+            for (size_t i=0; i<fmt.size(); i++) {
+                fmt_str += fmt[i];
+            }
+            llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(fmt_str);
+            printargs.push_back(fmt_ptr);
+            printargs.insert(printargs.end(), args.begin(), args.end());
+            tmp = string_format_fortran(context, *module, *builder, printargs);
         } else {
             throw CodeGenError("Only FormatFortran string formatting implemented so far.");
         }

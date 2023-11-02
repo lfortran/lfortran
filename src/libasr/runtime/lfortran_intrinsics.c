@@ -509,10 +509,45 @@ char** parse_fortran_format(char* format, int *count, int *item_start) {
     return format_values_2;
 }
 
-LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* format, ...)
+void fmterror(const char* fmttype, const char* argtype) {
+    printf("Type mismatch in print or write statement: expected %s, got %s.\n", fmttype, argtype);
+    exit(1);
+}
+
+void match_fmt_arg(const char* fmtargs, int idx, const char* fmttype) {
+    int i = 0, pos = 0;
+    while (i < strlen(fmtargs)) {
+        if (fmtargs[i] == '%') {
+            i++;
+            pos++;
+        }
+        if (idx == pos) {
+            const char* check = &fmtargs[i];
+            if (check[0] == 'd' || strncmp(check, "hi", 2) == 0 || strncmp(check, "hhi", 3) == 0 || strncmp(check, "lld", 3) == 0 ||
+                check[0] == 'u' || strncmp(check, "hu", 2) == 0 || strncmp(check, "hhu", 3) == 0 || strncmp(check, "llu", 3) == 0) {
+                if (strcmp(fmttype,"integer") != 0) {
+                    fmterror(fmttype, "integer");
+                } else return;
+            } else if (strncmp(check, "13.", 3) == 0 || strncmp(check, "23.", 3) == 0) {
+                if (strcmp(fmttype,"real") != 0) {
+                    fmterror(fmttype, "real");
+                } else return;
+            } else if (check[0] == 's') {
+                if (strcmp(fmttype,"string") != 0) {
+                    fmterror(fmttype, "string");
+                } else return;
+            }
+        }
+        while (fmtargs[i] != '%' && fmtargs[i] != '\0') i++;
+    }
+    printf("Type mismatch: expected %s, did not recognize any value\n", fmttype);
+    exit(1);
+}
+
+LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* format, const char* fmtargs, ...)
 {
     va_list args;
-    va_start(args, format);
+    va_start(args, fmtargs);
     int len = strlen(format);
     char* modified_input_string = (char*)malloc((len+1) * sizeof(char));
     strncpy(modified_input_string, format, len);
@@ -526,10 +561,11 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
     char* result = (char*)malloc(sizeof(char));
     result[0] = '\0';
     int item_start = 0;
+    int fmt_idx = 0;
     while (1) {
         int scale = 0;
         for (int i = item_start; i < format_values_count; i++) {
-            if(format_values[i] == NULL) continue;
+            if (format_values[i] == NULL) continue;
             char* value = format_values[i];
 
             if (value[0] == '(' && value[strlen(value)-1] == ')') {
@@ -573,8 +609,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 free(value);
             } else if (tolower(value[0]) == 'a') {
                 // Character Editing (A[n])
-                if ( count == 0 ) break;
-                count--;
+                if (fmt_idx >= count) break;
+                match_fmt_arg(fmtargs, ++fmt_idx, (const char*)"string");
                 char* arg = va_arg(args, char*);
                 if (arg == NULL) continue;
                 if (strlen(value) == 1) {
@@ -596,26 +632,26 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 result = append_to_string(result, " ");
             } else if (tolower(value[0]) == 'i') {
                 // Integer Editing ( I[w[.m]] )
-                if ( count == 0 ) break;
-                count--;
+                if (fmt_idx >= count) break;
+                match_fmt_arg(fmtargs, ++fmt_idx, (const char*)"integer");
                 int val = va_arg(args, int);
                 handle_integer(value, val, &result);
             } else if (tolower(value[0]) == 'd') {
                 // D Editing (D[w[.d]])
-                if ( count == 0 ) break;
-                count--;
+                if (fmt_idx >= count) break;
+                match_fmt_arg(fmtargs, ++fmt_idx, (const char*)"real");
                 double val = va_arg(args, double);
                 handle_decimal(value, val, scale, &result, "D");
             } else if (tolower(value[0]) == 'e') {
                 // E Editing E[w[.d][Ee]]
                 // Only (E[w[.d]]) has been implemented yet
-                if ( count == 0 ) break;
-                count--;
+                if (fmt_idx >= count) break;
+                match_fmt_arg(fmtargs, ++fmt_idx, (const char*)"real");
                 double val = va_arg(args, double);
                 handle_decimal(value, val, scale, &result, "E");
             } else if (tolower(value[0]) == 'f') {
-                if ( count == 0 ) break;
-                count--;
+                if (fmt_idx >= count) break;
+                match_fmt_arg(fmtargs, ++fmt_idx, (const char*)"real");
                 double val = va_arg(args, double);
                 handle_float(value, val, &result);
             } else if (strlen(value) != 0) {
@@ -623,7 +659,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
             }
 
         }
-        if ( count > 0 ) {
+        if ( fmt_idx < count ) {
             result = append_to_string(result, "\n");
             item_start = item_start_idx;
         } else {
@@ -633,7 +669,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
 
     free(modified_input_string);
     for (int i = 0;i<format_values_count;i++) {
-            free(format_values[i]);
+        free(format_values[i]);
     }
     free(format_values);
     va_end(args);
