@@ -2907,6 +2907,7 @@ asr_implicit_interface_and_typing = true
 [[test]]
 filename = "external_02.f90"
 asr_implicit_interface_and_typing = true
+asr_implicit_interface_and_typing_with_llvm = true
 
 [[test]]
 filename = "dimension_attr2.f90"
