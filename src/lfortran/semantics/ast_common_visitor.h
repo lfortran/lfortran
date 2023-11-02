@@ -748,7 +748,8 @@ public:
         {"dtan", "tan"},
         {"datan2", "atan2"},
 
-        {"dsign", "sign"}
+        {"dsign", "sign"},
+        {"dsqrt", "sqrt"}
     };
 
     ASR::asr_t *tmp;
