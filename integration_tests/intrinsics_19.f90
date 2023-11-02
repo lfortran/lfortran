@@ -67,6 +67,7 @@ print *, floor(3.6), floor(3.6_dp), s12, d12, floor(x2), floor(y2)
 print *, nint(-3.6), nint(-3.6_dp), s13, d13, nint(-x2), nint(-y2)
 print *, floor(-3.6), floor(-3.6_dp), s14, d14, floor(-x2), floor(-y2)
 if (abs(dsqrt(4.0_dp) - 2.0_dp) > 1e-15_dp) error stop
+if (abs(dsqrt(y) - 0.70710678118654757_dp) > 1e-15_dp) error stop
 
 if (abs(s9_ - log_gamma(log_gamma(x) + 3*log_gamma(x+log_gamma(x)))) > 1e-7) error stop
 if (abs(d9_ - log_gamma(log_gamma(y) + 3*log_gamma(y+log_gamma(y)))) > 1e-15_dp) error stop
