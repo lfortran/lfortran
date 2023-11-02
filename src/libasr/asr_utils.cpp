@@ -134,7 +134,8 @@ void extract_module_python(const ASR::TranslationUnit_t &m,
     }
 }
 
-void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_interface) {
+void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_interface,
+        std::map<std::string, ASR::symbol_t*> changed_external_function_symbol) {
     /*
         Iterate over body of program, check if there are any subroutine calls if yes, iterate over its args
         and update the args if they are equal to the old symbol
@@ -155,20 +156,6 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
 
         ArgsReplacer(Allocator &al_) : al(al_) {}
 
-        ASR::symbol_t* fetch_sym(ASR::symbol_t* arg_sym_underlying) {
-            ASR::symbol_t* sym = nullptr;
-            if (ASR::is_a<ASR::Variable_t>(*arg_sym_underlying)) {
-                ASR::Variable_t* arg_variable = ASR::down_cast<ASR::Variable_t>(arg_sym_underlying);
-                std::string arg_variable_name = std::string(arg_variable->m_name);
-                sym = arg_variable->m_parent_symtab->get_symbol(arg_variable_name);
-            } else if (ASR::is_a<ASR::Function_t>(*arg_sym_underlying)) {
-                ASR::Function_t* arg_function = ASR::down_cast<ASR::Function_t>(arg_sym_underlying);
-                std::string arg_function_name = std::string(arg_function->m_name);
-                sym = arg_function->m_symtab->parent->get_symbol(arg_function_name);
-            }
-            return sym;
-        }
-
         void replace_Var(ASR::Var_t* x) {
             *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc, new_sym));
         }
@@ -177,9 +164,12 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
     class ArgsVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArgsVisitor>
     {
         public:
+        Allocator &al;
         SymbolTable* scope = current_scope;
         ArgsReplacer replacer;
-        ArgsVisitor(Allocator &al_) : replacer(al_) {}
+        std::map<std::string, ASR::symbol_t*> &changed_external_function_symbol;
+        ArgsVisitor(Allocator &al_, std::map<std::string, ASR::symbol_t*> &changed_external_function_symbol_) : al(al_), replacer(al_),
+                    changed_external_function_symbol(changed_external_function_symbol_) {}
 
         void call_replacer_(ASR::symbol_t* new_sym) {
             replacer.current_expr = current_expr;
@@ -223,6 +213,22 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
 
         void visit_Function(const ASR::Function_t& x) {
             ASR::Function_t* func = (ASR::Function_t*)(&x);
+            scope = func->m_symtab;
+            ASRUtils::SymbolDuplicator symbol_duplicator(al);
+            std::map<std::string, ASR::symbol_t*> scope_ = scope->get_scope();
+            std::vector<std::string> symbols_to_duplicate;
+            for (auto it: scope_) {
+                if (changed_external_function_symbol.find(it.first) != changed_external_function_symbol.end() &&
+                    is_external_sym_changed(it.second, changed_external_function_symbol[it.first])) {
+                    symbols_to_duplicate.push_back(it.first);
+                }
+            }
+
+            for (auto it: symbols_to_duplicate) {
+                scope->erase_symbol(it);
+                symbol_duplicator.duplicate_symbol(changed_external_function_symbol[it], scope);
+            }
+
             for (size_t i = 0; i < func->n_args; i++) {
                 ASR::expr_t* arg_expr = func->m_args[i];
                 if (ASR::is_a<ASR::Var_t>(*arg_expr)) {
@@ -251,7 +257,7 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
     };
 
     if (implicit_interface) {
-        ArgsVisitor v(al);
+        ArgsVisitor v(al, changed_external_function_symbol);
         SymbolTable *tu_symtab = ASRUtils::get_tu_symtab(current_scope);
         ASR::asr_t* asr_ = tu_symtab->asr_owner;
         ASR::TranslationUnit_t* tu = ASR::down_cast2<ASR::TranslationUnit_t>(asr_);
