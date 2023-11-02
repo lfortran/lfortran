@@ -1085,6 +1085,12 @@ static inline bool all_args_evaluated(const Vec<ASR::array_index_t> &args) {
 
 static inline bool extract_value(ASR::expr_t* value_expr,
     std::complex<double>& value) {
+    if ( ASR::is_a<ASR::ComplexConstructor_t>(*value_expr) ) {
+        value_expr = ASR::down_cast<ASR::ComplexConstructor_t>(value_expr)->m_value;
+        if (!value_expr) {
+            return false;
+        }
+    }
     if( !ASR::is_a<ASR::ComplexConstant_t>(*value_expr) ) {
         return false;
     }
