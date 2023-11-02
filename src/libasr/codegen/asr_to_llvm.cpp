@@ -5540,7 +5540,7 @@ public:
         this->visit_expr_wrapper(x.m_test, true);
         llvm::Value *cond = tmp;
         llvm::Type* _type = llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get());
-        llvm::Value* ifexp_res = builder->CreateAlloca(_type);
+        llvm::Value* ifexp_res = CreateAlloca(_type);
         llvm_utils->create_if_else(cond, [&]() {
             this->visit_expr_wrapper(x.m_body, true);
             builder->CreateStore(tmp, ifexp_res);
