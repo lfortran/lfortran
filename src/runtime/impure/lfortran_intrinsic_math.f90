@@ -24,7 +24,7 @@ interface exp
 end interface
 
 interface log
-    module procedure slog, dlog, clog, zlog, alog
+    module procedure slog, dlog, clog, zlog
 end interface
 
 interface erf
