@@ -1521,7 +1521,7 @@ public:
             visit_program_unit(*x.m_contains[i]);
         }
 
-        ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface);
+        ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
 
         starting_m_body = nullptr;
         starting_n_body =  0;
@@ -1923,7 +1923,7 @@ public:
             visit_program_unit(*x.m_contains[i]);
         }
 
-        ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface);
+        ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
 
         starting_m_body = nullptr;
         starting_n_body = 0;
@@ -2004,7 +2004,7 @@ public:
             is_Function = false;
         }
 
-        ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface);
+        ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
 
         starting_m_body = nullptr;
         starting_n_body = 0;
@@ -2467,12 +2467,17 @@ public:
             original_sym = current_scope->resolve_symbol(sub_name);
         }
         if (!original_sym || (original_sym && is_external)) {
+            ASR::symbol_t* external_sym = is_external ? original_sym : nullptr;
             original_sym = resolve_intrinsic_function(x.base.base.loc, sub_name);
             if (!original_sym && compiler_options.implicit_interface) {
                 ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8));
                 create_implicit_interface_function(x, sub_name, false, type);
                 original_sym = current_scope->resolve_symbol(sub_name);
                 LCOMPILERS_ASSERT(original_sym!=nullptr);
+            }
+            // check if external sym is updated, or: say if signature of external_sym and original_sym are different
+            if (original_sym && external_sym && is_external && ASRUtils::is_external_sym_changed(original_sym, external_sym)) {
+                changed_external_function_symbol[ASRUtils::symbol_name(original_sym)] = original_sym;
             }
             // remove from external_procedures_mapping
             if (original_sym && is_external) {

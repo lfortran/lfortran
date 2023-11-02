@@ -801,7 +801,7 @@ public:
 
     std::vector<std::map<std::string, ASR::ttype_t*>> implicit_stack;
     std::map<uint64_t, std::vector<std::string>> &external_procedures_mapping;
-    std::map<std::string, std::vector<SymbolTable*>> external_function_parent_scope;
+    std::map<std::string, ASR::symbol_t*> changed_external_function_symbol;
     std::map<std::string, std::vector<AST::stmt_t*>> entry_point_mapping;
     std::vector<std::string> external_procedures;
     std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions;
@@ -1712,7 +1712,6 @@ public:
                 nullptr, false, false, false, false, false, nullptr, 0,
                 false, false, false);
             parent_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
-            external_function_parent_scope[sym].push_back(parent_scope);
             current_scope = parent_scope;
         } else {
             throw SemanticError("function interface must be specified explicitly; you can enable implicit interfaces with `--implicit-interface`", loc);
@@ -5076,7 +5075,7 @@ public:
 
                 // erase from external_procedures_mapping
                 erase_from_external_mapping(var_name);
-                ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface);
+                ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
 
                 // Update arguments if the symbol belonged to a function
                 if (current_scope->asr_owner) {
@@ -5105,7 +5104,7 @@ public:
             if (ASR::is_a<ASR::Function_t>(*v2)) {
                 current_scope->erase_symbol(var_name);
                 erase_from_external_mapping(var_name);
-                ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface);
+                ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
                 v = v2;
             }
         }
