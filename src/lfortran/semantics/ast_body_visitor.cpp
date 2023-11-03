@@ -1507,7 +1507,7 @@ public:
             }
         }
         data_structure.clear();
-        
+
         transform_stmts(body, x.n_body, x.m_body);
         handle_format();
         ASR::stmt_t* impl_del = create_implicit_deallocate(x.base.base.loc);
@@ -1656,7 +1656,7 @@ public:
             ASR::expr_t* lhs = entry_function->m_return_var;
             ASR::expr_t* rhs = ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, master_function_sym,
                                 master_function_sym, args.p, args.n, ASRUtils::expr_type(lhs), nullptr, nullptr));
-            
+
             stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, lhs, rhs, nullptr));
 
         } else {
@@ -1664,7 +1664,7 @@ public:
                                         master_function_sym, args.p, args.n, nullptr, nullptr, compiler_options.implicit_argument_casting));
         }
         LCOMPILERS_ASSERT(stmt != nullptr);
-        
+
         Vec<ASR::stmt_t*> body; body.reserve(al, entry_function->n_body + 1);
         for (size_t i = 0; i < entry_function->n_body; i++) {
             body.push_back(al, entry_function->m_body[i]);
@@ -1796,9 +1796,9 @@ public:
         for(int i = 0; i < num_entry_functions + 1; i++) {
             ASR::stmt_t* if_stmt = nullptr;
             ASR::expr_t* right = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, i+1, int32_type));
-            ASR::expr_t* cmp = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc, left, ASR::cmpopType::Eq, right, 
+            ASR::expr_t* cmp = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc, left, ASR::cmpopType::Eq, right,
                                 logical_type, nullptr));
-            
+
             Vec<ASR::stmt_t*> if_body; if_body.reserve(al, 1);
             ASR::stmt_t* go_to_label = ASRUtils::STMT(ASR::make_GoTo_t(al, loc, i+1, s2c(al, std::to_string(i+1))));
             if_body.push_back(al, go_to_label);
