@@ -146,7 +146,7 @@ public:
                 r += std::to_string(down_cast<ASR::Real_t>(t)->m_kind);
                 r += ")";
                 break;
-	    } case ASR::ttypeType::Complex: {
+            } case ASR::ttypeType::Complex: {
                 r = "complex(";
                 r += std::to_string(down_cast<ASR::Complex_t>(t)->m_kind);
                 r += ")";
@@ -203,6 +203,19 @@ public:
                     + ASRUtils::type_to_str_python(t) + "` is not handled yet");
         }
         return r;
+    }
+
+    template <typename T>
+    void handle_compare(const T& x) {
+        std::string r = "", m_op = cmpop2str(x.m_op);
+        int current_precedence = last_expr_precedence;
+        visit_expr_with_precedence(*x.m_left, current_precedence);
+        r += s;
+        r += m_op;
+        visit_expr_with_precedence(*x.m_right, current_precedence);
+        r += s;
+        last_expr_precedence = current_precedence;
+        s = r;
     }
 
     /********************************** Unit **********************************/
@@ -945,15 +958,7 @@ public:
     }
 
     void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
-        std::string r = "", m_op = cmpop2str(x.m_op);
-        int current_precedence = last_expr_precedence;
-        visit_expr_with_precedence(*x.m_left, current_precedence);
-        r += s;
-        r += m_op;
-        visit_expr_with_precedence(*x.m_right, current_precedence);
-        r += s;
-        last_expr_precedence = current_precedence;
-        s = r;
+        handle_compare(x);
     }
 
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
@@ -999,15 +1004,7 @@ public:
     }
 
     void visit_RealCompare(const ASR::RealCompare_t &x) {
-        std::string r = "", m_op = cmpop2str(x.m_op);
-        int current_precedence = last_expr_precedence;
-        visit_expr_with_precedence(*x.m_left, current_precedence);
-        r += s;
-        r += m_op;
-        visit_expr_with_precedence(*x.m_right, current_precedence);
-        r += s;
-        last_expr_precedence = current_precedence;
-        s = r;
+        handle_compare(x);
     }
 
     void visit_RealBinOp(const ASR::RealBinOp_t &x) {
@@ -1030,9 +1027,15 @@ public:
         s = "(" + re + ", " + im + ")";
     }
 
-    // void visit_ComplexUnaryMinus(const ASR::ComplexUnaryMinus_t &x) {}
+    void visit_ComplexUnaryMinus(const ASR::ComplexUnaryMinus_t &x) {
+        visit_expr_with_precedence(*x.m_arg, 9);
+        s = "-" + s;
+        last_expr_precedence = Precedence::UnaryMinus;
+    }
 
-    // void visit_ComplexCompare(const ASR::ComplexCompare_t &x) {}
+    void visit_ComplexCompare(const ASR::ComplexCompare_t &x) {
+        handle_compare(x);
+    }
 
     // void visit_ComplexBinOp(const ASR::ComplexBinOp_t &x) {}
 
@@ -1053,7 +1056,9 @@ public:
         last_expr_precedence = Precedence::Not;
     }
 
-    // void visit_LogicalCompare(const ASR::LogicalCompare_t &x) {}
+    void visit_LogicalCompare(const ASR::LogicalCompare_t &x) {
+        handle_compare(x);
+    }
 
     void visit_LogicalBinOp(const ASR::LogicalBinOp_t &x) {
         std::string r = "", m_op = logicalbinop2str(x.m_op);
@@ -1100,15 +1105,7 @@ public:
     // void visit_StringSection(const ASR::StringSection_t &x) {}
 
     void visit_StringCompare(const ASR::StringCompare_t &x) {
-        std::string r = "", m_op = cmpop2str(x.m_op);
-        int current_precedence = last_expr_precedence;
-        visit_expr_with_precedence(*x.m_left, current_precedence);
-        r += s;
-        r += m_op;
-        visit_expr_with_precedence(*x.m_right, current_precedence);
-        r += s;
-        last_expr_precedence = current_precedence;
-        s = r;
+        handle_compare(x);
     }
 
     // void visit_StringOrd(const ASR::StringOrd_t &x) {}
