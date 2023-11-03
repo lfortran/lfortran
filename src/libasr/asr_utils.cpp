@@ -1465,6 +1465,7 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
 
     ASR::expr_t* dest_shape = nullptr;
     ASR::expr_t* value = nullptr;
+    ASR::ttype_t* ret_type = nullptr;
     if( ASRUtils::is_fixed_size_array(expr1_mdims, expr1_ndims) ) {
         Vec<ASR::expr_t*> lengths; lengths.reserve(al, expr1_ndims);
         for( size_t i = 0; i < expr1_ndims; i++ ) {
@@ -1495,6 +1496,7 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
             }
             value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc,
                 values.p, values.size(), value_type, ASR::arraystorageType::ColMajor));
+            ret_type = value_type;
         }
     } else {
         dest_shape = ASRUtils::EXPR(ASR::make_IntrinsicArrayFunction_t(al, loc,
@@ -1502,7 +1504,12 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
             shape_args.size(), 0, dest_shape_type, nullptr));
     }
 
-    expr2 = ASRUtils::EXPR(ASR::make_ArrayBroadcast_t(al, loc, expr2, dest_shape, expr1_type, value));
+    if (ret_type == nullptr) {
+        // TODO: Construct appropriate return type here
+        // For now simply coping the type from expr1
+        ret_type = expr1_type;
+    }
+    expr2 = ASRUtils::EXPR(ASR::make_ArrayBroadcast_t(al, loc, expr2, dest_shape, ret_type, value));
 }
 
 void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
