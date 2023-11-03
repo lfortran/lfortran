@@ -146,7 +146,7 @@ public:
                 r += std::to_string(down_cast<ASR::Real_t>(t)->m_kind);
                 r += ")";
                 break;
-           } case ASR::ttypeType::Complex: {
+            } case ASR::ttypeType::Complex: {
                 r = "complex(";
                 r += std::to_string(down_cast<ASR::Complex_t>(t)->m_kind);
                 r += ")";
