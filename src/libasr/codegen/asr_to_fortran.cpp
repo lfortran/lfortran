@@ -440,13 +440,13 @@ public:
         if (type->m_elemental) {
             r += "elemental ";
         }
-        std::string return_var = "";
+        bool is_return_var_declared = false;
         if (x.m_return_var) {
-            LCOMPILERS_ASSERT(is_a<ASR::Var_t>(*x.m_return_var));
-            visit_expr(*x.m_return_var);
-            return_var = s;
-            r += get_type(ASRUtils::expr_type(x.m_return_var));
-            r += " ";
+            if (!ASRUtils::is_array(ASRUtils::expr_type(x.m_return_var))) {
+                is_return_var_declared = true;
+                r += get_type(ASRUtils::expr_type(x.m_return_var));
+                r += " ";
+            }
             r += "function";
         } else {
             r += "subroutine";
@@ -469,8 +469,14 @@ public:
             }
             r += ")";
         }
-        if (x.m_return_var && strcmp(x.m_name, return_var.c_str())) {
-            r += " result(" + return_var + ")";
+        std::string return_var = "";
+        if (x.m_return_var) {
+            LCOMPILERS_ASSERT(is_a<ASR::Var_t>(*x.m_return_var));
+            visit_expr(*x.m_return_var);
+            return_var = s;
+            if (strcmp(x.m_name, return_var.c_str())) {
+                r += " result(" + return_var + ")";
+            }
         }
         r += "\n";
 
@@ -479,7 +485,7 @@ public:
             std::string variable_declaration;
             std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
             for (auto &item : var_order) {
-                if (return_var.size() && item == return_var) continue;
+                if (is_return_var_declared && item == return_var) continue;
                 ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
                 if (is_a<ASR::Variable_t>(*var_sym)) {
                     visit_symbol(*var_sym);
