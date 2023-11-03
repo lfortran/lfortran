@@ -1887,6 +1887,7 @@ void store_unit_file(int32_t unit_num, FILE* filep, bool unit_file_bin) {
 }
 
 FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin) {
+    *unit_file_bin = false;
     for( int i = 0; i <= last_index_used; i++ ) {
         if( unit_to_file[i].unit == unit_num ) {
             *unit_file_bin = unit_to_file[i].unit_file_bin;
