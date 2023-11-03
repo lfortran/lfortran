@@ -205,6 +205,19 @@ public:
         return r;
     }
 
+    template <typename T>
+    void handle_compare(const T& x) {
+        std::string r = "", m_op = cmpop2str(x.m_op);
+        int current_precedence = last_expr_precedence;
+        visit_expr_with_precedence(*x.m_left, current_precedence);
+        r += s;
+        r += m_op;
+        visit_expr_with_precedence(*x.m_right, current_precedence);
+        r += s;
+        last_expr_precedence = current_precedence;
+        s = r;
+    }
+
     /********************************** Unit **********************************/
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         std::string r = "";
@@ -1018,19 +1031,6 @@ public:
         visit_expr_with_precedence(*x.m_arg, 9);
         s = "-" + s;
         last_expr_precedence = Precedence::UnaryMinus;
-    }
-
-    template <typename T>
-    void handle_compare(const T& x) {
-        std::string r = "", m_op = cmpop2str(x.m_op);
-        int current_precedence = last_expr_precedence;
-        visit_expr_with_precedence(*x.m_left, current_precedence);
-        r += s;
-        r += m_op;
-        visit_expr_with_precedence(*x.m_right, current_precedence);
-        r += s;
-        last_expr_precedence = current_precedence;
-        s = r;
     }
 
     void visit_ComplexCompare(const ASR::ComplexCompare_t &x) {
