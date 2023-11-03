@@ -884,6 +884,7 @@ public:
             SET_INTRINSIC_NAME(Exp, "exp");
             SET_INTRINSIC_NAME(Max, "max");
             SET_INTRINSIC_NAME(Min, "min");
+            SET_INTRINSIC_NAME(Sqrt, "sqrt");
             default : {
                 throw LCompilersException("IntrinsicScalarFunction: `"
                     + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)

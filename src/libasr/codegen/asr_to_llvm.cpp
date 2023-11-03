@@ -1456,6 +1456,9 @@ public:
             return;
         }
         this->visit_expr(*x.m_arg);
+        if (tmp->getType()->isPointerTy()) {
+            tmp = CreateLoad(tmp);
+        }
         llvm::Value *c = tmp;
         int64_t kind_value = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x.m_arg));
         std::string func_name;
