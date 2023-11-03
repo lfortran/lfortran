@@ -209,7 +209,7 @@
                                         (Real 4)
                                     )]
                                     (Array
-                                        (Integer 4)
+                                        (Real 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 4 (Integer 4)))]
                                         FixedSizeArray
@@ -278,7 +278,7 @@
                                         (Real 4)
                                     )]
                                     (Array
-                                        (Integer 4)
+                                        (Real 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 4 (Integer 4)))]
                                         FixedSizeArray
@@ -345,7 +345,7 @@
                                             (Real 4)
                                         )]
                                         (Array
-                                            (Integer 4)
+                                            (Real 4)
                                             [((IntegerConstant 1 (Integer 4))
                                             (IntegerConstant 4 (Integer 4)))]
                                             FixedSizeArray
@@ -401,7 +401,7 @@
                                                         (Real 4)
                                                     )]
                                                     (Array
-                                                        (Integer 4)
+                                                        (Real 4)
                                                         [((IntegerConstant 1 (Integer 4))
                                                         (IntegerConstant 4 (Integer 4)))]
                                                         FixedSizeArray
@@ -467,7 +467,7 @@
                                                 (Real 4)
                                             )]
                                             (Array
-                                                (Integer 4)
+                                                (Real 4)
                                                 [((IntegerConstant 1 (Integer 4))
                                                 (IntegerConstant 4 (Integer 4)))]
                                                 FixedSizeArray
