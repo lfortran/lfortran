@@ -105,8 +105,7 @@
                                         []
                                         .false.
                                     )
-                                    [not_ok
-                                    default_class]
+                                    [default_class]
                                     []
                                     [(If
                                         (PointerAssociated
