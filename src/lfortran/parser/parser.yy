@@ -1575,9 +1575,10 @@ decl_statement
     : var_decl
     | interface_decl
     | derived_type_decl
-    | template_decl
     | enum_decl
     | statement
+    | template_decl
+    | requirement_decl
     | instantiate
     | require_decl
     ;
