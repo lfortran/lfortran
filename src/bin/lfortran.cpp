@@ -1506,7 +1506,7 @@ int link_executable(const std::vector<std::string> &infiles,
             extra_runtime_linker_path += " -Wl,-rpath," + s;
         }
     }
-    if (backend == Backend::llvm) {
+    if (backend == Backend::llvm || backend == Backend::fortran) {
         std::string run_cmd = "", compile_cmd = "";
         if (t == "x86_64-pc-windows-msvc") {
             compile_cmd = "link /NOLOGO /OUT:" + outfile + " ";
@@ -1551,6 +1551,10 @@ int link_executable(const std::vector<std::string> &infiles,
                 compile_cmd += extra_runtime_linker_path;
             }
             compile_cmd += " -l" + runtime_lib + " -lm";
+            if (backend == Backend::fortran) {
+                compile_cmd += " -L\"$CONDA_PREFIX/lib\" -Wl,-rpath,"
+                    "\"$CONDA_PREFIX/lib/\" -lgfortran";
+            }
             run_cmd = "./" + outfile;
         }
         int err = system(compile_cmd.c_str());
@@ -1664,17 +1668,6 @@ int link_executable(const std::vector<std::string> &infiles,
     } else if (backend == Backend::wasm) {
         std::string cmd = "cp " + infiles[0] + " " + outfile
             + " && " + "cp " + infiles[0] + ".js" + " " + outfile + ".js";
-        int err = system(cmd.c_str());
-        if (err) {
-            std::cout << "The command '" + cmd + "' failed." << std::endl;
-            return 10;
-        }
-        return 0;
-    } else if (backend == Backend::fortran) {
-        std::string cmd = "gfortran -o " + outfile + " ";
-        for (auto &s : infiles) {
-            cmd += s + " ";
-        }
         int err = system(cmd.c_str());
         if (err) {
             std::cout << "The command '" + cmd + "' failed." << std::endl;
