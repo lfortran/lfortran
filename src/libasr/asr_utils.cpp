@@ -190,24 +190,38 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
             }
             return sym;
         }
+        
+        void handle_Var(ASR::expr_t* arg_expr, ASR::expr_t** expr_to_replace) {
+            if (ASR::is_a<ASR::Var_t>(*arg_expr)) {
+                ASR::Var_t* arg_var = ASR::down_cast<ASR::Var_t>(arg_expr);
+                ASR::symbol_t* arg_sym = arg_var->m_v;
+                ASR::symbol_t* arg_sym_underlying = ASRUtils::symbol_get_past_external(arg_sym);
+                ASR::symbol_t* sym = fetch_sym(arg_sym_underlying);
+                if (sym != arg_sym) {
+                    ASR::expr_t** current_expr_copy = current_expr;
+                    current_expr = const_cast<ASR::expr_t**>((expr_to_replace));
+                    this->call_replacer_(sym);
+                    current_expr = current_expr_copy;
+                }
+            }
+        }
+
 
         void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
             ASR::SubroutineCall_t* subrout_call = (ASR::SubroutineCall_t*)(&x);
             for (size_t j = 0; j < subrout_call->n_args; j++) {
                 ASR::call_arg_t arg = subrout_call->m_args[j];
                 ASR::expr_t* arg_expr = arg.m_value;
-                if (ASR::is_a<ASR::Var_t>(*arg_expr)) {
-                    ASR::Var_t* arg_var = ASR::down_cast<ASR::Var_t>(arg_expr);
-                    ASR::symbol_t* arg_sym = arg_var->m_v;
-                    ASR::symbol_t* arg_sym_underlying = ASRUtils::symbol_get_past_external(arg_sym);
-                    ASR::symbol_t* sym = fetch_sym(arg_sym_underlying);
-                    if (sym != arg_sym) {
-                        ASR::expr_t** current_expr_copy = current_expr;
-                        current_expr = const_cast<ASR::expr_t**>(&(subrout_call->m_args[j].m_value));
-                        this->call_replacer_(sym);
-                        current_expr = current_expr_copy;
-                    }
-                }
+                handle_Var(arg_expr, &(subrout_call->m_args[j].m_value));
+            }
+        }
+
+        void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+            ASR::FunctionCall_t* func_call = (ASR::FunctionCall_t*)(&x);
+            for (size_t j = 0; j < func_call->n_args; j++) {
+                ASR::call_arg_t arg = func_call->m_args[j];
+                ASR::expr_t* arg_expr = arg.m_value;
+                handle_Var(arg_expr, &(func_call->m_args[j].m_value));
             }
         }
 
