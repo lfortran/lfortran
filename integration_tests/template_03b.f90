@@ -36,9 +36,9 @@ contains
     subroutine f()
         integer, parameter :: sp = kind(1.0), dp = kind(1.d0)
         instantiate axpy_tmpl(real(sp), integer, real(dp), real(sp), operator(+), operator(*))
-        real :: a
+        real(sp) :: a
         integer :: x(3)
-        real :: y(3)
+        real(dp) :: y(3)
         a = 0.5
         x = 2
         y = 0

@@ -2,11 +2,11 @@
     "basename": "ast-template_03b-6812e13",
     "cmd": "lfortran --show-ast --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/template_03b.f90",
-    "infile_hash": "404e9930ac2e2b281eb818f5bda5e60fd76b165cb3dfd55e6ca20cd7",
+    "infile_hash": "0fde3b3e9fa4d4c7c474bdcb2e919925643255e14d694460a6190804",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "ast-template_03b-6812e13.stdout",
-    "stdout_hash": "ab30d9416f20909178e27c65580683e6d5020c373ef55c82e7522f26",
+    "stdout_hash": "0d2136210038b0f42ebd4d02311eadc08ff8f452720e5c839fe83c70",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

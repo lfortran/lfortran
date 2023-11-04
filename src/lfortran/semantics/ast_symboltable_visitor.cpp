@@ -2699,7 +2699,6 @@ public:
         }
 
         std::map<std::string, ASR::ttype_t*> type_subs;
-        // std::vector<std::string> primitives = {"integer"};
 
         SetChar args;
         args.reserve(al, x.n_namelist);
@@ -2978,20 +2977,10 @@ public:
                         throw SemanticError("The restriction " + f_name
                             + " does not have 2 parameters", x.base.base.loc);
                     }
-                    ASR::ttype_t *ltype = ASRUtils::subs_expr_type(type_subs, f->m_args[0]);
-                    ASR::ttype_t *rtype = ASRUtils::subs_expr_type(type_subs, f->m_args[1]);
+
+                    ASR::ttype_t *left_type = ASRUtils::subs_expr_type(type_subs, f->m_args[0]);
+                    ASR::ttype_t *right_type = ASRUtils::subs_expr_type(type_subs, f->m_args[1]);
                     ASR::ttype_t *ftype = ASRUtils::subs_expr_type(type_subs, f->m_return_var);
-                    if (is_binop) {
-                        if (!ASRUtils::check_equal_type(ltype, rtype) || !ASRUtils::check_equal_type(rtype, ftype)) {
-                            throw SemanticError("Intrinsic operator "+ op_name + " does not apply to "
-                                "arguments of different types", x.base.base.loc);
-                        }
-                    } else if (is_cmpop) {
-                        if (!ASRUtils::check_equal_type(ltype, rtype) || !ASRUtils::is_logical(*ftype)) {
-                            throw SemanticError("Intrinsic operator " + op_name +
-                                " requires same-typed arguments and a logical return type", x.base.base.loc);
-                        }
-                    }
 
                     SymbolTable *parent_scope = current_scope;
                     current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -3000,8 +2989,10 @@ public:
                     for (size_t i=0; i<2; i++) {
                         std::string var_name = "arg" + std::to_string(i);
                         ASR::asr_t *v = ASR::make_Variable_t(al, x.base.base.loc, current_scope,
-                            s2c(al, var_name), nullptr, 0, ASR::intentType::In, nullptr, nullptr,
-                            ASR::storage_typeType::Default, ASRUtils::duplicate_type(al, ltype),
+                            s2c(al, var_name), nullptr, 0, ASR::intentType::In, nullptr,
+                            nullptr, ASR::storage_typeType::Default,
+                            (i == 0 ? ASRUtils::duplicate_type(al, left_type)
+                                : ASRUtils::duplicate_type(al, right_type)),
                             nullptr, ASR::abiType::Source, ASR::accessType::Private,
                             ASR::presenceType::Required, false);
                         current_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(v));
@@ -3009,20 +3000,33 @@ public:
                         args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, var)));
                     }
 
-                    std::string func_name = op_name + "_intrinsic_" + ASRUtils::type_to_str(ltype);
+                    std::string func_name = op_name + "_intrinsic_" + ASRUtils::type_to_str(left_type);
                     ASR::ttype_t *return_type = nullptr;
                     ASR::expr_t *value = nullptr;
-                    ASR::expr_t *lexpr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
+                    ASR::expr_t *left = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                         current_scope->get_symbol("arg0")));
-                    ASR::expr_t *rexpr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
+                    ASR::expr_t *right = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                         current_scope->get_symbol("arg1")));
 
+                    ASR::expr_t **conversion_cand = &left;
+                    ASR::ttype_t *source_type = left_type;
+                    ASR::ttype_t *dest_type = right_type;
+
                     if (is_binop) {
-                        value = ASRUtils::EXPR(ASRUtils::make_Binop_util(al, x.base.base.loc, binop, lexpr, rexpr, ltype));
-                        return_type = ASRUtils::duplicate_type(al, ltype);
+                        ImplicitCastRules::find_conversion_candidate(&left, &right, left_type,
+                                                                     right_type, conversion_cand,
+                                                                     &source_type, &dest_type);
+                        ImplicitCastRules::set_converted_value(al, x.base.base.loc, conversion_cand,
+                                                               source_type, dest_type);
+                        return_type = ASRUtils::duplicate_type(al, ftype);
+                        value = ASRUtils::EXPR(ASRUtils::make_Binop_util(al, x.base.base.loc, binop, left, right, dest_type));
+                        if (!ASRUtils::check_equal_type(dest_type, return_type)) {
+                            throw SemanticError("Unapplicable types for intrinsic operator " + op_name,
+                                x.base.base.loc);
+                        }
                     } else {
-                        value = ASRUtils::EXPR(ASRUtils::make_Cmpop_util(al, x.base.base.loc, cmpop, lexpr, rexpr, ltype));
                         return_type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
+                        value = ASRUtils::EXPR(ASRUtils::make_Cmpop_util(al, x.base.base.loc, cmpop, left, right, left_type));
                     }
 
                     ASR::asr_t *return_v = ASR::make_Variable_t(al, x.base.base.loc,

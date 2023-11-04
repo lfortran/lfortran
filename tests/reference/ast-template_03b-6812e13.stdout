@@ -471,7 +471,9 @@
             (Declaration
                 (AttrType
                     TypeReal
-                    []
+                    [(()
+                    sp
+                    Value)]
                     ()
                     ()
                     None
@@ -507,7 +509,9 @@
             (Declaration
                 (AttrType
                     TypeReal
-                    []
+                    [(()
+                    dp
+                    Value)]
                     ()
                     ()
                     None
