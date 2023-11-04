@@ -1004,7 +1004,7 @@
                                                         .false.
                                                     )
                                                     [cast_integer
-                                                    ~add_intrinsic_integer]
+                                                    ~add_intrinsic]
                                                     [(Var 15 arr)]
                                                     [(=
                                                         (Var 15 n)
@@ -1058,7 +1058,7 @@
                                                             [(=
                                                                 (Var 15 res)
                                                                 (FunctionCall
-                                                                    13 ~add_intrinsic_integer
+                                                                    13 ~add_intrinsic
                                                                     ()
                                                                     [((Var 15 res))
                                                                     ((ArrayItem
@@ -1181,7 +1181,7 @@
                                                         .false.
                                                     )
                                                     [cast_real
-                                                    ~add_intrinsic_real]
+                                                    ~add_intrinsic1]
                                                     [(Var 17 arr)]
                                                     [(=
                                                         (Var 17 n)
@@ -1235,7 +1235,7 @@
                                                             [(=
                                                                 (Var 17 res)
                                                                 (FunctionCall
-                                                                    13 ~add_intrinsic_real
+                                                                    13 ~add_intrinsic1
                                                                     ()
                                                                     [((Var 17 res))
                                                                     ((ArrayItem
@@ -1310,7 +1310,15 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            ~add_intrinsic_integer:
+                                            ~add:
+                                                (CustomOperator
+                                                    13
+                                                    ~add
+                                                    [13 ~add_intrinsic
+                                                    13 ~add_intrinsic1]
+                                                    Public
+                                                ),
+                                            ~add_intrinsic:
                                                 (Function
                                                     (SymbolTable
                                                         14
@@ -1364,7 +1372,7 @@
                                                                     .false.
                                                                 )
                                                         })
-                                                    ~add_intrinsic_integer
+                                                    ~add_intrinsic
                                                     (FunctionType
                                                         [(Integer 4)
                                                         (Integer 4)]
@@ -1400,7 +1408,7 @@
                                                     .true.
                                                     ()
                                                 ),
-                                            ~add_intrinsic_real:
+                                            ~add_intrinsic1:
                                                 (Function
                                                     (SymbolTable
                                                         16
@@ -1454,7 +1462,7 @@
                                                                     .false.
                                                                 )
                                                         })
-                                                    ~add_intrinsic_real
+                                                    ~add_intrinsic1
                                                     (FunctionType
                                                         [(Real 4)
                                                         (Real 4)]

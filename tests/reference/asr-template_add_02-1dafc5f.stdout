@@ -689,13 +689,13 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [~add_intrinsic_real]
+                                                    [~add_intrinsic]
                                                     [(Var 12 x)
                                                     (Var 12 y)]
                                                     [(=
                                                         (Var 12 z)
                                                         (FunctionCall
-                                                            10 ~add_intrinsic_real
+                                                            10 ~add_intrinsic
                                                             ()
                                                             [((Var 12 x))
                                                             ((Var 12 y))]
@@ -743,7 +743,14 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            ~add_intrinsic_real:
+                                            ~add:
+                                                (CustomOperator
+                                                    10
+                                                    ~add
+                                                    [10 ~add_intrinsic]
+                                                    Public
+                                                ),
+                                            ~add_intrinsic:
                                                 (Function
                                                     (SymbolTable
                                                         11
@@ -797,7 +804,7 @@
                                                                     .false.
                                                                 )
                                                         })
-                                                    ~add_intrinsic_real
+                                                    ~add_intrinsic
                                                     (FunctionType
                                                         [(Real 4)
                                                         (Real 4)]

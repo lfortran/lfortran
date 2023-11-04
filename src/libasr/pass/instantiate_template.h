@@ -30,7 +30,11 @@ namespace LCompilers {
         SymbolTable *current_scope,
         std::string new_sym_name, ASR::symbol_t *sym);
 
-    void check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
+    bool check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
+        std::map<std::string, ASR::symbol_t*> &symbol_subs,
+        ASR::Function_t *f, ASR::symbol_t *sym_arg);
+
+    void report_check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
         std::map<std::string, ASR::symbol_t*> &symbol_subs,
         ASR::Function_t *f, ASR::symbol_t *sym_arg, const Location &loc,
         diag::Diagnostics &diagnostics);
