@@ -35,7 +35,6 @@ module template_03_m
         integer, parameter :: sp = kind(1.0), dp = kind(1.d0)
         instantiate axpy_tmpl(real, integer, real, real, operator(+), operator(*))
         real :: a
-        real(dp) :: b
         integer :: x(3)
         real :: y(3)
         a = 0.5

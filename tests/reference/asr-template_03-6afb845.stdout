@@ -710,22 +710,6 @@
                                                     .false.
                                                     ()
                                                 ),
-                                            b:
-                                                (Variable
-                                                    9
-                                                    b
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 8)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
                                             dp:
                                                 (Variable
                                                     9
