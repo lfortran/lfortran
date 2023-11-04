@@ -2699,47 +2699,41 @@ public:
         }
 
         std::map<std::string, ASR::ttype_t*> type_subs;
-        std::vector<std::string> primitives = {"integer"};
+        // std::vector<std::string> primitives = {"integer"};
 
         SetChar args;
         args.reserve(al, x.n_namelist);
-        for (size_t i=0; i<x.n_namelist; i++) {
-            std::string req_arg = to_lower(x.m_namelist[i]);
-            std::string req_param = req->m_args[i];
-            if (std::find(primitives.begin(),
-                          primitives.end(),
-                          req_arg) == primitives.end()
-                && std::find(current_procedure_args.begin(),
-                          current_procedure_args.end(),
-                          req_arg) == current_procedure_args.end()) {
-                throw SemanticError("Parameter '" + std::string(x.m_namelist[i])
-                    + "' was not declared", x.base.base.loc);
-            }
 
-            /*
-            ASR::symbol_t *requires_arg_sym = current_scope->resolve_symbol(requires_arg);
-            context_map[requirement_arg] = requires_arg;
-            if (!requires_arg_sym) {
-                ASR::symbol_t *requirement_arg_sym = (req->m_symtab)->get_symbol(requirement_arg);
-                requires_arg_sym = replace_symbol(requirement_arg_sym, requires_arg);
-                current_scope->add_symbol(requires_arg, requires_arg_sym);
+        for (size_t i=0; i<x.n_namelist; i++) {
+            AST::decl_attribute_t *attr = x.m_namelist[i];
+
+            std::string req_param = req->m_args[i];
+            std::string req_arg = "";
+
+            if (AST::is_a<AST::AttrNamelist_t>(*attr)) {
+                AST::AttrNamelist_t *attr_name = AST::down_cast<AST::AttrNamelist_t>(attr);
+                req_arg = to_lower(attr_name->m_name);
+                if (std::find(current_procedure_args.begin(),
+                        current_procedure_args.end(),
+                        req_arg) == current_procedure_args.end()) {
+                    throw SemanticError("Parameter '" + req_arg
+                        + "' was not declared", x.base.base.loc);
+                }
+            } else if (AST::is_a<AST::AttrType_t>(*attr)) {
+                Vec<ASR::dimension_t> dims;
+                dims.reserve(al, 0);
+                ASR::symbol_t *type_declaration;
+                ASR::ttype_t *ttype = determine_type(attr->base.loc, req_param,
+                    attr, false, false, dims, type_declaration, current_procedure_abi_type);
+
+                req_arg = ASRUtils::type_to_str(ttype);
+                type_subs[req_param] = ttype;
+            } else {
+                throw LCompilersException("Unsupported decl_attribute for require statements.");
             }
-            */
 
             ASR::symbol_t *param_sym = (req->m_symtab)->get_symbol(req_param);
-
-            if (std::find(primitives.begin(),
-                          primitives.end(),
-                          req_arg) != primitives.end()) {
-                if (req_arg.compare("integer") == 0) {
-                    type_subs[req_param] = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-                } else {
-                    throw LCompilersException("Unsupported type for require statements.");
-                }
-            }
-
             rename_symbol(al, type_subs, current_scope, req_arg, param_sym);
-
             context_map[req_param] = req_arg;
             args.push_back(al, s2c(al, req_arg));
         }
@@ -2857,66 +2851,56 @@ public:
         for (size_t i=0; i<x.n_args; i++) {
             std::string param = temp->m_args[i];
             ASR::symbol_t *param_sym = temp->m_symtab->get_symbol(param);
-            if (AST::is_a<AST::UseSymbol_t>(*x.m_args[i])) {
-                AST::UseSymbol_t* arg_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_args[i]);
-                std::string arg = to_lower(arg_symbol->m_remote_sym);
-                if (ASR::is_a<ASR::Variable_t>(*param_sym)) {
-                    ASR::ttype_t *t = ASRUtils::symbol_type(param_sym);
-                    ASR::ttype_t* s;
-                    if (ASRUtils::is_type_parameter(*t)) {
-                        ASR::TypeParameter_t *tp = ASR::down_cast<ASR::TypeParameter_t>(t);
-                        if (arg.compare("real") == 0) {
-                            s = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4));
-                        } else if (arg.compare("integer") == 0) {
-                            s = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-                        } else if (arg.compare("complex") == 0) {
-                            s = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, 4));
-                        } else if (arg.compare("character") == 0) {
-                            s = ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc, 1, 0, nullptr));
-                        } else if (arg.compare("logical") == 0) {
-                            s = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
-                        } else {
-                            ASR::symbol_t *arg_t = current_scope->resolve_symbol(arg);
-                            if (ASRUtils::is_type_parameter(*ASRUtils::symbol_type(arg_t))) {
-                                ASR::TypeParameter_t *arg_tp = ASR::down_cast<ASR::TypeParameter_t>(ASRUtils::symbol_type(arg_t));
-                                s = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, x.base.base.loc, arg_tp->m_param));
-                            } else {
-                                throw SemanticError(
-                                    "The type " + arg + " is not yet handled for template instantiation",
-                                    x.base.base.loc);
-                            }
-                        }
-                        type_subs[tp->m_param] = s;
-                    } else {
-                        // type checking non-type parameter template arguments
-                        ASR::symbol_t *arg_sym = current_scope->resolve_symbol(arg);
-                        s = ASRUtils::symbol_type(arg_sym);
-                        if (!ASRUtils::check_equal_type(s, t)) {
-                            throw SemanticError(
-                                "The type of " + arg + " does not match the type of " + param,
-                                x.base.base.loc);
-                        }
-                        symbol_subs[param] = arg_sym;
-                    }
-                } else if (ASR::is_a<ASR::Function_t>(*param_sym)) {
-                    ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(param_sym);
+            ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
+            if (AST::is_a<AST::AttrType_t>(*x.m_args[i])) {
+                // Handling types as instantiate's arguments
+                Vec<ASR::dimension_t> dims;
+                dims.reserve(al, 0);
+                ASR::symbol_t *type_declaration;
+                ASR::ttype_t *arg_type = determine_type(x.m_args[i]->base.loc, param,
+                    x.m_args[i], false, false, dims, type_declaration, current_procedure_abi_type);
+                if (!ASRUtils::is_type_parameter(*param_type)) {
+                    throw SemanticError("The type " + ASRUtils::type_to_str(arg_type) +
+                        " cannot be applied to non-type parameter " + param, x.base.base.loc);
+                }
+                type_subs[param] = arg_type;
+            } else if (AST::is_a<AST::AttrNamelist_t>(*x.m_args[i])) {
+                AST::AttrNamelist_t *attr_name = AST::down_cast<AST::AttrNamelist_t>(x.m_args[i]);
+                std::string arg = to_lower(attr_name->m_name);
+                if (ASR::is_a<ASR::Function_t>(*param_sym)) {
+                    // Handling functions passed as instantiate's arguments
+                    ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(param_sym);
                     ASR::symbol_t *f_arg0 = current_scope->resolve_symbol(arg);
                     if (!f_arg0) {
                         throw SemanticError("The function argument " + arg + " is not found",
                             x.m_args[i]->base.loc);
                     }
-                    ASR::symbol_t *f_arg = ASRUtils::symbol_get_past_external(f_arg0);
-                    if (!ASR::is_a<ASR::Function_t>(*f_arg)) {
-                        throw SemanticError(
-                            "The argument for " + param + " must be a function",
-                            x.m_args[i]->base.loc);
-                    }
                     check_restriction(type_subs, symbol_subs, f, f_arg0, x.base.base.loc, diag);
+                } else if (ASRUtils::is_type_parameter(*param_type)) {
+                    // Handling type parameters passed as instantiate's arguments
+                    ASR::symbol_t *arg_sym = current_scope->resolve_symbol(arg);
+                    ASR::ttype_t *arg_type = ASRUtils::symbol_type(arg_sym);
+                    if (ASRUtils::is_type_parameter(*arg_type)) {
+                        type_subs[param] = ASRUtils::TYPE(ASR::make_TypeParameter_t(al,
+                            x.base.base.loc, ASR::down_cast<ASR::TypeParameter_t>(arg_type)->m_param));
+                    } else {
+                        throw SemanticError("The type " + arg + " is not yet handled for " 
+                            + "template instantiation", x.base.base.loc);
+                    }
                 } else {
-                    throw SemanticError("Unsupported symbol argument", x.m_args[i]->base.loc);
+                    // Handling local variables passed as instantiate's arguments
+                    ASR::symbol_t *arg_sym = current_scope->resolve_symbol(arg);
+                    ASR::ttype_t *arg_type = ASRUtils::symbol_type(arg_sym);
+                    if (!ASRUtils::check_equal_type(arg_type, param_type)) {
+                        throw SemanticError("The type of " + arg + " does not match the type of " + param,
+                            x.base.base.loc);
+                    }
+                    symbol_subs[param] = arg_sym;
                 }
-            } else if (AST::is_a<AST::IntrinsicOperator_t>(*x.m_args[i])) {
-                AST::IntrinsicOperator_t *intrinsic_op = AST::down_cast<AST::IntrinsicOperator_t>(x.m_args[i]);
+
+            } else if (AST::is_a<AST::AttrIntrinsicOperator_t>(*x.m_args[i])) {
+                AST::AttrIntrinsicOperator_t *intrinsic_op 
+                    = AST::down_cast<AST::AttrIntrinsicOperator_t>(x.m_args[i]);
                 ASR::binopType binop = ASR::Add;
                 ASR::cmpopType cmpop = ASR::Eq;
                 bool is_binop = false, is_cmpop = false;
@@ -3018,8 +3002,7 @@ public:
                         ASR::asr_t *v = ASR::make_Variable_t(al, x.base.base.loc, current_scope,
                             s2c(al, var_name), nullptr, 0, ASR::intentType::In, nullptr, nullptr,
                             ASR::storage_typeType::Default, ASRUtils::duplicate_type(al, ltype),
-                            nullptr,
-                            ASR::abiType::Source, ASR::accessType::Private,
+                            nullptr, ASR::abiType::Source, ASR::accessType::Private,
                             ASR::presenceType::Required, false);
                         current_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(v));
                         ASR::symbol_t *var = current_scope->get_symbol(var_name);
@@ -3073,7 +3056,7 @@ public:
                     symbol_subs[f->m_name] = op_sym;
                 }
             } else {
-                throw SemanticError("Unsupported template argument", x.m_args[i]->base.loc);
+                throw LCompilersException("Unsupported argument to instantiate statement.");
             }
         }
 

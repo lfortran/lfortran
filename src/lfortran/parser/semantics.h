@@ -286,6 +286,9 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
             down_cast<decl_attribute_t>(attr), \
             nullptr, None)
 
+#define ATTR_NAME(x, l) make_AttrNamelist_t \
+            (p.m_a, l, name2char(x))
+
 #define IMPORT0(x, trivia, l) make_Import_t( \
             p.m_a, l, \
             nullptr, 0, \
@@ -867,12 +870,17 @@ ast_t* SUBROUTINE_CALL0(Allocator &al, struct_member_t* mem, size_t n,
             v.push_back(al, item.arg);
         }
     }
+    Vec<decl_attribute_t*> v3;
+    v3.reserve(al, temp_args.size());
+    for (size_t i=0; i<temp_args.size(); i++) {
+        v3.push_back(al, down_cast<decl_attribute_t>(temp_args[i]));
+    }
     return make_SubroutineCall_t(al, l, 0,
         /*char* a_func*/ name2char(id),
         /*struct_member_t* a_member*/ mem, /*size_t n_member*/ n,
         /*expr_t** a_args*/ v.p, /*size_t n_args*/ v.size(),
         /*keyword_t* a_keywords*/ v2.p, /*size_t n_keywords*/ v2.size(),
-        /*temp_args*/ USE_SYMBOLS(temp_args), /*n_temp_args*/ temp_args.size(), nullptr);
+        /*temp_args*/ v3.p, /*n_temp_args*/ v3.size(), nullptr);
 }
 #define SUBROUTINE_CALL(name, args, l) SUBROUTINE_CALL0(p.m_a, \
         nullptr, 0, name, args, empty_vecast(), l)
@@ -1940,13 +1948,18 @@ ast_t* FUNCCALLORARRAY0(Allocator &al, const ast_t *id,
     for (auto &item : subargs) {
         v1.push_back(al, item.arg);
     }
+    Vec<decl_attribute_t*> v3;
+    v3.reserve(al, temp_args.size());
+    for (size_t i=0; i<temp_args.size(); i++) {
+        v3.push_back(al, down_cast<decl_attribute_t>(temp_args[i]));
+    }
     return make_FuncCallOrArray_t(al, l,
         /*char* a_func*/ name2char(id),
         /* struct_member_t* */member.p, /* size_t */member.size(),
         /*fnarg_t* a_args*/ v.p, /*size_t n_args*/ v.size(),
         /*keyword_t* a_keywords*/ v2.p, /*size_t n_keywords*/ v2.size(),
         /*fnarg_t* a_subargs*/ v1.p , /*size_t n_subargs*/ v1.size(),
-        /*m_temp_args*/ USE_SYMBOLS(temp_args), /*n_temp_args*/ temp_args.size());
+        /*m_temp_args*/ v3.p, /*n_temp_args*/ v3.size());
 }
 #define FUNCCALLORARRAY(id, args, l) FUNCCALLORARRAY0(p.m_a, id, empty5(), \
         args, empty1(), empty_vecast(), l)
@@ -2206,14 +2219,14 @@ ast_t* TYPEPARAMETER0(Allocator &al,
         VEC_CAST(require_list, unit_require), require_list.size())
 #define UNIT_REQUIRE(name, namelist, l) \
         make_UnitRequire_t(p.m_a, l, name2char(name), \
-        REDUCE_ARGS(p.m_a, namelist), namelist.size())
+        VEC_CAST(namelist, decl_attribute), namelist.size())
 #define INSTANTIATE1(name, args, l) \
         make_Instantiate_t(p.m_a, l, name2char(name), \
-        USE_SYMBOLS(args), args.size(), \
+        VEC_CAST(args, decl_attribute), args.size(), \
         nullptr, 0)
 #define INSTANTIATE2(name, args, syms, l) \
         make_Instantiate_t(p.m_a, l, name2char(name), \
-        USE_SYMBOLS(args), args.size(), \
+        VEC_CAST(args, decl_attribute), args.size(), \
         USE_SYMBOLS(syms), syms.size())
 
 #define DERIVED_TYPE_PROC(attr, syms, trivia, l) make_DerivedTypeProc_t(p.m_a, l, \
