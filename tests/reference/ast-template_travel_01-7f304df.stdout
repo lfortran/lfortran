@@ -554,13 +554,27 @@
             [(Require
                 [(UnitRequire
                     operations
-                    [D
-                    T
-                    S
-                    plus_D
-                    plus_T
-                    D_divided_by_T
-                    D_divided_by_S]
+                    [(AttrNamelist
+                        D
+                    )
+                    (AttrNamelist
+                        T
+                    )
+                    (AttrNamelist
+                        S
+                    )
+                    (AttrNamelist
+                        plus_D
+                    )
+                    (AttrNamelist
+                        plus_T
+                    )
+                    (AttrNamelist
+                        D_divided_by_T
+                    )
+                    (AttrNamelist
+                        D_divided_by_S
+                    )]
                 )]
             )
             (Declaration
@@ -911,33 +925,38 @@
             []
             [(Instantiate
                 travel_tmpl
-                [(UseSymbol
-                    real
+                [(AttrType
+                    TypeReal
+                    []
                     ()
-                )
-                (UseSymbol
-                    real
                     ()
+                    None
                 )
-                (UseSymbol
-                    real
+                (AttrType
+                    TypeReal
+                    []
                     ()
+                    ()
+                    None
                 )
-                (UseSymbol
+                (AttrType
+                    TypeReal
+                    []
+                    ()
+                    ()
+                    None
+                )
+                (AttrNamelist
                     add_real
-                    ()
                 )
-                (UseSymbol
+                (AttrNamelist
                     add_real
-                    ()
                 )
-                (UseSymbol
+                (AttrNamelist
                     slash_real
-                    ()
                 )
-                (UseSymbol
+                (AttrNamelist
                     slash_real
-                    ()
                 )]
                 [(UseSymbol
                     avg_S_from_T
@@ -946,33 +965,38 @@
             )
             (Instantiate
                 travel_tmpl
-                [(UseSymbol
-                    real
+                [(AttrType
+                    TypeReal
+                    []
                     ()
-                )
-                (UseSymbol
-                    real
                     ()
+                    None
                 )
-                (UseSymbol
-                    real
+                (AttrType
+                    TypeReal
+                    []
                     ()
+                    ()
+                    None
                 )
-                (UseSymbol
+                (AttrType
+                    TypeReal
+                    []
+                    ()
+                    ()
+                    None
+                )
+                (AttrNamelist
                     add_real
-                    ()
                 )
-                (UseSymbol
+                (AttrNamelist
                     add_real
-                    ()
                 )
-                (UseSymbol
+                (AttrNamelist
                     slash_real
-                    ()
                 )
-                (UseSymbol
+                (AttrNamelist
                     slash_real
-                    ()
                 )]
                 [(UseSymbol
                     avg_S_from_S

@@ -94,8 +94,12 @@
             [(Require
                 [(UnitRequire
                     eq
-                    [t
-                    ne]
+                    [(AttrNamelist
+                        t
+                    )
+                    (AttrNamelist
+                        ne
+                    )]
                 )]
             )
             (Declaration
@@ -439,11 +443,14 @@
         )]
         [(Instantiate
             change_positions_tmpl
-            [(UseSymbol
-                integer
+            [(AttrType
+                TypeInteger
+                []
                 ()
+                ()
+                None
             )
-            (IntrinsicOperator
+            (AttrIntrinsicOperator
                 NOTEQ
             )]
             [(UseSymbol
@@ -453,11 +460,14 @@
         )
         (Instantiate
             change_positions_tmpl
-            [(UseSymbol
-                character
+            [(AttrType
+                TypeCharacter
+                []
                 ()
+                ()
+                None
             )
-            (IntrinsicOperator
+            (AttrIntrinsicOperator
                 NOTEQ
             )]
             [(UseSymbol
