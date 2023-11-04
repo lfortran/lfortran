@@ -4963,7 +4963,8 @@ public:
         } else {
             v = current_scope->resolve_symbol(var_name);
         }
-        if (!v) {
+        if (!v || (v && is_external_procedure)) {
+            ASR::symbol_t* external_sym = is_external_procedure ? v : nullptr;
             if (var_name == "float" || var_name == "dble") {
                 Vec<ASR::call_arg_t> args;
                 visit_expr_list(x.m_args, x.n_args, args);
@@ -4980,15 +4981,25 @@ public:
             if( !is_function ) {
                 return;
             }
-            if (compiler_options.implicit_interface && is_function && !v) {
+            if (compiler_options.implicit_interface && is_function && ( !v || (v && is_external_procedure))) {
                 // Function Call is not defined in this case.
                 // We need to create an interface and add the Function into
                 // the symbol table.
                 // Currently using real*8 as the return type.
-                ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8));
+                ASR::ttype_t* type = external_sym ? ASRUtils::symbol_type(external_sym) :
+                                    ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8));
                 create_implicit_interface_function(x, var_name, true, type);
                 v = current_scope->resolve_symbol(var_name);
                 LCOMPILERS_ASSERT(v!=nullptr);
+                // check if external sym is updated, or: say if signature of external_sym and original_sym are different
+                if (v && external_sym && is_external_procedure && ASRUtils::is_external_sym_changed(v, external_sym)) {
+                    changed_external_function_symbol[ASRUtils::symbol_name(v)] = v;
+                }
+                // remove from external_procedures_mapping
+                if (v && is_external_procedure) {
+                    erase_from_external_mapping(var_name);
+                }
+                ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
             }
         }
         // if v is a function which has null pointer return type, give error
