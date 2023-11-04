@@ -190,24 +190,38 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
             }
             return sym;
         }
+        
+        void handle_Var(ASR::expr_t* arg_expr, ASR::expr_t** expr_to_replace) {
+            if (ASR::is_a<ASR::Var_t>(*arg_expr)) {
+                ASR::Var_t* arg_var = ASR::down_cast<ASR::Var_t>(arg_expr);
+                ASR::symbol_t* arg_sym = arg_var->m_v;
+                ASR::symbol_t* arg_sym_underlying = ASRUtils::symbol_get_past_external(arg_sym);
+                ASR::symbol_t* sym = fetch_sym(arg_sym_underlying);
+                if (sym != arg_sym) {
+                    ASR::expr_t** current_expr_copy = current_expr;
+                    current_expr = const_cast<ASR::expr_t**>((expr_to_replace));
+                    this->call_replacer_(sym);
+                    current_expr = current_expr_copy;
+                }
+            }
+        }
+
 
         void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
             ASR::SubroutineCall_t* subrout_call = (ASR::SubroutineCall_t*)(&x);
             for (size_t j = 0; j < subrout_call->n_args; j++) {
                 ASR::call_arg_t arg = subrout_call->m_args[j];
                 ASR::expr_t* arg_expr = arg.m_value;
-                if (ASR::is_a<ASR::Var_t>(*arg_expr)) {
-                    ASR::Var_t* arg_var = ASR::down_cast<ASR::Var_t>(arg_expr);
-                    ASR::symbol_t* arg_sym = arg_var->m_v;
-                    ASR::symbol_t* arg_sym_underlying = ASRUtils::symbol_get_past_external(arg_sym);
-                    ASR::symbol_t* sym = fetch_sym(arg_sym_underlying);
-                    if (sym != arg_sym) {
-                        ASR::expr_t** current_expr_copy = current_expr;
-                        current_expr = const_cast<ASR::expr_t**>(&(subrout_call->m_args[j].m_value));
-                        this->call_replacer_(sym);
-                        current_expr = current_expr_copy;
-                    }
-                }
+                handle_Var(arg_expr, &(subrout_call->m_args[j].m_value));
+            }
+        }
+
+        void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+            ASR::FunctionCall_t* func_call = (ASR::FunctionCall_t*)(&x);
+            for (size_t j = 0; j < func_call->n_args; j++) {
+                ASR::call_arg_t arg = func_call->m_args[j];
+                ASR::expr_t* arg_expr = arg.m_value;
+                handle_Var(arg_expr, &(func_call->m_args[j].m_value));
             }
         }
 
@@ -1465,6 +1479,7 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
 
     ASR::expr_t* dest_shape = nullptr;
     ASR::expr_t* value = nullptr;
+    ASR::ttype_t* ret_type = nullptr;
     if( ASRUtils::is_fixed_size_array(expr1_mdims, expr1_ndims) ) {
         Vec<ASR::expr_t*> lengths; lengths.reserve(al, expr1_ndims);
         for( size_t i = 0; i < expr1_ndims; i++ ) {
@@ -1486,7 +1501,7 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
         if( ASRUtils::is_value_constant(expr2) &&
             ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims) <= 256 ) {
             ASR::ttype_t* value_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
-                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), dims.p, dims.size(),
+                ASRUtils::type_get_past_array(ASRUtils::expr_type(expr2)), dims.p, dims.size(),
                 ASR::array_physical_typeType::FixedSizeArray));
             Vec<ASR::expr_t*> values;
             values.reserve(al, ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims));
@@ -1495,6 +1510,7 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
             }
             value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc,
                 values.p, values.size(), value_type, ASR::arraystorageType::ColMajor));
+            ret_type = value_type;
         }
     } else {
         dest_shape = ASRUtils::EXPR(ASR::make_IntrinsicArrayFunction_t(al, loc,
@@ -1502,7 +1518,18 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
             shape_args.size(), 0, dest_shape_type, nullptr));
     }
 
-    expr2 = ASRUtils::EXPR(ASR::make_ArrayBroadcast_t(al, loc, expr2, dest_shape, expr1_type, value));
+    if (ret_type == nullptr) {
+        // TODO: Construct appropriate return type here
+        // For now simply coping the type from expr1
+        ret_type = expr1_type;
+    }
+    expr2 = ASRUtils::EXPR(ASR::make_ArrayBroadcast_t(al, loc, expr2, dest_shape, ret_type, value));
+
+    if (ASRUtils::extract_physical_type(expr1_type) != ASRUtils::extract_physical_type(ret_type)) {
+        expr2 = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al, loc, expr2,
+            ASRUtils::extract_physical_type(ret_type),
+            ASRUtils::extract_physical_type(expr1_type), expr1_type, nullptr));
+    }
 }
 
 void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,

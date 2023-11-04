@@ -2,14 +2,8 @@
     (SymbolTable
         1
         {
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
             iso_fortran_env:
                 (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math),
             points:
                 (Module
                     (SymbolTable
@@ -350,26 +344,6 @@
                                                     Public
                                                     Required
                                                     .false.
-                                                ),
-                                            sqrt:
-                                                (ExternalSymbol
-                                                    10
-                                                    sqrt
-                                                    14 sqrt
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    sqrt
-                                                    Private
-                                                ),
-                                            sqrt@ssqrt:
-                                                (ExternalSymbol
-                                                    10
-                                                    sqrt@ssqrt
-                                                    14 ssqrt
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    ssqrt
-                                                    Private
                                                 )
                                         })
                                     point_dist_func
@@ -397,10 +371,9 @@
                                     (Var 10 b)]
                                     [(=
                                         (Var 10 distance)
-                                        (FunctionCall
-                                            10 sqrt@ssqrt
-                                            10 sqrt
-                                            [((RealBinOp
+                                        (IntrinsicScalarFunction
+                                            Sqrt
+                                            [(RealBinOp
                                                 (RealBinOp
                                                     (RealBinOp
                                                         (StructInstanceMember
@@ -466,9 +439,9 @@
                                                 )
                                                 (Real 4)
                                                 ()
-                                            ))]
+                                            )]
+                                            0
                                             (Real 4)
-                                            ()
                                             ()
                                         )
                                         ()
@@ -555,26 +528,6 @@
                                                     Public
                                                     Required
                                                     .false.
-                                                ),
-                                            sqrt:
-                                                (ExternalSymbol
-                                                    11
-                                                    sqrt
-                                                    14 sqrt
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    sqrt
-                                                    Private
-                                                ),
-                                            sqrt@ssqrt:
-                                                (ExternalSymbol
-                                                    11
-                                                    sqrt@ssqrt
-                                                    14 ssqrt
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    ssqrt
-                                                    Private
                                                 )
                                         })
                                     point_dist_subrout
@@ -604,10 +557,9 @@
                                     (Var 11 distance)]
                                     [(=
                                         (Var 11 distance)
-                                        (FunctionCall
-                                            11 sqrt@ssqrt
-                                            11 sqrt
-                                            [((RealBinOp
+                                        (IntrinsicScalarFunction
+                                            Sqrt
+                                            [(RealBinOp
                                                 (RealBinOp
                                                     (RealBinOp
                                                         (StructInstanceMember
@@ -673,9 +625,9 @@
                                                 )
                                                 (Real 4)
                                                 ()
-                                            ))]
+                                            )]
+                                            0
                                             (Real 4)
-                                            ()
                                             ()
                                         )
                                         ()
@@ -698,7 +650,7 @@
                                 )
                         })
                     points_a
-                    [lfortran_intrinsic_math]
+                    []
                     .false.
                     .false.
                 ),

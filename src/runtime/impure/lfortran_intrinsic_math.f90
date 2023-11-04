@@ -19,16 +19,12 @@ interface dimag
     module procedure zaimag
 end interface
 
-interface sqrt
-    module procedure ssqrt, dsqrt, csqrt, zsqrt
-end interface
-
 interface exp
     module procedure sexp, dexp, cexp, zexp
 end interface
 
 interface log
-    module procedure slog, dlog, clog, zlog, alog
+    module procedure slog, dlog, clog, zlog
 end interface
 
 interface erf
@@ -227,40 +223,6 @@ interface
     end function
 end interface
 r = c_zaimag(x)
-end function
-
-! sqrt -------------------------------------------------------------------------
-
-elemental real(sp) function ssqrt(x) result(r)
-real(sp), intent(in) :: x
-r = _lfortran_sqrt(x)
-end function
-
-elemental real(dp) function dsqrt(x) result(r)
-real(dp), intent(in) :: x
-r = _lfortran_sqrt(x)
-end function
-
-elemental complex(sp) function csqrt(x) result(r)
-complex(sp), intent(in) :: x
-interface
-    pure complex(c_float) function c_csqrt(x) bind(c, name="_lfortran_csqrt")
-    import :: c_float
-    complex(c_float), intent(in), value :: x
-    end function
-end interface
-r = c_csqrt(x)
-end function
-
-elemental complex(dp) function zsqrt(x) result(r)
-complex(dp), intent(in) :: x
-interface
-    pure complex(c_double) function c_zsqrt(x) bind(c, name="_lfortran_zsqrt")
-    import :: c_double
-    complex(c_double), intent(in), value :: x
-    end function
-end interface
-r = c_zsqrt(x)
 end function
 
 ! exp --------------------------------------------------------------------------

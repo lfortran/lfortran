@@ -61,6 +61,7 @@ enum class IntrinsicScalarFunctions : int64_t {
     Sign,
     SignFromValue,
     Aint,
+    Sqrt,
     Sngl,
     SymbolicSymbol,
     SymbolicAdd,
@@ -121,6 +122,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Sign)
         INTRINSIC_NAME_CASE(SignFromValue)
         INTRINSIC_NAME_CASE(Aint)
+        INTRINSIC_NAME_CASE(Sqrt)
         INTRINSIC_NAME_CASE(Sngl)
         INTRINSIC_NAME_CASE(SymbolicSymbol)
         INTRINSIC_NAME_CASE(SymbolicAdd)
@@ -1657,6 +1659,69 @@ namespace Aint {
     }
 
 }  // namespace Aint
+
+namespace Sqrt {
+
+    static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x,
+            diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 1,
+            "ASR Verify: Call `sqrt` must have exactly one argument",
+            x.base.base.loc, diagnostics);
+        ASR::ttype_t *type = ASRUtils::expr_type(x.m_args[0]);
+        ASRUtils::require_impl(ASRUtils::is_real(*type) || ASRUtils::is_complex(*type),
+            "ASR Verify: Arguments to `sqrt` must be of real or complex type",
+            x.base.base.loc, diagnostics);
+    }
+
+    static ASR::expr_t *eval_Sqrt(Allocator &al, const Location &loc,
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args) {
+        if (is_real(*arg_type)) {
+            double val = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
+            return f(std::sqrt(val), arg_type);
+        } else {
+            std::complex<double> crv;
+            if( ASRUtils::extract_value(args[0], crv) ) {
+                std::complex<double> val = std::sqrt(crv);
+                return ASRUtils::EXPR(ASR::make_ComplexConstant_t(
+                    al, loc, val.real(), val.imag(), arg_type));
+            } else {
+                return nullptr;
+            }
+        }
+    }
+
+    static inline ASR::asr_t* create_Sqrt(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args,
+            const std::function<void (const std::string &, const Location &)> err) {
+        ASR::ttype_t* return_type = expr_type(args[0]);
+        if ( args.n != 1 ) {
+            err("Intrinsic `sqrt` accepts exactly one argument", loc);
+        } else if ( !(is_real(*return_type) || is_complex(*return_type)) ) {
+            err("Argument of the `sqrt` must be Real or Complex", loc);
+        }
+        ASR::expr_t *m_value = nullptr;
+        if (all_args_evaluated(args)) {
+            m_value = eval_Sqrt(al, loc, return_type, args);
+        }
+        return ASR::make_IntrinsicScalarFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicScalarFunctions::Sqrt),
+            args.p, args.n, 0, return_type, m_value);
+    }
+
+    static inline ASR::expr_t* instantiate_Sqrt(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t overload_id) {
+        ASR::ttype_t* arg_type = arg_types[0];
+        if (is_real(*arg_type)) {
+            return EXPR(ASR::make_IntrinsicFunctionSqrt_t(al, loc,
+                new_args[0].m_value, return_type, nullptr));
+        } else {
+            return UnaryIntrinsicFunction::instantiate_functions(al, loc, scope,
+                "sqrt", arg_type, return_type, new_args, overload_id);
+        }
+    }
+
+}  // namespace Sqrt
 
 namespace Sngl {
 
@@ -3238,6 +3303,8 @@ namespace IntrinsicScalarFunctionRegistry {
             {nullptr, &Radix::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Aint),
             {&Aint::instantiate_Aint, &Aint::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Sqrt),
+            {&Sqrt::instantiate_Sqrt, &Sqrt::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Sngl),
             {&Sngl::instantiate_Sngl, &Sngl::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SignFromValue),
@@ -3340,6 +3407,8 @@ namespace IntrinsicScalarFunctionRegistry {
             "sign"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Aint),
             "aint"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Sqrt),
+            "sqrt"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Sngl),
             "sngl"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SignFromValue),
@@ -3412,6 +3481,7 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"radix", {&Radix::create_Radix, nullptr}},
                 {"sign", {&Sign::create_Sign, &Sign::eval_Sign}},
                 {"aint", {&Aint::create_Aint, &Aint::eval_Aint}},
+                {"sqrt", {&Sqrt::create_Sqrt, &Sqrt::eval_Sqrt}},
                 {"sngl", {&Sngl::create_Sngl, &Sngl::eval_Sngl}},
                 {"Symbol", {&SymbolicSymbol::create_SymbolicSymbol, &SymbolicSymbol::eval_SymbolicSymbol}},
                 {"SymbolicAdd", {&SymbolicAdd::create_SymbolicAdd, &SymbolicAdd::eval_SymbolicAdd}},
@@ -3450,6 +3520,7 @@ namespace IntrinsicScalarFunctionRegistry {
                  id_ == IntrinsicScalarFunctions::Expm1 ||
                  id_ == IntrinsicScalarFunctions::Min ||
                  id_ == IntrinsicScalarFunctions::Max ||
+                 id_ == IntrinsicScalarFunctions::Sqrt ||
                  id_ == IntrinsicScalarFunctions::SymbolicSymbol);
     }
 
