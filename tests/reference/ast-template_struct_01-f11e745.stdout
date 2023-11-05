@@ -57,7 +57,9 @@
             [(Require
                 [(UnitRequire
                     r
-                    [t]
+                    [(AttrNamelist
+                        t
+                    )]
                 )]
             )
             (Declaration
@@ -266,9 +268,12 @@
             []
             [(Instantiate
                 struct_t
-                [(UseSymbol
-                    integer
+                [(AttrType
+                    TypeInteger
+                    []
                     ()
+                    ()
+                    None
                 )]
                 [(UseSymbol
                     tuple

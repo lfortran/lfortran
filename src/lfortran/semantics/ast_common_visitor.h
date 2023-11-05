@@ -5625,7 +5625,7 @@ public:
     }
 
     void handle_templated(std::string name, bool is_nested,
-            AST::use_symbol_t** args, size_t n_args, const Location &loc) {
+            AST::decl_attribute_t** args, size_t n_args, const Location &loc) {
         std::string func_name = name;
 
         ASR::symbol_t *sym0 = current_scope->resolve_symbol(func_name);
@@ -5653,49 +5653,25 @@ public:
         for (size_t i=0; i<n_args; i++) {
             std::string param = temp->m_args[i];
             ASR::symbol_t *param_sym = temp->m_symtab->get_symbol(param);
-            if (AST::is_a<AST::UseSymbol_t>(*args[i])) {
-                AST::UseSymbol_t* arg_symbol = AST::down_cast<AST::UseSymbol_t>(args[i]);
-                std::string arg = to_lower(arg_symbol->m_remote_sym);
-                if (ASR::is_a<ASR::Variable_t>(*param_sym)) {
-                    ASR::ttype_t *t = ASRUtils::symbol_type(param_sym);
-                    ASR::ttype_t* s;
-                    if (ASRUtils::is_type_parameter(*t)) {
-                        ASR::TypeParameter_t *tp = ASR::down_cast<ASR::TypeParameter_t>(t);
-                        if (arg.compare("real") == 0) {
-                            s = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4));
-                        } else if (arg.compare("integer") == 0) {
-                            s = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-                        } else if (arg.compare("complex") == 0) {
-                            s = ASRUtils::TYPE(ASR::make_Complex_t(al, loc, 4));
-                        } else if (arg.compare("character") == 0) {
-                            s = ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, 0, nullptr));
-                        } else if (arg.compare("logical") == 0) {
-                            s = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
-                        } else {
-                            ASR::symbol_t *arg_t = current_scope->resolve_symbol(arg);
-                            if (ASRUtils::is_type_parameter(*ASRUtils::symbol_type(arg_t))) {
-                                ASR::TypeParameter_t *arg_tp = ASR::down_cast<ASR::TypeParameter_t>(ASRUtils::symbol_type(arg_t));
-                                s = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc, arg_tp->m_param));
-                            } else {
-                                throw SemanticError(
-                                    "The type " + arg + " is not yet handled for template instantiation",
-                                    loc);
-                            }
-                        }
-                        type_subs[tp->m_param] = s;
-                    } else {
-                        // type checking non-type parameter template arguments
-                        ASR::symbol_t *arg_sym = current_scope->resolve_symbol(arg);
-                        s = ASRUtils::symbol_type(arg_sym);
-                        if (!ASRUtils::check_equal_type(s, t)) {
-                            throw SemanticError(
-                                "The type of " + arg + " does not match the type of " + param,
-                                loc);
-                        }
-                        symbol_subs[param] = arg_sym;
-                    }
-                } else if (ASR::is_a<ASR::Function_t>(*param_sym)) {
-                    ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(param_sym);
+            ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
+            if (AST::is_a<AST::AttrType_t>(*args[i])) {
+                // Handling types as instantiate's arguments
+                Vec<ASR::dimension_t> dims;
+                dims.reserve(al, 0);
+                ASR::symbol_t *type_declaration;
+                ASR::ttype_t *arg_type = determine_type(args[i]->base.loc, param,
+                    args[i], false, false, dims, type_declaration, current_procedure_abi_type);
+                if (!ASRUtils::is_type_parameter(*param_type)) {
+                    throw SemanticError("The type " + ASRUtils::type_to_str(arg_type) +
+                        " cannot be applied to non-type parameter " + param, loc);
+                }
+                type_subs[param] = arg_type;
+            } else if (AST::is_a<AST::AttrNamelist_t>(*args[i])) {
+                AST::AttrNamelist_t *attr_name = AST::down_cast<AST::AttrNamelist_t>(args[i]);
+                std::string arg = to_lower(attr_name->m_name);
+                if (ASR::is_a<ASR::Function_t>(*param_sym)) {
+                    // Handling functions passed as instantiate's arguments
+                    ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(param_sym);
                     ASR::symbol_t *f_arg0 = current_scope->resolve_symbol(arg);
                     if (!f_arg0) {
                         throw SemanticError("The function argument " + arg + " is not found",
@@ -5708,49 +5684,58 @@ public:
                             args[i]->base.loc);
                     }
                     report_check_restriction(type_subs, symbol_subs, f, f_arg0, loc, diag);
+                } else if (ASRUtils::is_type_parameter(*param_type)) {
+                    // Handling type parameters passed as instantiate's arguments
+                    ASR::symbol_t *arg_sym = current_scope->resolve_symbol(arg);
+                    ASR::ttype_t *arg_type = ASRUtils::symbol_type(arg_sym);
+                    if (ASRUtils::is_type_parameter(*arg_type)) {
+                        type_subs[param] = ASRUtils::TYPE(ASR::make_TypeParameter_t(al,
+                            loc, ASR::down_cast<ASR::TypeParameter_t>(arg_type)->m_param));
+                    } else {
+                        throw SemanticError("The type " + arg + " is not yet handled for " 
+                            + "template instantiation", loc);
+                    }
                 } else {
-                    throw SemanticError("Unsupported symbol argument", args[i]->base.loc);
+                    // Handling local variables passed as instantiate's arguments
+                    ASR::symbol_t *arg_sym = current_scope->resolve_symbol(arg);
+                    ASR::ttype_t *arg_type = ASRUtils::symbol_type(arg_sym);
+                    if (!ASRUtils::check_equal_type(arg_type, param_type)) {
+                        throw SemanticError("The type of " + arg + " does not match the type of " + param,
+                            loc);
+                    }
+                    symbol_subs[param] = arg_sym;
                 }
-            } else if (AST::is_a<AST::IntrinsicOperator_t>(*args[i])) {
-                AST::IntrinsicOperator_t *intrinsic_op = AST::down_cast<AST::IntrinsicOperator_t>(args[i]);
+
+            } else if (AST::is_a<AST::AttrIntrinsicOperator_t>(*args[i])) {
+                AST::AttrIntrinsicOperator_t *intrinsic_op 
+                    = AST::down_cast<AST::AttrIntrinsicOperator_t>(args[i]);
                 ASR::binopType binop = ASR::Add;
                 ASR::cmpopType cmpop = ASR::Eq;
                 bool is_binop = false, is_cmpop = false;
                 std::string op_name;
                 switch (intrinsic_op->m_op) {
                     case (AST::PLUS):
-                        is_binop = true; binop = ASR::Add; op_name = "~add";
-                        break;
+                        is_binop = true; binop = ASR::Add; op_name = "~add"; break;
                     case (AST::MINUS):
-                        is_binop = true; binop = ASR::Sub; op_name = "~sub";
-                        break;
+                        is_binop = true; binop = ASR::Sub; op_name = "~sub"; break;
                     case (AST::STAR):
-                        is_binop = true; binop = ASR::Mul; op_name = "~mul";
-                        break;
+                        is_binop = true; binop = ASR::Mul; op_name = "~mul"; break;
                     case (AST::DIV):
-                        is_binop = true; binop = ASR::Div; op_name = "~div";
-                        break;
+                        is_binop = true; binop = ASR::Div; op_name = "~div"; break;
                     case (AST::POW):
-                        is_binop = true; binop = ASR::Pow; op_name = "~pow";
-                        break;
+                        is_binop = true; binop = ASR::Pow; op_name = "~pow"; break;
                     case (AST::EQ):
-                        is_cmpop = true; cmpop = ASR::Eq; op_name = "~eq";
-                        break;
+                        is_cmpop = true; cmpop = ASR::Eq; op_name = "~eq"; break;
                     case (AST::NOTEQ):
-                        is_cmpop = true; cmpop = ASR::NotEq; op_name = "~neq";
-                        break;
+                        is_cmpop = true; cmpop = ASR::NotEq; op_name = "~neq"; break;
                     case (AST::LT):
-                        is_cmpop = true; cmpop = ASR::Lt; op_name = "~lt";
-                        break;
+                        is_cmpop = true; cmpop = ASR::Lt; op_name = "~lt"; break;
                     case (AST::LTE):
-                        is_cmpop = true; cmpop = ASR::LtE; op_name = "~lte";
-                        break;
+                        is_cmpop = true; cmpop = ASR::LtE; op_name = "~lte"; break;
                     case (AST::GT):
-                        is_cmpop = true; cmpop = ASR::Gt; op_name = "~gt";
-                        break;
+                        is_cmpop = true; cmpop = ASR::Gt; op_name = "~gt"; break;
                     case (AST::GTE):
-                        is_cmpop = true; cmpop = ASR::GtE; op_name = "~gte";
-                        break;
+                        is_cmpop = true; cmpop = ASR::GtE; op_name = "~gte"; break;
                     default:
                         throw SemanticError("Unsupported binary operator", args[i]->base.loc);
                 }
@@ -5887,7 +5872,7 @@ public:
                     symbol_subs[f->m_name] = op_sym;
                 }
             } else {
-                throw SemanticError("Unsupported template argument", args[i]->base.loc);
+                throw LCompilersException("Unsupported argument to instantiate statement.");
             }
         }
 

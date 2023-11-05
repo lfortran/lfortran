@@ -116,7 +116,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (Character 1 0 ())
+                                                        (Character 1 1 ())
                                                         [(()
                                                         ())]
                                                         DescriptorArray
@@ -131,7 +131,7 @@
                                     change_positions_chr
                                     (FunctionType
                                         [(Array
-                                            (Character 1 0 ())
+                                            (Character 1 1 ())
                                             [(()
                                             ())]
                                             DescriptorArray
@@ -249,7 +249,7 @@
                                                     [(()
                                                     (Var 12 i)
                                                     ())]
-                                                    (Character 1 0 ())
+                                                    (Character 1 1 ())
                                                     ColMajor
                                                     ()
                                                 ))
@@ -264,7 +264,7 @@
                                                         ()
                                                     )
                                                     ())]
-                                                    (Character 1 0 ())
+                                                    (Character 1 1 ())
                                                     ColMajor
                                                     ()
                                                 ))]
@@ -817,7 +817,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 0 ())
+                                                    (Character 1 1 ())
                                                     ()
                                                     Source
                                                     Private
@@ -833,7 +833,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 0 ())
+                                                    (Character 1 1 ())
                                                     ()
                                                     Source
                                                     Private
@@ -859,8 +859,8 @@
                                         })
                                     ~neq_intrinsic1
                                     (FunctionType
-                                        [(Character 1 0 ())
-                                        (Character 1 0 ())]
+                                        [(Character 1 1 ())
+                                        (Character 1 1 ())]
                                         (Logical 4)
                                         Source
                                         Implementation

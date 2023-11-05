@@ -5,7 +5,7 @@
 %locations
 %glr-parser
 %expect    210 // shift/reduce conflicts
-%expect-rr 175 // reduce/reduce conflicts
+%expect-rr 189 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
 //%define parse.error verbose
@@ -384,6 +384,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> require_decl
 %type <vec_ast> unit_require_plus
 %type <ast> unit_require
+%type <vec_ast> instantiate_symbol_list
+%type <ast> instantiate_symbol
 %type <ast> enum_decl
 %type <ast> program
 %type <ast> end_program
@@ -746,15 +748,24 @@ unit_require_plus
     ;
 
 unit_require
-    : id "(" id_list ")" { $$ = UNIT_REQUIRE($1, $3, @$); }
+    : id "(" instantiate_symbol_list ")" { $$ = UNIT_REQUIRE($1, $3, @$); }
 
 instantiate
-    : KW_INSTANTIATE id "(" use_symbol_list ")" sep {
+    : KW_INSTANTIATE id "(" instantiate_symbol_list ")" sep {
         $$ = INSTANTIATE1($2, $4, @$); }
-    | KW_INSTANTIATE id "(" use_symbol_list ")" "," KW_ONLY ":" use_symbol_list sep {
+    | KW_INSTANTIATE id "(" instantiate_symbol_list ")" "," KW_ONLY ":" use_symbol_list sep {
         $$ = INSTANTIATE2($2, $4, $9, @$); }
     ;
 
+instantiate_symbol_list
+    : instantiate_symbol_list "," instantiate_symbol { $$ = $1; LIST_ADD($$, $3); }
+    | instantiate_symbol { LIST_NEW($$); LIST_ADD($$, $1); }
+
+instantiate_symbol
+    : var_type %dprec 2 { $$ = $1; }
+    | KW_OPERATOR "(" operator_type ")" { $$ = DECL_OP($3, @$); }
+    | KW_OPERATOR "(" "/)" { $$ = DECL_OP(OPERATOR(DIV, @$), @$); }
+    | id %dprec 1 { $$ = ATTR_NAME($1, @$); }
 
 end_type
     : KW_END_TYPE id_opt
@@ -1575,9 +1586,10 @@ decl_statement
     : var_decl
     | interface_decl
     | derived_type_decl
-    | template_decl
     | enum_decl
     | statement
+    | template_decl
+    | requirement_decl
     | instantiate
     | require_decl
     ;
@@ -1707,7 +1719,7 @@ subroutine_call
             $$ = SUBROUTINE_CALL2($2, @$); }
     | KW_CALL struct_member_star id {
             $$ = SUBROUTINE_CALL3($2, $3, @$); }
-    | KW_CALL id "{" use_symbol_list "}" "(" fnarray_arg_list_opt ")" {
+    | KW_CALL id "{" instantiate_symbol_list "}" "(" fnarray_arg_list_opt ")" {
             $$ = SUBROUTINE_CALL4($2, $4, $7, @$); }
     ;
 
@@ -2267,7 +2279,7 @@ expr
     : id { $$ = $1; }
     | struct_member_star id { NAME1($$, $2, $1, @$); }
     | id "(" fnarray_arg_list_opt ")" { $$ = FUNCCALLORARRAY($1, $3, @$); }
-    | id "{" use_symbol_list "}" "(" fnarray_arg_list_opt ")" { $$ = FUNCCALLORARRAY5($1, $6, $3, @$); }
+    | id "{" instantiate_symbol_list "}" "(" fnarray_arg_list_opt ")" { $$ = FUNCCALLORARRAY5($1, $6, $3, @$); }
     | TK_STRING "(" fnarray_arg_list_opt ")" { $$ = SUBSTRING($1, $3, @$);}
     | struct_member_star id "(" fnarray_arg_list_opt ")" {
             $$ = FUNCCALLORARRAY2($1, $2, $4, @$); }
