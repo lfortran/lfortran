@@ -1003,7 +1003,8 @@ RUN(NAME external_03 LABELS gfortran llvmImplicit)
 RUN(NAME external_04 LABELS gfortran llvmImplicit)
 RUN(NAME external_05 LABELS gfortran llvmImplicit)
 RUN(NAME external_06 LABELS gfortran llvmImplicit)
-
+RUN(NAME external_07 LABELS gfortran llvmImplicit)
+RUN(NAME external_08 LABELS gfortran llvmImplicit)
 
 
 RUN(NAME interface_12 LABELS gfortran llvm)

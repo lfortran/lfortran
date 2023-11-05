@@ -7868,6 +7868,12 @@ public:
                     if (ASRUtils::get_FunctionType(fn)->m_deftype == ASR::deftypeType::Implementation) {
                         LCOMPILERS_ASSERT(llvm_symtab_fn.find(h) != llvm_symtab_fn.end());
                         tmp = llvm_symtab_fn[h];
+                    } else if (llvm_symtab_fn_arg.find(h) == llvm_symtab_fn_arg.end() &&
+                                ASR::is_a<ASR::Function_t>(*var_sym) &&
+                                ASRUtils::get_FunctionType(fn)->m_deftype == ASR::deftypeType::Interface ) {
+                        LCOMPILERS_ASSERT(llvm_symtab_fn.find(h) != llvm_symtab_fn.end());
+                        tmp = llvm_symtab_fn[h];
+                        LCOMPILERS_ASSERT(tmp != nullptr)
                     } else {
                         // Must be an argument/chained procedure pass
                         LCOMPILERS_ASSERT(llvm_symtab_fn_arg.find(h) != llvm_symtab_fn_arg.end());
