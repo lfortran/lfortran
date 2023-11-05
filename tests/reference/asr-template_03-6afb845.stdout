@@ -642,8 +642,8 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [~mul_intrinsic_real
-                                                    ~add_intrinsic_real]
+                                                    [~mul_intrinsic
+                                                    ~add_intrinsic]
                                                     [(Var 21 a)
                                                     (Var 21 x)
                                                     (Var 21 y)]
@@ -669,7 +669,7 @@
                                                                 ()
                                                             )
                                                             (FunctionCall
-                                                                9 ~add_intrinsic_real
+                                                                9 ~add_intrinsic
                                                                 ()
                                                                 [((ArrayItem
                                                                     (Var 21 y)
@@ -681,7 +681,7 @@
                                                                     ()
                                                                 ))
                                                                 ((FunctionCall
-                                                                    9 ~mul_intrinsic_real
+                                                                    9 ~mul_intrinsic
                                                                     ()
                                                                     [((Var 21 a))
                                                                     ((ArrayItem
@@ -814,7 +814,14 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            ~add_intrinsic_real:
+                                            ~add:
+                                                (CustomOperator
+                                                    9
+                                                    ~add
+                                                    [9 ~add_intrinsic]
+                                                    Public
+                                                ),
+                                            ~add_intrinsic:
                                                 (Function
                                                     (SymbolTable
                                                         19
@@ -868,7 +875,7 @@
                                                                     .false.
                                                                 )
                                                         })
-                                                    ~add_intrinsic_real
+                                                    ~add_intrinsic
                                                     (FunctionType
                                                         [(Real 4)
                                                         (Real 4)]
@@ -904,7 +911,14 @@
                                                     .true.
                                                     ()
                                                 ),
-                                            ~mul_intrinsic_real:
+                                            ~mul:
+                                                (CustomOperator
+                                                    9
+                                                    ~mul
+                                                    [9 ~mul_intrinsic]
+                                                    Public
+                                                ),
+                                            ~mul_intrinsic:
                                                 (Function
                                                     (SymbolTable
                                                         20
@@ -958,7 +972,7 @@
                                                                     .false.
                                                                 )
                                                         })
-                                                    ~mul_intrinsic_real
+                                                    ~mul_intrinsic
                                                     (FunctionType
                                                         [(Real 4)
                                                         (Integer 4)]

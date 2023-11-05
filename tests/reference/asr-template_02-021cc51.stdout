@@ -155,7 +155,7 @@
                                         []
                                         .false.
                                     )
-                                    [~neq_intrinsic_character]
+                                    [~neq_intrinsic1]
                                     [(Var 12 vec)]
                                     [(=
                                         (Var 12 n)
@@ -242,7 +242,7 @@
                                         ())
                                         [(If
                                             (FunctionCall
-                                                8 ~neq_intrinsic_character
+                                                8 ~neq_intrinsic1
                                                 ()
                                                 [((ArrayItem
                                                     (Var 12 vec)
@@ -494,7 +494,7 @@
                                         []
                                         .false.
                                     )
-                                    [~neq_intrinsic_integer]
+                                    [~neq_intrinsic]
                                     [(Var 10 vec)]
                                     [(=
                                         (Var 10 n)
@@ -581,7 +581,7 @@
                                         ())
                                         [(If
                                             (FunctionCall
-                                                8 ~neq_intrinsic_integer
+                                                8 ~neq_intrinsic
                                                 ()
                                                 [((ArrayItem
                                                     (Var 10 vec)
@@ -705,97 +705,15 @@
                                     eq
                                     Public
                                 ),
-                            ~neq_intrinsic_character:
-                                (Function
-                                    (SymbolTable
-                                        11
-                                        {
-                                            arg0:
-                                                (Variable
-                                                    11
-                                                    arg0
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Character 1 1 ())
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                ),
-                                            arg1:
-                                                (Variable
-                                                    11
-                                                    arg1
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Character 1 1 ())
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                ),
-                                            ret:
-                                                (Variable
-                                                    11
-                                                    ret
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    ~neq_intrinsic_character
-                                    (FunctionType
-                                        [(Character 1 1 ())
-                                        (Character 1 1 ())]
-                                        (Logical 4)
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .true.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                    )
-                                    []
-                                    [(Var 11 arg0)
-                                    (Var 11 arg1)]
-                                    [(=
-                                        (Var 11 ret)
-                                        (StringCompare
-                                            (Var 11 arg0)
-                                            NotEq
-                                            (Var 11 arg1)
-                                            (Logical 4)
-                                            ()
-                                        )
-                                        ()
-                                    )]
-                                    (Var 11 ret)
+                            ~neq:
+                                (CustomOperator
+                                    8
+                                    ~neq
+                                    [8 ~neq_intrinsic
+                                    8 ~neq_intrinsic1]
                                     Public
-                                    .false.
-                                    .true.
-                                    ()
                                 ),
-                            ~neq_intrinsic_integer:
+                            ~neq_intrinsic:
                                 (Function
                                     (SymbolTable
                                         9
@@ -849,7 +767,7 @@
                                                     .false.
                                                 )
                                         })
-                                    ~neq_intrinsic_integer
+                                    ~neq_intrinsic
                                     (FunctionType
                                         [(Integer 4)
                                         (Integer 4)]
@@ -880,6 +798,96 @@
                                         ()
                                     )]
                                     (Var 9 ret)
+                                    Public
+                                    .false.
+                                    .true.
+                                    ()
+                                ),
+                            ~neq_intrinsic1:
+                                (Function
+                                    (SymbolTable
+                                        11
+                                        {
+                                            arg0:
+                                                (Variable
+                                                    11
+                                                    arg0
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 1 ())
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            arg1:
+                                                (Variable
+                                                    11
+                                                    arg1
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 1 ())
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            ret:
+                                                (Variable
+                                                    11
+                                                    ret
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    ~neq_intrinsic1
+                                    (FunctionType
+                                        [(Character 1 1 ())
+                                        (Character 1 1 ())]
+                                        (Logical 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 11 arg0)
+                                    (Var 11 arg1)]
+                                    [(=
+                                        (Var 11 ret)
+                                        (StringCompare
+                                            (Var 11 arg0)
+                                            NotEq
+                                            (Var 11 arg1)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 11 ret)
                                     Public
                                     .false.
                                     .true.

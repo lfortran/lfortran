@@ -2874,7 +2874,13 @@ public:
                         throw SemanticError("The function argument " + arg + " is not found",
                             x.m_args[i]->base.loc);
                     }
-                    check_restriction(type_subs, symbol_subs, f, f_arg0, x.base.base.loc, diag);
+                    ASR::symbol_t *f_arg = ASRUtils::symbol_get_past_external(f_arg0);
+                    if (!ASR::is_a<ASR::Function_t>(*f_arg)) {
+                        throw SemanticError(
+                            "The argument for " + param + " must be a function",
+                            x.m_args[i]->base.loc);
+                    }
+                    report_check_restriction(type_subs, symbol_subs, f, f_arg0, x.base.base.loc, diag);
                 } else if (ASRUtils::is_type_parameter(*param_type)) {
                     // Handling type parameters passed as instantiate's arguments
                     ASR::symbol_t *arg_sym = current_scope->resolve_symbol(arg);
@@ -2961,12 +2967,8 @@ public:
                     ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
                     for (size_t i = 0; i < gen_proc->n_procs; i++) {
                         ASR::symbol_t* proc = gen_proc->m_procs[i];
-                        try {
-                            check_restriction(type_subs, symbol_subs, f, proc, x.base.base.loc, diag);
+                        if (check_restriction(type_subs, symbol_subs, f, proc)) {
                             found = true;
-                            break;
-                        } catch (const SemanticError &e) {
-                            // ignore restriction error so that the next alias can be checked
                         }
                     }
                 }
@@ -3000,7 +3002,9 @@ public:
                         args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, var)));
                     }
 
-                    std::string func_name = op_name + "_intrinsic_" + ASRUtils::type_to_str(left_type);
+                    //std::string func_name = op_name + "_intrinsic_" + ASRUtils::type_to_str(ltype);
+                    std::string func_name = parent_scope->get_unique_name(op_name + "_intrinsic");
+
                     ASR::ttype_t *return_type = nullptr;
                     ASR::expr_t *value = nullptr;
                     ASR::expr_t *left = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
@@ -3053,9 +3057,25 @@ public:
                         ASR::abiType::Source, ASR::accessType::Public,
                         ASR::deftypeType::Implementation, nullptr, false, true,
                         false, false, false, nullptr, 0, false, false, true);
-
                     ASR::symbol_t *op_sym = ASR::down_cast<ASR::symbol_t>(op_function);
                     parent_scope->add_symbol(func_name, op_sym);
+
+                    Vec<ASR::symbol_t*> symbols;
+                    if (parent_scope->get_symbol(op_name) != nullptr) {
+                        ASR::CustomOperator_t *old_c = ASR::down_cast<ASR::CustomOperator_t>(
+                            parent_scope->get_symbol(op_name));
+                        symbols.reserve(al, old_c->n_procs + 1);
+                        for (size_t i=0; i<old_c->n_procs; i++) {
+                            symbols.push_back(al, old_c->m_procs[i]);
+                        }
+                    } else {
+                        symbols.reserve(al, 1);
+                    }
+                    symbols.push_back(al, ASR::down_cast<ASR::symbol_t>(op_function));
+                    ASR::asr_t *c = ASR::make_CustomOperator_t(al, x.base.base.loc,
+                        parent_scope, s2c(al, op_name), symbols.p, symbols.size(), ASR::Public);
+                    parent_scope->add_or_overwrite_symbol(op_name, ASR::down_cast<ASR::symbol_t>(c));
+
                     current_scope = parent_scope;
                     symbol_subs[f->m_name] = op_sym;
                 }

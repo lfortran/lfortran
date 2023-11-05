@@ -757,7 +757,50 @@ ASR::symbol_t* rename_symbol(Allocator &al,
     return t.rename_symbol(sym);
 }
 
-void check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
+bool check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
+        std::map<std::string, ASR::symbol_t*> &symbol_subs,
+        ASR::Function_t *f, ASR::symbol_t *sym_arg) {
+    std::string f_name = f->m_name;
+    ASR::Function_t *arg = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(sym_arg));
+    std::string arg_name = arg->m_name;
+    if (f->n_args != arg->n_args) {
+        return false;
+    }
+    for (size_t i = 0; i < f->n_args; i++) {
+        ASR::ttype_t *f_param = ASRUtils::expr_type(f->m_args[i]);
+        ASR::ttype_t *arg_param = ASRUtils::expr_type(arg->m_args[i]);
+        if (ASR::is_a<ASR::TypeParameter_t>(*f_param)) {
+            ASR::TypeParameter_t *f_tp
+                = ASR::down_cast<ASR::TypeParameter_t>(f_param);
+            if (!ASRUtils::check_equal_type(type_subs[f_tp->m_param],
+                                            arg_param)) {
+                return false;
+            }
+        }
+    }
+    if (f->m_return_var) {
+        if (!arg->m_return_var) {
+            return false;
+        }
+        ASR::ttype_t *f_ret = ASRUtils::expr_type(f->m_return_var);
+        ASR::ttype_t *arg_ret = ASRUtils::expr_type(arg->m_return_var);
+        if (ASR::is_a<ASR::TypeParameter_t>(*f_ret)) {
+            ASR::TypeParameter_t *return_tp
+                = ASR::down_cast<ASR::TypeParameter_t>(f_ret);
+            if (!ASRUtils::check_equal_type(type_subs[return_tp->m_param], arg_ret)) {
+                return false;
+            }
+        }
+    } else {
+        if (arg->m_return_var) {
+            return false;
+        }
+    }
+    symbol_subs[f_name] = sym_arg;
+    return true;
+}
+
+void report_check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
         std::map<std::string, ASR::symbol_t*> &symbol_subs,
         ASR::Function_t *f, ASR::symbol_t *sym_arg, const Location &loc,
         diag::Diagnostics &diagnostics) {
