@@ -1167,7 +1167,7 @@ RUN(NAME array_unbounded_01 LABELS gfortran llvm llvmStackArray)
 RUN(NAME array_unbounded_02 LABELS gfortran llvm llvmStackArray)
 
 RUN(NAME matmul_01 LABELS gfortran llvm EXTRA_ARGS --ignore-pragma)
-RUN(NAME matmul_02 LABELS gfortran)
+RUN(NAME matmul_02 LABELS gfortran llvm)
 RUN(NAME legacy_array_sections_01 LABELS gfortran llvm llvmStackArray EXTRA_ARGS --legacy-array-sections)
 RUN(NAME legacy_array_sections_02 LABELS gfortran llvm llvmStackArray EXTRA_ARGS --legacy-array-sections)
 RUN(NAME cmake_minimal_test_01 LABELS gfortran llvm)
