@@ -1,0 +1,17 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+define void @a() {
+.entry:
+  call void @b(float ()* @f, float ()* @g)
+  br label %return
+
+return:                                           ; preds = %.entry
+  ret void
+}
+
+declare void @b(float ()*, float ()*)
+
+declare float @f()
+
+declare float @g()
