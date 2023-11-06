@@ -1423,7 +1423,7 @@ int compile_to_binary_fortran(const std::string &infile,
         out << src.result;
     }
 
-    std::string cmd = "gfortran -o " + outfile + " -c " + in_file;
+    std::string cmd = "gfortran -fno-backtrace -o " + outfile + " -c " + in_file;
     int err = system(cmd.c_str());
     if (err) {
         std::cout << "The command '" + cmd + "' failed." << std::endl;
