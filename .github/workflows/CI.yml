@@ -170,8 +170,8 @@ jobs:
             cd scipy
             git remote add ondrej https://github.com/certik/scipy
             git fetch ondrej
-            git checkout -t ondrej/merge_special_minpack_minpack2_fitpack_mach_01
-            git checkout 53109f0f0d9cf0110c314c993063ae3b4121ffbe
+            git checkout -t ondrej/merge_special_minpack_minpack2_fitpack_integrate_01
+            git checkout 503037097dad5a7d33c1445e8778a9cdf1f9ef11
             micromamba env create -f environment.yml
             micromamba activate scipy-dev
             git submodule update --init
@@ -208,7 +208,7 @@ jobs:
             micromamba activate scipy-dev
             python dev.py test -t scipy.interpolate -v
 
-      - name: Test SciPy Mach (Integrate)
+      - name: Test SciPy Mach & Quadpack (Integrate)
         shell: bash -e -x -l {0}
         run: |
             cd scipy/
