@@ -119,6 +119,11 @@ jobs:
         shell: bash -e -l {0}
         run: micromamba install bison=3.4
 
+      - name: Install GFortran macOS
+        if: contains(matrix.os, 'macos')
+        shell: bash -e -l {0}
+        run: micromamba install gfortran
+
       - uses: hendrikmuhs/ccache-action@main
         with:
           key: ${{ github.job }}-${{ matrix.os }}
