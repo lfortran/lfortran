@@ -1,0 +1,13 @@
+{
+    "basename": "ast-max_02-b788ae0",
+    "cmd": "lfortran --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/max_02.f90",
+    "infile_hash": "546e90ecfb8989994d40a9f42c5084616d7d0d863ed4ed620c177746",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-max_02-b788ae0.stdout",
+    "stdout_hash": "2cd1d286956258367db7798aeeb3d373df1aa2298ea152655d6a9fe9",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
