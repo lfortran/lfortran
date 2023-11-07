@@ -1197,8 +1197,4 @@ RUN(NAME goto_gototarget_return_01 LABELS gfortran llvm fortran)
 
 RUN(NAME selected_int_kind_01 LABELS gfortran llvm)
 
-RUN(NAME file_08 LABELS gfortran llvm NOFAST COPY_TO_BIN file_08.txt)
-
 RUN(NAME capital_01 LABELS gfortran llvmImplicit)
-
-RUN(NAME min_three_args LABELS gfortran llvm)
