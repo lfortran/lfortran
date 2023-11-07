@@ -3202,8 +3202,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr,
                                               Allocator &al,
                                               diag::Diagnostics &diagnostics,
-                                              CompilerOptions &co,
-                                              LocationManager &lm) {
+                                              CompilerOptions &co) {
     ASRToWASMVisitor v(al, diagnostics);
 
     co.po.always_run = true;
@@ -3211,7 +3210,7 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr,
                 "implied_do_loops", "print_arr", "do_loops", "select_case",
                 "intrinsic_function", "nested_vars", "unused_functions"};
     LCompilers::PassManager pass_manager;
-    pass_manager.apply_passes(al, &asr, passes, co.po, diagnostics, lm);
+    pass_manager.apply_passes(al, &asr, passes, co.po, diagnostics);
 
 
 #ifdef SHOW_ASR
@@ -3231,13 +3230,12 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr,
 
 Result<int> asr_to_wasm(ASR::TranslationUnit_t &asr, Allocator &al,
                         const std::string &filename, bool time_report,
-                        diag::Diagnostics &diagnostics, CompilerOptions &co,
-                        LocationManager &lm) {
+                        diag::Diagnostics &diagnostics, CompilerOptions &co) {
     int time_visit_asr = 0;
     int time_save = 0;
 
     auto t1 = std::chrono::high_resolution_clock::now();
-    Result<Vec<uint8_t>> wasm = asr_to_wasm_bytes_stream(asr, al, diagnostics, co, lm);
+    Result<Vec<uint8_t>> wasm = asr_to_wasm_bytes_stream(asr, al, diagnostics, co);
     auto t2 = std::chrono::high_resolution_clock::now();
     time_visit_asr =
         std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();

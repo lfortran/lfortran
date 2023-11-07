@@ -115,7 +115,7 @@ namespace LCompilers {
 
         void apply_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                            std::vector<std::string>& passes, PassOptions &pass_options,
-                           [[maybe_unused]] diag::Diagnostics &diagnostics, LocationManager &lm) {
+                           [[maybe_unused]] diag::Diagnostics &diagnostics) {
             if (pass_options.pass_cumulative) {
                 int _pass_max_idx = -1, _opt_max_idx = -1;
                 for (std::string &current_pass: passes) {
@@ -285,18 +285,18 @@ namespace LCompilers {
 
         void apply_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                           PassOptions& pass_options,
-                          diag::Diagnostics &diagnostics, LocationManager &lm) {
+                          diag::Diagnostics &diagnostics) {
             if( !_user_defined_passes.empty() ) {
                 pass_options.fast = true;
                 apply_passes(al, asr, _user_defined_passes, pass_options,
-                    diagnostics, lm);
+                    diagnostics);
             } else if( apply_default_passes ) {
                 pass_options.fast = is_fast;
                 if( is_fast ) {
                     apply_passes(al, asr, _with_optimization_passes, pass_options,
-                        diagnostics, lm);
+                        diagnostics);
                 } else {
-                    apply_passes(al, asr, _passes, pass_options, diagnostics, lm);
+                    apply_passes(al, asr, _passes, pass_options, diagnostics);
                 }
             }
         }

@@ -641,7 +641,7 @@ int emit_asr(const std::string &infile,
     compiler_options.po.always_run = true;
     compiler_options.po.run_fun = "f";
 
-    pass_manager.apply_passes(al, asr, compiler_options.po, diagnostics, lm);
+    pass_manager.apply_passes(al, asr, compiler_options.po, diagnostics);
     if (compiler_options.po.tree) {
         std::cout << LCompilers::pickle_tree(*asr,
             compiler_options.use_colors) << std::endl;
@@ -706,7 +706,7 @@ int emit_c(const std::string &infile,
     LCompilers::ASR::TranslationUnit_t* asr = r.result;
 
     LCompilers::Result<std::string> c_result = fe.get_c3(*asr, diagnostics,
-                                                pass_manager, lm, 1);
+                                                pass_manager, 1);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (c_result.ok) {
         std::cout << c_result.result;
@@ -956,7 +956,7 @@ int compile_to_object_file(const std::string &infile,
 #endif
     }
     LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
-        res = fe.get_llvm3(*asr, lpm, lm, diagnostics, infile);
+        res = fe.get_llvm3(*asr, lpm, diagnostics, infile);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (res.ok) {
         m = std::move(res.result);
@@ -1183,7 +1183,7 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
         diagnostics.diagnostics.clear();
         auto t1 = std::chrono::high_resolution_clock::now();
         LCompilers::Result<int>
-            result = LCompilers::asr_to_wasm(*asr, al, outfile, time_report, diagnostics, compiler_options, lm);
+            result = LCompilers::asr_to_wasm(*asr, al, outfile, time_report, diagnostics, compiler_options);
         auto t2 = std::chrono::high_resolution_clock::now();
         time_asr_to_wasm = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
@@ -1391,7 +1391,7 @@ int compile_to_object_file_c(const std::string &infile,
     std::string src;
     diagnostics.diagnostics.clear();
     LCompilers::Result<std::string> res
-        = fe.get_c3(*asr, diagnostics, pass_manager, lm, 1);
+        = fe.get_c3(*asr, diagnostics, pass_manager, 1);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (res.ok) {
         src = res.result;
