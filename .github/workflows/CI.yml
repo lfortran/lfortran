@@ -416,6 +416,7 @@ jobs:
           environment-file: ci/environment.yml
           create-args: >-
             python=3.10
+            openblas=0.3.21
 
       - name: Install Linux / macOS Packages
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
@@ -454,7 +455,7 @@ jobs:
             git checkout 409ba02a107f47ee835f3976952bbc64dd46de8a
             mkdir lf
             cd lf
-            FC=$(pwd)/../../src/bin/lfortran cmake ..
+            FC=$(pwd)/../../src/bin/lfortran cmake -DCMAKE_Fortran_FLAGS=--verbose ..
             make
             examples/example_hybrd
             examples/example_hybrd1
