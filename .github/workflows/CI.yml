@@ -96,8 +96,13 @@ jobs:
             xonsh ci\test.xsh
 
   scipy:
-    name: Check SciPy Build and Test Run
-    runs-on: ubuntu-latest
+    name: Check SciPy Build and Test Run, ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["macos-latest", "ubuntu-latest"]
+        python-version: ["3.10"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -105,30 +110,32 @@ jobs:
 
       - uses: mamba-org/setup-micromamba@v1
         with:
-          environment-file: ci/environment_linux.yml
+          environment-file: ci/environment.yml
           create-args: >-
-            python=3.10
+            python=${{ matrix.python-version }}
+
+      - name: Install Linux / macOS Packages
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        shell: bash -e -l {0}
+        run: micromamba install bison=3.4
 
       - uses: hendrikmuhs/ccache-action@main
         with:
-          variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
 
-      - name: Build Linux
+      - name: Setup Platform
         shell: bash -e -l {0}
         run: |
-            ./build0.sh
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+            echo "LFORTRAN_CMAKE_GENERATOR=Ninja" >> $GITHUB_ENV
+            echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+            echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+            echo "ENABLE_RUNTIME_STACKTRACE=yes" >> $GITHUB_ENV
 
-            cmake --build . -j16 --target install
+      - name: Build (Linux / macOS)
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        run: |
+            xonsh ci/build_tmp.xsh
 
       - name: Test SciPy
         shell: bash -e -x -l {0}
