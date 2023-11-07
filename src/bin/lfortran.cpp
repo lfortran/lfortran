@@ -641,7 +641,7 @@ int emit_asr(const std::string &infile,
     compiler_options.po.always_run = true;
     compiler_options.po.run_fun = "f";
 
-    pass_manager.apply_passes(al, asr, compiler_options.po, diagnostics, lm);
+    pass_manager.apply_passes(al, asr, compiler_options.po, diagnostics);
     if (compiler_options.po.tree) {
         std::cout << LCompilers::pickle_tree(*asr,
             compiler_options.use_colors) << std::endl;
@@ -706,7 +706,7 @@ int emit_c(const std::string &infile,
     LCompilers::ASR::TranslationUnit_t* asr = r.result;
 
     LCompilers::Result<std::string> c_result = fe.get_c3(*asr, diagnostics,
-                                                pass_manager, lm, 1);
+                                                pass_manager, 1);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (c_result.ok) {
         std::cout << c_result.result;
@@ -762,6 +762,35 @@ int emit_fortran(const std::string &infile, CompilerOptions &compiler_options) {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 1;
     }
+}
+
+int dump_all_passes(const std::string &infile, CompilerOptions &compiler_options) {
+    std::string input = read_file(infile);
+
+    LCompilers::FortranEvaluator fe(compiler_options);
+    LCompilers::LocationManager lm;
+    LCompilers::diag::Diagnostics diagnostics;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
+
+    LCompilers::Result<LCompilers::ASR::TranslationUnit_t*> asr = fe.get_asr2(input, lm, diagnostics);
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (asr.ok) {
+        Allocator al(64*1024*1024);
+        LCompilers::PassManager pass_manager;
+        compiler_options.po.always_run = true;
+        compiler_options.po.run_fun = "f";
+        pass_manager.dump_all_passes(al, asr.result, compiler_options.po, diagnostics, lm);
+        std::cerr << diagnostics.render(lm, compiler_options);
+    } else {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return 1;
+    }
+    return 0;
 }
 
 int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
@@ -927,7 +956,7 @@ int compile_to_object_file(const std::string &infile,
 #endif
     }
     LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
-        res = fe.get_llvm3(*asr, lpm, lm, diagnostics, infile);
+        res = fe.get_llvm3(*asr, lpm, diagnostics, infile);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (res.ok) {
         m = std::move(res.result);
@@ -1154,7 +1183,7 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
         diagnostics.diagnostics.clear();
         auto t1 = std::chrono::high_resolution_clock::now();
         LCompilers::Result<int>
-            result = LCompilers::asr_to_wasm(*asr, al, outfile, time_report, diagnostics, compiler_options, lm);
+            result = LCompilers::asr_to_wasm(*asr, al, outfile, time_report, diagnostics, compiler_options);
         auto t2 = std::chrono::high_resolution_clock::now();
         time_asr_to_wasm = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
@@ -1362,7 +1391,7 @@ int compile_to_object_file_c(const std::string &infile,
     std::string src;
     diagnostics.diagnostics.clear();
     LCompilers::Result<std::string> res
-        = fe.get_c3(*asr, diagnostics, pass_manager, lm, 1);
+        = fe.get_c3(*asr, diagnostics, pass_manager, 1);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (res.ok) {
         src = res.result;
@@ -2188,6 +2217,10 @@ int main(int argc, char *argv[])
             outfile = basename.replace_extension(".jl").string();
         } else {
             outfile = basename.replace_extension(".out").string();
+        }
+
+        if (compiler_options.po.dump_fortran || compiler_options.po.dump_all_passes) {
+            dump_all_passes(arg_file, compiler_options);
         }
 
         if (arg_E) {
