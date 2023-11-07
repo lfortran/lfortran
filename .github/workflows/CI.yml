@@ -757,8 +757,8 @@ jobs:
             micromamba activate gf
 
             cd integration_tests
-            ./run_tests.py -b fortran
-            ./run_tests.py -b fortran -f
+            ./run_tests.py -b fortran -j1
+            ./run_tests.py -b fortran -f -j1
 
   test_c_cpp:
     name: Test C/C++ backend
