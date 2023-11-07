@@ -632,10 +632,16 @@ public:
             default:
                 throw LCompilersException("Intent type is not handled");
         }
+        if (x.m_presence == ASR::presenceType::Optional) {
+            r += ", optional";
+        }
         if (x.m_storage == ASR::storage_typeType::Parameter) {
             r += ", parameter";
         } else if (x.m_storage == ASR::storage_typeType::Save) {
             r += ", save";
+        }
+        if (x.m_value_attr) {
+            r += ", value";
         }
         r += " :: ";
         r.append(x.m_name);
