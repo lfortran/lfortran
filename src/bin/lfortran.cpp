@@ -764,6 +764,35 @@ int emit_fortran(const std::string &infile, CompilerOptions &compiler_options) {
     }
 }
 
+int dump_all_passes(const std::string &infile, CompilerOptions &compiler_options) {
+    std::string input = read_file(infile);
+
+    LCompilers::FortranEvaluator fe(compiler_options);
+    LCompilers::LocationManager lm;
+    LCompilers::diag::Diagnostics diagnostics;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
+
+    LCompilers::Result<LCompilers::ASR::TranslationUnit_t*> asr = fe.get_asr2(input, lm, diagnostics);
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (asr.ok) {
+        Allocator al(64*1024*1024);
+        LCompilers::PassManager pass_manager;
+        compiler_options.po.always_run = true;
+        compiler_options.po.run_fun = "f";
+        pass_manager.dump_all_passes(al, asr.result, compiler_options.po, diagnostics, lm);
+        std::cerr << diagnostics.render(lm, compiler_options);
+    } else {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return 1;
+    }
+    return 0;
+}
+
 int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
     const LCompilers::CompilerOptions &compiler_options)
 {
@@ -2188,6 +2217,10 @@ int main(int argc, char *argv[])
             outfile = basename.replace_extension(".jl").string();
         } else {
             outfile = basename.replace_extension(".out").string();
+        }
+
+        if (compiler_options.po.dump_fortran || compiler_options.po.dump_all_passes) {
+            dump_all_passes(arg_file, compiler_options);
         }
 
         if (arg_E) {
