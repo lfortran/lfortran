@@ -470,6 +470,46 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         pass_result.push_back(al, doloop);
     }
 
+    template <typename LOOP_BODY>
+    void create_do_loop_for_const_val(const Location& loc, int result_rank,
+        Vec<ASR::expr_t*>& idx_vars,
+        Vec<ASR::expr_t*>& loop_vars, std::vector<int>& loop_var_indices,
+        Vec<ASR::stmt_t*>& doloop_body, LOOP_BODY loop_body) {
+        if ( use_custom_loop_params ) {
+            PassUtils::create_idx_vars(idx_vars, loop_vars, loop_var_indices,
+                result_ubound, result_inc, loc, al, current_scope, "_t");
+        } else {
+            PassUtils::create_idx_vars(idx_vars, result_rank, loc, al, current_scope, "_t");
+            loop_vars.from_pointer_n_copy(al, idx_vars.p, idx_vars.size());
+        }
+
+        ASR::stmt_t* doloop = nullptr;
+        for ( int i = (int) loop_vars.size() - 1; i >= 0; i-- ) {
+            // TODO: Add an If debug node to check if the lower and upper bounds of both the arrays are same.
+            ASR::do_loop_head_t head;
+            head.m_v = loop_vars[i];
+            if ( use_custom_loop_params ) {
+                int j = loop_var_indices[i];
+                head.m_start = result_lbound[j];
+                head.m_end = result_ubound[j];
+                head.m_increment = result_inc[j];
+            } else {
+                head.m_start = PassUtils::get_bound(result_var, i + 1, "lbound", al);
+                head.m_end = PassUtils::get_bound(result_var, i + 1, "ubound", al);
+                head.m_increment = nullptr;
+            }
+            head.loc = head.m_v->base.loc;
+            doloop_body.reserve(al, 1);
+            if ( doloop == nullptr ) {
+                loop_body();
+            } else {
+                doloop_body.push_back(al, doloop);
+            }
+            doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head, doloop_body.p, doloop_body.size()));
+        }
+        pass_result.push_back(al, doloop);
+    }
+
     template <typename T>
     void replace_Constant(T* x) {
         if( !(result_var != nullptr && PassUtils::is_array(result_var) &&
@@ -480,11 +520,11 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
         const Location& loc = x->base.base.loc;
         int n_dims = PassUtils::get_rank(result_var);
-        Vec<ASR::expr_t*> idx_vars, loop_vars, idx_vars_value;
+        Vec<ASR::expr_t*> idx_vars, loop_vars;
         std::vector<int> loop_var_indices;
         Vec<ASR::stmt_t*> doloop_body;
-        create_do_loop(loc, n_dims, idx_vars, idx_vars_value,
-            loop_vars, loop_var_indices, doloop_body, result_var,
+        create_do_loop_for_const_val(loc, n_dims, idx_vars,
+            loop_vars, loop_var_indices, doloop_body,
             [=, &idx_vars, &doloop_body] () {
             ASR::expr_t* ref = *current_expr;
             ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al, current_scope);
@@ -980,11 +1020,11 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             if (result_var) {
                 int n_dims = PassUtils::get_rank(result_var);
                 if (n_dims != 0) {
-                    Vec<ASR::expr_t*> idx_vars, loop_vars, idx_vars_value;
+                    Vec<ASR::expr_t*> idx_vars, loop_vars;
                     std::vector<int> loop_var_indices;
                     Vec<ASR::stmt_t*> doloop_body;
-                    create_do_loop(loc, n_dims, idx_vars, idx_vars_value,
-                        loop_vars, loop_var_indices, doloop_body, ASRUtils::EXPR((ASR::asr_t*)x),
+                    create_do_loop_for_const_val(loc, n_dims, idx_vars,
+                        loop_vars, loop_var_indices, doloop_body,
                         [=, &idx_vars, &doloop_body] () {
                         ASR::expr_t* ref = ASRUtils::EXPR((ASR::asr_t*)x);
                         ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al, current_scope);
