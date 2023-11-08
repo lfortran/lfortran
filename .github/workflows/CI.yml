@@ -521,11 +521,11 @@ jobs:
             make
             ls -l ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
             file ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
-            ldd ./gpt2
-            ldd ./chat
-            ldd ./test_basic_input
-            ldd ./test_chat
-            ldd ./test_more_inputs
+            ./gpt2
+            ./chat
+            ./test_basic_input
+            ./test_chat
+            ./test_more_inputs
 
             git clean -dfx
             git checkout -t origin/lf36run
