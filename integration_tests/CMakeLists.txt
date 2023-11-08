@@ -198,6 +198,7 @@ RUN(NAME print_04 LABELS gfortran llvm llvm2 fortran)
 RUN(NAME print_arr_01 LABELS gfortran llvm llvm2 wasm c fortran)
 RUN(NAME print_arr_02 LABELS gfortran llvm llvm2 wasm c fortran)
 RUN(NAME print_arr_03 LABELS gfortran llvm llvm2 fortran)
+RUN(NAME print_arr_04 LABELS llvm fortran EXTRA_ARGS --apply-fortran-mangling)
 
 RUN(NAME include_01 LABELS gfortran llvm wasm c fortran)
 RUN(NAME include_02 LABELS gfortran llvm wasm c fortran)

@@ -48,6 +48,7 @@ struct PassOptions {
     bool intrinsic_symbols_mangling = false;
     bool all_symbols_mangling = false;
     bool bindc_mangling = false;
+    bool fortran_mangling = false;
     bool mangle_underscore = false;
     bool json = false;
     bool no_loc = false;

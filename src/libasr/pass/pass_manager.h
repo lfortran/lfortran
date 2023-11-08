@@ -392,6 +392,9 @@ namespace LCompilers {
             apply_default_passes = false;
         }
 
+        void use_fortran_passes() {
+            _user_defined_passes.push_back("unique_symbols");
+        }
     };
 
 }
