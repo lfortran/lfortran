@@ -753,9 +753,6 @@ jobs:
       - name: Test Linux
         shell: bash -e -l {0}
         run: |
-            micromamba create -n gf gfortran
-            micromamba activate gf
-
             cd integration_tests
             ./run_tests.py -b fortran -j1
             ./run_tests.py -b fortran -f -j1
