@@ -48,6 +48,7 @@ _CPack_Packages
 *.a
 *.a.*
 *.so
+*.so.*
 *.s
 *.ll
 *.dylib
