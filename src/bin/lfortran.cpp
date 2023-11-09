@@ -1701,9 +1701,14 @@ int link_executable(const std::vector<std::string> &infiles,
         return 0;
     } else if (backend == Backend::fortran) {
         std::string cmd = "gfortran -o " + outfile + " ";
+        std::string base_path = "\"" + runtime_library_dir + "\"";
+        std::string runtime_lib = "lfortran_runtime";
         for (auto &s : infiles) {
             cmd += s + " ";
         }
+        cmd += " -L" + base_path
+            + " -Wl,-rpath," + base_path;
+        cmd += " -l" + runtime_lib + " -lm";
         int err = system(cmd.c_str());
         if (err) {
             std::cout << "The command '" + cmd + "' failed." << std::endl;
