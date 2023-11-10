@@ -1282,12 +1282,21 @@ R"(    // Initialise Numpy
         visit_expr(*x.m_dim);
         std::string idx = src;
         if( x.m_bound == ASR::arrayboundType::LBound ) {
-            src = "((" + result_type + ")" + var_name + "->dims[" + idx + "-1].lower_bound)";
+            if (ASRUtils::is_simd_array(x.m_v)) {
+                src = "0";
+            } else {
+                src = "((" + result_type + ")" + var_name + "->dims[" + idx + "-1].lower_bound)";
+            }
         } else if( x.m_bound == ASR::arrayboundType::UBound ) {
-            std::string lower_bound = var_name + "->dims[" + idx + "-1].lower_bound";
-            std::string length = var_name + "->dims[" + idx + "-1].length";
-            std::string upper_bound = length + " + " + lower_bound + " - 1";
-            src = "((" + result_type + ") " + upper_bound + ")";
+            if (ASRUtils::is_simd_array(x.m_v)) {
+                int64_t size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(x.m_v));
+                src = std::to_string(size - 1);
+            } else {
+                std::string lower_bound = var_name + "->dims[" + idx + "-1].lower_bound";
+                std::string length = var_name + "->dims[" + idx + "-1].length";
+                std::string upper_bound = length + " + " + lower_bound + " - 1";
+                src = "((" + result_type + ") " + upper_bound + ")";
+            }
         }
     }
 
@@ -1321,7 +1330,7 @@ R"(    // Initialise Numpy
         int n_dims = ASRUtils::extract_dimensions_from_ttype(x_mv_type, m_dims);
         bool is_data_only_array = ASRUtils::is_fixed_size_array(m_dims, n_dims) &&
                                   ASR::is_a<ASR::StructType_t>(*ASRUtils::get_asr_owner(x.m_v));
-        if( is_data_only_array ) {
+        if( is_data_only_array) {
             out += "[";
         } else {
             out += "->data[";
