@@ -2,16 +2,2895 @@
     (SymbolTable
         1
         {
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin),
             template_04:
                 (Program
                     (SymbolTable
-                        116
+                        121
                         {
-                            
+                            1_integer_matrix_elements:
+                                (ExternalSymbol
+                                    121
+                                    1_integer_matrix_elements
+                                    124 elements
+                                    integer_matrix
+                                    []
+                                    elements
+                                    Public
+                                ),
+                            1_real_matrix_elements:
+                                (ExternalSymbol
+                                    121
+                                    1_real_matrix_elements
+                                    129 elements
+                                    real_matrix
+                                    []
+                                    elements
+                                    Public
+                                ),
+                            achar:
+                                (ExternalSymbol
+                                    121
+                                    achar
+                                    133 achar
+                                    lfortran_intrinsic_builtin
+                                    []
+                                    achar
+                                    Private
+                                ),
+                            derive_extended_monoid:
+                                (ExternalSymbol
+                                    121
+                                    derive_extended_monoid
+                                    13 derive_extended_monoid
+                                    template_04_monoid
+                                    []
+                                    derive_extended_monoid
+                                    Public
+                                ),
+                            derive_extended_semigroup:
+                                (ExternalSymbol
+                                    121
+                                    derive_extended_semigroup
+                                    2 derive_extended_semigroup
+                                    template_04_semigroup
+                                    []
+                                    derive_extended_semigroup
+                                    Public
+                                ),
+                            derive_unit_ring_from_negate:
+                                (ExternalSymbol
+                                    121
+                                    derive_unit_ring_from_negate
+                                    34 derive_unit_ring_from_negate
+                                    template_04_unitring
+                                    []
+                                    derive_unit_ring_from_negate
+                                    Public
+                                ),
+                            extended_monoid:
+                                (ExternalSymbol
+                                    121
+                                    extended_monoid
+                                    13 extended_monoid
+                                    template_04_monoid
+                                    []
+                                    extended_monoid
+                                    Public
+                                ),
+                            extended_semigroup:
+                                (ExternalSymbol
+                                    121
+                                    extended_semigroup
+                                    2 extended_semigroup
+                                    template_04_semigroup
+                                    []
+                                    extended_semigroup
+                                    Public
+                                ),
+                            integer_matrix:
+                                (StructType
+                                    (SymbolTable
+                                        124
+                                        {
+                                            elements:
+                                                (Variable
+                                                    124
+                                                    elements
+                                                    [n]
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (Var 121 n))
+                                                        ((IntegerConstant 1 (Integer 4))
+                                                        (Var 121 n))]
+                                                        FixedSizeArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    integer_matrix
+                                    []
+                                    [elements]
+                                    Source
+                                    Private
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                ),
+                            integer_plus_matrix:
+                                (Function
+                                    (SymbolTable
+                                        125
+                                        {
+                                            1_integer_matrix_elements:
+                                                (ExternalSymbol
+                                                    125
+                                                    1_integer_matrix_elements
+                                                    124 elements
+                                                    integer_matrix
+                                                    []
+                                                    elements
+                                                    Public
+                                                ),
+                                            combined:
+                                                (Variable
+                                                    125
+                                                    combined
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        121 integer_matrix
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            i:
+                                                (Variable
+                                                    125
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            j:
+                                                (Variable
+                                                    125
+                                                    j
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            x:
+                                                (Variable
+                                                    125
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        121 integer_matrix
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            y:
+                                                (Variable
+                                                    125
+                                                    y
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        121 integer_matrix
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    integer_plus_matrix
+                                    (FunctionType
+                                        [(Struct
+                                            121 integer_matrix
+                                        )
+                                        (Struct
+                                            121 integer_matrix
+                                        )]
+                                        (Struct
+                                            121 integer_matrix
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    [~add_intrinsic]
+                                    [(Var 125 x)
+                                    (Var 125 y)]
+                                    [(DoLoop
+                                        ()
+                                        ((Var 125 i)
+                                        (IntegerConstant 1 (Integer 4))
+                                        (Var 121 n)
+                                        ())
+                                        [(DoLoop
+                                            ()
+                                            ((Var 125 j)
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Var 121 n)
+                                            ())
+                                            [(=
+                                                (ArrayItem
+                                                    (StructInstanceMember
+                                                        (Var 125 combined)
+                                                        125 1_integer_matrix_elements
+                                                        (Array
+                                                            (Integer 4)
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (Var 121 n))
+                                                            ((IntegerConstant 1 (Integer 4))
+                                                            (Var 121 n))]
+                                                            FixedSizeArray
+                                                        )
+                                                        ()
+                                                    )
+                                                    [(()
+                                                    (Var 125 i)
+                                                    ())
+                                                    (()
+                                                    (Var 125 j)
+                                                    ())]
+                                                    (Integer 4)
+                                                    ColMajor
+                                                    ()
+                                                )
+                                                (FunctionCall
+                                                    121 ~add_intrinsic
+                                                    ()
+                                                    [((ArrayItem
+                                                        (StructInstanceMember
+                                                            (Var 125 x)
+                                                            125 1_integer_matrix_elements
+                                                            (Array
+                                                                (Integer 4)
+                                                                [((IntegerConstant 1 (Integer 4))
+                                                                (Var 121 n))
+                                                                ((IntegerConstant 1 (Integer 4))
+                                                                (Var 121 n))]
+                                                                FixedSizeArray
+                                                            )
+                                                            ()
+                                                        )
+                                                        [(()
+                                                        (Var 125 i)
+                                                        ())
+                                                        (()
+                                                        (Var 125 j)
+                                                        ())]
+                                                        (Integer 4)
+                                                        ColMajor
+                                                        ()
+                                                    ))
+                                                    ((ArrayItem
+                                                        (StructInstanceMember
+                                                            (Var 125 y)
+                                                            125 1_integer_matrix_elements
+                                                            (Array
+                                                                (Integer 4)
+                                                                [((IntegerConstant 1 (Integer 4))
+                                                                (Var 121 n))
+                                                                ((IntegerConstant 1 (Integer 4))
+                                                                (Var 121 n))]
+                                                                FixedSizeArray
+                                                            )
+                                                            ()
+                                                        )
+                                                        [(()
+                                                        (Var 125 i)
+                                                        ())
+                                                        (()
+                                                        (Var 125 j)
+                                                        ())]
+                                                        (Integer 4)
+                                                        ColMajor
+                                                        ()
+                                                    ))]
+                                                    (Integer 4)
+                                                    ()
+                                                    ()
+                                                )
+                                                ()
+                                            )]
+                                        )]
+                                    )]
+                                    (Var 125 combined)
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            integer_times_matrix:
+                                (Function
+                                    (SymbolTable
+                                        126
+                                        {
+                                            1_integer_matrix_elements:
+                                                (ExternalSymbol
+                                                    126
+                                                    1_integer_matrix_elements
+                                                    124 elements
+                                                    integer_matrix
+                                                    []
+                                                    elements
+                                                    Public
+                                                ),
+                                            combined:
+                                                (Variable
+                                                    126
+                                                    combined
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        121 integer_matrix
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            dot:
+                                                (Variable
+                                                    126
+                                                    dot
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            i:
+                                                (Variable
+                                                    126
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            j:
+                                                (Variable
+                                                    126
+                                                    j
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            k:
+                                                (Variable
+                                                    126
+                                                    k
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            x:
+                                                (Variable
+                                                    126
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        121 integer_matrix
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            y:
+                                                (Variable
+                                                    126
+                                                    y
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        121 integer_matrix
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    integer_times_matrix
+                                    (FunctionType
+                                        [(Struct
+                                            121 integer_matrix
+                                        )
+                                        (Struct
+                                            121 integer_matrix
+                                        )]
+                                        (Struct
+                                            121 integer_matrix
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    [~add_intrinsic
+                                    ~mul_intrinsic]
+                                    [(Var 126 x)
+                                    (Var 126 y)]
+                                    [(DoLoop
+                                        ()
+                                        ((Var 126 i)
+                                        (IntegerConstant 1 (Integer 4))
+                                        (Var 121 n)
+                                        ())
+                                        [(DoLoop
+                                            ()
+                                            ((Var 126 j)
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Var 121 n)
+                                            ())
+                                            [(=
+                                                (Var 126 dot)
+                                                (FunctionCall
+                                                    121 zero_integer
+                                                    ()
+                                                    []
+                                                    (Integer 4)
+                                                    ()
+                                                    ()
+                                                )
+                                                ()
+                                            )
+                                            (DoLoop
+                                                ()
+                                                ((Var 126 k)
+                                                (IntegerConstant 1 (Integer 4))
+                                                (Var 121 n)
+                                                ())
+                                                [(=
+                                                    (Var 126 dot)
+                                                    (FunctionCall
+                                                        121 ~add_intrinsic
+                                                        ()
+                                                        [((Var 126 dot))
+                                                        ((FunctionCall
+                                                            121 ~mul_intrinsic
+                                                            ()
+                                                            [((ArrayItem
+                                                                (StructInstanceMember
+                                                                    (Var 126 x)
+                                                                    126 1_integer_matrix_elements
+                                                                    (Array
+                                                                        (Integer 4)
+                                                                        [((IntegerConstant 1 (Integer 4))
+                                                                        (Var 121 n))
+                                                                        ((IntegerConstant 1 (Integer 4))
+                                                                        (Var 121 n))]
+                                                                        FixedSizeArray
+                                                                    )
+                                                                    ()
+                                                                )
+                                                                [(()
+                                                                (Var 126 i)
+                                                                ())
+                                                                (()
+                                                                (Var 126 k)
+                                                                ())]
+                                                                (Integer 4)
+                                                                ColMajor
+                                                                ()
+                                                            ))
+                                                            ((ArrayItem
+                                                                (StructInstanceMember
+                                                                    (Var 126 y)
+                                                                    126 1_integer_matrix_elements
+                                                                    (Array
+                                                                        (Integer 4)
+                                                                        [((IntegerConstant 1 (Integer 4))
+                                                                        (Var 121 n))
+                                                                        ((IntegerConstant 1 (Integer 4))
+                                                                        (Var 121 n))]
+                                                                        FixedSizeArray
+                                                                    )
+                                                                    ()
+                                                                )
+                                                                [(()
+                                                                (Var 126 k)
+                                                                ())
+                                                                (()
+                                                                (Var 126 j)
+                                                                ())]
+                                                                (Integer 4)
+                                                                ColMajor
+                                                                ()
+                                                            ))]
+                                                            (Integer 4)
+                                                            ()
+                                                            ()
+                                                        ))]
+                                                        (Integer 4)
+                                                        ()
+                                                        ()
+                                                    )
+                                                    ()
+                                                )]
+                                            )
+                                            (=
+                                                (ArrayItem
+                                                    (StructInstanceMember
+                                                        (Var 126 combined)
+                                                        126 1_integer_matrix_elements
+                                                        (Array
+                                                            (Integer 4)
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (Var 121 n))
+                                                            ((IntegerConstant 1 (Integer 4))
+                                                            (Var 121 n))]
+                                                            FixedSizeArray
+                                                        )
+                                                        ()
+                                                    )
+                                                    [(()
+                                                    (Var 126 i)
+                                                    ())
+                                                    (()
+                                                    (Var 126 j)
+                                                    ())]
+                                                    (Integer 4)
+                                                    ColMajor
+                                                    ()
+                                                )
+                                                (Var 126 dot)
+                                                ()
+                                            )]
+                                        )]
+                                    )]
+                                    (Var 126 combined)
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            m1:
+                                (Variable
+                                    121
+                                    m1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        121 integer_matrix
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            m2:
+                                (Variable
+                                    121
+                                    m2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        121 integer_matrix
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            m3:
+                                (Variable
+                                    121
+                                    m3
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        121 integer_matrix
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            m4:
+                                (Variable
+                                    121
+                                    m4
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        121 integer_matrix
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            matrix_tmpl:
+                                (ExternalSymbol
+                                    121
+                                    matrix_tmpl
+                                    105 matrix_tmpl
+                                    template_04_matrix
+                                    []
+                                    matrix_tmpl
+                                    Public
+                                ),
+                            monoid:
+                                (ExternalSymbol
+                                    121
+                                    monoid
+                                    13 monoid
+                                    template_04_monoid
+                                    []
+                                    monoid
+                                    Public
+                                ),
+                            n:
+                                (Variable
+                                    121
+                                    n
+                                    []
+                                    Local
+                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4))
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            one_integer:
+                                (ExternalSymbol
+                                    121
+                                    one_integer
+                                    116 one_integer
+                                    template_04_func
+                                    []
+                                    one_integer
+                                    Public
+                                ),
+                            one_real:
+                                (ExternalSymbol
+                                    121
+                                    one_real
+                                    116 one_real
+                                    template_04_func
+                                    []
+                                    one_real
+                                    Public
+                                ),
+                            r1:
+                                (Variable
+                                    121
+                                    r1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        121 real_matrix
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            r2:
+                                (Variable
+                                    121
+                                    r2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        121 real_matrix
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            r3:
+                                (Variable
+                                    121
+                                    r3
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        121 real_matrix
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            r4:
+                                (Variable
+                                    121
+                                    r4
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        121 real_matrix
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            real_matrix:
+                                (StructType
+                                    (SymbolTable
+                                        129
+                                        {
+                                            elements:
+                                                (Variable
+                                                    129
+                                                    elements
+                                                    [n]
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Real 4)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (Var 121 n))
+                                                        ((IntegerConstant 1 (Integer 4))
+                                                        (Var 121 n))]
+                                                        FixedSizeArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    real_matrix
+                                    []
+                                    [elements]
+                                    Source
+                                    Private
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                ),
+                            real_plus_matrix:
+                                (Function
+                                    (SymbolTable
+                                        130
+                                        {
+                                            1_real_matrix_elements:
+                                                (ExternalSymbol
+                                                    130
+                                                    1_real_matrix_elements
+                                                    129 elements
+                                                    real_matrix
+                                                    []
+                                                    elements
+                                                    Public
+                                                ),
+                                            combined:
+                                                (Variable
+                                                    130
+                                                    combined
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        121 real_matrix
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            i:
+                                                (Variable
+                                                    130
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            j:
+                                                (Variable
+                                                    130
+                                                    j
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            x:
+                                                (Variable
+                                                    130
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        121 real_matrix
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            y:
+                                                (Variable
+                                                    130
+                                                    y
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        121 real_matrix
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    real_plus_matrix
+                                    (FunctionType
+                                        [(Struct
+                                            121 real_matrix
+                                        )
+                                        (Struct
+                                            121 real_matrix
+                                        )]
+                                        (Struct
+                                            121 real_matrix
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    [~add_intrinsic1]
+                                    [(Var 130 x)
+                                    (Var 130 y)]
+                                    [(DoLoop
+                                        ()
+                                        ((Var 130 i)
+                                        (IntegerConstant 1 (Integer 4))
+                                        (Var 121 n)
+                                        ())
+                                        [(DoLoop
+                                            ()
+                                            ((Var 130 j)
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Var 121 n)
+                                            ())
+                                            [(=
+                                                (ArrayItem
+                                                    (StructInstanceMember
+                                                        (Var 130 combined)
+                                                        130 1_real_matrix_elements
+                                                        (Array
+                                                            (Real 4)
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (Var 121 n))
+                                                            ((IntegerConstant 1 (Integer 4))
+                                                            (Var 121 n))]
+                                                            FixedSizeArray
+                                                        )
+                                                        ()
+                                                    )
+                                                    [(()
+                                                    (Var 130 i)
+                                                    ())
+                                                    (()
+                                                    (Var 130 j)
+                                                    ())]
+                                                    (Real 4)
+                                                    ColMajor
+                                                    ()
+                                                )
+                                                (FunctionCall
+                                                    121 ~add_intrinsic1
+                                                    ()
+                                                    [((ArrayItem
+                                                        (StructInstanceMember
+                                                            (Var 130 x)
+                                                            130 1_real_matrix_elements
+                                                            (Array
+                                                                (Real 4)
+                                                                [((IntegerConstant 1 (Integer 4))
+                                                                (Var 121 n))
+                                                                ((IntegerConstant 1 (Integer 4))
+                                                                (Var 121 n))]
+                                                                FixedSizeArray
+                                                            )
+                                                            ()
+                                                        )
+                                                        [(()
+                                                        (Var 130 i)
+                                                        ())
+                                                        (()
+                                                        (Var 130 j)
+                                                        ())]
+                                                        (Real 4)
+                                                        ColMajor
+                                                        ()
+                                                    ))
+                                                    ((ArrayItem
+                                                        (StructInstanceMember
+                                                            (Var 130 y)
+                                                            130 1_real_matrix_elements
+                                                            (Array
+                                                                (Real 4)
+                                                                [((IntegerConstant 1 (Integer 4))
+                                                                (Var 121 n))
+                                                                ((IntegerConstant 1 (Integer 4))
+                                                                (Var 121 n))]
+                                                                FixedSizeArray
+                                                            )
+                                                            ()
+                                                        )
+                                                        [(()
+                                                        (Var 130 i)
+                                                        ())
+                                                        (()
+                                                        (Var 130 j)
+                                                        ())]
+                                                        (Real 4)
+                                                        ColMajor
+                                                        ()
+                                                    ))]
+                                                    (Real 4)
+                                                    ()
+                                                    ()
+                                                )
+                                                ()
+                                            )]
+                                        )]
+                                    )]
+                                    (Var 130 combined)
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            real_times_matrix:
+                                (Function
+                                    (SymbolTable
+                                        131
+                                        {
+                                            1_real_matrix_elements:
+                                                (ExternalSymbol
+                                                    131
+                                                    1_real_matrix_elements
+                                                    129 elements
+                                                    real_matrix
+                                                    []
+                                                    elements
+                                                    Public
+                                                ),
+                                            combined:
+                                                (Variable
+                                                    131
+                                                    combined
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        121 real_matrix
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            dot:
+                                                (Variable
+                                                    131
+                                                    dot
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            i:
+                                                (Variable
+                                                    131
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            j:
+                                                (Variable
+                                                    131
+                                                    j
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            k:
+                                                (Variable
+                                                    131
+                                                    k
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            x:
+                                                (Variable
+                                                    131
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        121 real_matrix
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            y:
+                                                (Variable
+                                                    131
+                                                    y
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        121 real_matrix
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    real_times_matrix
+                                    (FunctionType
+                                        [(Struct
+                                            121 real_matrix
+                                        )
+                                        (Struct
+                                            121 real_matrix
+                                        )]
+                                        (Struct
+                                            121 real_matrix
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    [~add_intrinsic1
+                                    ~mul_intrinsic1]
+                                    [(Var 131 x)
+                                    (Var 131 y)]
+                                    [(DoLoop
+                                        ()
+                                        ((Var 131 i)
+                                        (IntegerConstant 1 (Integer 4))
+                                        (Var 121 n)
+                                        ())
+                                        [(DoLoop
+                                            ()
+                                            ((Var 131 j)
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Var 121 n)
+                                            ())
+                                            [(=
+                                                (Var 131 dot)
+                                                (FunctionCall
+                                                    121 zero_real
+                                                    ()
+                                                    []
+                                                    (Real 4)
+                                                    ()
+                                                    ()
+                                                )
+                                                ()
+                                            )
+                                            (DoLoop
+                                                ()
+                                                ((Var 131 k)
+                                                (IntegerConstant 1 (Integer 4))
+                                                (Var 121 n)
+                                                ())
+                                                [(=
+                                                    (Var 131 dot)
+                                                    (FunctionCall
+                                                        121 ~add_intrinsic1
+                                                        ()
+                                                        [((Var 131 dot))
+                                                        ((FunctionCall
+                                                            121 ~mul_intrinsic1
+                                                            ()
+                                                            [((ArrayItem
+                                                                (StructInstanceMember
+                                                                    (Var 131 x)
+                                                                    131 1_real_matrix_elements
+                                                                    (Array
+                                                                        (Real 4)
+                                                                        [((IntegerConstant 1 (Integer 4))
+                                                                        (Var 121 n))
+                                                                        ((IntegerConstant 1 (Integer 4))
+                                                                        (Var 121 n))]
+                                                                        FixedSizeArray
+                                                                    )
+                                                                    ()
+                                                                )
+                                                                [(()
+                                                                (Var 131 i)
+                                                                ())
+                                                                (()
+                                                                (Var 131 k)
+                                                                ())]
+                                                                (Real 4)
+                                                                ColMajor
+                                                                ()
+                                                            ))
+                                                            ((ArrayItem
+                                                                (StructInstanceMember
+                                                                    (Var 131 y)
+                                                                    131 1_real_matrix_elements
+                                                                    (Array
+                                                                        (Real 4)
+                                                                        [((IntegerConstant 1 (Integer 4))
+                                                                        (Var 121 n))
+                                                                        ((IntegerConstant 1 (Integer 4))
+                                                                        (Var 121 n))]
+                                                                        FixedSizeArray
+                                                                    )
+                                                                    ()
+                                                                )
+                                                                [(()
+                                                                (Var 131 k)
+                                                                ())
+                                                                (()
+                                                                (Var 131 j)
+                                                                ())]
+                                                                (Real 4)
+                                                                ColMajor
+                                                                ()
+                                                            ))]
+                                                            (Real 4)
+                                                            ()
+                                                            ()
+                                                        ))]
+                                                        (Real 4)
+                                                        ()
+                                                        ()
+                                                    )
+                                                    ()
+                                                )]
+                                            )
+                                            (=
+                                                (ArrayItem
+                                                    (StructInstanceMember
+                                                        (Var 131 combined)
+                                                        131 1_real_matrix_elements
+                                                        (Array
+                                                            (Real 4)
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (Var 121 n))
+                                                            ((IntegerConstant 1 (Integer 4))
+                                                            (Var 121 n))]
+                                                            FixedSizeArray
+                                                        )
+                                                        ()
+                                                    )
+                                                    [(()
+                                                    (Var 131 i)
+                                                    ())
+                                                    (()
+                                                    (Var 131 j)
+                                                    ())]
+                                                    (Real 4)
+                                                    ColMajor
+                                                    ()
+                                                )
+                                                (Var 131 dot)
+                                                ()
+                                            )]
+                                        )]
+                                    )]
+                                    (Var 131 combined)
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            semigroup:
+                                (ExternalSymbol
+                                    121
+                                    semigroup
+                                    2 semigroup
+                                    template_04_semigroup
+                                    []
+                                    semigroup
+                                    Public
+                                ),
+                            semiring:
+                                (ExternalSymbol
+                                    121
+                                    semiring
+                                    28 semiring
+                                    template_04_semiring
+                                    []
+                                    semiring
+                                    Public
+                                ),
+                            unit_ring:
+                                (ExternalSymbol
+                                    121
+                                    unit_ring
+                                    34 unit_ring
+                                    template_04_unitring
+                                    []
+                                    unit_ring
+                                    Public
+                                ),
+                            unit_ring_only_minus:
+                                (ExternalSymbol
+                                    121
+                                    unit_ring_only_minus
+                                    34 unit_ring_only_minus
+                                    template_04_unitring
+                                    []
+                                    unit_ring_only_minus
+                                    Public
+                                ),
+                            unit_ring_only_negate:
+                                (ExternalSymbol
+                                    121
+                                    unit_ring_only_negate
+                                    34 unit_ring_only_negate
+                                    template_04_unitring
+                                    []
+                                    unit_ring_only_negate
+                                    Public
+                                ),
+                            zero_integer:
+                                (ExternalSymbol
+                                    121
+                                    zero_integer
+                                    116 zero_integer
+                                    template_04_func
+                                    []
+                                    zero_integer
+                                    Public
+                                ),
+                            zero_real:
+                                (ExternalSymbol
+                                    121
+                                    zero_real
+                                    116 zero_real
+                                    template_04_func
+                                    []
+                                    zero_real
+                                    Public
+                                ),
+                            ~add:
+                                (CustomOperator
+                                    121
+                                    ~add
+                                    [121 ~add_intrinsic
+                                    121 ~add_intrinsic1]
+                                    Public
+                                ),
+                            ~add_intrinsic:
+                                (Function
+                                    (SymbolTable
+                                        122
+                                        {
+                                            arg0:
+                                                (Variable
+                                                    122
+                                                    arg0
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            arg1:
+                                                (Variable
+                                                    122
+                                                    arg1
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            ret:
+                                                (Variable
+                                                    122
+                                                    ret
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    ~add_intrinsic
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 122 arg0)
+                                    (Var 122 arg1)]
+                                    [(=
+                                        (Var 122 ret)
+                                        (IntegerBinOp
+                                            (Var 122 arg0)
+                                            Add
+                                            (Var 122 arg1)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 122 ret)
+                                    Public
+                                    .false.
+                                    .true.
+                                    ()
+                                ),
+                            ~add_intrinsic1:
+                                (Function
+                                    (SymbolTable
+                                        127
+                                        {
+                                            arg0:
+                                                (Variable
+                                                    127
+                                                    arg0
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            arg1:
+                                                (Variable
+                                                    127
+                                                    arg1
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            ret:
+                                                (Variable
+                                                    127
+                                                    ret
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    ~add_intrinsic1
+                                    (FunctionType
+                                        [(Real 4)
+                                        (Real 4)]
+                                        (Real 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 127 arg0)
+                                    (Var 127 arg1)]
+                                    [(=
+                                        (Var 127 ret)
+                                        (RealBinOp
+                                            (Var 127 arg0)
+                                            Add
+                                            (Var 127 arg1)
+                                            (Real 4)
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 127 ret)
+                                    Public
+                                    .false.
+                                    .true.
+                                    ()
+                                ),
+                            ~mul:
+                                (CustomOperator
+                                    121
+                                    ~mul
+                                    [121 ~mul_intrinsic
+                                    121 ~mul_intrinsic1]
+                                    Public
+                                ),
+                            ~mul_intrinsic:
+                                (Function
+                                    (SymbolTable
+                                        123
+                                        {
+                                            arg0:
+                                                (Variable
+                                                    123
+                                                    arg0
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            arg1:
+                                                (Variable
+                                                    123
+                                                    arg1
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            ret:
+                                                (Variable
+                                                    123
+                                                    ret
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    ~mul_intrinsic
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 123 arg0)
+                                    (Var 123 arg1)]
+                                    [(=
+                                        (Var 123 ret)
+                                        (IntegerBinOp
+                                            (Var 123 arg0)
+                                            Mul
+                                            (Var 123 arg1)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 123 ret)
+                                    Public
+                                    .false.
+                                    .true.
+                                    ()
+                                ),
+                            ~mul_intrinsic1:
+                                (Function
+                                    (SymbolTable
+                                        128
+                                        {
+                                            arg0:
+                                                (Variable
+                                                    128
+                                                    arg0
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            arg1:
+                                                (Variable
+                                                    128
+                                                    arg1
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            ret:
+                                                (Variable
+                                                    128
+                                                    ret
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    ~mul_intrinsic1
+                                    (FunctionType
+                                        [(Real 4)
+                                        (Real 4)]
+                                        (Real 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 128 arg0)
+                                    (Var 128 arg1)]
+                                    [(=
+                                        (Var 128 ret)
+                                        (RealBinOp
+                                            (Var 128 arg0)
+                                            Mul
+                                            (Var 128 arg1)
+                                            (Real 4)
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 128 ret)
+                                    Public
+                                    .false.
+                                    .true.
+                                    ()
+                                )
                         })
                     template_04
-                    []
-                    []
+                    [template_04_matrix
+                    template_04_func]
+                    [(=
+                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 121 m1)
+                                121 1_integer_matrix_elements
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 1 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 1 (Integer 4))
+                            ())]
+                            (Integer 4)
+                            ColMajor
+                            ()
+                        )
+                        (IntegerConstant 1 (Integer 4))
+                        ()
+                    )
+                    (=
+                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 121 m1)
+                                121 1_integer_matrix_elements
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 1 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 2 (Integer 4))
+                            ())]
+                            (Integer 4)
+                            ColMajor
+                            ()
+                        )
+                        (IntegerConstant 0 (Integer 4))
+                        ()
+                    )
+                    (=
+                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 121 m1)
+                                121 1_integer_matrix_elements
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 2 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 1 (Integer 4))
+                            ())]
+                            (Integer 4)
+                            ColMajor
+                            ()
+                        )
+                        (IntegerConstant 0 (Integer 4))
+                        ()
+                    )
+                    (=
+                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 121 m1)
+                                121 1_integer_matrix_elements
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 2 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 2 (Integer 4))
+                            ())]
+                            (Integer 4)
+                            ColMajor
+                            ()
+                        )
+                        (IntegerConstant 1 (Integer 4))
+                        ()
+                    )
+                    (=
+                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 121 m2)
+                                121 1_integer_matrix_elements
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 1 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 1 (Integer 4))
+                            ())]
+                            (Integer 4)
+                            ColMajor
+                            ()
+                        )
+                        (IntegerConstant 1 (Integer 4))
+                        ()
+                    )
+                    (=
+                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 121 m2)
+                                121 1_integer_matrix_elements
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 1 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 2 (Integer 4))
+                            ())]
+                            (Integer 4)
+                            ColMajor
+                            ()
+                        )
+                        (IntegerConstant 2 (Integer 4))
+                        ()
+                    )
+                    (=
+                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 121 m2)
+                                121 1_integer_matrix_elements
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 2 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 1 (Integer 4))
+                            ())]
+                            (Integer 4)
+                            ColMajor
+                            ()
+                        )
+                        (IntegerConstant 2 (Integer 4))
+                        ()
+                    )
+                    (=
+                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 121 m2)
+                                121 1_integer_matrix_elements
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 2 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 2 (Integer 4))
+                            ())]
+                            (Integer 4)
+                            ColMajor
+                            ()
+                        )
+                        (IntegerConstant 1 (Integer 4))
+                        ()
+                    )
+                    (=
+                        (Var 121 m3)
+                        (FunctionCall
+                            121 integer_plus_matrix
+                            ()
+                            [((Var 121 m1))
+                            ((Var 121 m2))]
+                            (Struct
+                                121 integer_matrix
+                            )
+                            ()
+                            ()
+                        )
+                        ()
+                    )
+                    (Print
+                        [(ArrayItem
+                            (StructInstanceMember
+                                (Var 121 m3)
+                                121 1_integer_matrix_elements
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 1 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 1 (Integer 4))
+                            ())]
+                            (Integer 4)
+                            ColMajor
+                            ()
+                        )
+                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 121 m3)
+                                121 1_integer_matrix_elements
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 1 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 2 (Integer 4))
+                            ())]
+                            (Integer 4)
+                            ColMajor
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(ArrayItem
+                            (StructInstanceMember
+                                (Var 121 m3)
+                                121 1_integer_matrix_elements
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 2 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 1 (Integer 4))
+                            ())]
+                            (Integer 4)
+                            ColMajor
+                            ()
+                        )
+                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 121 m3)
+                                121 1_integer_matrix_elements
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 2 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 2 (Integer 4))
+                            ())]
+                            (Integer 4)
+                            ColMajor
+                            ()
+                        )
+                        (FunctionCall
+                            121 achar
+                            ()
+                            [((IntegerConstant 10 (Integer 4)))
+                            (())]
+                            (Character 1 1 ())
+                            (StringConstant
+                                "\n"
+                                (Character 1 1 ())
+                            )
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (=
+                        (Var 121 m4)
+                        (FunctionCall
+                            121 integer_times_matrix
+                            ()
+                            [((Var 121 m3))
+                            ((Var 121 m2))]
+                            (Struct
+                                121 integer_matrix
+                            )
+                            ()
+                            ()
+                        )
+                        ()
+                    )
+                    (Print
+                        [(ArrayItem
+                            (StructInstanceMember
+                                (Var 121 m4)
+                                121 1_integer_matrix_elements
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 1 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 1 (Integer 4))
+                            ())]
+                            (Integer 4)
+                            ColMajor
+                            ()
+                        )
+                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 121 m4)
+                                121 1_integer_matrix_elements
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 1 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 2 (Integer 4))
+                            ())]
+                            (Integer 4)
+                            ColMajor
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(ArrayItem
+                            (StructInstanceMember
+                                (Var 121 m4)
+                                121 1_integer_matrix_elements
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 2 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 1 (Integer 4))
+                            ())]
+                            (Integer 4)
+                            ColMajor
+                            ()
+                        )
+                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 121 m4)
+                                121 1_integer_matrix_elements
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 2 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 2 (Integer 4))
+                            ())]
+                            (Integer 4)
+                            ColMajor
+                            ()
+                        )
+                        (FunctionCall
+                            121 achar
+                            ()
+                            [((IntegerConstant 10 (Integer 4)))
+                            (())]
+                            (Character 1 1 ())
+                            (StringConstant
+                                "\n"
+                                (Character 1 1 ())
+                            )
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (=
+                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 121 r1)
+                                121 1_real_matrix_elements
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 1 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 1 (Integer 4))
+                            ())]
+                            (Real 4)
+                            ColMajor
+                            ()
+                        )
+                        (RealConstant
+                            1.200000
+                            (Real 4)
+                        )
+                        ()
+                    )
+                    (=
+                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 121 r1)
+                                121 1_real_matrix_elements
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 1 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 2 (Integer 4))
+                            ())]
+                            (Real 4)
+                            ColMajor
+                            ()
+                        )
+                        (Cast
+                            (IntegerConstant 0 (Integer 4))
+                            IntegerToReal
+                            (Real 4)
+                            (RealConstant
+                                0.000000
+                                (Real 4)
+                            )
+                        )
+                        ()
+                    )
+                    (=
+                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 121 r1)
+                                121 1_real_matrix_elements
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 2 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 1 (Integer 4))
+                            ())]
+                            (Real 4)
+                            ColMajor
+                            ()
+                        )
+                        (Cast
+                            (IntegerConstant 0 (Integer 4))
+                            IntegerToReal
+                            (Real 4)
+                            (RealConstant
+                                0.000000
+                                (Real 4)
+                            )
+                        )
+                        ()
+                    )
+                    (=
+                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 121 r1)
+                                121 1_real_matrix_elements
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 2 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 2 (Integer 4))
+                            ())]
+                            (Real 4)
+                            ColMajor
+                            ()
+                        )
+                        (Cast
+                            (IntegerConstant 1 (Integer 4))
+                            IntegerToReal
+                            (Real 4)
+                            (RealConstant
+                                1.000000
+                                (Real 4)
+                            )
+                        )
+                        ()
+                    )
+                    (=
+                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 121 r2)
+                                121 1_real_matrix_elements
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 1 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 1 (Integer 4))
+                            ())]
+                            (Real 4)
+                            ColMajor
+                            ()
+                        )
+                        (Cast
+                            (IntegerConstant 1 (Integer 4))
+                            IntegerToReal
+                            (Real 4)
+                            (RealConstant
+                                1.000000
+                                (Real 4)
+                            )
+                        )
+                        ()
+                    )
+                    (=
+                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 121 r2)
+                                121 1_real_matrix_elements
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 1 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 2 (Integer 4))
+                            ())]
+                            (Real 4)
+                            ColMajor
+                            ()
+                        )
+                        (RealConstant
+                            2.500000
+                            (Real 4)
+                        )
+                        ()
+                    )
+                    (=
+                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 121 r2)
+                                121 1_real_matrix_elements
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 2 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 1 (Integer 4))
+                            ())]
+                            (Real 4)
+                            ColMajor
+                            ()
+                        )
+                        (Cast
+                            (IntegerConstant 2 (Integer 4))
+                            IntegerToReal
+                            (Real 4)
+                            (RealConstant
+                                2.000000
+                                (Real 4)
+                            )
+                        )
+                        ()
+                    )
+                    (=
+                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 121 r2)
+                                121 1_real_matrix_elements
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 2 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 2 (Integer 4))
+                            ())]
+                            (Real 4)
+                            ColMajor
+                            ()
+                        )
+                        (Cast
+                            (IntegerConstant 1 (Integer 4))
+                            IntegerToReal
+                            (Real 4)
+                            (RealConstant
+                                1.000000
+                                (Real 4)
+                            )
+                        )
+                        ()
+                    )
+                    (=
+                        (Var 121 r3)
+                        (FunctionCall
+                            121 real_plus_matrix
+                            ()
+                            [((Var 121 r1))
+                            ((Var 121 r2))]
+                            (Struct
+                                121 real_matrix
+                            )
+                            ()
+                            ()
+                        )
+                        ()
+                    )
+                    (Print
+                        [(ArrayItem
+                            (StructInstanceMember
+                                (Var 121 r3)
+                                121 1_real_matrix_elements
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 1 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 1 (Integer 4))
+                            ())]
+                            (Real 4)
+                            ColMajor
+                            ()
+                        )
+                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 121 r3)
+                                121 1_real_matrix_elements
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 1 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 2 (Integer 4))
+                            ())]
+                            (Real 4)
+                            ColMajor
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(ArrayItem
+                            (StructInstanceMember
+                                (Var 121 r3)
+                                121 1_real_matrix_elements
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 2 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 1 (Integer 4))
+                            ())]
+                            (Real 4)
+                            ColMajor
+                            ()
+                        )
+                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 121 r3)
+                                121 1_real_matrix_elements
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 2 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 2 (Integer 4))
+                            ())]
+                            (Real 4)
+                            ColMajor
+                            ()
+                        )
+                        (FunctionCall
+                            121 achar
+                            ()
+                            [((IntegerConstant 10 (Integer 4)))
+                            (())]
+                            (Character 1 1 ())
+                            (StringConstant
+                                "\n"
+                                (Character 1 1 ())
+                            )
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (=
+                        (Var 121 r4)
+                        (FunctionCall
+                            121 real_times_matrix
+                            ()
+                            [((Var 121 r3))
+                            ((Var 121 r2))]
+                            (Struct
+                                121 real_matrix
+                            )
+                            ()
+                            ()
+                        )
+                        ()
+                    )
+                    (Print
+                        [(ArrayItem
+                            (StructInstanceMember
+                                (Var 121 r4)
+                                121 1_real_matrix_elements
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 1 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 1 (Integer 4))
+                            ())]
+                            (Real 4)
+                            ColMajor
+                            ()
+                        )
+                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 121 r4)
+                                121 1_real_matrix_elements
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 1 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 2 (Integer 4))
+                            ())]
+                            (Real 4)
+                            ColMajor
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(ArrayItem
+                            (StructInstanceMember
+                                (Var 121 r4)
+                                121 1_real_matrix_elements
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 2 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 1 (Integer 4))
+                            ())]
+                            (Real 4)
+                            ColMajor
+                            ()
+                        )
+                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 121 r4)
+                                121 1_real_matrix_elements
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (Var 121 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 2 (Integer 4))
+                            ())
+                            (()
+                            (IntegerConstant 2 (Integer 4))
+                            ())]
+                            (Real 4)
+                            ColMajor
+                            ()
+                        )
+                        (FunctionCall
+                            121 achar
+                            ()
+                            [((IntegerConstant 10 (Integer 4)))
+                            (())]
+                            (Character 1 1 ())
+                            (StringConstant
+                                "\n"
+                                (Character 1 1 ())
+                            )
+                            ()
+                        )]
+                        ()
+                        ()
+                    )]
                 ),
             template_04_field:
                 (Module
@@ -196,8 +3075,8 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [one
-                                                    divide]
+                                                    [divide
+                                                    one]
                                                     [(Var 95 x)]
                                                     [(=
                                                         (Var 95 inverse)
@@ -802,8 +3681,8 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [invert
-                                                    mult]
+                                                    [mult
+                                                    invert]
                                                     [(Var 104 x)
                                                     (Var 104 y)]
                                                     [(=
@@ -3296,6 +6175,233 @@
                     .false.
                     .false.
                 ),
+            template_04_func:
+                (Module
+                    (SymbolTable
+                        116
+                        {
+                            one_integer:
+                                (Function
+                                    (SymbolTable
+                                        118
+                                        {
+                                            z:
+                                                (Variable
+                                                    118
+                                                    z
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    one_integer
+                                    (FunctionType
+                                        []
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    [(=
+                                        (Var 118 z)
+                                        (IntegerConstant 1 (Integer 4))
+                                        ()
+                                    )]
+                                    (Var 118 z)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            one_real:
+                                (Function
+                                    (SymbolTable
+                                        120
+                                        {
+                                            z:
+                                                (Variable
+                                                    120
+                                                    z
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    one_real
+                                    (FunctionType
+                                        []
+                                        (Real 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    [(=
+                                        (Var 120 z)
+                                        (Cast
+                                            (IntegerConstant 1 (Integer 4))
+                                            IntegerToReal
+                                            (Real 4)
+                                            (RealConstant
+                                                1.000000
+                                                (Real 4)
+                                            )
+                                        )
+                                        ()
+                                    )]
+                                    (Var 120 z)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            zero_integer:
+                                (Function
+                                    (SymbolTable
+                                        117
+                                        {
+                                            z:
+                                                (Variable
+                                                    117
+                                                    z
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    zero_integer
+                                    (FunctionType
+                                        []
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    [(=
+                                        (Var 117 z)
+                                        (IntegerConstant 0 (Integer 4))
+                                        ()
+                                    )]
+                                    (Var 117 z)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            zero_real:
+                                (Function
+                                    (SymbolTable
+                                        119
+                                        {
+                                            z:
+                                                (Variable
+                                                    119
+                                                    z
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    zero_real
+                                    (FunctionType
+                                        []
+                                        (Real 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    [(=
+                                        (Var 119 z)
+                                        (Cast
+                                            (IntegerConstant 0 (Integer 4))
+                                            IntegerToReal
+                                            (Real 4)
+                                            (RealConstant
+                                                0.000000
+                                                (Real 4)
+                                            )
+                                        )
+                                        ()
+                                    )]
+                                    (Var 119 z)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    template_04_func
+                    []
+                    .false.
+                    .false.
+                ),
             template_04_matrix:
                 (Module
                     (SymbolTable
@@ -3687,6 +6793,38 @@
                                                                     Required
                                                                     .false.
                                                                 ),
+                                                            i:
+                                                                (Variable
+                                                                    112
+                                                                    i
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            j:
+                                                                (Variable
+                                                                    112
+                                                                    j
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
                                                             x:
                                                                 (Variable
                                                                     112
@@ -3749,101 +6887,115 @@
                                                     [plus_t]
                                                     [(Var 112 x)
                                                     (Var 112 y)]
-                                                    [(=
-                                                        (StructInstanceMember
-                                                            (Var 112 combined)
-                                                            112 1_matrix_elements
-                                                            (Array
-                                                                (TypeParameter
-                                                                    t
-                                                                )
-                                                                [((IntegerConstant 1 (Integer 4))
-                                                                (Var 106 n))
-                                                                ((IntegerConstant 1 (Integer 4))
-                                                                (Var 106 n))]
-                                                                PointerToDataArray
-                                                            )
-                                                            ()
-                                                        )
-                                                        (ArrayBroadcast
-                                                            (FunctionCall
-                                                                106 plus_t
-                                                                ()
-                                                                [((StructInstanceMember
-                                                                    (Var 112 x)
-                                                                    112 1_matrix_elements
-                                                                    (Array
-                                                                        (TypeParameter
-                                                                            t
-                                                                        )
-                                                                        [((IntegerConstant 1 (Integer 4))
-                                                                        (Var 106 n))
-                                                                        ((IntegerConstant 1 (Integer 4))
-                                                                        (Var 106 n))]
-                                                                        PointerToDataArray
-                                                                    )
-                                                                    ()
-                                                                ))
-                                                                ((StructInstanceMember
-                                                                    (Var 112 y)
-                                                                    112 1_matrix_elements
-                                                                    (Array
-                                                                        (TypeParameter
-                                                                            t
-                                                                        )
-                                                                        [((IntegerConstant 1 (Integer 4))
-                                                                        (Var 106 n))
-                                                                        ((IntegerConstant 1 (Integer 4))
-                                                                        (Var 106 n))]
-                                                                        PointerToDataArray
-                                                                    )
-                                                                    ()
-                                                                ))]
-                                                                (TypeParameter
-                                                                    t
-                                                                )
-                                                                ()
-                                                                ()
-                                                            )
-                                                            (IntrinsicArrayFunction
-                                                                Shape
-                                                                [(StructInstanceMember
-                                                                    (Var 112 combined)
-                                                                    112 1_matrix_elements
-                                                                    (Array
-                                                                        (TypeParameter
-                                                                            t
-                                                                        )
-                                                                        [((IntegerConstant 1 (Integer 4))
-                                                                        (Var 106 n))
-                                                                        ((IntegerConstant 1 (Integer 4))
-                                                                        (Var 106 n))]
-                                                                        PointerToDataArray
-                                                                    )
-                                                                    ()
-                                                                )]
-                                                                0
-                                                                (Array
-                                                                    (Integer 4)
-                                                                    [((IntegerConstant 1 (Integer 4))
-                                                                    (IntegerConstant 2 (Integer 4)))]
-                                                                    FixedSizeArray
-                                                                )
-                                                                ()
-                                                            )
-                                                            (Array
-                                                                (TypeParameter
-                                                                    t
-                                                                )
-                                                                [((IntegerConstant 1 (Integer 4))
-                                                                (Var 106 n))
-                                                                ((IntegerConstant 1 (Integer 4))
-                                                                (Var 106 n))]
-                                                                PointerToDataArray
-                                                            )
-                                                            ()
-                                                        )
+                                                    [(DoLoop
                                                         ()
+                                                        ((Var 112 i)
+                                                        (IntegerConstant 1 (Integer 4))
+                                                        (Var 106 n)
+                                                        ())
+                                                        [(DoLoop
+                                                            ()
+                                                            ((Var 112 j)
+                                                            (IntegerConstant 1 (Integer 4))
+                                                            (Var 106 n)
+                                                            ())
+                                                            [(=
+                                                                (ArrayItem
+                                                                    (StructInstanceMember
+                                                                        (Var 112 combined)
+                                                                        112 1_matrix_elements
+                                                                        (Array
+                                                                            (TypeParameter
+                                                                                t
+                                                                            )
+                                                                            [((IntegerConstant 1 (Integer 4))
+                                                                            (Var 106 n))
+                                                                            ((IntegerConstant 1 (Integer 4))
+                                                                            (Var 106 n))]
+                                                                            PointerToDataArray
+                                                                        )
+                                                                        ()
+                                                                    )
+                                                                    [(()
+                                                                    (Var 112 i)
+                                                                    ())
+                                                                    (()
+                                                                    (Var 112 j)
+                                                                    ())]
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ColMajor
+                                                                    ()
+                                                                )
+                                                                (FunctionCall
+                                                                    106 plus_t
+                                                                    ()
+                                                                    [((ArrayItem
+                                                                        (StructInstanceMember
+                                                                            (Var 112 x)
+                                                                            112 1_matrix_elements
+                                                                            (Array
+                                                                                (TypeParameter
+                                                                                    t
+                                                                                )
+                                                                                [((IntegerConstant 1 (Integer 4))
+                                                                                (Var 106 n))
+                                                                                ((IntegerConstant 1 (Integer 4))
+                                                                                (Var 106 n))]
+                                                                                PointerToDataArray
+                                                                            )
+                                                                            ()
+                                                                        )
+                                                                        [(()
+                                                                        (Var 112 i)
+                                                                        ())
+                                                                        (()
+                                                                        (Var 112 j)
+                                                                        ())]
+                                                                        (TypeParameter
+                                                                            t
+                                                                        )
+                                                                        ColMajor
+                                                                        ()
+                                                                    ))
+                                                                    ((ArrayItem
+                                                                        (StructInstanceMember
+                                                                            (Var 112 y)
+                                                                            112 1_matrix_elements
+                                                                            (Array
+                                                                                (TypeParameter
+                                                                                    t
+                                                                                )
+                                                                                [((IntegerConstant 1 (Integer 4))
+                                                                                (Var 106 n))
+                                                                                ((IntegerConstant 1 (Integer 4))
+                                                                                (Var 106 n))]
+                                                                                PointerToDataArray
+                                                                            )
+                                                                            ()
+                                                                        )
+                                                                        [(()
+                                                                        (Var 112 i)
+                                                                        ())
+                                                                        (()
+                                                                        (Var 112 j)
+                                                                        ())]
+                                                                        (TypeParameter
+                                                                            t
+                                                                        )
+                                                                        ColMajor
+                                                                        ()
+                                                                    ))]
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    ()
+                                                                )
+                                                                ()
+                                                            )]
+                                                        )]
                                                     )]
                                                     (Var 112 combined)
                                                     Private
@@ -4120,8 +7272,8 @@
                                                         .false.
                                                     )
                                                     [zero_t
-                                                    times_t
-                                                    plus_t]
+                                                    plus_t
+                                                    times_t]
                                                     [(Var 114 x)
                                                     (Var 114 y)]
                                                     [(DoLoop
@@ -7157,8 +10309,8 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [negate
-                                                    plus]
+                                                    [plus
+                                                    negate]
                                                     [(Var 60 x)
                                                     (Var 60 y)]
                                                     [(=

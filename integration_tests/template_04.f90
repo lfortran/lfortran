@@ -245,8 +245,14 @@ module template_04_matrix
         elemental function plus_matrix(x, y) result(combined)
             type(matrix), intent(in) :: x, y
             type(matrix) :: combined
-
-            combined%elements = plus_t(x%elements, y%elements)
+            integer :: i, j
+            ! TODO: something wrong with elemental function operations
+            ! combined%elements = plus_t(x%elements, y%elements)
+            do i = 1, n
+                do j = 1, n
+                    combined%elements(i,j) = plus_t(x%elements(i,j), y%elements(i,j))
+                end do
+            end do
         end function
 
         pure function zero()
@@ -288,5 +294,85 @@ module template_04_matrix
     end template
 end module
 
+module template_04_func
+    implicit none
+    private
+    public :: zero_integer, zero_real, one_integer, one_real
+
+contains
+
+    pure function zero_integer() result(z)
+        integer :: z
+        z = 0
+    end function
+
+    pure function one_integer() result(z)
+        integer :: z
+        z = 1
+    end function
+
+    pure function zero_real() result(z)
+        real :: z
+        z = 0
+    end function
+
+    pure function one_real() result(z)
+        real :: z
+        z = 1
+    end function
+
+end module
+
 program template_04
+use template_04_matrix
+use template_04_func
+
+integer, parameter :: n = 2
+instantiate matrix_tmpl(integer, operator(+), zero_integer, operator(*), one_integer, n), &
+    only: integer_matrix => matrix, &
+          integer_plus_matrix => plus_matrix, &
+          integer_times_matrix => times_matrix
+          
+type(integer_matrix) :: m1, m2, m3, m4
+m1%elements(1,1) = 1
+m1%elements(1,2) = 0
+m1%elements(2,1) = 0
+m1%elements(2,2) = 1
+
+m2%elements(1,1) = 1
+m2%elements(1,2) = 2
+m2%elements(2,1) = 2
+m2%elements(2,2) = 1
+
+m3 = integer_plus_matrix(m1, m2)
+print *, m3%elements(1,1), m3%elements(1,2)
+print *, m3%elements(2,1), m3%elements(2,2), achar(10)
+
+m4 = integer_times_matrix(m3, m2)
+print *, m4%elements(1,1), m4%elements(1,2)
+print *, m4%elements(2,1), m4%elements(2,2), achar(10)
+
+instantiate matrix_tmpl(real, operator(+), zero_real, operator(*), one_real, n), &
+    only: real_matrix => matrix, &
+          real_plus_matrix => plus_matrix, &
+          real_times_matrix => times_matrix
+
+type(real_matrix) :: r1, r2, r3, r4
+r1%elements(1,1) = 1.2
+r1%elements(1,2) = 0
+r1%elements(2,1) = 0
+r1%elements(2,2) = 1
+
+r2%elements(1,1) = 1
+r2%elements(1,2) = 2.5
+r2%elements(2,1) = 2
+r2%elements(2,2) = 1
+
+r3 = real_plus_matrix(r1, r2)
+print *, r3%elements(1,1), r3%elements(1,2)
+print *, r3%elements(2,1), r3%elements(2,2), achar(10)
+
+r4 = real_times_matrix(r3, r2)
+print *, r4%elements(1,1), r4%elements(1,2)
+print *, r4%elements(2,1), r4%elements(2,2), achar(10)
 end program
