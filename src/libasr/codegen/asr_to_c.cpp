@@ -1330,7 +1330,7 @@ R"(    // Initialise Numpy
         int n_dims = ASRUtils::extract_dimensions_from_ttype(x_mv_type, m_dims);
         bool is_data_only_array = ASRUtils::is_fixed_size_array(m_dims, n_dims) &&
                                   ASR::is_a<ASR::StructType_t>(*ASRUtils::get_asr_owner(x.m_v));
-        if( is_data_only_array) {
+        if( is_data_only_array || ASRUtils::is_simd_array(x.m_v)) {
             out += "[";
         } else {
             out += "->data[";
@@ -1353,6 +1353,8 @@ R"(    // Initialise Numpy
                     current_index += " * " + length;
                 }
                 index += current_index;
+            } else if (ASRUtils::is_simd_array(x.m_v)) {
+                index += src;
             } else {
                 current_index += "(" + src + " - " + array + "->dims["
                                     + std::to_string(i) + "].lower_bound)";
