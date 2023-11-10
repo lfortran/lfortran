@@ -632,7 +632,6 @@ public:
             arg, x->m_old, x->m_new, ttype, value);
     }
 
-    /*
     ASR::asr_t* duplicate_ArraySection(ASR::ArraySection_t *x) {
         ASR::expr_t *v = duplicate_expr(x->m_v);
 
@@ -648,7 +647,6 @@ public:
         return ASR::make_ArraySection_t(al, x->base.base.loc,
             v, args.p, args.size(), ttype, value);
     }
-    */
 
     ASR::ttype_t* substitute_type(ASR::ttype_t *ttype) {
         switch (ttype->type) {

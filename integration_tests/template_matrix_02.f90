@@ -29,25 +29,25 @@ module template_matrix_02_m
             r%elements = plus(a%elements, b%elements)
         end function
 
-        !pure function mul_matrix(a, b) result(r)
-        !    type(matrix), intent(in) :: a, b
-        !    type(matrix) :: r
-!
-        !    type(t) :: dot(n)
-        !    type(t) :: temp
-        !    integer :: i, j, k
-!
-        !    do i = 1, n
-        !        do j = 1, n
-        !            dot = times(a%elements(i,:), b%elements(:,j))
-        !            temp = dot(1)
-        !            do k = 2, n
-        !                temp = plus(temp, dot(i))
-        !            end do
-        !            r%elements(i,j) = temp
-        !        end do
-        !    end do
-        !end function
+        pure function mul_matrix(a, b) result(r)
+            type(matrix), intent(in) :: a, b
+            type(matrix) :: r
+
+            type(t) :: dot(n)
+            type(t) :: temp
+            integer :: i, j, k
+
+            do i = 1, n
+                do j = 1, n
+                    dot = times(a%elements(i,:), b%elements(:,j))
+                    temp = dot(1)
+                    do k = 2, n
+                        temp = plus(temp, dot(i))
+                    end do
+                    r%elements(i,j) = temp
+                end do
+            end do
+        end function
     end template
 
 end module
@@ -60,8 +60,8 @@ integer :: i, j
 
 instantiate matrix_t(integer, operator(+), operator(*), n), &
     only: int_matrix => matrix, &
-          int_add_matrix => add_matrix
-          !int_mul_matrix => mul_matrix
+          int_add_matrix => add_matrix, &
+          int_mul_matrix => mul_matrix
 
 type(int_matrix) :: am, bm, cm, dm
 
@@ -73,10 +73,13 @@ do i = 1, n
 end do
 
 cm = int_add_matrix(am, bm)
-!dm = int_mul_matrix(am, bm)
+dm = int_mul_matrix(am, bm)
 
-print *, cm
-!print *, cm%elements(1,1), cm%elements(1,2)
-!print *, cm%elements(2,1), cm%elements(2,2)
+print *, cm%elements(1,1), cm%elements(1,2)
+print *, cm%elements(2,1), cm%elements(2,2), achar(10)
+
+print *, dm%elements(1,1), dm%elements(1,2)
+print *, dm%elements(2,1), dm%elements(2,2)
+
 
 end program
