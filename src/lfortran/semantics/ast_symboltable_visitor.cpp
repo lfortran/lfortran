@@ -2484,6 +2484,26 @@ public:
                 dflt_access
                 );
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(v));
+        } else if (ASR::is_a<ASR::Requirement_t>(*t)) {
+            ASR::Requirement_t *mreq = ASR::down_cast<ASR::Requirement_t>(t);
+            ASR::asr_t *req = ASR::make_ExternalSymbol_t(
+                al, mreq->base.base.loc,
+                current_scope,
+                s2c(al, local_sym),
+                (ASR::symbol_t*) mreq,
+                m->m_name, nullptr, 0, mreq->m_name,
+                dflt_access);
+            current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(req));
+        } else if (ASR::is_a<ASR::Template_t>(*t)) {
+            ASR::Requirement_t *mtemp = ASR::down_cast<ASR::Requirement_t>(t);
+            ASR::asr_t *temp = ASR::make_ExternalSymbol_t(
+                al, mtemp->base.base.loc,
+                current_scope,
+                s2c(al, local_sym),
+                (ASR::symbol_t*) mtemp,
+                m->m_name, nullptr, 0, mtemp->m_name,
+                dflt_access);
+            current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(temp)); 
         } else {
             throw LCompilersException("Only Subroutines, Functions, Variables and Derived supported in 'use'");
         }
@@ -2697,7 +2717,8 @@ public:
 
     void visit_UnitRequire(const AST::UnitRequire_t &x) {
         std::string require_name = to_lower(x.m_name);
-        ASR::symbol_t *req0 = current_scope->resolve_symbol(require_name);
+        ASR::symbol_t *req0 = ASRUtils::symbol_get_past_external(
+            current_scope->resolve_symbol(require_name));
 
         if (!req0 || !ASR::is_a<ASR::Requirement_t>(*req0)) {
             throw SemanticError("No requirement '" + require_name + "' is defined",
@@ -2834,9 +2855,10 @@ public:
 
     void visit_Instantiate(const AST::Instantiate_t &x) {
         std::string template_name = x.m_name;
-
+        
         // check if the template exists
-        ASR::symbol_t *sym0 = current_scope->resolve_symbol(template_name);
+        ASR::symbol_t *sym0 = ASRUtils::symbol_get_past_external(
+            current_scope->resolve_symbol(template_name));
         if (!sym0) {
             throw SemanticError("Use of an unspecified template '" + template_name
                 + "'", x.base.base.loc);
