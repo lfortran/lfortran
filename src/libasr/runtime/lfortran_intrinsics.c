@@ -108,6 +108,16 @@ LFORTRAN_API void _lfortran_random_number(int n, double *v)
     }
 }
 
+LFORTRAN_API void _lfortran_init_random_seed(unsigned seed)
+{
+    srand(seed);
+}
+
+LFORTRAN_API void _lfortran_init_random_clock()
+{
+    srand((unsigned int)clock());
+}
+
 LFORTRAN_API double _lfortran_random()
 {
     return (rand() / (double) RAND_MAX);
@@ -1192,6 +1202,38 @@ LFORTRAN_API double_complex_t _lfortran_zatanh(double_complex_t x)
     return catanh(x);
 }
 
+// trunc -----------------------------------------------------------------------
+
+LFORTRAN_API float _lfortran_strunc(float x)
+{
+    return truncf(x);
+}
+
+LFORTRAN_API double _lfortran_dtrunc(double x)
+{
+    return trunc(x);
+}
+
+// fix -----------------------------------------------------------------------
+
+LFORTRAN_API float _lfortran_sfix(float x)
+{
+    if (x > 0.0) {
+        return floorf(x);
+    } else {
+        return ceilf(x);
+    }
+}
+
+LFORTRAN_API double _lfortran_dfix(double x)
+{
+    if (x > 0.0) {
+        return floor(x);
+    } else {
+        return ceil(x);
+    }
+}
+
 // phase --------------------------------------------------------------------
 
 LFORTRAN_API float _lfortran_cphase(float_complex_t x)
@@ -1234,10 +1276,10 @@ LFORTRAN_API void _lfortran_strcpy(char** x, char *y, int8_t free_target)
         if (*x) {
             free((void *)*x);
         }
-        *x = (char *) malloc(strlen(y)*sizeof(char));
-        _lfortran_string_init(strlen(y)+1, *x);
     }
-    for (size_t i = 0; i < strlen(*x); i ++) {
+    *x = (char*) malloc((strlen(y) + 1) * sizeof(char));
+    _lfortran_string_init(strlen(y) + 1, *x);
+    for (size_t i = 0; i < strlen(*x); i++) {
         if (i < strlen(y)) {
             x[0][i] = y[i];
         } else {
