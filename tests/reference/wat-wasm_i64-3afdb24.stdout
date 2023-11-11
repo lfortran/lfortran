@@ -184,7 +184,7 @@
         end
         return
     )
-    (memory (;0;) 100 100)
+    (memory (;0;) 1000 1000)
     (export "memory" (memory 0))
     (export "a_sqr_i64" (func 2))
     (export "add_i64" (func 3))
