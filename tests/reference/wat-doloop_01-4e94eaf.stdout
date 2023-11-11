@@ -662,7 +662,7 @@
         end
         return
     )
-    (memory (;0;) 100 100)
+    (memory (;0;) 1000 1000)
     (export "memory" (memory 0))
     (export "_start" (func 2))
     (export "print_i64" (func 3))

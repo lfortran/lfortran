@@ -197,7 +197,7 @@
         end
         return
     )
-    (memory (;0;) 100 100)
+    (memory (;0;) 1000 1000)
     (export "memory" (memory 0))
     (export "get_num_neg_i32" (func 2))
     (export "get_num_neg_i64" (func 3))
