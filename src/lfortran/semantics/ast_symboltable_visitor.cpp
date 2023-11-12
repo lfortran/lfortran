@@ -33,6 +33,8 @@ void extract_bind(T &x, ASR::abiType &abi_type, char *&bindc_name) {
                     bind->m_args[0]);
                 if (to_lower(std::string(name->m_id)) == "c") {
                     abi_type=ASR::abiType::BindC;
+                } else if (to_lower(std::string(name->m_id)) == "js") {
+                    abi_type=ASR::abiType::BindJS;
                 } else {
                     throw SemanticError("Unsupported language in bind()",
                         x.base.base.loc);
@@ -2503,7 +2505,7 @@ public:
                 (ASR::symbol_t*) mtemp,
                 m->m_name, nullptr, 0, mtemp->m_name,
                 dflt_access);
-            current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(temp)); 
+            current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(temp));
         } else {
             throw LCompilersException("Only Subroutines, Functions, Variables and Derived supported in 'use'");
         }
@@ -2855,7 +2857,7 @@ public:
 
     void visit_Instantiate(const AST::Instantiate_t &x) {
         std::string template_name = x.m_name;
-        
+
         // check if the template exists
         ASR::symbol_t *sym0 = ASRUtils::symbol_get_past_external(
             current_scope->resolve_symbol(template_name));
@@ -2924,7 +2926,7 @@ public:
                         type_subs[param] = ASRUtils::TYPE(ASR::make_TypeParameter_t(al,
                             x.base.base.loc, ASR::down_cast<ASR::TypeParameter_t>(arg_type)->m_param));
                     } else {
-                        throw SemanticError("The type " + arg + " is not yet handled for " 
+                        throw SemanticError("The type " + arg + " is not yet handled for "
                             + "template instantiation", x.base.base.loc);
                     }
                 } else {
@@ -2939,7 +2941,7 @@ public:
                 }
 
             } else if (AST::is_a<AST::AttrIntrinsicOperator_t>(*x.m_args[i])) {
-                AST::AttrIntrinsicOperator_t *intrinsic_op 
+                AST::AttrIntrinsicOperator_t *intrinsic_op
                     = AST::down_cast<AST::AttrIntrinsicOperator_t>(x.m_args[i]);
                 ASR::binopType binop = ASR::Add;
                 ASR::cmpopType cmpop = ASR::Eq;
