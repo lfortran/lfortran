@@ -33,6 +33,8 @@ void extract_bind(T &x, ASR::abiType &abi_type, char *&bindc_name) {
                     bind->m_args[0]);
                 if (to_lower(std::string(name->m_id)) == "c") {
                     abi_type=ASR::abiType::BindC;
+                } else if (to_lower(std::string(name->m_id)) == "js") {
+                    abi_type=ASR::abiType::BindJS;
                 } else {
                     throw SemanticError("Unsupported language in bind()",
                         x.base.base.loc);
