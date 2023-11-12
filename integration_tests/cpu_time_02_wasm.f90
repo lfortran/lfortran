@@ -3,7 +3,7 @@ use iso_fortran_env, only: dp=>real64
 implicit none
 real(dp) :: t1, t2
 interface
-    subroutine cpu_time(t) bind(c)
+    subroutine cpu_time(t) bind(js)
         import :: dp
         real(dp), intent(out) :: t
     end subroutine
