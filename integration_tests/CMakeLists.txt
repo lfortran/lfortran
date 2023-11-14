@@ -789,6 +789,7 @@ RUN(NAME allocate_13 LABELS gfortran llvm)
 RUN(NAME allocate_14 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs)
 RUN(NAME allocate_15 LABELS gfortran llvm)
+RUN(NAME allocate_16 LABELS gfortran llvm)
 RUN(NAME block_01 LABELS gfortran llvm)
 RUN(NAME block_02 LABELS gfortran)
 RUN(NAME block_03 LABELS gfortran llvm)
