@@ -3209,8 +3209,22 @@ public:
                 LLVM::CreateStore(*builder, array_size_value, array_size);
                 break;
             }
+            case ASR::array_physical_typeType::PointerToDataArray: {
+                ASR::dimension_t* m_dims = nullptr;
+                size_t n_dims = ASRUtils::extract_dimensions_from_ttype(v_m_type, m_dims);
+                llvm::Value* llvm_size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1));
+                int ptr_loads_copy = ptr_loads;
+                ptr_loads = 2;
+                for( size_t i = 0; i < n_dims; i++ ) {
+                    visit_expr_wrapper(m_dims[i].m_length, true);
+                    llvm_size = builder->CreateMul(tmp, llvm_size);
+                }
+                ptr_loads = ptr_loads_copy;
+                LLVM::CreateStore(*builder, llvm_size, array_size);
+                break;
+            }
             default: {
-                LCOMPILERS_ASSERT(false);
+                LCOMPILERS_ASSERT_MSG(false, std::to_string(phy_type));
             }
         }
         llvm::Value* llvmi = CreateAlloca(llvm::Type::getInt32Ty(context), nullptr, "i");
@@ -3233,6 +3247,10 @@ public:
                         ptr_i = llvm_utils->create_ptr_gep(
                             LLVM::CreateLoad(*builder, arr_descr->get_pointer_to_data(ptr)),
                             LLVM::CreateLoad(*builder, llvmi));
+                        break;
+                    }
+                    case ASR::array_physical_typeType::PointerToDataArray: {
+                        ptr_i = llvm_utils->create_ptr_gep(ptr, LLVM::CreateLoad(*builder, llvmi));
                         break;
                     }
                     default: {
