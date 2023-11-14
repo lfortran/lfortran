@@ -112,6 +112,26 @@ static inline ASR::symbol_t *symbol_get_past_external(ASR::symbol_t *f)
     }
 }
 
+static inline ASR::FunctionType_t* get_FunctionType(ASR::symbol_t* x) {
+    ASR::symbol_t* a_name_ = ASRUtils::symbol_get_past_external(x);
+    ASR::FunctionType_t* func_type = nullptr;
+    if( ASR::is_a<ASR::Function_t>(*a_name_) ) {
+        func_type = ASR::down_cast<ASR::FunctionType_t>(
+            ASR::down_cast<ASR::Function_t>(a_name_)->m_function_signature);
+    } else if( ASR::is_a<ASR::Variable_t>(*a_name_) ) {
+        func_type = ASR::down_cast<ASR::FunctionType_t>(
+            ASR::down_cast<ASR::Variable_t>(a_name_)->m_type);
+    } else if( ASR::is_a<ASR::ClassProcedure_t>(*a_name_) ) {
+        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
+            ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::ClassProcedure_t>(a_name_)->m_proc));
+        func_type = ASR::down_cast<ASR::FunctionType_t>(func->m_function_signature);
+    } else {
+        LCOMPILERS_ASSERT(false);
+    }
+    return func_type;
+}
+
 static inline const ASR::symbol_t *symbol_get_past_external(const ASR::symbol_t *f)
 {
     if (f->type == ASR::symbolType::ExternalSymbol) {
@@ -4419,21 +4439,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     ASR::call_arg_t* a_args, size_t n_args, ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt, bool implicit_argument_casting) {
     bool is_method = a_dt != nullptr;
     ASR::symbol_t* a_name_ = ASRUtils::symbol_get_past_external(a_name);
-    ASR::FunctionType_t* func_type = nullptr;
-    if( ASR::is_a<ASR::Function_t>(*a_name_) ) {
-        func_type = ASR::down_cast<ASR::FunctionType_t>(
-            ASR::down_cast<ASR::Function_t>(a_name_)->m_function_signature);
-    } else if( ASR::is_a<ASR::Variable_t>(*a_name_) ) {
-        func_type = ASR::down_cast<ASR::FunctionType_t>(
-            ASR::down_cast<ASR::Variable_t>(a_name_)->m_type);
-    } else if( ASR::is_a<ASR::ClassProcedure_t>(*a_name_) ) {
-        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
-            ASRUtils::symbol_get_past_external(
-            ASR::down_cast<ASR::ClassProcedure_t>(a_name_)->m_proc));
-        func_type = ASR::down_cast<ASR::FunctionType_t>(func->m_function_signature);
-    } else {
-        LCOMPILERS_ASSERT(false);
-    }
+    ASR::FunctionType_t* func_type = get_FunctionType(a_name);
 
     for( size_t i = 0; i < n_args; i++ ) {
         if( a_args[i].m_value == nullptr ||
