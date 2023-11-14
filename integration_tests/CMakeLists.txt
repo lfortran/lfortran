@@ -1063,9 +1063,9 @@ RUN(NAME array_op_01 LABELS gfortran llvm llvmStackArray wasm)
 RUN(NAME array_op_02 LABELS gfortran llvm llvmStackArray wasm)
 RUN(NAME array_op_03 LABELS gfortran llvm llvmStackArray wasm)
 RUN(NAME array_op_04 LABELS gfortran llvm llvmStackArray)
-RUN(NAME array_slice_01 LABELS gfortran llvm llvmStackArray)
+RUN(NAME array_slice_01 LABELS gfortran llvm llvmStackArray c)
 RUN(NAME array_slice_02 LABELS gfortran llvm llvmStackArray)
-RUN(NAME array_slice_03 LABELS gfortran llvm llvmStackArray)
+RUN(NAME array_slice_03 LABELS gfortran llvm llvmStackArray c)
 
 RUN(NAME declaration_01 LABELS gfortran llvm)
 
