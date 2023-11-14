@@ -50,6 +50,7 @@
 #include <libasr/pass/unique_symbols.h>
 #include <libasr/pass/insert_deallocate.h>
 #include <libasr/pass/replace_print_struct_type.h>
+#include <libasr/pass/promote_allocatable_to_nonallocatable.h>
 #include <libasr/codegen/asr_to_fortran.h>
 #include <libasr/asr_verify.h>
 #include <libasr/pickle.h>
@@ -103,7 +104,8 @@ namespace LCompilers {
             {"where", &pass_replace_where},
             {"print_struct_type", &pass_replace_print_struct_type},
             {"unique_symbols", &pass_unique_symbols},
-            {"insert_deallocate", &pass_insert_deallocate}
+            {"insert_deallocate", &pass_insert_deallocate},
+            {"promote_allocatable_to_nonallocatable", &pass_promote_allocatable_to_nonallocatable}
         };
 
         bool is_fast;
@@ -225,7 +227,7 @@ namespace LCompilers {
                 "unused_functions",
                 "transform_optional_argument_functions",
                 "unique_symbols",
-                "insert_deallocate"
+                "insert_deallocate",
             };
 
             _with_optimization_passes = {
@@ -261,7 +263,8 @@ namespace LCompilers {
                 "transform_optional_argument_functions",
                 "inline_function_calls",
                 "unique_symbols",
-                "insert_deallocate"
+                "insert_deallocate",
+                "promote_allocatable_to_nonallocatable"
             };
 
             // These are re-write passes which are already handled
