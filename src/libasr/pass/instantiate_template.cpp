@@ -868,7 +868,7 @@ void report_check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
                     "Restriction type mismatch with provided function argument",
                     diag::Level::Error, diag::Stage::Semantic, {
                         diag::Label("", {loc}),
-                        diag::Label("Restriction's return type " + rtype,
+                        diag::Label("Requirement's return type " + rtype,
                             {f->m_return_var->base.loc}),
                         diag::Label("Function's return type " + atype,
                             {arg->m_return_var->base.loc})

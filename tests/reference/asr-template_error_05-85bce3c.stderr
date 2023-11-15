@@ -9,7 +9,7 @@ semantic error: Restriction type mismatch with provided function argument
 ...
    |
 11 |            end function
-   | ...^^^^^^^^^^^^^^^^^^^^^ Restriction's return type real
+   | ...^^^^^^^^^^^^^^^^^^^^^ Requirement's return type real
    |
 28 |        integer function func_arg_real(x, y) result(z)
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
