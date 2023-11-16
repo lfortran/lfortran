@@ -3966,7 +3966,11 @@ namespace IntrinsicScalarFunctionRegistry {
                  id_ == IntrinsicScalarFunctions::Min ||
                  id_ == IntrinsicScalarFunctions::Max ||
                  id_ == IntrinsicScalarFunctions::Sqrt ||
-                 id_ == IntrinsicScalarFunctions::SymbolicSymbol);
+                 id_ == IntrinsicScalarFunctions::SymbolicSymbol ||
+                 id_ == IntrinsicScalarFunctions::Tan ||
+                 id_ == IntrinsicScalarFunctions::Cosh ||
+                 id_ == IntrinsicScalarFunctions::Sinh ||
+                 id_ == IntrinsicScalarFunctions::Tanh);
     }
 
     static inline create_intrinsic_function get_create_function(const std::string& name) {
