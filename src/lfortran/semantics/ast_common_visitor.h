@@ -807,6 +807,7 @@ public:
     std::vector<std::string> external_procedures;
     std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions;
     std::map<std::string, std::vector<int>> &entry_function_arguments_mapping;
+    std::vector<std::string> set_bindc_symbols;
     Vec<char*> data_member_names;
     SetChar current_function_dependencies;
     ASR::ttype_t* current_variable_type_;

@@ -113,6 +113,21 @@ public:
       : CommonVisitor(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
                       instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure) {}
 
+    void parse_set_bindc() {
+        // --set-bindc=setulb,f,g and push in set_bindc_symbols
+        std::string bindc = compiler_options.set_bindc;
+        std::string delimiter = ",";
+        size_t pos = 0;
+        std::string token;
+        while ((pos = bindc.find(delimiter)) != std::string::npos) {
+            token = bindc.substr(0, pos);
+            set_bindc_symbols.push_back(token);
+            bindc.erase(0, pos + delimiter.length());
+        }
+        set_bindc_symbols.push_back(bindc);
+    }
+
+
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
         if (!current_scope) {
             current_scope = al.make_new<SymbolTable>(nullptr);
@@ -120,6 +135,7 @@ public:
         LCOMPILERS_ASSERT(current_scope != nullptr);
         global_scope = current_scope;
 
+        parse_set_bindc();
         // Create the TU early, so that asr_owner is set, so that
         // ASRUtils::get_tu_symtab() can be used, which has an assert
         // for asr_owner.
@@ -870,6 +886,15 @@ public:
         return master_args;
     }
 
+    bool set_bindc(std::string sym_name, SymbolTable* parent_scope) {
+        if (std::find(set_bindc_symbols.begin(), set_bindc_symbols.end(), sym_name) != set_bindc_symbols.end()
+            || ( std::find(set_bindc_symbols.begin(), set_bindc_symbols.end(), "true") != set_bindc_symbols.end()
+            && parent_scope->parent == nullptr )) {
+            return true;
+        }
+        return false;
+    }
+
     void visit_Subroutine(const AST::Subroutine_t &x) {
         in_Subroutine = true;
         SetChar current_function_dependencies_copy = current_function_dependencies;
@@ -1028,6 +1053,9 @@ public:
         func_deps.reserve(al, current_function_dependencies.size());
         for( auto& itr: current_function_dependencies ) {
             func_deps.push_back(al, s2c(al, itr));
+        }
+        if (set_bindc(sym_name, parent_scope)) {
+            current_procedure_abi_type = ASR::abiType::BindC;
         }
         tmp = ASRUtils::make_Function_t_util(
             al, x.base.base.loc,
