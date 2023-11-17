@@ -2342,7 +2342,8 @@ int main(int argc, char *argv[])
             }
         }
 
-        if (endswith(arg_file, ".f90") || endswith(arg_file, ".f")) {
+        if ( endswith(LCompilers::to_lower(arg_file), ".f90") ||
+             endswith(LCompilers::to_lower(arg_file), ".f") ) {
             if (backend == Backend::x86) {
                 return compile_to_binary_x86(arg_file, outfile,
                         time_report, compiler_options);
