@@ -99,7 +99,8 @@ public:
         {AST::intrinsicopType::LTE, "~lte"},
         {AST::intrinsicopType::GT, "~gt"},
         {AST::intrinsicopType::GTE, "~gte"},
-        {AST::intrinsicopType::MINUS, "~sub"}
+        {AST::intrinsicopType::MINUS, "~sub"},
+        {AST::intrinsicopType::CONCAT, "~concat"}
     };
 
     SymbolTableVisitor(Allocator &al, SymbolTable *symbol_table,
