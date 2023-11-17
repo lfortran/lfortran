@@ -212,7 +212,7 @@ RUN(NAME expr_02 LABELS gfortran llvm cpp x86 wasm c fortran)
 RUN(NAME expr_03 LABELS gfortran llvm cpp x86 wasm c fortran)
 RUN(NAME expr_04 LABELS gfortran llvm cpp wasm c fortran)
 RUN(NAME expr_05 LABELS gfortran llvm cpp c fortran) # it contains pow, wasm supports only x**2
-RUN(NAME expr_06 LABELS gfortran llvm wasm c fortran)
+RUN(NAME expr_06 LABELS gfortran llvm wasm c cpp x86 fortran)
 RUN(NAME expr_07 LABELS gfortran llvm wasm c fortran)
 RUN(NAME expr_08 LABELS gfortran llvm wasm c fortran)
 RUN(NAME expr_09 LABELS gfortran llvm wasm c fortran)

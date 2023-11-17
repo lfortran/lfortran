@@ -2219,7 +2219,7 @@ julia = true
 fortran = true
 
 [[test]]
-filename = "../integration_tests/expr_06.f90"
+filename = "../integration_tests/expr_06.F90"
 asr = true
 julia = true
 
