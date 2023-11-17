@@ -52,5 +52,5 @@ if not $IS_WIN:
     ctest -L llvm
     cd ..
 
-    ./run_tests.py -b llvm2 llvm_rtlib
-    ./run_tests.py -b llvm2 llvm_rtlib -f
+    ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma
+    ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma -f
