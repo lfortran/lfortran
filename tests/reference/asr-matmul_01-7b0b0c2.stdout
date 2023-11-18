@@ -153,6 +153,22 @@
                                     Required
                                     .false.
                                 ),
+                            err:
+                                (Variable
+                                    6
+                                    err
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
                             fma_clock:
                                 (Variable
                                     6
@@ -759,11 +775,8 @@
                         [((Var 6 t2))]
                         ()
                     )
-                    (Print
-                        [(StringConstant
-                            "Error:"
-                            (Character 1 6 ())
-                        )
+                    (=
+                        (Var 6 err)
                         (IntrinsicArrayFunction
                             MaxVal
                             [(IntrinsicScalarFunction
@@ -796,7 +809,15 @@
                             0
                             (Real 4)
                             ()
-                        )]
+                        )
+                        ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "Error:"
+                            (Character 1 6 ())
+                        )
+                        (Var 6 err)]
                         ()
                         ()
                     )
@@ -960,6 +981,22 @@
                         )]
                         ()
                         ()
+                    )
+                    (If
+                        (RealCompare
+                            (Var 6 err)
+                            Gt
+                            (RealConstant
+                                0.000100
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
                     )
                     (Print
                         []
@@ -1001,11 +1038,8 @@
                         [((Var 6 t2))]
                         ()
                     )
-                    (Print
-                        [(StringConstant
-                            "Error:"
-                            (Character 1 6 ())
-                        )
+                    (=
+                        (Var 6 err)
                         (IntrinsicArrayFunction
                             MaxVal
                             [(IntrinsicScalarFunction
@@ -1038,7 +1072,15 @@
                             0
                             (Real 4)
                             ()
-                        )]
+                        )
+                        ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "Error:"
+                            (Character 1 6 ())
+                        )
+                        (Var 6 err)]
                         ()
                         ()
                     )
@@ -1202,6 +1244,22 @@
                         )]
                         ()
                         ()
+                    )
+                    (If
+                        (RealCompare
+                            (Var 6 err)
+                            Gt
+                            (RealConstant
+                                0.000100
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
                     )
                     (ImplicitDeallocate
                         [(Var 6 a)

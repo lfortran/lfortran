@@ -1174,7 +1174,7 @@ RUN(NAME precision_02 LABELS gfortran) # TODO fix this test
 RUN(NAME array_unbounded_01 LABELS gfortran llvm llvmStackArray)
 RUN(NAME array_unbounded_02 LABELS gfortran llvm llvmStackArray)
 
-RUN(NAME matmul_01 LABELS gfortran llvm EXTRA_ARGS --ignore-pragma)
+RUN(NAME matmul_01 LABELS gfortran llvm c EXTRA_ARGS --ignore-pragma)
 RUN(NAME matmul_02 LABELS gfortran)
 RUN(NAME simd_01 LABELS gfortran c NOFAST)
 RUN(NAME simd_02 LABELS gfortran c NOFAST)
