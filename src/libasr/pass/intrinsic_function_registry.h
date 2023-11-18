@@ -451,6 +451,8 @@ class ASRBuilder {
         ASR::cmpopType::Eq, y, logical, nullptr))
     #define sNotEq(x, y) EXPR(ASR::make_StringCompare_t(al, loc, x,             \
         ASR::cmpopType::NotEq, y, logical, nullptr))
+    #define sLt(x, y) EXPR(ASR::make_StringCompare_t(al, loc, x,             \
+        ASR::cmpopType::Lt, y, logical, nullptr))
 
     ASR::expr_t *Gt(ASR::expr_t *left, ASR::expr_t *right) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
@@ -3246,18 +3248,20 @@ namespace Max {
 namespace Min {
 
     static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
-        ASRUtils::require_impl(x.n_args > 1, "ASR Verify: Call to min0 must have at least two arguments",
+        ASRUtils::require_impl(x.n_args > 1, "Call to min0 must have at least two arguments",
             x.base.base.loc, diagnostics);
         ASRUtils::require_impl(ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(x.m_args[0])) ||
-            ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[0])),
-             "ASR Verify: Arguments to min0 must be of real or integer type",
+            ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[0])) || ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_args[0])),
+             "Arguments to min0 must be of real, integer or character type",
             x.base.base.loc, diagnostics);
         for(size_t i=0;i<x.n_args;i++){
             ASRUtils::require_impl((ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(x.m_args[i])) &&
                                             ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(x.m_args[0]))) ||
                                         (ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[i])) &&
-                                         ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[0]))),
-            "ASR Verify: All arguments must be of the same type",
+                                         ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[0]))) ||
+                                         (ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_args[i])) &&
+                                         ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_args[0]))),
+            "All arguments must be of the same type",
             x.base.base.loc, diagnostics);
         }
     }
@@ -3279,6 +3283,15 @@ namespace Min {
                 min_val = std::fmin(min_val, val);
             }
             return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, min_val, arg_type));
+        } else if (ASR::is_a<ASR::Character_t>(*arg_type)) {
+            char* min_val = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
+            for (size_t i = 1; i < args.size(); i++) {
+                char* val = ASR::down_cast<ASR::StringConstant_t>(args[i])->m_s;
+                if (strcmp(val, min_val) < 0) {
+                    min_val = val;
+                }
+            }
+            return ASR::down_cast<ASR::expr_t>(ASR::make_StringConstant_t(al, loc, min_val, arg_type));
         } else {
             return nullptr;
         }
@@ -3356,8 +3369,16 @@ namespace Min {
                 body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
                     if_body.p, if_body.n, nullptr, 0)));
             }
+        } else if (return_type->type == ASR::ttypeType::Character) {
+            for (size_t i = 1; i < args.size(); i++) {
+                test = make_Compare(make_StringCompare_t, args[i], Lt, result);
+                Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
+                if_body.push_back(al, b.Assignment(result, args[i]));
+                body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
+                    if_body.p, if_body.n, nullptr, 0)));
+            }
         } else {
-            throw LCompilersException("Arguments to min0 must be of real or integer type");
+            throw LCompilersException("Arguments to min0 must be of real, integer or character type");
         }
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
