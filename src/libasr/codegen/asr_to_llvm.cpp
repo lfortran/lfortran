@@ -4947,6 +4947,10 @@ public:
                 ASRUtils::expr_value(m_arg) == nullptr ) {
                 tmp = llvm_utils->create_gep(tmp, 0);
             }
+        } else if (
+            m_new == ASR::array_physical_typeType::SIMDArray &&
+            m_old == ASR::array_physical_typeType::FixedSizeArray) {
+            // pass
         } else if(
             m_new == ASR::array_physical_typeType::DescriptorArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {
