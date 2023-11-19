@@ -472,10 +472,18 @@ char** parse_fortran_format(char* format, int *count, int *item_start) {
             case 'e' :
             case 'f' :
                 start = index++;
+                bool dot = false;
                 if(tolower(format[index]) == 's') index++;
                 while (isdigit(format[index])) index++;
-                if (format[index] == '.') index++;
+                if (format[index] == '.') {
+                    dot = true;
+                    index++;
+                }
                 while (isdigit(format[index])) index++;
+                if (dot && tolower(format[index]) == 'e') {
+                    index++;
+                    while (isdigit(format[index])) index++;
+                }
                 format_values_2[format_values_count++] = substring(format, start, index);
                 index--;
                 break;
