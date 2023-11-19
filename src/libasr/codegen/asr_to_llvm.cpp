@@ -88,9 +88,9 @@ private:
   std::string current_der_type_name;
 
     //! Helpful for debugging while testing LLVM code
-    void print_util(llvm::Value* v, std::string fmt_chars, std::string endline="\t") {
+    void print_util(llvm::Value* v, std::string fmt_chars, std::string endline) {
         // Usage:
-        // print_util(tmp, "%d") // `tmp` to be an integer type
+        // print_util(tmp, "%d", "\n") // `tmp` is an integer type to match the format specifiers
         std::vector<llvm::Value *> args;
         std::vector<std::string> fmt;
         args.push_back(v);
