@@ -307,6 +307,12 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
         i--;
     }
 
+    int exp = 2;
+    char* exp_loc = strchr(num_pos, 'e');
+    if (exp_loc != NULL) {
+        exp = atoi(++exp_loc);
+    }
+
     char* ptr = strchr(val_str, '.');
     if (ptr != NULL) {
         memmove(ptr, ptr + 1, strlen(ptr));
@@ -321,7 +327,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
         memmove(val_str, val_str + 1, strlen(val_str));
         decimal--;
     }
-    if (format[1] == 'S') {
+    if (tolower(format[1]) == 's') {
         scale = 1;
         decimal--;
     }
@@ -405,7 +411,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     if (atoi(num_pos) == 0) {
         sprintf(exponent, "%+02d", (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
     } else {
-        sprintf(exponent, "%+03d", (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
+        sprintf(exponent, "%+0*d", exp+1, (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
     }
 
     strcat(formatted_value, exponent);
@@ -442,6 +448,9 @@ char** parse_fortran_format(char* format, int *count, int *item_start) {
             case ',' :
                 break;
             case '/' :
+                format_values_2[format_values_count++] = substring(format, index, index+1);
+                break;
+            case '*' :
                 format_values_2[format_values_count++] = substring(format, index, index+1);
                 break;
             case '"' :
@@ -552,6 +561,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
     char* result = (char*)malloc(sizeof(char));
     result[0] = '\0';
     int item_start = 0;
+    bool array = false;
     while (1) {
         int scale = 0;
         for (int i = item_start; i < format_values_count; i++) {
@@ -585,6 +595,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
 
             if (value[0] == '/') {
                 result = append_to_string(result, "\n");
+            } else if (value[0] == '*') {
+                array = true;
             } else if (isdigit(value[0]) && tolower(value[1]) == 'p') {
                 // Scale Factor nP
                 scale = atoi(&value[0]);
@@ -650,7 +662,9 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
 
         }
         if ( count > 0 ) {
-            result = append_to_string(result, "\n");
+            if (!array) {
+                result = append_to_string(result, "\n");
+            }
             item_start = item_start_idx;
         } else {
             break;
