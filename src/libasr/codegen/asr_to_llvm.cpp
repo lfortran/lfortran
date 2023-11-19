@@ -4770,6 +4770,7 @@ public:
             bool is_value_data_only_array = (value_ptype == ASR::array_physical_typeType::PointerToDataArray);
             bool is_target_fixed_sized_array = (target_ptype == ASR::array_physical_typeType::FixedSizeArray);
             bool is_value_fixed_sized_array = (value_ptype == ASR::array_physical_typeType::FixedSizeArray);
+            bool is_target_simd_array = (target_ptype == ASR::array_physical_typeType::SIMDArray);
             // bool is_target_descriptor_based_array = (target_ptype == ASR::array_physical_typeType::DescriptorArray);
             bool is_value_descriptor_based_array = (value_ptype == ASR::array_physical_typeType::DescriptorArray);
             if( is_value_fixed_sized_array && is_target_fixed_sized_array ) {
@@ -4862,6 +4863,8 @@ public:
                     arr_descr->copy_array_data_only(value_data, target_data, module.get(),
                                                     llvm_data_type, llvm_size);
                 }
+            } else if ( is_target_simd_array ) {
+                builder->CreateStore(value, target);
             } else {
                 arr_descr->copy_array(value, target, module.get(),
                                       target_type, false, false);
