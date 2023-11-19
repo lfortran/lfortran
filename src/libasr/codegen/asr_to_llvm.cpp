@@ -4724,10 +4724,14 @@ public:
         }
         ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
         ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
+        ASR::expr_t *m_value = x.m_value;
+        if (ASRUtils::is_simd_array(x.m_target) && ASR::is_a<ASR::ArraySection_t>(*m_value)) {
+            m_value = ASR::down_cast<ASR::ArraySection_t>(m_value)->m_v;
+        }
         int ptr_loads_copy = ptr_loads;
         ptr_loads = 2 - (ASRUtils::is_character(*value_type) ||
             ASRUtils::is_array(value_type));
-        this->visit_expr_wrapper(x.m_value, true);
+        this->visit_expr_wrapper(m_value, true);
         ptr_loads = ptr_loads_copy;
         if( ASR::is_a<ASR::Var_t>(*x.m_value) &&
             ASR::is_a<ASR::Union_t>(*value_type) ) {
@@ -4865,7 +4869,26 @@ public:
                                                     llvm_data_type, llvm_size);
                 }
             } else if ( is_target_simd_array ) {
-                builder->CreateStore(value, target);
+                if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
+                    int idx = 1;
+                    ASR::ArraySection_t *arr = down_cast<ASR::ArraySection_t>(x.m_value);
+                    (void) ASRUtils::extract_value(arr->m_args->m_left, idx);
+                    value = llvm_utils->create_gep(value, idx-1);
+                    target = llvm_utils->create_gep(target, 0);
+                    ASR::dimension_t* asr_dims = nullptr;
+                    size_t asr_n_dims = ASRUtils::extract_dimensions_from_ttype(target_type, asr_dims);
+                    int64_t size = ASRUtils::get_fixed_size_of_array(asr_dims, asr_n_dims);
+                    llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::type_get_past_array(
+                        ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(target_type))), module.get());
+                    llvm::DataLayout data_layout(module.get());
+                    uint64_t data_size = data_layout.getTypeAllocSize(llvm_data_type);
+                    llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
+                    llvm_size = builder->CreateMul(llvm_size,
+                        llvm::ConstantInt::get(context, llvm::APInt(32, data_size)));
+                    builder->CreateMemCpy(target, llvm::MaybeAlign(), value, llvm::MaybeAlign(), llvm_size);
+                } else {
+                    builder->CreateStore(value, target);
+                }
             } else {
                 arr_descr->copy_array(value, target, module.get(),
                                       target_type, false, false);
