@@ -809,8 +809,8 @@ jobs:
             cd ../../..
 
             cd integration_tests
-            ./run_tests.py -b cpp c
-            ./run_tests.py -b cpp c -f
+            ./run_tests.py -b cpp c c_nopragma
+            ./run_tests.py -b cpp c c_nopragma -f
 
   upload_tarball:
     name: Upload Tarball
