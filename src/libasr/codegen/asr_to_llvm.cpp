@@ -6013,6 +6013,12 @@ public:
         llvm::Value *right_val = tmp;
         lookup_enum_value_for_nonints = false;
         LCOMPILERS_ASSERT(ASRUtils::is_real(*x.m_type))
+        if (ASRUtils::is_simd_array(x.m_right) && is_a<ASR::Var_t>(*x.m_right)) {
+            right_val = CreateLoad(right_val);
+        }
+        if (ASRUtils::is_simd_array(x.m_left) && is_a<ASR::Var_t>(*x.m_left)) {
+            left_val = CreateLoad(left_val);
+        }
         switch (x.m_op) {
             case ASR::binopType::Add: {
                 tmp = builder->CreateFAdd(left_val, right_val);
