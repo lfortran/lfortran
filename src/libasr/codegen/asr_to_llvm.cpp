@@ -9200,6 +9200,20 @@ public:
         }
     }
 
+    void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t &x) {
+        this->visit_expr_wrapper(x.m_array, true);
+        llvm::Value *value = tmp;
+        llvm::Type* ele_type = llvm_utils->get_type_from_ttype_t_util(
+            ASRUtils::type_get_past_array(x.m_type), module.get());
+        size_t n_eles = ASRUtils::get_fixed_size_of_array(x.m_type);
+        llvm::Type* vec_type = FIXED_VECTOR_TYPE::get(ele_type, n_eles);
+        llvm::AllocaInst *vec = builder->CreateAlloca(vec_type, nullptr);
+        for (size_t i=0; i < n_eles; i++) {
+            builder->CreateStore(value, llvm_utils->create_gep(vec, i));
+        }
+        tmp = CreateLoad(vec);
+    }
+
 };
 
 
