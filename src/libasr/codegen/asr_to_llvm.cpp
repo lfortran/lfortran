@@ -2320,7 +2320,8 @@ public:
             Vec<llvm::Value*> llvm_diminfo;
             llvm_diminfo.reserve(al, 2 * x.n_args + 1);
             if( array_t->m_physical_type == ASR::array_physical_typeType::PointerToDataArray ||
-                array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray ) {
+                array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
+                array_t->m_physical_type == ASR::array_physical_typeType::SIMDArray ) {
                 int ptr_loads_copy = ptr_loads;
                 for( size_t idim = 0; idim < x.n_args; idim++ ) {
                     ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
@@ -2354,7 +2355,7 @@ public:
             } else {
                 tmp = arr_descr->get_single_element(array, indices, x.n_args,
                                                     array_t->m_physical_type == ASR::array_physical_typeType::PointerToDataArray,
-                                                    array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray,
+                                                    array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray || array_t->m_physical_type == ASR::array_physical_typeType::SIMDArray,
                                                     llvm_diminfo.p, is_polymorphic, current_select_type_block_type);
             }
         }
@@ -9178,6 +9179,15 @@ public:
                 }
                 start_new_block(mergeBB);
                 tmp = LLVM::CreateLoad(*builder, target);
+                break;
+            }
+            case ASR::array_physical_typeType::SIMDArray: {
+                if( x.m_bound == ASR::arrayboundType::LBound ) {
+                    tmp = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                } else if( x.m_bound == ASR::arrayboundType::UBound ) {
+                    int64_t size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(x.m_v));
+                    tmp = llvm::ConstantInt::get(context, llvm::APInt(32, size));
+                }
                 break;
             }
             default: {
