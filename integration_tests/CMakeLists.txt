@@ -1215,3 +1215,5 @@ RUN(NAME goto_gototarget_return_01 LABELS gfortran llvm fortran)
 RUN(NAME selected_int_kind_01 LABELS gfortran llvm)
 
 RUN(NAME capital_01 LABELS gfortran llvmImplicit)
+
+RUN(NAME do_concurrent_01 LABELS gfortran llvm)
