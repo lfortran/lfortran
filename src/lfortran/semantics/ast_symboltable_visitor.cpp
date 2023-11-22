@@ -2240,6 +2240,126 @@ public:
         return "";
     }
 
+    template <typename T>
+    void process_generic_proc_custom_op(std::string& local_sym, ASR::symbol_t *t,
+        std::queue<std::pair<std::string, std::string>>& to_be_imported_later,
+        const Location& loc, ASR::Module_t *m,
+        ASR::asr_t* (*constructor) (Allocator&, const Location&, SymbolTable*,
+        char*, ASR::symbol_t**, size_t, ASR::accessType), T* /*ptr*/) {
+        if (current_scope->get_symbol(local_sym) != nullptr) {
+            ASR::symbol_t* gp_sym = current_scope->get_symbol(local_sym);
+            if( ASR::is_a<ASR::ExternalSymbol_t>(*gp_sym) ) {
+                gp_sym = ASRUtils::symbol_get_past_external(gp_sym);
+                LCOMPILERS_ASSERT(ASR::is_a<T>(*gp_sym));
+                T* gp = ASR::down_cast<T>(gp_sym);
+                T* gp_ext = ASR::down_cast<T>(t);
+                Vec<ASR::symbol_t*> gp_procs;
+                gp_procs.reserve(al, gp->n_procs + gp_ext->n_procs);
+                for( size_t i = 0; i < gp->n_procs; i++ ) {
+                    std::string gp_proc_name = ASRUtils::symbol_name(gp->m_procs[i]);
+                    ASR::symbol_t* m_proc = current_scope->resolve_symbol(
+                        gp_proc_name);
+                    if( m_proc == nullptr ) {
+                        std::string local_sym_ = "@" + gp_proc_name + "@";
+                        m_proc = current_scope->resolve_symbol(local_sym_);
+                        if( m_proc == nullptr ) {
+                            ASR::Module_t* m_ = ASRUtils::get_sym_module(gp->m_procs[i]);
+                            std::string m__name = std::string(m_->m_name);
+                            import_symbols_util(m_, m__name, gp_proc_name, local_sym_,
+                                                to_be_imported_later, loc);
+                            m_proc = current_scope->resolve_symbol(local_sym_);
+                        }
+                    }
+                    LCOMPILERS_ASSERT(m_proc != nullptr);
+                    if( !ASRUtils::present(gp_procs, m_proc) ) {
+                        gp_procs.push_back(al, m_proc);
+                    }
+                }
+                for( size_t i = 0; i < gp_ext->n_procs; i++ ) {
+                    std::string gp_ext_proc_name = ASRUtils::symbol_name(gp_ext->m_procs[i]);
+                    ASR::symbol_t* m_proc = current_scope->resolve_symbol(
+                        gp_ext_proc_name);
+                    if( m_proc == nullptr ) {
+                        std::string local_sym_ = "@" + gp_ext_proc_name + "@";
+                        m_proc = current_scope->resolve_symbol(local_sym_);
+                        if( m_proc == nullptr ) {
+                            ASR::Module_t* m_ = ASRUtils::get_sym_module(gp_ext->m_procs[i]);
+                            std::string m__name = std::string(m_->m_name);
+                            import_symbols_util(m_, m__name, gp_ext_proc_name,
+                                                local_sym_, to_be_imported_later, loc);
+                            m_proc = current_scope->resolve_symbol(local_sym_);
+                        }
+                    }
+                    LCOMPILERS_ASSERT(m_proc != nullptr);
+                    if( !ASRUtils::present(gp_procs, m_proc) ) {
+                        gp_procs.push_back(al, m_proc);
+                    }
+                }
+                ASR::asr_t *ep = constructor(
+                    al, t->base.loc, current_scope, s2c(al, local_sym),
+                    gp_procs.p, gp_procs.size(), dflt_access);
+                current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
+            } else {
+                LCOMPILERS_ASSERT(ASR::is_a<T>(*gp_sym));
+                T* gp = ASR::down_cast<T>(gp_sym);
+                T* gp_ext = ASR::down_cast<T>(t);
+                Vec<ASR::symbol_t*> gp_procs;
+                gp_procs.reserve(al, gp->n_procs + gp_ext->n_procs);
+                for( size_t i = 0; i < gp->n_procs; i++ ) {
+                    gp_procs.push_back(al, gp->m_procs[i]);
+                }
+                for( size_t i = 0; i < gp_ext->n_procs; i++ ) {
+                    std::string gp_ext_proc_name = ASRUtils::symbol_name(gp_ext->m_procs[i]);
+                    ASR::symbol_t* m_proc = current_scope->resolve_symbol(
+                        gp_ext_proc_name);
+                    if( m_proc == nullptr ) {
+                        std::string local_sym_ = "@" + gp_ext_proc_name + "@";
+                        m_proc = current_scope->resolve_symbol(local_sym_);
+                        if( m_proc == nullptr ) {
+                            ASR::Module_t* m_ = ASRUtils::get_sym_module(gp_ext->m_procs[i]);
+                            std::string m__name = std::string(m_->m_name);
+                            import_symbols_util(m_, m__name, gp_ext_proc_name,
+                                                local_sym_, to_be_imported_later, loc);
+                            m_proc = current_scope->resolve_symbol(local_sym_);
+                        }
+                    }
+                    LCOMPILERS_ASSERT(m_proc != nullptr);
+                    if( !ASRUtils::present(gp_procs, m_proc) ) {
+                        gp_procs.push_back(al, m_proc);
+                    }
+                    gp_procs.push_back(al, m_proc);
+                }
+                gp->m_procs = gp_procs.p;
+                gp->n_procs = gp_procs.size();
+            }
+        } else {
+            T* gp_ext = ASR::down_cast<T>(t);
+            Vec<ASR::symbol_t*> gp_procs;
+            gp_procs.reserve(al, gp_ext->n_procs);
+            bool are_all_present = true;
+            for( size_t i = 0; i < gp_ext->n_procs; i++ ) {
+                ASR::symbol_t* m_proc = current_scope->resolve_symbol(
+                    ASRUtils::symbol_name(gp_ext->m_procs[i]));
+                if( m_proc == nullptr ) {
+                    are_all_present = false;
+                    break;
+                }
+                gp_procs.push_back(al, m_proc);
+            }
+            ASR::asr_t *ep = nullptr;
+            if( are_all_present ) {
+                ep = constructor(
+                    al, t->base.loc, current_scope, s2c(al, local_sym),
+                    gp_procs.p, gp_procs.size(), dflt_access);
+            } else {
+                ep = ASR::make_ExternalSymbol_t(al, t->base.loc,
+                    current_scope, s2c(al, local_sym), t,
+                    m->m_name, nullptr, 0, gp_ext->m_name, dflt_access);
+            }
+            current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
+        }
+    }
+
     void import_symbols_util(ASR::Module_t *m, std::string& msym,
                              std::string& remote_sym, std::string& local_sym,
                              std::queue<std::pair<std::string, std::string>>& to_be_imported_later,
@@ -2271,181 +2391,11 @@ public:
                 );
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(sub));
         } else if (ASR::is_a<ASR::GenericProcedure_t>(*t)) {
-            if (current_scope->get_symbol(local_sym) != nullptr) {
-                ASR::symbol_t* gp_sym = current_scope->get_symbol(local_sym);
-                if( ASR::is_a<ASR::ExternalSymbol_t>(*gp_sym) ) {
-                    gp_sym = ASRUtils::symbol_get_past_external(gp_sym);
-                    LCOMPILERS_ASSERT(ASR::is_a<ASR::GenericProcedure_t>(*gp_sym));
-                    ASR::GenericProcedure_t* gp = ASR::down_cast<ASR::GenericProcedure_t>(gp_sym);
-                    ASR::GenericProcedure_t* gp_ext = ASR::down_cast<ASR::GenericProcedure_t>(t);
-                    Vec<ASR::symbol_t*> gp_procs;
-                    gp_procs.reserve(al, gp->n_procs + gp_ext->n_procs);
-                    for( size_t i = 0; i < gp->n_procs; i++ ) {
-                        std::string gp_proc_name = ASRUtils::symbol_name(gp->m_procs[i]);
-                        ASR::symbol_t* m_proc = current_scope->resolve_symbol(
-                            gp_proc_name);
-                        if( m_proc == nullptr ) {
-                            std::string local_sym_ = "@" + gp_proc_name + "@";
-                            m_proc = current_scope->resolve_symbol(local_sym_);
-                            if( m_proc == nullptr ) {
-                                ASR::Module_t* m_ = ASRUtils::get_sym_module(gp->m_procs[i]);
-                                std::string m__name = std::string(m_->m_name);
-                                import_symbols_util(m_, m__name, gp_proc_name, local_sym_,
-                                                    to_be_imported_later, loc);
-                                m_proc = current_scope->resolve_symbol(local_sym_);
-                            }
-                        }
-                        LCOMPILERS_ASSERT(m_proc != nullptr);
-                        if( !ASRUtils::present(gp_procs, m_proc) ) {
-                            gp_procs.push_back(al, m_proc);
-                        }
-                    }
-                    for( size_t i = 0; i < gp_ext->n_procs; i++ ) {
-                        std::string gp_ext_proc_name = ASRUtils::symbol_name(gp_ext->m_procs[i]);
-                        ASR::symbol_t* m_proc = current_scope->resolve_symbol(
-                            gp_ext_proc_name);
-                        if( m_proc == nullptr ) {
-                            std::string local_sym_ = "@" + gp_ext_proc_name + "@";
-                            m_proc = current_scope->resolve_symbol(local_sym_);
-                            if( m_proc == nullptr ) {
-                                ASR::Module_t* m_ = ASRUtils::get_sym_module(gp_ext->m_procs[i]);
-                                std::string m__name = std::string(m_->m_name);
-                                import_symbols_util(m_, m__name, gp_ext_proc_name,
-                                                    local_sym_, to_be_imported_later, loc);
-                                m_proc = current_scope->resolve_symbol(local_sym_);
-                            }
-                        }
-                        LCOMPILERS_ASSERT(m_proc != nullptr);
-                        if( !ASRUtils::present(gp_procs, m_proc) ) {
-                            gp_procs.push_back(al, m_proc);
-                        }
-                    }
-                    ASR::asr_t *ep = ASR::make_GenericProcedure_t(
-                        al, t->base.loc, current_scope, s2c(al, local_sym),
-                        gp_procs.p, gp_procs.size(), dflt_access);
-                    current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
-                } else {
-                    LCOMPILERS_ASSERT(ASR::is_a<ASR::GenericProcedure_t>(*gp_sym));
-                    ASR::GenericProcedure_t* gp = ASR::down_cast<ASR::GenericProcedure_t>(gp_sym);
-                    ASR::GenericProcedure_t* gp_ext = ASR::down_cast<ASR::GenericProcedure_t>(t);
-                    Vec<ASR::symbol_t*> gp_procs;
-                    gp_procs.reserve(al, gp->n_procs + gp_ext->n_procs);
-                    for( size_t i = 0; i < gp->n_procs; i++ ) {
-                        gp_procs.push_back(al, gp->m_procs[i]);
-                    }
-                    for( size_t i = 0; i < gp_ext->n_procs; i++ ) {
-                        std::string gp_ext_proc_name = ASRUtils::symbol_name(gp_ext->m_procs[i]);
-                        ASR::symbol_t* m_proc = current_scope->resolve_symbol(
-                            gp_ext_proc_name);
-                        if( m_proc == nullptr ) {
-                            std::string local_sym_ = "@" + gp_ext_proc_name + "@";
-                            m_proc = current_scope->resolve_symbol(local_sym_);
-                            if( m_proc == nullptr ) {
-                                ASR::Module_t* m_ = ASRUtils::get_sym_module(gp_ext->m_procs[i]);
-                                std::string m__name = std::string(m_->m_name);
-                                import_symbols_util(m_, m__name, gp_ext_proc_name,
-                                                    local_sym_, to_be_imported_later, loc);
-                                m_proc = current_scope->resolve_symbol(local_sym_);
-                            }
-                        }
-                        LCOMPILERS_ASSERT(m_proc != nullptr);
-                        if( !ASRUtils::present(gp_procs, m_proc) ) {
-                            gp_procs.push_back(al, m_proc);
-                        }
-                        gp_procs.push_back(al, m_proc);
-                    }
-                    gp->m_procs = gp_procs.p;
-                    gp->n_procs = gp_procs.size();
-                }
-            } else {
-                ASR::GenericProcedure_t *gp_ext = ASR::down_cast<ASR::GenericProcedure_t>(t);
-                Vec<ASR::symbol_t*> gp_procs;
-                gp_procs.reserve(al, gp_ext->n_procs);
-                bool are_all_present = true;
-                for( size_t i = 0; i < gp_ext->n_procs; i++ ) {
-                    ASR::symbol_t* m_proc = current_scope->resolve_symbol(
-                        ASRUtils::symbol_name(gp_ext->m_procs[i]));
-                    if( m_proc == nullptr ) {
-                        are_all_present = false;
-                        break;
-                    }
-                    gp_procs.push_back(al, m_proc);
-                }
-                ASR::asr_t *ep = nullptr;
-                if( are_all_present ) {
-                    ep = ASR::make_GenericProcedure_t(
-                        al, t->base.loc, current_scope, s2c(al, local_sym),
-                        gp_procs.p, gp_procs.size(), dflt_access);
-                } else {
-                    ep = ASR::make_ExternalSymbol_t(al, t->base.loc,
-                        current_scope, s2c(al, local_sym), t,
-                        m->m_name, nullptr, 0, gp_ext->m_name, dflt_access);
-                }
-                current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
-            }
+            process_generic_proc_custom_op<ASR::GenericProcedure_t>(local_sym, t,
+                to_be_imported_later, loc, m, &ASR::make_GenericProcedure_t, nullptr);
         } else if (ASR::is_a<ASR::CustomOperator_t>(*t)) {
-            if (current_scope->get_symbol(local_sym) != nullptr) {
-                throw SemanticError("Symbol already defined",
-                    loc);
-            }
-            ASR::CustomOperator_t *gp = ASR::down_cast<ASR::CustomOperator_t>(t);
-            std::string gp_name = std::string(gp->m_name);
-            for (size_t igp = 0; igp < gp->n_procs; igp++) {
-                std::string proc_name = ASRUtils::symbol_name(gp->m_procs[igp]);
-                std::string mangled_name = proc_name + "@" + gp_name;
-                to_be_imported_later.push(std::make_pair(proc_name, mangled_name));
-            }
-            Str name;
-            name.from_str(al, local_sym);
-            char *cname = name.c_str(al);
-            ASR::asr_t *ep = ASR::make_ExternalSymbol_t(
-                al, t->base.loc,
-                current_scope,
-                /* a_name */ cname,
-                t,
-                m->m_name, nullptr, 0, gp->m_name,
-                dflt_access
-                );
-            current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
-        } else if (ASR::is_a<ASR::ExternalSymbol_t>(*t)) {
-            if (current_scope->get_symbol(local_sym) != nullptr) {
-                throw SemanticError("Symbol " + local_sym +" already defined", loc);
-            }
-            // Repack ExternalSymbol to point directly to the original symbol
-            ASR::ExternalSymbol_t *es = ASR::down_cast<ASR::ExternalSymbol_t>(t);
-            ASR::asr_t *ep = ASR::make_ExternalSymbol_t(
-                al, es->base.base.loc,
-                current_scope,
-                /* a_name */ s2c(al, local_sym),
-                es->m_external,
-                es->m_module_name, es->m_scope_names, es->n_scope_names, es->m_original_name,
-                es->m_access
-                );
-            ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(t);
-            if( ASR::is_a<ASR::CustomOperator_t>(*orig_sym) ) {
-                ASR::CustomOperator_t *gp = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
-                std::string gp_name = std::string(gp->m_name);
-                for (size_t igp = 0; igp < gp->n_procs; igp++) {
-                    std::string proc_name = ASRUtils::symbol_name(gp->m_procs[igp]);
-                    std::string mangled_name = proc_name + "@" + gp_name;
-                    ASR::symbol_t* proc_sym = m->m_symtab->resolve_symbol(proc_name);
-                    ASR::symbol_t* mangled_sym = m->m_symtab->resolve_symbol(mangled_name);
-                    std::string proc_remote_sym = "";
-                    if( proc_sym ) {
-                        proc_remote_sym = proc_name;
-                    } else if( mangled_sym ) {
-                        proc_remote_sym = mangled_name;
-                    } else {
-                        // Should never happen because if the user
-                        // doesn't import a procedure for a custom operator
-                        // the lfortran is supposed to do that with help
-                        // of to_be_imported_later queue.
-                        LCOMPILERS_ASSERT(false);
-                    }
-                    to_be_imported_later.push(std::make_pair(proc_remote_sym, mangled_name));
-                }
-            }
-            current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
+            process_generic_proc_custom_op<ASR::CustomOperator_t>(local_sym, t,
+                to_be_imported_later, loc, m, &ASR::make_CustomOperator_t, nullptr);
         } else if (ASR::is_a<ASR::Function_t>(*t)) {
             bool is_already_defined = false;
             ASR::symbol_t* imported_func_sym = current_scope->get_symbol(local_sym);
