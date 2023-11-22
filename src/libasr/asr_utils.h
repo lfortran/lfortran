@@ -1186,6 +1186,13 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
             }
             break;
         }
+        case ASR::exprType::FunctionCall: {
+            ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(value_expr);
+            if (!extract_value(func_call->m_value, value)) {
+                return false;
+            }
+            break;
+        }
         default:
             return false;
     }
