@@ -987,7 +987,7 @@
                             (Var 6 err)
                             Gt
                             (RealConstant
-                                0.000100
+                                0.001000
                                 (Real 4)
                             )
                             (Logical 4)
@@ -1250,7 +1250,7 @@
                             (Var 6 err)
                             Gt
                             (RealConstant
-                                0.000100
+                                0.001000
                                 (Real 4)
                             )
                             (Logical 4)
