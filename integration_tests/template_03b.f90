@@ -4,13 +4,11 @@ program template_03
         type, deferred :: T
         type, deferred :: U
         type, deferred :: V
-        interface
-            elemental function op(a, b)
+        elemental function op(a, b) result(op)
             type(T), intent(in) :: a
             type(U), intent(in) :: b
             type(V) :: op
-            end function
-        end interface
+        end function
     end requirement
 
     template axpy_tmpl(T, U, V, W, plus, times)
@@ -19,13 +17,10 @@ program template_03
         require :: op(T, U, W, times)
     contains
         subroutine axpy(a, x, y)
-        type(T), intent(in) :: a
-        type(U), intent(in) :: x(:)
-        type(V), intent(inout) :: y(:)
-        integer :: i
-        do i = 1, size(x)
-            y(i) = plus(y(i), times(a, x(i)))
-        end do
+            type(T), intent(in) :: a
+            type(U), intent(in) :: x(:)
+            type(V), intent(inout) :: y(:)
+            y = plus(y, times(a, x))
         end subroutine
     end template
 
@@ -41,8 +36,7 @@ contains
         real(dp) :: y(3)
         a = 0.5
         x = 2
-        y = 0
+        y = 2
         call axpy(a, x, y)
-        print *, y
     end subroutine
 end program

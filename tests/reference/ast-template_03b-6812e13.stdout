@@ -43,86 +43,79 @@
                 )]
                 []
                 []
-            )
-            (Interface
-                (InterfaceHeader)
-                ()
-                [(InterfaceProc
-                    (Function
-                        op
-                        [(a)
-                        (b)]
-                        [(SimpleAttribute
-                            AttrElemental
-                        )]
-                        ()
-                        ()
-                        ()
-                        []
-                        []
-                        []
-                        [(Declaration
-                            (AttrType
-                                TypeType
-                                []
-                                ()
-                                T
-                                None
-                            )
-                            [(AttrIntent
-                                In
-                            )]
-                            [(a
-                            []
-                            []
-                            ()
-                            None
-                            ())]
-                            ()
-                        )
-                        (Declaration
-                            (AttrType
-                                TypeType
-                                []
-                                ()
-                                U
-                                None
-                            )
-                            [(AttrIntent
-                                In
-                            )]
-                            [(b
-                            []
-                            []
-                            ()
-                            None
-                            ())]
-                            ()
-                        )
-                        (Declaration
-                            (AttrType
-                                TypeType
-                                []
-                                ()
-                                V
-                                None
-                            )
-                            []
-                            [(op
-                            []
-                            []
-                            ()
-                            None
-                            ())]
-                            ()
-                        )]
-                        []
-                        []
-                        []
-                    )
-                )]
             )]
-            []
+            [(Function
+                op
+                [(a)
+                (b)]
+                [(SimpleAttribute
+                    AttrElemental
+                )]
+                op
+                ()
+                ()
+                []
+                []
+                []
+                [(Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        ()
+                        T
+                        None
+                    )
+                    [(AttrIntent
+                        In
+                    )]
+                    [(a
+                    []
+                    []
+                    ()
+                    None
+                    ())]
+                    ()
+                )
+                (Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        ()
+                        U
+                        None
+                    )
+                    [(AttrIntent
+                        In
+                    )]
+                    [(b
+                    []
+                    []
+                    ()
+                    None
+                    ())]
+                    ()
+                )
+                (Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        ()
+                        V
+                        None
+                    )
+                    []
+                    [(op
+                    []
+                    []
+                    ()
+                    None
+                    ())]
+                    ()
+                )]
+                []
+                []
+                []
+            )]
         )
         (Template
             axpy_tmpl
@@ -250,107 +243,39 @@
                     None
                     ())]
                     ()
-                )
-                (Declaration
-                    (AttrType
-                        TypeInteger
-                        []
-                        ()
-                        ()
-                        None
-                    )
-                    []
-                    [(i
-                    []
-                    []
-                    ()
-                    None
-                    ())]
-                    ()
                 )]
-                [(DoLoop
+                [(=
                     0
-                    ()
-                    0
-                    i
-                    1
+                    y
                     (FuncCallOrArray
-                        size
+                        plus
                         []
                         [(()
-                        x
+                        y
+                        ()
+                        0)
+                        (()
+                        (FuncCallOrArray
+                            times
+                            []
+                            [(()
+                            a
+                            ()
+                            0)
+                            (()
+                            x
+                            ()
+                            0)]
+                            []
+                            []
+                            []
+                        )
                         ()
                         0)]
                         []
                         []
                         []
                     )
-                    ()
-                    [(=
-                        0
-                        (FuncCallOrArray
-                            y
-                            []
-                            [(()
-                            i
-                            ()
-                            0)]
-                            []
-                            []
-                            []
-                        )
-                        (FuncCallOrArray
-                            plus
-                            []
-                            [(()
-                            (FuncCallOrArray
-                                y
-                                []
-                                [(()
-                                i
-                                ()
-                                0)]
-                                []
-                                []
-                                []
-                            )
-                            ()
-                            0)
-                            (()
-                            (FuncCallOrArray
-                                times
-                                []
-                                [(()
-                                a
-                                ()
-                                0)
-                                (()
-                                (FuncCallOrArray
-                                    x
-                                    []
-                                    [(()
-                                    i
-                                    ()
-                                    0)]
-                                    []
-                                    []
-                                    []
-                                )
-                                ()
-                                0)]
-                                []
-                                []
-                                []
-                            )
-                            ()
-                            0)]
-                            []
-                            []
-                            []
-                        )
-                        ()
-                    )]
-                    ()
                     ()
                 )]
                 []
@@ -542,7 +467,7 @@
             (=
                 0
                 y
-                0
+                2
                 ()
             )
             (SubroutineCall
@@ -563,12 +488,6 @@
                 0)]
                 []
                 []
-                ()
-            )
-            (Print
-                0
-                ()
-                [y]
                 ()
             )]
             []

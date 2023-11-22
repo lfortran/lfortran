@@ -1,164 +1,85 @@
-module template_matrix_m
-  implicit none
-  private
-  public :: matrix_t
+module template_matrix_01_m
 
-  requirement elemental_oper(t, op)
-    type, deferred :: t
-    pure elemental function op(x, y) result(z)
-      type(t), intent(in) :: x, y
-      type(t) :: z
-    end function
-  end requirement
-
-  requirement empty_oper(t, op)
-    type, deferred :: t
-    pure function op() result(z)
-      type(t) :: z
-    end function
-  end requirement
-
-  template matrix_t(t, plus, times, zero, n)
-    require :: elemental_oper(t, plus), elemental_oper(t, times)
-    require :: empty_oper(t, zero)
-    integer :: n
-
+    implicit none
     private
-    public :: matrix
+    public :: matrix_t
 
-    type :: matrix
-      type(t) :: elements(n,n)
-    end type
+    requirement elemental_op(t, op)
+        type, deferred :: t
+        pure elemental function op(l, r) result(rs)
+            type(t), intent(in) :: l, r
+            type(t) :: rs
+        end function
+    end requirement
 
-  contains
+    template matrix_t(t, plus, times, n)
+        require :: elemental_op(t, plus), elemental_op(t, times)
+        integer :: n
+        
+        private
+        public :: add_matrix
 
-    pure function plus_matrix(m_x, m_y) result(m_z)
-      type(matrix), intent(in) :: m_x, m_y
-      type(matrix) :: m_z   
-      m_z%elements = plus(m_x%elements, m_y%elements)
-    end function
+        type :: matrix
+            type(t) :: elements(n, n)
+        end type
+    contains
+        pure function add_matrix(a, b) result(r)
+            type(matrix), intent(in) :: a, b
+            type(matrix) :: r
+            r%elements = plus(a%elements, b%elements)
+        end function
 
-    subroutine matmul_matrix(m_x, m_y, m_z)
-      type(matrix), intent(in) :: m_x, m_y
-      type(matrix), intent(inout) :: m_z
+        pure function mul_matrix(a, b) result(r)
+            type(matrix), intent(in) :: a, b
+            type(matrix) :: r
 
-      type(t) :: tmp
-      integer :: i, j, k
+            type(t) :: dot(n)
+            type(t) :: temp
+            integer :: i, j, k
 
-      do i= 1,n
-        do j= 1,n
-          tmp = times(m_x%elements(i,1),m_y%elements(1,j))
-          do k = 2,n
-              tmp = plus(tmp, times(m_x%elements(i,k),m_y%elements(k,j)))
-          end do
-          m_z%elements(i,j) = tmp
-        end do
-      end do
-    end subroutine
-
-    subroutine matmul_matrix2(m_x, m_y, m_z)
-        type(matrix), intent(in) :: m_x, m_y
-        type(matrix), intent(inout) :: m_z
-
-        !type(t) :: dot(n)
-        integer :: i, j
-
-
-        do i = 1, n
-          do j = 1, n
-            !dot = times(m_x%elements(i,:), m_y%elements(:,j))
-            !print *, dot
-          end do
-        end do
-    end subroutine
-
-    !elemental function matmul_matrix(m_x, m_y) result(m_z)
-    !  type(matrix), intent(in) :: m_x, m_y
-    !  type(matrix) :: m_z
-!
-    !  type(t) :: tmp
-    !  integer :: i, j, k
-!
-    !  do i= 1,n
-    !    do j= 1,n
-    !      tmp = m_x%elements(i,1)*m_y%elements(1,j)
-    !      do k = 2, n
-    !          tmp = plus(tmp, times(m_x%elements(i,k),m_y%elements(k,j)))
-    !      end do
-    !      m_z%elements(i,j) = tmp
-    !    end do
-    !  end do
-    !end function
-
-  end template
-
-contains
-
-  pure elemental function plus_integer(x, y) result(z)
-    integer, intent(in) :: x, y
-    integer :: z
-    z = x + y
-  end function
-
-  pure elemental function mult_integer(x, y) result(z)
-    integer, intent(in) :: x, y
-    integer :: z
-    z = x * y
-  end function
-
-  pure elemental function plus_complex(x, y) result(z)
-    complex, intent(in) :: x, y
-    complex :: z
-    z = x + y
-  end function
-
-  pure elemental function mult_complex(x, y) result(z)
-    complex, intent(in) :: x, y
-    complex :: z
-    z = x * y
-  end function
-
-  pure function zero_integer() result(z)
-    integer :: z
-    z = 0
-  end function
-
-  subroutine test_template()
-    integer, parameter :: n = 2
-    instantiate matrix_t(integer, operator(+), mult_integer, zero_integer, n), &
-      only: integer_matrix => matrix, &
-            integer_plus_matrix => plus_matrix, &
-            integer_mult_matrix => matmul_matrix, &
-            test_matmul_matrix => matmul_matrix2
-    type(integer_matrix) :: m1, m2, m3, m4
-    m1%elements(1,1) = 1
-    m1%elements(1,2) = 0
-    m1%elements(2,1) = 0
-    m1%elements(2,2) = 1
-
-    m2%elements(1,1) = 1
-    m2%elements(1,2) = 2
-    m2%elements(2,1) = 2
-    m2%elements(2,2) = 1
-
-    m3 = integer_plus_matrix(m1, m2)
-    call integer_mult_matrix(m2, m3, m4)
-
-    print *, m1%elements
-    print *, m2%elements
-    print *, m3%elements
-    print *, m4%elements
-
-    call test_matmul_matrix(m1, m2, m3)
-  end subroutine
+            do i = 1, n
+                do j = 1, n
+                    dot = times(a%elements(i,:), b%elements(:,j))
+                    temp = dot(1)
+                    do k = 2, n
+                        temp = plus(temp, dot(i))
+                    end do
+                    r%elements(i,j) = temp
+                end do
+            end do
+        end function
+    end template
 
 end module
 
-program template_matrix
-use template_matrix_m
+program template_matrix_01
+use template_matrix_01_m
 
-implicit none
+integer, parameter :: n = 2
+integer :: i, j
 
-call test_template()
+instantiate matrix_t(integer, operator(+), operator(*), n), &
+    only: int_matrix => matrix, &
+          int_add_matrix => add_matrix, &
+          int_mul_matrix => mul_matrix
 
-end program template_matrix
+type(int_matrix) :: am, bm, cm, dm
+
+do i = 1, n
+    do j = 1, n
+        am%elements(i,j) = i
+        bm%elements(i,j) = i
+    end do
+end do
+
+cm = int_add_matrix(am, bm)
+dm = int_mul_matrix(am, bm)
+
+print *, cm%elements(1,1), cm%elements(1,2)
+print *, cm%elements(2,1), cm%elements(2,2), achar(10)
+
+print *, dm%elements(1,1), dm%elements(1,2)
+print *, dm%elements(2,1), dm%elements(2,2)
+
+
+end program
