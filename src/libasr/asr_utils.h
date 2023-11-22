@@ -2409,8 +2409,8 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
 
 static inline void set_absent_optional_arguments_to_null(
     Vec<ASR::call_arg_t>& args, ASR::Function_t* func, Allocator& al,
-    ASR::expr_t* dt=nullptr) {
-    int offset = (dt != nullptr);
+    ASR::expr_t* dt=nullptr, bool nopass = false) {
+    int offset = (dt != nullptr) && (!nopass);
     for( size_t i = args.size(); i + offset < func->n_args; i++ ) {
         if( ASR::is_a<ASR::Variable_t>(
                 *ASR::down_cast<ASR::Var_t>(func->m_args[i + offset])->m_v) ) {

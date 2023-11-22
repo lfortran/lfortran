@@ -3505,7 +3505,7 @@ public:
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
         }
         ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
-        ASRUtils::set_absent_optional_arguments_to_null(args, func, al, v_expr);
+        ASRUtils::set_absent_optional_arguments_to_null(args, func, al, v_expr, v_class_proc->m_is_nopass);
         return ASRUtils::make_FunctionCall_t_util(al, loc,
                 v, nullptr, args.p, args.size(), type, nullptr,
                 v_expr);
