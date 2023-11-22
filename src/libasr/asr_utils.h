@@ -2559,11 +2559,6 @@ template <typename SemanticError>
 inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
     int a_kind = 4;
     switch( kind_expr->type ) {
-        case ASR::exprType::IntegerConstant: {
-            a_kind = ASR::down_cast<ASR::IntegerConstant_t>
-                    (kind_expr)->m_n;
-            break;
-        }
         case ASR::exprType::Var: {
             ASR::Var_t* kind_var =
                 ASR::down_cast<ASR::Var_t>(kind_expr);
@@ -2595,8 +2590,11 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
             break;
         }
         default: {
-            throw SemanticError(R"""(Only Integer literals or expressions which reduce to constant Integer are accepted as kind parameters.)""",
-                                loc);
+            if (!ASRUtils::extract_value(kind_expr, a_kind)) {
+                throw SemanticError("Only Integer literals or expressions which "
+                    "reduce to constant Integer are accepted as kind parameters.",
+                    loc);
+            }
         }
     }
     return a_kind;
