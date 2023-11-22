@@ -1217,3 +1217,6 @@ RUN(NAME selected_int_kind_01 LABELS gfortran llvm)
 RUN(NAME capital_01 LABELS gfortran llvmImplicit)
 
 RUN(NAME do_concurrent_01 LABELS gfortran llvm)
+
+RUN(NAME transfer_01 LABELS gfortran llvm)
+RUN(NAME transfer_02 LABELS gfortran)

@@ -6659,6 +6659,21 @@ public:
         tmp = CreateLoad(result);
     }
 
+    void visit_BitCast(const ASR::BitCast_t& x) {
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+
+        this->visit_expr_wrapper(x.m_source, true);
+        llvm::Value* source = tmp;
+        llvm::Type* source_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::expr_type(x.m_source), module.get());
+        llvm::Value* source_ptr = CreateAlloca(source_type, nullptr, "bitcast_source");
+        builder->CreateStore(source, source_ptr);
+        llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get())->getPointerTo();
+        tmp = LLVM::CreateLoad(*builder, builder->CreateBitCast(source_ptr, target_llvm_type));
+    }
+
     void visit_Cast(const ASR::Cast_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
