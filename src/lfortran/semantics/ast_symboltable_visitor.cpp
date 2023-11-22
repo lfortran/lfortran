@@ -2766,7 +2766,7 @@ public:
                 req_arg = ASRUtils::type_to_str(ttype);
                 type_subs[req_param] = ttype;
             } else {
-                throw LCompilersException("Unsupported decl_attribute for require statements.");
+                throw SemanticError("Unsupported decl_attribute for require statements.", x.m_namelist[i]->base.loc);
             }
 
             ASR::symbol_t *param_sym = (req->m_symtab)->get_symbol(req_param);
@@ -2993,7 +2993,7 @@ public:
                 } else if (is_cmpop) {
                     is_overloaded = ASRUtils::is_op_overloaded(cmpop, op_name, current_scope, nullptr);
                 } else {
-                    throw LCompilersException("ICE: must be binop or cmop");
+                    throw SemanticError("Must be binop or cmop", x.m_args[i]->base.loc);
                 }
 
                 ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(param_sym);
@@ -3119,7 +3119,7 @@ public:
                     symbol_subs[f->m_name] = op_sym;
                 }
             } else {
-                throw LCompilersException("Unsupported argument to instantiate statement.");
+                throw SemanticError("Unsupported template argument", x.m_args[i]->base.loc);
             }
         }
 
