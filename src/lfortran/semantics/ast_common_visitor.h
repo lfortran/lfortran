@@ -3505,7 +3505,7 @@ public:
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
         }
         ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
-        ASRUtils::set_absent_optional_arguments_to_null(args, func, al, v_expr);
+        ASRUtils::set_absent_optional_arguments_to_null(args, func, al, v_expr, v_class_proc->m_is_nopass);
         return ASRUtils::make_FunctionCall_t_util(al, loc,
                 v, nullptr, args.p, args.size(), type, nullptr,
                 v_expr);
@@ -5692,7 +5692,7 @@ public:
                         type_subs[param] = ASRUtils::TYPE(ASR::make_TypeParameter_t(al,
                             loc, ASR::down_cast<ASR::TypeParameter_t>(arg_type)->m_param));
                     } else {
-                        throw SemanticError("The type " + arg + " is not yet handled for " 
+                        throw SemanticError("The type " + arg + " is not yet handled for "
                             + "template instantiation", loc);
                     }
                 } else {
@@ -5707,7 +5707,7 @@ public:
                 }
 
             } else if (AST::is_a<AST::AttrIntrinsicOperator_t>(*args[i])) {
-                AST::AttrIntrinsicOperator_t *intrinsic_op 
+                AST::AttrIntrinsicOperator_t *intrinsic_op
                     = AST::down_cast<AST::AttrIntrinsicOperator_t>(args[i]);
                 ASR::binopType binop = ASR::Add;
                 ASR::cmpopType cmpop = ASR::Eq;

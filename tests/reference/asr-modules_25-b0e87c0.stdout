@@ -194,6 +194,7 @@
                                                     4 next_token
                                                     Source
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     toml_character_tokenizer
@@ -496,6 +497,7 @@
                                                     8 next_token
                                                     Source
                                                     .true.
+                                                    .false.
                                                 )
                                         })
                                     toml_tokenizer

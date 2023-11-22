@@ -2067,7 +2067,7 @@ public:
                 ASR::asr_t *v = ASR::make_ClassProcedure_t(al, loc,
                     clss->m_symtab, name, pass_arg_name,
                     proc_name, proc_sym, ASR::abiType::Source,
-                    is_deferred);
+                    is_deferred, is_nopass);
                 ASR::symbol_t *cls_proc_sym = ASR::down_cast<ASR::symbol_t>(v);
                 clss->m_symtab->add_symbol(pname.first, cls_proc_sym);
             }

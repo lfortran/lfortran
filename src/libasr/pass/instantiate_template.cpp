@@ -47,7 +47,7 @@ public:
         ASR::ttype_t *t = x->m_type;
         ASR::dimension_t* tp_m_dims = nullptr;
         int tp_n_dims = ASRUtils::extract_dimensions_from_ttype(t, tp_m_dims);
-        
+
         if (ASR::is_a<ASR::TypeParameter_t>(*t)) {
             ASR::TypeParameter_t *tp = ASR::down_cast<ASR::TypeParameter_t>(t);
             if (type_subs.find(tp->m_param) != type_subs.end()) {
@@ -98,7 +98,7 @@ public:
 
         ASR::symbol_t *new_f = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Function_t_util(
             al, x->base.base.loc, current_scope, s2c(al, new_sym_name), x->m_dependencies,
-            x->n_dependencies, args.p, args.size(), nullptr, 0, new_return_var_ref, ftype->m_abi, 
+            x->n_dependencies, args.p, args.size(), nullptr, 0, new_return_var_ref, ftype->m_abi,
             x->m_access, ftype->m_deftype, ftype->m_bindc_name, ftype->m_elemental,
             ftype->m_pure, ftype->m_module, ftype->m_inline, ftype->m_static, ftype->m_restrictions,
             ftype->n_restrictions, ftype->m_is_restriction, x->m_deterministic, x->m_side_effect_free));
@@ -434,7 +434,7 @@ public:
 
         ASR::symbol_t *new_x = ASR::down_cast<ASR::symbol_t>(ASR::make_ClassProcedure_t(
             al, x->base.base.loc, current_scope, x->m_name, x->m_self_argument,
-            s2c(al, new_cp_name), new_cp_proc, x->m_abi, x->m_is_deferred));
+            s2c(al, new_cp_name), new_cp_proc, x->m_abi, x->m_is_deferred, x->m_is_nopass));
         current_scope->add_symbol(x->m_name, new_x);
 
         return new_x;
