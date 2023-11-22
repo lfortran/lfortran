@@ -5692,7 +5692,7 @@ public:
                         type_subs[param] = ASRUtils::TYPE(ASR::make_TypeParameter_t(al,
                             loc, ASR::down_cast<ASR::TypeParameter_t>(arg_type)->m_param));
                     } else {
-                        throw SemanticError("The type " + arg + " is not yet handled for " 
+                        throw SemanticError("The type " + arg + " is not yet handled for "
                             + "template instantiation", loc);
                     }
                 } else {
@@ -5707,7 +5707,7 @@ public:
                 }
 
             } else if (AST::is_a<AST::AttrIntrinsicOperator_t>(*args[i])) {
-                AST::AttrIntrinsicOperator_t *intrinsic_op 
+                AST::AttrIntrinsicOperator_t *intrinsic_op
                     = AST::down_cast<AST::AttrIntrinsicOperator_t>(args[i]);
                 ASR::binopType binop = ASR::Add;
                 ASR::cmpopType cmpop = ASR::Eq;
