@@ -38,6 +38,10 @@ public:
     int last_expr_precedence;
     std::string format_string;
 
+    // Used for importing struct type inside interface
+    bool is_interface = false;
+    std::vector<std::string> import_struct_type;
+
 public:
     ASRToFortranVisitor(bool _use_colors, int _indent)
         : use_colors{_use_colors}, indent_level{0},
@@ -154,7 +158,18 @@ public:
             } case ASR::ttypeType::Character: {
                 ASR::Character_t *c = down_cast<ASR::Character_t>(t);
                 r = "character(len=";
-                r += std::to_string(c->m_len);
+                if(c->m_len > 0) {
+                    r += std::to_string(c->m_len);
+                } else {
+                    if (c->m_len == -1) {
+                        r += "*";
+                    } else if (c->m_len == -2) {
+                        r += ":";
+                    } else if (c->m_len == -3) {
+                        visit_expr(*c->m_len_expr);
+                        r += s;
+                    }
+                }
                 r += ", kind=";
                 r += std::to_string(c->m_kind);
                 r += ")";
@@ -196,6 +211,18 @@ public:
                 break;
             } case ASR::ttypeType::Pointer: {
                 r = get_type(down_cast<ASR::Pointer_t>(t)->m_type) + ", pointer";
+                break;
+            } case ASR::ttypeType::Struct: {
+                ASR::Struct_t* struct_type = down_cast<ASR::Struct_t>(t);
+                std::string struct_name = ASRUtils::symbol_name(struct_type->m_derived_type);
+                r = "type(";
+                r += struct_name;
+                r += ")";
+                if (std::find(import_struct_type.begin(), import_struct_type.end(),
+                        struct_name) == import_struct_type.end() && is_interface) {
+                    // Push unique struct names;
+                    import_struct_type.push_back(struct_name);
+                }
                 break;
             }
             default:
@@ -251,8 +278,34 @@ public:
         r += " ";
         r.append(x.m_name);
         r += "\n";
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                visit_symbol(*item.second);
+                r += s;
+            }
+        }
         r += indent + "implicit none";
         r += "\n";
+        std::map<std::string, std::vector<std::string>> struct_dep_graph;
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::StructType_t>(*item.second) ||
+                    ASR::is_a<ASR::EnumType_t>(*item.second) ||
+                    ASR::is_a<ASR::UnionType_t>(*item.second)) {
+                std::vector<std::string> struct_deps_vec;
+                std::pair<char**, size_t> struct_deps_ptr = ASRUtils::symbol_dependencies(item.second);
+                for( size_t i = 0; i < struct_deps_ptr.second; i++ ) {
+                    struct_deps_vec.push_back(std::string(struct_deps_ptr.first[i]));
+                }
+                struct_dep_graph[item.first] = struct_deps_vec;
+            }
+        }
+
+        std::vector<std::string> struct_deps = ASRUtils::order_deps(struct_dep_graph);
+        for (auto &item : struct_deps) {
+            ASR::symbol_t* struct_sym = x.m_symtab->get_symbol(item);
+            visit_symbol(*struct_sym);
+            r += s;
+        }
         std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
         for (auto &item : var_order) {
             ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
@@ -290,7 +343,87 @@ public:
         r += " ";
         r.append(x.m_name);
         r += "\n";
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                visit_symbol(*item.second);
+                r += s;
+            }
+        }
+        r += indent + "implicit none";
+        r += "\n";
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::GenericProcedure_t>(*item.second)) {
+                visit_symbol(*item.second);
+                r += s;
 
+            }
+        }
+        std::map<std::string, std::vector<std::string>> struct_dep_graph;
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::StructType_t>(*item.second) ||
+                    ASR::is_a<ASR::EnumType_t>(*item.second) ||
+                    ASR::is_a<ASR::UnionType_t>(*item.second)) {
+                std::vector<std::string> struct_deps_vec;
+                std::pair<char**, size_t> struct_deps_ptr = ASRUtils::symbol_dependencies(item.second);
+                for( size_t i = 0; i < struct_deps_ptr.second; i++ ) {
+                    struct_deps_vec.push_back(std::string(struct_deps_ptr.first[i]));
+                }
+                struct_dep_graph[item.first] = struct_deps_vec;
+            }
+        }
+
+        std::vector<std::string> struct_deps = ASRUtils::order_deps(struct_dep_graph);
+        for (auto &item : struct_deps) {
+            ASR::symbol_t* struct_sym = x.m_symtab->get_symbol(item);
+            visit_symbol(*struct_sym);
+            r += s;
+        }
+        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
+        for (auto &item : var_order) {
+            ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
+            if (is_a<ASR::Variable_t>(*var_sym)) {
+                visit_symbol(*var_sym);
+                r += s;
+            }
+        }
+        std::vector<std::string> func_name;
+        std::vector<std::string> interface_func_name;
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::Function_t>(*item.second)) {
+                ASR::Function_t *f = down_cast<ASR::Function_t>(item.second);
+                if (ASRUtils::get_FunctionType(f)->m_deftype == ASR::deftypeType::Interface) {
+                    interface_func_name.push_back(item.first);
+                } else {
+                    func_name.push_back(item.first);
+                }
+            }
+        }
+        for (size_t i = 0; i < interface_func_name.size(); i++) {
+            if (i == 0) {
+                r += "interface\n";
+                is_interface = true;
+                inc_indent();
+            }
+            visit_symbol(*x.m_symtab->get_symbol(interface_func_name[i]));
+            r += s;
+            if (i < interface_func_name.size() - 1) {
+                r += "\n";
+            } else {
+                dec_indent();
+                is_interface = false;
+                r += "end interface\n";
+            }
+        }
+        for (size_t i = 0; i < func_name.size(); i++) {
+            if (i == 0) {
+                r += "\n";
+                r += "contains";
+                r += "\n\n";
+            }
+            visit_symbol(*x.m_symtab->get_symbol(func_name[i]));
+            r += s;
+            if (i < func_name.size()) r += "\n";
+        }
         r += "end module";
         r += " ";
         r.append(x.m_name);
@@ -300,7 +433,20 @@ public:
 
     void visit_Function(const ASR::Function_t &x) {
         std::string r = indent;
+        ASR::FunctionType_t *type = ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature);
+        if (type->m_pure) {
+            r += "pure ";
+        }
+        if (type->m_elemental) {
+            r += "elemental ";
+        }
+        bool is_return_var_declared = false;
         if (x.m_return_var) {
+            if (!ASRUtils::is_array(ASRUtils::expr_type(x.m_return_var))) {
+                is_return_var_declared = true;
+                r += get_type(ASRUtils::expr_type(x.m_return_var));
+                r += " ";
+            }
             r += "function";
         } else {
             r += "subroutine";
@@ -314,19 +460,73 @@ public:
             if (i < x.n_args-1) r += ", ";
         }
         r += ")";
+        if (type->m_abi == ASR::abiType::BindC) {
+            r += " bind(c";
+            if (type->m_bindc_name) {
+                r += ", name = \"";
+                r += type->m_bindc_name;
+                r += "\"";
+            }
+            r += ")";
+        }
+        std::string return_var = "";
         if (x.m_return_var) {
+            LCOMPILERS_ASSERT(is_a<ASR::Var_t>(*x.m_return_var));
             visit_expr(*x.m_return_var);
-            r += " result(" + s + ")";
+            return_var = s;
+            if (strcmp(x.m_name, return_var.c_str())) {
+                r += " result(" + return_var + ")";
+            }
         }
         r += "\n";
 
         inc_indent();
-        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
-        for (auto &item : var_order) {
-            ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
-            if (is_a<ASR::Variable_t>(*var_sym)) {
-                visit_symbol(*var_sym);
-                r += s;
+        {
+            std::string variable_declaration;
+            std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
+            for (auto &item : var_order) {
+                if (is_return_var_declared && item == return_var) continue;
+                ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
+                if (is_a<ASR::Variable_t>(*var_sym)) {
+                    visit_symbol(*var_sym);
+                    variable_declaration += s;
+                }
+            }
+            for (size_t i = 0; i < import_struct_type.size(); i ++) {
+                if (i == 0) {
+                    r += indent;
+                    r += "import ";
+                }
+                r += import_struct_type[i];
+                if (i < import_struct_type.size() - 1) {
+                    r += ", ";
+                } else {
+                    r += "\n";
+                }
+            }
+            import_struct_type.clear();
+            r += variable_declaration;
+        }
+
+        // Interface
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::Function_t>(*item.second)) {
+                ASR::Function_t *f = down_cast<ASR::Function_t>(item.second);
+                if (ASRUtils::get_FunctionType(f)->m_deftype == ASR::deftypeType::Interface) {
+                    is_interface = true;
+                    r += indent;
+                    r += "interface\n";
+                    inc_indent();
+                    visit_symbol(*item.second);
+                    r += s;
+                    r += "\n";
+                    dec_indent();
+                    r += indent;
+                    r += "end interface\n";
+                    is_interface = false;
+                } else {
+                    throw CodeGenError("Nested Function is not handled yet");
+                }
             }
         }
 
@@ -345,13 +545,61 @@ public:
         s = r;
     }
 
-    // void visit_GenericProcedure(const ASR::GenericProcedure_t &x) {}
+    void visit_GenericProcedure(const ASR::GenericProcedure_t &x) {
+        std::string r = indent;
+        r += "interface ";
+        r.append(x.m_name);
+        r += "\n";
+        inc_indent();
+        r += indent;
+        r += "module procedure ";
+        for (size_t i = 0; i < x.n_procs; i++) {
+            r += ASRUtils::symbol_name(x.m_procs[i]);
+            if (i < x.n_procs-1) r += ", ";
+        }
+        dec_indent();
+        r += "\n";
+        r += "end interface ";
+        r.append(x.m_name);
+        r += "\n";
+        s = r;
+    }
 
     // void visit_CustomOperator(const ASR::CustomOperator_t &x) {}
 
-    // void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {}
+    void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
+        ASR::symbol_t *sym = down_cast<ASR::symbol_t>(
+            ASRUtils::symbol_parent_symtab(x.m_external)->asr_owner);
+        if (!is_a<ASR::StructType_t>(*sym)) {
+            s = indent;
+            s += "use ";
+            s.append(x.m_module_name);
+            s += ", only: ";
+            s.append(x.m_original_name);
+            s += "\n";
+        }
+    }
 
-    // void visit_StructType(const ASR::StructType_t &x) {}
+    void visit_StructType(const ASR::StructType_t &x) {
+        std::string r = indent;
+        r += "type :: ";
+        r.append(x.m_name);
+        r += "\n";
+        inc_indent();
+        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
+        for (auto &item : var_order) {
+            ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
+            if (is_a<ASR::Variable_t>(*var_sym)) {
+                visit_symbol(*var_sym);
+                r += s;
+            }
+        }
+        dec_indent();
+        r += "end type ";
+        r.append(x.m_name);
+        r += "\n";
+        s = r;
+    }
 
     // void visit_EnumType(const ASR::EnumType_t &x) {}
 
@@ -384,10 +632,16 @@ public:
             default:
                 throw LCompilersException("Intent type is not handled");
         }
+        if (x.m_presence == ASR::presenceType::Optional) {
+            r += ", optional";
+        }
         if (x.m_storage == ASR::storage_typeType::Parameter) {
             r += ", parameter";
         } else if (x.m_storage == ASR::storage_typeType::Save) {
             r += ", save";
+        }
+        if (x.m_value_attr) {
+            r += ", value";
         }
         r += " :: ";
         r.append(x.m_name);
@@ -593,7 +847,7 @@ public:
         std::string r = indent;
         r += "print";
         r += " ";
-        if (x.m_values[0] && is_a<ASR::StringFormat_t>(*x.m_values[0])) {
+        if (x.n_values > 0 && is_a<ASR::StringFormat_t>(*x.m_values[0])) {
             ASR::StringFormat_t *sf = down_cast<ASR::StringFormat_t>(x.m_values[0]);
             visit_expr(*sf->m_fmt);
             if (is_a<ASR::StringConstant_t>(*sf->m_fmt)
@@ -604,11 +858,10 @@ public:
         } else {
             r += "*";
         }
-        r += ", ";
         for (size_t i = 0; i < x.n_values; i++) {
+            r += ", ";
             visit_expr(*x.m_values[i]);
             r += s;
-            if (i < x.n_values-1) r += ", ";
         }
         r += "\n";
         s = r;
@@ -724,7 +977,7 @@ public:
         if (!x.m_unit) {
             r += "*, ";
         }
-        if (x.m_values[0] && is_a<ASR::StringFormat_t>(*x.m_values[0])) {
+        if (x.n_values > 0 && is_a<ASR::StringFormat_t>(*x.m_values[0])) {
             ASR::StringFormat_t *sf = down_cast<ASR::StringFormat_t>(x.m_values[0]);
             visit_expr(*sf->m_fmt);
             if (is_a<ASR::StringConstant_t>(*sf->m_fmt)
@@ -879,14 +1132,25 @@ public:
     // void visit_NamedExpr(const ASR::NamedExpr_t &x) {}
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-        std::string r = ASRUtils::symbol_name(x.m_name);
+        std::string r = "";
+        if (x.m_original_name) {
+            r += ASRUtils::symbol_name(x.m_original_name);
+        } else {
+            r += ASRUtils::symbol_name(x.m_name);
+        }
+        if (r == "bit_size") {
+            // TODO: Remove this once bit_size is implemented in IntrinsicScalarFunction
+            visit_expr(*x.m_value);
+            return;
+        }
+
         r += "(";
         for (size_t i = 0; i < x.n_args; i ++) {
             visit_expr(*x.m_args[i].m_value);
             r += s;
             if (i < x.n_args-1) r += ", ";
         }
-        r += ")\n";
+        r += ")";
         s = r;
     }
 
@@ -934,7 +1198,18 @@ public:
 
     // void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t &x) {}
 
-    // void visit_StructTypeConstructor(const ASR::StructTypeConstructor_t &x) {}
+    void visit_StructTypeConstructor(const ASR::StructTypeConstructor_t &x) {
+        std::string r = indent;
+        r += ASRUtils::symbol_name(x.m_dt_sym);
+        r += "(";
+        for(size_t i = 0; i < x.n_args; i++) {
+            visit_expr(*x.m_args[i].m_value);
+            r += s;
+            if (i < x.n_args - 1) r += ", ";
+        }
+        r += ")";
+        s = r;
+    }
 
     // void visit_EnumTypeConstructor(const ASR::EnumTypeConstructor_t &x) {}
 
@@ -1037,7 +1312,17 @@ public:
         handle_compare(x);
     }
 
-    // void visit_ComplexBinOp(const ASR::ComplexBinOp_t &x) {}
+    void visit_ComplexBinOp(const ASR::ComplexBinOp_t &x) {
+        std::string r = "", m_op = binop2str(x.m_op);
+        int current_precedence = last_expr_precedence;
+        visit_expr_with_precedence(*x.m_left, current_precedence);
+        r += s;
+        r += m_op;
+        visit_expr_with_precedence(*x.m_right, current_precedence);
+        r += s;
+        last_expr_precedence = current_precedence;
+        s = r;
+    }
 
     void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
         s = ".";
@@ -1100,7 +1385,18 @@ public:
         s = "len(" + s + ")";
     }
 
-    // void visit_StringItem(const ASR::StringItem_t &x) {}
+    void visit_StringItem(const ASR::StringItem_t &x) {
+        std::string r = "";
+        this->visit_expr(*x.m_arg);
+        r += s;
+        r += "(";
+        this->visit_expr(*x.m_idx);
+        r += s;
+        r += ":";
+        r += s;
+        r += ")";
+        s = r;
+    }
 
     // void visit_StringSection(const ASR::StringSection_t &x) {}
 
@@ -1281,7 +1577,14 @@ public:
 
     // void visit_BitCast(const ASR::BitCast_t &x) {}
 
-    // void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {}
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
+        std::string r;
+        visit_expr(*x.m_v);
+        r += s;
+        r += "%";
+        r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_m));
+        s = r;
+    }
 
     // void visit_StructStaticMember(const ASR::StructStaticMember_t &x) {}
 

@@ -106,7 +106,7 @@ private:
     // present in function symbol table.
     std::map<std::string, ASR::symbol_t*> arg2value;
 
-    std::string current_routine;
+    std::string& current_routine;
 
     bool inline_external_symbol_calls;
 

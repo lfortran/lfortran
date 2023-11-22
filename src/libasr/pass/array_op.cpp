@@ -470,6 +470,46 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         pass_result.push_back(al, doloop);
     }
 
+    template <typename LOOP_BODY>
+    void create_do_loop_for_const_val(const Location& loc, int result_rank,
+        Vec<ASR::expr_t*>& idx_vars,
+        Vec<ASR::expr_t*>& loop_vars, std::vector<int>& loop_var_indices,
+        Vec<ASR::stmt_t*>& doloop_body, LOOP_BODY loop_body) {
+        if ( use_custom_loop_params ) {
+            PassUtils::create_idx_vars(idx_vars, loop_vars, loop_var_indices,
+                result_ubound, result_inc, loc, al, current_scope, "_t");
+        } else {
+            PassUtils::create_idx_vars(idx_vars, result_rank, loc, al, current_scope, "_t");
+            loop_vars.from_pointer_n_copy(al, idx_vars.p, idx_vars.size());
+        }
+
+        ASR::stmt_t* doloop = nullptr;
+        for ( int i = (int) loop_vars.size() - 1; i >= 0; i-- ) {
+            // TODO: Add an If debug node to check if the lower and upper bounds of both the arrays are same.
+            ASR::do_loop_head_t head;
+            head.m_v = loop_vars[i];
+            if ( use_custom_loop_params ) {
+                int j = loop_var_indices[i];
+                head.m_start = result_lbound[j];
+                head.m_end = result_ubound[j];
+                head.m_increment = result_inc[j];
+            } else {
+                head.m_start = PassUtils::get_bound(result_var, i + 1, "lbound", al);
+                head.m_end = PassUtils::get_bound(result_var, i + 1, "ubound", al);
+                head.m_increment = nullptr;
+            }
+            head.loc = head.m_v->base.loc;
+            doloop_body.reserve(al, 1);
+            if ( doloop == nullptr ) {
+                loop_body();
+            } else {
+                doloop_body.push_back(al, doloop);
+            }
+            doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head, doloop_body.p, doloop_body.size()));
+        }
+        pass_result.push_back(al, doloop);
+    }
+
     template <typename T>
     void replace_Constant(T* x) {
         if( !(result_var != nullptr && PassUtils::is_array(result_var) &&
@@ -480,11 +520,11 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
         const Location& loc = x->base.base.loc;
         int n_dims = PassUtils::get_rank(result_var);
-        Vec<ASR::expr_t*> idx_vars, loop_vars, idx_vars_value;
+        Vec<ASR::expr_t*> idx_vars, loop_vars;
         std::vector<int> loop_var_indices;
         Vec<ASR::stmt_t*> doloop_body;
-        create_do_loop(loc, n_dims, idx_vars, idx_vars_value,
-            loop_vars, loop_var_indices, doloop_body, result_var,
+        create_do_loop_for_const_val(loc, n_dims, idx_vars,
+            loop_vars, loop_var_indices, doloop_body,
             [=, &idx_vars, &doloop_body] () {
             ASR::expr_t* ref = *current_expr;
             ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al, current_scope);
@@ -676,16 +716,25 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             op_n_dims = x_dims.size();
         }
 
-        ASR::ttype_t* x_m_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
-            ASRUtils::type_get_past_allocatable(ASRUtils::duplicate_type(al,
-            ASRUtils::type_get_past_pointer(x->m_type), &empty_dims))));
-
+        ASR::ttype_t* x_m_type;
+        if (op_expr && ASRUtils::is_simd_array(op_expr)) {
+            x_m_type = ASRUtils::expr_type(op_expr);
+        } else {
+            x_m_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                ASRUtils::type_get_past_allocatable(ASRUtils::duplicate_type(al,
+                ASRUtils::type_get_past_pointer(x->m_type), &empty_dims))));
+        }
         ASR::expr_t* array_section_pointer = PassUtils::create_var(
             result_counter, "_array_section_pointer_", loc,
             x_m_type, al, current_scope);
         result_counter += 1;
-        pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_Associate_t_util(
-            al, loc, array_section_pointer, *current_expr)));
+        if (op_expr && ASRUtils::is_simd_array(op_expr)) {
+            pass_result.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
+                al, loc, array_section_pointer, *current_expr, nullptr)));
+        } else {
+            pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_Associate_t_util(
+                al, loc, array_section_pointer, *current_expr)));
+        }
         *current_expr = array_section_pointer;
 
         // Might get used in other replace_* methods as well.
@@ -700,6 +749,33 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
     template <typename T>
     void replace_ArrayOpCommon(T* x, std::string res_prefix) {
+        bool is_left_simd  = ASRUtils::is_simd_array(x->m_left);
+        bool is_right_simd = ASRUtils::is_simd_array(x->m_right);
+        if ( is_left_simd && is_right_simd ) {
+            return;
+        } else if ( ( is_left_simd && !is_right_simd) ||
+                    (!is_left_simd &&  is_right_simd) ) {
+            ASR::expr_t** current_expr_copy = current_expr;
+            ASR::expr_t* op_expr_copy = op_expr;
+            if (is_left_simd) {
+                // Replace ArraySection, case: a = a + b(:4)
+                if (ASR::is_a<ASR::ArraySection_t>(*x->m_right)) {
+                    current_expr = &(x->m_right);
+                    op_expr = x->m_left;
+                    this->replace_expr(x->m_right);
+                }
+            } else {
+                // Replace ArraySection, case: a = b(:4) + a
+                if (ASR::is_a<ASR::ArraySection_t>(*x->m_left)) {
+                    current_expr = &(x->m_left);
+                    op_expr = x->m_right;
+                    this->replace_expr(x->m_left);
+                }
+            }
+            current_expr = current_expr_copy;
+            op_expr = op_expr_copy;
+            return;
+        }
         const Location& loc = x->base.base.loc;
         bool current_status = use_custom_loop_params;
         use_custom_loop_params = false;
@@ -980,11 +1056,11 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             if (result_var) {
                 int n_dims = PassUtils::get_rank(result_var);
                 if (n_dims != 0) {
-                    Vec<ASR::expr_t*> idx_vars, loop_vars, idx_vars_value;
+                    Vec<ASR::expr_t*> idx_vars, loop_vars;
                     std::vector<int> loop_var_indices;
                     Vec<ASR::stmt_t*> doloop_body;
-                    create_do_loop(loc, n_dims, idx_vars, idx_vars_value,
-                        loop_vars, loop_var_indices, doloop_body, ASRUtils::EXPR((ASR::asr_t*)x),
+                    create_do_loop_for_const_val(loc, n_dims, idx_vars,
+                        loop_vars, loop_var_indices, doloop_body,
                         [=, &idx_vars, &doloop_body] () {
                         ASR::expr_t* ref = ASRUtils::EXPR((ASR::asr_t*)x);
                         ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al, current_scope);
@@ -1546,10 +1622,19 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
         }
 
         void visit_Assignment(const ASR::Assignment_t &x) {
-            if (ASR::is_a<ASR::Array_t>(*ASRUtils::expr_type(x.m_target)) &&
-                ASR::down_cast<ASR::Array_t>(ASRUtils::expr_type(x.m_target))->m_physical_type
-                    == ASR::array_physical_typeType::SIMDArray) {
-                return;
+            if (ASRUtils::is_simd_array(x.m_target)) {
+                size_t n_dims = 1;
+                if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
+                    n_dims = ASRUtils::extract_n_dims_from_ttype(
+                        ASRUtils::expr_type(down_cast<ASR::ArraySection_t>(
+                        x.m_value)->m_v));
+                }
+                if (n_dims == 1) {
+                    if (!ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_value)) {
+                        this->visit_expr(*x.m_value);
+                    }
+                    return;
+                }
             }
             if( (ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_target)) &&
                 ASR::is_a<ASR::GetPointer_t>(*x.m_value)) ||

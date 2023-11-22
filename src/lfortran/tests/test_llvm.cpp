@@ -363,13 +363,6 @@ integer :: f
 f = 5
 end function)";
 
-    LCompilers::LocationManager lm;
-    {
-        LCompilers::LocationManager::FileLocations fl;
-        fl.in_filename = "input.f90";
-        lm.files.push_back(fl);
-    }
-
     // Src -> AST
     Allocator al(4*1024);
     LCompilers::diag::Diagnostics diagnostics;
@@ -396,7 +389,7 @@ end function)";
     co.platform = LCompilers::get_platform();
     LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
         res = LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(), al,
-            lpm, lm, co, "f", "");
+            lpm, co, "f", "");
     REQUIRE(res.ok);
     std::unique_ptr<LCompilers::LLVMModule> m = std::move(res.result);
     //std::cout << "Module:" << std::endl;
@@ -412,13 +405,6 @@ TEST_CASE("ASR -> LLVM 2") {
 integer :: f
 f = 4
 end function)";
-
-    LCompilers::LocationManager lm;
-    {
-        LCompilers::LocationManager::FileLocations fl;
-        fl.in_filename = "input.f90";
-        lm.files.push_back(fl);
-    }
 
     // Src -> AST
     Allocator al(4*1024);
@@ -441,7 +427,7 @@ end function)";
     lpm.do_not_use_optimization_passes();
     LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
         res = LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(), al,
-            lpm, lm, compiler_options, "f", "");
+            lpm, compiler_options, "f", "");
     REQUIRE(res.ok);
     std::unique_ptr<LCompilers::LLVMModule> m = std::move(res.result);
     //std::cout << "Module:" << std::endl;

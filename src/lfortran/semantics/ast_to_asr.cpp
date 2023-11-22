@@ -112,7 +112,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
             LCOMPILERS_ASSERT(diagnostics.has_error());
             throw LCompilersException("Fortran code could not be generated after symbol_table_visitor");
         }
-        std::ofstream outfile ("pass_00_initial_code_01.f90");
+        std::ofstream outfile ("pass_fortran_00_initial_code_01.f90");
         outfile << "! Fortran code after SymbolTable Visitor\n" << fortran_code.result << "\n";
         outfile.close();
     }
@@ -142,7 +142,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
                 LCOMPILERS_ASSERT(diagnostics.has_error());
                 throw LCompilersException("Fortran code could not be generated after body_visitor");
             }
-            std::ofstream outfile ("pass_00_initial_code_02.f90");
+            std::ofstream outfile ("pass_fortran_00_initial_code_02.f90");
             outfile << "! Fortran code after Body Visitor\n" << fortran_code.result << "\n";
             outfile.close();
         }

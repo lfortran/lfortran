@@ -142,8 +142,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         main_func = nullptr;
         avail_mem_loc = 0;
 
-        min_no_pages = 100;  // fixed 6.4 Mb memory currently
-        max_no_pages = 100;  // fixed 6.4 Mb memory currently
+        min_no_pages = 1000;  // fixed 64 Mb memory currently
+        max_no_pages = 1000;  // fixed 64 Mb memory currently
 
         m_compiler_globals.resize(GLOBAL_VARS_CNT);
         m_import_func_idx_map.resize(IMPORT_FUNCS_CNT);
@@ -160,10 +160,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void import_function(ASR::Function_t* fn) {
-        if (ASRUtils::get_FunctionType(fn)->m_abi != ASR::abiType::BindC) return;
-        if (ASRUtils::get_FunctionType(fn)->m_deftype != ASR::deftypeType::Interface) return;
-        if (ASRUtils::get_FunctionType(fn)->m_abi != ASR::abiType::BindC) return;
-        if (ASRUtils::is_intrinsic_function2(fn)) return;
+        if (ASRUtils::get_FunctionType(fn)->m_abi != ASR::abiType::BindJS) return;
 
         emit_function_prototype(*fn);
         m_wa.emit_import_fn("js", fn->m_name,
@@ -184,6 +181,14 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             if (ASR::is_a<ASR::Program_t>(*item.second)) {
                 ASR::Program_t *p = ASR::down_cast<ASR::Program_t>(item.second);
                 for (auto &item : p->m_symtab->get_scope()) {
+                    if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(item.second);
+                        import_function(fn);
+                    }
+                }
+            } else if (ASR::is_a<ASR::Module_t>(*item.second)) {
+                ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(item.second);
+                for (auto &item : m->m_symtab->get_scope()) {
                     if (ASR::is_a<ASR::Function_t>(*item.second)) {
                         ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(item.second);
                         import_function(fn);
@@ -1152,13 +1157,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     bool is_unsupported_function(const ASR::Function_t &x) {
         if (strcmp(x.m_name, "_start") == 0) return false;
 
-        if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC &&
-            ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface) {
-            if (ASRUtils::is_intrinsic_function2(&x)) {
-                diag.codegen_warning_label(
-                    "WASM: C Intrinsic Functions not yet supported",
-                    {x.base.base.loc}, std::string(x.m_name));
-            }
+         if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindJS) {
+            return true;
+         }
+
+        if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC) {
+            // Skip C Intrinsic Functions
             return true;
         }
         for (size_t i = 0; i < x.n_body; i++) {
@@ -1167,13 +1171,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(
                     ASRUtils::symbol_get_past_external(sub_call.m_name));
                 if (ASRUtils::get_FunctionType(s)->m_abi == ASR::abiType::BindC &&
-                    ASRUtils::get_FunctionType(s)->m_deftype == ASR::deftypeType::Interface &&
                     ASRUtils::is_intrinsic_function2(s)) {
-                    diag.codegen_warning_label(
-                        "WASM: Calls to C Intrinsic Functions are not yet "
-                        "supported",
-                        {x.m_body[i]->base.loc},
-                        "Function: calls " + std::string(s->m_name));
+                    // Skip functions that call into C Intrinsic Functions
                     return true;
                 }
             }
@@ -2300,7 +2299,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
     void visit_RealConstant(const ASR::RealConstant_t &x) {
         double val = x.m_r;
-        int a_kind = ((ASR::Real_t *)(&(x.m_type->base)))->m_kind;
+        int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         switch (a_kind) {
             case 4: {
                 m_wa.emit_f32_const(val);
@@ -2319,7 +2318,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
     void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
         bool val = x.m_value;
-        int a_kind = ((ASR::Logical_t *)(&(x.m_type->base)))->m_kind;
+        int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         switch (a_kind) {
             case 4: {
                 m_wa.emit_i32_const(val);
@@ -3202,16 +3201,15 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr,
                                               Allocator &al,
                                               diag::Diagnostics &diagnostics,
-                                              CompilerOptions &co,
-                                              LocationManager &lm) {
+                                              CompilerOptions &co) {
     ASRToWASMVisitor v(al, diagnostics);
 
     co.po.always_run = true;
     std::vector<std::string> passes = {"pass_array_by_data", "array_op",
                 "implied_do_loops", "print_arr", "do_loops", "select_case",
-                "intrinsic_function", "nested_vars", "unused_functions"};
+                "nested_vars", "unused_functions", "intrinsic_function"};
     LCompilers::PassManager pass_manager;
-    pass_manager.apply_passes(al, &asr, passes, co.po, diagnostics, lm);
+    pass_manager.apply_passes(al, &asr, passes, co.po, diagnostics);
 
 
 #ifdef SHOW_ASR
@@ -3231,13 +3229,12 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr,
 
 Result<int> asr_to_wasm(ASR::TranslationUnit_t &asr, Allocator &al,
                         const std::string &filename, bool time_report,
-                        diag::Diagnostics &diagnostics, CompilerOptions &co,
-                        LocationManager &lm) {
+                        diag::Diagnostics &diagnostics, CompilerOptions &co) {
     int time_visit_asr = 0;
     int time_save = 0;
 
     auto t1 = std::chrono::high_resolution_clock::now();
-    Result<Vec<uint8_t>> wasm = asr_to_wasm_bytes_stream(asr, al, diagnostics, co, lm);
+    Result<Vec<uint8_t>> wasm = asr_to_wasm_bytes_stream(asr, al, diagnostics, co);
     auto t2 = std::chrono::high_resolution_clock::now();
     time_visit_asr =
         std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();

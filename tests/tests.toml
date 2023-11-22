@@ -113,6 +113,10 @@ filename = "../integration_tests/template_03b.f90"
 ast = true
 
 [[test]]
+filename = "../integration_tests/template_04.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/template_struct_01.f90"
 asr = true
 ast = true
@@ -533,7 +537,7 @@ filename = "wasm_main_program.f90"
 wat = true
 
 [[test]]
-filename = "wasm_bind_c.f90"
+filename = "wasm_bind_js.f90"
 wat = true
 
 [[test]]
@@ -897,6 +901,10 @@ filename = "array14.f90"
 run = true
 
 [[test]]
+filename = "array15.f90"
+pass = "array_op"
+
+[[test]]
 filename = "../integration_tests/arrays_01.f90"
 cpp = true
 asr = true
@@ -990,7 +998,6 @@ llvm = true
 [[test]]
 filename = "../integration_tests/arrays_op_6.f90"
 asr = true
-llvm = true
 
 [[test]]
 filename = "../integration_tests/arrays_op_7.f90"
@@ -1357,12 +1364,10 @@ llvm = true
 [[test]]
 filename = "../integration_tests/allocate_01.f90"
 asr = true
-llvm = true
 
 [[test]]
 filename = "../integration_tests/allocate_02.f90"
 asr = true
-llvm = true
 
 [[test]]
 filename = "../integration_tests/allocate_03.f90"
@@ -2153,7 +2158,6 @@ llvm = true
 [[test]]
 filename = "../integration_tests/string_04.f90"
 asr = true
-llvm = true
 
 [[test]]
 filename = "../integration_tests/string_10.f90"

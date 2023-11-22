@@ -64,9 +64,11 @@ set(SRC
     pass/pass_compare.cpp
     pass/unique_symbols.cpp
     pass/insert_deallocate.cpp
+    pass/promote_allocatable_to_nonallocatable.cpp
 
     asr_verify.cpp
     asr_utils.cpp
+    casting_utils.cpp
     diagnostics.cpp
     stacktrace.cpp
     string_utils.cpp

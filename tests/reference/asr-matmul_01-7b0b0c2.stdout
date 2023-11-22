@@ -153,6 +153,22 @@
                                     Required
                                     .false.
                                 ),
+                            err:
+                                (Variable
+                                    6
+                                    err
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
                             fma_clock:
                                 (Variable
                                     6
@@ -759,11 +775,8 @@
                         [((Var 6 t2))]
                         ()
                     )
-                    (Print
-                        [(StringConstant
-                            "Error:"
-                            (Character 1 6 ())
-                        )
+                    (=
+                        (Var 6 err)
                         (IntrinsicArrayFunction
                             MaxVal
                             [(IntrinsicScalarFunction
@@ -796,7 +809,15 @@
                             0
                             (Real 4)
                             ()
-                        )]
+                        )
+                        ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "Error:"
+                            (Character 1 6 ())
+                        )
+                        (Var 6 err)]
                         ()
                         ()
                     )
@@ -960,6 +981,22 @@
                         )]
                         ()
                         ()
+                    )
+                    (If
+                        (RealCompare
+                            (Var 6 err)
+                            Gt
+                            (RealConstant
+                                0.000100
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
                     )
                     (Print
                         []
@@ -1001,11 +1038,8 @@
                         [((Var 6 t2))]
                         ()
                     )
-                    (Print
-                        [(StringConstant
-                            "Error:"
-                            (Character 1 6 ())
-                        )
+                    (=
+                        (Var 6 err)
                         (IntrinsicArrayFunction
                             MaxVal
                             [(IntrinsicScalarFunction
@@ -1038,7 +1072,15 @@
                             0
                             (Real 4)
                             ()
-                        )]
+                        )
+                        ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "Error:"
+                            (Character 1 6 ())
+                        )
+                        (Var 6 err)]
                         ()
                         ()
                     )
@@ -1202,6 +1244,22 @@
                         )]
                         ()
                         ()
+                    )
+                    (If
+                        (RealCompare
+                            (Var 6 err)
+                            Gt
+                            (RealConstant
+                                0.000100
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
                     )
                     (ImplicitDeallocate
                         [(Var 6 a)
@@ -2238,35 +2296,46 @@
                                         ())
                                         [(=
                                             (Var 4 a0)
-                                            (ArrayBroadcast
-                                                (ArrayItem
-                                                    (Var 4 a)
-                                                    [(()
-                                                    (Var 4 k)
-                                                    ())
-                                                    (()
-                                                    (IntegerBinOp
-                                                        (Var 4 x)
-                                                        Add
-                                                        (IntegerConstant 0 (Integer 4))
-                                                        (Integer 4)
+                                            (ArrayPhysicalCast
+                                                (ArrayBroadcast
+                                                    (ArrayItem
+                                                        (Var 4 a)
+                                                        [(()
+                                                        (Var 4 k)
+                                                        ())
+                                                        (()
+                                                        (IntegerBinOp
+                                                            (Var 4 x)
+                                                            Add
+                                                            (IntegerConstant 0 (Integer 4))
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ())]
+                                                        (Real 4)
+                                                        ColMajor
                                                         ()
                                                     )
-                                                    ())]
-                                                    (Real 4)
-                                                    ColMajor
-                                                    ()
-                                                )
-                                                (ArrayConstant
-                                                    [(IntegerConstant 8 (Integer 4))]
+                                                    (ArrayConstant
+                                                        [(IntegerConstant 8 (Integer 4))]
+                                                        (Array
+                                                            (Integer 4)
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4)))]
+                                                            FixedSizeArray
+                                                        )
+                                                        ColMajor
+                                                    )
                                                     (Array
-                                                        (Integer 4)
+                                                        (Real 4)
                                                         [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 1 (Integer 4)))]
+                                                        (IntegerConstant 8 (Integer 4)))]
                                                         FixedSizeArray
                                                     )
-                                                    ColMajor
+                                                    ()
                                                 )
+                                                FixedSizeArray
+                                                SIMDArray
                                                 (Array
                                                     (Real 4)
                                                     [((IntegerConstant 1 (Integer 4))
@@ -2381,35 +2450,46 @@
                                         )
                                         (=
                                             (Var 4 a1)
-                                            (ArrayBroadcast
-                                                (ArrayItem
-                                                    (Var 4 a)
-                                                    [(()
-                                                    (Var 4 k)
-                                                    ())
-                                                    (()
-                                                    (IntegerBinOp
-                                                        (Var 4 x)
-                                                        Add
-                                                        (IntegerConstant 1 (Integer 4))
-                                                        (Integer 4)
+                                            (ArrayPhysicalCast
+                                                (ArrayBroadcast
+                                                    (ArrayItem
+                                                        (Var 4 a)
+                                                        [(()
+                                                        (Var 4 k)
+                                                        ())
+                                                        (()
+                                                        (IntegerBinOp
+                                                            (Var 4 x)
+                                                            Add
+                                                            (IntegerConstant 1 (Integer 4))
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ())]
+                                                        (Real 4)
+                                                        ColMajor
                                                         ()
                                                     )
-                                                    ())]
-                                                    (Real 4)
-                                                    ColMajor
-                                                    ()
-                                                )
-                                                (ArrayConstant
-                                                    [(IntegerConstant 8 (Integer 4))]
+                                                    (ArrayConstant
+                                                        [(IntegerConstant 8 (Integer 4))]
+                                                        (Array
+                                                            (Integer 4)
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4)))]
+                                                            FixedSizeArray
+                                                        )
+                                                        ColMajor
+                                                    )
                                                     (Array
-                                                        (Integer 4)
+                                                        (Real 4)
                                                         [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 1 (Integer 4)))]
+                                                        (IntegerConstant 8 (Integer 4)))]
                                                         FixedSizeArray
                                                     )
-                                                    ColMajor
+                                                    ()
                                                 )
+                                                FixedSizeArray
+                                                SIMDArray
                                                 (Array
                                                     (Real 4)
                                                     [((IntegerConstant 1 (Integer 4))
@@ -2524,35 +2604,46 @@
                                         )
                                         (=
                                             (Var 4 a2)
-                                            (ArrayBroadcast
-                                                (ArrayItem
-                                                    (Var 4 a)
-                                                    [(()
-                                                    (Var 4 k)
-                                                    ())
-                                                    (()
-                                                    (IntegerBinOp
-                                                        (Var 4 x)
-                                                        Add
-                                                        (IntegerConstant 2 (Integer 4))
-                                                        (Integer 4)
+                                            (ArrayPhysicalCast
+                                                (ArrayBroadcast
+                                                    (ArrayItem
+                                                        (Var 4 a)
+                                                        [(()
+                                                        (Var 4 k)
+                                                        ())
+                                                        (()
+                                                        (IntegerBinOp
+                                                            (Var 4 x)
+                                                            Add
+                                                            (IntegerConstant 2 (Integer 4))
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ())]
+                                                        (Real 4)
+                                                        ColMajor
                                                         ()
                                                     )
-                                                    ())]
-                                                    (Real 4)
-                                                    ColMajor
-                                                    ()
-                                                )
-                                                (ArrayConstant
-                                                    [(IntegerConstant 8 (Integer 4))]
+                                                    (ArrayConstant
+                                                        [(IntegerConstant 8 (Integer 4))]
+                                                        (Array
+                                                            (Integer 4)
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4)))]
+                                                            FixedSizeArray
+                                                        )
+                                                        ColMajor
+                                                    )
                                                     (Array
-                                                        (Integer 4)
+                                                        (Real 4)
                                                         [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 1 (Integer 4)))]
+                                                        (IntegerConstant 8 (Integer 4)))]
                                                         FixedSizeArray
                                                     )
-                                                    ColMajor
+                                                    ()
                                                 )
+                                                FixedSizeArray
+                                                SIMDArray
                                                 (Array
                                                     (Real 4)
                                                     [((IntegerConstant 1 (Integer 4))
@@ -2667,35 +2758,46 @@
                                         )
                                         (=
                                             (Var 4 a3)
-                                            (ArrayBroadcast
-                                                (ArrayItem
-                                                    (Var 4 a)
-                                                    [(()
-                                                    (Var 4 k)
-                                                    ())
-                                                    (()
-                                                    (IntegerBinOp
-                                                        (Var 4 x)
-                                                        Add
-                                                        (IntegerConstant 3 (Integer 4))
-                                                        (Integer 4)
+                                            (ArrayPhysicalCast
+                                                (ArrayBroadcast
+                                                    (ArrayItem
+                                                        (Var 4 a)
+                                                        [(()
+                                                        (Var 4 k)
+                                                        ())
+                                                        (()
+                                                        (IntegerBinOp
+                                                            (Var 4 x)
+                                                            Add
+                                                            (IntegerConstant 3 (Integer 4))
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ())]
+                                                        (Real 4)
+                                                        ColMajor
                                                         ()
                                                     )
-                                                    ())]
-                                                    (Real 4)
-                                                    ColMajor
-                                                    ()
-                                                )
-                                                (ArrayConstant
-                                                    [(IntegerConstant 8 (Integer 4))]
+                                                    (ArrayConstant
+                                                        [(IntegerConstant 8 (Integer 4))]
+                                                        (Array
+                                                            (Integer 4)
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4)))]
+                                                            FixedSizeArray
+                                                        )
+                                                        ColMajor
+                                                    )
                                                     (Array
-                                                        (Integer 4)
+                                                        (Real 4)
                                                         [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 1 (Integer 4)))]
+                                                        (IntegerConstant 8 (Integer 4)))]
                                                         FixedSizeArray
                                                     )
-                                                    ColMajor
+                                                    ()
                                                 )
+                                                FixedSizeArray
+                                                SIMDArray
                                                 (Array
                                                     (Real 4)
                                                     [((IntegerConstant 1 (Integer 4))
@@ -2810,35 +2912,46 @@
                                         )
                                         (=
                                             (Var 4 a4)
-                                            (ArrayBroadcast
-                                                (ArrayItem
-                                                    (Var 4 a)
-                                                    [(()
-                                                    (Var 4 k)
-                                                    ())
-                                                    (()
-                                                    (IntegerBinOp
-                                                        (Var 4 x)
-                                                        Add
-                                                        (IntegerConstant 4 (Integer 4))
-                                                        (Integer 4)
+                                            (ArrayPhysicalCast
+                                                (ArrayBroadcast
+                                                    (ArrayItem
+                                                        (Var 4 a)
+                                                        [(()
+                                                        (Var 4 k)
+                                                        ())
+                                                        (()
+                                                        (IntegerBinOp
+                                                            (Var 4 x)
+                                                            Add
+                                                            (IntegerConstant 4 (Integer 4))
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ())]
+                                                        (Real 4)
+                                                        ColMajor
                                                         ()
                                                     )
-                                                    ())]
-                                                    (Real 4)
-                                                    ColMajor
-                                                    ()
-                                                )
-                                                (ArrayConstant
-                                                    [(IntegerConstant 8 (Integer 4))]
+                                                    (ArrayConstant
+                                                        [(IntegerConstant 8 (Integer 4))]
+                                                        (Array
+                                                            (Integer 4)
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4)))]
+                                                            FixedSizeArray
+                                                        )
+                                                        ColMajor
+                                                    )
                                                     (Array
-                                                        (Integer 4)
+                                                        (Real 4)
                                                         [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 1 (Integer 4)))]
+                                                        (IntegerConstant 8 (Integer 4)))]
                                                         FixedSizeArray
                                                     )
-                                                    ColMajor
+                                                    ()
                                                 )
+                                                FixedSizeArray
+                                                SIMDArray
                                                 (Array
                                                     (Real 4)
                                                     [((IntegerConstant 1 (Integer 4))
@@ -2953,35 +3066,46 @@
                                         )
                                         (=
                                             (Var 4 a5)
-                                            (ArrayBroadcast
-                                                (ArrayItem
-                                                    (Var 4 a)
-                                                    [(()
-                                                    (Var 4 k)
-                                                    ())
-                                                    (()
-                                                    (IntegerBinOp
-                                                        (Var 4 x)
-                                                        Add
-                                                        (IntegerConstant 5 (Integer 4))
-                                                        (Integer 4)
+                                            (ArrayPhysicalCast
+                                                (ArrayBroadcast
+                                                    (ArrayItem
+                                                        (Var 4 a)
+                                                        [(()
+                                                        (Var 4 k)
+                                                        ())
+                                                        (()
+                                                        (IntegerBinOp
+                                                            (Var 4 x)
+                                                            Add
+                                                            (IntegerConstant 5 (Integer 4))
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ())]
+                                                        (Real 4)
+                                                        ColMajor
                                                         ()
                                                     )
-                                                    ())]
-                                                    (Real 4)
-                                                    ColMajor
-                                                    ()
-                                                )
-                                                (ArrayConstant
-                                                    [(IntegerConstant 8 (Integer 4))]
+                                                    (ArrayConstant
+                                                        [(IntegerConstant 8 (Integer 4))]
+                                                        (Array
+                                                            (Integer 4)
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4)))]
+                                                            FixedSizeArray
+                                                        )
+                                                        ColMajor
+                                                    )
                                                     (Array
-                                                        (Integer 4)
+                                                        (Real 4)
                                                         [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 1 (Integer 4)))]
+                                                        (IntegerConstant 8 (Integer 4)))]
                                                         FixedSizeArray
                                                     )
-                                                    ColMajor
+                                                    ()
                                                 )
+                                                FixedSizeArray
+                                                SIMDArray
                                                 (Array
                                                     (Real 4)
                                                     [((IntegerConstant 1 (Integer 4))

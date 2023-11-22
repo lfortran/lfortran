@@ -73,6 +73,14 @@ struct Stacktrace {
 
 #endif // HAVE_RUNTIME_STACKTRACE
 
+#ifdef HAVE_LFORTRAN_MACHO
+    #define INT64 "%lld"
+#elif HAVE_BUILD_TO_WASM
+    #define INT64 "%lld"
+#else
+    #define INT64 "%ld"
+#endif
+
 // This function performs case insensitive string comparison
 bool streql(const char *s1, const char* s2) {
 #if defined(_MSC_VER)
@@ -98,6 +106,16 @@ LFORTRAN_API void _lfortran_random_number(int n, double *v)
     for (i=0; i < n; i++) {
         v[i] = rand() / (double) RAND_MAX;
     }
+}
+
+LFORTRAN_API void _lfortran_init_random_seed(unsigned seed)
+{
+    srand(seed);
+}
+
+LFORTRAN_API void _lfortran_init_random_clock()
+{
+    srand((unsigned int)clock());
 }
 
 LFORTRAN_API double _lfortran_random()
@@ -289,6 +307,12 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
         i--;
     }
 
+    int exp = 2;
+    char* exp_loc = strchr(num_pos, 'e');
+    if (exp_loc != NULL) {
+        exp = atoi(++exp_loc);
+    }
+
     char* ptr = strchr(val_str, '.');
     if (ptr != NULL) {
         memmove(ptr, ptr + 1, strlen(ptr));
@@ -303,7 +327,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
         memmove(val_str, val_str + 1, strlen(val_str));
         decimal--;
     }
-    if (format[1] == 'S') {
+    if (tolower(format[1]) == 's') {
         scale = 1;
         decimal--;
     }
@@ -387,7 +411,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     if (atoi(num_pos) == 0) {
         sprintf(exponent, "%+02d", (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
     } else {
-        sprintf(exponent, "%+03d", (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
+        sprintf(exponent, "%+0*d", exp+1, (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
     }
 
     strcat(formatted_value, exponent);
@@ -426,6 +450,9 @@ char** parse_fortran_format(char* format, int *count, int *item_start) {
             case '/' :
                 format_values_2[format_values_count++] = substring(format, index, index+1);
                 break;
+            case '*' :
+                format_values_2[format_values_count++] = substring(format, index, index+1);
+                break;
             case '"' :
                 start = index++;
                 while (format[index] != '"') {
@@ -454,10 +481,18 @@ char** parse_fortran_format(char* format, int *count, int *item_start) {
             case 'e' :
             case 'f' :
                 start = index++;
+                bool dot = false;
                 if(tolower(format[index]) == 's') index++;
                 while (isdigit(format[index])) index++;
-                if (format[index] == '.') index++;
+                if (format[index] == '.') {
+                    dot = true;
+                    index++;
+                }
                 while (isdigit(format[index])) index++;
+                if (dot && tolower(format[index]) == 'e') {
+                    index++;
+                    while (isdigit(format[index])) index++;
+                }
                 format_values_2[format_values_count++] = substring(format, start, index);
                 index--;
                 break;
@@ -526,6 +561,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
     char* result = (char*)malloc(sizeof(char));
     result[0] = '\0';
     int item_start = 0;
+    bool array = false;
     while (1) {
         int scale = 0;
         for (int i = item_start; i < format_values_count; i++) {
@@ -559,6 +595,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
 
             if (value[0] == '/') {
                 result = append_to_string(result, "\n");
+            } else if (value[0] == '*') {
+                array = true;
             } else if (isdigit(value[0]) && tolower(value[1]) == 'p') {
                 // Scale Factor nP
                 scale = atoi(&value[0]);
@@ -624,7 +662,9 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
 
         }
         if ( count > 0 ) {
-            result = append_to_string(result, "\n");
+            if (!array) {
+                result = append_to_string(result, "\n");
+            }
             item_start = item_start_idx;
         } else {
             break;
@@ -1184,6 +1224,38 @@ LFORTRAN_API double_complex_t _lfortran_zatanh(double_complex_t x)
     return catanh(x);
 }
 
+// trunc -----------------------------------------------------------------------
+
+LFORTRAN_API float _lfortran_strunc(float x)
+{
+    return truncf(x);
+}
+
+LFORTRAN_API double _lfortran_dtrunc(double x)
+{
+    return trunc(x);
+}
+
+// fix -----------------------------------------------------------------------
+
+LFORTRAN_API float _lfortran_sfix(float x)
+{
+    if (x > 0.0) {
+        return floorf(x);
+    } else {
+        return ceilf(x);
+    }
+}
+
+LFORTRAN_API double _lfortran_dfix(double x)
+{
+    if (x > 0.0) {
+        return floor(x);
+    } else {
+        return ceil(x);
+    }
+}
+
 // phase --------------------------------------------------------------------
 
 LFORTRAN_API float _lfortran_cphase(float_complex_t x)
@@ -1226,10 +1298,10 @@ LFORTRAN_API void _lfortran_strcpy(char** x, char *y, int8_t free_target)
         if (*x) {
             free((void *)*x);
         }
-        *x = (char *) malloc(strlen(y)*sizeof(char));
-        _lfortran_string_init(strlen(y)+1, *x);
     }
-    for (size_t i = 0; i < strlen(*x); i ++) {
+    *x = (char*) malloc((strlen(y) + 1) * sizeof(char));
+    _lfortran_string_init(strlen(y) + 1, *x);
+    for (size_t i = 0; i < strlen(*x); i++) {
         if (i < strlen(y)) {
             x[0][i] = y[i];
         } else {
@@ -2072,7 +2144,7 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
 {
     if (unit_num == -1) {
         // Read from stdin
-        scanf("%d", p);
+        (void)!scanf("%d", p);
         return;
     }
 
@@ -2084,9 +2156,9 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
     }
 
     if (unit_file_bin) {
-        fread(p, sizeof(*p), 1, filep);
+        (void)!fread(p, sizeof(*p), 1, filep);
     } else {
-        fscanf(filep, "%d", p);
+        (void)!fscanf(filep, "%d", p);
     }
 }
 
@@ -2094,7 +2166,7 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num)
 {
     if (unit_num == -1) {
         // Read from stdin
-        scanf("%lld", p);
+        (void)!scanf(INT64, p);
         return;
     }
 
@@ -2106,9 +2178,9 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num)
     }
 
     if (unit_file_bin) {
-        fread(p, sizeof(*p), 1, filep);
+        (void)!fread(p, sizeof(*p), 1, filep);
     } else {
-        fscanf(filep, "%lld", p);
+        (void)!fscanf(filep, INT64, p);
     }
 }
 
@@ -2117,7 +2189,7 @@ LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t u
     if (unit_num == -1) {
         // Read from stdin
         for (int i = 0; i < array_size; i++) {
-            scanf("%s", &p[i]);
+            (void)!scanf("%s", &p[i]);
         }
         return;
     }
@@ -2130,10 +2202,10 @@ LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t u
     }
 
     if (unit_file_bin) {
-        fread(p, sizeof(int8_t), array_size, filep);
+        (void)!fread(p, sizeof(int8_t), array_size, filep);
     } else {
         for (int i = 0; i < array_size; i++) {
-            fscanf(filep, "%s", &p[i]);
+            (void)!fscanf(filep, "%s", &p[i]);
         }
     }
 }
@@ -2143,7 +2215,7 @@ LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t
     if (unit_num == -1) {
         // Read from stdin
         for (int i = 0; i < array_size; i++) {
-            scanf("%d", &p[i]);
+            (void)!scanf("%d", &p[i]);
         }
         return;
     }
@@ -2156,10 +2228,10 @@ LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t
     }
 
     if (unit_file_bin) {
-        fread(p, sizeof(int32_t), array_size, filep);
+        (void)!fread(p, sizeof(int32_t), array_size, filep);
     } else {
         for (int i = 0; i < array_size; i++) {
-            fscanf(filep, "%d", &p[i]);
+            (void)!fscanf(filep, "%d", &p[i]);
         }
     }
 }
@@ -2169,7 +2241,7 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
     if (unit_num == -1) {
         // Read from stdin
         *p = (char*)malloc(strlen(*p) * sizeof(char));
-        scanf("%s", *p);
+        (void)!scanf("%s", *p);
         return;
     }
 
@@ -2183,9 +2255,9 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
     int n = strlen(*p);
     *p = (char*)malloc(n * sizeof(char));
     if (unit_file_bin) {
-        fread(*p, sizeof(char), n, filep);
+        (void)!fread(*p, sizeof(char), n, filep);
     } else {
-        fscanf(filep, "%s", *p);
+        (void)!fscanf(filep, "%s", *p);
     }
     if (streql(*p, "")) {
         printf("Runtime error: End of file!\n");
@@ -2197,7 +2269,7 @@ LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num)
 {
     if (unit_num == -1) {
         // Read from stdin
-        scanf("%f", p);
+        (void)!scanf("%f", p);
         return;
     }
 
@@ -2209,9 +2281,9 @@ LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num)
     }
 
     if (unit_file_bin) {
-        fread(p, sizeof(*p), 1, filep);
+        (void)!fread(p, sizeof(*p), 1, filep);
     } else {
-        fscanf(filep, "%f", p);
+        (void)!fscanf(filep, "%f", p);
     }
 }
 
@@ -2220,7 +2292,7 @@ LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t u
     if (unit_num == -1) {
         // Read from stdin
         for (int i = 0; i < array_size; i++) {
-            scanf("%f", &p[i]);
+            (void)!scanf("%f", &p[i]);
         }
         return;
     }
@@ -2233,10 +2305,10 @@ LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t u
     }
 
     if (unit_file_bin) {
-        fread(p, sizeof(float), array_size, filep);
+        (void)!fread(p, sizeof(float), array_size, filep);
     } else {
         for (int i = 0; i < array_size; i++) {
-            fscanf(filep, "%f", &p[i]);
+            (void)!fscanf(filep, "%f", &p[i]);
         }
     }
 }
@@ -2246,7 +2318,7 @@ LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t
     if (unit_num == -1) {
         // Read from stdin
         for (int i = 0; i < array_size; i++) {
-            scanf("%lf", &p[i]);
+            (void)!scanf("%lf", &p[i]);
         }
         return;
     }
@@ -2259,10 +2331,10 @@ LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t
     }
 
     if (unit_file_bin) {
-        fread(p, sizeof(double), array_size, filep);
+        (void)!fread(p, sizeof(double), array_size, filep);
     } else {
         for (int i = 0; i < array_size; i++) {
-            fscanf(filep, "%lf", &p[i]);
+            (void)!fscanf(filep, "%lf", &p[i]);
         }
     }
 }
@@ -2274,7 +2346,7 @@ LFORTRAN_API void _lfortran_read_array_char(char **p, int array_size, int32_t un
         for (int i = 0; i < array_size; i++) {
             int n = 1; // TODO: Support character length > 1
             p[i] = (char*) malloc(n * sizeof(char));
-            scanf("%s", p[i]);
+            (void)!scanf("%s", p[i]);
         }
         return;
     }
@@ -2290,9 +2362,9 @@ LFORTRAN_API void _lfortran_read_array_char(char **p, int array_size, int32_t un
         int n = 1; // TODO: Support character length > 1
         p[i] = (char*) malloc(n * sizeof(char));
         if (unit_file_bin) {
-            fread(p[i], sizeof(char), n, filep);
+            (void)!fread(p[i], sizeof(char), n, filep);
         } else {
-            fscanf(filep, "%s", p[i]);
+            (void)!fscanf(filep, "%s", p[i]);
         }
     }
 }
@@ -2301,7 +2373,7 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num)
 {
     if (unit_num == -1) {
         // Read from stdin
-        scanf("%lf", p);
+        (void)!scanf("%lf", p);
         return;
     }
 
@@ -2313,9 +2385,9 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num)
     }
 
     if (unit_file_bin) {
-        fread(p, sizeof(*p), 1, filep);
+        (void)!fread(p, sizeof(*p), 1, filep);
     } else {
-        fscanf(filep, "%lf", p);
+        (void)!fscanf(filep, "%lf", p);
     }
 }
 
@@ -2410,7 +2482,7 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, const char *format, ...
     vfprintf(filep, format, args);
     va_end(args);
 
-    ftruncate(fileno(filep), ftell(filep));
+    (void)!ftruncate(fileno(filep), ftell(filep));
 }
 
 LFORTRAN_API void _lfortran_string_write(char **str, const char *format, ...) {

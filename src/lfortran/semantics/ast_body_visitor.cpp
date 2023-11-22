@@ -567,7 +567,8 @@ public:
                     body.reserve(al, 1);
                     body.push_back(al, ASRUtils::STMT(
                         ASR::make_FileWrite_t(al, loc, 0, a_unit,
-                        nullptr, nullptr, nullptr, nullptr, 0, nullptr, newline)));
+                        nullptr, nullptr, nullptr,
+                        nullptr, 0, nullptr, newline)));
                     // TODO: Compare with "no" (case-insensitive) in else part
                     // Throw runtime error if advance expression does not match "no"
                     tmp_vec.push_back(ASR::make_If_t(al, loc, test, body.p,
@@ -596,7 +597,8 @@ public:
             if (format_statements.find(label) == format_statements.end()) {
                 if( _type == AST::stmtType::Write ) {
                     tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
-                                            a_iomsg, a_iostat, a_id, a_values_vec.p, a_values_vec.size(), a_separator, a_end);
+                        a_iomsg, a_iostat, a_id, a_values_vec.p,
+                        a_values_vec.size(), a_separator, a_end);
                     print_statements[tmp] = std::make_pair(&w->base,label);
                 } else if( _type == AST::stmtType::Read ) {
                     tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
@@ -621,7 +623,8 @@ public:
             write_args.push_back(al, string_format);
             if( _type == AST::stmtType::Write ) {
                 tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
-                                        a_iomsg, a_iostat, a_id, write_args.p, write_args.size(), a_separator, a_end);
+                    a_iomsg, a_iostat, a_id, write_args.p,
+                    write_args.size(), a_separator, a_end);
             } else if( _type == AST::stmtType::Read ) {
                 tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
                                     a_iomsg, a_iostat, a_id, write_args.p, write_args.size());
@@ -629,7 +632,8 @@ public:
         } else {
             if( _type == AST::stmtType::Write ) {
                 tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
-                                        a_iomsg, a_iostat, a_id, a_values_vec.p, a_values_vec.size(), a_separator, a_end);
+                    a_iomsg, a_iostat, a_id, a_values_vec.p,
+                    a_values_vec.size(), a_separator, a_end);
             } else if( _type == AST::stmtType::Read ) {
                 tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
                                     a_iomsg, a_iostat, a_id, a_values_vec.p, a_values_vec.size());

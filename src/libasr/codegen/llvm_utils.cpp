@@ -1147,6 +1147,11 @@ namespace LCompilers {
                                             v_type->m_dims, v_type->n_dims));
                         break;
                     }
+                    case ASR::array_physical_typeType::SIMDArray: {
+                        llvm_type = llvm::VectorType::get(get_el_type(v_type->m_type, module),
+                            ASRUtils::get_fixed_size_of_array(v_type->m_dims, v_type->n_dims), false);
+                        break;
+                    }
                     default: {
                         LCOMPILERS_ASSERT(false);
                     }

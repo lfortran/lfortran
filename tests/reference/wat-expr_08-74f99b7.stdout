@@ -337,7 +337,7 @@
         call 6
         return
     )
-    (memory (;0;) 100 100)
+    (memory (;0;) 1000 1000)
     (export "memory" (memory 0))
     (export "kind" (func 2))
     (export "_lcompilers_abs_f32" (func 3))
