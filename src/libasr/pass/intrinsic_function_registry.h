@@ -50,6 +50,7 @@ enum class IntrinsicScalarFunctions : int64_t {
     Mod,
     Trailz,
     MinExponent,
+    MaxExponent,
     FloorDiv,
     ListIndex,
     Partition,
@@ -125,6 +126,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Mod)
         INTRINSIC_NAME_CASE(Trailz)
         INTRINSIC_NAME_CASE(MinExponent)
+        INTRINSIC_NAME_CASE(MaxExponent)
         INTRINSIC_NAME_CASE(ListIndex)
         INTRINSIC_NAME_CASE(Partition)
         INTRINSIC_NAME_CASE(ListReverse)
@@ -2555,6 +2557,76 @@ namespace MinExponent {
 
 } // namespace MinExponent
 
+namespace MaxExponent {
+
+     static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 1,
+            "ASR Verify: Call to maxexponent must have exactly 1 argument",
+            x.base.base.loc, diagnostics);
+        ASR::ttype_t *type1 = ASRUtils::expr_type(x.m_args[0]);
+        ASRUtils::require_impl(is_real(*type1),
+            "ASR Verify: Arguments to maxexponent must be of real type",
+            x.base.base.loc, diagnostics);
+    }
+
+    static ASR::expr_t *eval_MaxExponent(Allocator &al, const Location &loc,
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args) {
+        ASR::RealConstant_t* a = ASR::down_cast<ASR::RealConstant_t>(args[0]);
+        int m_kind = ASRUtils::extract_kind_from_ttype_t(a->m_type);
+        int result;
+        if (m_kind == 4) {
+            result = std::numeric_limits<float>::max_exponent;
+        } else {
+            result = std::numeric_limits<double>::max_exponent;
+        }
+        return make_ConstantWithType(make_IntegerConstant_t, result, int32, loc);
+
+    }
+
+    static inline ASR::asr_t* create_MaxExponent(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args,
+            const std::function<void (const std::string &, const Location &)> err) {
+        if (args.size() != 1) {
+            err("Intrinsic maxexponent function accepts exactly 1 arguments", loc);
+        }
+        ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
+        if (!(ASRUtils::is_real(*type1))) {
+            err("Argument of the maxexponent function must be Real",
+                args[0]->base.loc);
+        }
+        ASR::expr_t *m_value = nullptr;
+        if (all_args_evaluated(args)) {
+            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 1);
+            arg_values.push_back(al, expr_value(args[0]));
+            m_value = eval_MaxExponent(al, loc, expr_type(args[0]), arg_values);
+        }
+        return ASR::make_IntrinsicScalarFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicScalarFunctions::MaxExponent),
+            args.p, args.n, 0, int32, m_value);
+    }
+
+    static inline ASR::expr_t* instantiate_MaxExponent(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_optimization_maxexponent_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(fn_name, int32, ReturnVar);
+
+        int m_kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
+        if (m_kind == 4) {
+            body.push_back(al, b.Assignment(result, i32(128)));
+        } else {
+            body.push_back(al, b.Assignment(result, i32(1024)));
+        }
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace MaxExponent
+
 #define create_exp_macro(X, stdeval)                                                      \
 namespace X {                                                                             \
     static inline ASR::expr_t* eval_##X(Allocator &al, const Location &loc,               \
@@ -3741,6 +3813,8 @@ namespace IntrinsicScalarFunctionRegistry {
             {&Trailz::instantiate_Trailz, &Trailz::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::MinExponent),
             {&MinExponent::instantiate_MinExponent, &MinExponent::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::MaxExponent),
+            {&MaxExponent::instantiate_MaxExponent, &MaxExponent::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Abs),
             {&Abs::instantiate_Abs, &Abs::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Partition),
@@ -3871,6 +3945,8 @@ namespace IntrinsicScalarFunctionRegistry {
             "trailz"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::MinExponent),
             "minexponent"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::MaxExponent),
+            "maxexponent"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Expm1),
             "expm1"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::ListIndex),
@@ -3979,6 +4055,7 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"mod", {&Mod::create_Mod, &Mod::eval_Mod}},
                 {"trailz", {&Trailz::create_Trailz, &Trailz::eval_Trailz}},
                 {"minexponent", {&MinExponent::create_MinExponent, &MinExponent::eval_MinExponent}},
+                {"maxexponent", {&MaxExponent::create_MaxExponent, &MaxExponent::eval_MaxExponent}},
                 {"list.index", {&ListIndex::create_ListIndex, &ListIndex::eval_list_index}},
                 {"list.reverse", {&ListReverse::create_ListReverse, &ListReverse::eval_list_reverse}},
                 {"list.pop", {&ListPop::create_ListPop, &ListPop::eval_list_pop}},
