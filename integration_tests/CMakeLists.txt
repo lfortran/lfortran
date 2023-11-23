@@ -551,6 +551,8 @@ RUN(NAME intrinsics_80 LABELS gfortran llvm) # sum
 RUN(NAME intrinsics_81 LABELS gfortran llvm) # maxval
 RUN(NAME intrinsics_82 LABELS gfortran llvm) #array support tan, cosh, sinh, tanh
 RUN(NAME intrinsics_83 LABELS gfortran llvm) # kind
+RUN(NAME intrinsics_84 LABELS gfortran llvm) # minexponent
+RUN(NAME intrinsics_85 LABELS gfortran llvm) # maxexponent
 
 
 RUN(NAME parameter_01 LABELS gfortran)
