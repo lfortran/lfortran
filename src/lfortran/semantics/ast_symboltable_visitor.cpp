@@ -1871,6 +1871,8 @@ public:
                 Str s;
                 s.from_str_view(correct_pname);
                 char *name = s.c_str(al);
+                // lower case the name
+                name = s2c(al, to_lower(name));
                 x = resolve_symbol(loc, name);
                 symbols.push_back(al, x);
             }
