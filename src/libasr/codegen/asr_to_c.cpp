@@ -1218,7 +1218,6 @@ R"(    // Initialise Numpy
             We need to generate:
             a = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
         */
-        CHECK_FAST_C(compiler_options, x)
         size_t size = ASRUtils::get_fixed_size_of_array(x.m_type);
         std::string array_const_str = "{";
         for( size_t i = 0; i < size; i++ ) {

@@ -703,7 +703,7 @@ namespace LCompilers {
             PassOptions& pass_options) {
             int64_t fma_id = static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::FMA);
             ASR::ttype_t* type = ASRUtils::expr_type(arg0);
-            if (skip_instantiation(pass_options, fma_id)) {
+            if (skip_instantiation(pass_options, fma_id) || ASRUtils::is_simd_array(arg0)) {
                 Vec<ASR::expr_t*> args;
                 args.reserve(al, 3);
                 args.push_back(al, arg0);
