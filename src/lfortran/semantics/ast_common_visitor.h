@@ -2667,6 +2667,10 @@ public:
         }
         if (sym_type->m_type == AST::decl_typeType::TypeReal) {
             if(sym_type->m_kind) {
+                if (!sym_type->m_kind->m_value && sym_type->m_kind->m_type == AST::kind_item_typeType::Star) {
+                    throw SemanticError("Expected initialization expression for kind",
+                                    sym_type->m_kind->loc);
+                }
                 this->visit_expr(*sym_type->m_kind->m_value);
                 ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
                 int kind_value = ASRUtils::extract_kind<SemanticError>(kind_expr, loc);

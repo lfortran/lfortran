@@ -3317,6 +3317,10 @@ filename = "errors/kind1.f90"
 asr = true
 
 [[test]]
+filename = "errors/kind2.f90"
+asr = true
+
+[[test]]
 filename = "errors/intent1.f90"
 asr = true
 
