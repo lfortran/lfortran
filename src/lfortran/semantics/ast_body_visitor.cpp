@@ -1665,7 +1665,7 @@ public:
 
         } else {
             stmt = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al,loc, master_function_sym,
-                                        master_function_sym, args.p, args.n, nullptr, nullptr, compiler_options.implicit_argument_casting));
+                                        master_function_sym, args.p, args.n, nullptr, nullptr, compiler_options.implicit_argument_casting, false));
         }
         LCOMPILERS_ASSERT(stmt != nullptr);
 
@@ -2597,6 +2597,7 @@ public:
             }
         }
         ASR::symbol_t *final_sym=nullptr;
+        bool nopass = false;
         switch (original_sym->type) {
             case (ASR::symbolType::Function) : {
                 f = ASR::down_cast<ASR::Function_t>(original_sym);
@@ -2768,6 +2769,11 @@ public:
                     } else {
                         final_sym = current_scope->get_symbol(local_sym);
                     }
+                } else if (ASR::is_a<ASR::ClassProcedure_t>(*final_sym)) {
+                    ASR::ClassProcedure_t* class_proc = ASR::down_cast<ASR::ClassProcedure_t>(final_sym);
+                    nopass = class_proc->m_is_nopass;
+                    final_sym = original_sym;
+                    original_sym = nullptr;
                 } else {
                     if (!ASR::is_a<ASR::Function_t>(*final_sym) &&
                         !ASR::is_a<ASR::ClassProcedure_t>(*final_sym)) {
@@ -2832,11 +2838,11 @@ public:
         }
         ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
         if( f ) {
-            ASRUtils::set_absent_optional_arguments_to_null(args, f, al, v_expr);
+            ASRUtils::set_absent_optional_arguments_to_null(args, f, al, v_expr, nopass);
         }
         ASR::stmt_t* cast_stmt = nullptr;
         tmp = ASRUtils::make_SubroutineCall_t_util(al, x.base.base.loc,
-                final_sym, original_sym, args.p, args.size(), v_expr, &cast_stmt, compiler_options.implicit_argument_casting);
+                final_sym, original_sym, args.p, args.size(), v_expr, &cast_stmt, compiler_options.implicit_argument_casting, nopass);
 
         if (cast_stmt != nullptr) {
             current_body->push_back(al, cast_stmt);
