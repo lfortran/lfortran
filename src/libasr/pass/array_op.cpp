@@ -1869,7 +1869,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                             ASR::call_arg_t ref_arg; ref_arg.loc = array_item->base.loc; ref_arg.m_value = array_item;
                             ref_args.push_back(al, ref_arg);
                             ASR::stmt_t* subroutine_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, x.base.base.loc,
-                                                    x.m_name, x.m_original_name, ref_args.p, ref_args.n, nullptr, nullptr, false, x.m_nopass));
+                                                    x.m_name, x.m_original_name, ref_args.p, ref_args.n, nullptr, nullptr, false, ASRUtils::get_class_proc_nopass_val(x.m_name)));
                             doloop_body.push_back(al, subroutine_call);
                         });
                         remove_original_statement = true;

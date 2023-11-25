@@ -432,6 +432,15 @@ static inline char *symbol_name(const ASR::symbol_t *f)
     }
 }
 
+static inline bool get_class_proc_nopass_val(ASR::symbol_t* func_sym) {
+    func_sym = ASRUtils::symbol_get_past_external(func_sym);
+    bool nopass = false;
+    if (ASR::is_a<ASR::ClassProcedure_t>(*func_sym)) {
+        nopass = ASR::down_cast<ASR::ClassProcedure_t>(func_sym)->m_is_nopass;
+    }
+    return nopass;
+}
+
 static inline void encode_dimensions(size_t n_dims, std::string& res,
     bool use_underscore_sep=false) {
     if( n_dims == 0 ) {

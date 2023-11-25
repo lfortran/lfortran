@@ -441,7 +441,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
 
         ASR::SubroutineCall_t& xx = const_cast<ASR::SubroutineCall_t&>(x);
         ASRUtils::Call_t_body(al, xx.m_name, xx.m_args, xx.n_args, x.m_dt,
-            nullptr, false, x.m_nopass);
+            nullptr, false, ASRUtils::get_class_proc_nopass_val(x.m_name));
     }
 
     void visit_Array(const ASR::Array_t& /*x*/) {

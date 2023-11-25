@@ -440,7 +440,7 @@ class ReplaceSubroutineCallsWithOptionalArgumentsVisitor : public PassUtils::Pas
             pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al,
                                     x.base.base.loc, x.m_name, x.m_original_name,
                                     new_args.p, new_args.size(), x.m_dt,
-                                    nullptr, false, x.m_nopass)));
+                                    nullptr, false, ASRUtils::get_class_proc_nopass_val(x.m_name))));
         }
 };
 
