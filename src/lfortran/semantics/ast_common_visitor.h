@@ -4850,18 +4850,25 @@ public:
                     var_type = ASRUtils::duplicate_type_with_empty_dims(al, var_type,
                         ASR::array_physical_typeType::PointerToDataArray, true);
                 } else if (ASR::is_a<ASR::ArrayItem_t>(*var_expr) && compiler_options.legacy_array_sections) {
-                    ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(var_expr);
-                    size_t n_dims = array_item->n_args;
-                    Vec<ASR::dimension_t> empty_dims;
-                    empty_dims.reserve(al, n_dims);
-                    for( size_t i = 0; i < n_dims; i++ ) {
-                        ASR::dimension_t empty_dim;
-                        empty_dim.loc = var_type->base.loc;
-                        empty_dim.m_start = nullptr;
-                        empty_dim.m_length = nullptr;
-                        empty_dims.push_back(al, empty_dim);
+                    ASR::symbol_t* func_sym = parent_scope->resolve_symbol(func_name);
+                    ASR::Function_t* func = nullptr;
+                    if (func_sym) {
+                        func = ASR::down_cast<ASR::Function_t>(func_sym);
                     }
-                    var_type = ASRUtils::duplicate_type(al, var_type, &empty_dims, ASR::array_physical_typeType::DescriptorArray, true);
+                    if (func && func->n_args > 0 && func->n_args <= x.n_args && ASRUtils::is_array(ASRUtils::expr_type(func->m_args[i]))) {
+                        ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(var_expr);
+                        size_t n_dims = array_item->n_args;
+                        Vec<ASR::dimension_t> empty_dims;
+                        empty_dims.reserve(al, n_dims);
+                        for( size_t i = 0; i < n_dims; i++ ) {
+                            ASR::dimension_t empty_dim;
+                            empty_dim.loc = var_type->base.loc;
+                            empty_dim.m_start = nullptr;
+                            empty_dim.m_length = nullptr;
+                            empty_dims.push_back(al, empty_dim);
+                        }
+                        var_type = ASRUtils::duplicate_type(al, var_type, &empty_dims, ASR::array_physical_typeType::DescriptorArray, true);
+                    }
                 }
                 SetChar variable_dependencies_vec;
                 variable_dependencies_vec.reserve(al, 1);
