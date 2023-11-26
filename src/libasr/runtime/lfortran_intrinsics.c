@@ -1853,7 +1853,7 @@ LFORTRAN_API void _lfortran_i32sys_clock(
         *max = 0;
 #else
     struct timespec ts;
-    if(clock_gettime(CLOCK_MONOTONIC, &ts) == -1) {
+    if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
         *count = (int32_t)(ts.tv_nsec / 1000000) + ((int32_t)ts.tv_sec * 1000);
         *rate = 1e3; // milliseconds
         *max = INT_MAX;
@@ -1873,7 +1873,7 @@ LFORTRAN_API void _lfortran_i64sys_clock(
         *max = 0;
 #else
     struct timespec ts;
-    if(clock_gettime(CLOCK_MONOTONIC, &ts) == -1) {
+    if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
         *count = (uint64_t)(ts.tv_nsec) + ((uint64_t)ts.tv_sec * 1000000000);
         // FIXME: Rate can be in microseconds or nanoseconds depending on
         //          resolution of the underlying platform clock.
