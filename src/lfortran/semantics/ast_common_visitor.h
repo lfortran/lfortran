@@ -4764,6 +4764,19 @@ public:
                     // the C ABI is just a pointer
                     var_type = ASRUtils::duplicate_type_with_empty_dims(al, var_type,
                         ASR::array_physical_typeType::PointerToDataArray, true);
+                } else if (ASR::is_a<ASR::ArrayItem_t>(*var_expr) && compiler_options.legacy_array_sections) {
+                    ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(var_expr);
+                    size_t n_dims = array_item->n_args;
+                    Vec<ASR::dimension_t> empty_dims;
+                    empty_dims.reserve(al, n_dims);
+                    for( size_t i = 0; i < n_dims; i++ ) {
+                        ASR::dimension_t empty_dim;
+                        empty_dim.loc = var_type->base.loc;
+                        empty_dim.m_start = nullptr;
+                        empty_dim.m_length = nullptr;
+                        empty_dims.push_back(al, empty_dim);
+                    }
+                    var_type = ASRUtils::duplicate_type(al, var_type, &empty_dims, ASR::array_physical_typeType::PointerToDataArray, true);
                 }
                 SetChar variable_dependencies_vec;
                 variable_dependencies_vec.reserve(al, 1);
