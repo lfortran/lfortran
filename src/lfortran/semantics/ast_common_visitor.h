@@ -4861,7 +4861,7 @@ public:
                         empty_dim.m_length = nullptr;
                         empty_dims.push_back(al, empty_dim);
                     }
-                    var_type = ASRUtils::duplicate_type(al, var_type, &empty_dims, ASR::array_physical_typeType::PointerToDataArray, true);
+                    var_type = ASRUtils::duplicate_type(al, var_type, &empty_dims, ASR::array_physical_typeType::DescriptorArray, true);
                 }
                 SetChar variable_dependencies_vec;
                 variable_dependencies_vec.reserve(al, 1);
