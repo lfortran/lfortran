@@ -72,6 +72,8 @@ loop.body2:                                       ; preds = %loop.head1
 
 then:                                             ; preds = %loop.body2
   store i1 false, i1* %found, align 1
+  call void (i8*, ...) @_lfortran_free(i8* %21)
+  call void (i8*, ...) @_lfortran_free(i8* %24)
   br label %ifcont
 
 else:                                             ; preds = %loop.body2
@@ -118,6 +120,8 @@ declare i32 @_lfortran_str_len(i8**)
 
 declare i8* @_lfortran_str_item(i8*, i32)
 
+declare void @_lfortran_free(i8*, ...)
+
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   call void @_lpython_set_argv(i32 %0, i8** %1)
@@ -147,6 +151,8 @@ else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
+  call void (i8*, ...) @_lfortran_free(i8* %3)
+  call void (i8*, ...) @_lfortran_free(i8* %5)
   ret i32 0
 }
 
