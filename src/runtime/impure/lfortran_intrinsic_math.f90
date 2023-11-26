@@ -1106,7 +1106,7 @@ end subroutine
 ! system_clock------------------------------------------------------------------
 
 pure subroutine i32sys_clock(count, count_rate, count_max)
-integer(4), intent(out) :: count, count_rate, count_max
+integer(4), intent(out), optional :: count, count_rate, count_max
 interface
     pure subroutine c_i32sys_clock(count, count_rate, count_max) &
         bind(c, name="_lfortran_i32sys_clock")
@@ -1117,7 +1117,8 @@ call c_i32sys_clock(count, count_rate, count_max)
 end subroutine
 
 pure subroutine i64sys_clock(count, count_rate, count_max)
-integer(8), intent(out) :: count, count_rate, count_max
+integer(8), intent(out) :: count
+integer(8), intent(out), optional :: count_rate, count_max
 interface
     pure subroutine c_i64sys_clock(count, count_rate, count_max) &
         bind(c, name="_lfortran_i64sys_clock")
