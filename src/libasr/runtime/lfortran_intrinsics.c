@@ -1276,9 +1276,9 @@ LFORTRAN_API void _lfortran_strcpy(char** x, char *y, int8_t free_target)
         if (*x) {
             free((void *)*x);
         }
+        *x = (char *) malloc(strlen(y)*sizeof(char));
+        _lfortran_string_init(strlen(y)+1, *x);
     }
-    *x = (char*) malloc((strlen(y) + 1) * sizeof(char));
-    _lfortran_string_init(strlen(y) + 1, *x);
     for (size_t i = 0; i < strlen(*x); i++) {
         if (i < strlen(y)) {
             x[0][i] = y[i];

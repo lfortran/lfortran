@@ -1083,13 +1083,13 @@ public:
     }
 
     inline void call_lcompilers_free_strings() {
-        // if (strings_to_be_deallocated.n > 0) {
-        //     llvm::Function* free_fn = _Deallocate();
-        //     for( auto &value: strings_to_be_deallocated ) {
-        //         builder->CreateCall(free_fn, {value});
-        //     }
-        //     strings_to_be_deallocated.reserve(al, 1);
-        // }
+        if (strings_to_be_deallocated.n > 0) {
+            llvm::Function* free_fn = _Deallocate();
+            for( auto &value: strings_to_be_deallocated ) {
+                builder->CreateCall(free_fn, {value});
+            }
+            strings_to_be_deallocated.reserve(al, 1);
+        }
     }
 
     llvm::Function* _Allocate(bool realloc_lhs) {
@@ -5638,6 +5638,7 @@ public:
     }
 
     void visit_Return(const ASR::Return_t & /* x */) {
+        call_lcompilers_free_strings();
         builder->CreateBr(proc_return);
         llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_return");
         start_new_block(bb);
@@ -5854,6 +5855,7 @@ public:
                 llvm::APInt(32, 1));
         }
         tmp = lfortran_str_slice(str, left, right, step, left_present, right_present);
+        strings_to_be_deallocated.push_back(al, tmp);
     }
 
     void visit_RealCopySign(const ASR::RealCopySign_t& x) {
@@ -7622,6 +7624,10 @@ public:
         printf_args.push_back(fmt_ptr);
         printf_args.insert(printf_args.end(), args.begin(), args.end());
         printf(context, *module, *builder, printf_args);
+        for (size_t i=0; i<x.n_values; i++) {
+            if (ASR::is_a<ASR::StringFormat_t>(*x.m_values[i]))
+                LLVM::lfortran_free(context, *module, *builder, args[i]);
+        }
     }
 
     void visit_Stop(const ASR::Stop_t &x) {
