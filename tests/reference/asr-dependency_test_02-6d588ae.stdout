@@ -4,8 +4,6 @@
         {
             lfortran_intrinsic_builtin:
                 (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_kind:
-                (IntrinsicModule lfortran_intrinsic_kind),
             m_cli2:
                 (Module
                     (SymbolTable
@@ -31,16 +29,6 @@
                                                     Public
                                                     Required
                                                     .false.
-                                                ),
-                                            kind:
-                                                (ExternalSymbol
-                                                    3
-                                                    kind
-                                                    30 kind
-                                                    lfortran_intrinsic_kind
-                                                    []
-                                                    kind
-                                                    Private
                                                 ),
                                             real:
                                                 (ExternalSymbol
@@ -104,8 +92,7 @@
                                 )
                         })
                     m_cli2
-                    [lfortran_intrinsic_builtin
-                    lfortran_intrinsic_kind]
+                    [lfortran_intrinsic_builtin]
                     .false.
                     .false.
                 )

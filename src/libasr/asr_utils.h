@@ -2598,6 +2598,21 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
             }
             break;
         }
+        case ASR::exprType::IntrinsicScalarFunction: {
+            ASR::IntrinsicScalarFunction_t* kind_isf =
+                ASR::down_cast<ASR::IntrinsicScalarFunction_t>(kind_expr);
+            if (kind_isf->m_intrinsic_id == 22 && kind_isf->m_value) {
+                LCOMPILERS_ASSERT( ASR::is_a<ASR::IntegerConstant_t>(*kind_isf->m_value) );
+                ASR::IntegerConstant_t* kind_ic =
+                    ASR::down_cast<ASR::IntegerConstant_t>(kind_isf->m_value);
+                a_kind = kind_ic->m_n;
+            } else {
+                throw SemanticError("Only Integer literals or expressions which "
+                    "reduce to constant Integer are accepted as kind parameters.",
+                    loc);
+            }
+            break;
+        }
         default: {
             if (!ASRUtils::extract_value(kind_expr, a_kind)) {
                 throw SemanticError("Only Integer literals or expressions which "
