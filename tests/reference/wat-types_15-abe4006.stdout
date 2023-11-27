@@ -1,10 +1,9 @@
 (module
     (type (;0;) (func (param i32) (result)))
     (type (;1;) (func (param i32 i32 i32 i32) (result i32)))
-    (type (;2;) (func (param i32) (result i32)))
-    (type (;3;) (func (param) (result)))
-    (type (;4;) (func (param i64) (result)))
-    (type (;5;) (func (param f64) (result)))
+    (type (;2;) (func (param) (result)))
+    (type (;3;) (func (param i64) (result)))
+    (type (;4;) (func (param f64) (result)))
     (import "wasi_snapshot_preview1" "proc_exit" (func (;0;) (type 0)))
     (import "wasi_snapshot_preview1" "fd_write" (func (;1;) (type 1)))
     (global $0 (mut i32) (i32.const 0))
@@ -14,14 +13,7 @@
     (global $4 (mut f32) (f32.const 0.000000))
     (global $5 (mut f64) (f64.const 0.000000))
     (global $6 (mut f64) (f64.const 0.000000))
-    (func $2 (type 2) (param i32) (result i32)
-        (local i32)
-        i32.const 4
-        local.set 1
-        local.get 1
-        return
-    )
-    (func $3 (type 3) (param) (result)
+    (func $2 (type 2) (param) (result)
         (local i32 i64 i64 i32 i32 f64 f64 f32 f32)
         i32.const 8
         local.set 0
@@ -35,7 +27,7 @@
         local.set 6
         local.get 4
         i64.extend_i32_s
-        call 4
+        call 3
         i32.const 1
         i32.const 4
         i32.const 1
@@ -43,7 +35,7 @@
         call 1
         drop
         local.get 2
-        call 4
+        call 3
         i32.const 1
         i32.const 4
         i32.const 1
@@ -52,7 +44,7 @@
         drop
         local.get 8
         f64.promote_f32
-        call 5
+        call 4
         i32.const 1
         i32.const 4
         i32.const 1
@@ -60,7 +52,7 @@
         call 1
         drop
         local.get 6
-        call 5
+        call 4
         i32.const 1
         i32.const 16
         i32.const 1
@@ -77,7 +69,7 @@
         local.set 5
         local.get 3
         i64.extend_i32_s
-        call 4
+        call 3
         i32.const 1
         i32.const 4
         i32.const 1
@@ -85,7 +77,7 @@
         call 1
         drop
         local.get 1
-        call 4
+        call 3
         i32.const 1
         i32.const 4
         i32.const 1
@@ -94,7 +86,7 @@
         drop
         local.get 7
         f64.promote_f32
-        call 5
+        call 4
         i32.const 1
         i32.const 4
         i32.const 1
@@ -102,7 +94,7 @@
         call 1
         drop
         local.get 5
-        call 5
+        call 4
         i32.const 1
         i32.const 16
         i32.const 1
@@ -123,7 +115,7 @@
         local.set 5
         local.get 3
         i64.extend_i32_s
-        call 4
+        call 3
         i32.const 1
         i32.const 4
         i32.const 1
@@ -131,7 +123,7 @@
         call 1
         drop
         local.get 1
-        call 4
+        call 3
         i32.const 1
         i32.const 4
         i32.const 1
@@ -140,7 +132,7 @@
         drop
         local.get 7
         f64.promote_f32
-        call 5
+        call 4
         i32.const 1
         i32.const 4
         i32.const 1
@@ -148,7 +140,7 @@
         call 1
         drop
         local.get 5
-        call 5
+        call 4
         i32.const 1
         i32.const 16
         i32.const 1
@@ -169,7 +161,7 @@
         local.set 5
         local.get 3
         i64.extend_i32_s
-        call 4
+        call 3
         i32.const 1
         i32.const 4
         i32.const 1
@@ -177,7 +169,7 @@
         call 1
         drop
         local.get 1
-        call 4
+        call 3
         i32.const 1
         i32.const 4
         i32.const 1
@@ -186,7 +178,7 @@
         drop
         local.get 7
         f64.promote_f32
-        call 5
+        call 4
         i32.const 1
         i32.const 4
         i32.const 1
@@ -194,7 +186,7 @@
         call 1
         drop
         local.get 5
-        call 5
+        call 4
         i32.const 1
         i32.const 16
         i32.const 1
@@ -215,7 +207,7 @@
         local.set 5
         local.get 3
         i64.extend_i32_s
-        call 4
+        call 3
         i32.const 1
         i32.const 4
         i32.const 1
@@ -223,7 +215,7 @@
         call 1
         drop
         local.get 1
-        call 4
+        call 3
         i32.const 1
         i32.const 4
         i32.const 1
@@ -232,7 +224,7 @@
         drop
         local.get 7
         f64.promote_f32
-        call 5
+        call 4
         i32.const 1
         i32.const 4
         i32.const 1
@@ -240,7 +232,7 @@
         call 1
         drop
         local.get 5
-        call 5
+        call 4
         i32.const 1
         i32.const 16
         i32.const 1
@@ -251,7 +243,7 @@
         call 0
         return
     )
-    (func $4 (type 4) (param i64) (result)
+    (func $3 (type 3) (param i64) (result)
         (local i64 i64 i64 i64)
         local.get 0
         i64.const 0
@@ -356,7 +348,7 @@
         end
         return
     )
-    (func $5 (type 5) (param f64) (result)
+    (func $4 (type 4) (param f64) (result)
         (local i64 i64 i64)
         local.get 0
         f64.const 0.000000
@@ -376,7 +368,7 @@
         end
         local.get 0
         i64.trunc_f64_s
-        call 4
+        call 3
         i32.const 1
         i32.const 40
         i32.const 1
@@ -436,15 +428,14 @@
             end
         end
         local.get 3
-        call 4
+        call 3
         return
     )
     (memory (;0;) 1000 1000)
     (export "memory" (memory 0))
-    (export "kind" (func 2))
-    (export "_start" (func 3))
-    (export "print_i64" (func 4))
-    (export "print_f64" (func 5))
+    (export "_start" (func 2))
+    (export "print_i64" (func 3))
+    (export "print_f64" (func 4))
     (data (;0;) (i32.const 4) "\0c\00\00\00\01\00\00\00")
     (data (;1;) (i32.const 12) "    ")
     (data (;2;) (i32.const 16) "\18\00\00\00\01\00\00\00")
