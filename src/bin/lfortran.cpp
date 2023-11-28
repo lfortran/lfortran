@@ -1666,14 +1666,7 @@ int link_executable(const std::vector<std::string> &infiles,
             return 10;
         }
     } else if (backend == Backend::wasm) {
-        std::string cmd = "cp " + infiles[0] + " " + outfile
-            + " && " + "cp " + infiles[0] + ".js" + " " + outfile + ".js";
-        int err = system(cmd.c_str());
-        if (err) {
-            std::cout << "The command '" + cmd + "' failed." << std::endl;
-            return 10;
-        }
-        return 0;
+        // do nothing
     } else if (backend == Backend::fortran) {
         std::string cmd = "gfortran -o " + outfile + " ";
         std::string base_path = "\"" + runtime_library_dir + "\"";
@@ -2331,9 +2324,6 @@ int main(int argc, char *argv[])
             if (backend == Backend::x86) {
                 return compile_to_binary_x86(arg_file, outfile,
                         time_report, compiler_options);
-            } else if (backend == Backend::wasm) {
-                return compile_to_binary_wasm(arg_file, outfile,
-                        time_report, compiler_options);
             }
             std::string tmp_o = outfile + ".tmp.o";
             int err;
@@ -2353,6 +2343,9 @@ int main(int argc, char *argv[])
                         false, rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
             } else if (backend == Backend::fortran) {
                 err = compile_to_binary_fortran(arg_file, tmp_o, compiler_options);
+            } else if (backend == Backend::wasm) {
+                err = compile_to_binary_wasm(arg_file, outfile,
+                        time_report, compiler_options);
             } else {
                 throw LCompilers::LCompilersException("Backend not supported");
             }
