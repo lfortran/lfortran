@@ -224,13 +224,11 @@
                                                                     ()
                                                                 )]
                                                                 0
-                                                                (Allocatable
-                                                                    (Array
-                                                                        (Real 4)
-                                                                        [(()
-                                                                        ())]
-                                                                        DescriptorArray
-                                                                    )
+                                                                (Array
+                                                                    (Real 4)
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
                                                                 )
                                                                 ()
                                                             )]
@@ -243,13 +241,11 @@
                                                             )
                                                             ()
                                                         )
-                                                        (Allocatable
-                                                            (Array
-                                                                (Real 4)
-                                                                [(()
-                                                                ())]
-                                                                DescriptorArray
-                                                            )
+                                                        (Array
+                                                            (Real 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
                                                         )
                                                         ()
                                                     )
