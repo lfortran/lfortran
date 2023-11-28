@@ -1201,30 +1201,6 @@ bool select_func_subrout(const ASR::symbol_t* proc, const Vec<ASR::call_arg_t>& 
     return result;
 }
 
-int select_generic_procedure(const Vec<ASR::call_arg_t>& args,
-        const ASR::GenericProcedure_t &p, Location loc,
-        const std::function<void (const std::string &, const Location &)> err,
-        bool raise_error) {
-    for (size_t i=0; i < p.n_procs; i++) {
-        if( ASR::is_a<ASR::ClassProcedure_t>(*p.m_procs[i]) ) {
-            ASR::ClassProcedure_t *clss_fn
-                = ASR::down_cast<ASR::ClassProcedure_t>(p.m_procs[i]);
-            const ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(clss_fn->m_proc);
-            if( select_func_subrout(proc, args, loc, err) ) {
-                return i;
-            }
-        } else {
-            if( select_func_subrout(p.m_procs[i], args, loc, err) ) {
-                return i;
-            }
-        }
-    }
-    if( raise_error ) {
-        err("Arguments do not match for any generic procedure, " + std::string(p.m_name), loc);
-    }
-    return -1;
-}
-
 ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
             const Location &loc,
             ASR::symbol_t *v, Vec<ASR::call_arg_t>& args,

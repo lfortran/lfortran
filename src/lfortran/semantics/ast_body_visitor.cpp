@@ -1424,23 +1424,8 @@ public:
                                      select_type_default.p, select_type_default.size());
     }
 
-    void visit_Submodule(const AST::Submodule_t &x) {
-        SymbolTable *old_scope = current_scope;
-        ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
-        ASR::Module_t *v = ASR::down_cast<ASR::Module_t>(t);
-        current_scope = v->m_symtab;
-        current_module = v;
-
-        for (size_t i=0; i<x.n_contains; i++) {
-            visit_program_unit(*x.m_contains[i]);
-        }
-
-        current_scope = old_scope;
-        current_module = nullptr;
-        tmp = nullptr;
-    }
-
-    void visit_Module(const AST::Module_t &x) {
+    template <typename T>
+    void visit_SubmoduleModuleCommon(const T& x) {
         SymbolTable *old_scope = current_scope;
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
         ASR::Module_t *v = ASR::down_cast<ASR::Module_t>(t);
@@ -1474,6 +1459,14 @@ public:
         current_scope = old_scope;
         current_module = nullptr;
         tmp = nullptr;
+    }
+
+    void visit_Submodule(const AST::Submodule_t &x) {
+        visit_SubmoduleModuleCommon(x);
+    }
+
+    void visit_Module(const AST::Module_t &x) {
+        visit_SubmoduleModuleCommon(x);
     }
 
     void visit_Use(const AST::Use_t& /* x */) {

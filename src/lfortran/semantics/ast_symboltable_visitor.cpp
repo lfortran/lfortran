@@ -90,19 +90,6 @@ public:
 
     ASR::ttype_t *tmp_type;
 
-    std::map<AST::intrinsicopType, std::string> intrinsic2str = {
-        {AST::intrinsicopType::STAR, "~mul"},
-        {AST::intrinsicopType::PLUS, "~add"},
-        {AST::intrinsicopType::EQ, "~eq"},
-        {AST::intrinsicopType::NOTEQ, "~noteq"},
-        {AST::intrinsicopType::LT, "~lt"},
-        {AST::intrinsicopType::LTE, "~lte"},
-        {AST::intrinsicopType::GT, "~gt"},
-        {AST::intrinsicopType::GTE, "~gte"},
-        {AST::intrinsicopType::MINUS, "~sub"},
-        {AST::intrinsicopType::CONCAT, "~concat"}
-    };
-
     SymbolTableVisitor(Allocator &al, SymbolTable *symbol_table,
         diag::Diagnostics &diagnostics, CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash, std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
