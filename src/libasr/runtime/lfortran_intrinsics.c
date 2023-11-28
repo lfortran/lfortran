@@ -657,6 +657,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 double val = va_arg(args, double);
                 handle_float(value, val, &result);
             } else if (strlen(value) != 0) {
+                if ( count == 0 ) break;
+                count--;
                 printf("Printing support is not available for %s format.\n",value);
             }
 
