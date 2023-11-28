@@ -1451,7 +1451,7 @@ namespace Abs {
                 ASRUtils::extract_kind_from_ttype_t(type)));
         }
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_Abs,
-            static_cast<int64_t>(IntrinsicScalarFunctions::Abs), 0, type);
+            static_cast<int64_t>(IntrinsicScalarFunctions::Abs), 0, ASRUtils::type_get_past_allocatable(type));
     }
 
     static inline ASR::expr_t* instantiate_Abs(Allocator &al, const Location &loc,
