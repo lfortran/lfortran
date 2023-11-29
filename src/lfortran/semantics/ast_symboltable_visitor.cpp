@@ -1045,7 +1045,11 @@ public:
                 // function previously added as variable due to implicit typing
                 parent_scope->erase_symbol(sym_name);
             } else {
+<<<<<<< HEAD
                 throw SemanticError("Subroutine already defined " + sym_name, tmp->loc);
+=======
+                throw SemanticError("2 Subroutine already defined " + sym_name, tmp->loc);
+>>>>>>> b0628269d (DEV: Duplicate generic procedure in submodule so that binding happens easily)
             }
         }
         if( sym_name == interface_name ) {
