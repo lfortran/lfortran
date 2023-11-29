@@ -1000,9 +1000,13 @@ public:
                 }
             }
         }
+
+        bool update_gp = false;
+        int gp_index_to_be_updated = -1;
+        ASR::symbol_t* f1_ = nullptr;
         if (parent_scope->get_symbol(sym_name) != nullptr) {
-            ASR::symbol_t *f1 = ASRUtils::symbol_get_past_external(
-                parent_scope->get_symbol(sym_name));
+            f1_ = parent_scope->get_symbol(sym_name);
+            ASR::symbol_t *f1 = ASRUtils::symbol_get_past_external(f1_);
             if (ASR::is_a<ASR::Function_t>(*f1)) {
                 ASR::Function_t* f2 = ASR::down_cast<ASR::Function_t>(f1);
                 if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::Interactive ||
@@ -1010,13 +1014,38 @@ public:
                     // Previous declaration will be shadowed
                     parent_scope->erase_symbol(sym_name);
                 } else {
-                    throw SemanticError("Subroutine already defined", tmp->loc);
+                    throw SemanticError("Subroutine already defined " + sym_name, tmp->loc);
                 }
+            } else if( ASR::is_a<ASR::GenericProcedure_t>(*f1) ) {
+                ASR::GenericProcedure_t* gp = ASR::down_cast<ASR::GenericProcedure_t>(f1);
+                if( sym_name == gp->m_name ) {
+                    sym_name = sym_name + "~genericprocedure";
+                }
+
+                if( !ASR::is_a<ASR::GenericProcedure_t>(*f1_) ) {
+                    update_gp = true;
+                    Vec<ASR::symbol_t*> gp_procs;
+                    gp_procs.from_pointer_n_copy(al, gp->m_procs, gp->n_procs);
+                    f1_ = ASR::down_cast<ASR::symbol_t>(ASR::make_GenericProcedure_t(al, f1->base.loc,
+                        parent_scope, gp->m_name, gp_procs.p, gp_procs.size(), gp->m_access));
+                    parent_scope->overwrite_symbol(gp->m_name, f1_);
+                }
+
+                for( size_t igp = 0; igp < gp->n_procs; igp++ ) {
+                    if( ASRUtils::symbol_get_past_external(gp->m_procs[igp]) ==
+                        ASRUtils::symbol_get_past_external(parent_scope->resolve_symbol(sym_name)) ) {
+                        gp_index_to_be_updated = igp;
+                        break;
+                    }
+                }
+
+                // Any import from parent module will be shadowed
+                parent_scope->erase_symbol(sym_name);
             } else if (compiler_options.implicit_typing && ASR::is_a<ASR::Variable_t>(*f1)) {
                 // function previously added as variable due to implicit typing
                 parent_scope->erase_symbol(sym_name);
             } else {
-                throw SemanticError("Subroutine already defined", tmp->loc);
+                throw SemanticError("Subroutine already defined " + sym_name, tmp->loc);
             }
         }
         if( sym_name == interface_name ) {
@@ -1045,6 +1074,11 @@ public:
             is_requirement, false, false);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        if( update_gp ) {
+            LCOMPILERS_ASSERT(gp_index_to_be_updated >= 0);
+            ASR::GenericProcedure_t* f1_gp = ASR::down_cast<ASR::GenericProcedure_t>(f1_);
+            f1_gp->m_procs[gp_index_to_be_updated] = ASR::down_cast<ASR::symbol_t>(tmp);
+        }
         // populate the external_procedures_mapping
         uint64_t hash = get_hash(tmp);
         external_procedures_mapping[hash] = external_procedures;
@@ -2377,7 +2411,7 @@ public:
         if (ASR::is_a<ASR::Function_t>(*t) &&
             ASR::down_cast<ASR::Function_t>(t)->m_return_var == nullptr) {
             if (current_scope->get_symbol(local_sym) != nullptr) {
-                throw SemanticError("Subroutine already defined",
+                throw SemanticError("Subroutine already defined " + local_sym,
                     loc);
             }
             ASR::Function_t *msub = ASR::down_cast<ASR::Function_t>(t);
