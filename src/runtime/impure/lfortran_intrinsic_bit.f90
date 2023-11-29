@@ -31,7 +31,7 @@ interface btest
 end interface
 
 interface ishft
-    module procedure ishft32, ishft64
+    module procedure ishft32, ishft64, ishft6432, ishft3264
 end interface
 
 interface shiftl
@@ -319,6 +319,44 @@ end interface
 
 if (shift < 64) then
     r = c_ishft64(i, shift)
+else
+    error stop "shift must be less than 64"
+end if
+end function
+
+elemental integer(int64) function ishft6432(i, shift) result(r)
+integer(int64), intent(in) :: i
+integer(int32), intent(in) :: shift
+integer(int64) :: shift64
+interface
+    pure integer(int64) function c_ishft64(i, shift) bind(c, name="_lfortran_ishft64")
+        import :: int64
+        integer(int64), intent(in), value :: i, shift
+    end function
+end interface
+
+shift64 = shift
+if (shift < 64) then
+    r = c_ishft64(i, shift64)
+else
+    error stop "shift must be less than 64"
+end if
+end function
+
+elemental integer(int32) function ishft3264(i, shift) result(r)
+integer(int32), intent(in) :: i
+integer(int64), intent(in) :: shift
+integer(int64) :: i64
+interface
+    pure integer(int64) function c_ishft64(i, shift) bind(c, name="_lfortran_ishft64")
+        import :: int64
+        integer(int64), intent(in), value :: i, shift
+    end function
+end interface
+
+i64 = i
+if (shift < 64) then
+    r = c_ishft64(i64, shift)
 else
     error stop "shift must be less than 64"
 end if
