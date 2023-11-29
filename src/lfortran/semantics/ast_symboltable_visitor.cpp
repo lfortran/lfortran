@@ -2038,6 +2038,23 @@ public:
         }
     }
 
+    bool check_is_deferred(const std::string& pname, ASR::StructType_t* clss) {
+        auto& cdf = class_deferred_procedures;
+        while( true ) {
+            std::string proc = clss->m_name;
+            if(cdf.count(proc) && cdf[proc].count(pname) && cdf[proc][pname].count("deferred")) {
+                return true;
+            }
+            ASR::symbol_t* clss_sym = ASRUtils::symbol_get_past_external(clss->m_parent);
+            if( !clss_sym ) {
+                break;
+            }
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*clss_sym));
+            clss = ASR::down_cast<ASR::StructType_t>(clss_sym);
+        }
+        return false;
+    }
+
     void add_class_procedures() {
         for (auto &proc : class_procedures) {
             ASR::symbol_t* clss_sym = ASRUtils::symbol_get_past_external(
@@ -2048,7 +2065,7 @@ public:
                 auto &loc = pname.second["procedure"].loc;
                 auto& cdf = class_deferred_procedures;
                 bool is_pass = pname.second.count("pass");
-                bool is_deferred = (cdf.count(proc.first) && cdf[proc.first].count(pname.first) && cdf[proc.first][pname.first].count("deferred"));
+                bool is_deferred = check_is_deferred(pname.first, clss);
                 bool is_nopass = (cdf.count(proc.first) && cdf[proc.first].count(pname.first) && cdf[proc.first][pname.first].count("nopass"));
                 if (is_pass && is_nopass) {
                     throw SemanticError(diag::Diagnostic("Pass and NoPass attributes cannot be provided together",
