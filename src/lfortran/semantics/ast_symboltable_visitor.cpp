@@ -413,7 +413,7 @@ public:
                                                 [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }
                                                 ));
             ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(submod_parent);
-            std::string unsupported_sym_name = import_all(m);
+            std::string unsupported_sym_name = import_all(m, true);
             if( !unsupported_sym_name.empty() ) {
                 throw LCompilersException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
             }
@@ -2111,7 +2111,7 @@ public:
         }
     }
 
-    std::string import_all(const ASR::Module_t* m) {
+    std::string import_all(const ASR::Module_t* m, bool to_submodule=false) {
         // Import all symbols from the module, e.g.:
         //     use a
         for (auto &item : m->m_symtab->get_scope()) {
@@ -2161,7 +2161,7 @@ public:
             } else if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *mvar = ASR::down_cast<ASR::Variable_t>(item.second);
                 // check if m_access of mvar is public
-                if ( mvar->m_access == ASR::accessType::Public ) {
+                if ( mvar->m_access == ASR::accessType::Public || to_submodule ) {
                     ASR::asr_t *var = ASR::make_ExternalSymbol_t(
                         al, mvar->base.base.loc,
                         /* a_symtab */ current_scope,
