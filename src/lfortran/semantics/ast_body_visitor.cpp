@@ -465,6 +465,7 @@ public:
         for( std::uint32_t i = 0; i < n_kwargs; i++ ) {
             AST::kw_argstar_t kwarg = m_kwargs[i];
             std::string m_arg_str(kwarg.m_arg);
+            m_arg_str = to_lower(m_arg_str);
             if( m_arg_str == std::string("unit") ) {
                 if( a_unit != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `unit` found, `unit` has already been specified via argument or keyword arguments)""",
@@ -513,7 +514,7 @@ public:
                 if (!ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_pointer(a_status_type))) {
                         throw SemanticError("`status` must be of type Character", loc);
                 }
-            } else if( to_lower(m_arg_str) == std::string("fmt")  ) {
+            } else if( m_arg_str == std::string("fmt")  ) {
                 if( a_fmt != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `fmt` found, it has already been specified via arguments or keyword arguments)""",
                                         loc);
@@ -527,10 +528,6 @@ public:
                     a_fmt = ASRUtils::EXPR(tmp);
                 }
             } else if( m_arg_str == std::string("advance") ) {
-                if( a_fmt == nullptr ) {
-                    throw SemanticError(R"""(List directed format(*) is not allowed with a ADVANCE= specifier)""",
-                                        loc);
-                }
                 if( a_end != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `advance` found, it has already been specified via arguments or keyword arguments)""",
                                         loc);
@@ -576,6 +573,10 @@ public:
                     a_end = empty;
                 }
             }
+        }
+        if( a_fmt == nullptr && a_end != nullptr ) {
+            throw SemanticError(R"""(List directed format(*) is not allowed with a ADVANCE= specifier)""",
+                                loc);
         }
         if (_type == AST::stmtType::Write) {
             a_fmt_constant = a_fmt;
