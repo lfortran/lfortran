@@ -1,5 +1,5 @@
 module modules_18b
-use iso_c_binding, only: c_int, c_long_long, c_float, c_double
+use iso_c_binding, only: c_int, c_long_long, c_float, c_double, c_char
 implicit none
 
 contains
@@ -72,6 +72,28 @@ end function
 real(c_double) function fortran_f64_value(i) result(r) bind(c)
 real(c_double), value, intent(in) :: i
 r = i + 2.3_c_double
+end function
+
+function c2s(n, x) result(y)
+integer, intent(in) :: n
+character, intent(in) :: x(*)
+character(:), allocatable :: y
+integer :: i
+allocate(character(n) :: y)
+do i = 1, n
+    y(i:i) = x(i)
+end do
+end function
+
+integer function f_len_string(s) result(r)
+character(*), intent(in) :: s
+r = len(s)
+end function
+
+integer(c_int) function fortran_string(n, s) result(r) bind(c)
+integer(c_int), value, intent(in) :: n
+character(len=1, kind=c_char), intent(in) :: s(*)
+r = f_len_string(c2s(n, s))
 end function
 
 end module
