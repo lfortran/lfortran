@@ -100,4 +100,12 @@ std::string get_runtime_library_c_header_dir()
     return path;
 }
 
+// Decodes the exit status code of the process (in Unix)
+// See `WEXITSTATUS` for more information.
+// https://stackoverflow.com/a/27117435/15913193
+// https://linux.die.net/man/3/system
+int32_t get_exit_status(int32_t err) {
+    return (((err) >> 8) & 0x000000ff);
+}
+
 } // namespace LCompilers::LFortran
