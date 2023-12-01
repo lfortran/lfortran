@@ -2936,6 +2936,7 @@ public:
 
     ASR::asr_t* create_ArrayRef(const Location &loc,
                 AST::fnarg_t* m_args, size_t n_args,
+                AST::fnarg_t* m_subargs, size_t n_subargs,
                     ASR::expr_t* v_expr,
                     ASR::symbol_t *v,
                     ASR::symbol_t *f2) {
@@ -3130,6 +3131,31 @@ public:
                 !ASRUtils::is_array(root_v_type) ) {
                 return ASR::make_StringItem_t(al, loc,
                     v_Var, args.p[0].m_right, type, arr_ref_val);
+            } else if ( ASRUtils::is_character(*root_v_type) &&
+                        ASRUtils::is_array(root_v_type) &&
+                        n_subargs > 0) {
+                ASR::expr_t* array_item = replace_with_common_block_variables(ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
+                    v_Var, args.p, args.size(), ASRUtils::type_get_past_pointer(
+                        ASRUtils::type_get_past_allocatable(type)),
+                    ASR::arraystorageType::ColMajor, arr_ref_val)));
+                LCOMPILERS_ASSERT(n_subargs == 1);
+                ASR::ttype_t *char_type = ASRUtils::type_get_past_allocatable(type);
+                ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+                ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                                            1, int_type));
+                ASR::expr_t *l = nullptr, *r = nullptr;
+                if (m_subargs[0].m_start) {
+                    this->visit_expr(*(m_subargs[0].m_start));
+                    l = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                        ASRUtils::EXPR(tmp), ASR::binopType::Sub, const_1, int_type, nullptr));
+                }
+                if (m_subargs[0].m_end) {
+                    this->visit_expr(*(m_subargs[0].m_end));
+                    r = ASRUtils::EXPR(tmp);
+                }
+                this->visit_expr(*(m_subargs[0].m_step));
+                return ASR::make_StringSection_t(al, loc, array_item, l,
+                        r, ASRUtils::EXPR(tmp), char_type, arr_ref_val);
             } else {
                 return (ASR::asr_t*) replace_with_common_block_variables(ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
                     v_Var, args.p, args.size(), ASRUtils::type_get_past_pointer(
@@ -5055,7 +5081,7 @@ public:
                 if (x.m_member[0].n_args > 0) {
                     ASR::symbol_t *v1 = current_scope->resolve_symbol(to_lower(x.m_member[0].m_name));
                     ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v1);
-                    tmp = create_ArrayRef(x.base.base.loc, x.m_member[0].m_args, x.m_member[0].n_args, nullptr, v1, f2);
+                    tmp = create_ArrayRef(x.base.base.loc, x.m_member[0].m_args, x.m_member[0].n_args, nullptr, 0, nullptr, v1, f2);
                 } else {
                     tmp = resolve_variable(x.base.base.loc, to_lower(x.m_member[0].m_name));
                 }
@@ -5385,7 +5411,7 @@ public:
             switch (f2->type) {
             case(ASR::symbolType::Variable): {
                 // TODO: Make create_StringRef for character (non-array) variables.
-                tmp = create_ArrayRef(x.base.base.loc, x.m_args, x.n_args, v_expr, v, f2);
+                tmp = create_ArrayRef(x.base.base.loc, x.m_args, x.n_args, x.m_subargs, x.n_subargs, v_expr, v, f2);
                 break;
             }
             case(ASR::symbolType::StructType): {
