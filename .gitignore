@@ -212,4 +212,5 @@ build.ninja
 /compile_commands.json
 
 ## Docs
+doc/man/lfortran.1
 !doc/src/javascripts/*.js
