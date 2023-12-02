@@ -1529,6 +1529,8 @@ int link_executable(const std::vector<std::string> &infiles,
 #else
     std::string t = (compiler_options.platform == LCompilers::Platform::Windows) ? "x86_64-pc-windows-msvc" : compiler_options.target;
 #endif
+    size_t dot_index = outfile.find_last_of(".");
+    std::string file_name = outfile.substr(0, dot_index);
     std::string extra_runtime_linker_path;
     if (!compiler_options.runtime_linker_paths.empty()) {
         for (auto &s: compiler_options.runtime_linker_paths) {
@@ -1587,45 +1589,32 @@ int link_executable(const std::vector<std::string> &infiles,
             std::cout << "The command '" + compile_cmd + "' failed." << std::endl;
             return 10;
         }
-        size_t dot_index = outfile.find_last_of(".");
-        std::string file_name = outfile.substr(0, dot_index);
-        if (compiler_options.run || (outfile == file_name + ".out" &&
-                compiler_options.arg_o == "")) {
+
 #ifdef HAVE_RUNTIME_STACKTRACE
-            if (compiler_options.emit_debug_info) {
-                // TODO: Replace the following hardcoded part
-                std::string cmd = "";
+        if (compiler_options.emit_debug_info) {
+            // TODO: Replace the following hardcoded part
+            std::string cmd = "";
 #ifdef HAVE_LFORTRAN_MACHO
-                cmd += "dsymutil " + file_name + ".out && llvm-dwarfdump --debug-line "
-                    + file_name + ".out.dSYM > ";
+            cmd += "dsymutil " + file_name + ".out && llvm-dwarfdump --debug-line "
+                + file_name + ".out.dSYM > ";
 #else
-                cmd += "llvm-dwarfdump --debug-line " + file_name + ".out > ";
+            cmd += "llvm-dwarfdump --debug-line " + file_name + ".out > ";
 #endif
-                std::string libasr_path = LCompilers::LFortran::get_runtime_library_c_header_dir() + "/../";
-                cmd += file_name + "_ldd.txt && (" + libasr_path + "dwarf_convert.py "
-                    + file_name + "_ldd.txt " + file_name + "_lines.txt "
-                    + file_name + "_lines.dat && " + libasr_path + "dat_convert.py "
-                    + file_name + "_lines.dat)";
-                int status = system(cmd.c_str());
-                if ( status != 0 ) {
-                    std::cerr << "Error in creating the files used to generate "
-                        "the debug information. This might be caused because either"
-                        " `llvm-dwarfdump` or `Python` are not available. "
-                        "Please activate the CONDA environment and compile again.\n";
-                    return status;
-                }
-            }
-#endif
-            int err = system(run_cmd.c_str());
-            if (err != 0) {
-                if (0 < err && err < 256) {
-                    return err;
-                } else {
-                    return 1;
-                }
+            std::string libasr_path = LCompilers::LFortran::get_runtime_library_c_header_dir() + "/../";
+            cmd += file_name + "_ldd.txt && (" + libasr_path + "dwarf_convert.py "
+                + file_name + "_ldd.txt " + file_name + "_lines.txt "
+                + file_name + "_lines.dat && " + libasr_path + "dat_convert.py "
+                + file_name + "_lines.dat)";
+            int status = system(cmd.c_str());
+            if ( status != 0 ) {
+                std::cerr << "Error in creating the files used to generate "
+                    "the debug information. This might be caused because either"
+                    " `llvm-dwarfdump` or `Python` are not available. "
+                    "Please activate the CONDA environment and compile again.\n";
+                return status;
             }
         }
-        return 0;
+#endif
     } else if (backend == Backend::c) {
         std::string CXX = "gcc";
         std::string cmd = CXX + " -o " + outfile + " ";
@@ -1645,18 +1634,6 @@ int link_executable(const std::vector<std::string> &infiles,
             std::cout << "The command '" + cmd + "' failed." << std::endl;
             return 10;
         }
-        if (compiler_options.run) {
-            std::string run_cmd = (t == "x86_64-pc-windows-msvc") ? outfile : "./" + outfile;
-            int err = system(run_cmd.c_str());
-            if (err != 0) {
-                if (0 < err && err < 256) {
-                    return err;
-                } else {
-                    return 1;
-                }
-            }
-        }
-        return 0;
     } else if (backend == Backend::cpp) {
         std::string CXX = "g++";
         std::string options, post_options;
@@ -1681,7 +1658,6 @@ int link_executable(const std::vector<std::string> &infiles,
             std::cout << "The command '" + cmd + "' failed." << std::endl;
             return 10;
         }
-        return 0;
     } else if (backend == Backend::x86) {
         std::string cmd = "cp " + infiles[0] + " " + outfile;
         int err = system(cmd.c_str());
@@ -1689,16 +1665,8 @@ int link_executable(const std::vector<std::string> &infiles,
             std::cout << "The command '" + cmd + "' failed." << std::endl;
             return 10;
         }
-        return 0;
     } else if (backend == Backend::wasm) {
-        std::string cmd = "cp " + infiles[0] + " " + outfile
-            + " && " + "cp " + infiles[0] + ".js" + " " + outfile + ".js";
-        int err = system(cmd.c_str());
-        if (err) {
-            std::cout << "The command '" + cmd + "' failed." << std::endl;
-            return 10;
-        }
-        return 0;
+        // do nothing
     } else if (backend == Backend::fortran) {
         std::string cmd = "gfortran -o " + outfile + " ";
         std::string base_path = "\"" + runtime_library_dir + "\"";
@@ -1714,22 +1682,33 @@ int link_executable(const std::vector<std::string> &infiles,
             std::cout << "The command '" + cmd + "' failed." << std::endl;
             return 10;
         }
-        if (compiler_options.run) {
-            std::string run_cmd = (t == "x86_64-pc-windows-msvc") ? outfile : "./" + outfile;
-            int err = system(run_cmd.c_str());
-            if (err != 0) {
-                if (0 < err && err < 256) {
-                    return err;
-                } else {
-                    return 1;
-                }
-            }
-        }
-        return 0;
     } else {
         LCOMPILERS_ASSERT(false);
         return 1;
     }
+
+    if ( compiler_options.arg_o != "" ) {
+        return 0;
+    }
+
+    std::string run_cmd = "";
+    if (backend == Backend::wasm) {
+        // for node version less than 16, we need to also provide flag --experimental-wasm-bigint
+        run_cmd = "node --experimental-wasi-unstable-preview1 " + outfile + ".js";
+    } else if (t == "x86_64-pc-windows-msvc") {
+        run_cmd = outfile;
+    } else {
+        run_cmd = "./" + outfile;
+    }
+    int err = system(run_cmd.c_str());
+    if (err != 0) {
+        if (0 < err && err < 256) {
+            return err;
+        } else {
+            return LCompilers::LFortran::get_exit_status(err);
+        }
+    }
+    return 0;
 }
 
 int emit_c_preprocessor(const std::string &infile, CompilerOptions &compiler_options)
@@ -2063,7 +2042,6 @@ int main(int argc, char *argv[])
         app.add_flag("--bindc-mangling", compiler_options.po.bindc_mangling, "Mangles functions with abi bind(c)");
         app.add_flag("--apply-fortran-mangling", compiler_options.po.fortran_mangling, "Mangle symbols with Fortran supported syntax");
         app.add_flag("--mangle-underscore", compiler_options.po.mangle_underscore, "Mangles with underscore");
-        app.add_flag("--run", compiler_options.run, "Executes the generated binary when the `-o` option is specified");
         app.add_flag("--legacy-array-sections", compiler_options.legacy_array_sections, "Enables passing array items as sections if required");
         app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas");
         app.add_flag("--stack-arrays", compiler_options.stack_arrays, "Allocate memory for arrays on stack");
@@ -2346,9 +2324,6 @@ int main(int argc, char *argv[])
             if (backend == Backend::x86) {
                 return compile_to_binary_x86(arg_file, outfile,
                         time_report, compiler_options);
-            } else if (backend == Backend::wasm) {
-                return compile_to_binary_wasm(arg_file, outfile,
-                        time_report, compiler_options);
             }
             std::string tmp_o = outfile + ".tmp.o";
             int err;
@@ -2368,6 +2343,9 @@ int main(int argc, char *argv[])
                         false, rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
             } else if (backend == Backend::fortran) {
                 err = compile_to_binary_fortran(arg_file, tmp_o, compiler_options);
+            } else if (backend == Backend::wasm) {
+                err = compile_to_binary_wasm(arg_file, outfile,
+                        time_report, compiler_options);
             } else {
                 throw LCompilers::LCompilersException("Backend not supported");
             }
