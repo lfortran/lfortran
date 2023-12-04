@@ -34,6 +34,10 @@ interface ishft
     module procedure ishft32, ishft64, ishft6432, ishft3264
 end interface
 
+interface ishftc
+    module procedure ishftc32
+end interface
+
 interface shiftl
     module procedure shiftli8, shiftli32, shiftli64
 end interface
@@ -360,6 +364,15 @@ if (shift < 64) then
 else
     error stop "shift must be less than 64"
 end if
+end function
+
+! ishftc ------------------------------------------------------------------------
+
+elemental integer(int32) function ishftc32(i, shift) result(r)
+integer(int32), intent(in) :: i, shift
+
+r = i
+
 end function
 
 integer(int8) function shiftri8(i, shift) result(r)

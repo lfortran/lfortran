@@ -164,6 +164,7 @@ struct IntrinsicProcedures {
             {"btest", {m_bit, &not_implemented, false}},
             // Elemental function
             {"ishft", {m_bit, &eval_ishft, true}},
+            {"ishftc", {m_bit, &not_implemented, false}},
             {"shiftr", {m_bit, &not_implemented, true}},
             {"shiftl", {m_bit, &not_implemented, true}},
 
