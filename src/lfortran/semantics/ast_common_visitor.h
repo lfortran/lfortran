@@ -2933,12 +2933,9 @@ public:
         return 1; // default
     }
 
-    ASR::asr_t* create_ArrayRef(const Location &loc,
-                AST::fnarg_t* m_args, size_t n_args,
-                AST::fnarg_t* m_subargs, size_t n_subargs,
-                    ASR::expr_t* v_expr,
-                    ASR::symbol_t *v,
-                    ASR::symbol_t *f2) {
+    ASR::asr_t* create_ArrayRef(const Location &loc, AST::fnarg_t* m_args,
+        size_t n_args, AST::fnarg_t* m_subargs, size_t n_subargs,
+        ASR::expr_t* v_expr, ASR::symbol_t *v, ASR::symbol_t *f2) {
         ASR::ttype_t* root_v_type = ASRUtils::type_get_past_pointer(
             ASRUtils::symbol_type(v));
         size_t n_dims = ASRUtils::extract_n_dims_from_ttype(root_v_type);
@@ -3060,8 +3057,10 @@ public:
             if( a.m_right ) {
                 if( all_args_eval ) {
                     ASR::expr_t* m_right_expr = ASRUtils::expr_value(a.m_right);
-                    ASR::IntegerConstant_t *m_right = ASR::down_cast<ASR::IntegerConstant_t>(m_right_expr);
-                    end = m_right->m_n;
+                    if( ASR::is_a<ASR::IntegerConstant_t>(*m_right_expr) ) {
+                        ASR::IntegerConstant_t *m_right = ASR::down_cast<ASR::IntegerConstant_t>(m_right_expr);
+                        end = m_right->m_n;
+                    }
                 }
             }
             if( a.m_step ) {
@@ -5413,7 +5412,8 @@ public:
             switch (f2->type) {
             case(ASR::symbolType::Variable): {
                 // TODO: Make create_StringRef for character (non-array) variables.
-                tmp = create_ArrayRef(x.base.base.loc, x.m_args, x.n_args, x.m_subargs, x.n_subargs, v_expr, v, f2);
+                tmp = create_ArrayRef(x.base.base.loc, x.m_args, x.n_args,
+                                      x.m_subargs, x.n_subargs, v_expr, v, f2);
                 break;
             }
             case(ASR::symbolType::StructType): {
