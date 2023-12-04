@@ -35,11 +35,11 @@ interface ishft
 end interface
 
 interface ishftc
-    module procedure ishftc32
+    module procedure ishftc32, ishftc6432
 end interface
 
 interface shiftl
-    module procedure shiftli8, shiftli32, shiftli64
+    module procedure shiftli8, shiftli32, shiftli64, shiftli64i64
 end interface
 
 interface shiftr
@@ -375,6 +375,14 @@ r = i
 
 end function
 
+elemental integer(int64) function ishftc6432(i, shift) result(r)
+integer(int64), intent(in) :: i
+integer(int32), intent(in) :: shift
+
+r = i
+
+end function
+
 integer(int8) function shiftri8(i, shift) result(r)
 integer(int8), intent(in) :: i
 integer :: shift
@@ -403,6 +411,11 @@ end function
 integer(int64) function shiftli64(i, shift) result(r)
 integer(int64) :: i
 integer :: shift
+end function
+
+integer(int64) function shiftli64i64(i, shift) result(r)
+integer(int64) :: i
+integer(int64) :: shift
 end function
 
 ! mvbits ------------------------------------------------------------------------
