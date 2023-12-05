@@ -896,6 +896,8 @@ public:
 
         // Handle templated subroutines
         if (x.n_temp_args > 0) {
+            is_template = true;
+
             SetChar temp_args;
             temp_args.reserve(al, x.n_temp_args);
             for (size_t i=0; i < x.n_temp_args; i++) {
@@ -912,6 +914,15 @@ public:
                         visit_unit_require(*r->m_reqs[i]);
                         reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
                         tmp = nullptr;
+                    }
+                }
+
+                if (AST::is_a<AST::DerivedType_t>(*x.m_decl[i])) {
+                    AST::DerivedType_t *dt = AST::down_cast<AST::DerivedType_t>(x.m_decl[i]);
+                    if (std::find(current_procedure_args.begin(),
+                                  current_procedure_args.end(),
+                                  to_lower(dt->m_name)) != current_procedure_args.end()) {
+                        visit_unit_decl2(*x.m_decl[i]);
                     }
                 }
             }
@@ -1085,6 +1096,7 @@ public:
 
         current_function_dependencies = current_function_dependencies_copy;
         in_Subroutine = false;
+        is_template = false;
         mark_common_blocks_as_declared();
     }
 
@@ -1176,6 +1188,8 @@ public:
 
         // Handle templated functions
         if (x.n_temp_args > 0) {
+            is_template = true;
+
             SetChar temp_args;
             temp_args.reserve(al, x.n_temp_args);
             for (size_t i=0; i < x.n_temp_args; i++) {
@@ -1192,6 +1206,15 @@ public:
                         visit_unit_require(*r->m_reqs[i]);
                         reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
                         tmp = nullptr;
+                    }
+                }
+
+                if (AST::is_a<AST::DerivedType_t>(*x.m_decl[i])) {
+                    AST::DerivedType_t *dt = AST::down_cast<AST::DerivedType_t>(x.m_decl[i]);
+                    if (std::find(current_procedure_args.begin(),
+                                  current_procedure_args.end(),
+                                  to_lower(dt->m_name)) != current_procedure_args.end()) {
+                        visit_unit_decl2(*x.m_decl[i]);
                     }
                 }
             }
