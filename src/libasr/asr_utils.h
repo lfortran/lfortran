@@ -930,11 +930,13 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
         return is_value_constant(struct_member_t->m_v);
     } else if( ASR::is_a<ASR::Var_t>(*a_value) ) {
         ASR::Var_t* var_t = ASR::down_cast<ASR::Var_t>(a_value);
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(var_t->m_v)));
-        ASR::Variable_t* variable_t = ASR::down_cast<ASR::Variable_t>(
-            ASRUtils::symbol_get_past_external(var_t->m_v));
-        return variable_t->m_storage == ASR::storage_typeType::Parameter;
-
+        if( ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(var_t->m_v)) ) {
+            ASR::Variable_t* variable_t = ASR::down_cast<ASR::Variable_t>(
+                ASRUtils::symbol_get_past_external(var_t->m_v));
+            return variable_t->m_storage == ASR::storage_typeType::Parameter;
+        } else {
+            return false;
+        }
     } else if(ASR::is_a<ASR::ImpliedDoLoop_t>(*a_value)) {
         // OK
     } else if(ASR::is_a<ASR::Cast_t>(*a_value)) {
