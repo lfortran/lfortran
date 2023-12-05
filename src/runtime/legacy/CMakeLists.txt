@@ -21,18 +21,18 @@ set_target_properties(lfortran_runtime_static PROPERTIES
 
 install(TARGETS lfortran_runtime_static
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    ARCHIVE DESTINATION share/lfortran/lib
-    LIBRARY DESTINATION share/lfortran/lib
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
 install(TARGETS lfortran_runtime
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  ARCHIVE DESTINATION share/lfortran/lib
-  LIBRARY DESTINATION share/lfortran/lib
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
 # Install the header
 install(
     FILES ../../../src/libasr/runtime/lfortran_intrinsics.h
-    DESTINATION share/lfortran/lib/impure
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/lfortran/impure
 )

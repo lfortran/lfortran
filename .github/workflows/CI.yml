@@ -372,6 +372,9 @@ jobs:
               -DWITH_RUNTIME_STACKTRACE=yes \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_INSTALL_BINDIR=bin-tastic \
+              -DCMAKE_INSTALL_LIBDIR=oh-my-sweet-lib \
+              -DCMAKE_INSTALL_INCLUDEDIR=incl-O-Matic \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
@@ -386,6 +389,14 @@ jobs:
             ./run_tests.py -m
             ./run_tests.py -b llvm
             ./run_tests.py -b llvm -f
+
+      - name: Test Installation
+        shell: bash -e -l {0}
+        run: |
+            test -x inst/bin-tastic/lfortran
+            test -f inst/oh-my-sweet-lib/liblfortran_runtime_static.a
+            test -f inst/oh-my-sweet-lib/liblfortran_runtime.so
+            test -f inst/incl-O-Matic/lfortran/impure/lfortran_intrinsics.h
 
   third_party_code_compile:
     name: Check Third Party Code Compilation
