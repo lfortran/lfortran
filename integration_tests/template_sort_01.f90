@@ -31,7 +31,7 @@ module template_sort_01_m
             rhs = tmp
         end subroutine
 
-        pure subroutine qs(arr, low, high)
+        pure recursive subroutine qs(arr, low, high)
             type(T), intent(inout) :: arr(:)
             integer, intent(in) :: low, high
             
@@ -54,6 +54,7 @@ module template_sort_01_m
                 call qs(arr, last + 2, high)
             end if
         end subroutine
+
         !pure recursive function qsort(arr) result(res)
         !    type(T), intent(in) :: arr(:)
         !    type(T) :: res(size(arr))
@@ -81,7 +82,8 @@ module template_sort_01_m
     end template
 
 contains
-
+    
+    ! non-generic reference
     pure recursive subroutine quicksort(arr, low, high)
         integer, intent(inout) :: arr(:)
         integer, intent(in) :: low, high

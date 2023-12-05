@@ -306,6 +306,7 @@ public:
             ASRUtils::get_FunctionType(x)->n_restrictions, false, false, false);
 
         ASR::symbol_t *t = ASR::down_cast<ASR::symbol_t>(result);
+        
         func_scope->add_symbol(new_sym_name, t);
         context_map[x->m_name] = new_sym_name;
 
@@ -596,7 +597,7 @@ public:
                 name = search_sym;
             } else {
                 ASR::symbol_t* name2 = ASRUtils::symbol_get_past_external(name);
-                std::string nested_func_name = current_scope->get_unique_name("__asr_" + call_name, false);
+                std::string nested_func_name = func_scope->get_unique_name("__asr_" + call_name, false);
                 SymbolInstantiator nested(al, context_map, type_subs, symbol_subs, func_scope, template_scope, nested_func_name);
                 name = nested.instantiate_symbol(name2);
                 name = nested.instantiate_body(ASR::down_cast<ASR::Function_t>(name), ASR::down_cast<ASR::Function_t>(name2));

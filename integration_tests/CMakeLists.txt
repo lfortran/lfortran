@@ -1013,6 +1013,7 @@ RUN(NAME template_vector LABELS llvm)
 RUN(NAME template_simple_01 LABELS llvm)
 RUN(NAME template_simple_02 LABELS llvm)
 RUN(NAME template_simple_03 LABELS llvm)
+RUN(NAME template_sort_01 LABELS llvm wasm)
 
 RUN(NAME statement1 LABELS gfortran llvm)
 
