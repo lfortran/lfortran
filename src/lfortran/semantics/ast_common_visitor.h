@@ -2274,8 +2274,10 @@ public:
                                     s_access = assgnd_access[sym];
                                 }
                                 is_external = true;
+                            } else if(sa->m_attr == AST::simple_attributeType
+                                ::AttrNoPass) {
                             } else {
-                                throw SemanticError("Attribute type not implemented yet",
+                                throw SemanticError("Attribute type not implemented yet " + std::to_string(sa->m_attr),
                                         x.base.base.loc);
                             }
                         } else if (AST::is_a<AST::AttrIntent_t>(*a)) {
@@ -2884,6 +2886,7 @@ public:
                 throw SemanticError("Procedure type '" + func_name
                                     + "' not declared", loc);
             }
+            v = ASRUtils::symbol_get_past_external(v);
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*v));
             type = ASR::down_cast<ASR::Function_t>(v)->m_function_signature;
             type_declaration = v;
