@@ -1501,6 +1501,8 @@ public:
                 } else if (ASR::is_a<ASR::Logical_t>(*ASRUtils::expr_type(val))) {
                     ASR::expr_t* function_call = process_attributes(al, x.base.base.loc, val, module_scope);
                     print_tmp.push_back(function_call);
+                } else {
+                    print_tmp.push_back(val);
                 }
             } else if (ASR::is_a<ASR::Cast_t>(*val)) {
                 ASR::Cast_t* cast_t = ASR::down_cast<ASR::Cast_t>(val);
