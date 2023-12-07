@@ -556,6 +556,7 @@ RUN(NAME intrinsics_85 LABELS gfortran llvm) # maxexponent
 RUN(NAME intrinsics_86 LABELS gfortran llvm) # kind
 RUN(NAME intrinsics_87 LABELS gfortran llvm) # abs
 RUN(NAME intrinsics_88 LABELS gfortran llvm) #min for strings
+RUN(NAME intrinsics_89 LABELS gfortran llvm) #sin
 
 
 RUN(NAME parameter_01 LABELS gfortran)
