@@ -3159,10 +3159,9 @@ public:
             for (size_t i = 0; i < x.n_symbols; i++){
                 AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
                 std::string generic_name = to_lower(use_symbol->m_remote_sym);
-                ASR::symbol_t *s = temp->m_symtab->resolve_symbol(generic_name);
+                ASR::symbol_t *s = temp->m_symtab->get_symbol(generic_name);
                 if (!s) {
-                    throw SemanticError("Symbol " + generic_name + " was not found",
-                                        x.base.base.loc);
+                    throw SemanticError("Symbol " + generic_name + " was not found", x.base.base.loc);
                 }
                 std::string new_sym_name = to_lower(use_symbol->m_local_rename);
                 instantiate_symbol(al, context_map, type_subs, symbol_subs,

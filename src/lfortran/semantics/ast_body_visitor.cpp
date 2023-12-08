@@ -719,9 +719,11 @@ public:
             for (size_t i = 0; i < x.n_symbols; i++){
                 AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
                 std::string generic_name = to_lower(use_symbol->m_remote_sym);
-                ASR::symbol_t *s = temp->m_symtab->resolve_symbol(generic_name);
+                ASR::symbol_t *s = temp->m_symtab->get_symbol(generic_name);
+
                 std::string new_s_name = to_lower(use_symbol->m_local_rename);
                 context_map[generic_name] = new_s_name;
+
                 if (ASR::is_a<ASR::Function_t>(*s)) {
                     ASR::Function_t *new_f = ASR::down_cast<ASR::Function_t>(
                         current_scope->resolve_symbol(new_s_name));
@@ -741,6 +743,8 @@ public:
                                 temp_f->m_symtab, new_f, temp_f);
                         }
                     }
+                } else {
+                    throw LCompilersException("Unsupported symbol to be instantiated");
                 }
             }
         }
@@ -2433,11 +2437,8 @@ public:
         std::string sub_name = to_lower(x.m_name);
         if (x.n_temp_args > 0) {
             ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
-            bool is_nested = ASR::is_a<ASR::Template_t>(*ASRUtils::get_asr_owner(owner_sym));
-            handle_templated(x.m_name, is_nested, x.m_temp_args, x.n_temp_args, x.base.base.loc);
-            if (!is_nested) {
-                sub_name = "__templated_" + sub_name;
-            }
+            sub_name = handle_templated(x.m_name, ASR::is_a<ASR::Template_t>(*ASRUtils::get_asr_owner(owner_sym)), 
+                x.m_temp_args, x.n_temp_args, x.base.base.loc);
         }
         SymbolTable* scope = current_scope;
         ASR::symbol_t *original_sym;

@@ -5064,11 +5064,8 @@ public:
         std::string var_name = to_lower(x.m_func);
         if (x.n_temp_args > 0) {
             ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
-            bool is_nested = ASR::is_a<ASR::Template_t>(*ASRUtils::get_asr_owner(owner_sym));
-            handle_templated(x.m_func, is_nested, x.m_temp_args, x.n_temp_args, x.base.base.loc);
-            if (!is_nested) {
-                var_name = "__templated_" + var_name;
-            }
+            var_name = handle_templated(x.m_func, ASR::is_a<ASR::Template_t>(*ASRUtils::get_asr_owner(owner_sym)),
+                x.m_temp_args, x.n_temp_args, x.base.base.loc);
         }
         SymbolTable *scope = current_scope;
         ASR::symbol_t *v = nullptr;
@@ -5759,7 +5756,7 @@ public:
 
     }
 
-    void handle_templated(std::string name, bool is_nested,
+    std::string handle_templated(std::string name, bool is_nested,
             AST::decl_attribute_t** args, size_t n_args, const Location &loc) {
         std::string func_name = name;
 
@@ -5774,7 +5771,6 @@ public:
             throw SemanticError("Cannot instantiate a non-templated function '" + func_name
                 + "'", loc);
         }
-
 
         ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(sym);
 
@@ -6012,14 +6008,11 @@ public:
         }
 
         ASR::symbol_t *s = temp->m_symtab->resolve_symbol(func_name);
-        std::string new_func_name = func_name;
-        SymbolTable *target_scope = current_scope;
 
-        if (!is_nested) {
-            new_func_name = current_scope->get_unique_name("__asr_" + func_name);
-        } else {
-            target_scope = current_scope->parent;
-        }
+        SymbolTable *target_scope = current_scope;
+        if (is_nested) { target_scope = current_scope->parent; }
+
+        std::string new_func_name = target_scope->get_unique_name("__instantiated_" + func_name);
 
         instantiate_symbol(al, context_map, type_subs, symbol_subs,
             target_scope, temp->m_symtab, new_func_name, s);
@@ -6029,27 +6022,9 @@ public:
         instantiate_function_body(al, context_map, type_subs, symbol_subs,
             target_scope, temp->m_symtab, new_f, ASR::down_cast<ASR::Function_t>(s));
 
-        // Build generic procedure if has not existed yet
-        if (!is_nested) {
-            std::string g_name = "__templated_" + func_name;
-
-            Vec<ASR::symbol_t*> symbols;
-            if (current_scope->get_symbol(g_name) != nullptr) {
-                ASR::GenericProcedure_t *old_g = ASR::down_cast<ASR::GenericProcedure_t>(current_scope->get_symbol(g_name));
-                symbols.reserve(al, old_g->n_procs + 1);
-                for (size_t i=0; i<old_g->n_procs; i++) {
-                    symbols.push_back(al, old_g->m_procs[i]);
-                }
-            } else {
-                symbols.reserve(al, 1);
-            }
-            symbols.push_back(al, new_s);
-            ASR::asr_t *g = ASR::make_GenericProcedure_t(al, loc,
-                current_scope, s2c(al, g_name), symbols.p, symbols.size(), ASR::Public);
-            current_scope->add_or_overwrite_symbol(g_name, ASR::down_cast<ASR::symbol_t>(g));
-        }
-
         context_map.clear();
+
+        return new_func_name;
     }
 
     void visit_BinOp(const AST::BinOp_t &x) {
