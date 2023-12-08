@@ -14,13 +14,12 @@ module template_sort_01_m
         end function
     end requirement
 
-    template qsort_t(T, lt, ge)
+    template qsort_t(T, lt)
         require :: op_r(T, T, logical, lt)
-        require :: op_r(T, T, logical, ge)
         private
         public :: qsort
     contains
-        pure subroutine swp(lhs, rhs)
+        subroutine swp(lhs, rhs)
             type(T), intent(inout) :: lhs
             type(T), intent(inout) :: rhs
 
@@ -31,7 +30,7 @@ module template_sort_01_m
             rhs = tmp
         end subroutine
 
-        pure recursive subroutine qs(arr, low, high)
+        recursive subroutine qs(arr, low, high)
             type(T), intent(inout) :: arr(:)
             integer, intent(in) :: low, high
             
@@ -54,31 +53,6 @@ module template_sort_01_m
                 call qs(arr, last + 2, high)
             end if
         end subroutine
-
-        !pure recursive function qsort(arr) result(res)
-        !    type(T), intent(in) :: arr(:)
-        !    type(T) :: res(size(arr))
-        !    type(T) :: pivot, lower(size(arr)), upper(size(arr))
-        !    integer :: n, n_lower, n_upper, i
-        !    n = size(arr)
-        !    if (n > 1) then
-        !        pivot = arr(n)
-        !        n_lower = 0
-        !        n_upper = 0
-        !        do i=1,n-1
-        !            if (le(arr(i), pivot)) then
-        !                n_lower = n_lower + 1
-        !                lower(n_lower) = arr(i)
-        !            else if (gt(arr(i), pivot)) then
-        !                n_upper = n_upper + 1
-        !                upper(n_upper) = arr(i)
-        !            end if
-        !        end do
-        !        res = [qsort(lower(1:n_lower)), pivot, qsort(upper(1:n_upper))]    ! this doesn't work in non-generic
-        !    else
-        !        res = arr
-        !    end if
-        !end function
     end template
 
 contains
@@ -127,13 +101,6 @@ contains
         res = lhs < rhs
     end function
 
-    pure elemental function ge_real(lhs, rhs) result(res)
-        real, intent(in) :: lhs
-        real, intent(in) :: rhs
-        logical :: res
-        res = lhs >= rhs
-    end function
-
     pure elemental function lt_integer(lhs, rhs) result(res)
         integer, intent(in) :: lhs
         integer, intent(in) :: rhs
@@ -141,18 +108,11 @@ contains
         res = lhs < rhs
     end function
 
-    pure elemental function ge_integer(lhs, rhs) result(res)
-        integer, intent(in) :: lhs
-        integer, intent(in) :: rhs
-        logical :: res
-        res = lhs >= rhs
-    end function
-
     subroutine test_template()
         integer :: xi(10)
         real :: xr(10)
-        instantiate qsort_t(integer, lt_integer, ge_integer), only: qsort_integer => qs
-        instantiate qsort_t(real, lt_real, ge_real), only: qsort_real => qs
+        instantiate qsort_t(integer, lt_integer), only: qsort_integer => qs
+        instantiate qsort_t(real, lt_real), only: qsort_real => qs
         xi = [2,4,1,5,6,24,51,3,42,2]
         xr = [2,4,1,5,6,24,51,3,42,2]
         call qsort_integer(xi, 1, 10)
