@@ -306,7 +306,6 @@ public:
             ASRUtils::get_FunctionType(x)->n_restrictions, false, false, false);
 
         ASR::symbol_t *t = ASR::down_cast<ASR::symbol_t>(result);
-        
         func_scope->add_symbol(new_sym_name, t);
         context_map[x->m_name] = new_sym_name;
 
@@ -543,6 +542,7 @@ public:
         std::string call_name = ASRUtils::symbol_name(x->m_name);
         ASR::symbol_t *name = template_scope->get_symbol(call_name);
 
+        // TODO: refactor this if-else branches
         if (ASRUtils::is_requirement_function(name)) {
             name = symbol_subs[call_name];
         } else if (context_map.find(call_name) != context_map.end()) {
@@ -587,13 +587,14 @@ public:
         std::string call_name = ASRUtils::symbol_name(x->m_name);
         ASR::symbol_t *name = template_scope->get_symbol(call_name);
 
+        // TODO: refactor this if-else branches
         if (ASRUtils::is_requirement_function(name)) {
             name = symbol_subs[call_name];
         } else if (context_map.find(call_name) != context_map.end()) {
             name = current_scope->resolve_symbol(context_map[call_name]);
         } else if (ASRUtils::is_generic_function(name)) {
             ASR::symbol_t *search_sym = current_scope->resolve_symbol(call_name);
-            if (search_sym != nullptr) {
+            if (search_sym != nullptr && ASR::is_a<ASR::Function_t>(*search_sym)) {
                 name = search_sym;
             } else {
                 ASR::symbol_t* name2 = ASRUtils::symbol_get_past_external(name);
