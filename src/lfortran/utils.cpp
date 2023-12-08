@@ -5,6 +5,8 @@
 #include <windows.h>
 #endif
 
+#include <config.h>
+
 #include <fstream>
 
 #include <bin/tpl/whereami/whereami.h>
@@ -60,7 +62,7 @@ std::string get_runtime_library_dir()
         return dirname + "/../../runtime";
     } else {
         // Installed version
-        return dirname + "/../share/lfortran/lib";
+        return CMAKE_INSTALL_FULL_LIBDIR;
     }
 }
 
@@ -69,7 +71,8 @@ std::string get_runtime_library_header_dir()
     char *env_p = std::getenv("LFORTRAN_RUNTIME_LIBRARY_HEADER_DIR");
     if (env_p) return env_p;
 
-    return get_runtime_library_dir() + "/impure";
+    std::string install_p = CMAKE_INSTALL_FULL_INCLUDEDIR;
+    return install_p + "/lfortran/impure";
 }
 
 std::string get_runtime_library_c_header_dir()
