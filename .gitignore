@@ -92,6 +92,7 @@ src/runtime/tests/test_tan
 integration_tests/test-*
 input.txt
 input
+inst/
 src/libasr/libasr.a.*
 *.html
 *.o.tmp.c
