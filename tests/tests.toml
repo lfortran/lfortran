@@ -3586,3 +3586,7 @@ llvm = true
 [[test]]
 filename = "format2.f90"
 llvm = true
+
+[[test]]
+filename = "errors/type_conflict1.f90"
+asr = true
