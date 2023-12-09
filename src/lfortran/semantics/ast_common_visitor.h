@@ -2279,6 +2279,10 @@ public:
                                 s_presence = ASR::presenceType::Optional;
                             } else if (sa->m_attr == AST::simple_attributeType
                                     ::AttrTarget) {
+                                if (storage_type == ASR::storage_typeType::Parameter) {
+                                    throw SemanticError("Parameter attribute cannot be used with Target attribute",
+                                        x.base.base.loc);
+                                }
                                 // Do nothing for now
                             } else if (sa->m_attr == AST::simple_attributeType
                                     ::AttrAllocatable) {
