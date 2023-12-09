@@ -432,6 +432,15 @@ static inline char *symbol_name(const ASR::symbol_t *f)
     }
 }
 
+static inline bool get_class_proc_nopass_val(ASR::symbol_t* func_sym) {
+    func_sym = ASRUtils::symbol_get_past_external(func_sym);
+    bool nopass = false;
+    if (ASR::is_a<ASR::ClassProcedure_t>(*func_sym)) {
+        nopass = ASR::down_cast<ASR::ClassProcedure_t>(func_sym)->m_is_nopass;
+    }
+    return nopass;
+}
+
 static inline void encode_dimensions(size_t n_dims, std::string& res,
     bool use_underscore_sep=false) {
     if( n_dims == 0 ) {
@@ -1182,6 +1191,13 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
             ASR::Variable_t* var = EXPR2VAR(value_expr);
             if (var->m_storage == ASR::storage_typeType::Parameter
                     && !extract_value(var->m_value, value)) {
+                return false;
+            }
+            break;
+        }
+        case ASR::exprType::FunctionCall: {
+            ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(value_expr);
+            if (!extract_value(func_call->m_value, value)) {
                 return false;
             }
             break;
@@ -2409,9 +2425,9 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
 
 static inline void set_absent_optional_arguments_to_null(
     Vec<ASR::call_arg_t>& args, ASR::Function_t* func, Allocator& al,
-    ASR::expr_t* dt=nullptr) {
-    int offset = (dt != nullptr);
-    for( size_t i = args.size(); i < func->n_args - offset; i++ ) {
+    ASR::expr_t* dt=nullptr, bool nopass = false) {
+    int offset = (dt != nullptr) && (!nopass);
+    for( size_t i = args.size(); i + offset < func->n_args; i++ ) {
         if( ASR::is_a<ASR::Variable_t>(
                 *ASR::down_cast<ASR::Var_t>(func->m_args[i + offset])->m_v) ) {
             LCOMPILERS_ASSERT(ASRUtils::EXPR2VAR(func->m_args[i + offset])->m_presence ==
@@ -2424,7 +2440,7 @@ static inline void set_absent_optional_arguments_to_null(
             args.push_back(al, empty_arg);
         }
     }
-    LCOMPILERS_ASSERT(args.size() == (func->n_args - offset));
+    LCOMPILERS_ASSERT(args.size() + offset == (func->n_args));
 }
 
 static inline ASR::ttype_t* duplicate_type_with_empty_dims(Allocator& al, ASR::ttype_t* t,
@@ -2552,11 +2568,6 @@ template <typename SemanticError>
 inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
     int a_kind = 4;
     switch( kind_expr->type ) {
-        case ASR::exprType::IntegerConstant: {
-            a_kind = ASR::down_cast<ASR::IntegerConstant_t>
-                    (kind_expr)->m_n;
-            break;
-        }
         case ASR::exprType::Var: {
             ASR::Var_t* kind_var =
                 ASR::down_cast<ASR::Var_t>(kind_expr);
@@ -2587,9 +2598,27 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
             }
             break;
         }
+        case ASR::exprType::IntrinsicScalarFunction: {
+            ASR::IntrinsicScalarFunction_t* kind_isf =
+                ASR::down_cast<ASR::IntrinsicScalarFunction_t>(kind_expr);
+            if (kind_isf->m_intrinsic_id == 22 && kind_isf->m_value) {
+                LCOMPILERS_ASSERT( ASR::is_a<ASR::IntegerConstant_t>(*kind_isf->m_value) );
+                ASR::IntegerConstant_t* kind_ic =
+                    ASR::down_cast<ASR::IntegerConstant_t>(kind_isf->m_value);
+                a_kind = kind_ic->m_n;
+            } else {
+                throw SemanticError("Only Integer literals or expressions which "
+                    "reduce to constant Integer are accepted as kind parameters.",
+                    loc);
+            }
+            break;
+        }
         default: {
-            throw SemanticError(R"""(Only Integer literals or expressions which reduce to constant Integer are accepted as kind parameters.)""",
-                                loc);
+            if (!ASRUtils::extract_value(kind_expr, a_kind)) {
+                throw SemanticError("Only Integer literals or expressions which "
+                    "reduce to constant Integer are accepted as kind parameters.",
+                    loc);
+            }
         }
     }
     return a_kind;
@@ -4436,8 +4465,9 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
     ASR::expr_t*& expr1, ASR::expr_t*& expr2);
 
 static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
-    ASR::call_arg_t* a_args, size_t n_args, ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt, bool implicit_argument_casting) {
-    bool is_method = a_dt != nullptr;
+    ASR::call_arg_t* a_args, size_t n_args, ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt,
+    bool implicit_argument_casting, bool nopass) {
+    bool is_method = (a_dt != nullptr) && (!nopass);
     ASR::symbol_t* a_name_ = ASRUtils::symbol_get_past_external(a_name);
     ASR::FunctionType_t* func_type = get_FunctionType(a_name);
 
@@ -4600,7 +4630,7 @@ static inline ASR::asr_t* make_FunctionCall_t_util(
     ASR::symbol_t* a_original_name, ASR::call_arg_t* a_args, size_t n_args,
     ASR::ttype_t* a_type, ASR::expr_t* a_value, ASR::expr_t* a_dt) {
 
-    Call_t_body(al, a_name, a_args, n_args, a_dt, nullptr, false);
+    Call_t_body(al, a_name, a_args, n_args, a_dt, nullptr, false, false);
 
     return ASR::make_FunctionCall_t(al, a_loc, a_name, a_original_name,
             a_args, n_args, a_type, a_value, a_dt);
@@ -4609,9 +4639,9 @@ static inline ASR::asr_t* make_FunctionCall_t_util(
 static inline ASR::asr_t* make_SubroutineCall_t_util(
     Allocator &al, const Location &a_loc, ASR::symbol_t* a_name,
     ASR::symbol_t* a_original_name, ASR::call_arg_t* a_args, size_t n_args,
-    ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt, bool implicit_argument_casting) {
+    ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt, bool implicit_argument_casting, bool nopass) {
 
-    Call_t_body(al, a_name, a_args, n_args, a_dt, cast_stmt, implicit_argument_casting);
+    Call_t_body(al, a_name, a_args, n_args, a_dt, cast_stmt, implicit_argument_casting, nopass);
 
     return ASR::make_SubroutineCall_t(al, a_loc, a_name, a_original_name,
             a_args, n_args, a_dt);

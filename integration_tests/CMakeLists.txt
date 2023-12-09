@@ -550,6 +550,13 @@ RUN(NAME intrinsics_79 LABELS gfortran llvm wasm) # Trailz
 RUN(NAME intrinsics_80 LABELS gfortran llvm) # sum
 RUN(NAME intrinsics_81 LABELS gfortran llvm) # maxval
 RUN(NAME intrinsics_82 LABELS gfortran llvm) #array support tan, cosh, sinh, tanh
+RUN(NAME intrinsics_83 LABELS gfortran llvm) # kind
+RUN(NAME intrinsics_84 LABELS gfortran llvm) # minexponent
+RUN(NAME intrinsics_85 LABELS gfortran llvm) # maxexponent
+RUN(NAME intrinsics_86 LABELS gfortran llvm) # kind
+RUN(NAME intrinsics_87 LABELS gfortran llvm) # abs
+RUN(NAME intrinsics_88 LABELS gfortran llvm) #min for strings
+RUN(NAME intrinsics_89 LABELS gfortran llvm) #sin
 
 
 RUN(NAME parameter_01 LABELS gfortran)
@@ -627,6 +634,7 @@ RUN(NAME modules_49 LABELS gfortran llvm)
 RUN(NAME modules_50 LABELS gfortran)
 RUN(NAME modules_51 LABELS gfortran llvmImplicit)
 RUN(NAME modules_53 LABELS gfortran llvm)
+RUN(NAME modules_54 LABELS gfortran llvm)
 RUN(NAME operator_overloading_05_module3 LABELS gfortran llvm EXTRAFILES
         operator_overloading_05_module1.f90 operator_overloading_05_module2.f90)
 RUN(NAME associate_06 LABELS gfortran EXTRAFILES
@@ -858,6 +866,8 @@ RUN(NAME string_23 LABELS gfortran llvm)
 RUN(NAME string_24 LABELS gfortran llvm)
 RUN(NAME string_25 LABELS gfortran llvm fortran)
 RUN(NAME string_26 LABELS gfortran llvm fortran)
+RUN(NAME string_27 LABELS gfortran llvm)
+RUN(NAME string_28 LABELS gfortran llvm)
 
 RUN(NAME nested_01 LABELS gfortran llvm)
 RUN(NAME nested_02 LABELS gfortran llvm)
@@ -927,6 +937,8 @@ RUN(NAME class_08 LABELS gfortran llvm)
 RUN(NAME class_09 LABELS gfortran llvm)
 RUN(NAME class_10 LABELS gfortran llvm)
 RUN(NAME class_11 LABELS gfortran llvm)
+RUN(NAME class_12 LABELS gfortran llvm)
+RUN(NAME class_13 LABELS gfortran llvm)
 
 RUN(NAME kwargs_01 LABELS gfortran llvm wasm)
 RUN(NAME kwargs_02 LABELS gfortran)
@@ -951,6 +963,7 @@ RUN(NAME bits_05 LABELS gfortran llvm)
 RUN(NAME bits_06 LABELS gfortran llvm fortran)
 RUN(NAME cpu_time_01 LABELS gfortran llvm)
 RUN(NAME cpu_time_02_wasm LABELS wasm)
+RUN(NAME system_clock_01 LABELS gfortran llvm)
 RUN(NAME boz_01 LABELS gfortran llvm)
 RUN(NAME cmd_01 LABELS gfortran llvm)
 RUN(NAME cmd_02 LABELS gfortran llvm)
@@ -996,9 +1009,12 @@ RUN(NAME template_array_04b LABELS llvm llvmStackArray wasm)
 RUN(NAME template_matrix LABELS llvm)
 RUN(NAME template_struct_01 LABELS llvm)
 RUN(NAME template_vector LABELS llvm)
-RUN(NAME template_simple_01 LABELS llvm)
-RUN(NAME template_simple_02 LABELS llvm)
-RUN(NAME template_simple_03 LABELS llvm)
+RUN(NAME template_simple_01 LABELS llvm wasm)
+RUN(NAME template_simple_02 LABELS llvm wasm)
+RUN(NAME template_simple_03 LABELS llvm wasm)
+RUN(NAME template_simple_04 LABELS llvm wasm)
+RUN(NAME template_sort_01 LABELS llvm wasm)
+RUN(NAME template_sort_02 LABELS llvm wasm)
 
 RUN(NAME statement1 LABELS gfortran llvm)
 
@@ -1122,6 +1138,9 @@ RUN(NAME save_03 LABELS gfortran llvm)
 RUN(NAME save_04 LABELS gfortran llvm fortran)
 RUN(NAME save_05 LABELS gfortran llvm)
 RUN(NAME save_06 LABELS gfortran llvm)
+RUN(NAME save_07 LABELS gfortran llvm)
+RUN(NAME save_08 LABELS gfortran llvm)
+
 
 RUN(NAME entry_01 LABELS gfortran llvm)
 RUN(NAME entry_02 LABELS gfortran llvm)
@@ -1183,12 +1202,13 @@ RUN(NAME precision_02 LABELS gfortran) # TODO fix this test
 RUN(NAME array_unbounded_01 LABELS gfortran llvm llvmStackArray)
 RUN(NAME array_unbounded_02 LABELS gfortran llvm llvmStackArray)
 
-RUN(NAME matmul_01 LABELS gfortran llvm c llvm_nopragma c_nopragma NOFAST)
+RUN(NAME matmul_01 LABELS gfortran llvm c llvm_nopragma c_nopragma)
 RUN(NAME matmul_02 LABELS gfortran)
-RUN(NAME simd_01 LABELS gfortran c llvm llvm_nopragma c_nopragma NOFAST)
-RUN(NAME simd_02 LABELS gfortran c llvm llvm_nopragma c_nopragma NOFAST)
+RUN(NAME simd_01 LABELS gfortran c llvm llvm_nopragma c_nopragma)
+RUN(NAME simd_02 LABELS gfortran c llvm llvm_nopragma c_nopragma)
 RUN(NAME legacy_array_sections_01 LABELS gfortran llvm llvmStackArray EXTRA_ARGS --legacy-array-sections)
 RUN(NAME legacy_array_sections_02 LABELS gfortran llvm llvmStackArray EXTRA_ARGS --legacy-array-sections)
+RUN(NAME legacy_array_sections_03 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections --implicit-interface)
 RUN(NAME cmake_minimal_test_01 LABELS gfortran llvm)
 
 RUN(NAME ip_01 LABELS gfortran llvm)

@@ -111,6 +111,7 @@ asr = true
 [[test]]
 filename = "../integration_tests/template_03b.f90"
 ast = true
+asr = true
 
 [[test]]
 filename = "../integration_tests/template_04.f90"
@@ -139,6 +140,18 @@ asr = true
 
 [[test]]
 filename = "../integration_tests/template_simple_03.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/template_simple_04.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/template_sort_01.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/template_sort_02.f90"
 asr = true
 
 [[test]]
@@ -3321,6 +3334,10 @@ filename = "errors/kind1.f90"
 asr = true
 
 [[test]]
+filename = "errors/kind2.f90"
+asr = true
+
+[[test]]
 filename = "errors/intent1.f90"
 asr = true
 
@@ -3569,4 +3586,8 @@ run_with_dbg = true
 
 [[test]]
 filename = "../integration_tests/legacy_array_sections_01.f90"
+llvm = true
+
+[[test]]
+filename = "format2.f90"
 llvm = true

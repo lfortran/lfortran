@@ -47,7 +47,7 @@ public:
         ASR::ttype_t *t = x->m_type;
         ASR::dimension_t* tp_m_dims = nullptr;
         int tp_n_dims = ASRUtils::extract_dimensions_from_ttype(t, tp_m_dims);
-        
+
         if (ASR::is_a<ASR::TypeParameter_t>(*t)) {
             ASR::TypeParameter_t *tp = ASR::down_cast<ASR::TypeParameter_t>(t);
             if (type_subs.find(tp->m_param) != type_subs.end()) {
@@ -98,7 +98,7 @@ public:
 
         ASR::symbol_t *new_f = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Function_t_util(
             al, x->base.base.loc, current_scope, s2c(al, new_sym_name), x->m_dependencies,
-            x->n_dependencies, args.p, args.size(), nullptr, 0, new_return_var_ref, ftype->m_abi, 
+            x->n_dependencies, args.p, args.size(), nullptr, 0, new_return_var_ref, ftype->m_abi,
             x->m_access, ftype->m_deftype, ftype->m_bindc_name, ftype->m_elemental,
             ftype->m_pure, ftype->m_module, ftype->m_inline, ftype->m_static, ftype->m_restrictions,
             ftype->n_restrictions, ftype->m_is_restriction, x->m_deterministic, x->m_side_effect_free));
@@ -424,7 +424,6 @@ public:
             x->m_module_name, x->m_scope_names, x->n_scope_names, x->m_original_name, x->m_access));
     }
 
-    // ASR::symbol_t* duplicate_ClassProcedure(ASR::symbol_t *s) {
     ASR::symbol_t* duplicate_ClassProcedure(ASR::ClassProcedure_t *x) {
         std::string new_cp_name = func_scope->get_unique_name("__asr_" + new_sym_name + "_" + x->m_name, false);
         ASR::symbol_t *cp_proc = template_scope->get_symbol(x->m_name);
@@ -434,7 +433,7 @@ public:
 
         ASR::symbol_t *new_x = ASR::down_cast<ASR::symbol_t>(ASR::make_ClassProcedure_t(
             al, x->base.base.loc, current_scope, x->m_name, x->m_self_argument,
-            s2c(al, new_cp_name), new_cp_proc, x->m_abi, x->m_is_deferred));
+            s2c(al, new_cp_name), new_cp_proc, x->m_abi, x->m_is_deferred, x->m_is_nopass));
         current_scope->add_symbol(x->m_name, new_x);
 
         return new_x;
@@ -542,6 +541,7 @@ public:
         std::string call_name = ASRUtils::symbol_name(x->m_name);
         ASR::symbol_t *name = template_scope->get_symbol(call_name);
 
+        // TODO: refactor this if-else branches
         if (ASRUtils::is_requirement_function(name)) {
             name = symbol_subs[call_name];
         } else if (context_map.find(call_name) != context_map.end()) {
@@ -586,17 +586,18 @@ public:
         std::string call_name = ASRUtils::symbol_name(x->m_name);
         ASR::symbol_t *name = template_scope->get_symbol(call_name);
 
+        // TODO: refactor this if-else branches
         if (ASRUtils::is_requirement_function(name)) {
             name = symbol_subs[call_name];
         } else if (context_map.find(call_name) != context_map.end()) {
             name = current_scope->resolve_symbol(context_map[call_name]);
         } else if (ASRUtils::is_generic_function(name)) {
             ASR::symbol_t *search_sym = current_scope->resolve_symbol(call_name);
-            if (search_sym != nullptr) {
+            if (search_sym != nullptr && ASR::is_a<ASR::Function_t>(*search_sym)) {
                 name = search_sym;
             } else {
                 ASR::symbol_t* name2 = ASRUtils::symbol_get_past_external(name);
-                std::string nested_func_name = current_scope->get_unique_name("__asr_" + call_name, false);
+                std::string nested_func_name = func_scope->get_unique_name("__asr_" + call_name, false);
                 SymbolInstantiator nested(al, context_map, type_subs, symbol_subs, func_scope, template_scope, nested_func_name);
                 name = nested.instantiate_symbol(name2);
                 name = nested.instantiate_body(ASR::down_cast<ASR::Function_t>(name), ASR::down_cast<ASR::Function_t>(name2));
@@ -612,7 +613,7 @@ public:
             ADD_ASR_DEPENDENCIES(current_scope, name, dependencies);
         }
         return ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc, name /* change this */,
-            x->m_original_name, args.p, args.size(), dt, nullptr, false);
+            x->m_original_name, args.p, args.size(), dt, nullptr, false, ASRUtils::get_class_proc_nopass_val(x->m_name));
     }
 
     ASR::asr_t* duplicate_StructInstanceMember(ASR::StructInstanceMember_t *x) {

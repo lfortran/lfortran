@@ -1,0 +1,1253 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            template_03:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            axpy_tmpl:
+                                (Template
+                                    (SymbolTable
+                                        5
+                                        {
+                                            axpy:
+                                                (Function
+                                                    (SymbolTable
+                                                        8
+                                                        {
+                                                            a:
+                                                                (Variable
+                                                                    8
+                                                                    a
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            x:
+                                                                (Variable
+                                                                    8
+                                                                    x
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Array
+                                                                        (TypeParameter
+                                                                            u
+                                                                        )
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            y:
+                                                                (Variable
+                                                                    8
+                                                                    y
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Array
+                                                                        (TypeParameter
+                                                                            v
+                                                                        )
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    axpy
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            t
+                                                        )
+                                                        (Array
+                                                            (TypeParameter
+                                                                u
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                        (Array
+                                                            (TypeParameter
+                                                                v
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    [times
+                                                    plus]
+                                                    [(Var 8 a)
+                                                    (Var 8 x)
+                                                    (Var 8 y)]
+                                                    [(=
+                                                        (Var 8 y)
+                                                        (ArrayBroadcast
+                                                            (FunctionCall
+                                                                5 plus
+                                                                ()
+                                                                [((Var 8 y))
+                                                                ((FunctionCall
+                                                                    5 times
+                                                                    ()
+                                                                    [((Var 8 a))
+                                                                    ((Var 8 x))]
+                                                                    (TypeParameter
+                                                                        w
+                                                                    )
+                                                                    ()
+                                                                    ()
+                                                                ))]
+                                                                (TypeParameter
+                                                                    v
+                                                                )
+                                                                ()
+                                                                ()
+                                                            )
+                                                            (IntrinsicArrayFunction
+                                                                Shape
+                                                                [(Var 8 y)]
+                                                                0
+                                                                (Array
+                                                                    (Integer 4)
+                                                                    [((IntegerConstant 1 (Integer 4))
+                                                                    (IntegerConstant 1 (Integer 4)))]
+                                                                    FixedSizeArray
+                                                                )
+                                                                ()
+                                                            )
+                                                            (Array
+                                                                (TypeParameter
+                                                                    v
+                                                                )
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                            )
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )]
+                                                    ()
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            plus:
+                                                (Function
+                                                    (SymbolTable
+                                                        6
+                                                        {
+                                                            a:
+                                                                (Variable
+                                                                    6
+                                                                    a
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        v
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            b:
+                                                                (Variable
+                                                                    6
+                                                                    b
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        w
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            op:
+                                                                (Variable
+                                                                    6
+                                                                    op
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        v
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    plus
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            v
+                                                        )
+                                                        (TypeParameter
+                                                            w
+                                                        )]
+                                                        (TypeParameter
+                                                            v
+                                                        )
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .true.
+                                                    )
+                                                    []
+                                                    [(Var 6 a)
+                                                    (Var 6 b)]
+                                                    []
+                                                    (Var 6 op)
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            t:
+                                                (Variable
+                                                    5
+                                                    t
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        t
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            times:
+                                                (Function
+                                                    (SymbolTable
+                                                        7
+                                                        {
+                                                            a:
+                                                                (Variable
+                                                                    7
+                                                                    a
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            b:
+                                                                (Variable
+                                                                    7
+                                                                    b
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        u
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            op:
+                                                                (Variable
+                                                                    7
+                                                                    op
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        w
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    times
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            t
+                                                        )
+                                                        (TypeParameter
+                                                            u
+                                                        )]
+                                                        (TypeParameter
+                                                            w
+                                                        )
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .true.
+                                                    )
+                                                    []
+                                                    [(Var 7 a)
+                                                    (Var 7 b)]
+                                                    []
+                                                    (Var 7 op)
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            u:
+                                                (Variable
+                                                    5
+                                                    u
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        u
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            v:
+                                                (Variable
+                                                    5
+                                                    v
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        v
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            w:
+                                                (Variable
+                                                    5
+                                                    w
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        w
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    axpy_tmpl
+                                    [t
+                                    u
+                                    v
+                                    w
+                                    plus
+                                    times]
+                                    [(Require
+                                        op
+                                        [v
+                                        w
+                                        plus]
+                                    )
+                                    (Require
+                                        op
+                                        [t
+                                        u
+                                        w
+                                        times]
+                                    )]
+                                ),
+                            f:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            a:
+                                                (Variable
+                                                    9
+                                                    a
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            axpy:
+                                                (Function
+                                                    (SymbolTable
+                                                        12
+                                                        {
+                                                            a:
+                                                                (Variable
+                                                                    12
+                                                                    a
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            x:
+                                                                (Variable
+                                                                    12
+                                                                    x
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Array
+                                                                        (Integer 4)
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            y:
+                                                                (Variable
+                                                                    12
+                                                                    y
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Array
+                                                                        (Real 8)
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    axpy
+                                                    (FunctionType
+                                                        [(Real 4)
+                                                        (Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                        (Array
+                                                            (Real 8)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    [~mul_intrinsic
+                                                    ~add_intrinsic]
+                                                    [(Var 12 a)
+                                                    (Var 12 x)
+                                                    (Var 12 y)]
+                                                    [(=
+                                                        (Var 12 y)
+                                                        (ArrayBroadcast
+                                                            (FunctionCall
+                                                                9 ~add_intrinsic
+                                                                ()
+                                                                [((Var 12 y))
+                                                                ((FunctionCall
+                                                                    9 ~mul_intrinsic
+                                                                    ()
+                                                                    [((Var 12 a))
+                                                                    ((Var 12 x))]
+                                                                    (Real 4)
+                                                                    ()
+                                                                    ()
+                                                                ))]
+                                                                (Real 8)
+                                                                ()
+                                                                ()
+                                                            )
+                                                            (IntrinsicArrayFunction
+                                                                Shape
+                                                                [(Var 12 y)]
+                                                                0
+                                                                (Array
+                                                                    (Integer 4)
+                                                                    [((IntegerConstant 1 (Integer 4))
+                                                                    (IntegerConstant 1 (Integer 4)))]
+                                                                    FixedSizeArray
+                                                                )
+                                                                ()
+                                                            )
+                                                            (Array
+                                                                (TypeParameter
+                                                                    v
+                                                                )
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                            )
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )]
+                                                    ()
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            dp:
+                                                (Variable
+                                                    9
+                                                    dp
+                                                    []
+                                                    Local
+                                                    (IntrinsicScalarFunction
+                                                        Kind
+                                                        [(RealConstant
+                                                            1.000000
+                                                            (Real 8)
+                                                        )]
+                                                        0
+                                                        (Integer 4)
+                                                        (IntegerConstant 8 (Integer 4))
+                                                    )
+                                                    (IntegerConstant 8 (Integer 4))
+                                                    Parameter
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            sp:
+                                                (Variable
+                                                    9
+                                                    sp
+                                                    []
+                                                    Local
+                                                    (IntrinsicScalarFunction
+                                                        Kind
+                                                        [(RealConstant
+                                                            1.000000
+                                                            (Real 4)
+                                                        )]
+                                                        0
+                                                        (Integer 4)
+                                                        (IntegerConstant 4 (Integer 4))
+                                                    )
+                                                    (IntegerConstant 4 (Integer 4))
+                                                    Parameter
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            x:
+                                                (Variable
+                                                    9
+                                                    x
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 3 (Integer 4)))]
+                                                        FixedSizeArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            y:
+                                                (Variable
+                                                    9
+                                                    y
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Real 8)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 3 (Integer 4)))]
+                                                        FixedSizeArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            ~add:
+                                                (CustomOperator
+                                                    9
+                                                    ~add
+                                                    [9 ~add_intrinsic]
+                                                    Public
+                                                ),
+                                            ~add_intrinsic:
+                                                (Function
+                                                    (SymbolTable
+                                                        10
+                                                        {
+                                                            arg0:
+                                                                (Variable
+                                                                    10
+                                                                    arg0
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 8)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            arg1:
+                                                                (Variable
+                                                                    10
+                                                                    arg1
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            ret:
+                                                                (Variable
+                                                                    10
+                                                                    ret
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 8)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    ~add_intrinsic
+                                                    (FunctionType
+                                                        [(Real 8)
+                                                        (Real 4)]
+                                                        (Real 8)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    []
+                                                    [(Var 10 arg0)
+                                                    (Var 10 arg1)]
+                                                    [(=
+                                                        (Var 10 ret)
+                                                        (RealBinOp
+                                                            (Var 10 arg0)
+                                                            Add
+                                                            (Cast
+                                                                (Var 10 arg1)
+                                                                RealToReal
+                                                                (Real 8)
+                                                                ()
+                                                            )
+                                                            (Real 8)
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )]
+                                                    (Var 10 ret)
+                                                    Public
+                                                    .false.
+                                                    .true.
+                                                    ()
+                                                ),
+                                            ~mul:
+                                                (CustomOperator
+                                                    9
+                                                    ~mul
+                                                    [9 ~mul_intrinsic]
+                                                    Public
+                                                ),
+                                            ~mul_intrinsic:
+                                                (Function
+                                                    (SymbolTable
+                                                        11
+                                                        {
+                                                            arg0:
+                                                                (Variable
+                                                                    11
+                                                                    arg0
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            arg1:
+                                                                (Variable
+                                                                    11
+                                                                    arg1
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            ret:
+                                                                (Variable
+                                                                    11
+                                                                    ret
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    ~mul_intrinsic
+                                                    (FunctionType
+                                                        [(Real 4)
+                                                        (Integer 4)]
+                                                        (Real 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    []
+                                                    [(Var 11 arg0)
+                                                    (Var 11 arg1)]
+                                                    [(=
+                                                        (Var 11 ret)
+                                                        (RealBinOp
+                                                            (Var 11 arg0)
+                                                            Mul
+                                                            (Cast
+                                                                (Var 11 arg1)
+                                                                IntegerToReal
+                                                                (Real 4)
+                                                                ()
+                                                            )
+                                                            (Real 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )]
+                                                    (Var 11 ret)
+                                                    Public
+                                                    .false.
+                                                    .true.
+                                                    ()
+                                                )
+                                        })
+                                    f
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    [(=
+                                        (Var 9 a)
+                                        (RealConstant
+                                            0.500000
+                                            (Real 4)
+                                        )
+                                        ()
+                                    )
+                                    (=
+                                        (Var 9 x)
+                                        (ArrayBroadcast
+                                            (IntegerConstant 2 (Integer 4))
+                                            (ArrayConstant
+                                                [(IntegerConstant 3 (Integer 4))]
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4)))]
+                                                    FixedSizeArray
+                                                )
+                                                ColMajor
+                                            )
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 3 (Integer 4)))]
+                                                FixedSizeArray
+                                            )
+                                            (ArrayConstant
+                                                [(IntegerConstant 2 (Integer 4))
+                                                (IntegerConstant 2 (Integer 4))
+                                                (IntegerConstant 2 (Integer 4))]
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 3 (Integer 4)))]
+                                                    FixedSizeArray
+                                                )
+                                                ColMajor
+                                            )
+                                        )
+                                        ()
+                                    )
+                                    (=
+                                        (Var 9 y)
+                                        (ArrayBroadcast
+                                            (Cast
+                                                (IntegerConstant 2 (Integer 4))
+                                                IntegerToReal
+                                                (Real 8)
+                                                (RealConstant
+                                                    2.000000
+                                                    (Real 8)
+                                                )
+                                            )
+                                            (ArrayConstant
+                                                [(IntegerConstant 3 (Integer 4))]
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4)))]
+                                                    FixedSizeArray
+                                                )
+                                                ColMajor
+                                            )
+                                            (Array
+                                                (Real 8)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 3 (Integer 4)))]
+                                                FixedSizeArray
+                                            )
+                                            (ArrayConstant
+                                                [(Cast
+                                                    (IntegerConstant 2 (Integer 4))
+                                                    IntegerToReal
+                                                    (Real 8)
+                                                    (RealConstant
+                                                        2.000000
+                                                        (Real 8)
+                                                    )
+                                                )
+                                                (Cast
+                                                    (IntegerConstant 2 (Integer 4))
+                                                    IntegerToReal
+                                                    (Real 8)
+                                                    (RealConstant
+                                                        2.000000
+                                                        (Real 8)
+                                                    )
+                                                )
+                                                (Cast
+                                                    (IntegerConstant 2 (Integer 4))
+                                                    IntegerToReal
+                                                    (Real 8)
+                                                    (RealConstant
+                                                        2.000000
+                                                        (Real 8)
+                                                    )
+                                                )]
+                                                (Array
+                                                    (Real 8)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 3 (Integer 4)))]
+                                                    FixedSizeArray
+                                                )
+                                                ColMajor
+                                            )
+                                        )
+                                        ()
+                                    )
+                                    (SubroutineCall
+                                        9 axpy
+                                        ()
+                                        [((Var 9 a))
+                                        ((ArrayPhysicalCast
+                                            (Var 9 x)
+                                            FixedSizeArray
+                                            DescriptorArray
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 3 (Integer 4)))]
+                                                DescriptorArray
+                                            )
+                                            ()
+                                        ))
+                                        ((ArrayPhysicalCast
+                                            (Var 9 y)
+                                            FixedSizeArray
+                                            DescriptorArray
+                                            (Array
+                                                (Real 8)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 3 (Integer 4)))]
+                                                DescriptorArray
+                                            )
+                                            ()
+                                        ))]
+                                        ()
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            op:
+                                (Requirement
+                                    (SymbolTable
+                                        3
+                                        {
+                                            op:
+                                                (Function
+                                                    (SymbolTable
+                                                        4
+                                                        {
+                                                            a:
+                                                                (Variable
+                                                                    4
+                                                                    a
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            b:
+                                                                (Variable
+                                                                    4
+                                                                    b
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        u
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            op:
+                                                                (Variable
+                                                                    4
+                                                                    op
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        v
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    op
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            t
+                                                        )
+                                                        (TypeParameter
+                                                            u
+                                                        )]
+                                                        (TypeParameter
+                                                            v
+                                                        )
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .true.
+                                                    )
+                                                    []
+                                                    [(Var 4 a)
+                                                    (Var 4 b)]
+                                                    []
+                                                    (Var 4 op)
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            t:
+                                                (Variable
+                                                    3
+                                                    t
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        t
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            u:
+                                                (Variable
+                                                    3
+                                                    u
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        u
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            v:
+                                                (Variable
+                                                    3
+                                                    v
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        v
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    op
+                                    [t
+                                    u
+                                    v
+                                    op]
+                                    []
+                                )
+                        })
+                    template_03
+                    []
+                    [(SubroutineCall
+                        2 f
+                        ()
+                        []
+                        ()
+                    )]
+                )
+        })
+    []
+)

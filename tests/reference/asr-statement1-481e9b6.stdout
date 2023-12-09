@@ -2,8 +2,6 @@
     (SymbolTable
         1
         {
-            lfortran_intrinsic_kind:
-                (IntrinsicModule lfortran_intrinsic_kind),
             statement1:
                 (Program
                     (SymbolTable
@@ -12,11 +10,11 @@
                             dfloat:
                                 (Function
                                     (SymbolTable
-                                        13
+                                        4
                                         {
                                             dfloat_return_var_name:
                                                 (Variable
-                                                    13
+                                                    4
                                                     dfloat_return_var_name
                                                     []
                                                     ReturnVar
@@ -32,7 +30,7 @@
                                                 ),
                                             i:
                                                 (Variable
-                                                    13
+                                                    4
                                                     i
                                                     []
                                                     In
@@ -48,7 +46,7 @@
                                                 ),
                                             j:
                                                 (Variable
-                                                    13
+                                                    4
                                                     j
                                                     []
                                                     In
@@ -80,15 +78,15 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 13 i)
-                                    (Var 13 j)]
+                                    [(Var 4 i)
+                                    (Var 4 j)]
                                     [(=
-                                        (Var 13 dfloat_return_var_name)
+                                        (Var 4 dfloat_return_var_name)
                                         (Cast
                                             (IntegerBinOp
-                                                (Var 13 i)
+                                                (Var 4 i)
                                                 Add
-                                                (Var 13 j)
+                                                (Var 4 j)
                                                 (Integer 4)
                                                 ()
                                             )
@@ -98,7 +96,7 @@
                                         )
                                         ()
                                     )]
-                                    (Var 13 dfloat_return_var_name)
+                                    (Var 4 dfloat_return_var_name)
                                     Public
                                     .false.
                                     .false.
@@ -110,16 +108,15 @@
                                     dp
                                     []
                                     Local
-                                    (FunctionCall
-                                        2 kind
-                                        ()
-                                        [((RealConstant
+                                    (IntrinsicScalarFunction
+                                        Kind
+                                        [(RealConstant
                                             0.000000
                                             (Real 8)
-                                        ))]
+                                        )]
+                                        0
                                         (Integer 4)
                                         (IntegerConstant 8 (Integer 4))
-                                        ()
                                     )
                                     (IntegerConstant 8 (Integer 4))
                                     Parameter
@@ -149,11 +146,11 @@
                             ifloat:
                                 (Function
                                     (SymbolTable
-                                        14
+                                        5
                                         {
                                             i:
                                                 (Variable
-                                                    14
+                                                    5
                                                     i
                                                     []
                                                     In
@@ -169,7 +166,7 @@
                                                 ),
                                             ifloat_return_var_name:
                                                 (Variable
-                                                    14
+                                                    5
                                                     ifloat_return_var_name
                                                     []
                                                     ReturnVar
@@ -185,7 +182,7 @@
                                                 ),
                                             j:
                                                 (Variable
-                                                    14
+                                                    5
                                                     j
                                                     []
                                                     In
@@ -217,20 +214,20 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 14 i)
-                                    (Var 14 j)]
+                                    [(Var 5 i)
+                                    (Var 5 j)]
                                     [(=
-                                        (Var 14 ifloat_return_var_name)
+                                        (Var 5 ifloat_return_var_name)
                                         (IntegerBinOp
-                                            (Var 14 i)
+                                            (Var 5 i)
                                             Add
-                                            (Var 14 j)
+                                            (Var 5 j)
                                             (Integer 4)
                                             ()
                                         )
                                         ()
                                     )]
-                                    (Var 14 ifloat_return_var_name)
+                                    (Var 5 ifloat_return_var_name)
                                     Public
                                     .false.
                                     .false.
@@ -252,24 +249,14 @@
                                     Required
                                     .false.
                                 ),
-                            kind:
-                                (ExternalSymbol
-                                    2
-                                    kind
-                                    4 kind
-                                    lfortran_intrinsic_kind
-                                    []
-                                    kind
-                                    Private
-                                ),
                             sfloat:
                                 (Function
                                     (SymbolTable
-                                        12
+                                        3
                                         {
                                             i:
                                                 (Variable
-                                                    12
+                                                    3
                                                     i
                                                     []
                                                     In
@@ -285,7 +272,7 @@
                                                 ),
                                             j:
                                                 (Variable
-                                                    12
+                                                    3
                                                     j
                                                     []
                                                     In
@@ -301,7 +288,7 @@
                                                 ),
                                             sfloat_return_var_name:
                                                 (Variable
-                                                    12
+                                                    3
                                                     sfloat_return_var_name
                                                     []
                                                     ReturnVar
@@ -333,15 +320,15 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 12 i)
-                                    (Var 12 j)]
+                                    [(Var 3 i)
+                                    (Var 3 j)]
                                     [(=
-                                        (Var 12 sfloat_return_var_name)
+                                        (Var 3 sfloat_return_var_name)
                                         (Cast
                                             (IntegerBinOp
-                                                (Var 12 i)
+                                                (Var 3 i)
                                                 Mul
-                                                (Var 12 j)
+                                                (Var 3 j)
                                                 (Integer 4)
                                                 ()
                                             )
@@ -351,7 +338,7 @@
                                         )
                                         ()
                                     )]
-                                    (Var 12 sfloat_return_var_name)
+                                    (Var 3 sfloat_return_var_name)
                                     Public
                                     .false.
                                     .false.
@@ -391,7 +378,7 @@
                                 )
                         })
                     statement1
-                    [lfortran_intrinsic_kind]
+                    []
                     [(=
                         (Var 2 ti)
                         (FunctionCall

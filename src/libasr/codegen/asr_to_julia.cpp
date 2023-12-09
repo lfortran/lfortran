@@ -1901,6 +1901,7 @@ public:
             SET_INTRINSIC_NAME(Expm1, "expm1");
             SET_INTRINSIC_NAME(Trunc, "trunc");
             SET_INTRINSIC_NAME(Fix, "fix");
+            SET_INTRINSIC_NAME(Kind, "kind");
             default : {
                 throw LCompilersException("IntrinsicFunction: `"
                     + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)

@@ -5,6 +5,8 @@
 #include <windows.h>
 #endif
 
+#include <config.h>
+
 #include <fstream>
 
 #include <bin/tpl/whereami/whereami.h>
@@ -60,7 +62,7 @@ std::string get_runtime_library_dir()
         return dirname + "/../../runtime";
     } else {
         // Installed version
-        return dirname + "/../share/lfortran/lib";
+        return CMAKE_INSTALL_FULL_LIBDIR;
     }
 }
 
@@ -69,7 +71,8 @@ std::string get_runtime_library_header_dir()
     char *env_p = std::getenv("LFORTRAN_RUNTIME_LIBRARY_HEADER_DIR");
     if (env_p) return env_p;
 
-    return get_runtime_library_dir() + "/impure";
+    std::string install_p = CMAKE_INSTALL_FULL_INCLUDEDIR;
+    return install_p + "/lfortran/impure";
 }
 
 std::string get_runtime_library_c_header_dir()
@@ -98,6 +101,14 @@ std::string get_runtime_library_c_header_dir()
     }
 
     return path;
+}
+
+// Decodes the exit status code of the process (in Unix)
+// See `WEXITSTATUS` for more information.
+// https://stackoverflow.com/a/27117435/15913193
+// https://linux.die.net/man/3/system
+int32_t get_exit_status(int32_t err) {
+    return (((err) >> 8) & 0x000000ff);
 }
 
 } // namespace LCompilers::LFortran

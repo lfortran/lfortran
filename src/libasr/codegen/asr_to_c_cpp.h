@@ -3035,6 +3035,16 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             SET_INTRINSIC_NAME(Trunc, "trunc");
             SET_INTRINSIC_NAME(Fix, "fix");
             SET_INTRINSIC_NAME(FloorDiv, "floordiv");
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::FMA)) : {
+                this->visit_expr(*x.m_args[0]);
+                std::string a = src;
+                this->visit_expr(*x.m_args[1]);
+                std::string b = src;
+                this->visit_expr(*x.m_args[2]);
+                std::string c = src;
+                src = a +" + "+ b +"*"+ c;
+                return;
+            }
             default : {
                 throw LCompilersException("IntrinsicScalarFunction: `"
                     + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)

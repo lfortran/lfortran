@@ -657,6 +657,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 double val = va_arg(args, double);
                 handle_float(value, val, &result);
             } else if (strlen(value) != 0) {
+                if ( count == 0 ) break;
+                count--;
                 printf("Printing support is not available for %s format.\n",value);
             }
 
@@ -1847,13 +1849,13 @@ LFORTRAN_API void _lfortran_cpu_time(double *t) {
 
 LFORTRAN_API void _lfortran_i32sys_clock(
         int32_t *count, int32_t *rate, int32_t *max) {
-#if defined(_MSC_VER) || defined(__MACH__)
+#if defined(_MSC_VER)
         *count = - INT_MAX;
         *rate = 0;
         *max = 0;
 #else
     struct timespec ts;
-    if(clock_gettime(CLOCK_MONOTONIC, &ts) == -1) {
+    if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
         *count = (int32_t)(ts.tv_nsec / 1000000) + ((int32_t)ts.tv_sec * 1000);
         *rate = 1e3; // milliseconds
         *max = INT_MAX;
@@ -1867,13 +1869,13 @@ LFORTRAN_API void _lfortran_i32sys_clock(
 
 LFORTRAN_API void _lfortran_i64sys_clock(
         uint64_t *count, int64_t *rate, int64_t *max) {
-#if defined(_MSC_VER) || defined(__MACH__)
+#if defined(_MSC_VER)
         *count = - INT_MAX;
         *rate = 0;
         *max = 0;
 #else
     struct timespec ts;
-    if(clock_gettime(CLOCK_MONOTONIC, &ts) == -1) {
+    if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
         *count = (uint64_t)(ts.tv_nsec) + ((uint64_t)ts.tv_sec * 1000000000);
         // FIXME: Rate can be in microseconds or nanoseconds depending on
         //          resolution of the underlying platform clock.

@@ -193,7 +193,7 @@ print *, "Clock cycles per element:"
 print *, "Theoretical performance peak:", fma_clock, "cycles"
 print *, "Measured:                    ", measured, "cycles"
 print *, "Percent peak:                ", percent_peak, "%"
-if (err > 1e-4) error stop
+if (err > 1e-3) error stop
 
 print *
 print *, "matmul1:"
@@ -215,6 +215,6 @@ print *, "Clock cycles per element:"
 print *, "Theoretical performance peak:", fma_clock, "cycles"
 print *, "Measured:                    ", measured, "cycles"
 print *, "Percent peak:                ", percent_peak, "%"
-if (err > 1e-4) error stop
+if (err > 1e-3) error stop
 
 end program

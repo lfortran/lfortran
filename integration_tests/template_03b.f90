@@ -28,6 +28,30 @@ program template_03
 
 contains
     
+    elemental function my_mul(a, b) result(op)
+        integer, parameter :: sp = kind(1.0)
+        real(sp), intent(in) :: a
+        integer, intent(in) :: b
+        real(sp) :: op
+        op = a * b
+    end function
+
+    elemental function my_add(a, b) result(op)
+        integer, parameter :: sp = kind(1.0), dp = kind(1.d0)
+        real(dp), intent(in) :: a
+        real(sp), intent(in) :: b
+        real(dp) :: op
+        op = a + b
+    end function
+
+    subroutine my_axpy(a, x, y)
+        integer, parameter :: sp = kind(1.0), dp = kind(1.d0)
+        real(sp), intent(in) :: a
+        integer, intent(in) :: x(:)
+        real(dp), intent(inout) :: y(:)
+        y = my?add(y, my_mul(a, x))
+    end subroutine
+
     subroutine f()
         integer, parameter :: sp = kind(1.0), dp = kind(1.d0)
         instantiate axpy_tmpl(real(sp), integer, real(dp), real(sp), operator(+), operator(*))
@@ -38,5 +62,6 @@ contains
         x = 2
         y = 2
         call axpy(a, x, y)
+        ! call my_axpy(a, x, y)   ! non-generic does not work too
     end subroutine
 end program

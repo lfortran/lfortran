@@ -239,6 +239,7 @@
                                                     2 add_log_file
                                                     Source
                                                     .false.
+                                                    .false.
                                                 ),
                                             log_io_error:
                                                 (ClassProcedure
@@ -248,6 +249,7 @@
                                                     log_io_error
                                                     2 log_io_error
                                                     Source
+                                                    .false.
                                                     .false.
                                                 )
                                         })

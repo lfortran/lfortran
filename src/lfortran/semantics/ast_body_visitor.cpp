@@ -298,7 +298,7 @@ public:
         for( std::uint32_t i = 0; i < x.n_kwargs; i++ ) {
             AST::keyword_t kwarg = x.m_kwargs[i];
             std::string m_arg_str(kwarg.m_arg);
-            if( m_arg_str == std::string("unit") ) {
+            if( to_lower(m_arg_str) == std::string("unit") ) {
                 if( a_unit != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `unit` found, `unit` has already been specified via argument or keyword arguments)""",
                                         x.base.base.loc);
@@ -309,7 +309,7 @@ public:
                 if (!ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_newunit_type))) {
                         throw SemanticError("`unit` must be of type, Integer or IntegerPointer", x.base.base.loc);
                 }
-            } else if( m_arg_str == std::string("iostat") ) {
+            } else if( to_lower(m_arg_str) == std::string("iostat") ) {
                 if( a_iostat != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `iostat` found, unit has already been specified via arguments or keyword arguments)""",
                                         x.base.base.loc);
@@ -321,7 +321,7 @@ public:
                     (!ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_iostat_type))) ) {
                         throw SemanticError("`iostat` must be a variable of type, Integer or IntegerPointer", x.base.base.loc);
                 }
-            } else if( m_arg_str == std::string("iomsg") ) {
+            } else if( to_lower(m_arg_str) == std::string("iomsg") ) {
                 if( a_iomsg != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `iomsg` found, unit has already been specified via arguments or keyword arguments)""",
                                         x.base.base.loc);
@@ -333,7 +333,7 @@ public:
                     (!ASRUtils::is_character(*a_iomsg_type)) ) {
                         throw SemanticError("`iomsg` must be of type, Character or CharacterPointer", x.base.base.loc);
                     }
-            } else if( m_arg_str == std::string("status") ) {
+            } else if( to_lower(m_arg_str) == std::string("status") ) {
                 if( a_status != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `status` found, unit has already been specified via arguments or keyword arguments)""",
                                         x.base.base.loc);
@@ -344,7 +344,7 @@ public:
                 if (!ASRUtils::is_character(*a_status_type)) {
                         throw SemanticError("`status` must be of type, Character or CharacterPointer", x.base.base.loc);
                 }
-            } else if( m_arg_str == std::string("err") ) {
+            } else if( to_lower(m_arg_str) == std::string("err") ) {
                 if( a_err != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `err` found, `err` has already been specified via arguments or keyword arguments)""",
                                         x.base.base.loc);
@@ -719,9 +719,11 @@ public:
             for (size_t i = 0; i < x.n_symbols; i++){
                 AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
                 std::string generic_name = to_lower(use_symbol->m_remote_sym);
-                ASR::symbol_t *s = temp->m_symtab->resolve_symbol(generic_name);
+                ASR::symbol_t *s = temp->m_symtab->get_symbol(generic_name);
+
                 std::string new_s_name = to_lower(use_symbol->m_local_rename);
                 context_map[generic_name] = new_s_name;
+
                 if (ASR::is_a<ASR::Function_t>(*s)) {
                     ASR::Function_t *new_f = ASR::down_cast<ASR::Function_t>(
                         current_scope->resolve_symbol(new_s_name));
@@ -741,6 +743,8 @@ public:
                                 temp_f->m_symtab, new_f, temp_f);
                         }
                     }
+                } else {
+                    throw LCompilersException("Unsupported symbol to be instantiated");
                 }
             }
         }
@@ -1665,7 +1669,7 @@ public:
 
         } else {
             stmt = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al,loc, master_function_sym,
-                                        master_function_sym, args.p, args.n, nullptr, nullptr, compiler_options.implicit_argument_casting));
+                                        master_function_sym, args.p, args.n, nullptr, nullptr, compiler_options.implicit_argument_casting, false));
         }
         LCOMPILERS_ASSERT(stmt != nullptr);
 
@@ -2433,11 +2437,8 @@ public:
         std::string sub_name = to_lower(x.m_name);
         if (x.n_temp_args > 0) {
             ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
-            bool is_nested = ASR::is_a<ASR::Template_t>(*ASRUtils::get_asr_owner(owner_sym));
-            handle_templated(x.m_name, is_nested, x.m_temp_args, x.n_temp_args, x.base.base.loc);
-            if (!is_nested) {
-                sub_name = "__templated_" + sub_name;
-            }
+            sub_name = handle_templated(x.m_name, ASR::is_a<ASR::Template_t>(*ASRUtils::get_asr_owner(owner_sym)), 
+                x.m_temp_args, x.n_temp_args, x.base.base.loc);
         }
         SymbolTable* scope = current_scope;
         ASR::symbol_t *original_sym;
@@ -2597,91 +2598,12 @@ public:
             }
         }
         ASR::symbol_t *final_sym=nullptr;
+        bool nopass = false;
         switch (original_sym->type) {
             case (ASR::symbolType::Function) : {
-                f = ASR::down_cast<ASR::Function_t>(original_sym);
-                final_sym=original_sym;
+                final_sym = original_sym;
                 original_sym = nullptr;
-                if (compiler_options.legacy_array_sections) {
-                    // call b(w(icon)) -> call b(w(icon:)) if b is expecting an array
-                    ASR::FunctionType_t* f_type = ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
-                    std::map<int, ASR::ttype_t*> array_arg_idx;
-                    for (size_t i = 0; i < f->n_args; i++) {
-                        if (ASRUtils::is_array(ASRUtils::expr_type(f->m_args[i]))) {
-                            array_arg_idx[i] = f_type->m_arg_types[i];
-                        }
-                    }
-                    Vec<ASR::call_arg_t> args_with_array_section;
-                    args_with_array_section.reserve(al, args.size());
-                    for (size_t i = 0; i < args.size(); i++) {
-                        // check if i is in array_arg_idx
-                        if (array_arg_idx.find(i) != array_arg_idx.end()) {
-                            ASR::call_arg_t arg = args[i];
-                            ASR::ttype_t* expected_arg_type = ASRUtils::duplicate_type(al, array_arg_idx[i]);
-                            ASR::expr_t* arg_expr = arg.m_value;
-                            if (ASR::is_a<ASR::ArrayItem_t>(*arg_expr)) {
-                                ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(arg_expr);
-                                ASR::expr_t* array_expr = array_item->m_v;
-                                LCOMPILERS_ASSERT(array_item->n_args > 0);
-                                ASR::array_index_t last_arg = array_item->m_args[array_item->n_args - 1];
-                                ASR::expr_t* idx = last_arg.m_right;
-
-                                Vec<ASR::dimension_t> dims;
-                                dims.reserve(al, 1);
-                                ASR::dimension_t dim;
-                                dim.loc = x.base.base.loc;
-                                dim.m_length = nullptr;
-                                dim.m_start = nullptr;
-                                dims.push_back(al, dim);
-                                ASR::asr_t* descriptor_array = ASR::make_Array_t(al, x.base.base.loc, ASRUtils::type_get_past_array(expected_arg_type),
-                                                                dims.p, dims.size(), ASR::array_physical_typeType::DescriptorArray);
-
-                                ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(expected_arg_type);
-                                ASR::asr_t* expected_array = ASR::make_Array_t(al, x.base.base.loc, ASRUtils::type_get_past_array(expected_arg_type),
-                                                                array_t->m_dims, array_t->n_dims, ASRUtils::extract_physical_type(expected_arg_type));
-
-                                // make ArraySection
-                                Vec<ASR::array_index_t> array_indices;
-                                array_indices.reserve(al, array_item->n_args);
-
-                                for (size_t i = 0; i < array_item->n_args - 1; i++) {
-                                    array_indices.push_back(al, array_item->m_args[i]);
-                                }
-
-                                ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-                                ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
-
-                                ASR::expr_t* array_bound = ASRUtils::get_bound<SemanticError>(array_expr, array_item->n_args, "ubound", al);
-
-                                ASR::array_index_t array_idx;
-                                array_idx.loc = array_item->base.base.loc;
-                                array_idx.m_left = idx;
-                                array_idx.m_right = array_bound;
-                                array_idx.m_step = one;
-
-                                array_indices.push_back(al, array_idx);
-
-                                ASR::expr_t* array_section = ASRUtils::EXPR(ASR::make_ArraySection_t(al, array_item->base.base.loc,
-                                                            array_expr, array_indices.p, array_indices.size(),
-                                                            ASRUtils::TYPE(descriptor_array), nullptr));
-
-                                ASR::asr_t* array_cast = ASRUtils::make_ArrayPhysicalCast_t_util(al, array_item->base.base.loc, array_section,
-                                                        ASRUtils::extract_physical_type(ASRUtils::TYPE(descriptor_array)), ASRUtils::extract_physical_type(expected_arg_type), ASRUtils::TYPE(expected_array), nullptr);
-
-                                ASR::expr_t* array_section_cast = ASRUtils::EXPR(array_cast);
-
-                                arg.m_value = array_section_cast;
-
-                                args_with_array_section.push_back(al, arg);
-                            } else {
-                                args_with_array_section.push_back(al, args[i]);
-                            }
-                        } else {
-                            args_with_array_section.push_back(al, args[i]);
-                        }
-                    }
-                    args = args_with_array_section;
-                }
+                legacy_array_sections_helper(final_sym, args, x.base.base.loc);
                 break;
             }
             case (ASR::symbolType::GenericProcedure) : {
@@ -2768,6 +2690,11 @@ public:
                     } else {
                         final_sym = current_scope->get_symbol(local_sym);
                     }
+                } else if (ASR::is_a<ASR::ClassProcedure_t>(*final_sym)) {
+                    ASR::ClassProcedure_t* class_proc = ASR::down_cast<ASR::ClassProcedure_t>(final_sym);
+                    nopass = class_proc->m_is_nopass;
+                    final_sym = original_sym;
+                    original_sym = nullptr;
                 } else {
                     if (!ASR::is_a<ASR::Function_t>(*final_sym) &&
                         !ASR::is_a<ASR::ClassProcedure_t>(*final_sym)) {
@@ -2832,11 +2759,11 @@ public:
         }
         ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
         if( f ) {
-            ASRUtils::set_absent_optional_arguments_to_null(args, f, al, v_expr);
+            ASRUtils::set_absent_optional_arguments_to_null(args, f, al, v_expr, nopass);
         }
         ASR::stmt_t* cast_stmt = nullptr;
         tmp = ASRUtils::make_SubroutineCall_t_util(al, x.base.base.loc,
-                final_sym, original_sym, args.p, args.size(), v_expr, &cast_stmt, compiler_options.implicit_argument_casting);
+                final_sym, original_sym, args.p, args.size(), v_expr, &cast_stmt, compiler_options.implicit_argument_casting, nopass);
 
         if (cast_stmt != nullptr) {
             current_body->push_back(al, cast_stmt);

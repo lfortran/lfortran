@@ -118,6 +118,7 @@
                                                     2 circle_area
                                                     Source
                                                     .false.
+                                                    .false.
                                                 ),
                                             print:
                                                 (ClassProcedure
@@ -127,6 +128,7 @@
                                                     circle_print
                                                     2 circle_print
                                                     Source
+                                                    .false.
                                                     .false.
                                                 ),
                                             radius:

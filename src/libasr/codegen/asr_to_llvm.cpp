@@ -4987,6 +4987,10 @@ public:
             m_new == ASR::array_physical_typeType::SIMDArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {
             // pass
+        } else if (
+            m_new == ASR::array_physical_typeType::DescriptorArray &&
+            m_old == ASR::array_physical_typeType::SIMDArray) {
+            tmp = CreateLoad(arg);
         } else if(
             m_new == ASR::array_physical_typeType::DescriptorArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {
@@ -8281,11 +8285,13 @@ public:
         const ASR::symbol_t *proc_sym = symbol_get_past_external(x.m_name);
         std::string proc_sym_name = "";
         bool is_deferred = false;
+        bool is_nopass = false;
         if( ASR::is_a<ASR::ClassProcedure_t>(*proc_sym) ) {
             ASR::ClassProcedure_t* class_proc =
                 ASR::down_cast<ASR::ClassProcedure_t>(proc_sym);
             is_deferred = class_proc->m_is_deferred;
             proc_sym_name = class_proc->m_name;
+            is_nopass = class_proc->m_is_nopass;
         }
         if( is_deferred ) {
             visit_RuntimePolymorphicSubroutineCall(x, proc_sym_name);
@@ -8313,7 +8319,7 @@ public:
             s = ASR::down_cast<ASR::Function_t>(symbol_get_past_external(x.m_name));
         }
         bool is_method = false;
-        if (x.m_dt) {
+        if (x.m_dt && (!is_nopass)) {
             is_method = true;
             if (ASR::is_a<ASR::Var_t>(*x.m_dt)) {
                 ASR::Variable_t *caller = EXPR2VAR(x.m_dt);
@@ -8757,11 +8763,13 @@ public:
         const ASR::symbol_t *proc_sym = symbol_get_past_external(x.m_name);
         std::string proc_sym_name = "";
         bool is_deferred = false;
+        bool is_nopass = false;
         if( ASR::is_a<ASR::ClassProcedure_t>(*proc_sym) ) {
             ASR::ClassProcedure_t* class_proc =
                 ASR::down_cast<ASR::ClassProcedure_t>(proc_sym);
             is_deferred = class_proc->m_is_deferred;
             proc_sym_name = class_proc->m_name;
+            is_nopass = class_proc->m_is_nopass;
         }
         if( is_deferred ) {
             visit_RuntimePolymorphicFunctionCall(x, proc_sym_name);
@@ -8791,7 +8799,7 @@ public:
         }
         bool is_method = false;
         llvm::Value* pass_arg = nullptr;
-        if (x.m_dt) {
+        if (x.m_dt && (!is_nopass)) {
             is_method = true;
             if (ASR::is_a<ASR::Var_t>(*x.m_dt)) {
                 ASR::Variable_t *caller = EXPR2VAR(x.m_dt);

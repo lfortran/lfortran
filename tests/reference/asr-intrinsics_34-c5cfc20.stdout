@@ -13,16 +13,15 @@
                                     dp
                                     []
                                     Local
-                                    (FunctionCall
-                                        2 kind
-                                        ()
-                                        [((RealConstant
+                                    (IntrinsicScalarFunction
+                                        Kind
+                                        [(RealConstant
                                             0.000000
                                             (Real 8)
-                                        ))]
+                                        )]
+                                        0
                                         (Integer 4)
                                         (IntegerConstant 8 (Integer 4))
-                                        ()
                                     )
                                     (IntegerConstant 8 (Integer 4))
                                     Parameter
@@ -37,7 +36,7 @@
                                 (ExternalSymbol
                                     2
                                     epsilon
-                                    13 epsilon
+                                    4 epsilon
                                     lfortran_intrinsic_math
                                     []
                                     epsilon
@@ -47,7 +46,7 @@
                                 (ExternalSymbol
                                     2
                                     epsilon@depsilon
-                                    13 depsilon
+                                    4 depsilon
                                     lfortran_intrinsic_math
                                     []
                                     depsilon
@@ -57,20 +56,10 @@
                                 (ExternalSymbol
                                     2
                                     epsilon@sepsilon
-                                    13 sepsilon
+                                    4 sepsilon
                                     lfortran_intrinsic_math
                                     []
                                     sepsilon
-                                    Private
-                                ),
-                            kind:
-                                (ExternalSymbol
-                                    2
-                                    kind
-                                    4 kind
-                                    lfortran_intrinsic_kind
-                                    []
-                                    kind
                                     Private
                                 ),
                             x:
@@ -127,7 +116,7 @@
                                 )
                         })
                     intrinsics_34
-                    [lfortran_intrinsic_kind]
+                    []
                     [(Print
                         [(FunctionCall
                             2 epsilon@sepsilon
@@ -368,8 +357,6 @@
                 (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
             lfortran_intrinsic_builtin:
                 (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_kind:
-                (IntrinsicModule lfortran_intrinsic_kind),
             lfortran_intrinsic_math:
                 (IntrinsicModule lfortran_intrinsic_math)
         })

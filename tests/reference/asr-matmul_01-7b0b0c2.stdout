@@ -8,8 +8,6 @@
                 (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
             lfortran_intrinsic_builtin:
                 (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_kind:
-                (IntrinsicModule lfortran_intrinsic_kind),
             lfortran_intrinsic_math:
                 (IntrinsicModule lfortran_intrinsic_math),
             matmul_01:
@@ -121,7 +119,7 @@
                                 (ExternalSymbol
                                     6
                                     cpu_time
-                                    17 cpu_time
+                                    8 cpu_time
                                     lfortran_intrinsic_math
                                     []
                                     cpu_time
@@ -133,16 +131,15 @@
                                     dp
                                     []
                                     Local
-                                    (FunctionCall
-                                        6 kind
-                                        ()
-                                        [((RealConstant
+                                    (IntrinsicScalarFunction
+                                        Kind
+                                        [(RealConstant
                                             0.000000
                                             (Real 8)
-                                        ))]
+                                        )]
+                                        0
                                         (Integer 4)
                                         (IntegerConstant 8 (Integer 4))
-                                        ()
                                     )
                                     (IntegerConstant 8 (Integer 4))
                                     Parameter
@@ -249,16 +246,6 @@
                                     Required
                                     .false.
                                 ),
-                            kind:
-                                (ExternalSymbol
-                                    6
-                                    kind
-                                    8 kind
-                                    lfortran_intrinsic_kind
-                                    []
-                                    kind
-                                    Private
-                                ),
                             matmul1:
                                 (ExternalSymbol
                                     6
@@ -331,7 +318,7 @@
                                 (ExternalSymbol
                                     6
                                     random_number
-                                    17 random_number
+                                    8 random_number
                                     lfortran_intrinsic_math
                                     []
                                     random_number
@@ -341,7 +328,7 @@
                                 (ExternalSymbol
                                     6
                                     random_number@sp_rand_num
-                                    17 sp_rand_num
+                                    8 sp_rand_num
                                     lfortran_intrinsic_math
                                     []
                                     sp_rand_num
@@ -397,8 +384,7 @@
                                 )
                         })
                     matmul_01
-                    [matmul_01_cpu
-                    lfortran_intrinsic_kind]
+                    [matmul_01_cpu]
                     [(=
                         (Var 6 n)
                         (IntegerConstant 96 (Integer 4))
@@ -987,7 +973,7 @@
                             (Var 6 err)
                             Gt
                             (RealConstant
-                                0.000100
+                                0.001000
                                 (Real 4)
                             )
                             (Logical 4)
@@ -1250,7 +1236,7 @@
                             (Var 6 err)
                             Gt
                             (RealConstant
-                                0.000100
+                                0.001000
                                 (Real 4)
                             )
                             (Logical 4)

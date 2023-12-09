@@ -896,6 +896,8 @@ public:
 
         // Handle templated subroutines
         if (x.n_temp_args > 0) {
+            is_template = true;
+
             SetChar temp_args;
             temp_args.reserve(al, x.n_temp_args);
             for (size_t i=0; i < x.n_temp_args; i++) {
@@ -912,6 +914,15 @@ public:
                         visit_unit_require(*r->m_reqs[i]);
                         reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
                         tmp = nullptr;
+                    }
+                }
+
+                if (AST::is_a<AST::DerivedType_t>(*x.m_decl[i])) {
+                    AST::DerivedType_t *dt = AST::down_cast<AST::DerivedType_t>(x.m_decl[i]);
+                    if (std::find(current_procedure_args.begin(),
+                                  current_procedure_args.end(),
+                                  to_lower(dt->m_name)) != current_procedure_args.end()) {
+                        visit_unit_decl2(*x.m_decl[i]);
                     }
                 }
             }
@@ -1085,6 +1096,7 @@ public:
 
         current_function_dependencies = current_function_dependencies_copy;
         in_Subroutine = false;
+        is_template = false;
         mark_common_blocks_as_declared();
     }
 
@@ -1176,6 +1188,8 @@ public:
 
         // Handle templated functions
         if (x.n_temp_args > 0) {
+            is_template = true;
+
             SetChar temp_args;
             temp_args.reserve(al, x.n_temp_args);
             for (size_t i=0; i < x.n_temp_args; i++) {
@@ -1192,6 +1206,15 @@ public:
                         visit_unit_require(*r->m_reqs[i]);
                         reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
                         tmp = nullptr;
+                    }
+                }
+
+                if (AST::is_a<AST::DerivedType_t>(*x.m_decl[i])) {
+                    AST::DerivedType_t *dt = AST::down_cast<AST::DerivedType_t>(x.m_decl[i]);
+                    if (std::find(current_procedure_args.begin(),
+                                  current_procedure_args.end(),
+                                  to_lower(dt->m_name)) != current_procedure_args.end()) {
+                        visit_unit_decl2(*x.m_decl[i]);
                     }
                 }
             }
@@ -1871,6 +1894,8 @@ public:
                 Str s;
                 s.from_str_view(correct_pname);
                 char *name = s.c_str(al);
+                // lower case the name
+                name = s2c(al, to_lower(name));
                 x = resolve_symbol(loc, name);
                 symbols.push_back(al, x);
             }
@@ -2067,7 +2092,7 @@ public:
                 ASR::asr_t *v = ASR::make_ClassProcedure_t(al, loc,
                     clss->m_symtab, name, pass_arg_name,
                     proc_name, proc_sym, ASR::abiType::Source,
-                    is_deferred);
+                    is_deferred, is_nopass);
                 ASR::symbol_t *cls_proc_sym = ASR::down_cast<ASR::symbol_t>(v);
                 clss->m_symtab->add_symbol(pname.first, cls_proc_sym);
             }
@@ -2764,7 +2789,7 @@ public:
                 req_arg = ASRUtils::type_to_str(ttype);
                 type_subs[req_param] = ttype;
             } else {
-                throw LCompilersException("Unsupported decl_attribute for require statements.");
+                throw SemanticError("Unsupported decl_attribute for require statements.", x.m_namelist[i]->base.loc);
             }
 
             ASR::symbol_t *param_sym = (req->m_symtab)->get_symbol(req_param);
@@ -2991,7 +3016,7 @@ public:
                 } else if (is_cmpop) {
                     is_overloaded = ASRUtils::is_op_overloaded(cmpop, op_name, current_scope, nullptr);
                 } else {
-                    throw LCompilersException("ICE: must be binop or cmop");
+                    throw SemanticError("Must be binop or cmop", x.m_args[i]->base.loc);
                 }
 
                 ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(param_sym);
@@ -3121,7 +3146,7 @@ public:
                     symbol_subs[f->m_name] = op_sym;
                 }
             } else {
-                throw LCompilersException("Unsupported argument to instantiate statement.");
+                throw SemanticError("Unsupported template argument", x.m_args[i]->base.loc);
             }
         }
 
@@ -3138,10 +3163,9 @@ public:
             for (size_t i = 0; i < x.n_symbols; i++){
                 AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
                 std::string generic_name = to_lower(use_symbol->m_remote_sym);
-                ASR::symbol_t *s = temp->m_symtab->resolve_symbol(generic_name);
+                ASR::symbol_t *s = temp->m_symtab->get_symbol(generic_name);
                 if (!s) {
-                    throw SemanticError("Symbol " + generic_name + " was not found",
-                                        x.base.base.loc);
+                    throw SemanticError("Symbol " + generic_name + " was not found", x.base.base.loc);
                 }
                 std::string new_sym_name = to_lower(use_symbol->m_local_rename);
                 instantiate_symbol(al, context_map, type_subs, symbol_subs,

@@ -1,0 +1,5 @@
+tokenizer error: Token '?' is not recognized
+  --> tests/../integration_tests/template_03b.f90:52:15
+   |
+52 |         y = my?add(y, my_mul(a, x))
+   |               ^ token not recognized

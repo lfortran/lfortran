@@ -595,6 +595,7 @@
                                                                     7 __asr_intvector_push_back
                                                                     Source
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             resize:
                                                                 (ClassProcedure
@@ -604,6 +605,7 @@
                                                                     __asr_intvector_resize
                                                                     7 __asr_intvector_resize
                                                                     Source
+                                                                    .false.
                                                                     .false.
                                                                 ),
                                                             sz:
@@ -1271,6 +1273,7 @@
                                                                     3 push_back
                                                                     Source
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             resize:
                                                                 (ClassProcedure
@@ -1280,6 +1283,7 @@
                                                                     resize
                                                                     3 resize
                                                                     Source
+                                                                    .false.
                                                                     .false.
                                                                 ),
                                                             sz:

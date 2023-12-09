@@ -49,6 +49,9 @@ enum class IntrinsicScalarFunctions : int64_t {
     FlipSign,
     Mod,
     Trailz,
+    Kind,
+    MinExponent,
+    MaxExponent,
     FloorDiv,
     ListIndex,
     Partition,
@@ -123,6 +126,9 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(FloorDiv)
         INTRINSIC_NAME_CASE(Mod)
         INTRINSIC_NAME_CASE(Trailz)
+        INTRINSIC_NAME_CASE(Kind)
+        INTRINSIC_NAME_CASE(MinExponent)
+        INTRINSIC_NAME_CASE(MaxExponent)
         INTRINSIC_NAME_CASE(ListIndex)
         INTRINSIC_NAME_CASE(Partition)
         INTRINSIC_NAME_CASE(ListReverse)
@@ -445,6 +451,8 @@ class ASRBuilder {
         ASR::cmpopType::Eq, y, logical, nullptr))
     #define sNotEq(x, y) EXPR(ASR::make_StringCompare_t(al, loc, x,             \
         ASR::cmpopType::NotEq, y, logical, nullptr))
+    #define sLt(x, y) EXPR(ASR::make_StringCompare_t(al, loc, x,             \
+        ASR::cmpopType::Lt, y, logical, nullptr))
 
     ASR::expr_t *Gt(ASR::expr_t *left, ASR::expr_t *right) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
@@ -1445,7 +1453,7 @@ namespace Abs {
                 ASRUtils::extract_kind_from_ttype_t(type)));
         }
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_Abs,
-            static_cast<int64_t>(IntrinsicScalarFunctions::Abs), 0, type);
+            static_cast<int64_t>(IntrinsicScalarFunctions::Abs), 0, ASRUtils::type_get_past_allocatable(type));
     }
 
     static inline ASR::expr_t* instantiate_Abs(Allocator &al, const Location &loc,
@@ -2483,6 +2491,202 @@ namespace Trailz {
 
 } // namespace Trailz
 
+namespace Kind {
+
+     static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 1,
+            "ASR Verify: Call to kind must have exactly 1 argument",
+            x.base.base.loc, diagnostics);
+        ASR::ttype_t *type1 = ASRUtils::expr_type(x.m_args[0]);
+        ASRUtils::require_impl(is_integer(*type1) || is_real(*type1) || is_logical(*type1) || is_character(*type1),
+            "ASR Verify: Arguments to kind must be of either integer or real or logical or character type",
+            x.base.base.loc, diagnostics);
+    }
+
+    static ASR::expr_t *eval_Kind(Allocator &al, const Location &loc,
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args) {
+        int result = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
+        return make_ConstantWithType(make_IntegerConstant_t, result, int32, loc);
+    }
+
+    static inline ASR::asr_t* create_Kind(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args,
+            const std::function<void (const std::string &, const Location &)> err) {
+        if (args.size() != 1) {
+            err("Intrinsic kind function accepts exactly 1 arguments", loc);
+        }
+        ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
+        if (!(ASRUtils::is_integer(*type1) || ASRUtils::is_real(*type1) || ASRUtils::is_logical(*type1) || ASRUtils::is_character(*type1))) {
+            err("Argument of the kind function must be integer or real or logical or character",
+                args[0]->base.loc);
+        }
+        ASR::expr_t *m_value = nullptr;
+        if (all_args_evaluated(args)) {
+            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 1);
+            arg_values.push_back(al, expr_value(args[0]));
+            m_value = eval_Kind(al, loc, expr_type(args[0]), arg_values);
+        }
+        return ASR::make_IntrinsicScalarFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicScalarFunctions::Kind),
+            args.p, args.n, 0, int32, m_value);
+    }
+
+    static inline ASR::expr_t* instantiate_Kind(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_optimization_kind_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(fn_name, int32, ReturnVar);
+        body.push_back(al, b.Assignment(result, i32(ASRUtils::extract_kind_from_ttype_t(arg_types[0]))));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace Kind
+
+namespace MinExponent {
+
+     static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 1,
+            "ASR Verify: Call to minexponent must have exactly 1 argument",
+            x.base.base.loc, diagnostics);
+        ASR::ttype_t *type1 = ASRUtils::expr_type(x.m_args[0]);
+        ASRUtils::require_impl(is_real(*type1),
+            "ASR Verify: Arguments to minexponent must be of real type",
+            x.base.base.loc, diagnostics);
+    }
+
+    static ASR::expr_t *eval_MinExponent(Allocator &al, const Location &loc,
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args) {
+        ASR::RealConstant_t* a = ASR::down_cast<ASR::RealConstant_t>(args[0]);
+        int m_kind = ASRUtils::extract_kind_from_ttype_t(a->m_type);
+        int result;
+        if (m_kind == 4) {
+            result = std::numeric_limits<float>::min_exponent;
+        } else {
+            result = std::numeric_limits<double>::min_exponent;
+        }
+        return make_ConstantWithType(make_IntegerConstant_t, result, int32, loc);
+
+    }
+
+    static inline ASR::asr_t* create_MinExponent(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args,
+            const std::function<void (const std::string &, const Location &)> err) {
+        if (args.size() != 1) {
+            err("Intrinsic minexponent function accepts exactly 1 arguments", loc);
+        }
+        ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
+        if (!(ASRUtils::is_real(*type1))) {
+            err("Argument of the minexponent function must be Real",
+                args[0]->base.loc);
+        }
+        ASR::expr_t *m_value = nullptr;
+        if (all_args_evaluated(args)) {
+            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 1);
+            arg_values.push_back(al, expr_value(args[0]));
+            m_value = eval_MinExponent(al, loc, expr_type(args[0]), arg_values);
+        }
+        return ASR::make_IntrinsicScalarFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicScalarFunctions::MinExponent),
+            args.p, args.n, 0, int32, m_value);
+    }
+
+    static inline ASR::expr_t* instantiate_MinExponent(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_optimization_minexponent_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(fn_name, int32, ReturnVar);
+
+        int m_kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
+        if (m_kind == 4) {
+            body.push_back(al, b.Assignment(result, i32(-125)));
+        } else {
+            body.push_back(al, b.Assignment(result, i32(-1021)));
+        }
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace MinExponent
+
+namespace MaxExponent {
+
+     static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 1,
+            "ASR Verify: Call to maxexponent must have exactly 1 argument",
+            x.base.base.loc, diagnostics);
+        ASR::ttype_t *type1 = ASRUtils::expr_type(x.m_args[0]);
+        ASRUtils::require_impl(is_real(*type1),
+            "ASR Verify: Arguments to maxexponent must be of real type",
+            x.base.base.loc, diagnostics);
+    }
+
+    static ASR::expr_t *eval_MaxExponent(Allocator &al, const Location &loc,
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args) {
+        ASR::RealConstant_t* a = ASR::down_cast<ASR::RealConstant_t>(args[0]);
+        int m_kind = ASRUtils::extract_kind_from_ttype_t(a->m_type);
+        int result;
+        if (m_kind == 4) {
+            result = std::numeric_limits<float>::max_exponent;
+        } else {
+            result = std::numeric_limits<double>::max_exponent;
+        }
+        return make_ConstantWithType(make_IntegerConstant_t, result, int32, loc);
+
+    }
+
+    static inline ASR::asr_t* create_MaxExponent(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args,
+            const std::function<void (const std::string &, const Location &)> err) {
+        if (args.size() != 1) {
+            err("Intrinsic maxexponent function accepts exactly 1 arguments", loc);
+        }
+        ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
+        if (!(ASRUtils::is_real(*type1))) {
+            err("Argument of the maxexponent function must be Real",
+                args[0]->base.loc);
+        }
+        ASR::expr_t *m_value = nullptr;
+        if (all_args_evaluated(args)) {
+            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 1);
+            arg_values.push_back(al, expr_value(args[0]));
+            m_value = eval_MaxExponent(al, loc, expr_type(args[0]), arg_values);
+        }
+        return ASR::make_IntrinsicScalarFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicScalarFunctions::MaxExponent),
+            args.p, args.n, 0, int32, m_value);
+    }
+
+    static inline ASR::expr_t* instantiate_MaxExponent(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_optimization_maxexponent_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(fn_name, int32, ReturnVar);
+
+        int m_kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
+        if (m_kind == 4) {
+            body.push_back(al, b.Assignment(result, i32(128)));
+        } else {
+            body.push_back(al, b.Assignment(result, i32(1024)));
+        }
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace MaxExponent
+
 #define create_exp_macro(X, stdeval)                                                      \
 namespace X {                                                                             \
     static inline ASR::expr_t* eval_##X(Allocator &al, const Location &loc,               \
@@ -3044,18 +3248,20 @@ namespace Max {
 namespace Min {
 
     static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
-        ASRUtils::require_impl(x.n_args > 1, "ASR Verify: Call to min0 must have at least two arguments",
+        ASRUtils::require_impl(x.n_args > 1, "Call to min0 must have at least two arguments",
             x.base.base.loc, diagnostics);
         ASRUtils::require_impl(ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(x.m_args[0])) ||
-            ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[0])),
-             "ASR Verify: Arguments to min0 must be of real or integer type",
+            ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[0])) || ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_args[0])),
+             "Arguments to min0 must be of real, integer or character type",
             x.base.base.loc, diagnostics);
         for(size_t i=0;i<x.n_args;i++){
             ASRUtils::require_impl((ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(x.m_args[i])) &&
                                             ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(x.m_args[0]))) ||
                                         (ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[i])) &&
-                                         ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[0]))),
-            "ASR Verify: All arguments must be of the same type",
+                                         ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[0]))) ||
+                                         (ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_args[i])) &&
+                                         ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_args[0]))),
+            "All arguments must be of the same type",
             x.base.base.loc, diagnostics);
         }
     }
@@ -3077,6 +3283,15 @@ namespace Min {
                 min_val = std::fmin(min_val, val);
             }
             return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, min_val, arg_type));
+        } else if (ASR::is_a<ASR::Character_t>(*arg_type)) {
+            char* min_val = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
+            for (size_t i = 1; i < args.size(); i++) {
+                char* val = ASR::down_cast<ASR::StringConstant_t>(args[i])->m_s;
+                if (strcmp(val, min_val) < 0) {
+                    min_val = val;
+                }
+            }
+            return ASR::down_cast<ASR::expr_t>(ASR::make_StringConstant_t(al, loc, min_val, arg_type));
         } else {
             return nullptr;
         }
@@ -3154,8 +3369,16 @@ namespace Min {
                 body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
                     if_body.p, if_body.n, nullptr, 0)));
             }
+        } else if (return_type->type == ASR::ttypeType::Character) {
+            for (size_t i = 1; i < args.size(); i++) {
+                test = make_Compare(make_StringCompare_t, args[i], Lt, result);
+                Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
+                if_body.push_back(al, b.Assignment(result, args[i]));
+                body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
+                    if_body.p, if_body.n, nullptr, 0)));
+            }
         } else {
-            throw LCompilersException("Arguments to min0 must be of real or integer type");
+            throw LCompilersException("Arguments to min0 must be of real, integer or character type");
         }
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -3667,6 +3890,12 @@ namespace IntrinsicScalarFunctionRegistry {
             {&Mod::instantiate_Mod, &Mod::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Trailz),
             {&Trailz::instantiate_Trailz, &Trailz::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Kind),
+            {&Kind::instantiate_Kind, &Kind::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::MinExponent),
+            {&MinExponent::instantiate_MinExponent, &MinExponent::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::MaxExponent),
+            {&MaxExponent::instantiate_MaxExponent, &MaxExponent::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Abs),
             {&Abs::instantiate_Abs, &Abs::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Partition),
@@ -3795,6 +4024,12 @@ namespace IntrinsicScalarFunctionRegistry {
             "mod"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Trailz),
             "trailz"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Kind),
+            "kind"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::MinExponent),
+            "minexponent"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::MaxExponent),
+            "maxexponent"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Expm1),
             "expm1"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::ListIndex),
@@ -3902,6 +4137,9 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"floordiv", {&FloorDiv::create_FloorDiv, &FloorDiv::eval_FloorDiv}},
                 {"mod", {&Mod::create_Mod, &Mod::eval_Mod}},
                 {"trailz", {&Trailz::create_Trailz, &Trailz::eval_Trailz}},
+                {"kind", {&Kind::create_Kind, &Kind::eval_Kind}},
+                {"minexponent", {&MinExponent::create_MinExponent, &MinExponent::eval_MinExponent}},
+                {"maxexponent", {&MaxExponent::create_MaxExponent, &MaxExponent::eval_MaxExponent}},
                 {"list.index", {&ListIndex::create_ListIndex, &ListIndex::eval_list_index}},
                 {"list.reverse", {&ListReverse::create_ListReverse, &ListReverse::eval_list_reverse}},
                 {"list.pop", {&ListPop::create_ListPop, &ListPop::eval_list_pop}},

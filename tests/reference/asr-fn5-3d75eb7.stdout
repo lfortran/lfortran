@@ -813,13 +813,20 @@
                                                     ColMajor
                                                     ()
                                                 )
-                                                (ArrayItem
-                                                    (Var 4 values)
-                                                    [(()
-                                                    (Var 4 i)
-                                                    ())]
+                                                (StringSection
+                                                    (ArrayItem
+                                                        (Var 4 values)
+                                                        [(()
+                                                        (Var 4 i)
+                                                        ())]
+                                                        (Character 1 -2 ())
+                                                        ColMajor
+                                                        ()
+                                                    )
+                                                    ()
+                                                    ()
+                                                    (IntegerConstant 1 (Integer 4))
                                                     (Character 1 -2 ())
-                                                    ColMajor
                                                     ()
                                                 )]
                                                 (Var 4 i)
