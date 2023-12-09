@@ -1,0 +1,2490 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            template_sort_01:
+                (Program
+                    (SymbolTable
+                        16
+                        {
+                            lt_integer:
+                                (ExternalSymbol
+                                    16
+                                    lt_integer
+                                    2 lt_integer
+                                    template_sort_01_m
+                                    []
+                                    lt_integer
+                                    Public
+                                ),
+                            lt_real:
+                                (ExternalSymbol
+                                    16
+                                    lt_real
+                                    2 lt_real
+                                    template_sort_01_m
+                                    []
+                                    lt_real
+                                    Public
+                                ),
+                            op_r:
+                                (ExternalSymbol
+                                    16
+                                    op_r
+                                    2 op_r
+                                    template_sort_01_m
+                                    []
+                                    op_r
+                                    Public
+                                ),
+                            qsort_t:
+                                (ExternalSymbol
+                                    16
+                                    qsort_t
+                                    2 qsort_t
+                                    template_sort_01_m
+                                    []
+                                    qsort_t
+                                    Public
+                                ),
+                            quicksort:
+                                (ExternalSymbol
+                                    16
+                                    quicksort
+                                    2 quicksort
+                                    template_sort_01_m
+                                    []
+                                    quicksort
+                                    Public
+                                ),
+                            swap:
+                                (ExternalSymbol
+                                    16
+                                    swap
+                                    2 swap
+                                    template_sort_01_m
+                                    []
+                                    swap
+                                    Public
+                                ),
+                            test_template:
+                                (ExternalSymbol
+                                    16
+                                    test_template
+                                    2 test_template
+                                    template_sort_01_m
+                                    []
+                                    test_template
+                                    Public
+                                )
+                        })
+                    template_sort_01
+                    [template_sort_01_m]
+                    [(SubroutineCall
+                        16 test_template
+                        ()
+                        []
+                        ()
+                    )]
+                ),
+            template_sort_01_m:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            lt_integer:
+                                (Function
+                                    (SymbolTable
+                                        12
+                                        {
+                                            lhs:
+                                                (Variable
+                                                    12
+                                                    lhs
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            res:
+                                                (Variable
+                                                    12
+                                                    res
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            rhs:
+                                                (Variable
+                                                    12
+                                                    rhs
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    lt_integer
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        (Logical 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 12 lhs)
+                                    (Var 12 rhs)]
+                                    [(=
+                                        (Var 12 res)
+                                        (IntegerCompare
+                                            (Var 12 lhs)
+                                            Lt
+                                            (Var 12 rhs)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 12 res)
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            lt_real:
+                                (Function
+                                    (SymbolTable
+                                        11
+                                        {
+                                            lhs:
+                                                (Variable
+                                                    11
+                                                    lhs
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            res:
+                                                (Variable
+                                                    11
+                                                    res
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            rhs:
+                                                (Variable
+                                                    11
+                                                    rhs
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    lt_real
+                                    (FunctionType
+                                        [(Real 4)
+                                        (Real 4)]
+                                        (Logical 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 11 lhs)
+                                    (Var 11 rhs)]
+                                    [(=
+                                        (Var 11 res)
+                                        (RealCompare
+                                            (Var 11 lhs)
+                                            Lt
+                                            (Var 11 rhs)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 11 res)
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            op_r:
+                                (Requirement
+                                    (SymbolTable
+                                        3
+                                        {
+                                            op_func:
+                                                (Function
+                                                    (SymbolTable
+                                                        4
+                                                        {
+                                                            lhs:
+                                                                (Variable
+                                                                    4
+                                                                    lhs
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            res:
+                                                                (Variable
+                                                                    4
+                                                                    res
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        v
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            rhs:
+                                                                (Variable
+                                                                    4
+                                                                    rhs
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    op_func
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            t
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                        )]
+                                                        (TypeParameter
+                                                            v
+                                                        )
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .true.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .true.
+                                                    )
+                                                    []
+                                                    [(Var 4 lhs)
+                                                    (Var 4 rhs)]
+                                                    []
+                                                    (Var 4 res)
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            t:
+                                                (Variable
+                                                    3
+                                                    t
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        t
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            u:
+                                                (Variable
+                                                    3
+                                                    u
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        u
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            v:
+                                                (Variable
+                                                    3
+                                                    v
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        v
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    op_r
+                                    [t
+                                    u
+                                    v
+                                    op_func]
+                                    []
+                                ),
+                            qsort_t:
+                                (Template
+                                    (SymbolTable
+                                        5
+                                        {
+                                            logical:
+                                                (Variable
+                                                    5
+                                                    logical
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            lt:
+                                                (Function
+                                                    (SymbolTable
+                                                        6
+                                                        {
+                                                            lhs:
+                                                                (Variable
+                                                                    6
+                                                                    lhs
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            res:
+                                                                (Variable
+                                                                    6
+                                                                    res
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Logical 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            rhs:
+                                                                (Variable
+                                                                    6
+                                                                    rhs
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    lt
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            t
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                        )]
+                                                        (Logical 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .true.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .true.
+                                                    )
+                                                    []
+                                                    [(Var 6 lhs)
+                                                    (Var 6 rhs)]
+                                                    []
+                                                    (Var 6 res)
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            qs:
+                                                (Function
+                                                    (SymbolTable
+                                                        8
+                                                        {
+                                                            arr:
+                                                                (Variable
+                                                                    8
+                                                                    arr
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Array
+                                                                        (TypeParameter
+                                                                            t
+                                                                        )
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            high:
+                                                                (Variable
+                                                                    8
+                                                                    high
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            i:
+                                                                (Variable
+                                                                    8
+                                                                    i
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            last:
+                                                                (Variable
+                                                                    8
+                                                                    last
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            low:
+                                                                (Variable
+                                                                    8
+                                                                    low
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            pivot:
+                                                                (Variable
+                                                                    8
+                                                                    pivot
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    qs
+                                                    (FunctionType
+                                                        [(Array
+                                                            (TypeParameter
+                                                                t
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                        (Integer 4)
+                                                        (Integer 4)]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    [lt
+                                                    swp
+                                                    qs]
+                                                    [(Var 8 arr)
+                                                    (Var 8 low)
+                                                    (Var 8 high)]
+                                                    [(If
+                                                        (IntegerCompare
+                                                            (Var 8 low)
+                                                            Lt
+                                                            (Var 8 high)
+                                                            (Logical 4)
+                                                            ()
+                                                        )
+                                                        [(=
+                                                            (Var 8 pivot)
+                                                            (ArrayItem
+                                                                (Var 8 arr)
+                                                                [(()
+                                                                (Var 8 high)
+                                                                ())]
+                                                                (TypeParameter
+                                                                    t
+                                                                )
+                                                                ColMajor
+                                                                ()
+                                                            )
+                                                            ()
+                                                        )
+                                                        (=
+                                                            (Var 8 last)
+                                                            (IntegerBinOp
+                                                                (Var 8 low)
+                                                                Sub
+                                                                (IntegerConstant 1 (Integer 4))
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            ()
+                                                        )
+                                                        (DoLoop
+                                                            ()
+                                                            ((Var 8 i)
+                                                            (Var 8 low)
+                                                            (IntegerBinOp
+                                                                (Var 8 high)
+                                                                Sub
+                                                                (IntegerConstant 1 (Integer 4))
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            ())
+                                                            [(If
+                                                                (FunctionCall
+                                                                    5 lt
+                                                                    ()
+                                                                    [((ArrayItem
+                                                                        (Var 8 arr)
+                                                                        [(()
+                                                                        (Var 8 i)
+                                                                        ())]
+                                                                        (TypeParameter
+                                                                            t
+                                                                        )
+                                                                        ColMajor
+                                                                        ()
+                                                                    ))
+                                                                    ((Var 8 pivot))]
+                                                                    (Logical 4)
+                                                                    ()
+                                                                    ()
+                                                                )
+                                                                [(=
+                                                                    (Var 8 last)
+                                                                    (IntegerBinOp
+                                                                        (Var 8 last)
+                                                                        Add
+                                                                        (IntegerConstant 1 (Integer 4))
+                                                                        (Integer 4)
+                                                                        ()
+                                                                    )
+                                                                    ()
+                                                                )
+                                                                (SubroutineCall
+                                                                    5 swp
+                                                                    ()
+                                                                    [((ArrayItem
+                                                                        (Var 8 arr)
+                                                                        [(()
+                                                                        (Var 8 last)
+                                                                        ())]
+                                                                        (TypeParameter
+                                                                            t
+                                                                        )
+                                                                        ColMajor
+                                                                        ()
+                                                                    ))
+                                                                    ((ArrayItem
+                                                                        (Var 8 arr)
+                                                                        [(()
+                                                                        (Var 8 i)
+                                                                        ())]
+                                                                        (TypeParameter
+                                                                            t
+                                                                        )
+                                                                        ColMajor
+                                                                        ()
+                                                                    ))]
+                                                                    ()
+                                                                )]
+                                                                []
+                                                            )]
+                                                        )
+                                                        (SubroutineCall
+                                                            5 swp
+                                                            ()
+                                                            [((ArrayItem
+                                                                (Var 8 arr)
+                                                                [(()
+                                                                (IntegerBinOp
+                                                                    (Var 8 last)
+                                                                    Add
+                                                                    (IntegerConstant 1 (Integer 4))
+                                                                    (Integer 4)
+                                                                    ()
+                                                                )
+                                                                ())]
+                                                                (TypeParameter
+                                                                    t
+                                                                )
+                                                                ColMajor
+                                                                ()
+                                                            ))
+                                                            ((ArrayItem
+                                                                (Var 8 arr)
+                                                                [(()
+                                                                (Var 8 high)
+                                                                ())]
+                                                                (TypeParameter
+                                                                    t
+                                                                )
+                                                                ColMajor
+                                                                ()
+                                                            ))]
+                                                            ()
+                                                        )
+                                                        (SubroutineCall
+                                                            5 qs
+                                                            ()
+                                                            [((ArrayPhysicalCast
+                                                                (Var 8 arr)
+                                                                DescriptorArray
+                                                                DescriptorArray
+                                                                (Array
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
+                                                                )
+                                                                ()
+                                                            ))
+                                                            ((Var 8 low))
+                                                            ((Var 8 last))]
+                                                            ()
+                                                        )
+                                                        (SubroutineCall
+                                                            5 qs
+                                                            ()
+                                                            [((ArrayPhysicalCast
+                                                                (Var 8 arr)
+                                                                DescriptorArray
+                                                                DescriptorArray
+                                                                (Array
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
+                                                                )
+                                                                ()
+                                                            ))
+                                                            ((IntegerBinOp
+                                                                (Var 8 last)
+                                                                Add
+                                                                (IntegerConstant 2 (Integer 4))
+                                                                (Integer 4)
+                                                                ()
+                                                            ))
+                                                            ((Var 8 high))]
+                                                            ()
+                                                        )]
+                                                        []
+                                                    )]
+                                                    ()
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            swp:
+                                                (Function
+                                                    (SymbolTable
+                                                        7
+                                                        {
+                                                            lhs:
+                                                                (Variable
+                                                                    7
+                                                                    lhs
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            rhs:
+                                                                (Variable
+                                                                    7
+                                                                    rhs
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            tmp:
+                                                                (Variable
+                                                                    7
+                                                                    tmp
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    swp
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            t
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                        )]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    []
+                                                    [(Var 7 lhs)
+                                                    (Var 7 rhs)]
+                                                    [(=
+                                                        (Var 7 tmp)
+                                                        (Var 7 lhs)
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 7 lhs)
+                                                        (Var 7 rhs)
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 7 rhs)
+                                                        (Var 7 tmp)
+                                                        ()
+                                                    )]
+                                                    ()
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            t:
+                                                (Variable
+                                                    5
+                                                    t
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        t
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    qsort_t
+                                    [t
+                                    lt]
+                                    [(Require
+                                        op_r
+                                        [t
+                                        logical
+                                        lt]
+                                    )]
+                                ),
+                            quicksort:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            arr:
+                                                (Variable
+                                                    9
+                                                    arr
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Integer 4)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            high:
+                                                (Variable
+                                                    9
+                                                    high
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            i:
+                                                (Variable
+                                                    9
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            last:
+                                                (Variable
+                                                    9
+                                                    last
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            low:
+                                                (Variable
+                                                    9
+                                                    low
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            pivot:
+                                                (Variable
+                                                    9
+                                                    pivot
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    quicksort
+                                    (FunctionType
+                                        [(Array
+                                            (Integer 4)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )
+                                        (Integer 4)
+                                        (Integer 4)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    [swap
+                                    quicksort]
+                                    [(Var 9 arr)
+                                    (Var 9 low)
+                                    (Var 9 high)]
+                                    [(If
+                                        (IntegerCompare
+                                            (Var 9 low)
+                                            Lt
+                                            (Var 9 high)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(=
+                                            (Var 9 pivot)
+                                            (ArrayItem
+                                                (Var 9 arr)
+                                                [(()
+                                                (Var 9 high)
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
+                                            )
+                                            ()
+                                        )
+                                        (=
+                                            (Var 9 last)
+                                            (IntegerBinOp
+                                                (Var 9 low)
+                                                Sub
+                                                (IntegerConstant 1 (Integer 4))
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            ()
+                                        )
+                                        (DoLoop
+                                            ()
+                                            ((Var 9 i)
+                                            (Var 9 low)
+                                            (IntegerBinOp
+                                                (Var 9 high)
+                                                Sub
+                                                (IntegerConstant 1 (Integer 4))
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            ())
+                                            [(If
+                                                (IntegerCompare
+                                                    (ArrayItem
+                                                        (Var 9 arr)
+                                                        [(()
+                                                        (Var 9 i)
+                                                        ())]
+                                                        (Integer 4)
+                                                        ColMajor
+                                                        ()
+                                                    )
+                                                    Lt
+                                                    (Var 9 pivot)
+                                                    (Logical 4)
+                                                    ()
+                                                )
+                                                [(=
+                                                    (Var 9 last)
+                                                    (IntegerBinOp
+                                                        (Var 9 last)
+                                                        Add
+                                                        (IntegerConstant 1 (Integer 4))
+                                                        (Integer 4)
+                                                        ()
+                                                    )
+                                                    ()
+                                                )
+                                                (SubroutineCall
+                                                    2 swap
+                                                    ()
+                                                    [((ArrayItem
+                                                        (Var 9 arr)
+                                                        [(()
+                                                        (Var 9 last)
+                                                        ())]
+                                                        (Integer 4)
+                                                        ColMajor
+                                                        ()
+                                                    ))
+                                                    ((ArrayItem
+                                                        (Var 9 arr)
+                                                        [(()
+                                                        (Var 9 i)
+                                                        ())]
+                                                        (Integer 4)
+                                                        ColMajor
+                                                        ()
+                                                    ))]
+                                                    ()
+                                                )]
+                                                []
+                                            )]
+                                        )
+                                        (SubroutineCall
+                                            2 swap
+                                            ()
+                                            [((ArrayItem
+                                                (Var 9 arr)
+                                                [(()
+                                                (IntegerBinOp
+                                                    (Var 9 last)
+                                                    Add
+                                                    (IntegerConstant 1 (Integer 4))
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
+                                            ))
+                                            ((ArrayItem
+                                                (Var 9 arr)
+                                                [(()
+                                                (Var 9 high)
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
+                                            ))]
+                                            ()
+                                        )
+                                        (SubroutineCall
+                                            2 quicksort
+                                            ()
+                                            [((ArrayPhysicalCast
+                                                (Var 9 arr)
+                                                DescriptorArray
+                                                DescriptorArray
+                                                (Array
+                                                    (Integer 4)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
+                                                ()
+                                            ))
+                                            ((Var 9 low))
+                                            ((Var 9 last))]
+                                            ()
+                                        )
+                                        (SubroutineCall
+                                            2 quicksort
+                                            ()
+                                            [((ArrayPhysicalCast
+                                                (Var 9 arr)
+                                                DescriptorArray
+                                                DescriptorArray
+                                                (Array
+                                                    (Integer 4)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
+                                                ()
+                                            ))
+                                            ((IntegerBinOp
+                                                (Var 9 last)
+                                                Add
+                                                (IntegerConstant 2 (Integer 4))
+                                                (Integer 4)
+                                                ()
+                                            ))
+                                            ((Var 9 high))]
+                                            ()
+                                        )]
+                                        []
+                                    )]
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            swap:
+                                (Function
+                                    (SymbolTable
+                                        10
+                                        {
+                                            lhs:
+                                                (Variable
+                                                    10
+                                                    lhs
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            rhs:
+                                                (Variable
+                                                    10
+                                                    rhs
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            tmp:
+                                                (Variable
+                                                    10
+                                                    tmp
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    swap
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 10 lhs)
+                                    (Var 10 rhs)]
+                                    [(=
+                                        (Var 10 tmp)
+                                        (Var 10 lhs)
+                                        ()
+                                    )
+                                    (=
+                                        (Var 10 lhs)
+                                        (Var 10 rhs)
+                                        ()
+                                    )
+                                    (=
+                                        (Var 10 rhs)
+                                        (Var 10 tmp)
+                                        ()
+                                    )]
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            test_template:
+                                (Function
+                                    (SymbolTable
+                                        13
+                                        {
+                                            __asr_swp:
+                                                (Function
+                                                    (SymbolTable
+                                                        17
+                                                        {
+                                                            lhs:
+                                                                (Variable
+                                                                    17
+                                                                    lhs
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            rhs:
+                                                                (Variable
+                                                                    17
+                                                                    rhs
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            tmp:
+                                                                (Variable
+                                                                    17
+                                                                    tmp
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    __asr_swp
+                                                    (FunctionType
+                                                        [(Integer 4)
+                                                        (Integer 4)]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    []
+                                                    [(Var 17 lhs)
+                                                    (Var 17 rhs)]
+                                                    [(=
+                                                        (Var 17 tmp)
+                                                        (Var 17 lhs)
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 17 lhs)
+                                                        (Var 17 rhs)
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 17 rhs)
+                                                        (Var 17 tmp)
+                                                        ()
+                                                    )]
+                                                    ()
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            __asr_swp1:
+                                                (Function
+                                                    (SymbolTable
+                                                        18
+                                                        {
+                                                            lhs:
+                                                                (Variable
+                                                                    18
+                                                                    lhs
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            rhs:
+                                                                (Variable
+                                                                    18
+                                                                    rhs
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            tmp:
+                                                                (Variable
+                                                                    18
+                                                                    tmp
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    __asr_swp1
+                                                    (FunctionType
+                                                        [(Real 4)
+                                                        (Real 4)]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    []
+                                                    [(Var 18 lhs)
+                                                    (Var 18 rhs)]
+                                                    [(=
+                                                        (Var 18 tmp)
+                                                        (Var 18 lhs)
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 18 lhs)
+                                                        (Var 18 rhs)
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 18 rhs)
+                                                        (Var 18 tmp)
+                                                        ()
+                                                    )]
+                                                    ()
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            qsort_integer:
+                                                (Function
+                                                    (SymbolTable
+                                                        14
+                                                        {
+                                                            arr:
+                                                                (Variable
+                                                                    14
+                                                                    arr
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Array
+                                                                        (Integer 4)
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            high:
+                                                                (Variable
+                                                                    14
+                                                                    high
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            i:
+                                                                (Variable
+                                                                    14
+                                                                    i
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            last:
+                                                                (Variable
+                                                                    14
+                                                                    last
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            low:
+                                                                (Variable
+                                                                    14
+                                                                    low
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            pivot:
+                                                                (Variable
+                                                                    14
+                                                                    pivot
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    qsort_integer
+                                                    (FunctionType
+                                                        [(Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                        (Integer 4)
+                                                        (Integer 4)]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    [lt_integer
+                                                    __asr_swp
+                                                    qsort_integer]
+                                                    [(Var 14 arr)
+                                                    (Var 14 low)
+                                                    (Var 14 high)]
+                                                    [(If
+                                                        (IntegerCompare
+                                                            (Var 14 low)
+                                                            Lt
+                                                            (Var 14 high)
+                                                            (Logical 4)
+                                                            ()
+                                                        )
+                                                        [(=
+                                                            (Var 14 pivot)
+                                                            (ArrayItem
+                                                                (Var 14 arr)
+                                                                [(()
+                                                                (Var 14 high)
+                                                                ())]
+                                                                (Integer 4)
+                                                                ColMajor
+                                                                ()
+                                                            )
+                                                            ()
+                                                        )
+                                                        (=
+                                                            (Var 14 last)
+                                                            (IntegerBinOp
+                                                                (Var 14 low)
+                                                                Sub
+                                                                (IntegerConstant 1 (Integer 4))
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            ()
+                                                        )
+                                                        (DoLoop
+                                                            ()
+                                                            ((Var 14 i)
+                                                            (Var 14 low)
+                                                            (IntegerBinOp
+                                                                (Var 14 high)
+                                                                Sub
+                                                                (IntegerConstant 1 (Integer 4))
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            ())
+                                                            [(If
+                                                                (FunctionCall
+                                                                    2 lt_integer
+                                                                    ()
+                                                                    [((ArrayItem
+                                                                        (Var 14 arr)
+                                                                        [(()
+                                                                        (Var 14 i)
+                                                                        ())]
+                                                                        (Integer 4)
+                                                                        ColMajor
+                                                                        ()
+                                                                    ))
+                                                                    ((Var 14 pivot))]
+                                                                    (Logical 4)
+                                                                    ()
+                                                                    ()
+                                                                )
+                                                                [(=
+                                                                    (Var 14 last)
+                                                                    (IntegerBinOp
+                                                                        (Var 14 last)
+                                                                        Add
+                                                                        (IntegerConstant 1 (Integer 4))
+                                                                        (Integer 4)
+                                                                        ()
+                                                                    )
+                                                                    ()
+                                                                )
+                                                                (SubroutineCall
+                                                                    13 __asr_swp
+                                                                    ()
+                                                                    [((ArrayItem
+                                                                        (Var 14 arr)
+                                                                        [(()
+                                                                        (Var 14 last)
+                                                                        ())]
+                                                                        (Integer 4)
+                                                                        ColMajor
+                                                                        ()
+                                                                    ))
+                                                                    ((ArrayItem
+                                                                        (Var 14 arr)
+                                                                        [(()
+                                                                        (Var 14 i)
+                                                                        ())]
+                                                                        (Integer 4)
+                                                                        ColMajor
+                                                                        ()
+                                                                    ))]
+                                                                    ()
+                                                                )]
+                                                                []
+                                                            )]
+                                                        )
+                                                        (SubroutineCall
+                                                            13 __asr_swp
+                                                            ()
+                                                            [((ArrayItem
+                                                                (Var 14 arr)
+                                                                [(()
+                                                                (IntegerBinOp
+                                                                    (Var 14 last)
+                                                                    Add
+                                                                    (IntegerConstant 1 (Integer 4))
+                                                                    (Integer 4)
+                                                                    ()
+                                                                )
+                                                                ())]
+                                                                (Integer 4)
+                                                                ColMajor
+                                                                ()
+                                                            ))
+                                                            ((ArrayItem
+                                                                (Var 14 arr)
+                                                                [(()
+                                                                (Var 14 high)
+                                                                ())]
+                                                                (Integer 4)
+                                                                ColMajor
+                                                                ()
+                                                            ))]
+                                                            ()
+                                                        )
+                                                        (SubroutineCall
+                                                            13 qsort_integer
+                                                            ()
+                                                            [((ArrayPhysicalCast
+                                                                (Var 14 arr)
+                                                                DescriptorArray
+                                                                DescriptorArray
+                                                                (Array
+                                                                    (Integer 4)
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
+                                                                )
+                                                                ()
+                                                            ))
+                                                            ((Var 14 low))
+                                                            ((Var 14 last))]
+                                                            ()
+                                                        )
+                                                        (SubroutineCall
+                                                            13 qsort_integer
+                                                            ()
+                                                            [((ArrayPhysicalCast
+                                                                (Var 14 arr)
+                                                                DescriptorArray
+                                                                DescriptorArray
+                                                                (Array
+                                                                    (Integer 4)
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
+                                                                )
+                                                                ()
+                                                            ))
+                                                            ((IntegerBinOp
+                                                                (Var 14 last)
+                                                                Add
+                                                                (IntegerConstant 2 (Integer 4))
+                                                                (Integer 4)
+                                                                ()
+                                                            ))
+                                                            ((Var 14 high))]
+                                                            ()
+                                                        )]
+                                                        []
+                                                    )]
+                                                    ()
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            qsort_real:
+                                                (Function
+                                                    (SymbolTable
+                                                        15
+                                                        {
+                                                            arr:
+                                                                (Variable
+                                                                    15
+                                                                    arr
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Array
+                                                                        (Real 4)
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            high:
+                                                                (Variable
+                                                                    15
+                                                                    high
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            i:
+                                                                (Variable
+                                                                    15
+                                                                    i
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            last:
+                                                                (Variable
+                                                                    15
+                                                                    last
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            low:
+                                                                (Variable
+                                                                    15
+                                                                    low
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            pivot:
+                                                                (Variable
+                                                                    15
+                                                                    pivot
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    qsort_real
+                                                    (FunctionType
+                                                        [(Array
+                                                            (Real 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                        (Integer 4)
+                                                        (Integer 4)]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    [lt_real
+                                                    __asr_swp1
+                                                    qsort_real]
+                                                    [(Var 15 arr)
+                                                    (Var 15 low)
+                                                    (Var 15 high)]
+                                                    [(If
+                                                        (IntegerCompare
+                                                            (Var 15 low)
+                                                            Lt
+                                                            (Var 15 high)
+                                                            (Logical 4)
+                                                            ()
+                                                        )
+                                                        [(=
+                                                            (Var 15 pivot)
+                                                            (ArrayItem
+                                                                (Var 15 arr)
+                                                                [(()
+                                                                (Var 15 high)
+                                                                ())]
+                                                                (Real 4)
+                                                                ColMajor
+                                                                ()
+                                                            )
+                                                            ()
+                                                        )
+                                                        (=
+                                                            (Var 15 last)
+                                                            (IntegerBinOp
+                                                                (Var 15 low)
+                                                                Sub
+                                                                (IntegerConstant 1 (Integer 4))
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            ()
+                                                        )
+                                                        (DoLoop
+                                                            ()
+                                                            ((Var 15 i)
+                                                            (Var 15 low)
+                                                            (IntegerBinOp
+                                                                (Var 15 high)
+                                                                Sub
+                                                                (IntegerConstant 1 (Integer 4))
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            ())
+                                                            [(If
+                                                                (FunctionCall
+                                                                    2 lt_real
+                                                                    ()
+                                                                    [((ArrayItem
+                                                                        (Var 15 arr)
+                                                                        [(()
+                                                                        (Var 15 i)
+                                                                        ())]
+                                                                        (Real 4)
+                                                                        ColMajor
+                                                                        ()
+                                                                    ))
+                                                                    ((Var 15 pivot))]
+                                                                    (Logical 4)
+                                                                    ()
+                                                                    ()
+                                                                )
+                                                                [(=
+                                                                    (Var 15 last)
+                                                                    (IntegerBinOp
+                                                                        (Var 15 last)
+                                                                        Add
+                                                                        (IntegerConstant 1 (Integer 4))
+                                                                        (Integer 4)
+                                                                        ()
+                                                                    )
+                                                                    ()
+                                                                )
+                                                                (SubroutineCall
+                                                                    13 __asr_swp1
+                                                                    ()
+                                                                    [((ArrayItem
+                                                                        (Var 15 arr)
+                                                                        [(()
+                                                                        (Var 15 last)
+                                                                        ())]
+                                                                        (Real 4)
+                                                                        ColMajor
+                                                                        ()
+                                                                    ))
+                                                                    ((ArrayItem
+                                                                        (Var 15 arr)
+                                                                        [(()
+                                                                        (Var 15 i)
+                                                                        ())]
+                                                                        (Real 4)
+                                                                        ColMajor
+                                                                        ()
+                                                                    ))]
+                                                                    ()
+                                                                )]
+                                                                []
+                                                            )]
+                                                        )
+                                                        (SubroutineCall
+                                                            13 __asr_swp1
+                                                            ()
+                                                            [((ArrayItem
+                                                                (Var 15 arr)
+                                                                [(()
+                                                                (IntegerBinOp
+                                                                    (Var 15 last)
+                                                                    Add
+                                                                    (IntegerConstant 1 (Integer 4))
+                                                                    (Integer 4)
+                                                                    ()
+                                                                )
+                                                                ())]
+                                                                (Real 4)
+                                                                ColMajor
+                                                                ()
+                                                            ))
+                                                            ((ArrayItem
+                                                                (Var 15 arr)
+                                                                [(()
+                                                                (Var 15 high)
+                                                                ())]
+                                                                (Real 4)
+                                                                ColMajor
+                                                                ()
+                                                            ))]
+                                                            ()
+                                                        )
+                                                        (SubroutineCall
+                                                            13 qsort_real
+                                                            ()
+                                                            [((ArrayPhysicalCast
+                                                                (Var 15 arr)
+                                                                DescriptorArray
+                                                                DescriptorArray
+                                                                (Array
+                                                                    (Real 4)
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
+                                                                )
+                                                                ()
+                                                            ))
+                                                            ((Var 15 low))
+                                                            ((Var 15 last))]
+                                                            ()
+                                                        )
+                                                        (SubroutineCall
+                                                            13 qsort_real
+                                                            ()
+                                                            [((ArrayPhysicalCast
+                                                                (Var 15 arr)
+                                                                DescriptorArray
+                                                                DescriptorArray
+                                                                (Array
+                                                                    (Real 4)
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
+                                                                )
+                                                                ()
+                                                            ))
+                                                            ((IntegerBinOp
+                                                                (Var 15 last)
+                                                                Add
+                                                                (IntegerConstant 2 (Integer 4))
+                                                                (Integer 4)
+                                                                ()
+                                                            ))
+                                                            ((Var 15 high))]
+                                                            ()
+                                                        )]
+                                                        []
+                                                    )]
+                                                    ()
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            xi:
+                                                (Variable
+                                                    13
+                                                    xi
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 10 (Integer 4)))]
+                                                        FixedSizeArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            xr:
+                                                (Variable
+                                                    13
+                                                    xr
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Real 4)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 10 (Integer 4)))]
+                                                        FixedSizeArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    test_template
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    [(=
+                                        (Var 13 xi)
+                                        (ArrayConstant
+                                            [(IntegerConstant 2 (Integer 4))
+                                            (IntegerConstant 4 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 5 (Integer 4))
+                                            (IntegerConstant 6 (Integer 4))
+                                            (IntegerConstant 24 (Integer 4))
+                                            (IntegerConstant 51 (Integer 4))
+                                            (IntegerConstant 3 (Integer 4))
+                                            (IntegerConstant 42 (Integer 4))
+                                            (IntegerConstant 2 (Integer 4))]
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 10 (Integer 4)))]
+                                                FixedSizeArray
+                                            )
+                                            ColMajor
+                                        )
+                                        ()
+                                    )
+                                    (=
+                                        (Var 13 xr)
+                                        (ArrayConstant
+                                            [(Cast
+                                                (IntegerConstant 2 (Integer 4))
+                                                IntegerToReal
+                                                (Real 4)
+                                                (RealConstant
+                                                    2.000000
+                                                    (Real 4)
+                                                )
+                                            )
+                                            (Cast
+                                                (IntegerConstant 4 (Integer 4))
+                                                IntegerToReal
+                                                (Real 4)
+                                                (RealConstant
+                                                    4.000000
+                                                    (Real 4)
+                                                )
+                                            )
+                                            (Cast
+                                                (IntegerConstant 1 (Integer 4))
+                                                IntegerToReal
+                                                (Real 4)
+                                                (RealConstant
+                                                    1.000000
+                                                    (Real 4)
+                                                )
+                                            )
+                                            (Cast
+                                                (IntegerConstant 5 (Integer 4))
+                                                IntegerToReal
+                                                (Real 4)
+                                                (RealConstant
+                                                    5.000000
+                                                    (Real 4)
+                                                )
+                                            )
+                                            (Cast
+                                                (IntegerConstant 6 (Integer 4))
+                                                IntegerToReal
+                                                (Real 4)
+                                                (RealConstant
+                                                    6.000000
+                                                    (Real 4)
+                                                )
+                                            )
+                                            (Cast
+                                                (IntegerConstant 24 (Integer 4))
+                                                IntegerToReal
+                                                (Real 4)
+                                                (RealConstant
+                                                    24.000000
+                                                    (Real 4)
+                                                )
+                                            )
+                                            (Cast
+                                                (IntegerConstant 51 (Integer 4))
+                                                IntegerToReal
+                                                (Real 4)
+                                                (RealConstant
+                                                    51.000000
+                                                    (Real 4)
+                                                )
+                                            )
+                                            (Cast
+                                                (IntegerConstant 3 (Integer 4))
+                                                IntegerToReal
+                                                (Real 4)
+                                                (RealConstant
+                                                    3.000000
+                                                    (Real 4)
+                                                )
+                                            )
+                                            (Cast
+                                                (IntegerConstant 42 (Integer 4))
+                                                IntegerToReal
+                                                (Real 4)
+                                                (RealConstant
+                                                    42.000000
+                                                    (Real 4)
+                                                )
+                                            )
+                                            (Cast
+                                                (IntegerConstant 2 (Integer 4))
+                                                IntegerToReal
+                                                (Real 4)
+                                                (RealConstant
+                                                    2.000000
+                                                    (Real 4)
+                                                )
+                                            )]
+                                            (Array
+                                                (Real 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 10 (Integer 4)))]
+                                                FixedSizeArray
+                                            )
+                                            ColMajor
+                                        )
+                                        ()
+                                    )
+                                    (SubroutineCall
+                                        13 qsort_integer
+                                        ()
+                                        [((ArrayPhysicalCast
+                                            (Var 13 xi)
+                                            FixedSizeArray
+                                            DescriptorArray
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 10 (Integer 4)))]
+                                                DescriptorArray
+                                            )
+                                            ()
+                                        ))
+                                        ((IntegerConstant 1 (Integer 4)))
+                                        ((IntegerConstant 10 (Integer 4)))]
+                                        ()
+                                    )
+                                    (SubroutineCall
+                                        13 qsort_real
+                                        ()
+                                        [((ArrayPhysicalCast
+                                            (Var 13 xr)
+                                            FixedSizeArray
+                                            DescriptorArray
+                                            (Array
+                                                (Real 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 10 (Integer 4)))]
+                                                DescriptorArray
+                                            )
+                                            ()
+                                        ))
+                                        ((IntegerConstant 1 (Integer 4)))
+                                        ((IntegerConstant 10 (Integer 4)))]
+                                        ()
+                                    )
+                                    (Print
+                                        [(Var 13 xi)]
+                                        ()
+                                        ()
+                                    )
+                                    (Print
+                                        [(Var 13 xr)]
+                                        ()
+                                        ()
+                                    )]
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    template_sort_01_m
+                    [template_sort_01_m]
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

@@ -541,6 +541,7 @@ public:
         std::string call_name = ASRUtils::symbol_name(x->m_name);
         ASR::symbol_t *name = template_scope->get_symbol(call_name);
 
+        // TODO: refactor this if-else branches
         if (ASRUtils::is_requirement_function(name)) {
             name = symbol_subs[call_name];
         } else if (context_map.find(call_name) != context_map.end()) {
@@ -585,17 +586,18 @@ public:
         std::string call_name = ASRUtils::symbol_name(x->m_name);
         ASR::symbol_t *name = template_scope->get_symbol(call_name);
 
+        // TODO: refactor this if-else branches
         if (ASRUtils::is_requirement_function(name)) {
             name = symbol_subs[call_name];
         } else if (context_map.find(call_name) != context_map.end()) {
             name = current_scope->resolve_symbol(context_map[call_name]);
         } else if (ASRUtils::is_generic_function(name)) {
             ASR::symbol_t *search_sym = current_scope->resolve_symbol(call_name);
-            if (search_sym != nullptr) {
+            if (search_sym != nullptr && ASR::is_a<ASR::Function_t>(*search_sym)) {
                 name = search_sym;
             } else {
                 ASR::symbol_t* name2 = ASRUtils::symbol_get_past_external(name);
-                std::string nested_func_name = current_scope->get_unique_name("__asr_" + call_name, false);
+                std::string nested_func_name = func_scope->get_unique_name("__asr_" + call_name, false);
                 SymbolInstantiator nested(al, context_map, type_subs, symbol_subs, func_scope, template_scope, nested_func_name);
                 name = nested.instantiate_symbol(name2);
                 name = nested.instantiate_body(ASR::down_cast<ASR::Function_t>(name), ASR::down_cast<ASR::Function_t>(name2));
