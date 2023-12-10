@@ -2793,7 +2793,6 @@ public:
                 return;
             }
         }
-        throw LCompilersException("Argument not found");
     }
 
     void visit_Print(const AST::Print_t &x) {
