@@ -2276,6 +2276,7 @@ public:
                                 is_external = true;
                             } else if(sa->m_attr == AST::simple_attributeType
                                 ::AttrNoPass) {
+                                std::cerr << "TODO: Support nopass here" << std::endl;
                             } else {
                                 throw SemanticError("Attribute type not implemented yet " + std::to_string(sa->m_attr),
                                         x.base.base.loc);
