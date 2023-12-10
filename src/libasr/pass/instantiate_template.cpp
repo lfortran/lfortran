@@ -130,23 +130,46 @@ public:
     }
 
     ASR::symbol_t* duplicate_Variable(ASR::Variable_t *x) {
-        ASR::ttype_t *t = x->m_type;
-
-        if (ASR::is_a<ASR::TypeParameter_t>(*t)) {
-            ASR::TypeParameter_t *tp = ASR::down_cast<ASR::TypeParameter_t>(t);
-            LCOMPILERS_ASSERT(type_subs.find(tp->m_param) != type_subs.end());
-            t = ASRUtils::duplicate_type(al, type_subs[tp->m_param]);
+        ASR::symbol_t *v = current_scope->get_symbol(x->m_name);
+        if (!v) {
+            ASR::ttype_t *t = substitute_type(x->m_type);
+            v = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+                al, x->base.base.loc, current_scope, x->m_name, x->m_dependencies,
+                x->n_dependencies, x->m_intent, x->m_symbolic_value,
+                x->m_value, x->m_storage, t, x->m_type_declaration,
+                x->m_abi, x->m_access, x->m_presence, x->m_value_attr));
+            current_scope->add_symbol(x->m_name, v);
         }
+        return v;
+    }
 
-        ASR::symbol_t* new_v = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
-            al, x->base.base.loc, current_scope, x->m_name, x->m_dependencies,
-            x->n_dependencies, x->m_intent, x->m_symbolic_value,
-            x->m_value, x->m_storage, t, x->m_type_declaration,
-            x->m_abi, x->m_access, x->m_presence, x->m_value_attr));
-
-        current_scope->add_symbol(x->m_name, new_v);
-
-        return new_v;
+    ASR::ttype_t* substitute_type(ASR::ttype_t *ttype) {
+        switch (ttype->type) {
+            case (ASR::ttypeType::TypeParameter) : {
+                ASR::TypeParameter_t *tp = ASR::down_cast<ASR::TypeParameter_t>(ttype);
+                LCOMPILERS_ASSERT(type_subs.find(tp->m_param) != type_subs.end());
+                return ASRUtils::duplicate_type(al, type_subs[tp->m_param]);
+            }
+            case (ASR::ttypeType::Array) : {
+                ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(ttype);
+                ASR::ttype_t *t = substitute_type(a->m_type);
+                ASR::dimension_t* m_dims = nullptr;
+                size_t n_dims = ASRUtils::extract_dimensions_from_ttype(ttype, m_dims);
+                Vec<ASR::dimension_t> new_dims;
+                new_dims.reserve(al, n_dims);
+                for (size_t i = 0; i < n_dims; i++) {
+                    ASR::dimension_t old_dim = m_dims[i];
+                    ASR::dimension_t new_dim;
+                    new_dim.loc = old_dim.loc;
+                    new_dim.m_start = duplicate_expr(old_dim.m_start);
+                    new_dim.m_length = duplicate_expr(old_dim.m_length);
+                    new_dims.push_back(al, new_dim);
+                }
+                return ASRUtils::make_Array_t_util(al, t->base.loc,
+                    t, new_dims.p, new_dims.size());
+            }
+            default : return ttype;
+        }
     }
 
 };
