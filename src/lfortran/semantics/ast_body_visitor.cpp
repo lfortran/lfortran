@@ -2738,6 +2738,9 @@ public:
                     ASR::Function_t *current_function = ASR::down_cast2
                         <ASR::Function_t>(current_scope->asr_owner);
                     redo_function_argument(*current_function, sub_name);
+                    // TODO: Support a class procedure here
+                    // Currently hard code nopass for a function
+                    nopass = true;
                 }
                 final_sym = original_sym;
                 original_sym = nullptr;
