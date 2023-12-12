@@ -1,7 +1,8 @@
 program intrinsics_91
-    if ( index('abc', 'b') /= 2 ) error stop
-    if ( index("elephant", "an") /= 6 ) error stop
-    if ( index("potato", "t", back=.true.) /= 5 ) error stop
-    if ( index("potato", "t", back=.false.) /= 3 ) error stop
-    if ( index("potato", "ta", back=.true.) /= 3 ) error stop
+    real(4) a
+    real(8) b
+    print*, tiny(a)
+    print*, tiny(b)
+    print*, kind(tiny(a))
+    print*, kind(tiny(b))
 end
