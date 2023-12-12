@@ -660,39 +660,7 @@ public:
         switch (ttype->type) {
             case (ASR::ttypeType::TypeParameter) : {
                 ASR::TypeParameter_t *param = ASR::down_cast<ASR::TypeParameter_t>(ttype);
-                ASR::ttype_t *t = type_subs[param->m_param];
-                switch (t->type) {
-                    case ASR::ttypeType::Integer: {
-                        ASR::Integer_t* tnew = ASR::down_cast<ASR::Integer_t>(t);
-                        t = ASRUtils::TYPE(ASR::make_Integer_t(al, t->base.loc, tnew->m_kind));
-                        break;
-                    }
-                    case ASR::ttypeType::Real: {
-                        ASR::Real_t* tnew = ASR::down_cast<ASR::Real_t>(t);
-                        t = ASRUtils::TYPE(ASR::make_Real_t(al, t->base.loc, tnew->m_kind));
-                        break;
-                    }
-                    case ASR::ttypeType::Character: {
-                        ASR::Character_t* tnew = ASR::down_cast<ASR::Character_t>(t);
-                        t = ASRUtils::TYPE(ASR::make_Character_t(al, t->base.loc,
-                                    tnew->m_kind, tnew->m_len, tnew->m_len_expr));
-                        break;
-                    }
-                    case ASR::ttypeType::Complex: {
-                        ASR::Complex_t* tnew = ASR::down_cast<ASR::Complex_t>(t);
-                        t = ASRUtils::TYPE(ASR::make_Complex_t(al, t->base.loc, tnew->m_kind));
-                        break;
-                    }
-                    case ASR::ttypeType::TypeParameter: {
-                        ASR::TypeParameter_t* tnew = ASR::down_cast<ASR::TypeParameter_t>(t);
-                        t = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, t->base.loc, tnew->m_param));
-                        break;
-                    }
-                    default: {
-                        LCOMPILERS_ASSERT(false);
-                    }
-                }
-                return t;
+                return ASRUtils::duplicate_type(al, type_subs[param->m_param]);
             }
             case (ASR::ttypeType::List) : {
                 ASR::List_t *tlist = ASR::down_cast<ASR::List_t>(ttype);

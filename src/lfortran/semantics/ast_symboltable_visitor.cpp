@@ -2922,7 +2922,7 @@ public:
                 ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
                 if (!ASRUtils::is_type_parameter(*param_type)) {
                     throw SemanticError("The type " + ASRUtils::type_to_str(arg_type) +
-                        " cannot be applied to non-type parameter " + param, x.base.base.loc);
+                        " cannot be applied to non-type parameter " + param, x.m_args[i]->base.loc);
                 }
                 type_subs[param] = arg_type;
             } else if (AST::is_a<AST::AttrNamelist_t>(*x.m_args[i])) {
@@ -2946,23 +2946,23 @@ public:
                 } else {
                     ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
                     if (ASRUtils::is_type_parameter(*param_type)) {
-                        // Handling type parameters passed as instantiate's arguments
-                        ASR::symbol_t *arg_sym = current_scope->resolve_symbol(arg);
-                        ASR::ttype_t *arg_type = ASRUtils::symbol_type(arg_sym);
-                        if (ASRUtils::is_type_parameter(*arg_type)) {
-                            type_subs[param] = ASRUtils::TYPE(ASR::make_TypeParameter_t(al,
-                                x.base.base.loc, ASR::down_cast<ASR::TypeParameter_t>(arg_type)->m_param));
+                        // Handling types passed as instantiate's arguments
+                        ASR::symbol_t *arg_sym0 = current_scope->resolve_symbol(arg);
+                        ASR::symbol_t *arg_sym = ASRUtils::symbol_get_past_external(arg_sym0);
+                        ASR::ttype_t *arg_type = nullptr;
+                        if (ASR::is_a<ASR::StructType_t>(*arg_sym)) {
+                            arg_type = ASRUtils::TYPE(ASR::make_Struct_t(al, x.m_args[i]->base.loc, arg_sym0));
                         } else {
-                            throw SemanticError("The type " + arg + " is not yet handled for "
-                                + "template instantiation", x.base.base.loc);
+                            arg_type = ASRUtils::symbol_type(arg_sym);
                         }
+                        type_subs[param] = ASRUtils::duplicate_type(al, arg_type);
                     } else {
                         // Handling local variables passed as instantiate's arguments
                         ASR::symbol_t *arg_sym = current_scope->resolve_symbol(arg);
                         ASR::ttype_t *arg_type = ASRUtils::symbol_type(arg_sym);
                         if (!ASRUtils::check_equal_type(arg_type, param_type)) {
                             throw SemanticError("The type of " + arg + " does not match the type of " + param,
-                                x.base.base.loc);
+                                x.m_args[i]->base.loc);
                         }
                         symbol_subs[param] = arg_sym;
                     }
