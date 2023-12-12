@@ -1,4 +1,4 @@
-module template_sort_02_type
+module template_sort_01_type
     implicit none
     public :: my_type, my_type_lt
 
@@ -17,7 +17,7 @@ contains
 end module
 
 module template_sort_01_m
-    use template_sort_02_type
+    use template_sort_01_type
     implicit none
     private
     public :: sort_t

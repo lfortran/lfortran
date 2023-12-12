@@ -22,7 +22,7 @@
                                     20
                                     lt_my_type
                                     2 lt_my_type
-                                    template_sort_02_type
+                                    template_sort_01_type
                                     []
                                     lt_my_type
                                     Public
@@ -42,7 +42,7 @@
                                     20
                                     my_type
                                     2 my_type
-                                    template_sort_02_type
+                                    template_sort_01_type
                                     []
                                     my_type
                                     Public
@@ -207,7 +207,7 @@
                                     5
                                     lt_my_type
                                     2 lt_my_type
-                                    template_sort_02_type
+                                    template_sort_01_type
                                     []
                                     lt_my_type
                                     Public
@@ -307,7 +307,7 @@
                                     5
                                     my_type
                                     2 my_type
-                                    template_sort_02_type
+                                    template_sort_01_type
                                     []
                                     my_type
                                     Public
@@ -3063,12 +3063,12 @@
                                 )
                         })
                     template_sort_01_m
-                    [template_sort_02_type
+                    [template_sort_01_type
                     template_sort_01_m]
                     .false.
                     .false.
                 ),
-            template_sort_02_type:
+            template_sort_01_type:
                 (Module
                     (SymbolTable
                         2
@@ -3225,7 +3225,7 @@
                                     ()
                                 )
                         })
-                    template_sort_02_type
+                    template_sort_01_type
                     []
                     .false.
                     .false.
