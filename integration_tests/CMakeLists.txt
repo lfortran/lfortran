@@ -1241,3 +1241,5 @@ RUN(NAME do_concurrent_01 LABELS gfortran llvm)
 
 RUN(NAME transfer_01 LABELS gfortran llvm)
 RUN(NAME transfer_02 LABELS gfortran)
+
+RUN(NAME present_01 LABELS gfortran llvm)
