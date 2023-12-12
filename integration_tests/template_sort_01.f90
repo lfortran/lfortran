@@ -1,4 +1,23 @@
+module template_sort_02_type
+    implicit none
+    public :: my_type, my_type_lt
+
+    type my_type
+        real :: d
+    end type
+
+contains
+
+    pure elemental function lt_my_type(lhs, rhs) result(res)
+        type(my_type), intent(in) :: lhs, rhs
+        logical :: res
+        res = lhs%d < rhs%d
+    end function
+
+end module
+
 module template_sort_01_m
+    use template_sort_02_type
     implicit none
     private
     public :: sort_t
@@ -109,16 +128,23 @@ contains
     end function
 
     subroutine test_template()
-        integer :: xi(10)
+        integer :: xi(10), i
         real :: xr(10)
+        type(my_type) :: xm(10)
         instantiate qsort_t(integer, lt_integer), only: qsort_integer => qs
         instantiate qsort_t(real, lt_real), only: qsort_real => qs
+        instantiate qsort_t(my_type, lt_my_type), only: qsort_my_type => qs
         xi = [2,4,1,5,6,24,51,3,42,2]
         xr = [2,4,1,5,6,24,51,3,42,2]
+        do i = 1, 10
+            xm(i) = my_type(xr(i))
+        end do
         call qsort_integer(xi, 1, 10)
         call qsort_real(xr, 1, 10)
+        call qsort_my_type(xm, 1, 10)
         print *, xi
         print *, xr
+        print *, xm
     end subroutine
 
 end module
