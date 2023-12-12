@@ -5760,6 +5760,7 @@ public:
 
     }
 
+    // TODO: extract commonality with visit_Instantiate
     std::string handle_templated(std::string name, bool is_nested,
             AST::decl_attribute_t** args, size_t n_args, const Location &loc) {
         std::string func_name = name;
@@ -5820,18 +5821,18 @@ public:
                     }
                     report_check_restriction(type_subs, symbol_subs, f, f_arg0, loc, diag);
                 } else {
-                    ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
+                    ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym); 
                     if (ASRUtils::is_type_parameter(*param_type)) {
                         // Handling type parameters passed as instantiate's arguments
-                        ASR::symbol_t *arg_sym = current_scope->resolve_symbol(arg);
-                        ASR::ttype_t *arg_type = ASRUtils::symbol_type(arg_sym);
-                        if (ASRUtils::is_type_parameter(*arg_type)) {
-                            type_subs[param] = ASRUtils::TYPE(ASR::make_TypeParameter_t(al,
-                                loc, ASR::down_cast<ASR::TypeParameter_t>(arg_type)->m_param));
+                        ASR::symbol_t *arg_sym0 = current_scope->resolve_symbol(arg);
+                        ASR::symbol_t *arg_sym = ASRUtils::symbol_get_past_external(arg_sym0);
+                        ASR::ttype_t *arg_type = nullptr;
+                        if (ASR::is_a<ASR::StructType_t>(*arg_sym)) {
+                            arg_type = ASRUtils::TYPE(ASR::make_Struct_t(al, args[i]->base.loc, arg_sym0));
                         } else {
-                            throw SemanticError("The type " + arg + " is not yet handled for "
-                                + "template instantiation", loc);
+                            arg_type = ASRUtils::symbol_type(arg_sym);
                         }
+                        type_subs[param] = ASRUtils::duplicate_type(al, arg_type);
                     } else {
                         // Handling local variables passed as instantiate's arguments
                         ASR::symbol_t *arg_sym = current_scope->resolve_symbol(arg);
