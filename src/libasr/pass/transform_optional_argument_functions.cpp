@@ -333,6 +333,17 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                     size_t k;
                     bool k_found = false;
                     for( k = 0; k < owning_function->n_args; k++ ) {
+                        ASR::expr_t* original_expr = nullptr;
+                        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_args[i].m_value)) {
+                            ASR::ArrayPhysicalCast_t *x_array_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_args[i].m_value);
+                            original_expr = x_array_cast->m_arg;
+                        }
+                        if( original_expr && ASR::is_a<ASR::Var_t>(*original_expr) && ASR::down_cast<ASR::Var_t>(owning_function->m_args[k])->m_v ==
+                            ASR::down_cast<ASR::Var_t>(original_expr)->m_v ) {
+                            k_found = true;
+                            break ;
+                        }
+
                         if( ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value) && ASR::down_cast<ASR::Var_t>(owning_function->m_args[k])->m_v ==
                             ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value)->m_v ) {
                             k_found = true;
