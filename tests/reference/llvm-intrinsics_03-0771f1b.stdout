@@ -109,6 +109,8 @@ define i32 @main(i32 %0, i8** %1) {
   %call_arg_value = alloca float, align 4
   call void @_lpython_set_argv(i32 %0, i8** %1)
   %a = alloca double, align 8
+  %real64 = alloca i32, align 4
+  store i32 8, i32* %real64, align 4
   %r1 = alloca double, align 8
   %r2 = alloca double, align 8
   %x = alloca float, align 4
