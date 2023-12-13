@@ -92,6 +92,9 @@ public:
                     format_args.push_back(al, string_format);
                     print_stmt = ASRUtils::STMT(ASR::make_Print_t(al, loc,
                         format_args.p, format_args.size(), nullptr, empty_space));
+                } else if (ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_array(ASRUtils::expr_type(print_args[0]))))) {
+                    print_stmt = ASRUtils::STMT(ASR::make_Print_t(al, loc,
+                        print_args.p, print_args.size(), nullptr, empty_space));
                 } else {
                     print_stmt = ASRUtils::STMT(ASR::make_Print_t(al, loc,
                         print_args.p, print_args.size(), nullptr, space));
