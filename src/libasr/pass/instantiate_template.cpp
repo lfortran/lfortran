@@ -392,6 +392,9 @@ public:
             case ASR::symbolType::ClassProcedure: {
                 return duplicate_ClassProcedure(ASR::down_cast<ASR::ClassProcedure_t>(x));
             }
+            case ASR::symbolType::CustomOperator: {
+                return duplicate_CustomOperator(ASR::down_cast<ASR::CustomOperator_t>(x));
+            }
             default: {
                 throw LCompilersException("Unsupported symbol for template instantiation");
             }
@@ -459,11 +462,7 @@ public:
     }
 
     ASR::symbol_t* duplicate_CustomOperator(ASR::CustomOperator_t *x) {
-        ASR::symbol_t *new_c = ASR::down_cast<ASR::symbol_t>(ASR::make_CustomOperator_t(
-            al, x->base.base.loc, current_scope, x->m_name, nullptr, 0, ASR::Public));
-        current_scope->add_symbol(x->m_name, new_c);
-
-        return new_c;
+        return func_scope->resolve_symbol(x->m_name);
     }
 
     ASR::asr_t* duplicate_Var(ASR::Var_t *x) {
@@ -596,7 +595,8 @@ public:
             ADD_ASR_DEPENDENCIES(current_scope, name, dependencies);
         }
 
-        ASR::symbol_t *original_name = x->m_original_name;
+        ASR::symbol_t *original_name = x->m_original_name != nullptr ? duplicate_symbol(x->m_original_name) : nullptr;
+        /*
         if (x->m_original_name && ASR::is_a<ASR::CustomOperator_t>(*x->m_original_name)) {
             ASR::CustomOperator_t *original_c = ASR::down_cast<ASR::CustomOperator_t>(x->m_original_name);
             Vec<ASR::symbol_t*> symbols;
@@ -615,6 +615,7 @@ public:
                 func_scope, s2c(al, original_c->m_name), symbols.p, symbols.size(), ASR::Public));
             func_scope->add_or_overwrite_symbol(original_c->m_name, original_name);
         }
+        */
 
         return ASRUtils::make_FunctionCall_t_util(al, x->base.base.loc, name, /* x->m_original_name */ original_name,
             args.p, args.size(), type, value, dt);
