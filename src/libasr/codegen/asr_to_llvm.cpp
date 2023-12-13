@@ -3375,8 +3375,16 @@ public:
         }
         for (auto &item : var_order) {
             ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
-            if (is_a<ASR::Variable_t>(*var_sym)) {
-                ASR::Variable_t *v = down_cast<ASR::Variable_t>(var_sym);
+            bool is_variable_in_intrinsic_mods = false;
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*var_sym)) {
+                ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(var_sym);
+                std::string module_name = std::string(ext_sym->m_module_name);
+                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(var_sym);
+                if (sym && module_name == "lfortran_intrinsic_iso_fortran_env" &&
+                    ASR::is_a<ASR::Variable_t>(*sym)) is_variable_in_intrinsic_mods = true;
+            }
+            if (is_a<ASR::Variable_t>(*var_sym) || is_variable_in_intrinsic_mods) {
+                ASR::Variable_t *v = is_variable_in_intrinsic_mods ? down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(var_sym)): down_cast<ASR::Variable_t>(var_sym);
                 uint32_t h = get_hash((ASR::asr_t*)v);
                 llvm::Type *type;
                 int n_dims = 0, a_kind = 4;

@@ -108,6 +108,26 @@ std::vector<std::string> determine_variable_declaration_order(
                     deps.push_back(dep);
             }
             var_dep_graph[itr.first] = deps;
+        } else if ( ASR::is_a<ASR::ExternalSymbol_t>(*itr.second) ) {
+            ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(itr.second);
+            std::string module_name = std::string(ext_sym->m_module_name);
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(itr.second);
+            if (sym && module_name == "lfortran_intrinsic_iso_fortran_env" &&
+                ASR::is_a<ASR::Variable_t>(*sym)) {
+                std::vector<std::string> deps;
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+                for( size_t i = 0; i < var->n_dependencies; i++ ) {
+                    std::string dep = var->m_dependencies[i];
+                    // Check if the dependent variable is present in the symtab.
+                    // This will help us to include only local dependencies, and we
+                    // assume that dependencies in the parent symtab are already declared
+                    // earlier.
+                    if (symtab->get_symbol(dep) != nullptr)
+                        deps.push_back(dep);
+                }
+                var_dep_graph[itr.first] = deps;
+            }
+
         }
     }
     return ASRUtils::order_deps(var_dep_graph);
