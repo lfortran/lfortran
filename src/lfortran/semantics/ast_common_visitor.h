@@ -5932,7 +5932,6 @@ public:
                         args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, var)));
                     }
 
-                    //std::string func_name = op_name + "_intrinsic_" + ASRUtils::type_to_str(ltype);
                     std::string func_name = parent_scope->get_unique_name(op_name + "_intrinsic");
 
                     ASR::ttype_t *return_type = nullptr;
