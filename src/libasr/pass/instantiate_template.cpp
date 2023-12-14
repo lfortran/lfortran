@@ -591,31 +591,11 @@ public:
             }
         }
 
+        ASR::symbol_t *original_name = x->m_original_name != nullptr ? duplicate_symbol(x->m_original_name) : nullptr;
+
         if (ASRUtils::symbol_parent_symtab(name)->get_counter() != current_scope->get_counter() && !ASR::is_a<ASR::ExternalSymbol_t>(*name)) {
             ADD_ASR_DEPENDENCIES(current_scope, name, dependencies);
         }
-
-        ASR::symbol_t *original_name = x->m_original_name != nullptr ? duplicate_symbol(x->m_original_name) : nullptr;
-        /*
-        if (x->m_original_name && ASR::is_a<ASR::CustomOperator_t>(*x->m_original_name)) {
-            ASR::CustomOperator_t *original_c = ASR::down_cast<ASR::CustomOperator_t>(x->m_original_name);
-            Vec<ASR::symbol_t*> symbols;
-            if (func_scope->get_symbol(original_c->m_name)) {
-                ASR::CustomOperator_t *old_c = ASR::down_cast<ASR::CustomOperator_t>(
-                    func_scope->get_symbol(original_c->m_name));
-                symbols.reserve(al, old_c->n_procs + 1);
-                for (size_t i=0; i<old_c->n_procs; i++) {
-                    symbols.push_back(al, old_c->m_procs[i]);
-                }
-            } else {
-                symbols.reserve(al, 1);
-            }
-            symbols.push_back(al, name);
-            original_name = ASR::down_cast<ASR::symbol_t>(ASR::make_CustomOperator_t(al, x->base.base.loc,
-                func_scope, s2c(al, original_c->m_name), symbols.p, symbols.size(), ASR::Public));
-            func_scope->add_or_overwrite_symbol(original_c->m_name, original_name);
-        }
-        */
 
         return ASRUtils::make_FunctionCall_t_util(al, x->base.base.loc, name, /* x->m_original_name */ original_name,
             args.p, args.size(), type, value, dt);

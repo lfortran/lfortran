@@ -6016,7 +6016,9 @@ public:
         ASR::symbol_t *s = temp->m_symtab->resolve_symbol(func_name);
 
         SymbolTable *target_scope = current_scope;
-        if (is_nested) { target_scope = current_scope->parent; }
+        if (is_nested) {
+            target_scope = current_scope->parent;
+        }
 
         std::string new_func_name = target_scope->get_unique_name("__instantiated_" + func_name);
 
