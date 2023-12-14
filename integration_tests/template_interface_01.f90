@@ -61,9 +61,9 @@ contains
 
     pure function simple_generic_sum {T, add, cast} (arr) result(res)
         require :: operator_r(T, T, T, add), cast_r(T, cast)
-        !interface operator(+)
-        !    procedure add
-        !end interface
+        interface operator(+)
+            procedure add
+        end interface
         type(T), intent(in) :: arr(:)
         type(T) :: res
         integer :: n, i
@@ -72,7 +72,7 @@ contains
         if (n > 0) then
             res = arr(1)
             do i=2,n
-                ! res = res + arr(i)
+                res = res + arr(i)
             end do
         end if    
     end function
@@ -90,6 +90,8 @@ contains
         rr = generic_sum_real(ar)
         print *, ri
         print *, rr
+        print *, simple_generic_sum{integer, operator(+), cast_integer}(ai)
+        print *, simple_generic_sum{real, operator(+), cast_real}(ar)
     end subroutine
 
 end module
