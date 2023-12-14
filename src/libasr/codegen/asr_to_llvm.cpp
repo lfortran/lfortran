@@ -201,6 +201,7 @@ public:
     std::unique_ptr<LLVMSetInterface> set_api_sc;
     std::unique_ptr<LLVMArrUtils::Descriptor> arr_descr;
     std::vector<llvm::Value*> heap_arrays;
+    std::vector<std::string> intrinsic_modules;
     std::map<llvm::Value*, llvm::Value*> strings_to_be_allocated; // (array, size)
     Vec<llvm::Value*> strings_to_be_deallocated;
 
@@ -899,13 +900,17 @@ public:
 
         prototype_only = false;
         for (auto &item : x.m_symtab->get_scope()) {
-            if (is_a<ASR::Module_t>(*item.second) &&
-                item.first.find("lfortran_intrinsic_optimization") != std::string::npos) {
+            if (is_a<ASR::Module_t>(*item.second)) {
                 ASR::Module_t* mod = ASR::down_cast<ASR::Module_t>(item.second);
-                for( auto &moditem: mod->m_symtab->get_scope() ) {
-                    ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(moditem.second);
-                    if (is_a<ASR::Function_t>(*sym)) {
-                        visit_Function(*ASR::down_cast<ASR::Function_t>(sym));
+                if (mod->m_intrinsic) {
+                    intrinsic_modules.push_back(std::string(mod->m_name));
+                }
+                if (item.first.find("lfortran_intrinsic_optimization") != std::string::npos) {
+                    for( auto &moditem: mod->m_symtab->get_scope() ) {
+                        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(moditem.second);
+                        if (is_a<ASR::Function_t>(*sym)) {
+                            visit_Function(*ASR::down_cast<ASR::Function_t>(sym));
+                        }
                     }
                 }
             }
@@ -3342,7 +3347,7 @@ public:
     void declare_vars(const T &x, bool create_vtabs=true) {
         llvm::Value *target_var;
         uint32_t debug_arg_count = 0;
-        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
+        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab, intrinsic_modules);
         if( create_vtabs ) {
             std::set<std::string> class_type_names;
             std::vector<ASR::symbol_t*> struct_types;
@@ -3380,7 +3385,8 @@ public:
                 ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(var_sym);
                 std::string module_name = std::string(ext_sym->m_module_name);
                 ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(var_sym);
-                if (sym && module_name == "lfortran_intrinsic_iso_fortran_env" &&
+                bool is_intrinsic_module = std::find(intrinsic_modules.begin(), intrinsic_modules.end(), module_name) != intrinsic_modules.end();
+                if (sym && is_intrinsic_module &&
                     ASR::is_a<ASR::Variable_t>(*sym)) is_variable_in_intrinsic_mods = true;
             }
             if (is_a<ASR::Variable_t>(*var_sym) || is_variable_in_intrinsic_mods) {

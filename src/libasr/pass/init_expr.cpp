@@ -124,7 +124,7 @@ class InitExprVisitor : public ASR::CallReplacerOnExpressionsVisitor<InitExprVis
         }
 
         void visit_SymbolsContainingSymbolTable() {
-            std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(current_scope);
+            std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(current_scope, {});
             for (auto &a : var_order) {
                 ASR::symbol_t* sym = current_scope->get_symbol(a);
                 this->visit_symbol(*sym);

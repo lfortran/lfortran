@@ -809,7 +809,7 @@ R"(
         std::string decl;
         // Topologically sort all program functions
         // and then define them in the right order
-        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
+        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab, {});
         std::string decl_tmp;
         for (auto &item : var_order) {
             ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);

@@ -92,7 +92,7 @@ std::vector<std::string> determine_function_definition_order(
 }
 
 std::vector<std::string> determine_variable_declaration_order(
-         SymbolTable* symtab) {
+         SymbolTable* symtab, std::vector<std::string> intrinsic_modules) {
     std::map<std::string, std::vector<std::string>> var_dep_graph;
     for( auto itr: symtab->get_scope() ) {
         if( ASR::is_a<ASR::Variable_t>(*itr.second) ) {
@@ -112,7 +112,8 @@ std::vector<std::string> determine_variable_declaration_order(
             ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(itr.second);
             std::string module_name = std::string(ext_sym->m_module_name);
             ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(itr.second);
-            if (sym && module_name == "lfortran_intrinsic_iso_fortran_env" &&
+            bool is_intrinsic_module = std::find(intrinsic_modules.begin(), intrinsic_modules.end(), module_name) != intrinsic_modules.end();
+            if (sym && is_intrinsic_module &&
                 ASR::is_a<ASR::Variable_t>(*sym)) {
                 std::vector<std::string> deps;
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
@@ -419,7 +420,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
 }
 
 void set_intrinsic(ASR::symbol_t* sym) {
-    switch( sym->type ) {
+switch( sym->type ) {
         case ASR::symbolType::Module: {
             ASR::Module_t* module_sym = ASR::down_cast<ASR::Module_t>(sym);
             module_sym->m_intrinsic = true;
