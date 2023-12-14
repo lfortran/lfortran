@@ -7674,11 +7674,14 @@ public:
         std::vector<llvm::Value *> args;
         std::vector<std::string> fmt;
         llvm::Value *sep = nullptr;
+        llvm::Value *sep_no_space = nullptr;
         llvm::Value *end = nullptr;
+        bool global_sep_space = false;
         if (x.m_separator) {
             this->visit_expr_wrapper(x.m_separator, true);
             sep = tmp;
         } else {
+            global_sep_space = true;
             sep = builder->CreateGlobalStringPtr(" ");
         }
         if (x.m_end) {
@@ -7690,7 +7693,12 @@ public:
         for (size_t i=0; i<x.n_values; i++) {
             if (i != 0) {
                 fmt.push_back("%s");
-                args.push_back(sep);
+                if (global_sep_space && !ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_array(ASRUtils::expr_type(x.m_values[i-1]))))) {
+                    args.push_back(sep);
+                } else {
+                    sep_no_space = sep_no_space != nullptr ? sep_no_space : builder->CreateGlobalStringPtr("");
+                    args.push_back(sep_no_space);
+                }
             }
             compute_fmt_specifier_and_arg(fmt, args, x.m_values[i], x.base.base.loc);
         }
