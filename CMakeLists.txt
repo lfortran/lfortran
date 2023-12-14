@@ -354,6 +354,7 @@ message("CXXFLAGS: $ENV{CXXFLAGS}")
 
 
 add_subdirectory(src)
+add_subdirectory(doc/man)
 
 if(LFORTRAN_BUILD_TO_WASM)
   set(WITH_RUNTIME_LIBRARY No)

@@ -375,6 +375,7 @@ jobs:
               -DCMAKE_INSTALL_BINDIR=bin-tastic \
               -DCMAKE_INSTALL_LIBDIR=oh-my-sweet-lib \
               -DCMAKE_INSTALL_INCLUDEDIR=incl-O-Matic \
+              -DCMAKE_INSTALL_MANDIR=man-O-man \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
@@ -397,6 +398,7 @@ jobs:
             test -f inst/oh-my-sweet-lib/liblfortran_runtime_static.a
             test -f inst/oh-my-sweet-lib/liblfortran_runtime.so
             test -f inst/incl-O-Matic/lfortran/impure/lfortran_intrinsics.h
+            test -f inst/man-O-man/man1/lfortran.1
 
   third_party_code_compile:
     name: Check Third Party Code Compilation
