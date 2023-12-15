@@ -3594,3 +3594,7 @@ llvm = true
 [[test]]
 filename = "errors/type_conflict1.f90"
 asr = true
+
+[[test]]
+filename = "char1.f90"
+fortran = true
