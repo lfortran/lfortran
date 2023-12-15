@@ -241,6 +241,19 @@ module template_04_matrix
         type :: matrix
             type(T) :: elements(n, n)
         end type
+
+        template matrix_subtraction_t(minus_t)
+            require :: unit_ring_only_minus(T, plus_t, zero_t, times_t, one_t, minus_t)
+
+            private
+
+        contains
+            elemental function minus_matrix(x, y) result(difference)
+                type(matrix), intent(in) :: x, y
+                type(matrix) :: difference
+                difference%elements = minus_t(x%elements, y%elements)
+            end function
+        end template
     contains
         elemental function plus_matrix(x, y) result(combined)
             type(matrix), intent(in) :: x, y
@@ -331,8 +344,10 @@ integer, parameter :: n = 2
 instantiate matrix_tmpl(integer, operator(+), zero_integer, operator(*), one_integer, n), &
     only: integer_matrix => matrix, &
           integer_plus_matrix => plus_matrix, &
-          integer_times_matrix => times_matrix
-          
+          integer_times_matrix => times_matrix, &
+          matrix_subtraction_t => matrix_subtraction_t
+! instantiate matrix_subtraction_t(operator(-)), only: integer_minus_matrix => minus_matrix
+
 type(integer_matrix) :: m1, m2, m3, m4
 m1%elements(1,1) = 1
 m1%elements(1,2) = 0
