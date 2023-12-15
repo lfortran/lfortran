@@ -1,5 +1,6 @@
 #include <cmath>
-
+// TODO: delete below
+#include <iostream>
 #include <libasr/asr_utils.h>
 #include <libasr/asr.h>
 #include <libasr/pass/pass_utils.h>
@@ -209,9 +210,13 @@ public:
                 ASR::StructType_t *s = ASR::down_cast<ASR::StructType_t>(x);
                 return instantiate_StructType(s);
             }
+            case (ASR::symbolType::Template) : {
+                ASR::Template_t *t = ASR::down_cast<ASR::Template_t>(x);
+                return instantiate_Template(t);
+            }
             default : {
                 std::string sym_name = ASRUtils::symbol_name(x);
-                throw new LCompilersException("Instantiation of " + sym_name
+                throw LCompilersException("Instantiation of " + sym_name
                     + " symbol is not supported");
             };
         }
@@ -277,6 +282,18 @@ public:
 
         ASR::symbol_t *t = current_scope->resolve_symbol(new_sym_name);
         return t;
+    }
+
+    ASR::symbol_t* instantiate_template_body(ASR::Template_t *new_t, ASR::Template_t *t) {
+        SymbolTable *parent_scope = current_scope;
+        current_scope = new_t->m_symtab;
+        
+        for (auto const &sym_pair: t->m_symtab->get_scope()) {
+
+        }
+
+        current_scope = parent_scope;
+        return current_scope->resolve_symbol(new_sym_name);
     }
 
     ASR::symbol_t* instantiate_Function(ASR::Function_t *x) {
@@ -371,6 +388,32 @@ public:
         return t;
     }
 
+    ASR::symbol_t* instantiate_Template(ASR::Template_t* x) {
+        current_scope = al.make_new<SymbolTable>(func_scope);
+
+        for (auto const &sym_pair: x->m_symtab->get_scope()) {
+            duplicate_symbol(sym_pair.second);
+        }
+
+        SetChar args;
+        args.reserve(al, x->n_args);
+        for (size_t i=0; i<x->n_args; i++) {
+            char* arg_i = x->m_args[i];
+            args.push_back(al, arg_i);
+        }
+
+        Vec<ASR::require_instantiation_t*> m_requires;
+        m_requires.reserve(al, x->n_requires);
+
+        ASR::asr_t *result = ASR::make_Template_t(al, x->base.base.loc, current_scope,
+            s2c(al, new_sym_name), args.p, args.size(), m_requires.p, m_requires.size());
+        
+        ASR::symbol_t *t = ASR::down_cast<ASR::symbol_t>(result);
+        func_scope->add_symbol(new_sym_name, t);
+
+        return t;
+    }
+
     ASR::symbol_t* duplicate_symbol(ASR::symbol_t* x) {
         std::string sym_name = ASRUtils::symbol_name(x);
 
@@ -394,6 +437,10 @@ public:
             }
             case ASR::symbolType::ClassProcedure: {
                 new_symbol = duplicate_ClassProcedure(ASR::down_cast<ASR::ClassProcedure_t>(x));
+                break;
+            }
+            case ASR::symbolType::Function: {
+                new_symbol = duplicate_Function(ASR::down_cast<ASR::Function_t>(x));
                 break;
             }
             default: {
@@ -460,6 +507,56 @@ public:
         current_scope->add_symbol(x->m_name, new_x);
 
         return new_x;
+    }
+
+    ASR::symbol_t* duplicate_Function(ASR::Function_t *x) {
+        dependencies.clear(al);
+        SymbolTable *parent_scope = current_scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+    
+        for (auto const &sym_pair: x->m_symtab->get_scope()) {
+            duplicate_symbol(sym_pair.second);
+        }
+
+        SetChar deps_vec;
+        deps_vec.reserve(al, dependencies.size());
+        for( size_t i = 0; i < dependencies.size(); i++ ) {
+            char* dep = dependencies[i];
+            deps_vec.push_back(al, dep);
+        }
+
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, x->n_args);
+        for (size_t i=0; i<x->n_args; i++) {
+            ASR::expr_t *new_arg = duplicate_expr(x->m_args[i]);
+            args.push_back(al, new_arg);
+        }
+
+        ASR::expr_t *new_return_var_ref = nullptr;
+        if (x->m_return_var != nullptr) {
+            new_return_var_ref = duplicate_expr(x->m_return_var);
+        }
+
+        ASR::asr_t *result = ASRUtils::make_Function_t_util(
+            al, x->base.base.loc,
+            current_scope, s2c(al, x->m_name),
+            deps_vec.p, deps_vec.size(),
+            args.p, args.size(),
+            nullptr, 0,
+            new_return_var_ref,
+            ASRUtils::get_FunctionType(x)->m_abi, x->m_access,
+            ASRUtils::get_FunctionType(x)->m_deftype, ASRUtils::get_FunctionType(x)->m_bindc_name,
+            ASRUtils::get_FunctionType(x)->m_elemental, ASRUtils::get_FunctionType(x)->m_pure,
+            ASRUtils::get_FunctionType(x)->m_module, ASRUtils::get_FunctionType(x)->m_inline,
+            ASRUtils::get_FunctionType(x)->m_static, ASRUtils::get_FunctionType(x)->m_restrictions,
+            ASRUtils::get_FunctionType(x)->n_restrictions, false, false, false);
+
+        ASR::symbol_t *t = ASR::down_cast<ASR::symbol_t>(result);
+        parent_scope->add_symbol(x->m_name, t);
+
+        current_scope = parent_scope;
+
+        return t;
     }
 
     ASR::asr_t* duplicate_Var(ASR::Var_t *x) {
@@ -739,6 +836,17 @@ ASR::symbol_t* instantiate_function_body(Allocator &al,
     SymbolInstantiator t(al, context_map, type_subs, symbol_subs,
         current_scope, template_scope, new_f->m_name);
     return t.instantiate_body(new_f, f);
+}
+
+ASR::symbol_t* instantiate_template_body(Allocator &al,
+        std::map<std::string, std::string> &context_map,
+        std::map<std::string, ASR::ttype_t*> type_subs,
+        std::map<std::string, ASR::symbol_t*> symbol_subs,
+        SymbolTable *current_scope, SymbolTable *template_scope,
+        ASR::Template_t *new_t, ASR::Template_t *t) {
+    SymbolInstantiator it(al, context_map, type_subs, symbol_subs,
+        current_scope, template_scope, new_t->m_name);
+    return it.instantiate_template_body(new_t, t);
 }
 
 ASR::symbol_t* rename_symbol(Allocator &al,

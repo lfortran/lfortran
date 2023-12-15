@@ -16,7 +16,7 @@ namespace LCompilers {
         std::map<std::string, ASR::ttype_t*> type_subs,
         std::map<std::string, ASR::symbol_t*> symbol_subs,
         SymbolTable *current_scope, SymbolTable *template_scope,
-       std::string new_sym_name, ASR::symbol_t *sym);
+        std::string new_sym_name, ASR::symbol_t *sym);
 
     ASR::symbol_t* instantiate_function_body(Allocator &al,
         std::map<std::string, std::string> &context_map,
@@ -24,6 +24,14 @@ namespace LCompilers {
         std::map<std::string, ASR::symbol_t*> symbol_subs,
         SymbolTable *current_scope, SymbolTable *template_scope,
         ASR::Function_t *new_f, ASR::Function_t *f);
+
+    // TODO: combine this with instantiate_function_body
+    ASR::symbol_t* instantiate_template_body(Allocator &al,
+        std::map<std::string, std::string> &context_map,
+        std::map<std::string, ASR::ttype_t*> type_subs,
+        std::map<std::string, ASR::symbol_t*> symbol_subs,
+        SymbolTable *current_scope, SymbolTable *template_scope,
+        ASR::Template_t *new_t, ASR::Template_t *t);
 
     ASR::symbol_t* rename_symbol(Allocator &al,
         std::map<std::string, ASR::ttype_t*> &type_subs,

@@ -743,6 +743,11 @@ public:
                                 temp_f->m_symtab, new_f, temp_f);
                         }
                     }
+                } else if (ASR::is_a<ASR::Template_t>(*s)) {
+                    ASR::Template_t *new_t = ASR::down_cast<ASR::Template_t>(
+                        current_scope->get_symbol(new_s_name));
+                    instantiate_template_body(al, context_map, type_subs, symbol_subs, current_scope,
+                        temp->m_symtab, new_t, ASR::down_cast<ASR::Template_t>(s));
                 } else {
                     throw LCompilersException("Unsupported symbol to be instantiated");
                 }
