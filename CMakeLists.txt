@@ -350,7 +350,6 @@ message("WITH_ZLIB: ${WITH_ZLIB}")
 message("WITH_TARGET_AARCH64: ${WITH_TARGET_AARCH64}")
 message("WITH_TARGET_X86: ${WITH_TARGET_X86}")
 message("WITH_TARGET_WASM: ${WITH_TARGET_WASM}")
-message("CXXFLAGS: $ENV{CXXFLAGS}")
 
 
 add_subdirectory(src)
