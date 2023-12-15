@@ -350,8 +350,7 @@ message("WITH_ZLIB: ${WITH_ZLIB}")
 message("WITH_TARGET_AARCH64: ${WITH_TARGET_AARCH64}")
 message("WITH_TARGET_X86: ${WITH_TARGET_X86}")
 message("WITH_TARGET_WASM: ${WITH_TARGET_WASM}")
-message("CXXFLAGS: $ENV{CXXFLAGS}")
-
+message("CXXFLAGS: ${CMAKE_CXX_FLAGS}")
 
 add_subdirectory(src)
 add_subdirectory(doc/man)
