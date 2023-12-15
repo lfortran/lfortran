@@ -317,6 +317,7 @@ jobs:
         run: |
             ./build0.sh
             export CXXFLAGS="-Werror"
+            export CFLAGS="-Werror"
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
@@ -364,6 +365,7 @@ jobs:
         run: |
             ./build0.sh
             export CXXFLAGS="-Werror"
+            export CFLAGS="-Werror"
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Release \
               -DWITH_LLVM=yes \

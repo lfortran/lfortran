@@ -351,6 +351,7 @@ message("WITH_TARGET_AARCH64: ${WITH_TARGET_AARCH64}")
 message("WITH_TARGET_X86: ${WITH_TARGET_X86}")
 message("WITH_TARGET_WASM: ${WITH_TARGET_WASM}")
 message("CXXFLAGS: ${CMAKE_CXX_FLAGS}")
+message("CFLAGS: ${CMAKE_C_FLAGS}")
 
 add_subdirectory(src)
 add_subdirectory(doc/man)
