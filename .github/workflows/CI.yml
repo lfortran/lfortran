@@ -300,10 +300,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          path: src
 
       - uses: mamba-org/setup-micromamba@v1
         with:
-          environment-file: ci/environment_linux.yml
+          environment-file: src/ci/environment_linux.yml
           create-args: >-
             python=3.10
 
@@ -315,9 +316,9 @@ jobs:
       - name: Build Linux
         shell: bash -e -l {0}
         run: |
-            ./build0.sh
+            ( cd src && ./build0.sh )
             export CXXFLAGS="-Werror"
-            cmake -S . -B builddir -GNinja \
+            cmake -S src -B builddir -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
               -DLFORTRAN_BUILD_ALL=yes \
@@ -334,6 +335,17 @@ jobs:
         shell: bash -e -l {0}
         run: ctest --output-on-failure
         working-directory: builddir
+
+      - name: Test Moved Installation
+        shell: bash -e -l {0}
+        run: |
+          mv inst inst.moved
+          cp src/examples/expr2.f90 .
+          rm -rf src
+          inst.moved/bin/lfortran expr2.f90 -o expr2
+          ./expr2
+          inst.moved/bin/lfortran --backend=c expr2.f90 -o expr2b
+          ./expr2b
 
   debug:
     name: Check Debug build
@@ -418,10 +430,10 @@ jobs:
               -DWITH_RUNTIME_STACKTRACE=yes \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_INSTALL_BINDIR=bin-tastic \
-              -DCMAKE_INSTALL_LIBDIR=oh-my-sweet-lib \
-              -DCMAKE_INSTALL_INCLUDEDIR=incl-O-Matic \
-              -DCMAKE_INSTALL_MANDIR=man-O-man \
+              -DCMAKE_INSTALL_BINDIR=bin/tastic \
+              -DCMAKE_INSTALL_LIBDIR=oh/my/sweet/lib \
+              -DCMAKE_INSTALL_INCLUDEDIR=incl/O/Matic \
+              -DCMAKE_INSTALL_MANDIR=man/O/man \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
@@ -440,11 +452,11 @@ jobs:
       - name: Test Installation
         shell: bash -e -l {0}
         run: |
-            test -x inst/bin-tastic/lfortran
-            test -f inst/oh-my-sweet-lib/liblfortran_runtime_static.a
-            test -f inst/oh-my-sweet-lib/liblfortran_runtime.so
-            test -f inst/incl-O-Matic/lfortran/impure/lfortran_intrinsics.h
-            test -f inst/man-O-man/man1/lfortran.1
+            test -x inst/bin/tastic/lfortran
+            test -f inst/oh/my/sweet/lib/liblfortran_runtime_static.a
+            test -f inst/oh/my/sweet/lib/liblfortran_runtime.so
+            test -f inst/incl/O/Matic/lfortran/impure/lfortran_intrinsics.h
+            test -f inst/man/O/man/man1/lfortran.1
 
   third_party_code_compile:
     name: Check Third Party Code Compilation
