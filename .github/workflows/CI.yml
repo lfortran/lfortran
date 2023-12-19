@@ -321,6 +321,7 @@ jobs:
             cmake -S src -B builddir -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
+              -DWITH_KOKKOS=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
               -DWITH_RUNTIME_STACKTRACE=yes \
@@ -346,6 +347,8 @@ jobs:
           ./expr2
           inst.moved/bin/lfortran --backend=c expr2.f90 -o expr2b
           ./expr2b
+          inst.moved/bin/lfortran --openmp --backend=cpp expr2.f90 -o expr2c
+          ./expr2c
 
   debug:
     name: Check Debug build
