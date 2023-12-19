@@ -314,6 +314,16 @@ if (WITH_UNWIND)
     set(HAVE_LFORTRAN_UNWIND yes)
 endif()
 
+set(WITH_KOKKOS no CACHE BOOL "Detect Kokkos location for cpp backend")
+if (WITH_KOKKOS)
+   find_package(Kokkos)
+   if(TARGET Kokkos::kokkoscore)
+     get_target_property(KOKKOS_INCLUDEDIR Kokkos::kokkoscore INTERFACE_INCLUDE_DIRECTORIES)
+     get_target_property(KOKKOS_LIBRARY Kokkos::kokkoscore LOCATION)
+     get_filename_component(KOKKOS_LIBDIR "${KOKKOS_LIBRARY}" DIRECTORY)
+   endif()
+endif()
+
 enable_testing()
 
 message("\n")
