@@ -3141,7 +3141,7 @@ public:
                         false, false, false, nullptr, 0, false, false, true);
                     ASR::symbol_t *op_sym = ASR::down_cast<ASR::symbol_t>(op_function);
                     parent_scope->add_symbol(func_name, op_sym);
-            
+
                     Vec<ASR::symbol_t*> symbols;
                     if (parent_scope->get_symbol(op_name) != nullptr) {
                         ASR::CustomOperator_t *old_c = ASR::down_cast<ASR::CustomOperator_t>(
