@@ -246,7 +246,6 @@ module template_04_matrix
             require :: unit_ring_only_minus(T, plus_t, zero_t, times_t, one_t, minus_t)
 
             private
-
         contains
             elemental function minus_matrix(x, y) result(difference)
                 type(matrix), intent(in) :: x, y
@@ -346,7 +345,7 @@ instantiate matrix_tmpl(integer, operator(+), zero_integer, operator(*), one_int
           integer_plus_matrix => plus_matrix, &
           integer_times_matrix => times_matrix, &
           matrix_subtraction_t => matrix_subtraction_t
-! instantiate matrix_subtraction_t(operator(-)), only: integer_minus_matrix => minus_matrix
+instantiate matrix_subtraction_t(operator(-)), only: integer_minus_matrix => minus_matrix
 
 type(integer_matrix) :: m1, m2, m3, m4
 m1%elements(1,1) = 1
