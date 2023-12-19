@@ -15,6 +15,12 @@ CPreprocessor::CPreprocessor(CompilerOptions &compiler_options)
     macro_definitions["__LFORTRAN__"] = md;
     md.expansion = "\"" + std::string(LFORTRAN_VERSION) + "\"";
     macro_definitions["__VERSION__"] = md;
+    md.expansion = std::to_string(LFORTRAN_MAJOR);
+    macro_definitions["__LFORTRAN_MAJOR__"] = md;
+    md.expansion = std::to_string(LFORTRAN_MINOR);
+    macro_definitions["__LFORTRAN_MINOR__"] = md;
+    md.expansion = std::to_string(LFORTRAN_PATCHLEVEL);
+    macro_definitions["__LFORTRAN_PATCHLEVEL__"] = md;
     if (compiler_options.platform == Platform::Windows) {
         md.expansion = "1";
         macro_definitions["_WIN32"] = md;
