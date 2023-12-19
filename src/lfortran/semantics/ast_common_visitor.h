@@ -5932,7 +5932,6 @@ public:
                         args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, var)));
                     }
 
-                    //std::string func_name = op_name + "_intrinsic_" + ASRUtils::type_to_str(ltype);
                     std::string func_name = parent_scope->get_unique_name(op_name + "_intrinsic");
 
                     ASR::ttype_t *return_type = nullptr;
@@ -6017,7 +6016,9 @@ public:
         ASR::symbol_t *s = temp->m_symtab->resolve_symbol(func_name);
 
         SymbolTable *target_scope = current_scope;
-        if (is_nested) { target_scope = current_scope->parent; }
+        if (is_nested) {
+            target_scope = current_scope->parent;
+        }
 
         std::string new_func_name = target_scope->get_unique_name("__instantiated_" + func_name);
 

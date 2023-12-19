@@ -382,26 +382,25 @@ public:
             return current_scope->get_symbol(sym_name);
         }
 
-        ASR::symbol_t* new_symbol = nullptr;
         switch (x->type) {
             case ASR::symbolType::Variable: {
-                new_symbol = duplicate_Variable(ASR::down_cast<ASR::Variable_t>(x));
-                break;
+                return duplicate_Variable(ASR::down_cast<ASR::Variable_t>(x));
             }
             case ASR::symbolType::ExternalSymbol: {
-                new_symbol = duplicate_ExternalSymbol(ASR::down_cast<ASR::ExternalSymbol_t>(x));
-                break;
+                return duplicate_ExternalSymbol(ASR::down_cast<ASR::ExternalSymbol_t>(x));
             }
             case ASR::symbolType::ClassProcedure: {
-                new_symbol = duplicate_ClassProcedure(ASR::down_cast<ASR::ClassProcedure_t>(x));
-                break;
+                return duplicate_ClassProcedure(ASR::down_cast<ASR::ClassProcedure_t>(x));
+            }
+            case ASR::symbolType::CustomOperator: {
+                return duplicate_CustomOperator(ASR::down_cast<ASR::CustomOperator_t>(x));
             }
             default: {
                 throw LCompilersException("Unsupported symbol for template instantiation");
             }
         }
 
-        return new_symbol;
+        return nullptr;
     }
 
     ASR::symbol_t* duplicate_Variable(ASR::Variable_t *x) {
@@ -460,6 +459,10 @@ public:
         current_scope->add_symbol(x->m_name, new_x);
 
         return new_x;
+    }
+
+    ASR::symbol_t* duplicate_CustomOperator(ASR::CustomOperator_t *x) {
+        return func_scope->resolve_symbol(x->m_name);
     }
 
     ASR::asr_t* duplicate_Var(ASR::Var_t *x) {
@@ -587,10 +590,14 @@ public:
                 throw LCompilersException("Cannot handle instantiation for the function call " + call_name);
             }
         }
+
+        ASR::symbol_t *original_name = x->m_original_name != nullptr ? duplicate_symbol(x->m_original_name) : nullptr;
+
         if (ASRUtils::symbol_parent_symtab(name)->get_counter() != current_scope->get_counter() && !ASR::is_a<ASR::ExternalSymbol_t>(*name)) {
             ADD_ASR_DEPENDENCIES(current_scope, name, dependencies);
         }
-        return ASRUtils::make_FunctionCall_t_util(al, x->base.base.loc, name, x->m_original_name,
+
+        return ASRUtils::make_FunctionCall_t_util(al, x->base.base.loc, name, /* x->m_original_name */ original_name,
             args.p, args.size(), type, value, dt);
     }
 
