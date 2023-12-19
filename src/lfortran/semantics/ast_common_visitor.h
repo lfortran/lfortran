@@ -2796,7 +2796,9 @@ public:
             LCOMPILERS_ASSERT(a_len != -10)
             type = ASRUtils::TYPE(ASR::make_Character_t(al, loc, a_kind, a_len, len_expr));
             type = ASRUtils::make_Array_t_util(
-                al, loc, type, dims.p, dims.size(), abi, is_argument);
+                al, loc, type, dims.p, dims.size(), abi, is_argument,
+                dims.size() > 0 ? ASR::array_physical_typeType::CharacterArraySinglePointer : ASR::array_physical_typeType::DescriptorArray,
+                dims.size() > 0 ? true : false);
             if( char_data->scope != nullptr ) {
                 char_data->type = type;
                 type_info.push_back(char_data);

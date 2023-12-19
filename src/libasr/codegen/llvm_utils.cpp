@@ -627,6 +627,30 @@ namespace LCompilers {
                                             v_type->m_dims, v_type->n_dims))->getPointerTo();
                         break;
                     }
+                    case ASR::array_physical_typeType::CharacterArraySinglePointer: {
+                        // type = character_type->getPointerTo();
+                    //     // is_array_type = true;
+                    //     // llvm::Type* el_type = get_el_type(v_type->m_type, module);
+                    //     // type = arr_api->get_array_type(asr_type, el_type, get_pointer);
+                        // break;
+                        if (ASRUtils::is_fixed_size_array(v_type->m_dims, v_type->n_dims)) {
+                            // llvm_type = character_type; -- @character_01.c = internal global i8* null
+                            // llvm_type = character_type->getPointerTo(); -- @character_01.c = internal global i8** null
+                            // llvm_type = llvm::ArrayType::get(character_type,
+                            //     ASRUtils::get_fixed_size_of_array(v_type->m_dims, v_type->n_dims))->getPointerTo();
+                            // -- @character_01 = internal global [2 x i8*]* zeroinitializer
+
+                            type = llvm::ArrayType::get(character_type,
+                                ASRUtils::get_fixed_size_of_array(v_type->m_dims, v_type->n_dims));
+                            break;
+                        } else if (ASRUtils::is_dimension_empty(v_type->m_dims, v_type->n_dims)) {
+                            // Treat it as a DescriptorArray
+                            is_array_type = true;
+                            llvm::Type* el_type = character_type;
+                            type = arr_api->get_array_type(asr_type, el_type);
+                            break;
+                        }
+                    }
                     default: {
                         LCOMPILERS_ASSERT(false);
                     }
@@ -1110,7 +1134,7 @@ namespace LCompilers {
         ASR::dimension_t*& m_dims, int& n_dims, int& a_kind, llvm::Module* module,
         ASR::abiType m_abi, bool is_pointer) {
         llvm::Type* llvm_type = nullptr;
-
+        std::cout<<"get_type_from_ttype_t: "<<ASRUtils::type_to_str_python(asr_type)<<std::endl;
         #define handle_llvm_pointers1()                                         \
             if (n_dims == 0 && ASR::is_a<ASR::Character_t>(*t2)) {              \
                 llvm_type = character_type;                                     \
@@ -1122,7 +1146,7 @@ namespace LCompilers {
                     llvm_type = llvm_type->getPointerTo();                      \
                 }                                                               \
             }
-
+        std::cout<<"here it is"<<std::endl;
         switch (asr_type->type) {
             case ASR::ttypeType::Array: {
                 ASR::Array_t* v_type = ASR::down_cast<ASR::Array_t>(asr_type);
@@ -1151,6 +1175,33 @@ namespace LCompilers {
                         llvm_type = llvm::VectorType::get(get_el_type(v_type->m_type, module),
                             ASRUtils::get_fixed_size_of_array(v_type->m_dims, v_type->n_dims), false);
                         break;
+                    }
+                    case ASR::array_physical_typeType::CharacterArraySinglePointer: {
+                        std::cout<<"CharacterArraySinglePointer: "<<std::endl;
+                        // llvm_type = character_type->getPointerTo();
+                        if (ASRUtils::is_fixed_size_array(v_type->m_dims, v_type->n_dims)) {
+                            // llvm_type = character_type; -- @character_01.c = internal global i8* null
+                            // llvm_type = character_type->getPointerTo(); -- @character_01.c = internal global i8** null
+                            // llvm_type = llvm::ArrayType::get(character_type,
+                            //     ASRUtils::get_fixed_size_of_array(v_type->m_dims, v_type->n_dims))->getPointerTo();
+                            // -- @character_01 = internal global [2 x i8*]* zeroinitializer
+                            std::cout<<"1"<<std::endl;
+                            llvm_type = llvm::ArrayType::get(character_type,
+                                ASRUtils::get_fixed_size_of_array(v_type->m_dims, v_type->n_dims));
+                            break;
+                        } else if (ASRUtils::is_dimension_empty(v_type->m_dims, v_type->n_dims)) {
+                            // Treat it as a DescriptorArray
+                            is_array_type = true;
+                            std::cout<<"2"<<std::endl;
+                            llvm::Type* el_type = character_type;
+                            std::cout<<"3"<<std::endl;
+                            llvm_type = arr_api->get_array_type(asr_type, el_type);
+                            std::cout<<"4"<<std::endl;
+                            break;
+                        }
+                    //     // is_array_type = true;
+                    //     // llvm::Type* el_type = get_el_type(v_type->m_type, module);
+                    //     // llvm_type = arr_api->get_array_type(asr_type, el_type);
                     }
                     default: {
                         LCOMPILERS_ASSERT(false);
@@ -1185,9 +1236,12 @@ namespace LCompilers {
                 break;
             }
             case (ASR::ttypeType::Character) : {
+                std::cout<<"Character: "<<std::endl;
                 ASR::Character_t* v_type = ASR::down_cast<ASR::Character_t>(asr_type);
                 a_kind = v_type->m_kind;
                 llvm_type = character_type;
+                if (llvm_type == nullptr) std::cout<<"nullptr"<<std::endl;
+                else std::cout<<"not nullptr"<<std::endl;
                 break;
             }
             case (ASR::ttypeType::Logical) : {
@@ -1295,6 +1349,7 @@ namespace LCompilers {
                 throw CodeGenError("Support for type " + ASRUtils::type_to_str(asr_type) +
                                    " not yet implemented.");
         }
+        std::cout<<"returned it correctly"<<std::endl;
         return llvm_type;
     }
 

@@ -313,7 +313,7 @@ end function
 
 function c2s(n, x) result(y)
 integer, intent(in) :: n
-character, intent(in) :: x(*)
+character, intent(in) :: x(:)
 character(:), allocatable :: y
 integer :: i
 allocate(character(n) :: y)
@@ -328,8 +328,8 @@ r = len(s)
 end function
 
 integer(c_int) function fortran_string(n, s) result(r) bind(c)
-integer(c_int), value, intent(in) :: n
-character(len=1, kind=c_char), intent(in) :: s(*)
+integer(c_int), intent(in) :: n
+character(len=1, kind=c_char), intent(in) :: s(:)
 r = f_len_string(c2s(n, s))
 end function
 

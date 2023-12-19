@@ -427,6 +427,7 @@ array_physical_type
     | PointerToDataArray
     | UnboundedPointerToDataArray
     | FixedSizeArray
+    | CharacterArraySinglePointer
     | NumPyArray
     | ISODescriptorArray
     | SIMDArray
