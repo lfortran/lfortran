@@ -369,7 +369,11 @@ filename = "errors/cpp8.f90"
 asr_preprocess = true
 
 [[test]]
-filename = "errors/template_error_01.f90"
+filename = "errors/template_error_01a.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_error_01b.f90"
 asr = true
 
 [[test]]

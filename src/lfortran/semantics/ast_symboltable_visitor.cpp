@@ -1516,6 +1516,14 @@ public:
             for (auto &proc: ext_overloaded_op_procs) {
                 overloaded_op_procs[proc.first] = proc.second;
             }
+            for (size_t i=0; i<x.n_temp_args; i++) {
+                ASR::symbol_t *s = parent_scope->get_symbol(to_lower(x.m_temp_args[i]));
+                if (!s) {
+                    throw SemanticError("Template argument " + std::string(x.m_temp_args[i])
+                        + " has not been declared in templated function specification.",
+                        x.base.base.loc);
+                }
+            }
             current_scope = grandparent_scope;
         } else {
             current_scope = parent_scope;
@@ -2723,18 +2731,12 @@ public:
             current_procedure_args.push_back(arg);
         }
 
-        for (auto &item: current_scope->get_scope()) {
-            bool defined = false;
-            std::string sym = item.first;
-            for (size_t i=0; i<current_procedure_args.size(); i++) {
-                std::string arg = current_procedure_args[i];
-                if (sym.compare(arg) == 0) {
-                    defined = true;
-                }
-            }
-            if (!defined) {
-                throw SemanticError("Symbol " + sym + " is not declared in " + to_lower(x.m_name) + "'s parameters",
-                                    x.base.base.loc);
+        for (size_t i=0; i<x.n_namelist; i++) {
+            ASR::symbol_t *s = current_scope->get_symbol(to_lower(x.m_namelist[i]));
+            if (!s) {
+                std::string sym_name = x.m_namelist[i];
+                throw SemanticError("Symbol " + sym_name + " is not declared in " 
+                    + to_lower(x.m_name) + "'s parameters", x.base.base.loc);
             }
         }
 
@@ -2766,7 +2768,7 @@ public:
             current_scope->resolve_symbol(require_name));
 
         if (!req0 || !ASR::is_a<ASR::Requirement_t>(*req0)) {
-            throw SemanticError("No requirement '" + require_name + "' is defined",
+            throw SemanticError("No requirement '" + require_name+ "' is defined",
                 x.base.base.loc);
         }
 
@@ -2794,8 +2796,7 @@ public:
                 if (std::find(current_procedure_args.begin(),
                         current_procedure_args.end(),
                         req_arg) == current_procedure_args.end()) {
-                    throw SemanticError("Parameter '" + req_arg
-                        + "' was not declared", x.base.base.loc);
+                    throw SemanticError("Parameter '" + req_arg + "' was not declared", x.base.base.loc);
                 }
             } else if (AST::is_a<AST::AttrType_t>(*attr)) {
                 Vec<ASR::dimension_t> dims;
@@ -2832,8 +2833,8 @@ public:
                 }
 
                 ASR::symbol_t *new_c_op = ASR::down_cast<ASR::symbol_t>(ASR::make_CustomOperator_t(
-                        al, c_op->base.base.loc, current_scope,
-                        s2c(al, c_op->m_name), symbols.p, symbols.size(), c_op->m_access));
+                    al, c_op->base.base.loc, current_scope,
+                    s2c(al, c_op->m_name), symbols.p, symbols.size(), c_op->m_access));
                 current_scope->add_symbol(c_op->m_name, new_c_op);
             }
         }
@@ -2885,6 +2886,11 @@ public:
         for (size_t i=0; i<x.n_namelist; i++) {
             std::string arg = to_lower(x.m_namelist[i]);
             args.push_back(al, s2c(al, arg));
+            ASR::symbol_t *s = current_scope->get_symbol(arg);
+            if (!s) {
+                throw SemanticError("Template argument " + arg  + " has not been"
+                    " declared in template specification.", x.base.base.loc);
+            }
         }
 
         add_overloaded_procedures();
