@@ -2869,11 +2869,8 @@ public:
             current_scope, x.m_name, args.p, args.size(), reqs.p, reqs.size());
 
         parent_scope->add_symbol(x.m_name, ASR::down_cast<ASR::symbol_t>(temp));
-
         current_scope = parent_scope;
-        current_procedure_args.clear();
-        context_map.clear();
-
+        
         // needs to rebuild the context prior to visiting template
         class_procedures.clear();
 

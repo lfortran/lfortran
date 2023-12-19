@@ -284,16 +284,21 @@ public:
         return t;
     }
 
-    ASR::symbol_t* instantiate_template_body(ASR::Template_t *new_t, ASR::Template_t *t) {
+    void instantiate_template_body(ASR::Template_t *new_t, ASR::Template_t *t) {
         SymbolTable *parent_scope = current_scope;
         current_scope = new_t->m_symtab;
+        duplicate_SymbolTable(t->m_symtab);
         
+        /*
         for (auto const &sym_pair: t->m_symtab->get_scope()) {
 
         }
+        */
+
+
 
         current_scope = parent_scope;
-        return current_scope->resolve_symbol(new_sym_name);
+        // return current_scope->resolve_symbol(new_sym_name);
     }
 
     ASR::symbol_t* instantiate_Function(ASR::Function_t *x) {
@@ -390,10 +395,7 @@ public:
 
     ASR::symbol_t* instantiate_Template(ASR::Template_t* x) {
         current_scope = al.make_new<SymbolTable>(func_scope);
-
-        for (auto const &sym_pair: x->m_symtab->get_scope()) {
-            duplicate_symbol(sym_pair.second);
-        }
+        duplicate_SymbolTable(x->m_symtab);
 
         SetChar args;
         args.reserve(al, x->n_args);
@@ -412,6 +414,31 @@ public:
         func_scope->add_symbol(new_sym_name, t);
 
         return t;
+    }
+
+    SymbolTable* duplicate_SymbolTable(SymbolTable* x) {
+        for (auto const &sym_pair: x->get_scope()) {
+            if (current_scope->get_symbol(sym_pair.first) != nullptr) {
+                continue;
+            }
+
+            ASR::symbol_t *s = sym_pair.second;
+            switch (s->type) {
+                case ASR::symbolType::Variable: {
+                    duplicate_Variable(ASR::down_cast<ASR::Variable_t>(s));
+                    break;
+                }
+                case ASR::symbolType::Function: {
+                    duplicate_Function(ASR::down_cast<ASR::Function_t>(s));
+                    break;
+                }
+                default: {
+                    throw LCompilersException("Unsupported symbol for template instantiation");
+                }
+            }
+        }
+
+        return current_scope;
     }
 
     ASR::symbol_t* duplicate_symbol(ASR::symbol_t* x) {
@@ -838,7 +865,7 @@ ASR::symbol_t* instantiate_function_body(Allocator &al,
     return t.instantiate_body(new_f, f);
 }
 
-ASR::symbol_t* instantiate_template_body(Allocator &al,
+void instantiate_template_body(Allocator &al,
         std::map<std::string, std::string> &context_map,
         std::map<std::string, ASR::ttype_t*> type_subs,
         std::map<std::string, ASR::symbol_t*> symbol_subs,
@@ -846,7 +873,7 @@ ASR::symbol_t* instantiate_template_body(Allocator &al,
         ASR::Template_t *new_t, ASR::Template_t *t) {
     SymbolInstantiator it(al, context_map, type_subs, symbol_subs,
         current_scope, template_scope, new_t->m_name);
-    return it.instantiate_template_body(new_t, t);
+    it.instantiate_template_body(new_t, t);
 }
 
 ASR::symbol_t* rename_symbol(Allocator &al,
