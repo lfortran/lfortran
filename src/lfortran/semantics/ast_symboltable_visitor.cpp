@@ -2731,11 +2731,17 @@ public:
             current_procedure_args.push_back(arg);
         }
 
-        for (size_t i=0; i<x.n_namelist; i++) {
-            ASR::symbol_t *s = current_scope->get_symbol(to_lower(x.m_namelist[i]));
-            if (!s) {
-                std::string sym_name = x.m_namelist[i];
-                throw SemanticError("Symbol " + sym_name + " is not declared in " 
+        for (auto &item: current_scope->get_scope()) {
+            bool defined = false;
+            std::string sym = item.first;
+            for (size_t i=0; i<x.n_namelist; i++) {
+                std::string arg = to_lower(x.m_namelist[i]);
+                if (sym.compare(arg) == 0) {
+                    defined = true;
+                }
+            }
+            if (!defined) {
+                throw SemanticError("Symbol " + sym + " is not declared in "
                     + to_lower(x.m_name) + "'s parameters", x.base.base.loc);
             }
         }

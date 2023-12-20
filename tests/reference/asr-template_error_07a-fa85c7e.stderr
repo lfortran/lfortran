@@ -1,0 +1,9 @@
+semantic error: Symbol combine is not declared in semigroup's parameters
+  --> tests/errors/template_error_07a.f90:6:5 - 13:1
+   |
+ 6 |        requirement semigroup(t)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+13 |    
+   | ...^ 

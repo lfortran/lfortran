@@ -7,13 +7,3 @@ warning: Parameter combine is unused in semigroup
   |
 9 |    
   | ...^ 
-
-semantic error: Symbol combine is not declared in semigroup's parameters
- --> tests/errors/template_error_07b.f90:6:5 - 9:1
-  |
-6 |        requirement semigroup(t, combine)
-  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
-...
-  |
-9 |    
-  | ...^ 
