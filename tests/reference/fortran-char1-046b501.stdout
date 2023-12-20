@@ -1,0 +1,4 @@
+program char1
+implicit none
+character(len=1, kind=1), parameter :: c_null_char = char(0)
+end program char1
