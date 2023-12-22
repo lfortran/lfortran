@@ -1457,7 +1457,7 @@ int link_executable(const std::vector<std::string> &infiles,
     const std::string &outfile,
     const std::string &runtime_library_dir, Backend backend,
     bool static_executable, bool link_with_gcc, bool kokkos,
-    CompilerOptions &compiler_options)
+    bool verbose, CompilerOptions &compiler_options)
 {
     /*
     The `gcc` line for dynamic linking that is constructed below:
@@ -1574,6 +1574,9 @@ int link_executable(const std::vector<std::string> &infiles,
             compile_cmd += " -l" + runtime_lib + " -lm";
             run_cmd = "./" + outfile;
         }
+	if (verbose) {
+            std::cout << compile_cmd << std::endl;
+	}
         int err = system(compile_cmd.c_str());
         if (err) {
             std::cout << "The command '" + compile_cmd + "' failed." << std::endl;
@@ -1619,6 +1622,9 @@ int link_executable(const std::vector<std::string> &infiles,
             cmd += extra_runtime_linker_path;
         }
         cmd += " -l" + runtime_lib + " -lm";
+	if (verbose) {
+            std::cout << cmd << std::endl;
+	}
         int err = system(cmd.c_str());
         if (err) {
             std::cout << "The command '" + cmd + "' failed." << std::endl;
@@ -1643,6 +1649,9 @@ int link_executable(const std::vector<std::string> &infiles,
             cmd += s + " ";
         }
         cmd += " " + post_options + " -lm";
+	if (verbose) {
+            std::cout << cmd << std::endl;
+	}
         int err = system(cmd.c_str());
         if (err) {
             std::cout << "The command '" + cmd + "' failed." << std::endl;
@@ -1667,6 +1676,9 @@ int link_executable(const std::vector<std::string> &infiles,
         cmd += " -L" + base_path
             + " -Wl,-rpath," + base_path;
         cmd += " -l" + runtime_lib + " -lm";
+	if (verbose) {
+            std::cout << cmd << std::endl;
+	}
         int err = system(cmd.c_str());
         if (err) {
             std::cout << "The command '" + cmd + "' failed." << std::endl;
@@ -2341,10 +2353,10 @@ int main(int argc, char *argv[])
             }
             if (err) return err;
             return link_executable({tmp_o}, outfile, runtime_library_dir,
-                    backend, static_link, link_with_gcc, true, compiler_options);
+                    backend, static_link, link_with_gcc, true, arg_v, compiler_options);
         } else {
             return link_executable(arg_files, outfile, runtime_library_dir,
-                    backend, static_link, link_with_gcc, true, compiler_options);
+                    backend, static_link, link_with_gcc, true, arg_v, compiler_options);
         }
     } catch(const LCompilers::LCompilersException &e) {
         std::cerr << "Internal Compiler Error: Unhandled exception" << std::endl;
