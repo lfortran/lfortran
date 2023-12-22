@@ -2512,8 +2512,8 @@ namespace Mod {
         */
 
         ASR::expr_t *q = nullptr, *op1 = nullptr, *op2 = nullptr;
+        int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[1]);
         if (is_real(*arg_types[1])) {
-            int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[1]);
             if (kind == 4) {
                 q = r2i32(r32Div(args[0], args[1]));
                 op1 = r32Mul(args[1], i2r32(q));
@@ -2524,9 +2524,25 @@ namespace Mod {
                 op2 = r64Sub(args[0], op1);
             }
         } else {
-            q = iDiv(args[0], args[1]);
-            op1 = iMul(args[1], q);
-            op2 = iSub(args[0], op1);
+            if (kind == 1) {
+                q = i8Div(args[0], args[1]);
+                op1 = i8Mul(args[1], q);
+                op2 = i8Sub(args[0], op1);
+            } else if (kind == 2) {
+                q = i16Div(args[0], args[1]);
+                op1 = i16Mul(args[1], q);
+                op2 = i16Sub(args[0], op1);
+            } else if (kind == 4) {
+                q = iDiv(args[0], args[1]);
+                op1 = iMul(args[1], q);
+                op2 = iSub(args[0], op1);
+            } else if (kind == 8) {
+                q = i64Div(args[0], args[1]);
+                op1 = i64Mul(args[1], q);
+                op2 = i64Sub(args[0], op1);
+            } else {
+                LCOMPILERS_ASSERT(false);
+            }
         }
         body.push_back(al, b.Assignment(result, op2));
 
