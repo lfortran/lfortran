@@ -109,7 +109,7 @@
                                                             (Character 1 -2 ())
                                                             [(()
                                                             ())]
-                                                            DescriptorArray
+                                                            CharacterArraySinglePointer
                                                         )
                                                     )
                                                     ()
@@ -190,7 +190,7 @@
                                         ))
                                         ((ArrayPhysicalCast
                                             (Var 8 littlefile)
-                                            DescriptorArray
+                                            CharacterArraySinglePointer
                                             PointerToDataArray
                                             (Allocatable
                                                 (Array
@@ -345,7 +345,7 @@
                                                         (Character 1 -1 ())
                                                         [(()
                                                         ())]
-                                                        DescriptorArray
+                                                        CharacterArraySinglePointer
                                                     )
                                                     ()
                                                     Source
@@ -377,7 +377,7 @@
                                             (Character 1 -1 ())
                                             [(()
                                             ())]
-                                            DescriptorArray
+                                            CharacterArraySinglePointer
                                         )]
                                         ()
                                         Source
