@@ -5050,6 +5050,16 @@ public:
             } else {
                 LCOMPILERS_ASSERT(false);
             }
+        } else if (
+            m_new == ASR::array_physical_typeType::CharacterArraySinglePointer &&
+            m_old == ASR::array_physical_typeType::DescriptorArray) {
+            if (ASRUtils::is_fixed_size_array(m_type)) {
+                tmp = LLVM::CreateLoad(*builder, arr_descr->get_pointer_to_data(tmp));
+                llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(m_type, module.get())->getPointerTo();
+                tmp = builder->CreateBitCast(tmp, target_type); // [1 x i8*]*
+                // we need [1 x i8*]
+                tmp = builder->CreateLoad(tmp);
+            }
         } else {
             LCOMPILERS_ASSERT(false);
         }

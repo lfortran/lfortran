@@ -2353,7 +2353,9 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
             ASR::ttype_t* dup_type = duplicate_type(al, ptr->m_type, dims,
                 physical_type, override_physical_type);
             if( override_physical_type &&
-                physical_type == ASR::array_physical_typeType::FixedSizeArray ) {
+                (physical_type == ASR::array_physical_typeType::FixedSizeArray ||
+                (physical_type == ASR::array_physical_typeType::CharacterArraySinglePointer &&
+                dims != nullptr) ) ) {
                 return dup_type;
             }
             return ASRUtils::TYPE(ASR::make_Pointer_t(al, ptr->base.base.loc,
