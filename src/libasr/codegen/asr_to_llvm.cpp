@@ -9343,6 +9343,9 @@ public:
                     start_new_block(mergeBB);
                     tmp = LLVM::CreateLoad(*builder, target);
                     break;
+                } else {
+                    LCOMPILERS_ASSERT(false);
+                    break;
                 }
             }
             default: {

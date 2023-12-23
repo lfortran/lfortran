@@ -649,6 +649,9 @@ namespace LCompilers {
                             llvm::Type* el_type = character_type;
                             type = arr_api->get_array_type(asr_type, el_type);
                             break;
+                        } else {
+                            LCOMPILERS_ASSERT(false);
+                            break;
                         }
                     }
                     default: {
@@ -1186,6 +1189,9 @@ namespace LCompilers {
                             is_array_type = true;
                             llvm::Type* el_type = character_type;
                             llvm_type = arr_api->get_array_type(asr_type, el_type);
+                            break;
+                        } else {
+                            LCOMPILERS_ASSERT(false);
                             break;
                         }
                     }
