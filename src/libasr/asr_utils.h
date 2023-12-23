@@ -3349,6 +3349,7 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
         }
         ASRUtils::insert_module_dependency(new_es, al, current_module_dependencies);
         x->m_name = new_es;
+        x->m_original_name = nullptr;
     }
 
     void replace_Var(ASR::Var_t* x) {
