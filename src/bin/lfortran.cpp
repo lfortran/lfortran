@@ -1206,7 +1206,7 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
 
 
 int compile_to_object_file_cpp(const std::string &infile,
-        const std::string &outfile,
+        const std::string &outfile, bool verbose,
         bool assembly, bool kokkos, const std::string &rtlib_header_dir,
         CompilerOptions &compiler_options)
 {
@@ -1304,6 +1304,9 @@ int compile_to_object_file_cpp(const std::string &infile,
         }
         options += " -I" + rtlib_header_dir;
         std::string cmd = CXX + " " + options + " -o " + outfile + " -c " + cppfile;
+	if (verbose) {
+            std::cout << cmd << std::endl;
+	}
         int err = system(cmd.c_str());
         if (err) {
             std::cout << "The command '" + cmd + "' failed." << std::endl;
@@ -1315,7 +1318,7 @@ int compile_to_object_file_cpp(const std::string &infile,
 }
 
 int compile_to_object_file_c(const std::string &infile,
-        const std::string &outfile,
+        const std::string &outfile, bool verbose,
         bool assembly, const std::string &rtlib_header_dir,
         LCompilers::PassManager pass_manager,
         CompilerOptions &compiler_options)
@@ -1404,6 +1407,9 @@ int compile_to_object_file_c(const std::string &infile,
         std::string CXX = "gcc";
         std::string options = " -I" + rtlib_header_dir;
         std::string cmd = CXX + " " + options + " -o " + outfile + " -c " + cfile;
+	if (verbose) {
+            std::cout << cmd << std::endl;
+	}
         int err = system(cmd.c_str());
         if (err) {
             std::cout << "The command '" + cmd + "' failed." << std::endl;
@@ -2306,10 +2312,10 @@ int main(int argc, char *argv[])
                 return 1;
 #endif
             } else if (backend == Backend::c) {
-                return compile_to_object_file_c(arg_file, outfile, false,
+                return compile_to_object_file_c(arg_file, outfile, arg_v, false,
                         rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
             } else if (backend == Backend::cpp) {
-                return compile_to_object_file_cpp(arg_file, outfile, false,
+                return compile_to_object_file_cpp(arg_file, outfile, arg_v, false,
                         true, rtlib_c_header_dir, compiler_options);
             } else if (backend == Backend::x86) {
                 return compile_to_binary_x86(arg_file, outfile, time_report, compiler_options);
@@ -2338,10 +2344,10 @@ int main(int argc, char *argv[])
                 return 1;
 #endif
             } else if (backend == Backend::cpp) {
-                err = compile_to_object_file_cpp(arg_file, tmp_o, false,
+                err = compile_to_object_file_cpp(arg_file, tmp_o, arg_v, false,
                         true, rtlib_header_dir, compiler_options);
             } else if (backend == Backend::c) {
-                err = compile_to_object_file_c(arg_file, tmp_o,
+                err = compile_to_object_file_c(arg_file, tmp_o, arg_v,
                         false, rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
             } else if (backend == Backend::fortran) {
                 err = compile_to_binary_fortran(arg_file, tmp_o, compiler_options);
