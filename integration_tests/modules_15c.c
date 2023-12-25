@@ -162,6 +162,10 @@ int f_string(char *s) {
     return strlen(s);
 }
 
+int32_t call_fortran_string(int32_t n, char *s) {
+    return fortran_string(n, s);
+}
+
 int32_t call_fortran_i32(int32_t i) {
     return fortran_i32(&i);
 }

@@ -52,6 +52,7 @@ float call_fortran_f32(float i);
 float call_fortran_f32_value(float i);
 double call_fortran_f64(double i);
 double call_fortran_f64_value(double i);
+int32_t call_fortran_string(int32_t n, char *s);
 
 int32_t fortran_i32(int32_t *i);
 int32_t fortran_i32_value(int32_t i);
@@ -61,6 +62,7 @@ float fortran_f32(float *i);
 float fortran_f32_value(float i);
 double fortran_f64(double *i);
 double fortran_f64_value(double i);
+int32_t fortran_string(int32_t n, char *s);
 
 
 #endif // MODULES_15C

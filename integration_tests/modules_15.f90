@@ -17,6 +17,7 @@ use modules_15b, only: &
     f_int_double_value_name, &
     sub_int_double_value_name, &
     f_string, &
+    call_fortran_string, &
     call_fortran_i32, call_fortran_i64, &
     call_fortran_f32, call_fortran_f64, &
     call_fortran_i32_value, call_fortran_i64_value, &
@@ -232,6 +233,11 @@ if (f_string("123") /= 3) error stop
 if (f_string("abcde") /= 5) error stop
 if (f_string(" ") /= 1) error stop
 if (f_string("") /= 0) error stop
+
+if (call_fortran_string(3, "123") /= 3) error stop
+if (call_fortran_string(5, "abcde") /= 5) error stop
+if (call_fortran_string(1, " ") /= 1) error stop
+if (call_fortran_string(0, "") /= 0) error stop
 
 ! Calling Fortran code from C
 in32 = 5

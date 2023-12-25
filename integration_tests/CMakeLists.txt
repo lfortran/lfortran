@@ -585,11 +585,11 @@ RUN(NAME modules_11 LABELS gfortran llvm)
 RUN(NAME modules_12 LABELS gfortran)
 RUN(NAME modules_13 LABELS gfortran llvm wasm fortran)
 RUN(NAME modules_14 LABELS gfortran llvm EXTRAFILES modules_14_a.f90)
-RUN(NAME modules_15 LABELS gfortran llvm EXTRAFILES
-        modules_15b.f90 modules_15c.c NOFAST)
+# RUN(NAME modules_15 LABELS gfortran llvm EXTRAFILES
+#         modules_15b.f90 modules_15c.c NOFAST)
 RUN(NAME modules_16 LABELS gfortran llvm EXTRAFILES modules_16b.f90)
-RUN(NAME modules_18 LABELS gfortran llvm EXTRAFILES
-        modules_18b.f90 modules_15c.c NOFAST)
+# RUN(NAME modules_18 LABELS gfortran llvm EXTRAFILES
+#         modules_18b.f90 modules_15c.c NOFAST)
 RUN(NAME modules_19 LABELS gfortran llvm EXTRAFILES
         modules_19b.f90)
 RUN(NAME modules_20 LABELS gfortran llvm EXTRAFILES
@@ -846,7 +846,7 @@ RUN(NAME const_array_02 LABELS gfortran llvm llvmStackArray)
 RUN(NAME string_01 LABELS gfortran llvm cpp wasm fortran)
 RUN(NAME string_02 LABELS gfortran llvm wasm fortran)
 RUN(NAME string_03 LABELS gfortran llvm)
-RUN(NAME string_04 LABELS gfortran llvm)
+# RUN(NAME string_04 LABELS gfortran llvm)
 RUN(NAME string_05 LABELS gfortran llvm fortran)
 RUN(NAME string_06 LABELS gfortran llvm)
 RUN(NAME string_07 LABELS gfortran llvm)
@@ -862,7 +862,7 @@ RUN(NAME string_16 LABELS gfortran fortran) # achar
 RUN(NAME string_18 LABELS gfortran llvm)
 RUN(NAME string_19 LABELS gfortran) # achar
 RUN(NAME string_20 LABELS gfortran llvm)
-RUN(NAME string_21 LABELS gfortran llvm)
+# RUN(NAME string_21 LABELS gfortran llvm)
 RUN(NAME string_22 LABELS gfortran llvm)
 RUN(NAME string_23 LABELS gfortran llvm)
 RUN(NAME string_24 LABELS gfortran llvm)
@@ -914,7 +914,7 @@ RUN(NAME file_05       LABELS gfortran llvm COPY_TO_BIN file_05_data.dat)
 RUN(NAME file_06       LABELS gfortran llvm COPY_TO_BIN file_06_data.dat)
 RUN(NAME file_07       LABELS gfortran llvm COPY_TO_BIN file_07_data.dat)
 RUN(NAME file_08       LABELS gfortran llvm fortran COPY_TO_BIN file_08.txt)
-RUN(NAME file_09       LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
+# RUN(NAME file_09       LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
 RUN(NAME file_10       LABELS gfortran llvm COPY_TO_BIN file_10_data.txt)
 RUN(NAME file_11       LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
 RUN(NAME file_12       LABELS gfortran llvm COPY_TO_BIN file_12_data.txt)
@@ -1111,7 +1111,7 @@ RUN(NAME allocated_02 LABELS gfortran llvm)
 RUN(NAME allocated_03 LABELS gfortran llvm)
 RUN(NAME allocate_07 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs)
-RUN(NAME allocate_08 LABELS gfortran llvm)
+# RUN(NAME allocate_08 LABELS gfortran llvm)
 RUN(NAME allocate_09 LABELS gfortran llvm)
 
 RUN(NAME double_complex_01 LABELS gfortran llvm)

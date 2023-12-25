@@ -2321,7 +2321,8 @@ public:
             llvm_diminfo.reserve(al, 2 * x.n_args + 1);
             if( array_t->m_physical_type == ASR::array_physical_typeType::PointerToDataArray ||
                 array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
-                array_t->m_physical_type == ASR::array_physical_typeType::SIMDArray ) {
+                array_t->m_physical_type == ASR::array_physical_typeType::SIMDArray ||
+                (array_t->m_physical_type == ASR::array_physical_typeType::CharacterArraySinglePointer && ASRUtils::is_fixed_size_array(x_mv_type))) {
                 int ptr_loads_copy = ptr_loads;
                 for( size_t idim = 0; idim < x.n_args; idim++ ) {
                     ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
@@ -2355,7 +2356,8 @@ public:
             } else {
                 tmp = arr_descr->get_single_element(array, indices, x.n_args,
                                                     array_t->m_physical_type == ASR::array_physical_typeType::PointerToDataArray,
-                                                    array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray || array_t->m_physical_type == ASR::array_physical_typeType::SIMDArray,
+                                                    array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray || array_t->m_physical_type == ASR::array_physical_typeType::SIMDArray
+                                                    || (array_t->m_physical_type == ASR::array_physical_typeType::CharacterArraySinglePointer && ASRUtils::is_fixed_size_array(x_mv_type)),
                                                     llvm_diminfo.p, is_polymorphic, current_select_type_block_type);
             }
         }
@@ -3340,6 +3342,7 @@ public:
 
     template<typename T>
     void declare_vars(const T &x, bool create_vtabs=true) {
+        std::cout<<"declare_vars of: "<<x.m_name<<"\n";
         llvm::Value *target_var;
         uint32_t debug_arg_count = 0;
         std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
@@ -3375,8 +3378,10 @@ public:
         }
         for (auto &item : var_order) {
             ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
+            std::cout<<"var_sym: "<<ASRUtils::symbol_name(var_sym)<<"\n";
             if (is_a<ASR::Variable_t>(*var_sym)) {
                 ASR::Variable_t *v = down_cast<ASR::Variable_t>(var_sym);
+                std::cout<<"v->m_name: "<<v->m_name<<"\n";
                 uint32_t h = get_hash((ASR::asr_t*)v);
                 llvm::Type *type;
                 int n_dims = 0, a_kind = 4;
@@ -3387,13 +3392,15 @@ public:
                 if (v->m_intent == intent_local ||
                     v->m_intent == intent_return_var ||
                     !v->m_intent) {
+                        std::cout<<"going to call get_type_from_ttype_t\n";
                     type = llvm_utils->get_type_from_ttype_t(
                         v->m_type, v->m_type_declaration, v->m_storage, is_array_type,
                         is_malloc_array_type, is_list, m_dims, n_dims, a_kind, module.get());
+                    std::cout<<"going to call get_type_from_ttype_t_util"<<"\n";
                     llvm::Type* type_ = llvm_utils->get_type_from_ttype_t_util(
                         ASRUtils::type_get_past_pointer(
                             ASRUtils::type_get_past_allocatable(v->m_type)), module.get(), v->m_abi);
-
+                    std::cout<<"done calling"<<std::endl;
                     /*
                     * The following if block is used for converting any
                     * general array descriptor to a pointer type which
@@ -5029,7 +5036,24 @@ public:
             int n_dims = ASRUtils::extract_n_dims_from_ttype(m_type_for_dimensions);
             arr_descr->reset_array_details(target, tmp, n_dims);
             tmp = target;
-        } else {
+        } 
+        else if (
+            m_new == ASR::array_physical_typeType::PointerToDataArray &&
+            m_old == ASR::array_physical_typeType::CharacterArraySinglePointer) {
+        //     tmp = LLVM::CreateLoad(*builder, arr_descr->get_pointer_to_data(tmp));
+            if (ASRUtils::is_fixed_size_array(m_type)) {
+                if( (ASRUtils::expr_value(m_arg) &&
+                    !ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(m_arg))) ||
+                    ASRUtils::expr_value(m_arg) == nullptr ) {
+                    tmp = llvm_utils->create_gep(tmp, 0);
+                }
+            } else {
+                LCOMPILERS_ASSERT(false);
+            }
+        } 
+        else {
+            std::cout<<"new: "<<ASRUtils::array_physical_typeType_to_str(m_new)<<std::endl;
+            std::cout<<"old: "<<ASRUtils::array_physical_typeType_to_str(m_old)<<std::endl;
             LCOMPILERS_ASSERT(false);
         }
     }
@@ -9080,6 +9104,10 @@ public:
 
         ASR::ttype_t* x_mv_type = ASRUtils::expr_type(m_v);
         ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(x_mv_type);
+        // if (physical_type == ASR::array_physical_typeType::CharacterArraySinglePointer) {
+        //     if (m_dim) physical_type = ASR::array_physical_typeType::FixedSizeArray;
+        //     else physical_type = ASR::array_physical_typeType::DescriptorArray;
+        // }
         switch( physical_type ) {
             case ASR::array_physical_typeType::DescriptorArray: {
                 tmp = arr_descr->get_array_size(llvm_arg, llvm_dim, output_kind, dim_kind);
@@ -9183,6 +9211,7 @@ public:
         ASR::ttype_t* x_mv_type = ASRUtils::expr_type(x.m_v);
         ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(x_mv_type);
         switch( physical_type ) {
+            // case ASR::array_physical_typeType::CharacterArraySinglePointer:
             case ASR::array_physical_typeType::DescriptorArray: {
                 llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(llvm_arg1);
                 llvm::Value* const_1 = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
@@ -9252,6 +9281,70 @@ public:
                     tmp = llvm::ConstantInt::get(context, llvm::APInt(32, size));
                 }
                 break;
+            }
+            case ASR::array_physical_typeType::CharacterArraySinglePointer: {
+                ASR::dimension_t* m_dims = nullptr;
+                int n_dims = ASRUtils::extract_dimensions_from_ttype(x_mv_type, m_dims);
+                if (ASRUtils::is_dimension_empty(m_dims, n_dims)) {
+                    // treat it as DescriptorArray
+                    llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(llvm_arg1);
+                    llvm::Value* const_1 = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                    dim_val = builder->CreateSub(dim_val, const_1);
+                    llvm::Value* dim_struct = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_val);
+                    llvm::Value* res = nullptr;
+                    if( x.m_bound == ASR::arrayboundType::LBound ) {
+                        res = arr_descr->get_lower_bound(dim_struct);
+                    } else if( x.m_bound == ASR::arrayboundType::UBound ) {
+                        res = arr_descr->get_upper_bound(dim_struct);
+                    }
+                    tmp = res;
+                    break;
+                } else if (ASRUtils::is_fixed_size_array(x_mv_type)) {
+                    llvm::BasicBlock &entry_block = builder->GetInsertBlock()->getParent()->getEntryBlock();
+                    llvm::IRBuilder<> builder0(context);
+                    builder0.SetInsertPoint(&entry_block, entry_block.getFirstInsertionPt());
+                    llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(
+                        ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(x.m_type)), module.get());
+                    llvm::AllocaInst *target = builder0.CreateAlloca(
+                        target_type, nullptr, "array_bound");
+                    llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
+                    ASR::dimension_t* m_dims = nullptr;
+                    int n_dims = ASRUtils::extract_dimensions_from_ttype(x_mv_type, m_dims);
+                    for( int i = 0; i < n_dims; i++ ) {
+                        llvm::Function *fn = builder->GetInsertBlock()->getParent();
+
+                        llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
+                        llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
+
+                        llvm::Value* cond = builder->CreateICmpEQ(dim_val,
+                            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, i + 1)));
+                        builder->CreateCondBr(cond, thenBB, elseBB);
+                        builder->SetInsertPoint(thenBB);
+                        {
+                            if( x.m_bound == ASR::arrayboundType::LBound ) {
+                                this->visit_expr_wrapper(m_dims[i].m_start, true);
+                                builder->CreateStore(tmp, target);
+                            } else if( x.m_bound == ASR::arrayboundType::UBound ) {
+                                llvm::Value *lbound = nullptr, *length = nullptr;
+                                this->visit_expr_wrapper(m_dims[i].m_start, true);
+                                lbound = tmp;
+                                this->visit_expr_wrapper(m_dims[i].m_length, true);
+                                length = tmp;
+                                builder->CreateStore(
+                                    builder->CreateSub(builder->CreateAdd(length, lbound),
+                                        llvm::ConstantInt::get(context, llvm::APInt(32, 1))),
+                                    target);
+                            }
+                        }
+                        builder->CreateBr(mergeBB);
+
+                        start_new_block(elseBB);
+                    }
+                    start_new_block(mergeBB);
+                    tmp = LLVM::CreateLoad(*builder, target);
+                    break;
+                }
             }
             default: {
                 LCOMPILERS_ASSERT(false);

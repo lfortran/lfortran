@@ -1412,6 +1412,38 @@ static inline std::string get_type_code(ASR::ttype_t** types, size_t n_types,
     return code;
 }
 
+static inline std::string array_physical_typeType_to_str(ASR::array_physical_typeType t) {
+    switch (t) {
+        case ASR::array_physical_typeType::CharacterArraySinglePointer: {
+            return "CharacterArraySinglePointer";
+        }
+        case ASR::array_physical_typeType::DescriptorArray: {
+            return "DescriptorArray";
+        }
+        case ASR::array_physical_typeType::FixedSizeArray: {
+            return "FixedSizeArray";
+        }
+        case ASR::array_physical_typeType::NumPyArray: {
+            return "NumPyArray";
+        }
+        case ASR::array_physical_typeType::ISODescriptorArray: {
+            return "ISODescriptorArray";
+        }
+        case ASR::array_physical_typeType::PointerToDataArray: {
+            return "PointerToDataArray";
+        }
+        case ASR::array_physical_typeType::SIMDArray: {
+            return "SIMDArray";
+        }
+        case ASR::array_physical_typeType::UnboundedPointerToDataArray: {
+            return "UnboundedPointerToDataArray";
+        }
+        default: {
+            throw LCompilersException("Unknown array_physical_typeType");
+        }
+    }
+}
+
 static inline std::string type_to_str_python(const ASR::ttype_t *t,
                                              bool for_error_message=true)
 {

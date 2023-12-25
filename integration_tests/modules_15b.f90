@@ -244,6 +244,12 @@ interface
     character(len=1, kind=c_char), intent(in) :: s(*)
     end function
 
+    integer(c_int) function call_fortran_string(n, s) result(r) bind(c)
+    import :: c_int, c_char
+    integer(c_int), value, intent(in) :: n
+    character(len=1, kind=c_char), intent(in) :: s(*)
+    end function
+
     integer(c_int) function call_fortran_i32(i) result(r) bind(c)
     import :: c_int
     integer(c_int), value, intent(in) :: i
@@ -303,6 +309,28 @@ contains
 integer function f_string(s) result(r)
 character(*), intent(in) :: s
 r = f_string0(s // c_null_char)
+end function
+
+function c2s(n, x) result(y)
+integer, intent(in) :: n
+character, intent(in) :: x(:)
+character(:), allocatable :: y
+integer :: i
+allocate(character(n) :: y)
+do i = 1, n
+    y(i:i) = x(i)
+end do
+end function
+
+integer function f_len_string(s) result(r)
+character(*), intent(in) :: s
+r = len(s)
+end function
+
+integer(c_int) function fortran_string(n, s) result(r) bind(c)
+integer(c_int), intent(in) :: n
+character(len=1, kind=c_char), intent(in) :: s(:)
+r = f_len_string(c2s(n, s))
 end function
 
 integer(c_int) function fortran_i32(i) result(r) bind(c)
