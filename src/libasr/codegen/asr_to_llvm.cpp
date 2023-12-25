@@ -5058,7 +5058,7 @@ public:
                 llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(m_type, module.get())->getPointerTo();
                 tmp = builder->CreateBitCast(tmp, target_type); // [1 x i8*]*
                 // we need [1 x i8*]
-                tmp = builder->CreateLoad(tmp);
+                tmp = LLVM::CreateLoad(*builder, tmp);
             }
         } else {
             LCOMPILERS_ASSERT(false);
