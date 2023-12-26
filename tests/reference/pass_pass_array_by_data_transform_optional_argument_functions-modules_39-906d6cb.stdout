@@ -259,7 +259,7 @@
                                                         (Character 1 -1 ())
                                                         [(()
                                                         ())]
-                                                        DescriptorArray
+                                                        CharacterArraySinglePointer
                                                     )
                                                     ()
                                                     Source
@@ -291,7 +291,7 @@
                                             (Character 1 -1 ())
                                             [(()
                                             ())]
-                                            DescriptorArray
+                                            CharacterArraySinglePointer
                                         )]
                                         ()
                                         Source

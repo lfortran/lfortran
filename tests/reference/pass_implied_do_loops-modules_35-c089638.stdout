@@ -88,7 +88,7 @@
                                                             (Character 1 -1 ())
                                                             [(()
                                                             ())]
-                                                            DescriptorArray
+                                                            CharacterArraySinglePointer
                                                         )
                                                     )
                                                     ()
@@ -111,7 +111,7 @@
                                                             (Character 1 -2 ())
                                                             [(()
                                                             ())]
-                                                            DescriptorArray
+                                                            CharacterArraySinglePointer
                                                         )
                                                     )
                                                     ()
@@ -128,7 +128,7 @@
                                                 (Character 1 -1 ())
                                                 [(()
                                                 ())]
-                                                DescriptorArray
+                                                CharacterArraySinglePointer
                                             )
                                         )]
                                         ()
@@ -295,7 +295,7 @@
                                             (Character 1 5 ())
                                             [(()
                                             ())]
-                                            DescriptorArray
+                                            CharacterArraySinglePointer
                                         )
                                     )
                                     ()

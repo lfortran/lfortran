@@ -56,7 +56,7 @@
                                                             (Character 1 1 ())
                                                             [(()
                                                             ())]
-                                                            DescriptorArray
+                                                            CharacterArraySinglePointer
                                                         )
                                                     )
                                                     ()
@@ -578,7 +578,7 @@
                                                         (Character 1 1 ())
                                                         [(()
                                                         ())]
-                                                        DescriptorArray
+                                                        CharacterArraySinglePointer
                                                     )
                                                     ()
                                                     Source
@@ -611,7 +611,7 @@
                                             (Character 1 1 ())
                                             [(()
                                             ())]
-                                            DescriptorArray
+                                            CharacterArraySinglePointer
                                         )]
                                         (Allocatable
                                             (Character 1 -2 ())
