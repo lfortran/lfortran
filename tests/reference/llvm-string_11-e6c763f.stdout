@@ -49,7 +49,7 @@ loop.head1:                                       ; preds = %ifcont, %loop.body
   %10 = alloca i8*, align 8
   store i8* %9, i8** %10, align 8
   %11 = call i32 @_lfortran_str_len(i8** %10)
-  %12 = icmp slt i32 %8, %11
+  %12 = icmp sle i32 %8, %11
   %13 = load i1, i1* %found, align 1
   %14 = icmp eq i1 %12, false
   %15 = select i1 %14, i1 %12, i1 %13
