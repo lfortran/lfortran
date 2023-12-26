@@ -41,7 +41,7 @@ integer elemental function index(string_, substring_) result(idx)
     do while (i < len(string_) .and. found)
         k = 0
         j = 1
-        do while (j < len(substring_) .and. found)
+        do while (j <= len(substring_) .and. found)
             pos = i + k
             if( string_(pos:pos) /= substring_(j:j) ) then
                 found = .false.
