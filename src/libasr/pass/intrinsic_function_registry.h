@@ -363,8 +363,10 @@ class ASRBuilder {
     #define r64Div(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, \
                 left, ASR::binopType::Div, right, real64, nullptr))
 
-    #define r32Add(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
-            ASR::binopType::Add, right, real32, nullptr))
+    #define rAdd(left, right, t) EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
+            ASR::binopType::Add, right, t, nullptr))
+    #define rSub(left, right, t) EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
+            ASR::binopType::Sub, right, t, nullptr))
     #define r32Sub(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
             ASR::binopType::Sub, right, real32, nullptr))
     #define r64Sub(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
@@ -1865,11 +1867,25 @@ namespace Anint {
         ASR::expr_t *test;
         ASR::expr_t* zero = make_ConstantWithType(make_RealConstant_t, 0.0, arg_types[0], loc);
         test = make_Compare(make_RealCompare_t, args[0], Gt, zero);
-    
+
+        Vec<ASR::ttype_t*> arg_types_aint; arg_types_aint.reserve(al, 1);
+        arg_types_aint.push_back(al, arg_types[0]);
+
+        Vec<ASR::call_arg_t> new_args_aint1; new_args_aint1.reserve(al, 1);
+        ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = rAdd(args[0], f(0.5, arg_types_aint[0]), arg_types_aint[0]);
+        new_args_aint1.push_back(al, arg1);
+
+        Vec<ASR::call_arg_t> new_args_aint2; new_args_aint2.reserve(al, 1);
+        ASR::call_arg_t arg2; arg2.loc = loc; arg2.m_value = rSub(args[0], f(0.5, arg_types_aint[0]), arg_types_aint[0]);
+        new_args_aint2.push_back(al, arg2);
+
+        ASR::expr_t* func_call_aint_pos = Aint::instantiate_Aint(al, loc, scope, arg_types_aint, return_type, new_args_aint1, 0);
+        ASR::expr_t* func_call_aint_neg = Aint::instantiate_Aint(al, loc, scope, arg_types_aint, return_type, new_args_aint2, 0);
+
         Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
-        if_body.push_back(al, b.Assignment(result, i2r(r2i64(r32Add(args[0], f(0.5, arg_types[0]))), return_type)));
+        if_body.push_back(al, b.Assignment(result, func_call_aint_pos));
         Vec<ASR::stmt_t *> else_body; else_body.reserve(al, 1);
-        else_body.push_back(al, b.Assignment(result, i2r(r2i64(r32Sub(args[0], f(0.5, arg_types[0]))), return_type)));
+        else_body.push_back(al, b.Assignment(result, func_call_aint_neg));
         body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
             if_body.p, if_body.n, else_body.p, else_body.n)));
 
