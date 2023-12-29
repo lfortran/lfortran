@@ -2416,7 +2416,7 @@ public:
         switch( array_physical_type ) {
             case ASR::array_physical_typeType::DescriptorArray: {
                 ASR::ttype_t* asr_data_type = ASRUtils::duplicate_type_without_dims(al,
-                    x_m_array_type, x_m_array_type->base.loc);
+                    ASRUtils::get_contained_type(x_m_array_type), x_m_array_type->base.loc);
                 ASR::ttype_t* asr_shape_type = ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_shape));
                 llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(asr_data_type, module.get());
                 tmp = arr_descr->reshape(array, llvm_data_type, shape, asr_shape_type, module.get());
@@ -4793,7 +4793,7 @@ public:
             bool is_target_fixed_sized_array = (target_ptype == ASR::array_physical_typeType::FixedSizeArray);
             bool is_value_fixed_sized_array = (value_ptype == ASR::array_physical_typeType::FixedSizeArray);
             bool is_target_simd_array = (target_ptype == ASR::array_physical_typeType::SIMDArray);
-            // bool is_target_descriptor_based_array = (target_ptype == ASR::array_physical_typeType::DescriptorArray);
+            bool is_target_descriptor_based_array = (target_ptype == ASR::array_physical_typeType::DescriptorArray);
             bool is_value_descriptor_based_array = (value_ptype == ASR::array_physical_typeType::DescriptorArray);
             if( is_value_fixed_sized_array && is_target_fixed_sized_array ) {
                 value = llvm_utils->create_gep(value, 0);
@@ -4820,6 +4820,20 @@ public:
                 llvm::DataLayout data_layout(module.get());
                 uint64_t data_size = data_layout.getTypeAllocSize(llvm_data_type);
                 llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
+                llvm_size = builder->CreateMul(llvm_size,
+                    llvm::ConstantInt::get(context, llvm::APInt(32, data_size)));
+                builder->CreateMemCpy(target, llvm::MaybeAlign(), value, llvm::MaybeAlign(), llvm_size);
+            } else if( is_target_descriptor_based_array && is_value_fixed_sized_array ) {
+                if( ASRUtils::is_allocatable(target_type) ) {
+                    target = LLVM::CreateLoad(*builder, target);
+                }
+                llvm::Value* llvm_size = arr_descr->get_array_size(target, nullptr, 4);
+                target = LLVM::CreateLoad(*builder, arr_descr->get_pointer_to_data(target));
+                value = llvm_utils->create_gep(value, 0);
+                llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::type_get_past_array(
+                    ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(value_type))), module.get());
+                llvm::DataLayout data_layout(module.get());
+                uint64_t data_size = data_layout.getTypeAllocSize(llvm_data_type);
                 llvm_size = builder->CreateMul(llvm_size,
                     llvm::ConstantInt::get(context, llvm::APInt(32, data_size)));
                 builder->CreateMemCpy(target, llvm::MaybeAlign(), value, llvm::MaybeAlign(), llvm_size);
@@ -4907,8 +4921,11 @@ public:
                     builder->CreateStore(value, target);
                 }
             } else {
+                if( LLVM::is_llvm_pointer(*target_type) ) {
+                    target = LLVM::CreateLoad(*builder, target);
+                }
                 arr_descr->copy_array(value, target, module.get(),
-                                      target_type, false, false);
+                                      target_type, true, false);
             }
         } else if( ASR::is_a<ASR::DictItem_t>(*x.m_target) ) {
             ASR::DictItem_t* dict_item_t = ASR::down_cast<ASR::DictItem_t>(x.m_target);
