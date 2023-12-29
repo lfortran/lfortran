@@ -50,6 +50,7 @@ enum class IntrinsicScalarFunctions : int64_t {
     Mod,
     Trailz,
     Kind,
+    Digits,
     MinExponent,
     MaxExponent,
     FloorDiv,
@@ -127,6 +128,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Mod)
         INTRINSIC_NAME_CASE(Trailz)
         INTRINSIC_NAME_CASE(Kind)
+        INTRINSIC_NAME_CASE(Digits)
         INTRINSIC_NAME_CASE(MinExponent)
         INTRINSIC_NAME_CASE(MaxExponent)
         INTRINSIC_NAME_CASE(ListIndex)
@@ -2495,11 +2497,11 @@ namespace Kind {
 
      static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args == 1,
-            "ASR Verify: Call to kind must have exactly 1 argument",
+            "Call to kind must have exactly 1 argument",
             x.base.base.loc, diagnostics);
         ASR::ttype_t *type1 = ASRUtils::expr_type(x.m_args[0]);
         ASRUtils::require_impl(is_integer(*type1) || is_real(*type1) || is_logical(*type1) || is_character(*type1),
-            "ASR Verify: Arguments to kind must be of either integer or real or logical or character type",
+            "Arguments to kind must be of either integer, real, logical, character type",
             x.base.base.loc, diagnostics);
     }
 
@@ -2513,11 +2515,11 @@ namespace Kind {
             Vec<ASR::expr_t*>& args,
             const std::function<void (const std::string &, const Location &)> err) {
         if (args.size() != 1) {
-            err("Intrinsic kind function accepts exactly 1 arguments", loc);
+            err("Intrinsic kind function accepts exactly 1 argument", loc);
         }
         ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
         if (!(ASRUtils::is_integer(*type1) || ASRUtils::is_real(*type1) || ASRUtils::is_logical(*type1) || ASRUtils::is_character(*type1))) {
-            err("Argument of the kind function must be integer or real or logical or character",
+            err("Argument of the kind function must be integer, real, logical or character",
                 args[0]->base.loc);
         }
         ASR::expr_t *m_value = nullptr;
@@ -2546,6 +2548,93 @@ namespace Kind {
     }
 
 } // namespace Kind
+
+namespace Digits {
+
+     static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 1,
+            "Call to `digits` must have exactly 1 argument",
+            x.base.base.loc, diagnostics);
+        ASR::ttype_t *type1 = ASRUtils::expr_type(x.m_args[0]);
+        ASRUtils::require_impl(is_integer(*type1) || is_real(*type1),
+            "Arguments to `digits` intrinsic must be integer or real",
+            x.base.base.loc, diagnostics);
+    }
+
+    static ASR::expr_t *eval_Digits(Allocator &al, const Location &loc,
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args) {
+        ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
+        int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
+        if (is_integer(*type1)) {
+            if (kind == 4) {
+                return make_ConstantWithType(make_IntegerConstant_t, 31, int32, loc);
+            } else if (kind == 8) {
+                return make_ConstantWithType(make_IntegerConstant_t, 63, int32, loc);
+            } else {
+                throw SemanticError("Kind "+ std::to_string(kind) + " not supported for type Integer", loc);
+            }
+        } else if (is_real(*type1)) {
+            if (kind == 4) {
+                return make_ConstantWithType(make_IntegerConstant_t, 24, int32, loc);
+            } else if (kind == 8) {
+                return make_ConstantWithType(make_IntegerConstant_t, 53, int32, loc);
+            } else {
+                throw SemanticError("Kind "+ std::to_string(kind) + " not supported for type Real", loc);
+            }
+        } else {
+            throw SemanticError("Argument to `digits` intrinsic must be real or integer", loc);
+        }
+    }
+
+    static inline ASR::asr_t* create_Digits(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args,
+            const std::function<void (const std::string &, const Location &)> err) {
+        if (args.size() != 1) {
+            err("Intrinsic `digits` function accepts exactly 1 argument", loc);
+        }
+        ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
+        if (!(ASRUtils::is_integer(*type1) || ASRUtils::is_real(*type1))) {
+            err("Arguments to `digits` intrinsic must be integer or real",
+                args[0]->base.loc);
+        }
+        ASR::expr_t *m_value = nullptr;
+        if (all_args_evaluated(args)) {
+            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 1);
+            arg_values.push_back(al, expr_value(args[0]));
+            m_value = eval_Digits(al, loc, expr_type(args[0]), arg_values);
+        }
+        return ASR::make_IntrinsicScalarFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicScalarFunctions::Digits),
+            args.p, args.n, 0, int32, m_value);
+    }
+
+    static inline ASR::expr_t* instantiate_Digits(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_optimization_digits_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(fn_name, int32, ReturnVar);
+        int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
+        if (is_integer(*arg_types[0])) {
+            if (kind == 4) {
+                body.push_back(al, b.Assignment(result, i32(31)));
+            } else if (kind == 8) {
+                body.push_back(al, b.Assignment(result, i32(63)));
+            }
+        } else if (is_real(*arg_types[0])) {
+            if (kind == 4) {
+                body.push_back(al, b.Assignment(result, i32(24)));
+            } else if (kind == 8) {
+                body.push_back(al, b.Assignment(result, i32(53)));
+            }
+        }
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+    
+} // namespace Digits
 
 namespace MinExponent {
 
@@ -3891,6 +3980,8 @@ namespace IntrinsicScalarFunctionRegistry {
             {&Trailz::instantiate_Trailz, &Trailz::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Kind),
             {&Kind::instantiate_Kind, &Kind::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Digits),
+            {&Digits::instantiate_Digits, &Digits::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::MinExponent),
             {&MinExponent::instantiate_MinExponent, &MinExponent::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::MaxExponent),
@@ -4025,6 +4116,8 @@ namespace IntrinsicScalarFunctionRegistry {
             "trailz"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Kind),
             "kind"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Digits),
+            "Digits"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::MinExponent),
             "minexponent"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::MaxExponent),
@@ -4137,6 +4230,7 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"mod", {&Mod::create_Mod, &Mod::eval_Mod}},
                 {"trailz", {&Trailz::create_Trailz, &Trailz::eval_Trailz}},
                 {"kind", {&Kind::create_Kind, &Kind::eval_Kind}},
+                {"digits", {&Digits::create_Digits, &Digits::eval_Digits}},
                 {"minexponent", {&MinExponent::create_MinExponent, &MinExponent::eval_MinExponent}},
                 {"maxexponent", {&MaxExponent::create_MaxExponent, &MaxExponent::eval_MaxExponent}},
                 {"list.index", {&ListIndex::create_ListIndex, &ListIndex::eval_list_index}},
