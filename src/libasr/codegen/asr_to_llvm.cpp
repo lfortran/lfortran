@@ -3179,10 +3179,10 @@ public:
                 size_t n_dims = ASRUtils::extract_dimensions_from_ttype(symbol_type, m_dims);
                 ASR::array_physical_typeType phy_type = ASRUtils::extract_physical_type(symbol_type);
                 bool is_data_only = (phy_type == ASR::array_physical_typeType::PointerToDataArray ||
-                                     phy_type == ASR::array_physical_typeType::FixedSizeArray || 
-                                     (phy_type == ASR::array_physical_typeType::CharacterArraySinglePointer && 
+                                     phy_type == ASR::array_physical_typeType::FixedSizeArray ||
+                                     (phy_type == ASR::array_physical_typeType::CharacterArraySinglePointer &&
                                      ASRUtils::is_fixed_size_array(symbol_type)));
-                if (phy_type == ASR::array_physical_typeType::DescriptorArray || 
+                if (phy_type == ASR::array_physical_typeType::DescriptorArray ||
                     (phy_type == ASR::array_physical_typeType::CharacterArraySinglePointer &&
                     ASRUtils::is_dimension_empty(m_dims, n_dims))) {
                     int n_dims = 0, a_kind=4;
@@ -3517,9 +3517,9 @@ public:
                     }
 
                     llvm_symtab[h] = ptr;
-                    if( (ASRUtils::is_array(v->m_type) && 
+                    if( (ASRUtils::is_array(v->m_type) &&
                         ((ASRUtils::extract_physical_type(v->m_type) == ASR::array_physical_typeType::DescriptorArray) ||
-                        (ASRUtils::extract_physical_type(v->m_type) == ASR::array_physical_typeType::CharacterArraySinglePointer && 
+                        (ASRUtils::extract_physical_type(v->m_type) == ASR::array_physical_typeType::CharacterArraySinglePointer &&
                         ASRUtils::is_dimension_empty(m_dims,n_dims))))
                     ) {
                         fill_array_details_(ptr, type_, m_dims, n_dims,
@@ -4921,11 +4921,13 @@ public:
                     builder->CreateStore(value, target);
                 }
             } else {
+                bool create_dim_des_array = false;
                 if( LLVM::is_llvm_pointer(*target_type) ) {
                     target = LLVM::CreateLoad(*builder, target);
+                    create_dim_des_array = true;
                 }
                 arr_descr->copy_array(value, target, module.get(),
-                                      target_type, true, false);
+                                      target_type, create_dim_des_array, false);
             }
         } else if( ASR::is_a<ASR::DictItem_t>(*x.m_target) ) {
             ASR::DictItem_t* dict_item_t = ASR::down_cast<ASR::DictItem_t>(x.m_target);
