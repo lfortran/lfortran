@@ -8,6 +8,8 @@ source_filename = "LFortran"
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   call void @_lpython_set_argv(i32 %0, i8** %1)
+  %real64 = alloca i32, align 4
+  store i32 8, i32* %real64, align 4
   %x = alloca double, align 8
   store double 0x3FEFEB7A9B2C6D8B, double* %x, align 8
   %2 = load double, double* %x, align 8

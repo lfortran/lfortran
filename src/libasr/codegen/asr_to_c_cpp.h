@@ -297,7 +297,7 @@ R"(#include <stdio.h>
         std::string contains;
 
         // Declare the global variables that are imported from the module
-        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
+        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab, {});
         for (auto &item : var_order) {
             ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
             if (ASR::is_a<ASR::Variable_t>(*var_sym)) {
@@ -357,7 +357,7 @@ R"(#include <stdio.h>
         indentation_level += 1;
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string decl;
-        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
+        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab, {});
         for (auto &item : var_order) {
             ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
             if (ASR::is_a<ASR::Variable_t>(*var_sym)) {
@@ -401,7 +401,7 @@ R"(#include <stdio.h>
         indentation_level += 1;
         SymbolTable* current_scope_copy = current_scope;
         current_scope = block->m_symtab;
-        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(block->m_symtab);
+        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(block->m_symtab, {});
         for (auto &item : var_order) {
             ASR::symbol_t* var_sym = block->m_symtab->get_symbol(item);
             if (ASR::is_a<ASR::Variable_t>(*var_sym)) {
@@ -810,7 +810,7 @@ R"(#include <stdio.h>
             indentation_level += 1;
             std::string indent(indentation_level*indentation_spaces, ' ');
             std::string decl;
-            std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
+            std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab, {});
             for (auto &item : var_order) {
                 ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
                 if (ASR::is_a<ASR::Variable_t>(*var_sym)) {

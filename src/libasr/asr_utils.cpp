@@ -92,7 +92,7 @@ std::vector<std::string> determine_function_definition_order(
 }
 
 std::vector<std::string> determine_variable_declaration_order(
-         SymbolTable* symtab) {
+         SymbolTable* symtab, std::vector<std::string> intrinsic_modules) {
     std::map<std::string, std::vector<std::string>> var_dep_graph;
     for( auto itr: symtab->get_scope() ) {
         if( ASR::is_a<ASR::Variable_t>(*itr.second) ) {
@@ -108,6 +108,27 @@ std::vector<std::string> determine_variable_declaration_order(
                     deps.push_back(dep);
             }
             var_dep_graph[itr.first] = deps;
+        } else if ( ASR::is_a<ASR::ExternalSymbol_t>(*itr.second) ) {
+            ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(itr.second);
+            std::string module_name = std::string(ext_sym->m_module_name);
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(itr.second);
+            bool is_intrinsic_module = std::find(intrinsic_modules.begin(), intrinsic_modules.end(), module_name) != intrinsic_modules.end();
+            if (sym && is_intrinsic_module &&
+                ASR::is_a<ASR::Variable_t>(*sym)) {
+                std::vector<std::string> deps;
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+                for( size_t i = 0; i < var->n_dependencies; i++ ) {
+                    std::string dep = var->m_dependencies[i];
+                    // Check if the dependent variable is present in the symtab.
+                    // This will help us to include only local dependencies, and we
+                    // assume that dependencies in the parent symtab are already declared
+                    // earlier.
+                    if (symtab->get_symbol(dep) != nullptr)
+                        deps.push_back(dep);
+                }
+                var_dep_graph[itr.first] = deps;
+            }
+
         }
     }
     return ASRUtils::order_deps(var_dep_graph);
@@ -399,7 +420,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
 }
 
 void set_intrinsic(ASR::symbol_t* sym) {
-    switch( sym->type ) {
+switch( sym->type ) {
         case ASR::symbolType::Module: {
             ASR::Module_t* module_sym = ASR::down_cast<ASR::Module_t>(sym);
             module_sym->m_intrinsic = true;

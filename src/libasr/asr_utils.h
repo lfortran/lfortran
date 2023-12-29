@@ -1748,7 +1748,7 @@ std::vector<std::string> determine_function_definition_order(
          SymbolTable* symtab);
 
 std::vector<std::string> determine_variable_declaration_order(
-         SymbolTable* symtab);
+         SymbolTable* symtab, std::vector<std::string> intrinsic_modules);
 
 void extract_module_python(const ASR::TranslationUnit_t &m,
         std::vector<std::pair<std::string, ASR::Module_t*>>& children_modules,

@@ -306,7 +306,7 @@ public:
             visit_symbol(*struct_sym);
             r += s;
         }
-        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
+        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab, {});
         for (auto &item : var_order) {
             ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
             if (is_a<ASR::Variable_t>(*var_sym)) {
@@ -378,7 +378,7 @@ public:
             visit_symbol(*struct_sym);
             r += s;
         }
-        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
+        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab, {});
         for (auto &item : var_order) {
             ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
             if (is_a<ASR::Variable_t>(*var_sym)) {
@@ -483,7 +483,7 @@ public:
         inc_indent();
         {
             std::string variable_declaration;
-            std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
+            std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab, {});
             for (auto &item : var_order) {
                 if (is_return_var_declared && item == return_var) continue;
                 ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
@@ -586,7 +586,7 @@ public:
         r.append(x.m_name);
         r += "\n";
         inc_indent();
-        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
+        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab, {});
         for (auto &item : var_order) {
             ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
             if (is_a<ASR::Variable_t>(*var_sym)) {
