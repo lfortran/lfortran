@@ -2942,6 +2942,26 @@ public:
                 v, vals.p, vals.size(), der, nullptr);
     }
 
+    int get_based_indexing(ASR::symbol_t* v) {
+        if (v != nullptr && ASR::is_a<ASR::Variable_t>(*v)) {
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(v);
+            if (ASRUtils::is_array(var->m_type) && var->m_value && var->m_storage == ASR::storage_typeType::Parameter) {
+                ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(var->m_type);
+                for (size_t i = 0; i < arr->n_dims; i++) {
+                    ASR::dimension_t dim = arr->m_dims[i];
+                    if (dim.m_start != nullptr) {
+                        ASR::expr_t *start = ASRUtils::expr_value(dim.m_start);
+                        if (start) {
+                            ASR::IntegerConstant_t *start2 = ASR::down_cast<ASR::IntegerConstant_t>(start);
+                            return start2->m_n;
+                        }
+                    }
+                }
+            }
+        }
+        return 1; // default
+    }
+
     ASR::asr_t* create_ArrayRef(const Location &loc,
                 AST::fnarg_t* m_args, size_t n_args,
                 AST::fnarg_t* m_subargs, size_t n_subargs,
@@ -3124,7 +3144,8 @@ public:
                         if (val && index) {
                             ASR::ArrayConstant_t *val2 = ASR::down_cast<ASR::ArrayConstant_t>(val);
                             ASR::IntegerConstant_t *index2 = ASR::down_cast<ASR::IntegerConstant_t>(index);
-                            int64_t index3 = index2->m_n-1;
+                            int based_indexing = get_based_indexing(v);
+                            int64_t index3 = index2->m_n-based_indexing;
                             size_t index4 = index3;
                             if (index3 < 0 || index4 >= val2->n_args) {
                                 throw SemanticError("The index is out of bounds",
