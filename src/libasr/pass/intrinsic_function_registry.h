@@ -27,6 +27,7 @@ the code size.
 */
 
 enum class IntrinsicScalarFunctions : int64_t {
+    Kind, // if kind is reordered, update `extract_kind` in `asr_utils.h`
     Sin,
     Cos,
     Tan,
@@ -49,8 +50,8 @@ enum class IntrinsicScalarFunctions : int64_t {
     FlipSign,
     Mod,
     Trailz,
-    Kind,
     Digits,
+    Hypot,
     MinExponent,
     MaxExponent,
     FloorDiv,
@@ -105,6 +106,7 @@ enum class IntrinsicScalarFunctions : int64_t {
 
 inline std::string get_intrinsic_name(int x) {
     switch (x) {
+        INTRINSIC_NAME_CASE(Kind)
         INTRINSIC_NAME_CASE(Sin)
         INTRINSIC_NAME_CASE(Cos)
         INTRINSIC_NAME_CASE(Tan)
@@ -128,8 +130,8 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(FloorDiv)
         INTRINSIC_NAME_CASE(Mod)
         INTRINSIC_NAME_CASE(Trailz)
-        INTRINSIC_NAME_CASE(Kind)
         INTRINSIC_NAME_CASE(Digits)
+        INTRINSIC_NAME_CASE(Hypot)
         INTRINSIC_NAME_CASE(MinExponent)
         INTRINSIC_NAME_CASE(MaxExponent)
         INTRINSIC_NAME_CASE(ListIndex)
@@ -367,6 +369,10 @@ class ASRBuilder {
             ASR::binopType::Add, right, t, nullptr))
     #define rSub(left, right, t) EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
             ASR::binopType::Sub, right, t, nullptr))
+    #define r32Add(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
+            ASR::binopType::Add, right, real32, nullptr))
+    #define r64Add(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
+            ASR::binopType::Add, right, real64, nullptr))
     #define r32Sub(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
             ASR::binopType::Sub, right, real32, nullptr))
     #define r64Sub(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
@@ -2615,6 +2621,96 @@ namespace Trailz {
 
 } // namespace Trailz
 
+namespace Hypot {
+
+     static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 2,
+            "ASR Verify: Call to Hypot must have exactly 2 argument",
+            x.base.base.loc, diagnostics);
+        ASR::ttype_t *type1 = ASRUtils::expr_type(x.m_args[0]);
+        ASR::ttype_t *type2 = ASRUtils::expr_type(x.m_args[1]);
+        ASRUtils::require_impl(is_real(*type1) && is_real(*type2),
+            "ASR Verify: Arguments to Hypot must be of real type",
+            x.base.base.loc, diagnostics);
+    }
+
+    static ASR::expr_t *eval_Hypot(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
+        int kind = ASRUtils::extract_kind_from_ttype_t(t1);
+        if (kind == 4) {
+            float a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            float b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+            return make_ConstantWithType(make_RealConstant_t, std::hypot(a, b), t1, loc);
+        } else {
+            double a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+            return make_ConstantWithType(make_RealConstant_t, std::hypot(a, b), t1, loc);
+        }
+    }
+
+    static inline ASR::asr_t* create_Hypot(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args,
+            const std::function<void (const std::string &, const Location &)> err) {
+        if (args.size() != 2) {
+            err("Intrinsic Hypot function accepts exactly 2 arguments", loc);
+        }
+        ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
+        ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
+        if (!(ASRUtils::is_real(*type1))) {
+            err("Argument of the Hypot function must be Integer",
+                args[0]->base.loc);
+        }
+        if (!(ASRUtils::is_real(*type2))) {
+            err("Argument of the Hypot function must be Integer",
+                args[1]->base.loc);
+        }
+        ASR::expr_t *m_value = nullptr;
+        if (all_args_evaluated(args)) {
+            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 2);
+            arg_values.push_back(al, expr_value(args[0]));
+            arg_values.push_back(al, expr_value(args[1]));
+            m_value = eval_Hypot(al, loc, expr_type(args[0]), arg_values);
+        }
+        return ASR::make_IntrinsicScalarFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicScalarFunctions::Hypot),
+            args.p, args.n, 0, ASRUtils::expr_type(args[0]), m_value);
+    }
+
+    static inline ASR::expr_t* instantiate_Hypot(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_optimization_hypot_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("y", arg_types[1]);
+        auto result = declare(fn_name, arg_types[0], ReturnVar);
+        /*
+            real function hypot_(x,y) result(hypot)
+            real :: x,y
+            hypot = sqrt(x*x + y*y)
+            end function
+        */
+        ASR::expr_t *op1, *op2, *op3, *func_call_sqrt;
+        int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
+        if (kind == 4) {
+            op1 = r32Mul(args[0], args[0]); op2 = r32Mul(args[1], args[1]); op3 = r32Add(op1, op2);
+        } else {
+            op1 = r64Mul(args[0], args[0]); op2 = r64Mul(args[1], args[1]); op3 = r64Add(op1, op2);
+        }
+        Vec<ASR::ttype_t*> sqrt_arg_types; sqrt_arg_types.reserve(al, 1); sqrt_arg_types.push_back(al, ASRUtils::expr_type(op3));
+        Vec<ASR::call_arg_t> sqrt_args; sqrt_args.reserve(al, 1);
+        ASR::call_arg_t sqrt_arg; sqrt_arg.loc = loc; sqrt_arg.m_value = op3;
+        sqrt_args.push_back(al, sqrt_arg);
+        func_call_sqrt = Sqrt::instantiate_Sqrt(al, loc,scope, sqrt_arg_types, return_type, sqrt_args, 0);
+        body.push_back(al, b.Assignment(result, func_call_sqrt));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace Hypot
+
 namespace Kind {
 
      static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
@@ -4100,6 +4196,8 @@ namespace IntrinsicScalarFunctionRegistry {
             {&Mod::instantiate_Mod, &Mod::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Trailz),
             {&Trailz::instantiate_Trailz, &Trailz::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Hypot),
+            {&Hypot::instantiate_Hypot, &Hypot::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Kind),
             {&Kind::instantiate_Kind, &Kind::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Digits),
@@ -4238,6 +4336,8 @@ namespace IntrinsicScalarFunctionRegistry {
             "mod"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Trailz),
             "trailz"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Hypot),
+            "hypot"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Kind),
             "kind"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Digits),
@@ -4355,6 +4455,7 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"floordiv", {&FloorDiv::create_FloorDiv, &FloorDiv::eval_FloorDiv}},
                 {"mod", {&Mod::create_Mod, &Mod::eval_Mod}},
                 {"trailz", {&Trailz::create_Trailz, &Trailz::eval_Trailz}},
+                {"hypot", {&Hypot::create_Hypot, &Hypot::eval_Hypot}},
                 {"kind", {&Kind::create_Kind, &Kind::eval_Kind}},
                 {"digits", {&Digits::create_Digits, &Digits::eval_Digits}},
                 {"minexponent", {&MinExponent::create_MinExponent, &MinExponent::eval_MinExponent}},

@@ -5,5 +5,3 @@ program intrinsics_91
     if ( index("potato", "t", back=.false.) /= 3 ) error stop
     if ( index("potato", "ta", back=.true.) /= 3 ) error stop
 end
-    
-    

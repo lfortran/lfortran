@@ -737,6 +737,7 @@ public:
         {"atan2", {IntrinsicSignature({}, 2, 2)}},
         {"shape", {IntrinsicSignature({"kind"}, 1, 2)}},
         {"mod", {IntrinsicSignature({"mod"}, 1, 2)}},
+        {"hypot", {IntrinsicSignature({"hypot"}, 2, 2)}},
     };
 
     std::map<std::string, std::string> double_precision_intrinsics = {
