@@ -562,6 +562,7 @@ RUN(NAME intrinsics_90 LABELS gfortran llvm) #min
 RUN(NAME intrinsics_91 LABELS gfortran llvm) #index
 RUN(NAME intrinsics_92 LABELS gfortran llvm) #anint
 RUN(NAME intrinsics_93 LABELS gfortran llvm) #digits
+RUN(NAME intrinsics_94 LABELS gfortran llvm NOFAST) #hypot
 
 
 RUN(NAME parameter_01 LABELS gfortran)
