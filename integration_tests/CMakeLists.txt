@@ -563,6 +563,11 @@ RUN(NAME intrinsics_91 LABELS gfortran llvm) #index
 RUN(NAME intrinsics_92 LABELS gfortran llvm) #anint
 RUN(NAME intrinsics_93 LABELS gfortran llvm) #digits
 RUN(NAME intrinsics_94 LABELS gfortran llvm NOFAST) #hypot
+RUN(NAME intrinsics_95 LABELS gfortran llvm)
+RUN(NAME intrinsics_96 LABELS gfortran llvm)
+RUN(NAME intrinsics_97 LABELS gfortran llvm)#tiny
+RUN(NAME intrinsics_98 LABELS gfortran llvm)#shape
+RUN(NAME intrinsics_99 LABELS gfortran llvm)
 
 
 RUN(NAME parameter_01 LABELS gfortran)
@@ -1253,11 +1258,7 @@ RUN(NAME transfer_01 LABELS gfortran llvm)
 RUN(NAME transfer_02 LABELS gfortran)
 
 RUN(NAME present_01 LABELS gfortran llvm)
-RUN(NAME intrinsics_90 LABELS gfortran llvm)
-RUN(NAME intrinsics_91 LABELS gfortran llvm)
-RUN(NAME intrinsics_92 LABELS gfortran llvm)
-RUN(NAME intrinsics_93 LABELS gfortran llvm)
-RUN(NAME intrinsics_94 LABELS gfortran llvm)
 RUN(NAME types_20 LABELS gfortran llvm)
 RUN(NAME character_03 LABELS gfortran llvm)
 RUN(NAME arrayprint_01 LABELS gfortran llvm)
+RUN(NAME print_arr_05 LABELS gfortran llvm)
