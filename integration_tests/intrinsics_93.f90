@@ -1,5 +1,5 @@
 program intrinsics_93
-	integer :: i 
+    integer :: i 
     integer(8) :: j
     real :: x 
     real(8) :: y

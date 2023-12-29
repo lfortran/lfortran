@@ -3602,3 +3602,11 @@ asr = true
 [[test]]
 filename = "char1.f90"
 fortran = true
+
+[[test]]
+filename = "errors/loop_test.f90"
+asr = true
+
+[[test]]
+filename = "errors/parameter_01.f90"
+asr = true
