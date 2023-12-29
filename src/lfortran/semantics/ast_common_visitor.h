@@ -4376,10 +4376,12 @@ public:
          ASR::array_physical_typeType array_physical_type = ASRUtils::extract_physical_type(
                                                                 ASRUtils::expr_type(array));
          if( array_physical_type == ASR::array_physical_typeType::FixedSizeArray ) {
-            empty_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(array),
+            empty_type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(ASRUtils::expr_type(array))),
                             &dims, array_physical_type, true);
          } else {
-            empty_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(array), &dims);
+            empty_type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(ASRUtils::expr_type(array))), &dims);
          }
          newshape = ASRUtils::cast_to_descriptor(al, newshape);
          return ASR::make_ArrayReshape_t(al, x.base.base.loc, array, newshape, empty_type, nullptr);
@@ -5846,7 +5848,7 @@ public:
                     }
                     report_check_restriction(type_subs, symbol_subs, f, f_arg0, loc, diag);
                 } else {
-                    ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym); 
+                    ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
                     if (ASRUtils::is_type_parameter(*param_type)) {
                         // Handling type parameters passed as instantiate's arguments
                         ASR::symbol_t *arg_sym0 = current_scope->resolve_symbol(arg);
