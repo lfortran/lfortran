@@ -560,7 +560,9 @@ RUN(NAME intrinsics_88 LABELS gfortran llvm) #min for strings
 RUN(NAME intrinsics_89 LABELS gfortran llvm) #sin
 RUN(NAME intrinsics_90 LABELS gfortran llvm) #min
 RUN(NAME intrinsics_91 LABELS gfortran llvm) #index
+RUN(NAME intrinsics_92 LABELS gfortran llvm) #anint
 RUN(NAME intrinsics_93 LABELS gfortran llvm) #digits
+
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
