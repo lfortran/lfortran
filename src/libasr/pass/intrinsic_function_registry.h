@@ -27,6 +27,7 @@ the code size.
 */
 
 enum class IntrinsicScalarFunctions : int64_t {
+    Kind, // if kind is reordered, update `extract_kind` in `asr_utils.h`
     Sin,
     Cos,
     Tan,
@@ -49,7 +50,6 @@ enum class IntrinsicScalarFunctions : int64_t {
     FlipSign,
     Mod,
     Trailz,
-    Kind,
     Digits,
     Hypot,
     MinExponent,
@@ -106,6 +106,7 @@ enum class IntrinsicScalarFunctions : int64_t {
 
 inline std::string get_intrinsic_name(int x) {
     switch (x) {
+        INTRINSIC_NAME_CASE(Kind)
         INTRINSIC_NAME_CASE(Sin)
         INTRINSIC_NAME_CASE(Cos)
         INTRINSIC_NAME_CASE(Tan)
@@ -129,7 +130,6 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(FloorDiv)
         INTRINSIC_NAME_CASE(Mod)
         INTRINSIC_NAME_CASE(Trailz)
-        INTRINSIC_NAME_CASE(Kind)
         INTRINSIC_NAME_CASE(Digits)
         INTRINSIC_NAME_CASE(Hypot)
         INTRINSIC_NAME_CASE(MinExponent)
