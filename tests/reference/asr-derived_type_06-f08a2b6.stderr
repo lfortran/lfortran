@@ -1,0 +1,5 @@
+semantic error: Derived type `foo` is used before it is defined!
+ --> tests/errors/derived_type_06.f90:3:5
+  |
+3 |     type(foo) :: c
+  |     ^^^^^^^^^^^^^^ 
