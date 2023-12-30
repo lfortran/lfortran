@@ -4318,7 +4318,7 @@ class VerifyAbort {};
 static inline void require_impl(bool cond, const std::string &error_msg,
     const Location &loc, diag::Diagnostics &diagnostics) {
     if (!cond) {
-        diagnostics.message_label("ASR verify: " + error_msg,
+        diagnostics.message_label(error_msg,
             {loc}, "failed here",
             diag::Level::Error, diag::Stage::ASRVerify);
         throw VerifyAbort();
