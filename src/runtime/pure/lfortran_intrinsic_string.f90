@@ -33,7 +33,7 @@ end function
 integer elemental function index(string_, substring_, back_) result(idx)
     character(len=*), intent(in) :: string_
     character(len=*), intent(in) :: substring_
-    logical, optional, intent(in) :: back
+    logical, optional, intent(in) :: back_
     integer :: i, j, k, pos, len_str, len_sub
     logical :: found,back
     found = .true.
