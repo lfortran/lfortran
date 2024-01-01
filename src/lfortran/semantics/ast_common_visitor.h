@@ -3419,7 +3419,7 @@ public:
         int idx, ASR::symbol_t *v, Vec<ASR::call_arg_t>& args,
         ASR::GenericProcedure_t *g, ASR::ExternalSymbol_t *p) {
         ASR::symbol_t *final_sym;
-        final_sym = g->m_procs[idx];
+        final_sym = ASRUtils::symbol_get_past_external(g->m_procs[idx]);
         if (!ASR::is_a<ASR::Function_t>(*final_sym)) {
             throw SemanticError("ExternalSymbol must point to a Function", loc);
         }
@@ -3448,7 +3448,8 @@ public:
                 /* a_symtab */ current_scope,
                 /* a_name */ cname,
                 final_sym,
-                p->m_module_name, nullptr, 0, ASRUtils::symbol_name(final_sym),
+                ASRUtils::symbol_name(ASRUtils::get_asr_owner(final_sym)),
+                nullptr, 0, ASRUtils::symbol_name(final_sym),
                 ASR::accessType::Private
                 );
             final_sym = ASR::down_cast<ASR::symbol_t>(sub);
@@ -3611,8 +3612,8 @@ public:
                     final_sym, current_scope);
                 final_sym = ASR::down_cast<ASR::ClassProcedure_t>(final_sym)->m_proc;
             }
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*final_sym))
-            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(final_sym);
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(final_sym)))
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(final_sym));
             if( ASRUtils::get_FunctionType(func)->m_elemental &&
                 func->n_args == 1 &&
                 ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
@@ -3626,6 +3627,7 @@ public:
                     ADD_ASR_DEPENDENCIES(current_scope, cp_s, current_function_dependencies);
                 }
                 ASRUtils::insert_module_dependency(cp_s, al, current_module_dependencies);
+                ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
                 ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
                 return ASRUtils::make_FunctionCall_t_util(al, loc,
                     cp_s, v, args.p, args.size(), type,
@@ -3635,6 +3637,7 @@ public:
                     ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies);
                 }
                 ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
+                ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
                 ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
                 return ASRUtils::make_FunctionCall_t_util(al, loc,
                     final_sym, v, args.p, args.size(), type,
