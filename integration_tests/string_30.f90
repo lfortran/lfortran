@@ -4,6 +4,8 @@ module stdlib_string_type
 
     public :: string_type
 
+    public :: operator(//)
+
     type :: string_type
         private
         character(len=:), allocatable :: raw
@@ -48,6 +50,8 @@ module stdlib_ansi
     public :: ansi_code
 
     public :: to_string, operator(//)
+
+    public :: concat_left_str, concat_right_str
 
     type :: ansi_code
         private
