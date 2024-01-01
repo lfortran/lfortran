@@ -1185,7 +1185,7 @@ public:
             for (size_t i=0; i < x.n_temp_args; i++) {
                 current_procedure_args.push_back(to_lower(x.m_temp_args[i]));
                 temp_args.push_back(al, s2c(al, to_lower(x.m_temp_args[i])));
-            } 
+            }
             for (auto &proc: overloaded_op_procs) {
                 ext_overloaded_op_procs[proc.first] = proc.second;
             }
@@ -2247,7 +2247,7 @@ public:
                     ASR::symbol_t* m_proc = current_scope->resolve_symbol(
                         gp_proc_name);
                     if( m_proc == nullptr ) {
-                        std::string local_sym_ = "@" + gp_proc_name + "@";
+                        std::string local_sym_ = gp_proc_name + "@" + local_sym;
                         m_proc = current_scope->resolve_symbol(local_sym_);
                         if( m_proc == nullptr ) {
                             ASR::Module_t* m_ = ASRUtils::get_sym_module(gp->m_procs[i]);
@@ -2267,7 +2267,7 @@ public:
                     ASR::symbol_t* m_proc = current_scope->resolve_symbol(
                         gp_ext_proc_name);
                     if( m_proc == nullptr ) {
-                        std::string local_sym_ = "@" + gp_ext_proc_name + "@";
+                        std::string local_sym_ = gp_ext_proc_name + "@" + local_sym;
                         m_proc = current_scope->resolve_symbol(local_sym_);
                         if( m_proc == nullptr ) {
                             ASR::Module_t* m_ = ASRUtils::get_sym_module(gp_ext->m_procs[i]);
@@ -2329,7 +2329,8 @@ public:
                     ASRUtils::symbol_name(gp_ext->m_procs[i]));
                 if( m_proc == nullptr ) {
                     are_all_present = false;
-                    break;
+                    std::string proc_name = ASRUtils::symbol_name(gp_ext->m_procs[i]);
+                    to_be_imported_later.push(std::make_pair(proc_name, proc_name + "@" + local_sym));
                 }
                 gp_procs.push_back(al, m_proc);
             }
@@ -2487,6 +2488,15 @@ public:
                 nullptr, 0, ext_sym->m_original_name,
                 dflt_access);
             current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(temp));
+            if( ASR::is_a<ASR::GenericProcedure_t>(*ext_sym->m_external) ) {
+                process_generic_proc_custom_op<ASR::GenericProcedure_t>(local_sym,
+                    ext_sym->m_external, to_be_imported_later, loc, m,
+                    &ASR::make_GenericProcedure_t, nullptr);
+            } else if( ASR::is_a<ASR::CustomOperator_t>(*ext_sym->m_external) ) {
+                process_generic_proc_custom_op<ASR::CustomOperator_t>(local_sym,
+                    ext_sym->m_external, to_be_imported_later, loc, m,
+                    &ASR::make_CustomOperator_t, nullptr);
+            }
         } else {
             throw LCompilersException("Only Subroutines, Functions, Variables and Derived supported in 'use', found: " +
                 std::to_string(t->type) + ", name is: " + std::string(ASRUtils::symbol_name(t)));
