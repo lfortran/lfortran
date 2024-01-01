@@ -974,7 +974,7 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
         for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {
-            ASR::symbol_t* proc = gen_proc->m_procs[i];
+            ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(gen_proc->m_procs[i]);
             switch( proc->type ) {
                 case ASR::symbolType::Function: {
                     process_overloaded_assignment_function(proc, target, value, target_type,
@@ -993,7 +993,7 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                     break;
                 }
                 default: {
-                    err("Only functions and class procedures can be used for generic assignment statement", loc);
+                    err("Only functions and class procedures can be used for generic assignment statement, found " + std::to_string(proc->type), loc);
                 }
             }
         }
@@ -1035,7 +1035,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     ASR::down_cast<ASR::ClassProcedure_t>(
                     gen_proc->m_procs[i])->m_proc);
             } else {
-                proc = gen_proc->m_procs[i];
+                proc = ASRUtils::symbol_get_past_external(gen_proc->m_procs[i]);
             }
             switch(proc->type) {
                 case ASR::symbolType::Function: {
