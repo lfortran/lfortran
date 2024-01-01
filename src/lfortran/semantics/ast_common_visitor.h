@@ -6207,8 +6207,9 @@ public:
                                     value);
         } else {
             ASR::symbol_t* sym = current_scope->resolve_symbol(intrinsic_op_name);
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::CustomOperator_t>(*sym));
-            ASR::CustomOperator_t* custom_op = ASR::down_cast<ASR::CustomOperator_t>(sym);
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::CustomOperator_t>(*ASRUtils::symbol_get_past_external(sym)));
+            ASR::CustomOperator_t* custom_op = ASR::down_cast<ASR::CustomOperator_t>(
+                ASRUtils::symbol_get_past_external(sym));
             Vec<ASR::call_arg_t> args; args.reserve(al, 2);
             ASR::call_arg_t arg1; arg1.loc = x.base.base.loc; arg1.m_value = left;
             args.push_back(al, arg1);
@@ -6221,6 +6222,11 @@ public:
             ASR::ttype_t* return_type = ASRUtils::get_FunctionType(func)->m_return_var_type;
             return_type = handle_return_type(return_type, x.base.base.loc, args, func);
             ASR::symbol_t* v = custom_op->m_procs[i];
+            v = current_scope->resolve_symbol(ASRUtils::symbol_name(v));
+            if( v == nullptr ) {
+                throw SemanticError(std::string(ASRUtils::symbol_name(v)) +
+                    " not found in current scope", v->base.loc);
+            }
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
             ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
             tmp = ASRUtils::make_FunctionCall_t_util(al, x.base.base.loc, v,
