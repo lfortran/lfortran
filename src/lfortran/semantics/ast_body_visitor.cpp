@@ -2453,6 +2453,7 @@ public:
                 }
             }
         }
+
         // If this is a type bound procedure (in a class) it won't be in the
         // main symbol table. Need to check n_member.
         if (x.n_member >= 1) {
@@ -2690,6 +2691,10 @@ public:
                 } else if (ASR::is_a<ASR::ClassProcedure_t>(*final_sym)) {
                     ASR::ClassProcedure_t* class_proc = ASR::down_cast<ASR::ClassProcedure_t>(final_sym);
                     nopass = class_proc->m_is_nopass;
+                    final_sym = original_sym;
+                    original_sym = nullptr;
+                } else if (ASR::is_a<ASR::Variable_t>(*final_sym)) {
+                    nopass = true;
                     final_sym = original_sym;
                     original_sym = nullptr;
                 } else {
