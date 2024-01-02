@@ -196,18 +196,16 @@ macro(COMPILE)
     endif()
 
     foreach(compiler ${compilers})
-        if (compiler STREQUAL "lfortran")
+        if (compiler STREQUAL "lfortran" AND ${LFORTRAN_BACKEND} STREQUAL "llvm")
             add_custom_command(
                 OUTPUT ${name}_lfortran.mod
                 COMMAND lfortran -c ${CMAKE_CURRENT_SOURCE_DIR}/${name}.f90)
-            add_library(${name}_gfortran OBJECT ${name}_lfortran.mod)
-        elseif(compiler STREQUAL "gfortran")
+            add_library(${name}_lfortran OBJECT ${name}_lfortran.mod)
+        elseif(compiler STREQUAL "gfortran" AND ${LFORTRAN_BACKEND} STREQUAL "no")
             add_custom_command(
                 OUTPUT ${name}_gfortran.mod
                 COMMAND gfortran -c ${CMAKE_CURRENT_SOURCE_DIR}/${name}.f90)
-            add_library(${name}_lfortran OBJECT ${name}_gfortran.mod)
-        else()
-            message(FATAL_ERROR "Unsupported compiler: ${compiler}")
+            add_library(${name}_gfortran OBJECT ${name}_gfortran.mod)
         endif()
     endforeach()
 endmacro(COMPILE)
