@@ -1,23 +1,23 @@
-module stdlib_kinds
+module stdlib_kinds_modules_55
     use iso_fortran_env, only: int64
     implicit none
     private
     public :: int64
 
-end module stdlib_kinds
+end module stdlib_kinds_modules_55
 
-module stdlib_hashmaps
-    use stdlib_kinds, only: int64
+module stdlib_hashmaps_modules_55
+    use stdlib_kinds_modules_55, only: int64
 
     implicit none
     private
 
     integer, parameter, public :: int_calls = int64
 
-end module stdlib_hashmaps
+end module stdlib_hashmaps_modules_55
 
 program modules_55
-use stdlib_hashmaps
+use stdlib_hashmaps_modules_55
 implicit none
 
 print *, int_calls
