@@ -15,3 +15,12 @@ module stdlib_hashmaps
     integer, parameter, public :: int_calls = int64
 
 end module stdlib_hashmaps
+
+program modules_55
+use stdlib_hashmaps
+implicit none
+
+print *, int_calls
+if( int_calls /= 8 ) error stop
+
+end program
