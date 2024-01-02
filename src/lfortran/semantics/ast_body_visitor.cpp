@@ -813,7 +813,7 @@ public:
         ASR::expr_t* value = ASRUtils::EXPR(tmp);
         ASR::ttype_t* value_type = ASRUtils::expr_type(value);
         bool is_target_pointer = ASRUtils::is_pointer(target_type);
-        if ( !is_target_pointer ) {
+        if ( !is_target_pointer && !ASR::is_a<ASR::FunctionType_t>(*target_type) ) {
             throw SemanticError("Only a pointer variable can be associated with another variable.", x.base.base.loc);
         }
         if( ASRUtils::types_equal(target_type, value_type) ) {
