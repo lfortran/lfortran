@@ -4497,6 +4497,9 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     bool implicit_argument_casting, bool nopass) {
     bool is_method = (a_dt != nullptr) && (!nopass);
     ASR::symbol_t* a_name_ = ASRUtils::symbol_get_past_external(a_name);
+    if( ASR::is_a<ASR::Variable_t>(*a_name_) ) {
+        is_method = false;
+    }
     ASR::FunctionType_t* func_type = get_FunctionType(a_name);
 
     for( size_t i = 0; i < n_args; i++ ) {
