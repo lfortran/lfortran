@@ -110,6 +110,7 @@ public:
             }
             // Visit the statement
             LCOMPILERS_ASSERT(current_body != nullptr)
+            tmp = nullptr;
             this->visit_stmt(*m_body[i]);
             if (tmp != nullptr) {
                 ASR::stmt_t* tmp_stmt = ASRUtils::STMT(tmp);
@@ -816,6 +817,7 @@ public:
         if ( !is_target_pointer && !ASR::is_a<ASR::FunctionType_t>(*target_type) ) {
             throw SemanticError("Only a pointer variable can be associated with another variable.", x.base.base.loc);
         }
+
         if( ASRUtils::types_equal(target_type, value_type) ) {
             tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
         }
