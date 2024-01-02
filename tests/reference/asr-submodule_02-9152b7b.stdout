@@ -249,7 +249,7 @@
                                 )
                         })
                     points
-                    [stdlib_kinds]
+                    [stdlib_kinds_submodule_02]
                     .false.
                     .false.
                 ),
@@ -654,7 +654,7 @@
                     .false.
                     .false.
                 ),
-            stdlib_kinds:
+            stdlib_kinds_submodule_02:
                 (Module
                     (SymbolTable
                         2
@@ -680,7 +680,7 @@
                                     Public
                                 )
                         })
-                    stdlib_kinds
+                    stdlib_kinds_submodule_02
                     [iso_fortran_env]
                     .false.
                     .false.

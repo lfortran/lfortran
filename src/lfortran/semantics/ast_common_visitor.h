@@ -2479,7 +2479,9 @@ public:
                         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &init_expr, init_type, type);
                         LCOMPILERS_ASSERT(init_expr != nullptr);
                         value = ASRUtils::expr_value(init_expr);
-                        if ( init_expr ) {
+                        if ( init_expr && !ASR::is_a<ASR::FunctionType_t>(*
+                                ASRUtils::type_get_past_pointer(
+                                    ASRUtils::expr_type(init_expr))) ) {
                             if( ASRUtils::is_value_constant(value) ) {
                             } else if( ASRUtils::is_value_constant(init_expr) ) {
                                 if (ASR::is_a<ASR::Cast_t>(*init_expr)) {
