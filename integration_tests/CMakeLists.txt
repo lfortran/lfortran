@@ -122,6 +122,9 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC ${extra_args})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
+        elseif (LFORTRAN_BACKEND STREQUAL "gfortranModfileCompilation")
+            execute_process(COMMAND gfortran ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90 -c)
+            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         else ()
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC ${gfortran_args})
@@ -175,6 +178,37 @@ macro(RUN)
         RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS)
     endif()
 endmacro(RUN)
+
+# only compiles till object file
+# to make sure that the ASR generation is successful
+macro(COMPILE)
+    set(oneValueArgs NAME)
+    set(multiValueArgs COMPILERS)
+    cmake_parse_arguments(COMPILE "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+    set(name ${COMPILE_NAME})
+    set(compilers ${COMPILE_COMPILERS})
+    if (NOT name)
+        message(FATAL_ERROR "Must specify the NAME argument")
+    endif()
+
+    if (NOT compilers)
+        message(FATAL_ERROR "Must specify the COMPILER argument")
+    endif()
+
+    foreach(compiler ${compilers})
+        if (compiler STREQUAL "lfortran" AND ${LFORTRAN_BACKEND} STREQUAL "llvm")
+            add_custom_command(
+                OUTPUT ${name}_lfortran.mod
+                COMMAND lfortran -c ${CMAKE_CURRENT_SOURCE_DIR}/${name}.f90)
+            add_library(${name}_lfortran OBJECT ${name}_lfortran.mod)
+        elseif(compiler STREQUAL "gfortran" AND ${LFORTRAN_BACKEND} STREQUAL "no")
+            add_custom_command(
+                OUTPUT ${name}_gfortran.mod
+                COMMAND gfortran -c ${CMAKE_CURRENT_SOURCE_DIR}/${name}.f90)
+            add_library(${name}_gfortran OBJECT ${name}_gfortran.mod)
+        endif()
+    endforeach()
+endmacro(COMPILE)
 
 # The supported test labels are:
 #
@@ -883,6 +917,7 @@ RUN(NAME string_26 LABELS gfortran llvm fortran)
 RUN(NAME string_27 LABELS gfortran llvm)
 RUN(NAME string_28 LABELS gfortran llvm)
 RUN(NAME string_29 LABELS gfortran llvm)
+COMPILE(NAME string_30 COMPILERS gfortran lfortran)
 
 RUN(NAME nested_01 LABELS gfortran llvm)
 RUN(NAME nested_02 LABELS gfortran llvm)

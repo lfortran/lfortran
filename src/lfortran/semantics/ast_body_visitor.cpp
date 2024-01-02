@@ -465,6 +465,7 @@ public:
         for( std::uint32_t i = 0; i < n_kwargs; i++ ) {
             AST::kw_argstar_t kwarg = m_kwargs[i];
             std::string m_arg_str(kwarg.m_arg);
+            m_arg_str = to_lower(m_arg_str);
             if( m_arg_str == std::string("unit") ) {
                 if( a_unit != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `unit` found, `unit` has already been specified via argument or keyword arguments)""",
@@ -513,7 +514,7 @@ public:
                 if (!ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_pointer(a_status_type))) {
                         throw SemanticError("`status` must be of type Character", loc);
                 }
-            } else if( to_lower(m_arg_str) == std::string("fmt")  ) {
+            } else if( m_arg_str == std::string("fmt")  ) {
                 if( a_fmt != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `fmt` found, it has already been specified via arguments or keyword arguments)""",
                                         loc);
@@ -527,10 +528,6 @@ public:
                     a_fmt = ASRUtils::EXPR(tmp);
                 }
             } else if( m_arg_str == std::string("advance") ) {
-                if( a_fmt == nullptr ) {
-                    throw SemanticError(R"""(List directed format(*) is not allowed with a ADVANCE= specifier)""",
-                                        loc);
-                }
                 if( a_end != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `advance` found, it has already been specified via arguments or keyword arguments)""",
                                         loc);
@@ -576,6 +573,10 @@ public:
                     a_end = empty;
                 }
             }
+        }
+        if( a_fmt == nullptr && a_end != nullptr ) {
+            throw SemanticError(R"""(List directed format(*) is not allowed with a ADVANCE= specifier)""",
+                                loc);
         }
         if (_type == AST::stmtType::Write) {
             a_fmt_constant = a_fmt;
@@ -1424,23 +1425,8 @@ public:
                                      select_type_default.p, select_type_default.size());
     }
 
-    void visit_Submodule(const AST::Submodule_t &x) {
-        SymbolTable *old_scope = current_scope;
-        ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
-        ASR::Module_t *v = ASR::down_cast<ASR::Module_t>(t);
-        current_scope = v->m_symtab;
-        current_module = v;
-
-        for (size_t i=0; i<x.n_contains; i++) {
-            visit_program_unit(*x.m_contains[i]);
-        }
-
-        current_scope = old_scope;
-        current_module = nullptr;
-        tmp = nullptr;
-    }
-
-    void visit_Module(const AST::Module_t &x) {
+    template <typename T>
+    void visit_SubmoduleModuleCommon(const T& x) {
         SymbolTable *old_scope = current_scope;
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
         ASR::Module_t *v = ASR::down_cast<ASR::Module_t>(t);
@@ -1474,6 +1460,14 @@ public:
         current_scope = old_scope;
         current_module = nullptr;
         tmp = nullptr;
+    }
+
+    void visit_Submodule(const AST::Submodule_t &x) {
+        visit_SubmoduleModuleCommon(x);
+    }
+
+    void visit_Module(const AST::Module_t &x) {
+        visit_SubmoduleModuleCommon(x);
     }
 
     void visit_Use(const AST::Use_t& /* x */) {
@@ -2437,7 +2431,7 @@ public:
         std::string sub_name = to_lower(x.m_name);
         if (x.n_temp_args > 0) {
             ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
-            sub_name = handle_templated(x.m_name, ASR::is_a<ASR::Template_t>(*ASRUtils::get_asr_owner(owner_sym)), 
+            sub_name = handle_templated(x.m_name, ASR::is_a<ASR::Template_t>(*ASRUtils::get_asr_owner(owner_sym)),
                 x.m_temp_args, x.n_temp_args, x.base.base.loc);
         }
         SymbolTable* scope = current_scope;
@@ -2608,10 +2602,11 @@ public:
             }
             case (ASR::symbolType::GenericProcedure) : {
                 ASR::GenericProcedure_t *p = ASR::down_cast<ASR::GenericProcedure_t>(original_sym);
-                std::string s_name = "1_" + std::string(p->m_name);
                 ASR::symbol_t* original_sym_owner = ASRUtils::get_asr_owner(original_sym);
-                std::string original_sym_owner_name = ASRUtils::symbol_name(original_sym_owner);
-                if( !ASR::is_a<ASR::Module_t>(*original_sym_owner) ) {
+                if( !ASR::is_a<ASR::Module_t>(*original_sym_owner) &&
+                    !ASR::is_a<ASR::Program_t>(*original_sym_owner) ) {
+                    std::string s_name = "1_" + std::string(p->m_name);
+                    std::string original_sym_owner_name = ASRUtils::symbol_name(original_sym_owner);
                     if( current_scope->resolve_symbol(original_sym_owner_name) == nullptr ) {
                         std::string original_sym_owner_name_ = "1_" + original_sym_owner_name;
                         if( current_scope->resolve_symbol(original_sym_owner_name) == nullptr ) {
@@ -2625,11 +2620,11 @@ public:
                             original_sym_owner_name = original_sym_owner_name_;
                         }
                     }
+                    original_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
+                        p->base.base.loc, current_scope, s2c(al, s_name), original_sym,
+                        s2c(al, original_sym_owner_name), nullptr, 0, p->m_name, ASR::accessType::Private));
+                    current_scope->add_or_overwrite_symbol(s_name, original_sym);
                 }
-                original_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
-                    p->base.base.loc, current_scope, s2c(al, s_name), original_sym,
-                    s2c(al, original_sym_owner_name), nullptr, 0, p->m_name, ASR::accessType::Private));
-                current_scope->add_or_overwrite_symbol(s_name, original_sym);
                 int idx;
                 if( x.n_member >= 1 ) {
                     idx = ASRUtils::select_generic_procedure(args_with_mdt, *p, x.base.base.loc,
