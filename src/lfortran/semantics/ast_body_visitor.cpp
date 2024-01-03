@@ -110,6 +110,7 @@ public:
             }
             // Visit the statement
             LCOMPILERS_ASSERT(current_body != nullptr)
+            tmp = nullptr;
             this->visit_stmt(*m_body[i]);
             if (tmp != nullptr) {
                 ASR::stmt_t* tmp_stmt = ASRUtils::STMT(tmp);
@@ -813,9 +814,10 @@ public:
         ASR::expr_t* value = ASRUtils::EXPR(tmp);
         ASR::ttype_t* value_type = ASRUtils::expr_type(value);
         bool is_target_pointer = ASRUtils::is_pointer(target_type);
-        if ( !is_target_pointer ) {
+        if ( !is_target_pointer && !ASR::is_a<ASR::FunctionType_t>(*target_type) ) {
             throw SemanticError("Only a pointer variable can be associated with another variable.", x.base.base.loc);
         }
+
         if( ASRUtils::types_equal(target_type, value_type) ) {
             tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
         }
@@ -2451,6 +2453,7 @@ public:
                 }
             }
         }
+
         // If this is a type bound procedure (in a class) it won't be in the
         // main symbol table. Need to check n_member.
         if (x.n_member >= 1) {
@@ -2688,6 +2691,10 @@ public:
                 } else if (ASR::is_a<ASR::ClassProcedure_t>(*final_sym)) {
                     ASR::ClassProcedure_t* class_proc = ASR::down_cast<ASR::ClassProcedure_t>(final_sym);
                     nopass = class_proc->m_is_nopass;
+                    final_sym = original_sym;
+                    original_sym = nullptr;
+                } else if (ASR::is_a<ASR::Variable_t>(*final_sym)) {
+                    nopass = true;
                     final_sym = original_sym;
                     original_sym = nullptr;
                 } else {

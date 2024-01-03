@@ -545,6 +545,21 @@ static inline std::string type_to_str(const ASR::ttype_t *t)
         case ASR::ttypeType::SymbolicExpression: {
             return "symbolic expression";
         }
+        case ASR::ttypeType::FunctionType: {
+            ASR::FunctionType_t* ftp = ASR::down_cast<ASR::FunctionType_t>(t);
+            std::string result = "(";
+            for( size_t i = 0; i < ftp->n_arg_types; i++ ) {
+                result += type_to_str(ftp->m_arg_types[i]) + ", ";
+            }
+            result += "return_type: ";
+            if( ftp->m_return_var_type ) {
+                result += type_to_str(ftp->m_return_var_type);
+            } else {
+                result += "void";
+            }
+            result += ")";
+            return result;
+        }
         default : throw LCompilersException("Not implemented " + std::to_string(t->type) + ".");
     }
 }
@@ -2806,6 +2821,9 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
     // TODO: If anyone of the input or argument is derived type then
     // add support for checking member wise types and do not compare
     // directly. From stdlib_string len(pattern) error
+    if( a == nullptr && b == nullptr ) {
+        return true;
+    }
     a = ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(a));
     b = ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(b));
     if( !check_for_dimensions ) {
@@ -2915,6 +2933,24 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
                                                 ASRUtils::symbol_get_past_external(
                                                     b2->m_union_type));
                 return a2_type == b2_type;
+            }
+            case ASR::ttypeType::FunctionType: {
+                ASR::FunctionType_t* a2 = ASR::down_cast<ASR::FunctionType_t>(a);
+                ASR::FunctionType_t* b2 = ASR::down_cast<ASR::FunctionType_t>(b);
+                if( a2->n_arg_types != b2->n_arg_types ||
+                    (a2->m_return_var_type != nullptr && b2->m_return_var_type == nullptr) ||
+                    (a2->m_return_var_type == nullptr && b2->m_return_var_type != nullptr) ) {
+                    return false;
+                }
+                for( size_t i = 0; i < a2->n_arg_types; i++ ) {
+                    if( !types_equal(a2->m_arg_types[i], b2->m_arg_types[i], true) ) {
+                        return false;
+                    }
+                }
+                if( !types_equal(a2->m_return_var_type, b2->m_return_var_type, true) ) {
+                    return false;
+                }
+                return true;
             }
             default : return false;
         }
@@ -4497,6 +4533,9 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     bool implicit_argument_casting, bool nopass) {
     bool is_method = (a_dt != nullptr) && (!nopass);
     ASR::symbol_t* a_name_ = ASRUtils::symbol_get_past_external(a_name);
+    if( ASR::is_a<ASR::Variable_t>(*a_name_) ) {
+        is_method = false;
+    }
     ASR::FunctionType_t* func_type = get_FunctionType(a_name);
 
     for( size_t i = 0; i < n_args; i++ ) {

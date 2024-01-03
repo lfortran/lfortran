@@ -1350,7 +1350,9 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
 
 ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
         ASR::symbol_t* original_sym, SymbolTable *current_scope) {
-    if( original_sym && ASR::is_a<ASR::ClassProcedure_t>(*original_sym) ) {
+    if( original_sym && (ASR::is_a<ASR::ClassProcedure_t>(*original_sym) ||
+        (ASR::is_a<ASR::Variable_t>(*original_sym) &&
+         ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(original_sym)))) ) {
         std::string class_proc_name = ASRUtils::symbol_name(original_sym);
         if( original_sym != current_scope->resolve_symbol(class_proc_name) ) {
             std::string imported_proc_name = "1_" + class_proc_name;
