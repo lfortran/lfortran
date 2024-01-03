@@ -319,7 +319,7 @@ jobs:
             ( cd src && ./build0.sh )
             export CXXFLAGS="-Werror"
             cmake -S src -B builddir -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
+              -DCMAKE_BUILD_TYPE=RelWithDebInfo \
               -DWITH_LLVM=yes \
               -DWITH_KOKKOS=yes \
               -DLFORTRAN_BUILD_ALL=yes \
