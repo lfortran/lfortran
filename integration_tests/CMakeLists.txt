@@ -603,6 +603,7 @@ RUN(NAME intrinsics_96 LABELS gfortran llvm)
 RUN(NAME intrinsics_97 LABELS gfortran llvm)#tiny
 RUN(NAME intrinsics_98 LABELS gfortran llvm)#shape
 RUN(NAME intrinsics_99 LABELS gfortran llvm)
+RUN(NAME intrinsics_100 LABELS gfortran llvm) # mod
 
 
 RUN(NAME parameter_01 LABELS gfortran)

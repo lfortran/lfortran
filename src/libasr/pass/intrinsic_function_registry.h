@@ -263,6 +263,8 @@ class ASRBuilder {
         false, nullptr, 0, false, false, false));
 
     // Types -------------------------------------------------------------------
+    #define int8         TYPE(ASR::make_Integer_t(al, loc, 1))
+    #define int16        TYPE(ASR::make_Integer_t(al, loc, 2))
     #define int32        TYPE(ASR::make_Integer_t(al, loc, 4))
     #define int64        TYPE(ASR::make_Integer_t(al, loc, 8))
     #define real32       TYPE(ASR::make_Real_t(al, loc, 4))
@@ -321,6 +323,10 @@ class ASRBuilder {
     #define StringLen(s) EXPR(ASR::make_StringLen_t(al, loc, s, int32, nullptr))
 
     // Cast --------------------------------------------------------------------
+    #define r2i8(x) EXPR(ASR::make_Cast_t(al, loc, x,                           \
+        ASR::cast_kindType::RealToInteger, int8, nullptr))
+    #define r2i16(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
+        ASR::cast_kindType::RealToInteger, int16, nullptr))
     #define r2i32(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
         ASR::cast_kindType::RealToInteger, int32, nullptr))
     #define r2i64(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
@@ -347,43 +353,55 @@ class ASRBuilder {
     // Binop -------------------------------------------------------------------
     #define iAdd(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
             ASR::binopType::Add, right, int32, nullptr))
+    #define i64Add(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,    \
+            ASR::binopType::Add, right, int64, nullptr))
+    #define rAdd(left, right, t) EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
+            ASR::binopType::Add, right, t, nullptr))
+    #define r32Add(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,       \
+            ASR::binopType::Add, right, real32, nullptr))
+    #define r64Add(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,       \
+            ASR::binopType::Add, right, real64, nullptr))
+
+    #define iSub(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
+            ASR::binopType::Sub, right, int32, nullptr))
+    #define i8Sub(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,     \
+        ASR::binopType::Sub, right, int8, nullptr))
+    #define i16Sub(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,    \
+        ASR::binopType::Sub, right, int16, nullptr))
+    #define i64Sub(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,    \
+        ASR::binopType::Sub, right, int64, nullptr))
+    #define rSub(left, right, t) EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
+            ASR::binopType::Sub, right, t, nullptr))
+    #define r32Sub(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,       \
+            ASR::binopType::Sub, right, real32, nullptr))
+    #define r64Sub(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,       \
+            ASR::binopType::Sub, right, real64, nullptr))
+
+    #define iDiv(left, right) r2i32(EXPR(ASR::make_RealBinOp_t(al, loc,         \
+            i2r32(left), ASR::binopType::Div, i2r32(right), real32, nullptr)))
+    #define i8Div(left, right) r2i8(EXPR(ASR::make_RealBinOp_t(al, loc,         \
+            i2r32(left), ASR::binopType::Div, i2r32(right), real32, nullptr)))
+    #define i16Div(left, right) r2i16(EXPR(ASR::make_RealBinOp_t(al, loc,       \
+            i2r32(left), ASR::binopType::Div, i2r32(right), real32, nullptr)))
+    #define i64Div(left, right) r2i64(EXPR(ASR::make_RealBinOp_t(al, loc,       \
+            i2r32(left), ASR::binopType::Div, i2r32(right), real32, nullptr)))
+    #define r32Div(left, right) EXPR(ASR::make_RealBinOp_t(al, loc,             \
+            left, ASR::binopType::Div, right, real32, nullptr))
+    #define r64Div(left, right) EXPR(ASR::make_RealBinOp_t(al, loc,             \
+            left, ASR::binopType::Div, right, real64, nullptr))
 
     #define iMul(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
             ASR::binopType::Mul, right, int32, nullptr))
-    #define iSub(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
-            ASR::binopType::Sub, right, int32, nullptr))
-    #define iDiv(left, right) r2i32(EXPR(ASR::make_RealBinOp_t(al, loc, \
-                i2r32(left), ASR::binopType::Div, i2r32(right), real32, nullptr)))
-    #define i64Sub(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
-        ASR::binopType::Sub, right, int64, nullptr))
-    #define iAdd64(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
-            ASR::binopType::Add, right, int64, nullptr))
-    #define iDiv64(left, right) r2i64(EXPR(ASR::make_RealBinOp_t(al, loc, \
-                i2r32(left), ASR::binopType::Div, i2r32(right), real32, nullptr)))
-    #define r32Div(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, \
-                left, ASR::binopType::Div, right, real32, nullptr))
-    #define r64Div(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, \
-                left, ASR::binopType::Div, right, real64, nullptr))
-
-    #define rAdd(left, right, t) EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
-            ASR::binopType::Add, right, t, nullptr))
-    #define rSub(left, right, t) EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
-            ASR::binopType::Sub, right, t, nullptr))
-    #define r32Add(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
-            ASR::binopType::Add, right, real32, nullptr))
-    #define r64Add(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
-            ASR::binopType::Add, right, real64, nullptr))
-    #define r32Sub(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
-            ASR::binopType::Sub, right, real32, nullptr))
-    #define r64Sub(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
-            ASR::binopType::Sub, right, real64, nullptr))
-    #define r32Mul(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
+    #define i8Mul(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,     \
+            ASR::binopType::Mul, right, int8, nullptr))
+    #define i16Mul(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,    \
+            ASR::binopType::Mul, right, int16, nullptr))
+    #define i64Mul(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,    \
+            ASR::binopType::Mul, right, int64, nullptr))
+    #define r32Mul(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,       \
             ASR::binopType::Mul, right, real32, nullptr))
-    #define r64Mul(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
+    #define r64Mul(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,       \
             ASR::binopType::Mul, right, real64, nullptr))
-    #define rDiv(left, right) ASRUtils::make_ArrayBroadcast_t_util(al, loc, left, right); \
-        EXPR(ASR::make_RealBinOp_t(al, loc, left, \
-            ASR::binopType::Div, right, real32, nullptr)) \
 
     #define And(x, y) EXPR(ASR::make_LogicalBinOp_t(al, loc, x,                 \
             ASR::logicalbinopType::And, y, logical, nullptr))
@@ -1869,7 +1887,7 @@ namespace Anint {
         *     r = aint(x-0.5)
         * end if
         */
-       
+
         ASR::expr_t *test;
         ASR::expr_t* zero = make_ConstantWithType(make_RealConstant_t, 0.0, arg_types[0], loc);
         test = make_Compare(make_RealCompare_t, args[0], Gt, zero);
@@ -2494,8 +2512,8 @@ namespace Mod {
         */
 
         ASR::expr_t *q = nullptr, *op1 = nullptr, *op2 = nullptr;
+        int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[1]);
         if (is_real(*arg_types[1])) {
-            int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[1]);
             if (kind == 4) {
                 q = r2i32(r32Div(args[0], args[1]));
                 op1 = r32Mul(args[1], i2r32(q));
@@ -2506,9 +2524,25 @@ namespace Mod {
                 op2 = r64Sub(args[0], op1);
             }
         } else {
-            q = iDiv(args[0], args[1]);
-            op1 = iMul(args[1], q);
-            op2 = iSub(args[0], op1);
+            if (kind == 1) {
+                q = i8Div(args[0], args[1]);
+                op1 = i8Mul(args[1], q);
+                op2 = i8Sub(args[0], op1);
+            } else if (kind == 2) {
+                q = i16Div(args[0], args[1]);
+                op1 = i16Mul(args[1], q);
+                op2 = i16Sub(args[0], op1);
+            } else if (kind == 4) {
+                q = iDiv(args[0], args[1]);
+                op1 = iMul(args[1], q);
+                op2 = iSub(args[0], op1);
+            } else if (kind == 8) {
+                q = i64Div(args[0], args[1]);
+                op1 = i64Mul(args[1], q);
+                op2 = i64Sub(args[0], op1);
+            } else {
+                LCOMPILERS_ASSERT(false);
+            }
         }
         body.push_back(al, b.Assignment(result, op2));
 
@@ -2604,8 +2638,8 @@ namespace Trailz {
             while_loop_body.push_back(b.Assignment(args[0], iDiv(args[0], two)));
             while_loop_body.push_back(b.Assignment(result, iAdd(result, i(1, arg_types[0]))));
         } else {
-            while_loop_body.push_back(b.Assignment(args[0], iDiv64(args[0], two)));
-            while_loop_body.push_back(b.Assignment(result, iAdd64(result, i(1, arg_types[0]))));
+            while_loop_body.push_back(b.Assignment(args[0], i64Div(args[0], two)));
+            while_loop_body.push_back(b.Assignment(result, i64Add(result, i(1, arg_types[0]))));
         }
 
         ASR::expr_t* check_zero = iEq(args[0], i(0, arg_types[0]));
@@ -2851,7 +2885,7 @@ namespace Digits {
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
-    
+
 } // namespace Digits
 
 namespace MinExponent {
