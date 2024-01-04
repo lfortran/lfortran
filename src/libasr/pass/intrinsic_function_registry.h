@@ -1235,6 +1235,7 @@ namespace X {                                                                   
 } // namespace X
 
 create_unary_function(Trunc, trunc, trunc)
+create_unary_function(Gamma, tgamma, gamma)
 create_unary_function(LogGamma, lgamma, log_gamma)
 
 namespace Fix {
@@ -4148,6 +4149,8 @@ namespace IntrinsicScalarFunctionRegistry {
     static const std::map<int64_t,
         std::tuple<impl_function,
                    verify_function>>& intrinsic_function_by_id_db = {
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Gamma),
+            {&Gamma::instantiate_Gamma, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::LogGamma),
             {&LogGamma::instantiate_LogGamma, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Trunc),
@@ -4287,9 +4290,10 @@ namespace IntrinsicScalarFunctionRegistry {
     };
 
     static const std::map<int64_t, std::string>& intrinsic_function_id_to_name = {
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Gamma),
+            "gamma"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::LogGamma),
             "log_gamma"},
-
         {static_cast<int64_t>(IntrinsicScalarFunctions::Trunc),
             "trunc"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Fix),
@@ -4428,7 +4432,8 @@ namespace IntrinsicScalarFunctionRegistry {
     static const std::map<std::string,
         std::tuple<create_intrinsic_function,
                     eval_intrinsic_function>>& intrinsic_function_by_name_db = {
-                {"log_gamma", {&LogGamma::create_LogGamma, &LogGamma::eval_log_gamma}},
+                {"gamma", {&Gamma::create_Gamma, &Gamma::eval_Gamma}},
+                {"log_gamma", {&LogGamma::create_LogGamma, &LogGamma::eval_LogGamma}},
                 {"trunc", {&Trunc::create_Trunc, &Trunc::eval_Trunc}},
                 {"fix", {&Fix::create_Fix, &Fix::eval_Fix}},
                 {"sin", {&Sin::create_Sin, &Sin::eval_Sin}},
