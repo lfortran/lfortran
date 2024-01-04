@@ -1200,43 +1200,6 @@ static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x,
 
 } // namespace BinaryIntrinsicFunction
 
-namespace LogGamma {
-
-static inline ASR::expr_t *eval_log_gamma(Allocator &al, const Location &loc,
-        ASR::ttype_t *t, Vec<ASR::expr_t*>& args) {
-    double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
-    double val = lgamma(rv);
-    return make_ConstantWithType(make_RealConstant_t, val, t, loc);
-}
-
-static inline ASR::asr_t* create_LogGamma(Allocator& al, const Location& loc,
-    Vec<ASR::expr_t*>& args,
-    const std::function<void (const std::string &, const Location &)> err) {
-    ASR::ttype_t *type = ASRUtils::expr_type(args[0]);
-
-    if (args.n != 1) {
-            err("Intrinsic `log_gamma` accepts exactly one argument", loc);
-    } else if (!ASRUtils::is_real(*type)) {
-        err("`x` argument of `log_gamma` must be real",
-            args[0]->base.loc);
-    }
-
-    return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args,
-            eval_log_gamma, static_cast<int64_t>(IntrinsicScalarFunctions::LogGamma),
-            0, type);
-}
-
-static inline ASR::expr_t* instantiate_LogGamma (Allocator &al,
-        const Location &loc, SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
-        ASR::ttype_t *return_type, Vec<ASR::call_arg_t>& new_args,
-        int64_t overload_id) {
-    ASR::ttype_t* arg_type = arg_types[0];
-    return UnaryIntrinsicFunction::instantiate_functions(al, loc, scope,
-        "log_gamma", arg_type, return_type, new_args, overload_id);
-}
-
-} // namespace LogGamma
-
 // `X` is the name of the function in the IntrinsicScalarFunctions enum and
 // we use the same name for `create_X` and other places
 // `eval_X` is the name of the function in the `std` namespace for compile
@@ -1272,6 +1235,7 @@ namespace X {                                                                   
 } // namespace X
 
 create_unary_function(Trunc, trunc, trunc)
+create_unary_function(LogGamma, lgamma, log_gamma)
 
 namespace Fix {
     static inline ASR::expr_t *eval_Fix(Allocator &al, const Location &loc,
