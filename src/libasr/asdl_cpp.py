@@ -1461,12 +1461,6 @@ class PickleVisitorVisitor(ASDLVisitor):
     def make_visitor(self, name, fields, cons):
         self.emit("void visit_%s(const %s_t &x) {" % (name, name), 1)
         self.emit(      's.append("(");', 2)
-        subs = {
-            "Assignment": "=",
-            "Associate": "=>",
-        }
-        if name in subs:
-            name = subs[name]
 
         # For ASR
         symbol = [
