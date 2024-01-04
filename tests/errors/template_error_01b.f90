@@ -18,7 +18,7 @@ module template_travel_01b_m
 
     template travel_tmpl(D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S)
         require :: operation(D, D, D, plus_D)
-        require :: operation(T, T, T, plus_T)
+        !require :: operation(T, T, T, plus_T)
         require :: operation(D, T, S, D_divided_by_T)
         require :: operation(D, S, T, D_divided_by_S)
         private
