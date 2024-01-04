@@ -424,6 +424,9 @@ namespace LCompilers {
                 case 8:
                     type_ptr =  llvm::Type::getDoublePtrTy(context);
                     break;
+                case 16:
+                    type_ptr = llvm::Type::getFP128PtrTy(context);
+                    break;
                 default:
                     throw CodeGenError("Only 32 and 64 bits real kinds are supported.");
             }
@@ -435,6 +438,9 @@ namespace LCompilers {
                     break;
                 case 8:
                     type_ptr = llvm::Type::getDoubleTy(context);
+                    break;
+                case 16:
+                    type_ptr = llvm::Type::getFP128Ty(context);
                     break;
                 default:
                     throw CodeGenError("Only 32 and 64 bits real kinds are supported.");
