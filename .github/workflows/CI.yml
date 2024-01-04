@@ -915,6 +915,7 @@ jobs:
         run: |
           ./build0.sh
           lfortran_version=$(<version)
+          pandoc --standalone --to man doc/man/lfortran.md -o doc/man/lfortran.1
           ci/create_source_tarball.sh $lfortran_version
           ci/upload_tarball.sh
         env:
