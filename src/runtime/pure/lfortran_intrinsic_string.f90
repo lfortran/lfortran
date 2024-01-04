@@ -2,10 +2,6 @@ module lfortran_intrinsic_string
     use, intrinsic :: iso_fortran_env, only: i64 => int64
 implicit none
 
-interface repeat
-    module procedure repeati32, repeati64
-end interface
-
 contains
 
 integer elemental function len_trim(string) result(r)
@@ -64,38 +60,6 @@ integer elemental function index(string_, substring_, back) result(idx)
         end if
         i = i + 1
     end do
-end function
-
-integer elemental function len_repeati32(n) result(r)
-integer, intent(in) :: n
-r = n
-end function
-
-function repeati32(s, n) result(r)
-character(len=1), intent(in) :: s
-integer, intent(in) :: n
-character(len=len_repeati32(n)) :: r
-integer :: i, i1
-i1 = 1
-do i = 1, n
-    r(i:i) = s(i1:i1)
-end do
-end function
-
-integer elemental function len_repeati64(n) result(r)
-integer(i64), intent(in) :: n
-r = n
-end function
-
-function repeati64(s, n) result(r)
-character(len=1), intent(in) :: s
-integer(i64), intent(in) :: n
-character(len=len_repeati64(n)) :: r
-integer :: i, i1
-i1 = 1
-do i = 1, n
-    r(i:i) = s(i1:i1)
-end do
 end function
 
 function new_line(c) result(r)

@@ -51,6 +51,7 @@ enum class IntrinsicScalarFunctions : int64_t {
     Mod,
     Trailz,
     Digits,
+    Repeat,
     Hypot,
     MinExponent,
     MaxExponent,
@@ -131,6 +132,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Mod)
         INTRINSIC_NAME_CASE(Trailz)
         INTRINSIC_NAME_CASE(Digits)
+        INTRINSIC_NAME_CASE(Repeat)
         INTRINSIC_NAME_CASE(Hypot)
         INTRINSIC_NAME_CASE(MinExponent)
         INTRINSIC_NAME_CASE(MaxExponent)
@@ -420,6 +422,11 @@ class ASRBuilder {
             case ASR::ttypeType::Real : {
                 return EXPR(ASR::make_RealBinOp_t(al, loc, left,
                     ASR::binopType::Add, right, type, nullptr));
+                break;
+            }
+            case ASR::ttypeType::Character : {
+                return EXPR(ASR::make_StringConcat_t(al, loc, left,
+                    right, type, nullptr));
                 break;
             }
             default: {
@@ -2888,6 +2895,109 @@ namespace Digits {
 
 } // namespace Digits
 
+namespace Repeat {
+
+     static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 2,
+            "Call to `repeat` must have exactly 2 arguments",
+            x.base.base.loc, diagnostics);
+        ASR::ttype_t *type1 = ASRUtils::expr_type(x.m_args[0]);
+        ASR::ttype_t *type2 = ASRUtils::expr_type(x.m_args[1]);
+        ASRUtils::require_impl(is_character(*type1),
+            "First argument to `repeat` must be string",
+            x.base.base.loc, diagnostics);
+        ASRUtils::require_impl(is_integer(*type2),
+            "Second argument to `repeat` must be integer",
+            x.base.base.loc, diagnostics);
+    }
+
+    static ASR::expr_t *eval_Repeat(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
+        char* str = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
+        int64_t n = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        size_t len = std::strlen(str);
+        size_t new_len = len*n;
+        char* result = new char[new_len+1];
+        for (size_t i=0; i<new_len; i++) {
+            result[i] = str[i%len];
+        }
+        result[new_len] = '\0';
+        return make_ConstantWithType(make_StringConstant_t, result, t1, loc);
+    }
+
+    static inline ASR::asr_t* create_Repeat(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args,
+            const std::function<void (const std::string &, const Location &)> err) {
+        if (args.size() != 2) {
+            err("Intrinsic repeat function accepts exactly 2 arguments", loc);
+        }
+        ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
+        ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
+        if (!ASRUtils::is_character(*type1)) {
+            err("First argument of the repeat function must be String",
+                args[0]->base.loc);
+        }
+        if (!ASRUtils::is_integer(*type2)) {
+            err("Second argument of the repeat function must be Integer",
+                args[1]->base.loc);
+        }
+        ASR::expr_t *m_value = nullptr;
+        if (all_args_evaluated(args)) {
+            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 2);
+            arg_values.push_back(al, expr_value(args[0]));
+            arg_values.push_back(al, expr_value(args[1]));
+            m_value = eval_Repeat(al, loc, expr_type(args[0]), arg_values);
+        }
+        return ASR::make_IntrinsicScalarFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicScalarFunctions::Repeat),
+            args.p, args.n, 0, expr_type(args[0]), m_value);
+    }
+
+    static inline ASR::expr_t* instantiate_Repeat(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_optimization_repeat_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("y", arg_types[1]);
+        auto result = declare(fn_name, arg_types[0], ReturnVar);
+        auto itr = declare("r", arg_types[1], Local);
+        /*
+            function repeat_(s, n) result(r)
+                character(len=*), intent(in) :: s
+                integer, intent(in) :: n
+                character(len=n*len(s)) :: r
+                integer :: i 
+                i = n
+                do while (i > 0)
+                    r = s // r
+                    i = i - 1
+                end do
+            end function
+        */
+        
+        ASR::expr_t* empty_str =  StringConstant("", arg_types[0]);
+        body.push_back(al, b.Assignment(result, empty_str));
+        body.push_back(al, b.Assignment(itr, args[1]));
+        int arg_1_kind = ASRUtils::extract_kind_from_ttype_t(arg_types[1]);
+        ASR::expr_t *cond = iGt(itr, i(0, arg_types[1]));
+        std::vector<ASR::stmt_t*> while_loop_body;
+        if (arg_1_kind == 4) {
+            while_loop_body.push_back(b.Assignment(itr, iSub(itr, i(1, arg_types[1]))));
+            while_loop_body.push_back(b.Assignment(result, b.Add(result, args[0])));
+        } else {
+            while_loop_body.push_back(b.Assignment(itr, i64Sub(itr, i(1, arg_types[1]))));
+            while_loop_body.push_back(b.Assignment(result, b.Add(result, args[0])));
+        }
+        body.push_back(al, b.While(cond, while_loop_body));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace Repeat
+
 namespace MinExponent {
 
      static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
@@ -4236,6 +4346,8 @@ namespace IntrinsicScalarFunctionRegistry {
             {&Kind::instantiate_Kind, &Kind::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Digits),
             {&Digits::instantiate_Digits, &Digits::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Repeat),
+            {&Repeat::instantiate_Repeat, &Repeat::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::MinExponent),
             {&MinExponent::instantiate_MinExponent, &MinExponent::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::MaxExponent),
@@ -4376,6 +4488,8 @@ namespace IntrinsicScalarFunctionRegistry {
             "kind"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Digits),
             "Digits"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Repeat),
+            "Repeat"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::MinExponent),
             "minexponent"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::MaxExponent),
@@ -4492,6 +4606,7 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"hypot", {&Hypot::create_Hypot, &Hypot::eval_Hypot}},
                 {"kind", {&Kind::create_Kind, &Kind::eval_Kind}},
                 {"digits", {&Digits::create_Digits, &Digits::eval_Digits}},
+                {"repeat", {&Repeat::create_Repeat, &Repeat::eval_Repeat}},
                 {"minexponent", {&MinExponent::create_MinExponent, &MinExponent::eval_MinExponent}},
                 {"maxexponent", {&MaxExponent::create_MaxExponent, &MaxExponent::eval_MaxExponent}},
                 {"list.index", {&ListIndex::create_ListIndex, &ListIndex::eval_list_index}},

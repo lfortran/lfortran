@@ -708,6 +708,7 @@ public:
         {"atan2", {IntrinsicSignature({}, 2, 2)}},
         {"shape", {IntrinsicSignature({"kind"}, 1, 2)}},
         {"mod", {IntrinsicSignature({"mod"}, 1, 2)}},
+        {"repeat", {IntrinsicSignature({"repeat"}, 2, 2)}},
         {"hypot", {IntrinsicSignature({"hypot"}, 2, 2)}},
     };
 
