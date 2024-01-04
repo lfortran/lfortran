@@ -2,7 +2,11 @@ set(SRC
     ../../../src/libasr/runtime/lfortran_intrinsics.c
 )
 
-set(MATH_LIBRARIES "m" CACHE STRING "math library")
+if(WIN32)
+  set(MATH_LIBRARIES "" CACHE STRING "math library")
+else()
+  set(MATH_LIBRARIES "m" CACHE STRING "math library")
+endif()
 mark_as_advanced( MATH_LIBRARIES )
 
 add_library(lfortran_runtime SHARED ${SRC})
