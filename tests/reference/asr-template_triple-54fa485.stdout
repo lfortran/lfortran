@@ -88,7 +88,7 @@
                                     []
                                     [(Var 3 x)
                                     (Var 3 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 result)
                                         (IntegerBinOp
                                             (Var 3 x)
@@ -198,7 +198,7 @@
                                     []
                                     [(Var 5 x)
                                     (Var 5 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 5 result)
                                         (FunctionCall
                                             5 max@imax
@@ -290,7 +290,7 @@
                                     []
                                     [(Var 6 x)
                                     (Var 6 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 6 result)
                                         (IntrinsicScalarFunction
                                             Min
@@ -381,7 +381,7 @@
                                     []
                                     [(Var 4 x)
                                     (Var 4 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 4 result)
                                         (IntegerBinOp
                                             (Var 4 x)
@@ -437,7 +437,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 8 result)
                                         (IntegerConstant 1 (Integer 4))
                                         ()
@@ -487,7 +487,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 7 result)
                                         (IntegerConstant 0 (Integer 4))
                                         ()
@@ -582,7 +582,7 @@
                                     []
                                     [(Var 10 x)
                                     (Var 10 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 10 result)
                                         (RealBinOp
                                             (Var 10 x)
@@ -692,7 +692,7 @@
                                     []
                                     [(Var 13 x)
                                     (Var 13 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 13 result)
                                         (FunctionCall
                                             13 max@smax
@@ -784,7 +784,7 @@
                                     []
                                     [(Var 14 x)
                                     (Var 14 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 14 result)
                                         (IntrinsicScalarFunction
                                             Min
@@ -875,7 +875,7 @@
                                     []
                                     [(Var 11 x)
                                     (Var 11 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 11 result)
                                         (RealBinOp
                                             (Var 11 x)
@@ -931,7 +931,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 16 result)
                                         (RealConstant
                                             1.000000
@@ -1018,7 +1018,7 @@
                                     []
                                     [(Var 12 x)
                                     (Var 12 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 12 result)
                                         (RealBinOp
                                             (Var 12 x)
@@ -1074,7 +1074,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 15 result)
                                         (RealConstant
                                             0.000000
@@ -1605,7 +1605,7 @@
                                                     )
                                                     [plus_t]
                                                     [(Var 22 t)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 22 result)
                                                         (FunctionCall
                                                             20 plus_t
@@ -1699,7 +1699,7 @@
                                                     )
                                                     [plus_t]
                                                     [(Var 23 t)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 23 result)
                                                         (FunctionCall
                                                             20 plus_t
@@ -1963,7 +1963,7 @@
                                                     )
                                                     []
                                                     [(Var 26 t)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 26 result)
                                                         (FunctionCall
                                                             24 add_integer
@@ -2045,7 +2045,7 @@
                                                     )
                                                     []
                                                     [(Var 27 t)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 27 result)
                                                         (FunctionCall
                                                             24 add_integer
@@ -2090,7 +2090,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 25 tal)
                                         (FunctionCall
                                             25 triple_add_l
@@ -2102,7 +2102,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 25 tar)
                                         (FunctionCall
                                             25 triple_add_r
@@ -2226,7 +2226,7 @@
                                                     )
                                                     []
                                                     [(Var 32 t)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 32 result)
                                                         (FunctionCall
                                                             24 max_real
@@ -2308,7 +2308,7 @@
                                                     )
                                                     []
                                                     [(Var 33 t)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 33 result)
                                                         (FunctionCall
                                                             24 max_real
@@ -2353,7 +2353,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 31 tmaxl)
                                         (FunctionCall
                                             31 triple_max_l
@@ -2368,7 +2368,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 31 tmaxr)
                                         (FunctionCall
                                             31 triple_max_r
@@ -2495,7 +2495,7 @@
                                                     )
                                                     []
                                                     [(Var 29 t)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 29 result)
                                                         (FunctionCall
                                                             24 minus_real
@@ -2577,7 +2577,7 @@
                                                     )
                                                     []
                                                     [(Var 30 t)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 30 result)
                                                         (FunctionCall
                                                             24 minus_real
@@ -2622,7 +2622,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 28 tml)
                                         (FunctionCall
                                             28 triple_minus_l
@@ -2637,7 +2637,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 28 tmr)
                                         (FunctionCall
                                             28 triple_minus_r

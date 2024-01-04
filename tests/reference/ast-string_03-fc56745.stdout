@@ -156,7 +156,7 @@
                 (EndOfLine)]
             )
         )]
-        [(=
+        [(Assignment
             0
             verb
             (String
@@ -164,7 +164,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             posit
             (String
@@ -172,7 +172,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             title
             (String
@@ -180,7 +180,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             last_name
             (String
@@ -192,7 +192,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             combined
             (StrOp

@@ -326,7 +326,7 @@
                                                     (Var 20 s1)
                                                     (Var 20 d2)
                                                     (Var 20 s2)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 20 avg)
                                                         (FunctionCall
                                                             12 avg_integer_s_from_t
@@ -473,7 +473,7 @@
                                                     (Var 19 t1)
                                                     (Var 19 d2)
                                                     (Var 19 t2)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 19 avg)
                                                         (FunctionCall
                                                             12 ~div_intrinsic1
@@ -618,7 +618,7 @@
                                                     (Var 16 s1)
                                                     (Var 16 d2)
                                                     (Var 16 s2)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 16 avg)
                                                         (FunctionCall
                                                             12 avg_real_s_from_t
@@ -765,7 +765,7 @@
                                                     (Var 15 t1)
                                                     (Var 15 d2)
                                                     (Var 15 t2)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 15 avg)
                                                         (FunctionCall
                                                             12 ~div_intrinsic
@@ -945,7 +945,7 @@
                                                     []
                                                     [(Var 13 arg0)
                                                     (Var 13 arg1)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 13 ret)
                                                         (RealBinOp
                                                             (Var 13 arg0)
@@ -1035,7 +1035,7 @@
                                                     []
                                                     [(Var 17 arg0)
                                                     (Var 17 arg1)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 17 ret)
                                                         (IntegerBinOp
                                                             (Var 17 arg0)
@@ -1133,7 +1133,7 @@
                                                     []
                                                     [(Var 14 arg0)
                                                     (Var 14 arg1)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 14 ret)
                                                         (RealBinOp
                                                             (Var 14 arg0)
@@ -1223,7 +1223,7 @@
                                                     []
                                                     [(Var 18 arg0)
                                                     (Var 18 arg1)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 18 ret)
                                                         (IntegerBinOp
                                                             (Var 18 arg0)
@@ -1258,7 +1258,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 12 s1)
                                         (FunctionCall
                                             12 avg_real_s_from_t
@@ -1285,7 +1285,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 12 s2)
                                         (FunctionCall
                                             12 avg_real_s_from_s
@@ -1306,7 +1306,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 12 i1)
                                         (FunctionCall
                                             12 avg_integer_s_from_t
@@ -1321,7 +1321,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 12 i2)
                                         (FunctionCall
                                             12 avg_integer_s_from_s
@@ -1513,7 +1513,7 @@
                                                     (Var 11 s1)
                                                     (Var 11 d2)
                                                     (Var 11 s2)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 11 avg)
                                                         (FunctionCall
                                                             5 avg_s_from_t
@@ -1687,7 +1687,7 @@
                                                     (Var 10 t1)
                                                     (Var 10 d2)
                                                     (Var 10 t2)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 10 avg)
                                                         (FunctionCall
                                                             5 d_divided_by_t

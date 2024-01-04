@@ -109,7 +109,7 @@
                                         ()
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArrayItem
                                             (Var 3 c)
                                             [(()
@@ -312,7 +312,7 @@
                                         )]
                                         []
                                     )
-                                    (=
+                                    (Assignment
                                         (ArrayItem
                                             (Var 4 x)
                                             [(()
@@ -331,7 +331,7 @@
                                         (IntegerConstant 8 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 r)
                                         (IntegerConstant 0 (Integer 4))
                                         ()
@@ -482,7 +482,7 @@
                                         )]
                                         []
                                     )
-                                    (=
+                                    (Assignment
                                         (ArrayItem
                                             (Var 5 c)
                                             [(()
@@ -542,7 +542,7 @@
                         })
                     allocate_03
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 stat)
                         (IntegerConstant 1 (Integer 4))
                         ()
@@ -574,7 +574,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 c)
                             [(()
@@ -602,7 +602,7 @@
                         [((Var 2 c))]
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 r)
                         (FunctionCall
                             2 g

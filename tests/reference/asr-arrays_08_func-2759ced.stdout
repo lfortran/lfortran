@@ -111,7 +111,7 @@
                                             ()
                                         )
                                         ())
-                                        [(=
+                                        [(Assignment
                                             (ArrayItem
                                                 (Var 3 b)
                                                 [(()
@@ -280,7 +280,7 @@
                                     []
                                     [(Var 4 a)
                                     (Var 4 b)]
-                                    [(=
+                                    [(Assignment
                                         (Var 4 r)
                                         (LogicalConstant
                                             .true.
@@ -299,7 +299,7 @@
                                             ()
                                         )
                                         ())
-                                        [(=
+                                        [(Assignment
                                             (Var 4 r)
                                             (LogicalBinOp
                                                 (Var 4 r)
@@ -395,7 +395,7 @@
                             (IntegerConstant 10 (Integer 4))
                         )
                         ())
-                        [(=
+                        [(Assignment
                             (ArrayItem
                                 (Var 2 x)
                                 [(()
@@ -438,7 +438,7 @@
                         ))]
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 r)
                         (FunctionCall
                             2 verify

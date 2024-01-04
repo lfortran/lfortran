@@ -352,7 +352,7 @@
                                         )]
                                         []
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 5 r)
                                         (LogicalConstant
                                             .true.

@@ -268,13 +268,13 @@
                         []
                         ()
                     )
-                    (=
+                    (Assignment
                         0
                         u
                         (- (* 2 u) 1)
                         ()
                     )
-                    (=
+                    (Assignment
                         0
                         r2
                         (FuncCallOrArray
@@ -311,7 +311,7 @@
                     ()
                     ()
                 )
-                (=
+                (Assignment
                     0
                     u
                     (* u (FuncCallOrArray
@@ -337,7 +337,7 @@
                     ))
                     ()
                 )
-                (=
+                (Assignment
                     0
                     x
                     (FuncCallOrArray
@@ -353,7 +353,7 @@
                     )
                     ()
                 )]
-                [(=
+                [(Assignment
                     0
                     x
                     (FuncCallOrArray
@@ -373,7 +373,7 @@
                 ()
                 ()
             )
-            (=
+            (Assignment
                 0
                 first
                 (not first)
@@ -816,13 +816,13 @@
                 0
                 ()
                 first
-                [(=
+                [(Assignment
                     0
                     d
                     (- a (/ (Real "1._dp") 3))
                     ()
                 )
-                (=
+                (Assignment
                     0
                     c
                     (/ 1 (FuncCallOrArray
@@ -871,7 +871,7 @@
                         []
                         ()
                     )
-                    (=
+                    (Assignment
                         0
                         v
                         (** (+ 1 (* c x)) 3)
@@ -916,7 +916,7 @@
                     0
                     ()
                     (< U (- 1 (* (Real "0.0331_dp") (** x 4))))
-                    [(=
+                    [(Assignment
                         0
                         fn_val
                         (* d v)
@@ -951,7 +951,7 @@
                             []
                             []
                         )))))
-                        [(=
+                        [(Assignment
                             0
                             fn_val
                             (* d v)

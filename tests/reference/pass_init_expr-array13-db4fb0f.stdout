@@ -47,7 +47,7 @@
                         })
                     array13
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 __1_k)
                         (ArrayBound
                             (Var 2 numbers)
@@ -58,7 +58,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 numbers)
                             [(()
@@ -71,7 +71,7 @@
                         (IntegerConstant 5 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 __1_k)
                         (IntegerBinOp
                             (Var 2 __1_k)
@@ -82,7 +82,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 numbers)
                             [(()
@@ -95,7 +95,7 @@
                         (IntegerConstant 4 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 __1_k)
                         (IntegerBinOp
                             (Var 2 __1_k)
@@ -106,7 +106,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 numbers)
                             [(()
@@ -119,7 +119,7 @@
                         (IntegerConstant 2 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 __1_k)
                         (IntegerBinOp
                             (Var 2 __1_k)
@@ -130,7 +130,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 numbers)
                             [(()
@@ -143,7 +143,7 @@
                         (IntegerConstant 1 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 __1_k)
                         (IntegerBinOp
                             (Var 2 __1_k)
@@ -154,7 +154,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 numbers)
                             [(()
@@ -167,7 +167,7 @@
                         (IntegerConstant 3 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 __1_k)
                         (IntegerBinOp
                             (Var 2 __1_k)

@@ -212,7 +212,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 y)
                         (IntegerConstant 3 (Integer 4))
                         ()

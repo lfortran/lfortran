@@ -106,7 +106,7 @@
                         })
                     complex_02
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 x)
                         (ComplexConstructor
                             (RealConstant
@@ -133,7 +133,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 a)
                         (RealConstant
                             3.000000
@@ -141,7 +141,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 b)
                         (RealConstant
                             4.000000
@@ -149,7 +149,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 i_)
                         (ComplexConstructor
                             (IntegerConstant 0 (Integer 4))
@@ -163,7 +163,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 z)
                         (ComplexBinOp
                             (Cast
@@ -190,7 +190,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 w)
                         (ComplexBinOp
                             (Cast

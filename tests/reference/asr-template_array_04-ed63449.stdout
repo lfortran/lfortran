@@ -187,7 +187,7 @@
                                                             ()
                                                         )
                                                         ())
-                                                        [(=
+                                                        [(Assignment
                                                             (Var 6 j)
                                                             (IntegerBinOp
                                                                 (IntegerBinOp
@@ -326,17 +326,17 @@
                                                     []
                                                     [(Var 5 x)
                                                     (Var 5 y)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 5 tmp)
                                                         (Var 5 x)
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 5 x)
                                                         (Var 5 y)
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 5 y)
                                                         (Var 5 tmp)
                                                         ()
@@ -451,17 +451,17 @@
                                                     []
                                                     [(Var 10 x)
                                                     (Var 10 y)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 10 tmp)
                                                         (Var 10 x)
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 10 x)
                                                         (Var 10 y)
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 10 y)
                                                         (Var 10 tmp)
                                                         ()
@@ -591,7 +591,7 @@
                                                             ()
                                                         )
                                                         ())
-                                                        [(=
+                                                        [(Assignment
                                                             (Var 8 j)
                                                             (IntegerBinOp
                                                                 (IntegerBinOp
@@ -661,7 +661,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 7 a)
                                         (ArrayConstant
                                             [(IntegerConstant 1 (Integer 4))

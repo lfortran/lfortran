@@ -121,7 +121,7 @@
                         })
                     intrinsics_06
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 x)
                         (IntrinsicScalarFunction
                             Asin
@@ -143,7 +143,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (IntrinsicScalarFunction
                             Acos
@@ -165,7 +165,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (IntrinsicScalarFunction
                             Atan
@@ -187,7 +187,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (Cast
                             (FunctionCall
@@ -218,7 +218,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (FunctionCall
                             2 asinh@sasinh
@@ -241,7 +241,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (FunctionCall
                             2 acosh@sacosh
@@ -264,7 +264,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (FunctionCall
                             2 atanh@satanh

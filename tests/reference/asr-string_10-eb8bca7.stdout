@@ -64,7 +64,7 @@
                         })
                     string_10
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 is_alpha)
                         (LogicalBinOp
                             (LogicalBinOp
@@ -128,7 +128,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 c)
                         (StringConstant
                             "@a"
@@ -136,7 +136,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 is_alpha)
                         (LogicalBinOp
                             (LogicalBinOp
@@ -200,7 +200,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 c)
                         (StringConstant
                             "a@"
@@ -208,7 +208,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 is_alpha)
                         (LogicalBinOp
                             (LogicalBinOp
@@ -272,7 +272,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (StringSection
                             (Var 2 num)
                             (IntegerBinOp

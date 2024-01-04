@@ -21,13 +21,13 @@
             ()
             ()
             ()
-            [(=
+            [(Assignment
                 0
                 a
                 (+ a i)
                 ()
             )
-            (=
+            (Assignment
                 0
                 b
                 3
@@ -48,13 +48,13 @@
             ()
             ()
             ()
-            [(=
+            [(Assignment
                 0
                 do
                 (+ a i)
                 ()
             )
-            (=
+            (Assignment
                 0
                 enddo
                 3
@@ -75,7 +75,7 @@
             ()
             ()
             ()
-            [(=
+            [(Assignment
                 0
                 a
                 (+ a i)
@@ -84,7 +84,7 @@
                     [(Semicolon)]
                 )
             )
-            (=
+            (Assignment
                 0
                 b
                 3
@@ -124,7 +124,7 @@
             ()
             ()
             ()
-            [(=
+            [(Assignment
                 0
                 x
                 1
@@ -158,7 +158,7 @@
             1
             5
             ()
-            [(=
+            [(Assignment
                 0
                 x
                 (+ x i)
@@ -188,7 +188,7 @@
             1
             5
             (u- 1)
-            [(=
+            [(Assignment
                 0
                 x
                 i

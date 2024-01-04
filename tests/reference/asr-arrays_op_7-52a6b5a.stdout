@@ -84,7 +84,7 @@
                                     []
                                     [(Var 3 x)
                                     (Var 3 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 y)
                                         (Var 3 x)
                                         ()
@@ -140,7 +140,7 @@
                         })
                     arrays_op_7
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 x)
                         (ArrayBroadcast
                             (IntegerConstant 3 (Integer 4))

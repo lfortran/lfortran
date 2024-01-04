@@ -396,7 +396,7 @@
                 )]
             )
         )]
-        [(=
+        [(Assignment
             0
             n
             5
@@ -524,7 +524,7 @@
                     []
                 )
                 ()
-                [(=
+                [(Assignment
                     0
                     c
                     (+ c (CoarrayRef
@@ -727,7 +727,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             (FuncCallOrArray
                 a
@@ -749,7 +749,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             (CoarrayRef
                 b
@@ -776,7 +776,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             (CoarrayRef
                 c
@@ -809,7 +809,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             (CoarrayRef
                 c
@@ -835,7 +835,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             (CoarrayRef
                 B
@@ -869,7 +869,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             (CoarrayRef
                 D
@@ -917,7 +917,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             (CoarrayRef
                 D
@@ -944,7 +944,7 @@
             5
             ()
         )
-        (=
+        (Assignment
             0
             (CoarrayRef
                 D
@@ -971,7 +971,7 @@
             5
             ()
         )
-        (=
+        (Assignment
             0
             (CoarrayRef
                 D
@@ -999,7 +999,7 @@
             5
             ()
         )
-        (=
+        (Assignment
             0
             (CoarrayRef
                 D
@@ -1029,7 +1029,7 @@
             5
             ()
         )
-        (=
+        (Assignment
             0
             (CoarrayRef
                 D

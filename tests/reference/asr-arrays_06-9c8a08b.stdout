@@ -104,12 +104,12 @@
                         })
                     arrays_06
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 j)
                         (IntegerConstant 4 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (ArrayConstant
                             [(ImpliedDoLoop
@@ -142,7 +142,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (ArrayConstant
                             [(ImpliedDoLoop
@@ -182,7 +182,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (ArrayConstant
                             [(ImpliedDoLoop
@@ -229,7 +229,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (ArrayConstant
                             [(ImpliedDoLoop
@@ -297,7 +297,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 a)
                         (ArrayBroadcast
                             (Cast

@@ -58,7 +58,7 @@
                         })
                     real_dp_01
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 zero)
                         (RealConstant
                             0.000000
@@ -66,7 +66,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 v)
                         (Cast
                             (RealConstant
@@ -82,7 +82,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (RealConstant
                             1.050000

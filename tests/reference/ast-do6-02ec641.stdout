@@ -57,13 +57,13 @@
                 (EndOfLine)]
             )
         )]
-        [(=
+        [(Assignment
             0
             correct
             0
             ()
         )
-        (=
+        (Assignment
             0
             k
             0
@@ -85,7 +85,7 @@
                 1
                 5
                 ()
-                [(=
+                [(Assignment
                     30
                     k
                     (+ k 1)
@@ -105,7 +105,7 @@
             [k]
             ()
         )
-        (=
+        (Assignment
             0
             correct
             (+ correct k)
@@ -115,7 +115,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             k
             0
@@ -137,7 +137,7 @@
                 1
                 5
                 ()
-                [(=
+                [(Assignment
                     0
                     k
                     (+ k 1)
@@ -161,7 +161,7 @@
             [k]
             ()
         )
-        (=
+        (Assignment
             0
             correct
             (+ correct k)
@@ -171,7 +171,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             k
             0
@@ -185,7 +185,7 @@
             1
             25
             ()
-            [(=
+            [(Assignment
                 0
                 k
                 (+ k 1)
@@ -206,7 +206,7 @@
             [k]
             ()
         )
-        (=
+        (Assignment
             0
             correct
             (+ correct k)
@@ -216,7 +216,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             k
             0
@@ -230,7 +230,7 @@
             1
             25
             ()
-            [(=
+            [(Assignment
                 0
                 k
                 (+ k 1)
@@ -251,7 +251,7 @@
             [k]
             ()
         )
-        (=
+        (Assignment
             0
             correct
             (+ correct k)
@@ -261,7 +261,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             k
             0
@@ -283,13 +283,13 @@
                 1
                 5
                 ()
-                [(=
+                [(Assignment
                     0
                     k
                     (+ k 0)
                     ()
                 )
-                (=
+                (Assignment
                     50
                     k
                     (+ k 1)
@@ -309,7 +309,7 @@
             [k]
             ()
         )
-        (=
+        (Assignment
             0
             correct
             (+ correct k)
@@ -319,7 +319,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             k
             0
@@ -333,13 +333,13 @@
             1
             25
             ()
-            [(=
+            [(Assignment
                 0
                 k
                 (+ k 0)
                 ()
             )
-            (=
+            (Assignment
                 60
                 k
                 (+ k 1)
@@ -356,7 +356,7 @@
             [k]
             ()
         )
-        (=
+        (Assignment
             0
             correct
             (+ correct k)
@@ -366,7 +366,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             k
             (u- 30)
@@ -380,7 +380,7 @@
             1
             5
             ()
-            [(=
+            [(Assignment
                 0
                 k
                 (+ k 1)
@@ -410,7 +410,7 @@
                     ()
                     ()
                 )
-                (=
+                (Assignment
                     0
                     k
                     (+ k 2)
@@ -434,7 +434,7 @@
             [k]
             ()
         )
-        (=
+        (Assignment
             0
             correct
             (+ correct k)
@@ -448,7 +448,7 @@
             0
             ()
             (== k 25)
-            [(=
+            [(Assignment
                 0
                 j
                 0
@@ -482,7 +482,7 @@
             [k]
             ()
         )
-        (=
+        (Assignment
             0
             correct
             (+ correct k)
@@ -492,7 +492,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             k
             (u- 30)
@@ -506,7 +506,7 @@
             1
             5
             ()
-            [(=
+            [(Assignment
                 0
                 k
                 (+ k 1)
@@ -536,7 +536,7 @@
                     ()
                     ()
                 )
-                (=
+                (Assignment
                     0
                     k
                     (+ k 2)
@@ -560,7 +560,7 @@
             [k]
             ()
         )
-        (=
+        (Assignment
             0
             correct
             (+ correct k)
@@ -574,7 +574,7 @@
             0
             ()
             (== k 25)
-            [(=
+            [(Assignment
                 0
                 j
                 0
@@ -608,7 +608,7 @@
             [k]
             ()
         )
-        (=
+        (Assignment
             0
             correct
             (+ correct k)

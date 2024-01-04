@@ -296,7 +296,7 @@
                                     )
                                     []
                                     [(Var 4 cmd_settings)]
-                                    [(=
+                                    [(Assignment
                                         (Var 4 cmd_settings)
                                         (StructTypeConstructor
                                             2 fpm_run_settings

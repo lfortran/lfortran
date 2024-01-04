@@ -631,7 +631,7 @@
                                     (Var 6 profiles)
                                     (Var 6 profindex)
                                     (Var 6 os_valid)]
-                                    [(=
+                                    [(Assignment
                                         (ArrayItem
                                             (Var 6 profiles)
                                             [(()
@@ -687,7 +687,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 6 profindex)
                                         (IntegerBinOp
                                             (Var 6 profindex)

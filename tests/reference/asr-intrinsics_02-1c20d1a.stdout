@@ -57,7 +57,7 @@
                         })
                     intrinsics_02
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 y)
                         (Cast
                             (IntrinsicScalarFunction

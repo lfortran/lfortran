@@ -72,7 +72,7 @@
                         })
                     interface_10
                     [interface_10_m]
-                    [(=
+                    [(Assignment
                         (Var 4 x)
                         (StringConstant
                             "A"
@@ -162,7 +162,7 @@
                                     []
                                     [(Var 3 x)
                                     (Var 3 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 y)
                                         (Var 3 x)
                                         ()

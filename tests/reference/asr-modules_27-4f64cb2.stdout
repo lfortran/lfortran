@@ -403,7 +403,7 @@
                                     (Var 7 pos)
                                     (Var 7 ptr)
                                     (Var 7 stat)]
-                                    [(=
+                                    [(Assignment
                                         (Var 4 global_var)
                                         (RealConstant
                                             1.000000

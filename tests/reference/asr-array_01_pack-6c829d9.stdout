@@ -52,7 +52,7 @@
                         })
                     array_01_pack
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 m)
                         (ArrayConstant
                             [(IntegerConstant 1 (Integer 4))
@@ -71,7 +71,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 p)
                         (ArrayPack
                             (Var 2 m)

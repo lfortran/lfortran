@@ -30,13 +30,13 @@
             ())]
             ()
         )]
-        [(=
+        [(Assignment
             0
             n
             2
             ()
         )
-        (=
+        (Assignment
             0
             a
             10
@@ -59,19 +59,19 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             1
             a
             (+ a 10)
             ()
         )
-        (=
+        (Assignment
             2
             a
             (+ a 20)
             ()
         )
-        (=
+        (Assignment
             3
             a
             (+ a 30)
@@ -119,19 +119,19 @@
             30]
             ()
         )
-        (=
+        (Assignment
             10
             a
             (* a a)
             ()
         )
-        (=
+        (Assignment
             20
             a
             (+ a a)
             ()
         )
-        (=
+        (Assignment
             30
             a
             (- a a)

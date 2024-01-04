@@ -1047,7 +1047,7 @@
                                                         )]
                                                         []
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 3 istart)
                                                         (IntegerBinOp
                                                             (FunctionCall
@@ -1065,7 +1065,7 @@
                                                         )
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 3 line)
                                                         (StringConcat
                                                             (FunctionCall
@@ -1218,12 +1218,12 @@
                                             ()
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 3 sep_local)
                                             (Var 3 sep)
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 3 increment)
                                             (IntegerBinOp
                                                 (StringLen
@@ -1238,7 +1238,7 @@
                                             )
                                             ()
                                         )]
-                                        [(=
+                                        [(Assignment
                                             (Var 3 sep_local)
                                             (StringConstant
                                                 " "
@@ -1246,18 +1246,18 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 3 increment)
                                             (IntegerConstant 2 (Integer 4))
                                             ()
                                         )]
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 istart)
                                         (IntegerConstant 1 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 line)
                                         (StringConstant
                                             ""
@@ -1401,7 +1401,7 @@
                                         )]
                                         []
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 msg_scalar)
                                         (FunctionCall
                                             3 trim

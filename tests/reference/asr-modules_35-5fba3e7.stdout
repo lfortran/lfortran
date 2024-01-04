@@ -161,12 +161,12 @@
                                                 (Logical 4)
                                                 ()
                                             )
-                                            [(=
+                                            [(Assignment
                                                 (Var 3 strings)
                                                 (Var 3 strings_a)
                                                 ()
                                             )]
-                                            [(=
+                                            [(Assignment
                                                 (Var 3 strings)
                                                 (ArrayConstant
                                                     []
@@ -191,7 +191,7 @@
                                             (Logical 4)
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 3 strings)
                                             (ArrayConstant
                                                 []

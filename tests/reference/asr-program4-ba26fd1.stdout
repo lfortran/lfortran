@@ -102,7 +102,7 @@
                                     []
                                     [(Var 3 a)
                                     (Var 3 b)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 saved)
                                         (RealBinOp
                                             (Var 3 saved)
@@ -116,7 +116,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 c)
                                         (RealBinOp
                                             (RealBinOp
@@ -272,7 +272,7 @@
                                     []
                                     [(Var 4 a)
                                     (Var 4 b)]
-                                    [(=
+                                    [(Assignment
                                         (Var 4 saved1)
                                         (RealBinOp
                                             (Var 4 saved1)
@@ -286,7 +286,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 c)
                                         (RealBinOp
                                             (RealBinOp
@@ -321,7 +321,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 saved2)
                                         (RealBinOp
                                             (Var 4 saved2)
@@ -335,7 +335,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 d)
                                         (RealBinOp
                                             (Var 4 d)
@@ -406,7 +406,7 @@
                         })
                     program4
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 x)
                         (RealConstant
                             1.000000
@@ -414,7 +414,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 y)
                         (RealConstant
                             2.000000
@@ -422,7 +422,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 z)
                         (FunctionCall
                             2 func1
@@ -444,7 +444,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 z)
                         (FunctionCall
                             2 func1
@@ -466,7 +466,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 z)
                         (FunctionCall
                             2 func2
@@ -488,7 +488,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 z)
                         (FunctionCall
                             2 func2

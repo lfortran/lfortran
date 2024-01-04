@@ -519,7 +519,7 @@
                                                             (IntegerConstant 1 (Integer 4))
                                                             (Var 18 k)
                                                             ())
-                                                            [(=
+                                                            [(Assignment
                                                                 (Var 18 elem)
                                                                 (FunctionCall
                                                                     14 zero_t
@@ -552,7 +552,7 @@
                                                                 (IntegerConstant 1 (Integer 4))
                                                                 (Var 18 j)
                                                                 ())
-                                                                [(=
+                                                                [(Assignment
                                                                     (Var 18 elem)
                                                                     (FunctionCall
                                                                         14 plus_t
@@ -604,7 +604,7 @@
                                                                     ()
                                                                 )]
                                                             )
-                                                            (=
+                                                            (Assignment
                                                                 (ArrayItem
                                                                     (Var 18 r)
                                                                     [(()
@@ -1431,7 +1431,7 @@
                                                             (IntegerConstant 1 (Integer 4))
                                                             (Var 20 k)
                                                             ())
-                                                            [(=
+                                                            [(Assignment
                                                                 (Var 20 elem)
                                                                 (FunctionCall
                                                                     9 zero_integer
@@ -1460,7 +1460,7 @@
                                                                 (IntegerConstant 1 (Integer 4))
                                                                 (Var 20 j)
                                                                 ())
-                                                                [(=
+                                                                [(Assignment
                                                                     (Var 20 elem)
                                                                     (FunctionCall
                                                                         9 add_integer
@@ -1504,7 +1504,7 @@
                                                                     ()
                                                                 )]
                                                             )
-                                                            (=
+                                                            (Assignment
                                                                 (ArrayItem
                                                                     (Var 20 r)
                                                                     [(()
@@ -1569,7 +1569,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (ArrayItem
                                             (Var 19 arr)
                                             [(()
@@ -1585,7 +1585,7 @@
                                         (IntegerConstant 1 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArrayItem
                                             (Var 19 arr)
                                             [(()
@@ -1601,7 +1601,7 @@
                                         (IntegerConstant 1 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArrayItem
                                             (Var 19 arr)
                                             [(()
@@ -1617,7 +1617,7 @@
                                         (IntegerConstant 0 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArrayItem
                                             (Var 19 arr)
                                             [(()
@@ -1858,7 +1858,7 @@
                                     []
                                     [(Var 3 x)
                                     (Var 3 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 r)
                                         (IntegerBinOp
                                             (Var 3 x)
@@ -1948,7 +1948,7 @@
                                     []
                                     [(Var 6 x)
                                     (Var 6 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 6 r)
                                         (RealBinOp
                                             (Var 6 x)
@@ -2038,7 +2038,7 @@
                                     []
                                     [(Var 5 x)
                                     (Var 5 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 5 r)
                                         (IntegerBinOp
                                             (Var 5 x)
@@ -2128,7 +2128,7 @@
                                     []
                                     [(Var 8 x)
                                     (Var 8 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 8 r)
                                         (RealBinOp
                                             (Var 8 x)
@@ -2200,7 +2200,7 @@
                                     )
                                     []
                                     [(Var 4 x)]
-                                    [(=
+                                    [(Assignment
                                         (Var 4 r)
                                         (IntegerConstant 0 (Integer 4))
                                         ()
@@ -2266,7 +2266,7 @@
                                     )
                                     []
                                     [(Var 7 x)]
-                                    [(=
+                                    [(Assignment
                                         (Var 7 r)
                                         (Cast
                                             (IntegerConstant 0 (Integer 4))

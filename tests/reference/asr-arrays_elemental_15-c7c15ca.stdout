@@ -120,7 +120,7 @@
                                             (IntegerConstant 1 (Integer 4))
                                             (IntegerConstant 64 (Integer 4))
                                             ())
-                                            [(=
+                                            [(Assignment
                                                 (ArrayItem
                                                     (Var 7 array2d)
                                                     [(()
@@ -149,7 +149,7 @@
                                             )]
                                         )]
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 7 cos2d)
                                         (RealBinOp
                                             (IntrinsicScalarFunction
@@ -434,7 +434,7 @@
                                         (IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 256 (Integer 4))
                                         ())
-                                        [(=
+                                        [(Assignment
                                             (ArrayItem
                                                 (Var 6 array1d)
                                                 [(()
@@ -453,7 +453,7 @@
                                             ()
                                         )]
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 6 sin1d)
                                         (IntrinsicScalarFunction
                                             Sin
@@ -550,7 +550,7 @@
                                                 (IntegerConstant 1 (Integer 4))
                                                 (IntegerConstant 16 (Integer 4))
                                                 ())
-                                                [(=
+                                                [(Assignment
                                                     (ArrayItem
                                                         (Var 6 arraynd)
                                                         [(()
@@ -589,7 +589,7 @@
                                             )]
                                         )]
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 6 sinnd)
                                         (RealBinOp
                                             (IntrinsicScalarFunction
@@ -917,7 +917,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 8 eps)
                                         (Cast
                                             (RealConstant
@@ -957,7 +957,7 @@
                                                     (IntegerConstant 1 (Integer 4))
                                                     (IntegerConstant 4 (Integer 4))
                                                     ())
-                                                    [(=
+                                                    [(Assignment
                                                         (ArrayItem
                                                             (Var 8 arraynd)
                                                             [(()
@@ -1006,7 +1006,7 @@
                                             )]
                                         )]
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 8 observed)
                                         (RealBinOp
                                             (RealBinOp
@@ -1202,7 +1202,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArrayItem
                                             (Var 8 newshape)
                                             [(()
@@ -1215,7 +1215,7 @@
                                         (IntegerConstant 65536 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 8 observed1d)
                                         (ArrayReshape
                                             (Var 8 observed)
@@ -1425,7 +1425,7 @@
                                     [(Var 3 array)
                                     (Var 3 result)
                                     (Var 3 size)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 eps)
                                         (Cast
                                             (RealConstant
@@ -1676,7 +1676,7 @@
                                     (Var 5 result)
                                     (Var 5 size1)
                                     (Var 5 size2)]
-                                    [(=
+                                    [(Assignment
                                         (Var 5 eps)
                                         (Cast
                                             (RealConstant
@@ -1990,7 +1990,7 @@
                                     (Var 4 size1)
                                     (Var 4 size2)
                                     (Var 4 size3)]
-                                    [(=
+                                    [(Assignment
                                         (Var 4 eps)
                                         (Cast
                                             (RealConstant

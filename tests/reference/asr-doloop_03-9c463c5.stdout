@@ -42,7 +42,7 @@
                         })
                     doloop_03
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 j)
                         (IntegerConstant 0 (Integer 4))
                         ()
@@ -53,7 +53,7 @@
                         (IntegerConstant 1 (Integer 4))
                         (IntegerConstant 10 (Integer 4))
                         ())
-                        [(=
+                        [(Assignment
                             (Var 2 j)
                             (IntegerBinOp
                                 (Var 2 j)
@@ -107,7 +107,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 j)
                         (IntegerConstant 0 (Integer 4))
                         ()
@@ -131,7 +131,7 @@
                             )]
                             []
                         )
-                        (=
+                        (Assignment
                             (Var 2 j)
                             (IntegerBinOp
                                 (Var 2 j)
@@ -161,7 +161,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 j)
                         (IntegerConstant 0 (Integer 4))
                         ()
@@ -185,7 +185,7 @@
                             )]
                             []
                         )
-                        (=
+                        (Assignment
                             (Var 2 j)
                             (IntegerBinOp
                                 (Var 2 j)

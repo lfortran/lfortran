@@ -157,7 +157,7 @@
                     [(Var 2 n)
                     (Var 2 z)
                     (Var 2 cdn)]
-                    [(=
+                    [(Assignment
                         (Var 2 eps)
                         (RealConstant
                             0.000000
@@ -165,7 +165,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 pi)
                         (RealConstant
                             3.141593
@@ -173,7 +173,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 ca0)
                         (Cast
                             (IntrinsicScalarFunction
@@ -221,7 +221,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 va0)
                         (RealBinOp
                             (RealConstant

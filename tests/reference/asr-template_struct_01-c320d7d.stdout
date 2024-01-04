@@ -158,7 +158,7 @@
                                                     )
                                                     []
                                                     [(Var 6 p)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 6 r)
                                                         (StructInstanceMember
                                                             (Var 6 p)
@@ -249,7 +249,7 @@
                                                     )
                                                     []
                                                     [(Var 7 p)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 7 r)
                                                         (StructInstanceMember
                                                             (Var 7 p)
@@ -441,7 +441,7 @@
                                                     )
                                                     []
                                                     [(Var 10 p)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 10 r)
                                                         (StructInstanceMember
                                                             (Var 10 p)
@@ -526,7 +526,7 @@
                                                     )
                                                     []
                                                     [(Var 11 p)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 11 r)
                                                         (StructInstanceMember
                                                             (Var 11 p)
@@ -628,7 +628,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (StructInstanceMember
                                             (Var 8 t)
                                             8 1_int_tuple_fst
@@ -654,7 +654,7 @@
                                         ()
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (StructInstanceMember
                                             (Var 8 t)
                                             8 1_int_tuple_snd

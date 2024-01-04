@@ -168,7 +168,7 @@
                                     []
                                     [(Var 3 a)
                                     (Var 3 b)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 fn)
                                         (IntegerCompare
                                             (Var 3 a)

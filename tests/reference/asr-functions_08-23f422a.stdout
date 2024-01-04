@@ -138,7 +138,7 @@
                                     )
                                     [f_real]
                                     [(Var 4 a)]
-                                    [(=
+                                    [(Assignment
                                         (Var 4 x)
                                         (Cast
                                             (IntegerConstant 2 (Integer 4))
@@ -151,7 +151,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 b)
                                         (RealBinOp
                                             (Var 4 a)
@@ -244,7 +244,7 @@
                                             (Logical 4)
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 5 b)
                                             (RealConstant
                                                 2.000000
@@ -252,7 +252,7 @@
                                             )
                                             ()
                                         )]
-                                        [(=
+                                        [(Assignment
                                             (Var 5 b)
                                             (RealBinOp
                                                 (Var 5 a)
@@ -369,7 +369,7 @@
                         })
                     functions_08
                     []
-                    [(=
+                    [(Assignment
                         (Var 3 y)
                         (FunctionCall
                             3 f
@@ -386,7 +386,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 3 q)
                         (FunctionCall
                             3 f_real

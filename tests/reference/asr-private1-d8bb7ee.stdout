@@ -43,7 +43,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 3 y)
                                         (RealConstant
                                             3.000000

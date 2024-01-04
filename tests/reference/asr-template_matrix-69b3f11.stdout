@@ -394,7 +394,7 @@
                                                             (IntegerConstant 1 (Integer 4))
                                                             (Var 5 n)
                                                             ())
-                                                            [(=
+                                                            [(Assignment
                                                                 (Var 10 tmp)
                                                                 (FunctionCall
                                                                     5 times
@@ -469,7 +469,7 @@
                                                                 (IntegerConstant 2 (Integer 4))
                                                                 (Var 5 n)
                                                                 ())
-                                                                [(=
+                                                                [(Assignment
                                                                     (Var 10 tmp)
                                                                     (FunctionCall
                                                                         5 plus
@@ -549,7 +549,7 @@
                                                                     ()
                                                                 )]
                                                             )
-                                                            (=
+                                                            (Assignment
                                                                 (ArrayItem
                                                                     (StructInstanceMember
                                                                         (Var 10 m_z)
@@ -836,7 +836,7 @@
                                                     [(Var 9 m_x)
                                                     (Var 9 m_y)
                                                     (Var 9 m_z)]
-                                                    [(=
+                                                    [(Assignment
                                                         (StructInstanceMember
                                                             (Var 9 m_z)
                                                             9 1_matrix_elements
@@ -1138,7 +1138,7 @@
                                     []
                                     [(Var 14 x)
                                     (Var 14 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 14 z)
                                         (ComplexBinOp
                                             (Var 14 x)
@@ -1228,7 +1228,7 @@
                                     []
                                     [(Var 12 x)
                                     (Var 12 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 12 z)
                                         (IntegerBinOp
                                             (Var 12 x)
@@ -1318,7 +1318,7 @@
                                     []
                                     [(Var 13 x)
                                     (Var 13 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 13 z)
                                         (ComplexBinOp
                                             (Var 13 x)
@@ -1408,7 +1408,7 @@
                                     []
                                     [(Var 11 x)
                                     (Var 11 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 11 z)
                                         (IntegerBinOp
                                             (Var 11 x)
@@ -1654,7 +1654,7 @@
                                                             (IntegerConstant 1 (Integer 4))
                                                             (Var 15 n)
                                                             ())
-                                                            [(=
+                                                            [(Assignment
                                                                 (Var 18 tmp)
                                                                 (FunctionCall
                                                                     2 mult_integer
@@ -1719,7 +1719,7 @@
                                                                 (IntegerConstant 2 (Integer 4))
                                                                 (Var 15 n)
                                                                 ())
-                                                                [(=
+                                                                [(Assignment
                                                                     (Var 18 tmp)
                                                                     (FunctionCall
                                                                         2 plus_integer
@@ -1787,7 +1787,7 @@
                                                                     ()
                                                                 )]
                                                             )
-                                                            (=
+                                                            (Assignment
                                                                 (ArrayItem
                                                                     (StructInstanceMember
                                                                         (Var 18 m_z)
@@ -1920,7 +1920,7 @@
                                                     [(Var 17 m_x)
                                                     (Var 17 m_y)
                                                     (Var 17 m_z)]
-                                                    [(=
+                                                    [(Assignment
                                                         (StructInstanceMember
                                                             (Var 17 m_z)
                                                             17 1_integer_matrix_elements
@@ -2118,7 +2118,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (ArrayItem
                                             (StructInstanceMember
                                                 (Var 15 m1)
@@ -2146,7 +2146,7 @@
                                         (IntegerConstant 1 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArrayItem
                                             (StructInstanceMember
                                                 (Var 15 m1)
@@ -2174,7 +2174,7 @@
                                         (IntegerConstant 0 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArrayItem
                                             (StructInstanceMember
                                                 (Var 15 m1)
@@ -2202,7 +2202,7 @@
                                         (IntegerConstant 0 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArrayItem
                                             (StructInstanceMember
                                                 (Var 15 m1)
@@ -2230,7 +2230,7 @@
                                         (IntegerConstant 1 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArrayItem
                                             (StructInstanceMember
                                                 (Var 15 m2)
@@ -2258,7 +2258,7 @@
                                         (IntegerConstant 1 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArrayItem
                                             (StructInstanceMember
                                                 (Var 15 m2)
@@ -2286,7 +2286,7 @@
                                         (IntegerConstant 2 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArrayItem
                                             (StructInstanceMember
                                                 (Var 15 m2)
@@ -2314,7 +2314,7 @@
                                         (IntegerConstant 2 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArrayItem
                                             (StructInstanceMember
                                                 (Var 15 m2)

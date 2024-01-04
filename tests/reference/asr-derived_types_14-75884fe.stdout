@@ -221,7 +221,7 @@
                                     )
                                     []
                                     [(Var 7 raw)]
-                                    [(=
+                                    [(Assignment
                                         (Var 7 res)
                                         (LogicalConstant
                                             .true.
@@ -369,7 +369,7 @@
                                             ()
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 6 vtype)
                                             (StructInstanceMember
                                                 (Var 2 toml_type)
@@ -391,7 +391,7 @@
                                             ()
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 6 vtype)
                                             (StructInstanceMember
                                                 (Var 2 toml_type)
@@ -413,7 +413,7 @@
                                             ()
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 6 vtype)
                                             (StructInstanceMember
                                                 (Var 2 toml_type)
@@ -435,7 +435,7 @@
                                             ()
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 6 vtype)
                                             (StructInstanceMember
                                                 (Var 2 toml_type)
@@ -457,7 +457,7 @@
                                             ()
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 6 vtype)
                                             (StructInstanceMember
                                                 (Var 2 toml_type)
@@ -470,7 +470,7 @@
                                         (Return)]
                                         []
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 6 vtype)
                                         (StructInstanceMember
                                             (Var 2 toml_type)

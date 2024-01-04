@@ -153,12 +153,12 @@
                     )
                     []
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 f1)
                         (IntegerConstant 5 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 f2)
                         (IntegerBinOp
                             (IntegerConstant 5 (Integer 4))
@@ -169,7 +169,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 f3)
                         (IntegerBinOp
                             (IntegerBinOp
@@ -186,7 +186,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 f4)
                         (IntegerBinOp
                             (IntegerConstant 5 (Integer 4))
@@ -203,7 +203,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 f5)
                         (IntegerBinOp
                             (IntegerConstant 5 (Integer 4))
@@ -214,7 +214,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 f6)
                         (IntegerBinOp
                             (IntegerConstant 4 (Integer 4))
@@ -225,7 +225,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 f7)
                         (IntegerBinOp
                             (IntegerConstant 5 (Integer 4))
@@ -236,7 +236,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 f8)
                         (IntegerBinOp
                             (IntegerConstant 5 (Integer 4))

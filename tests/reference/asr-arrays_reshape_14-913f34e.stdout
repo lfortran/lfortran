@@ -323,7 +323,7 @@
                                     )
                                     []
                                     [(Var 4 d)]
-                                    [(=
+                                    [(Assignment
                                         (Var 4 eps)
                                         (Cast
                                             (RealConstant
@@ -345,7 +345,7 @@
                                         (IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 256 (Integer 4))
                                         ())
-                                        [(=
+                                        [(Assignment
                                             (Var 4 i)
                                             (IntegerBinOp
                                                 (IntegerBinOp
@@ -362,7 +362,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 j)
                                             (IntegerBinOp
                                                 (IntegerBinOp
@@ -385,7 +385,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (ArrayItem
                                                 (Var 4 b)
                                                 [(()
@@ -424,7 +424,7 @@
                                             ()
                                         )]
                                     )
-                                    (=
+                                    (Assignment
                                         (ArrayItem
                                             (Var 4 newshape)
                                             [(()
@@ -437,7 +437,7 @@
                                         (IntegerConstant 16 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArrayItem
                                             (Var 4 newshape)
                                             [(()
@@ -450,7 +450,7 @@
                                         (IntegerConstant 16 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 a)
                                         (ArrayReshape
                                             (Var 4 b)
@@ -571,7 +571,7 @@
                                             )]
                                         )]
                                     )
-                                    (=
+                                    (Assignment
                                         (ArrayItem
                                             (Var 4 newshape1)
                                             [(()
@@ -584,7 +584,7 @@
                                         (IntegerConstant 16 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArrayItem
                                             (Var 4 newshape1)
                                             [(()
@@ -597,7 +597,7 @@
                                         (IntegerConstant 16 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArrayItem
                                             (Var 4 newshape1)
                                             [(()
@@ -610,7 +610,7 @@
                                         (IntegerConstant 16 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 c)
                                         (ArrayReshape
                                             (Var 4 d)
@@ -1006,7 +1006,7 @@
                                     )
                                     []
                                     [(Var 3 a)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 eps)
                                         (Cast
                                             (RealConstant
@@ -1022,7 +1022,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArrayItem
                                             (Var 3 newshape)
                                             [(()
@@ -1035,7 +1035,7 @@
                                         (IntegerConstant 256 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 b)
                                         (ArrayReshape
                                             (Var 3 a)
@@ -1067,7 +1067,7 @@
                                         (IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 256 (Integer 4))
                                         ())
-                                        [(=
+                                        [(Assignment
                                             (Var 3 i)
                                             (IntegerBinOp
                                                 (IntegerBinOp
@@ -1084,7 +1084,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 3 j)
                                             (IntegerBinOp
                                                 (IntegerBinOp
@@ -1192,7 +1192,7 @@
                                                 (IntegerConstant 1 (Integer 4))
                                                 (IntegerConstant 16 (Integer 4))
                                                 ())
-                                                [(=
+                                                [(Assignment
                                                     (ArrayItem
                                                         (Var 3 c)
                                                         [(()
@@ -1263,7 +1263,7 @@
                                             )]
                                         )]
                                     )
-                                    (=
+                                    (Assignment
                                         (ArrayItem
                                             (Var 3 newshape1)
                                             [(()
@@ -1276,7 +1276,7 @@
                                         (IntegerConstant 4096 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 d)
                                         (ArrayReshape
                                             (Var 3 c)
@@ -1308,7 +1308,7 @@
                                         (IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 4096 (Integer 4))
                                         ())
-                                        [(=
+                                        [(Assignment
                                             (Var 3 i)
                                             (IntegerBinOp
                                                 (IntegerBinOp
@@ -1325,7 +1325,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 3 j)
                                             (IntegerBinOp
                                                 (IntegerBinOp
@@ -1354,7 +1354,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 3 k)
                                             (IntegerBinOp
                                                 (IntegerBinOp
@@ -1617,7 +1617,7 @@
                                             (IntegerConstant 1 (Integer 4))
                                             (IntegerConstant 16 (Integer 4))
                                             ())
-                                            [(=
+                                            [(Assignment
                                                 (ArrayItem
                                                     (Var 5 a)
                                                     [(()
@@ -1697,7 +1697,7 @@
                                         (IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 4096 (Integer 4))
                                         ())
-                                        [(=
+                                        [(Assignment
                                             (Var 5 i)
                                             (IntegerBinOp
                                                 (IntegerBinOp
@@ -1714,7 +1714,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 5 j)
                                             (IntegerBinOp
                                                 (IntegerBinOp
@@ -1743,7 +1743,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 5 k)
                                             (IntegerBinOp
                                                 (IntegerBinOp
@@ -1778,7 +1778,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (ArrayItem
                                                 (Var 5 d)
                                                 [(()

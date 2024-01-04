@@ -59,7 +59,7 @@
                         })
                     types_14
                     [iso_fortran_env]
-                    [(=
+                    [(Assignment
                         (Var 2 r)
                         (RealConstant
                             1.000000

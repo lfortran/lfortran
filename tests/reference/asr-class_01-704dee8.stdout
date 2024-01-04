@@ -58,7 +58,7 @@
                         })
                     circle_test
                     [class_circle1]
-                    [(=
+                    [(Assignment
                         (Var 6 c)
                         (StructTypeConstructor
                             6 circle
@@ -79,7 +79,7 @@
                         []
                         (Var 6 c)
                     )
-                    (=
+                    (Assignment
                         (StructInstanceMember
                             (Var 6 c)
                             6 1_circle_radius
@@ -228,7 +228,7 @@
                                     )
                                     []
                                     [(Var 4 this)]
-                                    [(=
+                                    [(Assignment
                                         (Var 4 area)
                                         (RealBinOp
                                             (Var 2 pi)
@@ -343,7 +343,7 @@
                                     )
                                     []
                                     [(Var 5 this)]
-                                    [(=
+                                    [(Assignment
                                         (Var 5 area)
                                         (FunctionCall
                                             5 1_area

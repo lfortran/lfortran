@@ -58,17 +58,17 @@
                         })
                     doloop_04
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 j)
                         (IntegerConstant 0 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 k)
                         (IntegerConstant 2 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 i)
                         (IntegerBinOp
                             (IntegerConstant 1 (Integer 4))
@@ -136,7 +136,7 @@
                             (Logical 4)
                             ()
                         )
-                        [(=
+                        [(Assignment
                             (Var 2 i)
                             (IntegerBinOp
                                 (Var 2 i)
@@ -147,7 +147,7 @@
                             )
                             ()
                         )
-                        (=
+                        (Assignment
                             (Var 2 j)
                             (IntegerBinOp
                                 (Var 2 j)
@@ -177,12 +177,12 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 j)
                         (IntegerConstant 0 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 k)
                         (IntegerUnaryMinus
                             (IntegerConstant 2 (Integer 4))
@@ -191,7 +191,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 i)
                         (IntegerBinOp
                             (IntegerConstant 10 (Integer 4))
@@ -259,7 +259,7 @@
                             (Logical 4)
                             ()
                         )
-                        [(=
+                        [(Assignment
                             (Var 2 i)
                             (IntegerBinOp
                                 (Var 2 i)
@@ -270,7 +270,7 @@
                             )
                             ()
                         )
-                        (=
+                        (Assignment
                             (Var 2 j)
                             (IntegerBinOp
                                 (Var 2 j)
@@ -300,12 +300,12 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 j)
                         (IntegerConstant 0 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 i)
                         (IntegerBinOp
                             (IntegerConstant 1 (Integer 4))
@@ -331,7 +331,7 @@
                             (Logical 4)
                             ()
                         )
-                        [(=
+                        [(Assignment
                             (Var 2 i)
                             (IntegerBinOp
                                 (Var 2 i)
@@ -342,7 +342,7 @@
                             )
                             ()
                         )
-                        (=
+                        (Assignment
                             (Var 2 j)
                             (IntegerBinOp
                                 (Var 2 j)
@@ -380,12 +380,12 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 j)
                         (IntegerConstant 0 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 i)
                         (IntegerBinOp
                             (IntegerConstant 1 (Integer 4))
@@ -411,7 +411,7 @@
                             (Logical 4)
                             ()
                         )
-                        [(=
+                        [(Assignment
                             (Var 2 i)
                             (IntegerBinOp
                                 (Var 2 i)
@@ -422,7 +422,7 @@
                             )
                             ()
                         )
-                        (=
+                        (Assignment
                             (Var 2 j)
                             (IntegerBinOp
                                 (Var 2 j)
@@ -460,12 +460,12 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 j)
                         (IntegerConstant 0 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 i)
                         (IntegerConstant 1 (Integer 4))
                         ()
@@ -476,7 +476,7 @@
                             .true.
                             (Logical 4)
                         )
-                        [(=
+                        [(Assignment
                             (Var 2 j)
                             (IntegerBinOp
                                 (Var 2 j)
@@ -500,7 +500,7 @@
                             )]
                             []
                         )
-                        (=
+                        (Assignment
                             (Var 2 i)
                             (IntegerBinOp
                                 (Var 2 i)
@@ -525,12 +525,12 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 k)
                         (IntegerConstant 2 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 i)
                         (IntegerBinOp
                             (IntegerConstant 1 (Integer 4))
@@ -598,7 +598,7 @@
                             (Logical 4)
                             ()
                         )
-                        [(=
+                        [(Assignment
                             (Var 2 i)
                             (IntegerBinOp
                                 (Var 2 i)

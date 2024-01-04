@@ -83,7 +83,7 @@
                     )
                     []
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 a)
                         (ArrayConstant
                             [(RealConstant
@@ -112,7 +112,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 b)
                         (ArrayConstant
                             [(RealUnaryMinus
@@ -168,7 +168,7 @@
                             )
                             ()
                         )
-                        [(=
+                        [(Assignment
                             (Var 2 a)
                             (ArrayBroadcast
                                 (RealConstant
@@ -237,7 +237,7 @@
                             )
                             ()
                         )
-                        [(=
+                        [(Assignment
                             (Var 2 a)
                             (ArrayBroadcast
                                 (RealConstant
@@ -304,7 +304,7 @@
                                 )
                                 ()
                             )
-                            [(=
+                            [(Assignment
                                 (Var 2 b)
                                 (ArrayBroadcast
                                     (RealConstant
@@ -355,7 +355,7 @@
                                 )
                                 ()
                             )]
-                            [(=
+                            [(Assignment
                                 (Var 2 a)
                                 (RealBinOp
                                     (RealBinOp

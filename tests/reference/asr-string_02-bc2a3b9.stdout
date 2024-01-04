@@ -74,7 +74,7 @@
                         })
                     string_02
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 title)
                         (StringConstant
                             "Mr. "
@@ -82,7 +82,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 firstname)
                         (StringConstant
                             "Rowan "
@@ -90,7 +90,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 surname)
                         (StringConstant
                             "Atkinson"
@@ -98,7 +98,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 greetings)
                         (StringConstant
                             "A big hello from Mr. Bean"

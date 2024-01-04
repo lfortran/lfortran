@@ -98,7 +98,7 @@
                                         ()
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 print_vars)
                                         (IntegerConstant 1 (Integer 4))
                                         ()

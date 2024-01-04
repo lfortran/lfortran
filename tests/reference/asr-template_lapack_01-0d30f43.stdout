@@ -870,7 +870,7 @@
                                                     gemm]
                                                     [(Var 10 a)
                                                     (Var 10 b)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 10 m)
                                                         (ArraySize
                                                             (Var 10 a)
@@ -880,7 +880,7 @@
                                                         )
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 10 n)
                                                         (ArraySize
                                                             (Var 10 b)
@@ -890,7 +890,7 @@
                                                         )
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 10 k)
                                                         (ArraySize
                                                             (Var 10 a)
@@ -1505,7 +1505,7 @@
                                     )
                                     []
                                     [(Var 14 a)]
-                                    [(=
+                                    [(Assignment
                                         (Var 14 b)
                                         (Cast
                                             (Var 14 a)
@@ -1576,7 +1576,7 @@
                                     )
                                     []
                                     [(Var 13 a)]
-                                    [(=
+                                    [(Assignment
                                         (Var 13 b)
                                         (Var 13 a)
                                         ()
@@ -1794,7 +1794,7 @@
                                     my_gemm_real]
                                     [(Var 15 a)
                                     (Var 15 b)]
-                                    [(=
+                                    [(Assignment
                                         (Var 15 m)
                                         (ArraySize
                                             (Var 15 a)
@@ -1804,7 +1804,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 15 n)
                                         (ArraySize
                                             (Var 15 b)
@@ -1814,7 +1814,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 15 k)
                                         (ArraySize
                                             (Var 15 a)
@@ -3226,7 +3226,7 @@
                                                     gemm]
                                                     [(Var 19 a)
                                                     (Var 19 b)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 19 m)
                                                         (ArraySize
                                                             (Var 19 a)
@@ -3236,7 +3236,7 @@
                                                         )
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 19 n)
                                                         (ArraySize
                                                             (Var 19 b)
@@ -3246,7 +3246,7 @@
                                                         )
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 19 k)
                                                         (ArraySize
                                                             (Var 19 a)
@@ -3612,7 +3612,7 @@
                                                     my_gemm_real]
                                                     [(Var 24 a)
                                                     (Var 24 b)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 24 m)
                                                         (ArraySize
                                                             (Var 24 a)
@@ -3622,7 +3622,7 @@
                                                         )
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 24 n)
                                                         (ArraySize
                                                             (Var 24 b)
@@ -3632,7 +3632,7 @@
                                                         )
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 24 k)
                                                         (ArraySize
                                                             (Var 24 a)
@@ -3948,7 +3948,7 @@
                                                     my_gemm_double]
                                                     [(Var 25 a)
                                                     (Var 25 b)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 25 m)
                                                         (ArraySize
                                                             (Var 25 a)
@@ -3958,7 +3958,7 @@
                                                         )
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 25 n)
                                                         (ArraySize
                                                             (Var 25 b)
@@ -3968,7 +3968,7 @@
                                                         )
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 25 k)
                                                         (ArraySize
                                                             (Var 25 a)
@@ -4447,7 +4447,7 @@
                                                     my_gemm_double]
                                                     [(Var 22 a)
                                                     (Var 22 b)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 22 m)
                                                         (ArraySize
                                                             (Var 22 a)
@@ -4457,7 +4457,7 @@
                                                         )
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 22 n)
                                                         (ArraySize
                                                             (Var 22 b)
@@ -4467,7 +4467,7 @@
                                                         )
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 22 k)
                                                         (ArraySize
                                                             (Var 22 a)
@@ -4783,7 +4783,7 @@
                                                     my_gemm_real]
                                                     [(Var 21 a)
                                                     (Var 21 b)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 21 m)
                                                         (ArraySize
                                                             (Var 21 a)
@@ -4793,7 +4793,7 @@
                                                         )
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 21 n)
                                                         (ArraySize
                                                             (Var 21 b)
@@ -4803,7 +4803,7 @@
                                                         )
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 21 k)
                                                         (ArraySize
                                                             (Var 21 a)
@@ -4930,7 +4930,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 20 csp)
                                         (FunctionCall
                                             20 __instantiated_simple_external_matmul
@@ -4976,7 +4976,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 20 cdp)
                                         (FunctionCall
                                             20 __instantiated_simple_external_matmul1

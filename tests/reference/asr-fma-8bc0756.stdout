@@ -144,7 +144,7 @@
                         })
                     fma
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 x)
                         (RealBinOp
                             (RealBinOp
@@ -200,7 +200,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 z)
                         (RealBinOp
                             (Var 2 s1)

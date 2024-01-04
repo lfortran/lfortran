@@ -73,7 +73,7 @@
                     )
                     []
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 a)
                         (Cast
                             (IntrinsicScalarFunction
@@ -93,7 +93,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 b)
                         (Cast
                             (IntrinsicScalarFunction

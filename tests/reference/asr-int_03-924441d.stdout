@@ -120,7 +120,7 @@
                         })
                     int_03
                     []
-                    [(=
+                    [(Assignment
                         (ArrayItem
                             (Var 2 ans)
                             [(()
@@ -133,7 +133,7 @@
                         (IntegerConstant 8524933037632333570 (Integer 8))
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 ans)
                             [(()
@@ -150,7 +150,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 ans)
                             [(()
@@ -167,7 +167,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 ans)
                             [(()
@@ -180,7 +180,7 @@
                         (IntegerConstant 7303655603304982073 (Integer 8))
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 ans)
                             [(()
@@ -198,7 +198,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 w8)
                         (ComplexConstructor
                             (RealConstant
@@ -218,7 +218,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 i4)
                         (Cast
                             (Var 2 w8)
@@ -228,7 +228,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 i8)
                         (Cast
                             (Var 2 w8)
@@ -275,7 +275,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 w4)
                         (ComplexConstructor
                             (RealConstant
@@ -295,7 +295,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 i4)
                         (Cast
                             (Var 2 w4)
@@ -305,7 +305,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 i8)
                         (Cast
                             (Var 2 w4)

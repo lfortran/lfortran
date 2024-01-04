@@ -88,7 +88,7 @@
                         })
                     matrix_01_tranpose
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 b)
                         (ArrayTranspose
                             (Var 2 a)

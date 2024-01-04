@@ -239,7 +239,7 @@
                                     )
                                     []
                                     [(Var 3 x)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 r)
                                         (IntegerCompare
                                             (IntegerBinOp
@@ -487,7 +487,7 @@
                                                     ()
                                                 )
                                                 ())
-                                                [(=
+                                                [(Assignment
                                                     (Var 4 x)
                                                     (FunctionCall
                                                         2 modulo2
@@ -511,7 +511,7 @@
                                                     )
                                                     ()
                                                 )
-                                                (=
+                                                (Assignment
                                                     (Var 4 y)
                                                     (FunctionCall
                                                         2 modulo2
@@ -763,7 +763,7 @@
                                 (IntegerConstant 1 (Integer 4))
                                 (Var 2 dim3)
                                 ())
-                                [(=
+                                [(Assignment
                                     (ArrayItem
                                         (Var 2 a)
                                         [(()
@@ -801,7 +801,7 @@
                                     )
                                     ()
                                 )
-                                (=
+                                (Assignment
                                     (ArrayItem
                                         (Var 2 b)
                                         [(()
@@ -860,7 +860,7 @@
                             )]
                         )]
                     )
-                    (=
+                    (Assignment
                         (Var 2 c)
                         (LogicalBinOp
                             (Var 2 a)
@@ -887,7 +887,7 @@
                         ((IntegerConstant 0 (Integer 4)))]
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 c)
                         (LogicalBinOp
                             (Var 2 a)
@@ -914,7 +914,7 @@
                         ((IntegerConstant 1 (Integer 4)))]
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 c)
                         (LogicalBinOp
                             (Var 2 a)
@@ -941,7 +941,7 @@
                         ((IntegerConstant 2 (Integer 4)))]
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 c)
                         (LogicalBinOp
                             (Var 2 b)

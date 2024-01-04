@@ -40,13 +40,13 @@
             ())]
             ()
         )]
-        [(=
+        [(Assignment
             0
             a
             (u- 2)
             ()
         )
-        (=
+        (Assignment
             0
             (FuncCallOrArray
                 a
@@ -62,7 +62,7 @@
             1
             ()
         )
-        (=
+        (Assignment
             0
             (FuncCallOrArray
                 a
@@ -78,7 +78,7 @@
             8
             ()
         )
-        (=
+        (Assignment
             0
             b
             (u- 3)
@@ -88,13 +88,13 @@
             0
             ()
             (>= a 0)
-            [(=
+            [(Assignment
                 0
                 b
                 1
                 ()
             )]
-            [(=
+            [(Assignment
                 0
                 b
                 0
@@ -111,13 +111,13 @@
             0
             ()
             (>= a 0)
-            [(=
+            [(Assignment
                 0
                 b
                 1
                 ()
             )]
-            [(=
+            [(Assignment
                 0
                 b
                 0
@@ -134,13 +134,13 @@
             0
             ()
             (>= a 0)
-            [(=
+            [(Assignment
                 0
                 b
                 1
                 ()
             )]
-            [(=
+            [(Assignment
                 0
                 b
                 0

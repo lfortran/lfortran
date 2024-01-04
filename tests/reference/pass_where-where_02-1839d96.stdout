@@ -68,7 +68,7 @@
                         })
                     main
                     []
-                    [(=
+                    [(Assignment
                         (ArrayItem
                             (Var 2 a)
                             [(()
@@ -84,7 +84,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 a)
                             [(()
@@ -100,7 +100,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 b)
                             [(()
@@ -116,7 +116,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 b)
                             [(()
@@ -174,7 +174,7 @@
                                 (Logical 4)
                                 ()
                             )
-                            [(=
+                            [(Assignment
                                 (ArrayItem
                                     (Var 2 a)
                                     [(()

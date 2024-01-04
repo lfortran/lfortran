@@ -44,7 +44,7 @@
             ())]
             ()
         )]
-        [(=
+        [(Assignment
             0
             k
             1
@@ -58,19 +58,19 @@
             )]
             ()
         )
-        (=
+        (Assignment
             200
             k
             (+ k 1)
             ()
         )
-        (=
+        (Assignment
             0
             m
             1
             ()
         )
-        (=
+        (Assignment
             0
             n
             2

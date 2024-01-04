@@ -61,7 +61,7 @@
                 )]
                 ()
             )
-            (=
+            (Assignment
                 0
                 e
                 (FuncCallOrArray
@@ -74,7 +74,7 @@
                 )
                 ()
             )
-            (=
+            (Assignment
                 0
                 b
                 0
@@ -105,7 +105,7 @@
                     )]
                     ()
                 )
-                (=
+                (Assignment
                     0
                     d
                     1
@@ -151,7 +151,7 @@
             ())]
             ()
         )]
-        [(=
+        [(Assignment
             0
             c
             (FuncCallOrArray

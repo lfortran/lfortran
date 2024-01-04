@@ -43,7 +43,7 @@
                         })
                     interface_04
                     [interface_04_mod2]
-                    [(=
+                    [(Assignment
                         (Var 5 i)
                         (IntegerConstant 5 (Integer 4))
                         ()
@@ -119,7 +119,7 @@
                                     )
                                     []
                                     [(Var 3 a)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 a)
                                         (IntegerBinOp
                                             (Var 3 a)

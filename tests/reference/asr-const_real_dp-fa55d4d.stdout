@@ -74,7 +74,7 @@
                         })
                     const_real_dp
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 zero)
                         (RealConstant
                             0.000000
@@ -82,7 +82,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 u)
                         (Cast
                             (RealConstant
@@ -98,7 +98,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 v)
                         (RealConstant
                             1.050000
@@ -106,7 +106,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (RealConstant
                             1.050000

@@ -72,7 +72,7 @@
                         })
                     intrinsics_04
                     [iso_fortran_env]
-                    [(=
+                    [(Assignment
                         (Var 2 x)
                         (RealConstant
                             1.500000
@@ -80,7 +80,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (IntrinsicScalarFunction
                             Tan
@@ -276,7 +276,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 z)
                         (ComplexConstructor
                             (RealConstant
@@ -296,7 +296,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 z)
                         (IntrinsicScalarFunction
                             Tan

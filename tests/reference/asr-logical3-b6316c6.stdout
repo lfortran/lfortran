@@ -42,7 +42,7 @@
                         })
                     logical3
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 a)
                         (LogicalConstant
                             .true.
@@ -50,7 +50,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 b)
                         (LogicalConstant
                             .false.
@@ -142,7 +142,7 @@
                             ()
                         )]
                     )
-                    (=
+                    (Assignment
                         (Var 2 a)
                         (LogicalConstant
                             .false.
@@ -150,7 +150,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 b)
                         (LogicalConstant
                             .true.
@@ -246,7 +246,7 @@
                             ()
                         )]
                     )
-                    (=
+                    (Assignment
                         (Var 2 a)
                         (LogicalConstant
                             .true.
@@ -254,7 +254,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 b)
                         (LogicalConstant
                             .true.

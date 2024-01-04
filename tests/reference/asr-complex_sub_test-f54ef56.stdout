@@ -26,7 +26,7 @@
                         })
                     complex2
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 x)
                         (ComplexConstructor
                             (RealConstant
@@ -46,7 +46,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (ComplexBinOp
                             (Var 2 x)
@@ -69,7 +69,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (ComplexBinOp
                             (Cast
@@ -97,7 +97,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (ComplexBinOp
                             (Cast
@@ -118,7 +118,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (ComplexBinOp
                             (Var 2 x)
