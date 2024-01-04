@@ -980,11 +980,9 @@ static inline ASR::asr_t* create_UnaryFunction(Allocator& al, const Location& lo
     Vec<ASR::expr_t*>& args, eval_intrinsic_function eval_function,
     int64_t intrinsic_id, int64_t overload_id, ASR::ttype_t* type) {
     ASR::expr_t *value = nullptr;
-    ASR::expr_t *arg_value = ASRUtils::expr_value(args[0]);
-    if (arg_value) {
-        Vec<ASR::expr_t*> arg_values;
-        arg_values.reserve(al, 1);
-        arg_values.push_back(al, arg_value);
+    if (ASRUtils::all_args_evaluated(args)) {
+        Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 1);
+        arg_values.push_back(al, ASRUtils::expr_value(args[0]));
         value = eval_function(al, loc, type, arg_values);
     }
 
@@ -1239,43 +1237,41 @@ static inline ASR::expr_t* instantiate_LogGamma (Allocator &al,
 
 } // namespace LogGamma
 
-#define create_trunc_macro(X, stdeval)                                              \
-namespace X {                                                                       \
-    static inline ASR::expr_t *eval_##X(Allocator &al, const Location &loc,         \
-            ASR::ttype_t *t, Vec<ASR::expr_t*>& args) {                             \
-        LCOMPILERS_ASSERT(args.size() == 1);                                        \
-        double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;              \
-        if (ASRUtils::extract_value(args[0], rv)) {                                 \
-            double val = std::stdeval(rv);                                          \
-            return make_ConstantWithType(make_RealConstant_t, val, t, loc);         \
-        }                                                                           \
-        return nullptr;                                                             \
-    }                                                                               \
-    static inline ASR::asr_t* create_##X(Allocator& al, const Location& loc,        \
-        Vec<ASR::expr_t*>& args,                                                    \
-        const std::function<void (const std::string &, const Location &)> err) {    \
-        ASR::ttype_t *type = ASRUtils::expr_type(args[0]);                          \
-        if (args.n != 1) {                                                          \
-            err("Intrinsic `#X` accepts exactly one argument", loc);                \
-        } else if (!ASRUtils::is_real(*type)) {                                     \
-            err("`x` argument of `#X` must be real",                                \
-                args[0]->base.loc);                                                 \
-        }                                                                           \
-        return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args,          \
-                eval_##X, static_cast<int64_t>(IntrinsicScalarFunctions::Trunc),    \
-                0, type);                                                           \
-    }                                                                               \
-    static inline ASR::expr_t* instantiate_##X (Allocator &al,                      \
-            const Location &loc, SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, \
-            ASR::ttype_t *return_type, Vec<ASR::call_arg_t>& new_args,              \
-            int64_t overload_id) {                                                  \
-        ASR::ttype_t* arg_type = arg_types[0];                                      \
-        return UnaryIntrinsicFunction::instantiate_functions(al, loc, scope,        \
-            "#X", arg_type, return_type, new_args, overload_id);                    \
-    }                                                                               \
+// `X` is the name of the function in the IntrinsicScalarFunctions enum and
+// we use the same name for `create_X` and other places
+// `eval_X` is the name of the function in the `std` namespace for compile
+//  numerical time evaluation
+// `lc_rt_name` is the name that we use in the C runtime library
+#define create_unary_function(X, eval_X, lc_rt_name)                            \
+namespace X {                                                                   \
+    static inline ASR::expr_t *eval_##X(Allocator &al, const Location &loc,     \
+            ASR::ttype_t *t, Vec<ASR::expr_t*> &args) {                         \
+        double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;          \
+        return f(std::eval_X(rv), t);                                           \
+    }                                                                           \
+    static inline ASR::asr_t* create_##X(Allocator &al, const Location &loc,    \
+        Vec<ASR::expr_t*> &args,                                                \
+        const std::function<void (const std::string &, const Location &)> err) {\
+        ASR::ttype_t *type = ASRUtils::expr_type(args[0]);                      \
+        if (args.n != 1) {                                                      \
+            err("Intrinsic `"#X"` accepts exactly one argument", loc);          \
+        } else if (!ASRUtils::is_real(*type)) {                                 \
+            err("`x` argument of `"#X"` must be real", args[0]->base.loc);      \
+        }                                                                       \
+        return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args,      \
+                eval_##X, static_cast<int64_t>(IntrinsicScalarFunctions::X),    \
+                0, type);                                                       \
+    }                                                                           \
+    static inline ASR::expr_t* instantiate_##X (Allocator &al,                  \
+            const Location &loc, SymbolTable *scope,                            \
+            Vec<ASR::ttype_t*> &arg_types, ASR::ttype_t *return_type,           \
+            Vec<ASR::call_arg_t> &new_args, int64_t overload_id) {              \
+        return UnaryIntrinsicFunction::instantiate_functions(al, loc, scope,    \
+            #lc_rt_name, arg_types[0], return_type, new_args, overload_id);     \
+    }                                                                           \
 } // namespace X
 
-create_trunc_macro(Trunc, trunc)
+create_unary_function(Trunc, trunc, trunc)
 
 namespace Fix {
     static inline ASR::expr_t *eval_Fix(Allocator &al, const Location &loc,
