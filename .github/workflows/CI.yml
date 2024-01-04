@@ -505,6 +505,7 @@ jobs:
             cd stdlib-fortran-lang
             git checkout -t origin/lf14
             git checkout 9e40e4d2f55e884bd4ce02b1e1a199bb11d1553f
+            micromamba activate lf
             FC=$(pwd)/../src/bin/lfortran cmake .
             make fortran_stdlib
             cp ./src/*.mod ./example/specialfunctions_gamma
