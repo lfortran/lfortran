@@ -71,7 +71,7 @@
                 ())]
                 ()
             )]
-            [(=
+            [(Assignment
                 0
                 a
                 (+ a 1)
@@ -112,7 +112,7 @@
                 ())]
                 ()
             )]
-            [(=
+            [(Assignment
                 0
                 a
                 (+ a 1)
@@ -181,7 +181,7 @@
                 (EndOfLine)]
             )
         )]
-        [(=
+        [(Assignment
             0
             i
             5
@@ -218,7 +218,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             r
             6
@@ -255,7 +255,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             i
             7

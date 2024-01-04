@@ -250,7 +250,7 @@
                                             (Logical 4)
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 4 __1_v)
                                             (ArrayBound
                                                 (Var 4 exclude_source)
@@ -279,7 +279,7 @@
                                                 ()
                                             )
                                             ())
-                                            [(=
+                                            [(Assignment
                                                 (ArrayItem
                                                     (Var 4 sources)
                                                     [(()
@@ -306,7 +306,7 @@
                                                 )
                                                 ()
                                             )
-                                            (=
+                                            (Assignment
                                                 (Var 4 __1_v)
                                                 (IntegerBinOp
                                                     (Var 4 __1_v)
@@ -318,7 +318,7 @@
                                                 ()
                                             )]
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 sources)
                                             (ArrayPack
                                                 (Var 4 dir_sources)
@@ -344,7 +344,7 @@
                                             )
                                             ()
                                         )]
-                                        [(=
+                                        [(Assignment
                                             (Var 4 sources)
                                             (ArrayConstant
                                                 [(Var 4 sources)

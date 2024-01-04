@@ -38,7 +38,7 @@
                         })
                     sin_03
                     [iso_fortran_env]
-                    [(=
+                    [(Assignment
                         (Var 2 x)
                         (IntrinsicScalarFunction
                             Sin

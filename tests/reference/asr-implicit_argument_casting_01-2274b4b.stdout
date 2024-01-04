@@ -98,7 +98,7 @@
                     []
                     [(Var 2 n)
                     (Var 2 a)]
-                    [(=
+                    [(Assignment
                         (Var 2 a)
                         (ArrayBroadcast
                             (RealConstant
@@ -281,7 +281,7 @@
                                     [idz_realcomp]
                                     [(Var 4 ls)
                                     (Var 4 w)]
-                                    [(=
+                                    [(Assignment
                                         (Var 4 isi)
                                         (IntegerConstant 1 (Integer 4))
                                         ()

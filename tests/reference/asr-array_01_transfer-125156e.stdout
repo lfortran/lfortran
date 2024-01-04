@@ -47,7 +47,7 @@
                         })
                     array_01_transfer
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 m)
                         (ArrayConstant
                             [(IntegerConstant 1 (Integer 4))

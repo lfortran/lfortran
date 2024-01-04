@@ -42,7 +42,7 @@
             ())]
             ()
         )]
-        [(=
+        [(Assignment
             0
             lout
             (+ 1 (/ n 2))
@@ -56,7 +56,7 @@
             1
             lout
             ()
-            [(=
+            [(Assignment
                 1
                 (FuncCallOrArray
                     f
@@ -93,7 +93,7 @@
                 []
                 []
             ) 0)
-            [(=
+            [(Assignment
                 0
                 (FuncCallOrArray
                     f
@@ -140,7 +140,7 @@
             1
             lout
             ()
-            [(=
+            [(Assignment
                 0
                 a
                 1
@@ -154,7 +154,7 @@
                 3
                 n
                 ()
-                [(=
+                [(Assignment
                     0
                     b
                     2
@@ -168,7 +168,7 @@
                     3
                     n
                     ()
-                    [(=
+                    [(Assignment
                         0
                         c
                         3
@@ -182,13 +182,13 @@
                         3
                         n
                         ()
-                        [(=
+                        [(Assignment
                             0
                             d
                             4
                             ()
                         )
-                        (=
+                        (Assignment
                             5
                             xx
                             5
@@ -197,7 +197,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         0
                         e
                         5
@@ -206,7 +206,7 @@
                     ()
                     ()
                 )
-                (=
+                (Assignment
                     0
                     kmn
                     6
@@ -215,13 +215,13 @@
                 ()
                 ()
             )
-            (=
+            (Assignment
                 0
                 g
                 8
                 ()
             )
-            (=
+            (Assignment
                 1
                 (FuncCallOrArray
                     kmn
@@ -240,7 +240,7 @@
             ()
             ()
         )
-        (=
+        (Assignment
             0
             h
             9

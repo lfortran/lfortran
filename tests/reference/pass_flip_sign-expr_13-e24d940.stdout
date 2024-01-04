@@ -116,7 +116,7 @@
                             (Logical 4)
                             ()
                         )
-                        [(=
+                        [(Assignment
                             (Var 86 _lcompilers_optimization_flipsign_f32)
                             (RealUnaryMinus
                                 (Var 86 variable)
@@ -125,7 +125,7 @@
                             )
                             ()
                         )]
-                        [(=
+                        [(Assignment
                             (Var 86 _lcompilers_optimization_flipsign_f32)
                             (Var 86 variable)
                             ()
@@ -251,7 +251,7 @@
                             (Logical 4)
                             ()
                         )
-                        [(=
+                        [(Assignment
                             (Var 87 _lcompilers_optimization_flipsign_f321)
                             (RealUnaryMinus
                                 (Var 87 variable)
@@ -260,7 +260,7 @@
                             )
                             ()
                         )]
-                        [(=
+                        [(Assignment
                             (Var 87 _lcompilers_optimization_flipsign_f321)
                             (Var 87 variable)
                             ()
@@ -506,12 +506,12 @@
                         })
                     flip_sign_dead_code
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 number)
                         (IntegerConstant 123 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (RealConstant
                             5.500000
@@ -519,7 +519,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (FunctionCall
                             1 _lcompilers_optimization_flipsign_f32
@@ -567,12 +567,12 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 number)
                         (IntegerConstant 124 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (RealConstant
                             5.500000
@@ -580,7 +580,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (FunctionCall
                             1 _lcompilers_optimization_flipsign_f321

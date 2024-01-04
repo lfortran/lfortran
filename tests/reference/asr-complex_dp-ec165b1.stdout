@@ -58,7 +58,7 @@
                         })
                     complex_dp
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 zero)
                         (Cast
                             (RealConstant
@@ -75,7 +75,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 v)
                         (Cast
                             (ComplexConstructor
@@ -100,7 +100,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (Cast
                             (ComplexConstructor

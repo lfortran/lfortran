@@ -62,7 +62,7 @@
                                     )
                                     []
                                     [(Var 5 x)]
-                                    [(=
+                                    [(Assignment
                                         (Var 5 y)
                                         (IntegerBinOp
                                             (Var 5 x)
@@ -211,7 +211,7 @@
                                     []
                                     [(Var 3 fun)
                                     (Var 3 x)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 y)
                                         (FunctionCall
                                             3 fun

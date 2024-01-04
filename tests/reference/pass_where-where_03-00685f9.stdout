@@ -99,7 +99,7 @@
                     )
                     []
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 a)
                         (ArrayConstant
                             [(RealConstant
@@ -128,7 +128,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 b)
                         (ArrayConstant
                             [(RealUnaryMinus
@@ -213,7 +213,7 @@
                                 (Logical 4)
                                 ()
                             )
-                            [(=
+                            [(Assignment
                                 (ArrayItem
                                     (Var 2 a)
                                     [(()
@@ -269,7 +269,7 @@
                                 (Logical 4)
                                 ()
                             )
-                            [(=
+                            [(Assignment
                                 (ArrayItem
                                     (Var 2 a)
                                     [(()
@@ -304,7 +304,7 @@
                                     (Logical 4)
                                     ()
                                 )
-                                [(=
+                                [(Assignment
                                     (ArrayItem
                                         (Var 2 b)
                                         [(()
@@ -320,7 +320,7 @@
                                     )
                                     ()
                                 )]
-                                [(=
+                                [(Assignment
                                     (ArrayItem
                                         (Var 2 a)
                                         [(()

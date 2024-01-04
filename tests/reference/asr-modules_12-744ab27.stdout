@@ -52,7 +52,7 @@
                         })
                     prog_module_12
                     [module_12]
-                    [(=
+                    [(Assignment
                         (ArrayItem
                             (Var 3 a)
                             [(()

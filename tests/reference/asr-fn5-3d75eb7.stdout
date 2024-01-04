@@ -222,7 +222,7 @@
                                             ()
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 3 strout)
                                             (StringConcat
                                                 (Var 3 line)
@@ -259,7 +259,7 @@
                                             )
                                             ()
                                         )]
-                                        [(=
+                                        [(Assignment
                                             (Var 3 strout)
                                             (Var 3 line)
                                             ()

@@ -143,7 +143,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 17 tempfile)
                                         (FunctionCall
                                             17 f_string@f_string~genericprocedure
@@ -266,7 +266,7 @@
                                             [(Exit
                                                 ()
                                             )]
-                                            [(=
+                                            [(Assignment
                                                 (Var 16 string_fortran)
                                                 (FunctionCall
                                                     16 f_string@f_string_cptr
@@ -473,7 +473,7 @@
                                     )
                                     [f_string_cptr_n]
                                     [(Var 6 cptr)]
-                                    [(=
+                                    [(Assignment
                                         (Var 6 s)
                                         (FunctionCall
                                             4 f_string_cptr_n

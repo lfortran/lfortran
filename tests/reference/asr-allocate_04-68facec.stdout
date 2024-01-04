@@ -141,7 +141,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 num)
                         (StringConstant
                             "lfortran"
@@ -149,7 +149,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 string)
                         (FunctionCall
                             2 trim
@@ -184,7 +184,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 num)
                         (StringConstant
                             "lfortran working"
@@ -192,7 +192,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 message)
                         (StringSection
                             (Var 2 num)

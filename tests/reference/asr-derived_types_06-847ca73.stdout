@@ -348,7 +348,7 @@
                                                     ()
                                                 )
                                             )
-                                            (=
+                                            (Assignment
                                                 (Var 12 lhs)
                                                 (StringConcat
                                                     (Var 12 lhs)
@@ -378,7 +378,7 @@
                                                 ()
                                                 ()
                                             )
-                                            [(=
+                                            [(Assignment
                                                 (Var 12 lhs)
                                                 (StructInstanceMember
                                                     (Var 12 rhs)
@@ -619,7 +619,7 @@
                                             ()
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (StructInstanceMember
                                                 (Var 13 self)
                                                 13 1_toml_time_hour
@@ -640,7 +640,7 @@
                                             ()
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (StructInstanceMember
                                                 (Var 13 self)
                                                 13 1_toml_time_minute
@@ -661,7 +661,7 @@
                                             ()
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (StructInstanceMember
                                                 (Var 13 self)
                                                 13 1_toml_time_second
@@ -682,7 +682,7 @@
                                             ()
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (StructInstanceMember
                                                 (Var 13 self)
                                                 13 1_toml_time_millisec
@@ -705,7 +705,7 @@
                                             ()
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (StructInstanceMember
                                                 (Var 13 self)
                                                 13 1_toml_time_zone
@@ -1001,7 +1001,7 @@
                                             ()
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 14 lhs)
                                             (StringConcat
                                                 (Var 14 lhs)
@@ -1574,12 +1574,12 @@
                                     []
                                     [(Var 5 raw)
                                     (Var 5 timestamp)]
-                                    [(=
+                                    [(Assignment
                                         (Var 5 first)
                                         (IntegerConstant 1 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (StructInstanceMember
                                             (Var 5 timestamp)
                                             5 1_toml_datetime_date
@@ -1602,7 +1602,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 5 stat)
                                         (IntegerCompare
                                             (Var 5 err)

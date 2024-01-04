@@ -50,7 +50,7 @@
                         })
                     common1
                     []
-                    [(=
+                    [(Assignment
                         (StructInstanceMember
                             (Var 5 struct_instance_sample)
                             5 1_sample_a
@@ -63,7 +63,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (StructInstanceMember
                             (Var 5 struct_instance_sample)
                             5 1_sample_b

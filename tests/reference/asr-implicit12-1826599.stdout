@@ -264,7 +264,7 @@
                     )
                     []
                     []
-                    [(=
+                    [(Assignment
                         (ArrayItem
                             (Var 2 y)
                             [(()
@@ -277,7 +277,7 @@
                         (IntegerConstant 3 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 x)
                             [(()
@@ -304,7 +304,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 b)
                         (Cast
                             (IntegerConstant 2 (Integer 4))
@@ -317,12 +317,12 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 d)
                         (IntegerConstant 3 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 f)
                         (Cast
                             (IntegerConstant 4 (Integer 4))
@@ -332,7 +332,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 h)
                         (Cast
                             (IntegerConstant 5 (Integer 4))
@@ -345,7 +345,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 i)
                         (Cast
                             (IntegerConstant 6 (Integer 4))
@@ -358,7 +358,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 l)
                         (Cast
                             (IntegerConstant 7 (Integer 4))
@@ -371,7 +371,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 m)
                         (Cast
                             (IntegerConstant 8 (Integer 4))
@@ -381,7 +381,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 o)
                         (Cast
                             (IntegerConstant 9 (Integer 4))
@@ -391,7 +391,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 p)
                         (Cast
                             (IntegerConstant 10 (Integer 4))
@@ -401,7 +401,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 q)
                         (Cast
                             (IntegerConstant 11 (Integer 4))
@@ -414,7 +414,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 r)
                         (Cast
                             (IntegerConstant 12 (Integer 4))

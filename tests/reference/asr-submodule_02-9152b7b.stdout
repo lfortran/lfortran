@@ -369,7 +369,7 @@
                                     []
                                     [(Var 10 a)
                                     (Var 10 b)]
-                                    [(=
+                                    [(Assignment
                                         (Var 10 distance)
                                         (IntrinsicScalarFunction
                                             Sqrt
@@ -555,7 +555,7 @@
                                     [(Var 11 a)
                                     (Var 11 b)
                                     (Var 11 distance)]
-                                    [(=
+                                    [(Assignment
                                         (Var 11 distance)
                                         (IntrinsicScalarFunction
                                             Sqrt

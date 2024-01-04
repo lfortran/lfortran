@@ -201,7 +201,7 @@
                     )
                     []
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 brcmp1)
                         (IntrinsicScalarFunction
                             Exp

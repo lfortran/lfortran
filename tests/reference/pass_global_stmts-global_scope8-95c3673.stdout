@@ -41,12 +41,12 @@
                     )
                     []
                     []
-                    [(=
+                    [(Assignment
                         (Var 1 x)
                         (IntegerConstant 6 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 f1)
                         (Var 1 x)
                         ()

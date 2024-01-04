@@ -121,7 +121,7 @@
                     )
                     []
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 f1)
                         (RealConstant
                             5.000000
@@ -129,7 +129,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 f2)
                         (RealBinOp
                             (RealConstant
@@ -149,7 +149,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 f3)
                         (RealBinOp
                             (RealBinOp
@@ -181,7 +181,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 f4)
                         (RealBinOp
                             (RealConstant
@@ -213,7 +213,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 f5)
                         (RealBinOp
                             (RealConstant
@@ -233,7 +233,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 f6)
                         (RealBinOp
                             (RealConstant

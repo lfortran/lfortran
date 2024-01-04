@@ -167,7 +167,7 @@
                                     )
                                     [f_string_cptr_n]
                                     [(Var 11 cptr)]
-                                    [(=
+                                    [(Assignment
                                         (Var 11 s)
                                         (FunctionCall
                                             2 f_string_cptr_n

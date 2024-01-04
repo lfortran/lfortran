@@ -434,7 +434,7 @@
                                     [(Var 3 a)
                                     (Var 3 b)
                                     (Var 3 c)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 n)
                                         (ArraySize
                                             (Var 3 a)
@@ -489,12 +489,12 @@
                                         ()
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 status)
                                         (IntegerConstant 0 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 a_2)
                                         (IntegerBinOp
                                             (Var 3 a)
@@ -510,7 +510,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 b_2)
                                         (IntegerBinOp
                                             (Var 3 b)
@@ -526,7 +526,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 c_2)
                                         (IntegerBinOp
                                             (Var 3 c)
@@ -542,7 +542,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 ab)
                                         (IntegerBinOp
                                             (IntegerBinOp
@@ -592,7 +592,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 bc)
                                         (IntegerBinOp
                                             (IntegerBinOp
@@ -642,7 +642,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 ca)
                                         (IntegerBinOp
                                             (IntegerBinOp
@@ -692,7 +692,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 abc)
                                         (IntegerBinOp
                                             (IntegerBinOp
@@ -753,7 +753,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 status)
                                         (IntegerConstant 1 (Integer 4))
                                         ()
@@ -776,7 +776,7 @@
                         })
                     allocate_01
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 n)
                         (IntegerConstant 10 (Integer 4))
                         ()
@@ -801,7 +801,7 @@
                         ()
                         (Var 2 isource)
                     )
-                    (=
+                    (Assignment
                         (Var 2 a)
                         (ArrayBroadcast
                             (IntegerConstant 1 (Integer 4))
@@ -829,7 +829,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 b)
                         (ArrayBroadcast
                             (IntegerConstant 2 (Integer 4))
@@ -857,7 +857,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 c)
                         (ArrayBroadcast
                             (IntegerConstant 3 (Integer 4))

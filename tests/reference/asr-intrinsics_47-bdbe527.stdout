@@ -114,7 +114,7 @@
                         })
                     intrinsics_47
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 l)
                         (ArrayAll
                             (ArrayConstant
@@ -143,7 +143,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 l)
                         (ArrayAll
                             (ArrayConstant
@@ -168,7 +168,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 l)
                         (ArrayAll
                             (ArrayConstant
@@ -193,7 +193,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 l)
                         (ArrayAll
                             (Var 2 a)
@@ -203,7 +203,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 l)
                         (ArrayAll
                             (ArrayConstant

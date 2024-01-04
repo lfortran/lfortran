@@ -194,7 +194,7 @@
                                                                 )
                                                         })
                                                     associate_block
-                                                    [(=>
+                                                    [(Associate
                                                         (Var 6 ii)
                                                         (Var 5 i)
                                                     )

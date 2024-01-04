@@ -107,7 +107,7 @@
                         })
                     arrays_01_logical
                     []
-                    [(=
+                    [(Assignment
                         (ArrayItem
                             (Var 2 a)
                             [(()
@@ -129,7 +129,7 @@
                         (IntegerConstant 2 (Integer 4))
                         (IntegerConstant 3 (Integer 4))
                         ())
-                        [(=
+                        [(Assignment
                             (ArrayItem
                                 (Var 2 a)
                                 [(()
@@ -214,7 +214,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 b)
                             [(()
@@ -236,7 +236,7 @@
                         (IntegerConstant 12 (Integer 4))
                         (IntegerConstant 14 (Integer 4))
                         ())
-                        [(=
+                        [(Assignment
                             (ArrayItem
                                 (Var 2 b)
                                 [(()
@@ -354,7 +354,7 @@
                         (IntegerConstant 1 (Integer 4))
                         (IntegerConstant 3 (Integer 4))
                         ())
-                        [(=
+                        [(Assignment
                             (ArrayItem
                                 (Var 2 b)
                                 [(()
@@ -430,7 +430,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 b)
                             [(()
@@ -512,7 +512,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 b)
                             [(()
@@ -602,7 +602,7 @@
                                     (Logical 4)
                                     ()
                                 )
-                                [(=
+                                [(Assignment
                                     (ArrayItem
                                         (Var 2 c)
                                         [(()
@@ -621,7 +621,7 @@
                                     )
                                     ()
                                 )]
-                                [(=
+                                [(Assignment
                                     (ArrayItem
                                         (Var 2 c)
                                         [(()

@@ -62,7 +62,7 @@
                                     )
                                     []
                                     [(Var 4 i)]
-                                    [(=
+                                    [(Assignment
                                         (Var 4 fpoint_return_var_name)
                                         (Cast
                                             (Var 4 i)

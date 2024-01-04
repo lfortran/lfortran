@@ -88,7 +88,7 @@
                         })
                     modules_24
                     [tomlf_de_tokenizer_24]
-                    [(=>
+                    [(Associate
                         (Var 7 tokenizer_ptr)
                         (Var 7 tokenizer)
                     )
@@ -180,7 +180,7 @@
                                     [(Nullify
                                         [6 table]
                                     )
-                                    (=>
+                                    (Associate
                                         (StructInstanceMember
                                             (Var 6 de)
                                             6 1_toml_tokenizer_current

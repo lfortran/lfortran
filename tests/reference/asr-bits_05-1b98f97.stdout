@@ -104,17 +104,17 @@
                         })
                     bits_05
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 from)
                         (IntegerConstant 10 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 from8)
                         (IntegerConstant 10 (Integer 8))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 res)
                         (FunctionCall
                             2 ibits@ibits32
@@ -141,7 +141,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 res8)
                         (FunctionCall
                             2 ibits@ibits64
@@ -168,7 +168,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 res)
                         (FunctionCall
                             2 ibits@ibits32
@@ -195,7 +195,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 res8)
                         (FunctionCall
                             2 ibits@ibits64
@@ -222,7 +222,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 from)
                         (IntegerUnaryMinus
                             (IntegerConstant 20 (Integer 4))
@@ -231,7 +231,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 from8)
                         (IntegerUnaryMinus
                             (IntegerConstant 20 (Integer 8))
@@ -240,7 +240,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 res)
                         (FunctionCall
                             2 ibits@ibits32
@@ -267,7 +267,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 res8)
                         (FunctionCall
                             2 ibits@ibits64
@@ -299,7 +299,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 res)
                         (FunctionCall
                             2 ibits@ibits32
@@ -326,7 +326,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 res8)
                         (FunctionCall
                             2 ibits@ibits64

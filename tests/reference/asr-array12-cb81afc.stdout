@@ -155,7 +155,7 @@
                                         ()
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 10 tmp)
                                         (FunctionCall
                                             2 getcwd

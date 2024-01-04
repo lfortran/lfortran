@@ -207,7 +207,7 @@
                                                 (Logical 4)
                                                 ()
                                             )
-                                            [(=
+                                            [(Assignment
                                                 (Var 3 strings)
                                                 (Var 3 strings_a)
                                                 ()

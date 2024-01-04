@@ -212,7 +212,7 @@
                     ())]
                     ()
                 )]
-                [(=
+                [(Assignment
                     0
                     n
                     (FuncCallOrArray
@@ -261,13 +261,13 @@
                     ()
                     ()
                 )
-                (=
+                (Assignment
                     0
                     pos
                     0
                     ()
                 )
-                (=
+                (Assignment
                     0
                     (FuncCallOrArray
                         pos
@@ -283,7 +283,7 @@
                     1
                     ()
                 )
-                (=
+                (Assignment
                     0
                     j
                     1
@@ -335,13 +335,13 @@
                             []
                             []
                         )
-                        [(=
+                        [(Assignment
                             0
                             j
                             (+ j 1)
                             ()
                         )
-                        (=
+                        (Assignment
                             0
                             (FuncCallOrArray
                                 pos
@@ -392,7 +392,7 @@
                     1
                     j
                     ()
-                    [(=
+                    [(Assignment
                         0
                         (FuncCallOrArray
                             mask

@@ -42,7 +42,7 @@
                         })
                     case_02
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 marks)
                         (IntegerConstant 81 (Integer 4))
                         ()
@@ -52,7 +52,7 @@
                         [(CaseStmt_Range
                             (IntegerConstant 91 (Integer 4))
                             (IntegerConstant 100 (Integer 4))
-                            [(=
+                            [(Assignment
                                 (Var 2 out)
                                 (IntegerConstant 0 (Integer 4))
                                 ()
@@ -69,7 +69,7 @@
                         (CaseStmt_Range
                             (IntegerConstant 81 (Integer 4))
                             (IntegerConstant 90 (Integer 4))
-                            [(=
+                            [(Assignment
                                 (Var 2 out)
                                 (IntegerConstant 1 (Integer 4))
                                 ()
@@ -86,7 +86,7 @@
                         (CaseStmt_Range
                             (IntegerConstant 71 (Integer 4))
                             (IntegerConstant 80 (Integer 4))
-                            [(=
+                            [(Assignment
                                 (Var 2 out)
                                 (IntegerConstant 2 (Integer 4))
                                 ()
@@ -103,7 +103,7 @@
                         (CaseStmt_Range
                             (IntegerConstant 61 (Integer 4))
                             (IntegerConstant 70 (Integer 4))
-                            [(=
+                            [(Assignment
                                 (Var 2 out)
                                 (IntegerConstant 3 (Integer 4))
                                 ()
@@ -120,7 +120,7 @@
                         (CaseStmt_Range
                             (IntegerConstant 41 (Integer 4))
                             (IntegerConstant 60 (Integer 4))
-                            [(=
+                            [(Assignment
                                 (Var 2 out)
                                 (IntegerConstant 4 (Integer 4))
                                 ()
@@ -137,7 +137,7 @@
                         (CaseStmt_Range
                             ()
                             (IntegerConstant 40 (Integer 4))
-                            [(=
+                            [(Assignment
                                 (Var 2 out)
                                 (IntegerConstant 5 (Integer 4))
                                 ()
@@ -151,7 +151,7 @@
                                 ()
                             )]
                         )]
-                        [(=
+                        [(Assignment
                             (Var 2 out)
                             (IntegerConstant 6 (Integer 4))
                             ()

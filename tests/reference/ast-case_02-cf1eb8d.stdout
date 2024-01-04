@@ -37,7 +37,7 @@
             ())]
             ()
         )]
-        [(=
+        [(Assignment
             0
             marks
             81
@@ -57,7 +57,7 @@
                     100
                 )]
                 ()
-                [(=
+                [(Assignment
                     0
                     out
                     0
@@ -82,7 +82,7 @@
                     90
                 )]
                 ()
-                [(=
+                [(Assignment
                     0
                     out
                     1
@@ -107,7 +107,7 @@
                     80
                 )]
                 ()
-                [(=
+                [(Assignment
                     0
                     out
                     2
@@ -132,7 +132,7 @@
                     70
                 )]
                 ()
-                [(=
+                [(Assignment
                     0
                     out
                     3
@@ -157,7 +157,7 @@
                     60
                 )]
                 ()
-                [(=
+                [(Assignment
                     0
                     out
                     4
@@ -182,7 +182,7 @@
                     40
                 )]
                 ()
-                [(=
+                [(Assignment
                     0
                     out
                     5
@@ -203,7 +203,7 @@
             )
             (CaseStmt_Default
                 ()
-                [(=
+                [(Assignment
                     0
                     out
                     6

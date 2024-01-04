@@ -772,7 +772,7 @@
                                     [padl_char_pad_with]
                                     [(Var 12 string)
                                     (Var 12 output_length)]
-                                    [(=
+                                    [(Assignment
                                         (Var 12 res)
                                         (FunctionCall
                                             6 padl_char_pad_with
@@ -1085,7 +1085,7 @@
                                     [padl_char_pad_with]
                                     [(Var 10 string)
                                     (Var 10 output_length)]
-                                    [(=
+                                    [(Assignment
                                         (Var 10 res)
                                         (StructTypeConstructor
                                             6 string_type
@@ -1284,7 +1284,7 @@
                                     [(Var 11 string)
                                     (Var 11 output_length)
                                     (Var 11 pad_with)]
-                                    [(=
+                                    [(Assignment
                                         (Var 11 res)
                                         (StructTypeConstructor
                                             6 string_type

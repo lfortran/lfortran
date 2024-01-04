@@ -156,7 +156,7 @@
                                     )
                                     []
                                     [(Var 8 settings)]
-                                    [(=
+                                    [(Assignment
                                         (Var 8 littlefile)
                                         (ArrayConstant
                                             [(StringConstant

@@ -104,7 +104,7 @@
                                     []
                                     [(Var 13 url)
                                     (Var 13 branch)]
-                                    [(=
+                                    [(Assignment
                                         (StructInstanceMember
                                             (Var 13 self)
                                             13 1_git_target_t_url
@@ -116,7 +116,7 @@
                                         (Var 13 url)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (StructInstanceMember
                                             (Var 13 self)
                                             13 1_git_target_t_object
@@ -548,7 +548,7 @@
                                     )
                                     []
                                     [(Var 9 self)]
-                                    [(=
+                                    [(Assignment
                                         (StructInstanceMember
                                             (Var 9 self)
                                             9 1_dependency_config_t_git

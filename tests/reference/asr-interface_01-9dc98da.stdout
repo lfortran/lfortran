@@ -92,7 +92,7 @@
                         })
                     interface_01
                     [interface_01_mod]
-                    [(=
+                    [(Assignment
                         (Var 5 i)
                         (IntegerConstant 5 (Integer 4))
                         ()
@@ -116,7 +116,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 5 r)
                         (Cast
                             (IntegerConstant 6 (Integer 4))
@@ -156,7 +156,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 5 i)
                         (IntegerConstant 7 (Integer 4))
                         ()
@@ -233,7 +233,7 @@
                                     )
                                     []
                                     [(Var 3 a)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 a)
                                         (IntegerBinOp
                                             (Var 3 a)
@@ -289,7 +289,7 @@
                                     )
                                     []
                                     [(Var 4 a)]
-                                    [(=
+                                    [(Assignment
                                         (Var 4 a)
                                         (RealBinOp
                                             (Var 4 a)

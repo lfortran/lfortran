@@ -41,7 +41,7 @@
                                 (Logical 4)
                             )
                         )
-                        [(=
+                        [(Assignment
                             (Var 2 k)
                             (IntegerConstant 15 (Integer 4))
                             ()

@@ -236,12 +236,12 @@
                         })
                     flip_sign_dead_code
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 number)
                         (IntegerConstant 123 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (RealConstant
                             5.500000
@@ -265,7 +265,7 @@
                             (Logical 4)
                             ()
                         )
-                        [(=
+                        [(Assignment
                             (Var 2 x)
                             (RealUnaryMinus
                                 (Var 2 x)
@@ -311,12 +311,12 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 number)
                         (IntegerConstant 124 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (RealConstant
                             5.500000
@@ -340,7 +340,7 @@
                             (Logical 4)
                             ()
                         )
-                        [(=
+                        [(Assignment
                             (Var 2 x)
                             (RealUnaryMinus
                                 (Var 2 x)

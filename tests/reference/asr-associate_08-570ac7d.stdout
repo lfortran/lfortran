@@ -183,7 +183,7 @@
                                                                 )
                                                         })
                                                     associate_block
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 8 target)
                                                         (StructInstanceMember
                                                             (ArrayItem
@@ -217,7 +217,7 @@
                                                         )
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 8 target)
                                                         (Var 5 i)
                                                         ()
@@ -372,7 +372,7 @@
                                                                 )
                                                         })
                                                     associate_block
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 9 target)
                                                         (ArrayItem
                                                             (Var 6 progress)
@@ -387,7 +387,7 @@
                                                         )
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (StructInstanceMember
                                                             (ArrayItem
                                                                 (StructInstanceMember

@@ -190,12 +190,12 @@
                                     )
                                     []
                                     [(Var 3 a)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 x)
                                         (IntegerConstant 2 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 b)
                                         (IntegerBinOp
                                             (Var 3 a)
@@ -315,7 +315,7 @@
                                     )
                                     []
                                     [(Var 4 a)]
-                                    [(=
+                                    [(Assignment
                                         (Var 4 x_signr32)
                                         (RealConstant
                                             1.000000
@@ -323,12 +323,12 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 y_signr32)
                                         (Var 4 a)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 r_signr32)
                                         (Var 4 x_signr32)
                                         ()
@@ -389,12 +389,12 @@
                                             (Logical 4)
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 4 r_signr32)
                                             (Var 4 x_signr32)
                                             ()
                                         )]
-                                        [(=
+                                        [(Assignment
                                             (Var 4 r_signr32)
                                             (RealUnaryMinus
                                                 (Var 4 x_signr32)
@@ -404,7 +404,7 @@
                                             ()
                                         )]
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 b)
                                         (RealBinOp
                                             (Var 4 a)
@@ -569,7 +569,7 @@
                                     []
                                     [(Var 5 x)
                                     (Var 5 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 5 r)
                                         (Var 5 x)
                                         ()
@@ -630,12 +630,12 @@
                                             (Logical 4)
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 5 r)
                                             (Var 5 x)
                                             ()
                                         )]
-                                        [(=
+                                        [(Assignment
                                             (Var 5 r)
                                             (RealUnaryMinus
                                                 (Var 5 x)
@@ -766,17 +766,17 @@
                         })
                     functions_01
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 a_f)
                         (Var 2 x)
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x_f)
                         (IntegerConstant 2 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 b_f)
                         (IntegerBinOp
                             (Var 2 a_f)
@@ -787,7 +787,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 y)
                         (Var 2 b_f)
                         ()
@@ -797,12 +797,12 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 a_f_real)
                         (Var 2 p)
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x_signr32_f_real)
                         (RealConstant
                             1.000000
@@ -810,12 +810,12 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 y_signr32_f_real)
                         (Var 2 a_f_real)
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 r_signr32_f_real)
                         (Var 2 x_signr32_f_real)
                         ()
@@ -876,12 +876,12 @@
                             (Logical 4)
                             ()
                         )
-                        [(=
+                        [(Assignment
                             (Var 2 r_signr32_f_real)
                             (Var 2 x_signr32_f_real)
                             ()
                         )]
-                        [(=
+                        [(Assignment
                             (Var 2 r_signr32_f_real)
                             (RealUnaryMinus
                                 (Var 2 x_signr32_f_real)
@@ -891,7 +891,7 @@
                             ()
                         )]
                     )
-                    (=
+                    (Assignment
                         (Var 2 b_f_real)
                         (RealBinOp
                             (Var 2 a_f_real)
@@ -902,7 +902,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 q)
                         (Var 2 b_f_real)
                         ()
@@ -912,7 +912,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 a)
                         (RealConstant
                             20.000000
@@ -920,7 +920,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 b)
                         (RealUnaryMinus
                             (RealConstant
@@ -935,17 +935,17 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x_signr32)
                         (Var 2 a)
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 y_signr32)
                         (Var 2 b)
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 r_signr32)
                         (Var 2 x_signr32)
                         ()
@@ -1006,12 +1006,12 @@
                             (Logical 4)
                             ()
                         )
-                        [(=
+                        [(Assignment
                             (Var 2 r_signr32)
                             (Var 2 x_signr32)
                             ()
                         )]
-                        [(=
+                        [(Assignment
                             (Var 2 r_signr32)
                             (RealUnaryMinus
                                 (Var 2 x_signr32)
@@ -1021,7 +1021,7 @@
                             ()
                         )]
                     )
-                    (=
+                    (Assignment
                         (Var 2 c)
                         (Var 2 r_signr32)
                         ()

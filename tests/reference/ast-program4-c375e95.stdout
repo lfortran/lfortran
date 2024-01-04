@@ -33,13 +33,13 @@
             ())]
             ()
         )]
-        [(=
+        [(Assignment
             0
             x
             (Real "1.0")
             ()
         )
-        (=
+        (Assignment
             0
             y
             (Real "2.0")
@@ -49,7 +49,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             z
             (FuncCallOrArray
@@ -82,7 +82,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             z
             (FuncCallOrArray
@@ -115,7 +115,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             z
             (FuncCallOrArray
@@ -148,7 +148,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             z
             (FuncCallOrArray
@@ -253,13 +253,13 @@
                 ())]
                 ()
             )]
-            [(=
+            [(Assignment
                 0
                 saved
                 (+ saved (Real "1.0"))
                 ()
             )
-            (=
+            (Assignment
                 0
                 c
                 (+ (+ (+ c a) b) saved)
@@ -374,25 +374,25 @@
                 ())]
                 ()
             )]
-            [(=
+            [(Assignment
                 0
                 saved1
                 (+ saved1 (Real "1.0"))
                 ()
             )
-            (=
+            (Assignment
                 0
                 c
                 (+ (+ (+ (+ (+ d c) a) b) saved1) saved2)
                 ()
             )
-            (=
+            (Assignment
                 0
                 saved2
                 (+ saved2 (Real "1.0"))
                 ()
             )
-            (=
+            (Assignment
                 0
                 d
                 (+ d (Real "3.0"))

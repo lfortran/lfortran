@@ -192,11 +192,11 @@
                         })
                     associate_07
                     []
-                    [(=>
+                    [(Associate
                         (Var 2 p1)
                         (Var 2 t1)
                     )
-                    (=>
+                    (Associate
                         (Var 2 p2)
                         (ArrayPhysicalCast
                             (Var 2 t2)

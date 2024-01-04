@@ -26,7 +26,7 @@
                         })
                     entry_02
                     []
-                    [(=
+                    [(Assignment
                         (Var 5 dummy)
                         (RealConstant
                             10.000000
@@ -40,7 +40,7 @@
                         [((Var 5 dummy))]
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 5 dummy)
                         (RealConstant
                             5.000000
@@ -236,7 +236,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 4 dummy)
                         (RealConstant
                             5.000000

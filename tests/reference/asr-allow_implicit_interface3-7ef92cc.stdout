@@ -137,7 +137,7 @@
                     )
                     []
                     [(Var 2 uplo)]
-                    [(=
+                    [(Assignment
                         (Var 2 info)
                         (IntegerConstant 0 (Integer 4))
                         ()
@@ -180,12 +180,12 @@
                             (Logical 4)
                             ()
                         )
-                        [(=
+                        [(Assignment
                             (Var 2 info)
                             (IntegerConstant 1 (Integer 4))
                             ()
                         )]
-                        [(=
+                        [(Assignment
                             (Var 2 info)
                             (IntegerConstant 2 (Integer 4))
                             ()

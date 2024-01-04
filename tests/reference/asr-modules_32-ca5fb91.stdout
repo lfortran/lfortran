@@ -157,7 +157,7 @@
                                     )
                                     []
                                     []
-                                    [(=>
+                                    [(Associate
                                         (Var 5 target_ptr)
                                         (PointerNullConstant
                                             (Pointer

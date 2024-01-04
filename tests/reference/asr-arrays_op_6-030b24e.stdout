@@ -195,7 +195,7 @@
                                     [(Var 3 a)
                                     (Var 3 b)
                                     (Var 3 c)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 d)
                                         (RealBinOp
                                             (RealBinOp
@@ -598,7 +598,7 @@
                                 (IntegerConstant 1 (Integer 4))
                                 (IntegerConstant 2 (Integer 4))
                                 ())
-                                [(=
+                                [(Assignment
                                     (ArrayItem
                                         (Var 2 a)
                                         [(()
@@ -652,7 +652,7 @@
                                     )
                                     ()
                                 )
-                                (=
+                                (Assignment
                                     (ArrayItem
                                         (Var 2 b)
                                         [(()
@@ -712,7 +712,7 @@
                                     )
                                     ()
                                 )
-                                (=
+                                (Assignment
                                     (ArrayItem
                                         (Var 2 c)
                                         [(()
@@ -742,7 +742,7 @@
                             )]
                         )]
                     )
-                    (=
+                    (Assignment
                         (Var 2 d)
                         (FunctionCall
                             2 asquare

@@ -85,7 +85,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (StructInstanceMember
                                             (Var 4 self)
                                             4 1_t_1_num
@@ -170,7 +170,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (StructInstanceMember
                                             (Var 5 self)
                                             5 1_t_1_num

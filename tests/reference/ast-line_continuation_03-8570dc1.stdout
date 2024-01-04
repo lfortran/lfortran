@@ -82,7 +82,7 @@
                 (EndOfLine)]
             )
         )]
-        [(=
+        [(Assignment
             0
             i
             5

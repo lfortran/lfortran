@@ -144,7 +144,7 @@
                                                     )
                                                     []
                                                     []
-                                                    [(=
+                                                    [(Assignment
                                                         (StructInstanceMember
                                                             (ArrayItem
                                                                 (Var 5 modules_used)
@@ -164,7 +164,7 @@
                                                         (IntegerConstant 2 (Integer 4))
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 5 modules_used)
                                                         (ArrayConstant
                                                             [(Var 5 modules_used)]
@@ -241,7 +241,7 @@
                                         ()
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (StructInstanceMember
                                             (ArrayItem
                                                 (Var 5 modules_used)

@@ -142,7 +142,7 @@
                                                     [f]
                                                     [(Var 7 x)
                                                     (Var 7 y)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 7 z)
                                                         (FunctionCall
                                                             5 f
@@ -500,7 +500,7 @@
                                                     [~add_intrinsic]
                                                     [(Var 10 x)
                                                     (Var 10 y)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 10 z)
                                                         (FunctionCall
                                                             8 ~add_intrinsic
@@ -631,7 +631,7 @@
                                                     []
                                                     [(Var 9 arg0)
                                                     (Var 9 arg1)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 9 ret)
                                                         (RealBinOp
                                                             (Var 9 arg0)
@@ -666,7 +666,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 8 x)
                                         (RealConstant
                                             5.100000
@@ -674,7 +674,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 8 y)
                                         (RealConstant
                                             7.200000

@@ -58,7 +58,7 @@
                         })
                     case03
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 marks)
                         (IntegerConstant 94 (Integer 4))
                         ()
@@ -119,7 +119,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 marks)
                         (IntegerUnaryMinus
                             (IntegerConstant 1 (Integer 4))

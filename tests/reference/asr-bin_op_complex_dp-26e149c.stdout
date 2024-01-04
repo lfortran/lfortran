@@ -74,7 +74,7 @@
                         })
                     bin_op_complex_dp
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 zero)
                         (Cast
                             (RealBinOp
@@ -108,7 +108,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 u)
                         (Cast
                             (RealBinOp
@@ -142,7 +142,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 v)
                         (Cast
                             (RealBinOp
@@ -176,7 +176,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (Cast
                             (RealBinOp

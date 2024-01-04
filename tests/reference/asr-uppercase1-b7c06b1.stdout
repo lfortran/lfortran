@@ -46,7 +46,7 @@
                                     )
                                     []
                                     [(Var 3 a)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 a)
                                         (IntegerBinOp
                                             (IntegerBinOp

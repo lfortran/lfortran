@@ -115,7 +115,7 @@
                                                     )
                                                     []
                                                     [(Var 4 x)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 4 f)
                                                         (RealBinOp
                                                             (Cast
@@ -181,7 +181,7 @@
                                     []
                                     [(Var 3 c)
                                     (Var 3 d)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 e)
                                         (FunctionCall
                                             3 f
@@ -193,7 +193,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 g)
                                         (FunctionCall
                                             3 f

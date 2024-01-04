@@ -58,7 +58,7 @@
                         })
                     string_11
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 mystring)
                         (StringConstant
                             "This is a test"
@@ -66,7 +66,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 teststring)
                         (StringConstant
                             "test"

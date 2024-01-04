@@ -91,7 +91,7 @@
                     []
                     [(Var 2 n)
                     (Var 2 z)]
-                    [(=
+                    [(Assignment
                         (Var 2 ci)
                         (ComplexConstructor
                             (RealConstant

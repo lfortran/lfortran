@@ -98,7 +98,7 @@
                                     []
                                     [(Var 9 self)
                                     (Var 9 name)]
-                                    [(=
+                                    [(Assignment
                                         (StructInstanceMember
                                             (Var 9 self)
                                             9 1_executable_config_name
@@ -110,7 +110,7 @@
                                         (Var 9 name)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (StructInstanceMember
                                             (Var 9 self)
                                             9 1_executable_config_source_dir
@@ -125,7 +125,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (StructInstanceMember
                                             (Var 9 self)
                                             9 1_executable_config_main

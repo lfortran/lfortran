@@ -25,7 +25,7 @@
             ())]
             ()
         )]
-        [(=
+        [(Assignment
             0
             i
             5
@@ -65,13 +65,13 @@
             ()
             ()
         )
-        (=
+        (Assignment
             0
             i
             (u- 2)
             ()
         )
-        (=
+        (Assignment
             40
             i
             (+ i 1)

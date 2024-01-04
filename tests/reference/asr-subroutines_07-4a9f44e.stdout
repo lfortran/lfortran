@@ -104,22 +104,22 @@
                         })
                     subroutines_07
                     [subroutines_07_mod]
-                    [(=
+                    [(Assignment
                         (Var 4 i)
                         (IntegerConstant 1 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 4 j)
                         (IntegerConstant 1 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 4 k)
                         (IntegerConstant 1 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 4 l)
                         (IntegerConstant 1 (Integer 4))
                         ()
@@ -264,7 +264,7 @@
                                     (Var 3 c)
                                     (Var 3 d)
                                     (Var 3 kind)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 b)
                                         (IntegerBinOp
                                             (IntegerBinOp
