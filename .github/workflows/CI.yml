@@ -498,6 +498,25 @@ jobs:
 
             cmake --build . -j16 --target install
 
+      - name: Test stdlib (specialfunctions_gamma)
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/Pranavchiku/stdlib-fortran-lang.git
+            cd stdlib-fortran-lang
+            git checkout -t origin/lf14
+            git checkout 9e40e4d2f55e884bd4ce02b1e1a199bb11d1553f
+            FC=$(pwd)/../../src/bin/lfortran cmake .
+            make fortran_stdlib
+            cp ./src/*.mod ./example/specialfunctions_gamma
+            make
+            ./example/specialfunctions_gamma/example_gamma
+            ./example/specialfunctions_gamma/example_gamma_p
+            ./example/specialfunctions_gamma/example_gamma_q
+            ./example/specialfunctions_gamma/example_ligamma
+            ./example/specialfunctions_gamma/example_log_factorial
+            ./example/specialfunctions_gamma/example_log_gamma
+            ./example/specialfunctions_gamma/example_uigamma
+
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
         run: |
