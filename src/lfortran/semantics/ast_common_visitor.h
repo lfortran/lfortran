@@ -2655,7 +2655,7 @@ public:
                 this->visit_expr(*sym_type->m_kind->m_value);
                 ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
                 int kind_value = ASRUtils::extract_kind<SemanticError>(kind_expr, loc);
-                if (kind_value != 4 && kind_value != 8) {
+                if (kind_value != 4 && kind_value != 8 && kind_value != 16) {
                     throw SemanticError("Kind " + std::to_string(kind_value) + " is not supported for Real",
                                     loc);
                 }
