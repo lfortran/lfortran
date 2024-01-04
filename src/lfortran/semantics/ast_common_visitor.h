@@ -2560,13 +2560,16 @@ public:
                                     lhs_len = rhs_len;
                                 } else if (lhs_len >= 0) {
                                     if (lhs_len != rhs_len) {
-                                        // Note: this might be valid, perhaps
-                                        // change this to a warning
-                                        throw SemanticError("The LHS character len="
-                                            + std::to_string(lhs_len)
-                                            + " and the RHS character len="
-                                            + std::to_string(rhs_len)
-                                            + " are not equal.", x.base.base.loc);
+                                        diag.semantic_warning_label(
+                                            "The LHS character len="
+                                                + std::to_string(lhs_len)
+                                                + " and the RHS character len="
+                                                + std::to_string(rhs_len)
+                                                + " are not equal.",
+                                            {x.base.base.loc},
+                                            "help: consider changing the RHS character len to match the LHS character len"
+                                        );
+                                        rhs_len = lhs_len;
                                     }
                                 } else {
                                     LCOMPILERS_ASSERT(lhs_len == -2)
