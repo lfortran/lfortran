@@ -545,6 +545,21 @@ static inline std::string type_to_str(const ASR::ttype_t *t)
         case ASR::ttypeType::SymbolicExpression: {
             return "symbolic expression";
         }
+        case ASR::ttypeType::FunctionType: {
+            ASR::FunctionType_t* ftp = ASR::down_cast<ASR::FunctionType_t>(t);
+            std::string result = "(";
+            for( size_t i = 0; i < ftp->n_arg_types; i++ ) {
+                result += type_to_str(ftp->m_arg_types[i]) + ", ";
+            }
+            result += "return_type: ";
+            if( ftp->m_return_var_type ) {
+                result += type_to_str(ftp->m_return_var_type);
+            } else {
+                result += "void";
+            }
+            result += ")";
+            return result;
+        }
         default : throw LCompilersException("Not implemented " + std::to_string(t->type) + ".");
     }
 }
@@ -930,11 +945,13 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
         return is_value_constant(struct_member_t->m_v);
     } else if( ASR::is_a<ASR::Var_t>(*a_value) ) {
         ASR::Var_t* var_t = ASR::down_cast<ASR::Var_t>(a_value);
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(var_t->m_v)));
-        ASR::Variable_t* variable_t = ASR::down_cast<ASR::Variable_t>(
-            ASRUtils::symbol_get_past_external(var_t->m_v));
-        return variable_t->m_storage == ASR::storage_typeType::Parameter;
-
+        if( ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(var_t->m_v)) ) {
+            ASR::Variable_t* variable_t = ASR::down_cast<ASR::Variable_t>(
+                ASRUtils::symbol_get_past_external(var_t->m_v));
+            return variable_t->m_storage == ASR::storage_typeType::Parameter;
+        } else {
+            return false;
+        }
     } else if(ASR::is_a<ASR::ImpliedDoLoop_t>(*a_value)) {
         // OK
     } else if(ASR::is_a<ASR::Cast_t>(*a_value)) {
@@ -2353,7 +2370,9 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
             ASR::ttype_t* dup_type = duplicate_type(al, ptr->m_type, dims,
                 physical_type, override_physical_type);
             if( override_physical_type &&
-                physical_type == ASR::array_physical_typeType::FixedSizeArray ) {
+                (physical_type == ASR::array_physical_typeType::FixedSizeArray ||
+                (physical_type == ASR::array_physical_typeType::CharacterArraySinglePointer &&
+                dims != nullptr) ) ) {
                 return dup_type;
             }
             return ASRUtils::TYPE(ASR::make_Pointer_t(al, ptr->base.base.loc,
@@ -2601,7 +2620,8 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
         case ASR::exprType::IntrinsicScalarFunction: {
             ASR::IntrinsicScalarFunction_t* kind_isf =
                 ASR::down_cast<ASR::IntrinsicScalarFunction_t>(kind_expr);
-            if (kind_isf->m_intrinsic_id == 22 && kind_isf->m_value) {
+            if (kind_isf->m_intrinsic_id == 0 && kind_isf->m_value) {
+                // m_intrinsic_id: 0 -> kind intrinsic
                 LCOMPILERS_ASSERT( ASR::is_a<ASR::IntegerConstant_t>(*kind_isf->m_value) );
                 ASR::IntegerConstant_t* kind_ic =
                     ASR::down_cast<ASR::IntegerConstant_t>(kind_isf->m_value);
@@ -2801,6 +2821,9 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
     // TODO: If anyone of the input or argument is derived type then
     // add support for checking member wise types and do not compare
     // directly. From stdlib_string len(pattern) error
+    if( a == nullptr && b == nullptr ) {
+        return true;
+    }
     a = ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(a));
     b = ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(b));
     if( !check_for_dimensions ) {
@@ -2910,6 +2933,24 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
                                                 ASRUtils::symbol_get_past_external(
                                                     b2->m_union_type));
                 return a2_type == b2_type;
+            }
+            case ASR::ttypeType::FunctionType: {
+                ASR::FunctionType_t* a2 = ASR::down_cast<ASR::FunctionType_t>(a);
+                ASR::FunctionType_t* b2 = ASR::down_cast<ASR::FunctionType_t>(b);
+                if( a2->n_arg_types != b2->n_arg_types ||
+                    (a2->m_return_var_type != nullptr && b2->m_return_var_type == nullptr) ||
+                    (a2->m_return_var_type == nullptr && b2->m_return_var_type != nullptr) ) {
+                    return false;
+                }
+                for( size_t i = 0; i < a2->n_arg_types; i++ ) {
+                    if( !types_equal(a2->m_arg_types[i], b2->m_arg_types[i], true) ) {
+                        return false;
+                    }
+                }
+                if( !types_equal(a2->m_return_var_type, b2->m_return_var_type, true) ) {
+                    return false;
+                }
+                return true;
             }
             default : return false;
         }
@@ -3052,10 +3093,33 @@ inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, bool check_for_di
     return types_equal(x, y, check_for_dimensions);
 }
 
+bool select_func_subrout(const ASR::symbol_t* proc, const Vec<ASR::call_arg_t>& args,
+    Location& loc, const std::function<void (const std::string &, const Location &)> err);
+
+template <typename T>
 int select_generic_procedure(const Vec<ASR::call_arg_t> &args,
-        const ASR::GenericProcedure_t &p, Location loc,
-        const std::function<void (const std::string &, const Location &)> err,
-        bool raise_error=true);
+    const T &p, Location loc,
+    const std::function<void (const std::string &, const Location &)> err,
+    bool raise_error=true) {
+    for (size_t i=0; i < p.n_procs; i++) {
+        if( ASR::is_a<ASR::ClassProcedure_t>(*p.m_procs[i]) ) {
+            ASR::ClassProcedure_t *clss_fn
+                = ASR::down_cast<ASR::ClassProcedure_t>(p.m_procs[i]);
+            const ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(clss_fn->m_proc);
+            if( select_func_subrout(proc, args, loc, err) ) {
+                return i;
+            }
+        } else {
+            if( select_func_subrout(p.m_procs[i], args, loc, err) ) {
+                return i;
+            }
+        }
+    }
+    if( raise_error ) {
+        err("Arguments do not match for any generic procedure, " + std::string(p.m_name), loc);
+    }
+    return -1;
+}
 
 ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
             const Location &loc,
@@ -4469,6 +4533,9 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     bool implicit_argument_casting, bool nopass) {
     bool is_method = (a_dt != nullptr) && (!nopass);
     ASR::symbol_t* a_name_ = ASRUtils::symbol_get_past_external(a_name);
+    if( ASR::is_a<ASR::Variable_t>(*a_name_) ) {
+        is_method = false;
+    }
     ASR::FunctionType_t* func_type = get_FunctionType(a_name);
 
     for( size_t i = 0; i < n_args; i++ ) {

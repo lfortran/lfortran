@@ -155,6 +155,14 @@ filename = "../integration_tests/template_sort_02.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/template_lapack_01.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/template_interface_01.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/test_backspace_01.f90"
 asr = true
 
@@ -1223,6 +1231,10 @@ asr = true
 
 [[test]]
 filename = "../integration_tests/derived_types_17.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/derived_types_30.f90"
 asr = true
 
 [[test]]
@@ -3591,3 +3603,19 @@ llvm = true
 [[test]]
 filename = "format2.f90"
 llvm = true
+
+[[test]]
+filename = "errors/type_conflict1.f90"
+asr = true
+
+[[test]]
+filename = "char1.f90"
+fortran = true
+
+[[test]]
+filename = "errors/loop_test.f90"
+asr = true
+
+[[test]]
+filename = "errors/parameter_01.f90"
+asr = true

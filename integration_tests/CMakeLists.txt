@@ -6,11 +6,6 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug
         CACHE STRING "Build type (Debug, Release)" FORCE)
 endif ()
-if (NOT (CMAKE_BUILD_TYPE STREQUAL "Debug" OR
-        CMAKE_BUILD_TYPE STREQUAL "Release"))
-    message("${CMAKE_BUILD_TYPE}")
-    message(FATAL_ERROR "CMAKE_BUILD_TYPE must be one of: Debug, Release (current value: '${CMAKE_BUILD_TYPE}')")
-endif ()
 
 set(LFORTRAN_BACKEND no CACHE STRING "Only compile the LFortran subset for the given backend")
 set(FAST no CACHE BOOL "Run supported tests with --fast")
@@ -23,13 +18,9 @@ message("---------------------")
 message("Fortran compiler: ${CMAKE_Fortran_COMPILER}")
 message("C compiler      : ${CMAKE_C_COMPILER}")
 message("Build type: ${CMAKE_BUILD_TYPE}")
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    message("Fortran compiler flags: ${CMAKE_Fortran_FLAGS_DEBUG}")
-    message("C compiler flags      : ${CMAKE_C_FLAGS_DEBUG}")
-else ()
-    message("Fortran compiler flags: ${CMAKE_Fortran_FLAGS_RELEASE}")
-    message("C compiler flags      : ${CMAKE_C_FLAGS_RELEASE}")
-endif ()
+string(TOUPPER "${CMAKE_BUILD_TYPE}" BTYPE)
+message("Fortran compiler flags: ${CMAKE_Fortran_FLAGS_${BTYPE}}")
+message("C compiler flags      : ${CMAKE_C_FLAGS_${BTYPE}}")
 message("Installation prefix: ${CMAKE_INSTALL_PREFIX}")
 message("LFORTRAN_BACKEND: ${LFORTRAN_BACKEND}")
 message("FAST: ${FAST}")
@@ -122,6 +113,9 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC ${extra_args})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
+        elseif (LFORTRAN_BACKEND STREQUAL "gfortranModfileCompilation")
+            execute_process(COMMAND gfortran ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90 -c)
+            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         else ()
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC ${gfortran_args})
@@ -176,6 +170,37 @@ macro(RUN)
     endif()
 endmacro(RUN)
 
+# only compiles till object file
+# to make sure that the ASR generation is successful
+macro(COMPILE)
+    set(oneValueArgs NAME)
+    set(multiValueArgs COMPILERS)
+    cmake_parse_arguments(COMPILE "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+    set(name ${COMPILE_NAME})
+    set(compilers ${COMPILE_COMPILERS})
+    if (NOT name)
+        message(FATAL_ERROR "Must specify the NAME argument")
+    endif()
+
+    if (NOT compilers)
+        message(FATAL_ERROR "Must specify the COMPILER argument")
+    endif()
+
+    foreach(compiler ${compilers})
+        if (compiler STREQUAL "lfortran" AND ${LFORTRAN_BACKEND} STREQUAL "llvm")
+            add_custom_command(
+                OUTPUT ${name}_lfortran.mod
+                COMMAND lfortran -c ${CMAKE_CURRENT_SOURCE_DIR}/${name}.f90)
+            add_library(${name}_lfortran OBJECT ${name}_lfortran.mod)
+        elseif(compiler STREQUAL "gfortran" AND ${LFORTRAN_BACKEND} STREQUAL "no")
+            add_custom_command(
+                OUTPUT ${name}_gfortran.mod
+                COMMAND gfortran -c ${CMAKE_CURRENT_SOURCE_DIR}/${name}.f90)
+            add_library(${name}_gfortran OBJECT ${name}_gfortran.mod)
+        endif()
+    endforeach()
+endmacro(COMPILE)
+
 # The supported test labels are:
 #
 # gfortran      --- compile with GFortran
@@ -203,6 +228,7 @@ RUN(NAME print_01 LABELS gfortran llvm cpp llvm2 wasm fortran)
 RUN(NAME print_02 LABELS gfortran llvm llvm2 wasm fortran)
 RUN(NAME print_03 LABELS gfortran llvm llvm2 wasm c fortran)
 RUN(NAME print_04 LABELS gfortran llvm llvm2 fortran)
+RUN(NAME print_05 LABELS gfortran llvm llvm2 fortran)
 RUN(NAME print_arr_01 LABELS gfortran llvm llvm2 wasm c fortran)
 RUN(NAME print_arr_02 LABELS gfortran llvm llvm2 wasm c fortran)
 RUN(NAME print_arr_03 LABELS gfortran llvm llvm2 fortran)
@@ -378,6 +404,7 @@ RUN(NAME arrays_op_28 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_op_29 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_reshape_14 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_reshape_15 LABELS gfortran llvm fortran)
+RUN(NAME arrays_reshape_16 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_elemental_15 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_03_func LABELS gfortran cpp llvm llvmStackArray wasm)
 RUN(NAME arrays_03_func_pass_arr_dims LABELS gfortran llvm llvmStackArray wasm)
@@ -557,6 +584,17 @@ RUN(NAME intrinsics_86 LABELS gfortran llvm) # kind
 RUN(NAME intrinsics_87 LABELS gfortran llvm) # abs
 RUN(NAME intrinsics_88 LABELS gfortran llvm) #min for strings
 RUN(NAME intrinsics_89 LABELS gfortran llvm) #sin
+RUN(NAME intrinsics_90 LABELS gfortran llvm) #min
+RUN(NAME intrinsics_91 LABELS gfortran llvm) #index
+RUN(NAME intrinsics_92 LABELS gfortran llvm) #anint
+RUN(NAME intrinsics_93 LABELS gfortran llvm) #digits
+RUN(NAME intrinsics_94 LABELS gfortran llvm NOFAST) #hypot
+RUN(NAME intrinsics_95 LABELS gfortran llvm)
+RUN(NAME intrinsics_96 LABELS gfortran llvm)
+RUN(NAME intrinsics_97 LABELS gfortran llvm)#tiny
+RUN(NAME intrinsics_98 LABELS gfortran llvm)#shape
+RUN(NAME intrinsics_99 LABELS gfortran llvm)
+RUN(NAME intrinsics_100 LABELS gfortran llvm) # mod
 
 
 RUN(NAME parameter_01 LABELS gfortran)
@@ -564,6 +602,8 @@ RUN(NAME parameter_02 LABELS gfortran)
 RUN(NAME parameter_03 LABELS gfortran llvm wasm)
 RUN(NAME parameter_04 LABELS gfortran llvm wasm) # selected_real,int_kind symboltable
 RUN(NAME parameter_05 LABELS gfortran llvm wasm) # Implicit IntegerToReal
+RUN(NAME parameter_06 LABELS gfortran llvm)
+RUN(NAME parameter_07 LABELS gfortran llvm)
 
 RUN(NAME modules_01 LABELS gfortran llvm wasm fortran)
 RUN(NAME modules_02 LABELS gfortran llvm wasm)
@@ -635,6 +675,7 @@ RUN(NAME modules_50 LABELS gfortran)
 RUN(NAME modules_51 LABELS gfortran llvmImplicit)
 RUN(NAME modules_53 LABELS gfortran llvm)
 RUN(NAME modules_54 LABELS gfortran llvm)
+RUN(NAME modules_55 LABELS gfortran llvm)
 RUN(NAME operator_overloading_05_module3 LABELS gfortran llvm EXTRAFILES
         operator_overloading_05_module1.f90 operator_overloading_05_module2.f90)
 RUN(NAME associate_06 LABELS gfortran EXTRAFILES
@@ -784,6 +825,7 @@ RUN(NAME derived_types_26 LABELS gfortran llvm)
 RUN(NAME derived_types_27 LABELS gfortran llvm fortran)
 RUN(NAME derived_types_28 LABELS gfortran llvm)
 RUN(NAME derived_types_29 LABELS gfortran llvm fortran)
+RUN(NAME derived_types_30 LABELS gfortran)
 
 RUN(NAME line_continuation_01 LABELS gfortran llvm wasm)
 RUN(NAME line_continuation_02 LABELS gfortran llvm wasm)
@@ -868,6 +910,8 @@ RUN(NAME string_25 LABELS gfortran llvm fortran)
 RUN(NAME string_26 LABELS gfortran llvm fortran)
 RUN(NAME string_27 LABELS gfortran llvm)
 RUN(NAME string_28 LABELS gfortran llvm)
+RUN(NAME string_29 LABELS gfortran llvm)
+COMPILE(NAME string_30 COMPILERS gfortran lfortran)
 
 RUN(NAME nested_01 LABELS gfortran llvm)
 RUN(NAME nested_02 LABELS gfortran llvm)
@@ -1013,8 +1057,10 @@ RUN(NAME template_simple_01 LABELS llvm wasm)
 RUN(NAME template_simple_02 LABELS llvm wasm)
 RUN(NAME template_simple_03 LABELS llvm wasm)
 RUN(NAME template_simple_04 LABELS llvm wasm)
-RUN(NAME template_sort_01 LABELS llvm wasm)
-RUN(NAME template_sort_02 LABELS llvm wasm)
+RUN(NAME template_sort_01 LABELS llvm)
+RUN(NAME template_sort_02 LABELS llvm)
+RUN(NAME template_lapack_01 LABELS llvm wasm)
+RUN(NAME template_interface_01 LABELS llvm wasm)
 
 RUN(NAME statement1 LABELS gfortran llvm)
 
@@ -1084,6 +1130,7 @@ RUN(NAME complex_12 LABELS gfortran llvm wasm)
 RUN(NAME complex_13 LABELS gfortran llvm wasm)
 RUN(NAME complex_14 LABELS gfortran llvm wasm)
 RUN(NAME complex_15 LABELS gfortran llvm fortran)
+RUN(NAME complex_16 LABELS gfortran llvm)
 
 RUN(NAME array_op_01 LABELS gfortran llvm llvmStackArray wasm)
 RUN(NAME array_op_02 LABELS gfortran llvm llvmStackArray wasm)
@@ -1239,3 +1286,9 @@ RUN(NAME do_concurrent_01 LABELS gfortran llvm)
 
 RUN(NAME transfer_01 LABELS gfortran llvm)
 RUN(NAME transfer_02 LABELS gfortran)
+
+RUN(NAME present_01 LABELS gfortran llvm)
+RUN(NAME types_20 LABELS gfortran llvm)
+RUN(NAME character_03 LABELS gfortran llvm)
+RUN(NAME arrayprint_01 LABELS gfortran llvm)
+RUN(NAME print_arr_05 LABELS gfortran llvm)

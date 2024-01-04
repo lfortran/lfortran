@@ -340,7 +340,7 @@
                                                             (Character 1 5 ())
                                                             [(()
                                                             ())]
-                                                            DescriptorArray
+                                                            CharacterArraySinglePointer
                                                         )
                                                     )
                                                     ()

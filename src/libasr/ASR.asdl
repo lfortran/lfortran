@@ -335,6 +335,7 @@ expr
     | OverloadedCompare(expr left, cmpop op, expr right, ttype type, expr? value, expr overloaded)
     | OverloadedBinOp(expr left, binop op, expr right, ttype type, expr? value, expr overloaded)
     | OverloadedUnaryMinus(expr arg, ttype type, expr? value, expr overloaded)
+    | OverloadedStringConcat(expr left, expr right, ttype type, expr? value, expr overloaded)
     -- This Cast changes the value (the bits) of the `arg`:
     | Cast(expr arg, cast_kind kind, ttype type, expr? value)
     -- This ArrayPhysicalCast we only change the physical type, the logical type does not change
@@ -427,6 +428,7 @@ array_physical_type
     | PointerToDataArray
     | UnboundedPointerToDataArray
     | FixedSizeArray
+    | CharacterArraySinglePointer
     | NumPyArray
     | ISODescriptorArray
     | SIMDArray

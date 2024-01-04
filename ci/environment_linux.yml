@@ -18,3 +18,5 @@ dependencies:
   - bison=3.4
   - rapidjson
   - ninja
+  - pandoc
+  - kokkos

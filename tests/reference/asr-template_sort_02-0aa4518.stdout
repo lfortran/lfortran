@@ -5,33 +5,53 @@
             template_sort_02:
                 (Program
                     (SymbolTable
-                        13
+                        16
                         {
                             lt_integer:
                                 (ExternalSymbol
-                                    13
+                                    16
                                     lt_integer
-                                    2 lt_integer
+                                    5 lt_integer
                                     template_sort_02_m
                                     []
                                     lt_integer
+                                    Public
+                                ),
+                            lt_my_type:
+                                (ExternalSymbol
+                                    16
+                                    lt_my_type
+                                    2 lt_my_type
+                                    template_sort_02_type
+                                    []
+                                    lt_my_type
                                     Public
                                 ),
                             lt_real:
                                 (ExternalSymbol
-                                    13
+                                    16
                                     lt_real
-                                    2 lt_real
+                                    5 lt_real
                                     template_sort_02_m
                                     []
                                     lt_real
                                     Public
                                 ),
+                            my_type:
+                                (ExternalSymbol
+                                    16
+                                    my_type
+                                    2 my_type
+                                    template_sort_02_type
+                                    []
+                                    my_type
+                                    Public
+                                ),
                             op_r:
                                 (ExternalSymbol
-                                    13
+                                    16
                                     op_r
-                                    2 op_r
+                                    5 op_r
                                     template_sort_02_m
                                     []
                                     op_r
@@ -39,9 +59,9 @@
                                 ),
                             quicksort:
                                 (ExternalSymbol
-                                    13
+                                    16
                                     quicksort
-                                    2 quicksort
+                                    5 quicksort
                                     template_sort_02_m
                                     []
                                     quicksort
@@ -49,9 +69,9 @@
                                 ),
                             swap:
                                 (ExternalSymbol
-                                    13
+                                    16
                                     swap
-                                    2 swap
+                                    5 swap
                                     template_sort_02_m
                                     []
                                     swap
@@ -59,9 +79,9 @@
                                 ),
                             test_template:
                                 (ExternalSymbol
-                                    13
+                                    16
                                     test_template
-                                    2 test_template
+                                    5 test_template
                                     template_sort_02_m
                                     []
                                     test_template
@@ -71,7 +91,7 @@
                     template_sort_02
                     [template_sort_02_m]
                     [(SubroutineCall
-                        13 test_template
+                        16 test_template
                         ()
                         []
                         ()
@@ -80,16 +100,16 @@
             template_sort_02_m:
                 (Module
                     (SymbolTable
-                        2
+                        5
                         {
                             lt_integer:
                                 (Function
                                     (SymbolTable
-                                        11
+                                        14
                                         {
                                             lhs:
                                                 (Variable
-                                                    11
+                                                    14
                                                     lhs
                                                     []
                                                     In
@@ -105,7 +125,7 @@
                                                 ),
                                             res:
                                                 (Variable
-                                                    11
+                                                    14
                                                     res
                                                     []
                                                     ReturnVar
@@ -121,7 +141,7 @@
                                                 ),
                                             rhs:
                                                 (Variable
-                                                    11
+                                                    14
                                                     rhs
                                                     []
                                                     In
@@ -153,33 +173,43 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 11 lhs)
-                                    (Var 11 rhs)]
+                                    [(Var 14 lhs)
+                                    (Var 14 rhs)]
                                     [(=
-                                        (Var 11 res)
+                                        (Var 14 res)
                                         (IntegerCompare
-                                            (Var 11 lhs)
+                                            (Var 14 lhs)
                                             Lt
-                                            (Var 11 rhs)
+                                            (Var 14 rhs)
                                             (Logical 4)
                                             ()
                                         )
                                         ()
                                     )]
-                                    (Var 11 res)
+                                    (Var 14 res)
                                     Public
                                     .false.
                                     .false.
                                     ()
                                 ),
+                            lt_my_type:
+                                (ExternalSymbol
+                                    5
+                                    lt_my_type
+                                    2 lt_my_type
+                                    template_sort_02_type
+                                    []
+                                    lt_my_type
+                                    Public
+                                ),
                             lt_real:
                                 (Function
                                     (SymbolTable
-                                        10
+                                        13
                                         {
                                             lhs:
                                                 (Variable
-                                                    10
+                                                    13
                                                     lhs
                                                     []
                                                     In
@@ -195,7 +225,7 @@
                                                 ),
                                             res:
                                                 (Variable
-                                                    10
+                                                    13
                                                     res
                                                     []
                                                     ReturnVar
@@ -211,7 +241,7 @@
                                                 ),
                                             rhs:
                                                 (Variable
-                                                    10
+                                                    13
                                                     rhs
                                                     []
                                                     In
@@ -243,38 +273,48 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 10 lhs)
-                                    (Var 10 rhs)]
+                                    [(Var 13 lhs)
+                                    (Var 13 rhs)]
                                     [(=
-                                        (Var 10 res)
+                                        (Var 13 res)
                                         (RealCompare
-                                            (Var 10 lhs)
+                                            (Var 13 lhs)
                                             Lt
-                                            (Var 10 rhs)
+                                            (Var 13 rhs)
                                             (Logical 4)
                                             ()
                                         )
                                         ()
                                     )]
-                                    (Var 10 res)
+                                    (Var 13 res)
                                     Public
                                     .false.
                                     .false.
                                     ()
                                 ),
+                            my_type:
+                                (ExternalSymbol
+                                    5
+                                    my_type
+                                    2 my_type
+                                    template_sort_02_type
+                                    []
+                                    my_type
+                                    Public
+                                ),
                             op_r:
                                 (Requirement
                                     (SymbolTable
-                                        3
+                                        6
                                         {
                                             op_func:
                                                 (Function
                                                     (SymbolTable
-                                                        4
+                                                        7
                                                         {
                                                             lhs:
                                                                 (Variable
-                                                                    4
+                                                                    7
                                                                     lhs
                                                                     []
                                                                     In
@@ -292,7 +332,7 @@
                                                                 ),
                                                             res:
                                                                 (Variable
-                                                                    4
+                                                                    7
                                                                     res
                                                                     []
                                                                     ReturnVar
@@ -310,7 +350,7 @@
                                                                 ),
                                                             rhs:
                                                                 (Variable
-                                                                    4
+                                                                    7
                                                                     rhs
                                                                     []
                                                                     In
@@ -350,10 +390,10 @@
                                                         .true.
                                                     )
                                                     []
-                                                    [(Var 4 lhs)
-                                                    (Var 4 rhs)]
+                                                    [(Var 7 lhs)
+                                                    (Var 7 rhs)]
                                                     []
-                                                    (Var 4 res)
+                                                    (Var 7 res)
                                                     Public
                                                     .false.
                                                     .false.
@@ -361,7 +401,7 @@
                                                 ),
                                             t:
                                                 (Variable
-                                                    3
+                                                    6
                                                     t
                                                     []
                                                     In
@@ -379,7 +419,7 @@
                                                 ),
                                             u:
                                                 (Variable
-                                                    3
+                                                    6
                                                     u
                                                     []
                                                     In
@@ -397,7 +437,7 @@
                                                 ),
                                             v:
                                                 (Variable
-                                                    3
+                                                    6
                                                     v
                                                     []
                                                     In
@@ -424,16 +464,16 @@
                             quicksort:
                                 (Template
                                     (SymbolTable
-                                        7
+                                        10
                                         {
                                             __instantiated_swap:
                                                 (Function
                                                     (SymbolTable
-                                                        14
+                                                        17
                                                         {
                                                             lhs:
                                                                 (Variable
-                                                                    14
+                                                                    17
                                                                     lhs
                                                                     []
                                                                     InOut
@@ -451,7 +491,7 @@
                                                                 ),
                                                             rhs:
                                                                 (Variable
-                                                                    14
+                                                                    17
                                                                     rhs
                                                                     []
                                                                     InOut
@@ -469,7 +509,7 @@
                                                                 ),
                                                             t:
                                                                 (Variable
-                                                                    14
+                                                                    17
                                                                     t
                                                                     []
                                                                     In
@@ -487,7 +527,7 @@
                                                                 ),
                                                             tmp:
                                                                 (Variable
-                                                                    14
+                                                                    17
                                                                     tmp
                                                                     []
                                                                     Local
@@ -525,21 +565,21 @@
                                                         .false.
                                                     )
                                                     []
-                                                    [(Var 14 lhs)
-                                                    (Var 14 rhs)]
+                                                    [(Var 17 lhs)
+                                                    (Var 17 rhs)]
                                                     [(=
-                                                        (Var 14 tmp)
-                                                        (Var 14 lhs)
+                                                        (Var 17 tmp)
+                                                        (Var 17 lhs)
                                                         ()
                                                     )
                                                     (=
-                                                        (Var 14 lhs)
-                                                        (Var 14 rhs)
+                                                        (Var 17 lhs)
+                                                        (Var 17 rhs)
                                                         ()
                                                     )
                                                     (=
-                                                        (Var 14 rhs)
-                                                        (Var 14 tmp)
+                                                        (Var 17 rhs)
+                                                        (Var 17 tmp)
                                                         ()
                                                     )]
                                                     ()
@@ -551,11 +591,11 @@
                                             __instantiated_swap1:
                                                 (Function
                                                     (SymbolTable
-                                                        15
+                                                        18
                                                         {
                                                             lhs:
                                                                 (Variable
-                                                                    15
+                                                                    18
                                                                     lhs
                                                                     []
                                                                     InOut
@@ -573,7 +613,7 @@
                                                                 ),
                                                             rhs:
                                                                 (Variable
-                                                                    15
+                                                                    18
                                                                     rhs
                                                                     []
                                                                     InOut
@@ -591,7 +631,7 @@
                                                                 ),
                                                             t:
                                                                 (Variable
-                                                                    15
+                                                                    18
                                                                     t
                                                                     []
                                                                     In
@@ -609,7 +649,7 @@
                                                                 ),
                                                             tmp:
                                                                 (Variable
-                                                                    15
+                                                                    18
                                                                     tmp
                                                                     []
                                                                     Local
@@ -647,21 +687,21 @@
                                                         .false.
                                                     )
                                                     []
-                                                    [(Var 15 lhs)
-                                                    (Var 15 rhs)]
+                                                    [(Var 18 lhs)
+                                                    (Var 18 rhs)]
                                                     [(=
-                                                        (Var 15 tmp)
-                                                        (Var 15 lhs)
+                                                        (Var 18 tmp)
+                                                        (Var 18 lhs)
                                                         ()
                                                     )
                                                     (=
-                                                        (Var 15 lhs)
-                                                        (Var 15 rhs)
+                                                        (Var 18 lhs)
+                                                        (Var 18 rhs)
                                                         ()
                                                     )
                                                     (=
-                                                        (Var 15 rhs)
-                                                        (Var 15 tmp)
+                                                        (Var 18 rhs)
+                                                        (Var 18 tmp)
                                                         ()
                                                     )]
                                                     ()
@@ -672,7 +712,7 @@
                                                 ),
                                             logical:
                                                 (Variable
-                                                    7
+                                                    10
                                                     logical
                                                     []
                                                     In
@@ -689,11 +729,11 @@
                                             lt:
                                                 (Function
                                                     (SymbolTable
-                                                        8
+                                                        11
                                                         {
                                                             lhs:
                                                                 (Variable
-                                                                    8
+                                                                    11
                                                                     lhs
                                                                     []
                                                                     In
@@ -711,7 +751,7 @@
                                                                 ),
                                                             res:
                                                                 (Variable
-                                                                    8
+                                                                    11
                                                                     res
                                                                     []
                                                                     ReturnVar
@@ -727,7 +767,7 @@
                                                                 ),
                                                             rhs:
                                                                 (Variable
-                                                                    8
+                                                                    11
                                                                     rhs
                                                                     []
                                                                     In
@@ -765,10 +805,10 @@
                                                         .true.
                                                     )
                                                     []
-                                                    [(Var 8 lhs)
-                                                    (Var 8 rhs)]
+                                                    [(Var 11 lhs)
+                                                    (Var 11 rhs)]
                                                     []
-                                                    (Var 8 res)
+                                                    (Var 11 res)
                                                     Public
                                                     .false.
                                                     .false.
@@ -777,11 +817,11 @@
                                             quicksort:
                                                 (Function
                                                     (SymbolTable
-                                                        9
+                                                        12
                                                         {
                                                             arr:
                                                                 (Variable
-                                                                    9
+                                                                    12
                                                                     arr
                                                                     []
                                                                     InOut
@@ -804,7 +844,7 @@
                                                                 ),
                                                             high:
                                                                 (Variable
-                                                                    9
+                                                                    12
                                                                     high
                                                                     []
                                                                     In
@@ -820,7 +860,7 @@
                                                                 ),
                                                             i:
                                                                 (Variable
-                                                                    9
+                                                                    12
                                                                     i
                                                                     []
                                                                     Local
@@ -836,7 +876,7 @@
                                                                 ),
                                                             last:
                                                                 (Variable
-                                                                    9
+                                                                    12
                                                                     last
                                                                     []
                                                                     Local
@@ -852,7 +892,7 @@
                                                                 ),
                                                             low:
                                                                 (Variable
-                                                                    9
+                                                                    12
                                                                     low
                                                                     []
                                                                     In
@@ -868,7 +908,7 @@
                                                                 ),
                                                             pivot:
                                                                 (Variable
-                                                                    9
+                                                                    12
                                                                     pivot
                                                                     []
                                                                     Local
@@ -913,23 +953,23 @@
                                                     __instantiated_swap
                                                     __instantiated_swap1
                                                     quicksort]
-                                                    [(Var 9 arr)
-                                                    (Var 9 low)
-                                                    (Var 9 high)]
+                                                    [(Var 12 arr)
+                                                    (Var 12 low)
+                                                    (Var 12 high)]
                                                     [(If
                                                         (IntegerCompare
-                                                            (Var 9 low)
+                                                            (Var 12 low)
                                                             Lt
-                                                            (Var 9 high)
+                                                            (Var 12 high)
                                                             (Logical 4)
                                                             ()
                                                         )
                                                         [(=
-                                                            (Var 9 pivot)
+                                                            (Var 12 pivot)
                                                             (ArrayItem
-                                                                (Var 9 arr)
+                                                                (Var 12 arr)
                                                                 [(()
-                                                                (Var 9 high)
+                                                                (Var 12 high)
                                                                 ())]
                                                                 (TypeParameter
                                                                     t
@@ -940,9 +980,9 @@
                                                             ()
                                                         )
                                                         (=
-                                                            (Var 9 last)
+                                                            (Var 12 last)
                                                             (IntegerBinOp
-                                                                (Var 9 low)
+                                                                (Var 12 low)
                                                                 Sub
                                                                 (IntegerConstant 1 (Integer 4))
                                                                 (Integer 4)
@@ -952,10 +992,10 @@
                                                         )
                                                         (DoLoop
                                                             ()
-                                                            ((Var 9 i)
-                                                            (Var 9 low)
+                                                            ((Var 12 i)
+                                                            (Var 12 low)
                                                             (IntegerBinOp
-                                                                (Var 9 high)
+                                                                (Var 12 high)
                                                                 Sub
                                                                 (IntegerConstant 1 (Integer 4))
                                                                 (Integer 4)
@@ -964,12 +1004,12 @@
                                                             ())
                                                             [(If
                                                                 (FunctionCall
-                                                                    7 lt
+                                                                    10 lt
                                                                     ()
                                                                     [((ArrayItem
-                                                                        (Var 9 arr)
+                                                                        (Var 12 arr)
                                                                         [(()
-                                                                        (Var 9 i)
+                                                                        (Var 12 i)
                                                                         ())]
                                                                         (TypeParameter
                                                                             t
@@ -977,15 +1017,15 @@
                                                                         ColMajor
                                                                         ()
                                                                     ))
-                                                                    ((Var 9 pivot))]
+                                                                    ((Var 12 pivot))]
                                                                     (Logical 4)
                                                                     ()
                                                                     ()
                                                                 )
                                                                 [(=
-                                                                    (Var 9 last)
+                                                                    (Var 12 last)
                                                                     (IntegerBinOp
-                                                                        (Var 9 last)
+                                                                        (Var 12 last)
                                                                         Add
                                                                         (IntegerConstant 1 (Integer 4))
                                                                         (Integer 4)
@@ -994,12 +1034,12 @@
                                                                     ()
                                                                 )
                                                                 (SubroutineCall
-                                                                    7 __instantiated_swap
+                                                                    10 __instantiated_swap
                                                                     ()
                                                                     [((ArrayItem
-                                                                        (Var 9 arr)
+                                                                        (Var 12 arr)
                                                                         [(()
-                                                                        (Var 9 last)
+                                                                        (Var 12 last)
                                                                         ())]
                                                                         (TypeParameter
                                                                             t
@@ -1008,9 +1048,9 @@
                                                                         ()
                                                                     ))
                                                                     ((ArrayItem
-                                                                        (Var 9 arr)
+                                                                        (Var 12 arr)
                                                                         [(()
-                                                                        (Var 9 i)
+                                                                        (Var 12 i)
                                                                         ())]
                                                                         (TypeParameter
                                                                             t
@@ -1024,13 +1064,13 @@
                                                             )]
                                                         )
                                                         (SubroutineCall
-                                                            7 __instantiated_swap1
+                                                            10 __instantiated_swap1
                                                             ()
                                                             [((ArrayItem
-                                                                (Var 9 arr)
+                                                                (Var 12 arr)
                                                                 [(()
                                                                 (IntegerBinOp
-                                                                    (Var 9 last)
+                                                                    (Var 12 last)
                                                                     Add
                                                                     (IntegerConstant 1 (Integer 4))
                                                                     (Integer 4)
@@ -1044,9 +1084,9 @@
                                                                 ()
                                                             ))
                                                             ((ArrayItem
-                                                                (Var 9 arr)
+                                                                (Var 12 arr)
                                                                 [(()
-                                                                (Var 9 high)
+                                                                (Var 12 high)
                                                                 ())]
                                                                 (TypeParameter
                                                                     t
@@ -1057,10 +1097,10 @@
                                                             ()
                                                         )
                                                         (SubroutineCall
-                                                            7 quicksort
+                                                            10 quicksort
                                                             ()
                                                             [((ArrayPhysicalCast
-                                                                (Var 9 arr)
+                                                                (Var 12 arr)
                                                                 DescriptorArray
                                                                 DescriptorArray
                                                                 (Array
@@ -1073,15 +1113,15 @@
                                                                 )
                                                                 ()
                                                             ))
-                                                            ((Var 9 low))
-                                                            ((Var 9 last))]
+                                                            ((Var 12 low))
+                                                            ((Var 12 last))]
                                                             ()
                                                         )
                                                         (SubroutineCall
-                                                            7 quicksort
+                                                            10 quicksort
                                                             ()
                                                             [((ArrayPhysicalCast
-                                                                (Var 9 arr)
+                                                                (Var 12 arr)
                                                                 DescriptorArray
                                                                 DescriptorArray
                                                                 (Array
@@ -1095,13 +1135,13 @@
                                                                 ()
                                                             ))
                                                             ((IntegerBinOp
-                                                                (Var 9 last)
+                                                                (Var 12 last)
                                                                 Add
                                                                 (IntegerConstant 2 (Integer 4))
                                                                 (Integer 4)
                                                                 ()
                                                             ))
-                                                            ((Var 9 high))]
+                                                            ((Var 12 high))]
                                                             ()
                                                         )]
                                                         []
@@ -1114,7 +1154,7 @@
                                                 ),
                                             t:
                                                 (Variable
-                                                    7
+                                                    10
                                                     t
                                                     []
                                                     In
@@ -1144,16 +1184,16 @@
                             swap:
                                 (Template
                                     (SymbolTable
-                                        5
+                                        8
                                         {
                                             swap:
                                                 (Function
                                                     (SymbolTable
-                                                        6
+                                                        9
                                                         {
                                                             lhs:
                                                                 (Variable
-                                                                    6
+                                                                    9
                                                                     lhs
                                                                     []
                                                                     InOut
@@ -1171,7 +1211,7 @@
                                                                 ),
                                                             rhs:
                                                                 (Variable
-                                                                    6
+                                                                    9
                                                                     rhs
                                                                     []
                                                                     InOut
@@ -1189,7 +1229,7 @@
                                                                 ),
                                                             t:
                                                                 (Variable
-                                                                    6
+                                                                    9
                                                                     t
                                                                     []
                                                                     In
@@ -1207,7 +1247,7 @@
                                                                 ),
                                                             tmp:
                                                                 (Variable
-                                                                    6
+                                                                    9
                                                                     tmp
                                                                     []
                                                                     Local
@@ -1245,21 +1285,21 @@
                                                         .false.
                                                     )
                                                     []
-                                                    [(Var 6 lhs)
-                                                    (Var 6 rhs)]
+                                                    [(Var 9 lhs)
+                                                    (Var 9 rhs)]
                                                     [(=
-                                                        (Var 6 tmp)
-                                                        (Var 6 lhs)
+                                                        (Var 9 tmp)
+                                                        (Var 9 lhs)
                                                         ()
                                                     )
                                                     (=
-                                                        (Var 6 lhs)
-                                                        (Var 6 rhs)
+                                                        (Var 9 lhs)
+                                                        (Var 9 rhs)
                                                         ()
                                                     )
                                                     (=
-                                                        (Var 6 rhs)
-                                                        (Var 6 tmp)
+                                                        (Var 9 rhs)
+                                                        (Var 9 tmp)
                                                         ()
                                                     )]
                                                     ()
@@ -1270,7 +1310,7 @@
                                                 ),
                                             t:
                                                 (Variable
-                                                    5
+                                                    8
                                                     t
                                                     []
                                                     In
@@ -1294,16 +1334,16 @@
                             test_template:
                                 (Function
                                     (SymbolTable
-                                        12
+                                        15
                                         {
                                             __asr___instantiated_swap:
                                                 (Function
                                                     (SymbolTable
-                                                        17
+                                                        20
                                                         {
                                                             lhs:
                                                                 (Variable
-                                                                    17
+                                                                    20
                                                                     lhs
                                                                     []
                                                                     InOut
@@ -1319,7 +1359,7 @@
                                                                 ),
                                                             rhs:
                                                                 (Variable
-                                                                    17
+                                                                    20
                                                                     rhs
                                                                     []
                                                                     InOut
@@ -1335,7 +1375,7 @@
                                                                 ),
                                                             t:
                                                                 (Variable
-                                                                    17
+                                                                    20
                                                                     t
                                                                     []
                                                                     In
@@ -1351,7 +1391,7 @@
                                                                 ),
                                                             tmp:
                                                                 (Variable
-                                                                    17
+                                                                    20
                                                                     tmp
                                                                     []
                                                                     Local
@@ -1370,336 +1410,6 @@
                                                     (FunctionType
                                                         [(Integer 4)
                                                         (Integer 4)]
-                                                        ()
-                                                        Source
-                                                        Implementation
-                                                        ()
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        []
-                                                        .false.
-                                                    )
-                                                    []
-                                                    [(Var 17 lhs)
-                                                    (Var 17 rhs)]
-                                                    [(=
-                                                        (Var 17 tmp)
-                                                        (Var 17 lhs)
-                                                        ()
-                                                    )
-                                                    (=
-                                                        (Var 17 lhs)
-                                                        (Var 17 rhs)
-                                                        ()
-                                                    )
-                                                    (=
-                                                        (Var 17 rhs)
-                                                        (Var 17 tmp)
-                                                        ()
-                                                    )]
-                                                    ()
-                                                    Public
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                ),
-                                            __asr___instantiated_swap1:
-                                                (Function
-                                                    (SymbolTable
-                                                        18
-                                                        {
-                                                            lhs:
-                                                                (Variable
-                                                                    18
-                                                                    lhs
-                                                                    []
-                                                                    InOut
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Integer 4)
-                                                                    ()
-                                                                    Source
-                                                                    Public
-                                                                    Required
-                                                                    .false.
-                                                                ),
-                                                            rhs:
-                                                                (Variable
-                                                                    18
-                                                                    rhs
-                                                                    []
-                                                                    InOut
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Integer 4)
-                                                                    ()
-                                                                    Source
-                                                                    Public
-                                                                    Required
-                                                                    .false.
-                                                                ),
-                                                            t:
-                                                                (Variable
-                                                                    18
-                                                                    t
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Integer 4)
-                                                                    ()
-                                                                    Source
-                                                                    Public
-                                                                    Required
-                                                                    .false.
-                                                                ),
-                                                            tmp:
-                                                                (Variable
-                                                                    18
-                                                                    tmp
-                                                                    []
-                                                                    Local
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Integer 4)
-                                                                    ()
-                                                                    Source
-                                                                    Public
-                                                                    Required
-                                                                    .false.
-                                                                )
-                                                        })
-                                                    __asr___instantiated_swap1
-                                                    (FunctionType
-                                                        [(Integer 4)
-                                                        (Integer 4)]
-                                                        ()
-                                                        Source
-                                                        Implementation
-                                                        ()
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        []
-                                                        .false.
-                                                    )
-                                                    []
-                                                    [(Var 18 lhs)
-                                                    (Var 18 rhs)]
-                                                    [(=
-                                                        (Var 18 tmp)
-                                                        (Var 18 lhs)
-                                                        ()
-                                                    )
-                                                    (=
-                                                        (Var 18 lhs)
-                                                        (Var 18 rhs)
-                                                        ()
-                                                    )
-                                                    (=
-                                                        (Var 18 rhs)
-                                                        (Var 18 tmp)
-                                                        ()
-                                                    )]
-                                                    ()
-                                                    Public
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                ),
-                                            __asr___instantiated_swap11:
-                                                (Function
-                                                    (SymbolTable
-                                                        21
-                                                        {
-                                                            lhs:
-                                                                (Variable
-                                                                    21
-                                                                    lhs
-                                                                    []
-                                                                    InOut
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Real 4)
-                                                                    ()
-                                                                    Source
-                                                                    Public
-                                                                    Required
-                                                                    .false.
-                                                                ),
-                                                            rhs:
-                                                                (Variable
-                                                                    21
-                                                                    rhs
-                                                                    []
-                                                                    InOut
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Real 4)
-                                                                    ()
-                                                                    Source
-                                                                    Public
-                                                                    Required
-                                                                    .false.
-                                                                ),
-                                                            t:
-                                                                (Variable
-                                                                    21
-                                                                    t
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Real 4)
-                                                                    ()
-                                                                    Source
-                                                                    Public
-                                                                    Required
-                                                                    .false.
-                                                                ),
-                                                            tmp:
-                                                                (Variable
-                                                                    21
-                                                                    tmp
-                                                                    []
-                                                                    Local
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Real 4)
-                                                                    ()
-                                                                    Source
-                                                                    Public
-                                                                    Required
-                                                                    .false.
-                                                                )
-                                                        })
-                                                    __asr___instantiated_swap11
-                                                    (FunctionType
-                                                        [(Real 4)
-                                                        (Real 4)]
-                                                        ()
-                                                        Source
-                                                        Implementation
-                                                        ()
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        []
-                                                        .false.
-                                                    )
-                                                    []
-                                                    [(Var 21 lhs)
-                                                    (Var 21 rhs)]
-                                                    [(=
-                                                        (Var 21 tmp)
-                                                        (Var 21 lhs)
-                                                        ()
-                                                    )
-                                                    (=
-                                                        (Var 21 lhs)
-                                                        (Var 21 rhs)
-                                                        ()
-                                                    )
-                                                    (=
-                                                        (Var 21 rhs)
-                                                        (Var 21 tmp)
-                                                        ()
-                                                    )]
-                                                    ()
-                                                    Public
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                ),
-                                            __asr___instantiated_swap2:
-                                                (Function
-                                                    (SymbolTable
-                                                        20
-                                                        {
-                                                            lhs:
-                                                                (Variable
-                                                                    20
-                                                                    lhs
-                                                                    []
-                                                                    InOut
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Real 4)
-                                                                    ()
-                                                                    Source
-                                                                    Public
-                                                                    Required
-                                                                    .false.
-                                                                ),
-                                                            rhs:
-                                                                (Variable
-                                                                    20
-                                                                    rhs
-                                                                    []
-                                                                    InOut
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Real 4)
-                                                                    ()
-                                                                    Source
-                                                                    Public
-                                                                    Required
-                                                                    .false.
-                                                                ),
-                                                            t:
-                                                                (Variable
-                                                                    20
-                                                                    t
-                                                                    []
-                                                                    In
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Real 4)
-                                                                    ()
-                                                                    Source
-                                                                    Public
-                                                                    Required
-                                                                    .false.
-                                                                ),
-                                                            tmp:
-                                                                (Variable
-                                                                    20
-                                                                    tmp
-                                                                    []
-                                                                    Local
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Real 4)
-                                                                    ()
-                                                                    Source
-                                                                    Public
-                                                                    Required
-                                                                    .false.
-                                                                )
-                                                        })
-                                                    __asr___instantiated_swap2
-                                                    (FunctionType
-                                                        [(Real 4)
-                                                        (Real 4)]
                                                         ()
                                                         Source
                                                         Implementation
@@ -1736,14 +1446,588 @@
                                                     .false.
                                                     ()
                                                 ),
+                                            __asr___instantiated_swap1:
+                                                (Function
+                                                    (SymbolTable
+                                                        21
+                                                        {
+                                                            lhs:
+                                                                (Variable
+                                                                    21
+                                                                    lhs
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            rhs:
+                                                                (Variable
+                                                                    21
+                                                                    rhs
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            t:
+                                                                (Variable
+                                                                    21
+                                                                    t
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            tmp:
+                                                                (Variable
+                                                                    21
+                                                                    tmp
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    __asr___instantiated_swap1
+                                                    (FunctionType
+                                                        [(Integer 4)
+                                                        (Integer 4)]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    []
+                                                    [(Var 21 lhs)
+                                                    (Var 21 rhs)]
+                                                    [(=
+                                                        (Var 21 tmp)
+                                                        (Var 21 lhs)
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 21 lhs)
+                                                        (Var 21 rhs)
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 21 rhs)
+                                                        (Var 21 tmp)
+                                                        ()
+                                                    )]
+                                                    ()
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            __asr___instantiated_swap11:
+                                                (Function
+                                                    (SymbolTable
+                                                        24
+                                                        {
+                                                            lhs:
+                                                                (Variable
+                                                                    24
+                                                                    lhs
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            rhs:
+                                                                (Variable
+                                                                    24
+                                                                    rhs
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            t:
+                                                                (Variable
+                                                                    24
+                                                                    t
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            tmp:
+                                                                (Variable
+                                                                    24
+                                                                    tmp
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    __asr___instantiated_swap11
+                                                    (FunctionType
+                                                        [(Real 4)
+                                                        (Real 4)]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    []
+                                                    [(Var 24 lhs)
+                                                    (Var 24 rhs)]
+                                                    [(=
+                                                        (Var 24 tmp)
+                                                        (Var 24 lhs)
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 24 lhs)
+                                                        (Var 24 rhs)
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 24 rhs)
+                                                        (Var 24 tmp)
+                                                        ()
+                                                    )]
+                                                    ()
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            __asr___instantiated_swap12:
+                                                (Function
+                                                    (SymbolTable
+                                                        27
+                                                        {
+                                                            lhs:
+                                                                (Variable
+                                                                    27
+                                                                    lhs
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Struct
+                                                                        5 my_type
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            rhs:
+                                                                (Variable
+                                                                    27
+                                                                    rhs
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Struct
+                                                                        5 my_type
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            t:
+                                                                (Variable
+                                                                    27
+                                                                    t
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Struct
+                                                                        5 my_type
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            tmp:
+                                                                (Variable
+                                                                    27
+                                                                    tmp
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Struct
+                                                                        5 my_type
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    __asr___instantiated_swap12
+                                                    (FunctionType
+                                                        [(Struct
+                                                            5 my_type
+                                                        )
+                                                        (Struct
+                                                            5 my_type
+                                                        )]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    []
+                                                    [(Var 27 lhs)
+                                                    (Var 27 rhs)]
+                                                    [(=
+                                                        (Var 27 tmp)
+                                                        (Var 27 lhs)
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 27 lhs)
+                                                        (Var 27 rhs)
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 27 rhs)
+                                                        (Var 27 tmp)
+                                                        ()
+                                                    )]
+                                                    ()
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            __asr___instantiated_swap2:
+                                                (Function
+                                                    (SymbolTable
+                                                        23
+                                                        {
+                                                            lhs:
+                                                                (Variable
+                                                                    23
+                                                                    lhs
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            rhs:
+                                                                (Variable
+                                                                    23
+                                                                    rhs
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            t:
+                                                                (Variable
+                                                                    23
+                                                                    t
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            tmp:
+                                                                (Variable
+                                                                    23
+                                                                    tmp
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    __asr___instantiated_swap2
+                                                    (FunctionType
+                                                        [(Real 4)
+                                                        (Real 4)]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    []
+                                                    [(Var 23 lhs)
+                                                    (Var 23 rhs)]
+                                                    [(=
+                                                        (Var 23 tmp)
+                                                        (Var 23 lhs)
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 23 lhs)
+                                                        (Var 23 rhs)
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 23 rhs)
+                                                        (Var 23 tmp)
+                                                        ()
+                                                    )]
+                                                    ()
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            __asr___instantiated_swap3:
+                                                (Function
+                                                    (SymbolTable
+                                                        26
+                                                        {
+                                                            lhs:
+                                                                (Variable
+                                                                    26
+                                                                    lhs
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Struct
+                                                                        5 my_type
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            rhs:
+                                                                (Variable
+                                                                    26
+                                                                    rhs
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Struct
+                                                                        5 my_type
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            t:
+                                                                (Variable
+                                                                    26
+                                                                    t
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Struct
+                                                                        5 my_type
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            tmp:
+                                                                (Variable
+                                                                    26
+                                                                    tmp
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Struct
+                                                                        5 my_type
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    __asr___instantiated_swap3
+                                                    (FunctionType
+                                                        [(Struct
+                                                            5 my_type
+                                                        )
+                                                        (Struct
+                                                            5 my_type
+                                                        )]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    []
+                                                    [(Var 26 lhs)
+                                                    (Var 26 rhs)]
+                                                    [(=
+                                                        (Var 26 tmp)
+                                                        (Var 26 lhs)
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 26 lhs)
+                                                        (Var 26 rhs)
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 26 rhs)
+                                                        (Var 26 tmp)
+                                                        ()
+                                                    )]
+                                                    ()
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
                                             __instantiated_quicksort:
                                                 (Function
                                                     (SymbolTable
-                                                        16
+                                                        19
                                                         {
                                                             arr:
                                                                 (Variable
-                                                                    16
+                                                                    19
                                                                     arr
                                                                     []
                                                                     InOut
@@ -1764,7 +2048,7 @@
                                                                 ),
                                                             high:
                                                                 (Variable
-                                                                    16
+                                                                    19
                                                                     high
                                                                     []
                                                                     In
@@ -1780,7 +2064,7 @@
                                                                 ),
                                                             i:
                                                                 (Variable
-                                                                    16
+                                                                    19
                                                                     i
                                                                     []
                                                                     Local
@@ -1796,7 +2080,7 @@
                                                                 ),
                                                             last:
                                                                 (Variable
-                                                                    16
+                                                                    19
                                                                     last
                                                                     []
                                                                     Local
@@ -1812,7 +2096,7 @@
                                                                 ),
                                                             low:
                                                                 (Variable
-                                                                    16
+                                                                    19
                                                                     low
                                                                     []
                                                                     In
@@ -1828,7 +2112,7 @@
                                                                 ),
                                                             pivot:
                                                                 (Variable
-                                                                    16
+                                                                    19
                                                                     pivot
                                                                     []
                                                                     Local
@@ -1869,23 +2153,23 @@
                                                     __asr___instantiated_swap
                                                     __asr___instantiated_swap1
                                                     __instantiated_quicksort]
-                                                    [(Var 16 arr)
-                                                    (Var 16 low)
-                                                    (Var 16 high)]
+                                                    [(Var 19 arr)
+                                                    (Var 19 low)
+                                                    (Var 19 high)]
                                                     [(If
                                                         (IntegerCompare
-                                                            (Var 16 low)
+                                                            (Var 19 low)
                                                             Lt
-                                                            (Var 16 high)
+                                                            (Var 19 high)
                                                             (Logical 4)
                                                             ()
                                                         )
                                                         [(=
-                                                            (Var 16 pivot)
+                                                            (Var 19 pivot)
                                                             (ArrayItem
-                                                                (Var 16 arr)
+                                                                (Var 19 arr)
                                                                 [(()
-                                                                (Var 16 high)
+                                                                (Var 19 high)
                                                                 ())]
                                                                 (Integer 4)
                                                                 ColMajor
@@ -1894,9 +2178,9 @@
                                                             ()
                                                         )
                                                         (=
-                                                            (Var 16 last)
+                                                            (Var 19 last)
                                                             (IntegerBinOp
-                                                                (Var 16 low)
+                                                                (Var 19 low)
                                                                 Sub
                                                                 (IntegerConstant 1 (Integer 4))
                                                                 (Integer 4)
@@ -1906,10 +2190,10 @@
                                                         )
                                                         (DoLoop
                                                             ()
-                                                            ((Var 16 i)
-                                                            (Var 16 low)
+                                                            ((Var 19 i)
+                                                            (Var 19 low)
                                                             (IntegerBinOp
-                                                                (Var 16 high)
+                                                                (Var 19 high)
                                                                 Sub
                                                                 (IntegerConstant 1 (Integer 4))
                                                                 (Integer 4)
@@ -1918,26 +2202,26 @@
                                                             ())
                                                             [(If
                                                                 (FunctionCall
-                                                                    2 lt_integer
+                                                                    5 lt_integer
                                                                     ()
                                                                     [((ArrayItem
-                                                                        (Var 16 arr)
+                                                                        (Var 19 arr)
                                                                         [(()
-                                                                        (Var 16 i)
+                                                                        (Var 19 i)
                                                                         ())]
                                                                         (Integer 4)
                                                                         ColMajor
                                                                         ()
                                                                     ))
-                                                                    ((Var 16 pivot))]
+                                                                    ((Var 19 pivot))]
                                                                     (Logical 4)
                                                                     ()
                                                                     ()
                                                                 )
                                                                 [(=
-                                                                    (Var 16 last)
+                                                                    (Var 19 last)
                                                                     (IntegerBinOp
-                                                                        (Var 16 last)
+                                                                        (Var 19 last)
                                                                         Add
                                                                         (IntegerConstant 1 (Integer 4))
                                                                         (Integer 4)
@@ -1946,21 +2230,21 @@
                                                                     ()
                                                                 )
                                                                 (SubroutineCall
-                                                                    12 __asr___instantiated_swap
+                                                                    15 __asr___instantiated_swap
                                                                     ()
                                                                     [((ArrayItem
-                                                                        (Var 16 arr)
+                                                                        (Var 19 arr)
                                                                         [(()
-                                                                        (Var 16 last)
+                                                                        (Var 19 last)
                                                                         ())]
                                                                         (Integer 4)
                                                                         ColMajor
                                                                         ()
                                                                     ))
                                                                     ((ArrayItem
-                                                                        (Var 16 arr)
+                                                                        (Var 19 arr)
                                                                         [(()
-                                                                        (Var 16 i)
+                                                                        (Var 19 i)
                                                                         ())]
                                                                         (Integer 4)
                                                                         ColMajor
@@ -1972,13 +2256,13 @@
                                                             )]
                                                         )
                                                         (SubroutineCall
-                                                            12 __asr___instantiated_swap1
+                                                            15 __asr___instantiated_swap1
                                                             ()
                                                             [((ArrayItem
-                                                                (Var 16 arr)
+                                                                (Var 19 arr)
                                                                 [(()
                                                                 (IntegerBinOp
-                                                                    (Var 16 last)
+                                                                    (Var 19 last)
                                                                     Add
                                                                     (IntegerConstant 1 (Integer 4))
                                                                     (Integer 4)
@@ -1990,9 +2274,9 @@
                                                                 ()
                                                             ))
                                                             ((ArrayItem
-                                                                (Var 16 arr)
+                                                                (Var 19 arr)
                                                                 [(()
-                                                                (Var 16 high)
+                                                                (Var 19 high)
                                                                 ())]
                                                                 (Integer 4)
                                                                 ColMajor
@@ -2001,10 +2285,10 @@
                                                             ()
                                                         )
                                                         (SubroutineCall
-                                                            12 __instantiated_quicksort
+                                                            15 __instantiated_quicksort
                                                             ()
                                                             [((ArrayPhysicalCast
-                                                                (Var 16 arr)
+                                                                (Var 19 arr)
                                                                 DescriptorArray
                                                                 DescriptorArray
                                                                 (Array
@@ -2015,15 +2299,15 @@
                                                                 )
                                                                 ()
                                                             ))
-                                                            ((Var 16 low))
-                                                            ((Var 16 last))]
+                                                            ((Var 19 low))
+                                                            ((Var 19 last))]
                                                             ()
                                                         )
                                                         (SubroutineCall
-                                                            12 __instantiated_quicksort
+                                                            15 __instantiated_quicksort
                                                             ()
                                                             [((ArrayPhysicalCast
-                                                                (Var 16 arr)
+                                                                (Var 19 arr)
                                                                 DescriptorArray
                                                                 DescriptorArray
                                                                 (Array
@@ -2035,13 +2319,13 @@
                                                                 ()
                                                             ))
                                                             ((IntegerBinOp
-                                                                (Var 16 last)
+                                                                (Var 19 last)
                                                                 Add
                                                                 (IntegerConstant 2 (Integer 4))
                                                                 (Integer 4)
                                                                 ()
                                                             ))
-                                                            ((Var 16 high))]
+                                                            ((Var 19 high))]
                                                             ()
                                                         )]
                                                         []
@@ -2055,11 +2339,11 @@
                                             __instantiated_quicksort1:
                                                 (Function
                                                     (SymbolTable
-                                                        19
+                                                        22
                                                         {
                                                             arr:
                                                                 (Variable
-                                                                    19
+                                                                    22
                                                                     arr
                                                                     []
                                                                     InOut
@@ -2080,7 +2364,7 @@
                                                                 ),
                                                             high:
                                                                 (Variable
-                                                                    19
+                                                                    22
                                                                     high
                                                                     []
                                                                     In
@@ -2096,7 +2380,7 @@
                                                                 ),
                                                             i:
                                                                 (Variable
-                                                                    19
+                                                                    22
                                                                     i
                                                                     []
                                                                     Local
@@ -2112,7 +2396,7 @@
                                                                 ),
                                                             last:
                                                                 (Variable
-                                                                    19
+                                                                    22
                                                                     last
                                                                     []
                                                                     Local
@@ -2128,7 +2412,7 @@
                                                                 ),
                                                             low:
                                                                 (Variable
-                                                                    19
+                                                                    22
                                                                     low
                                                                     []
                                                                     In
@@ -2144,7 +2428,7 @@
                                                                 ),
                                                             pivot:
                                                                 (Variable
-                                                                    19
+                                                                    22
                                                                     pivot
                                                                     []
                                                                     Local
@@ -2185,23 +2469,23 @@
                                                     __asr___instantiated_swap2
                                                     __asr___instantiated_swap11
                                                     __instantiated_quicksort1]
-                                                    [(Var 19 arr)
-                                                    (Var 19 low)
-                                                    (Var 19 high)]
+                                                    [(Var 22 arr)
+                                                    (Var 22 low)
+                                                    (Var 22 high)]
                                                     [(If
                                                         (IntegerCompare
-                                                            (Var 19 low)
+                                                            (Var 22 low)
                                                             Lt
-                                                            (Var 19 high)
+                                                            (Var 22 high)
                                                             (Logical 4)
                                                             ()
                                                         )
                                                         [(=
-                                                            (Var 19 pivot)
+                                                            (Var 22 pivot)
                                                             (ArrayItem
-                                                                (Var 19 arr)
+                                                                (Var 22 arr)
                                                                 [(()
-                                                                (Var 19 high)
+                                                                (Var 22 high)
                                                                 ())]
                                                                 (Real 4)
                                                                 ColMajor
@@ -2210,9 +2494,9 @@
                                                             ()
                                                         )
                                                         (=
-                                                            (Var 19 last)
+                                                            (Var 22 last)
                                                             (IntegerBinOp
-                                                                (Var 19 low)
+                                                                (Var 22 low)
                                                                 Sub
                                                                 (IntegerConstant 1 (Integer 4))
                                                                 (Integer 4)
@@ -2222,10 +2506,10 @@
                                                         )
                                                         (DoLoop
                                                             ()
-                                                            ((Var 19 i)
-                                                            (Var 19 low)
+                                                            ((Var 22 i)
+                                                            (Var 22 low)
                                                             (IntegerBinOp
-                                                                (Var 19 high)
+                                                                (Var 22 high)
                                                                 Sub
                                                                 (IntegerConstant 1 (Integer 4))
                                                                 (Integer 4)
@@ -2234,26 +2518,26 @@
                                                             ())
                                                             [(If
                                                                 (FunctionCall
-                                                                    2 lt_real
+                                                                    5 lt_real
                                                                     ()
                                                                     [((ArrayItem
-                                                                        (Var 19 arr)
+                                                                        (Var 22 arr)
                                                                         [(()
-                                                                        (Var 19 i)
+                                                                        (Var 22 i)
                                                                         ())]
                                                                         (Real 4)
                                                                         ColMajor
                                                                         ()
                                                                     ))
-                                                                    ((Var 19 pivot))]
+                                                                    ((Var 22 pivot))]
                                                                     (Logical 4)
                                                                     ()
                                                                     ()
                                                                 )
                                                                 [(=
-                                                                    (Var 19 last)
+                                                                    (Var 22 last)
                                                                     (IntegerBinOp
-                                                                        (Var 19 last)
+                                                                        (Var 22 last)
                                                                         Add
                                                                         (IntegerConstant 1 (Integer 4))
                                                                         (Integer 4)
@@ -2262,21 +2546,21 @@
                                                                     ()
                                                                 )
                                                                 (SubroutineCall
-                                                                    12 __asr___instantiated_swap2
+                                                                    15 __asr___instantiated_swap2
                                                                     ()
                                                                     [((ArrayItem
-                                                                        (Var 19 arr)
+                                                                        (Var 22 arr)
                                                                         [(()
-                                                                        (Var 19 last)
+                                                                        (Var 22 last)
                                                                         ())]
                                                                         (Real 4)
                                                                         ColMajor
                                                                         ()
                                                                     ))
                                                                     ((ArrayItem
-                                                                        (Var 19 arr)
+                                                                        (Var 22 arr)
                                                                         [(()
-                                                                        (Var 19 i)
+                                                                        (Var 22 i)
                                                                         ())]
                                                                         (Real 4)
                                                                         ColMajor
@@ -2288,13 +2572,13 @@
                                                             )]
                                                         )
                                                         (SubroutineCall
-                                                            12 __asr___instantiated_swap11
+                                                            15 __asr___instantiated_swap11
                                                             ()
                                                             [((ArrayItem
-                                                                (Var 19 arr)
+                                                                (Var 22 arr)
                                                                 [(()
                                                                 (IntegerBinOp
-                                                                    (Var 19 last)
+                                                                    (Var 22 last)
                                                                     Add
                                                                     (IntegerConstant 1 (Integer 4))
                                                                     (Integer 4)
@@ -2306,9 +2590,9 @@
                                                                 ()
                                                             ))
                                                             ((ArrayItem
-                                                                (Var 19 arr)
+                                                                (Var 22 arr)
                                                                 [(()
-                                                                (Var 19 high)
+                                                                (Var 22 high)
                                                                 ())]
                                                                 (Real 4)
                                                                 ColMajor
@@ -2317,10 +2601,10 @@
                                                             ()
                                                         )
                                                         (SubroutineCall
-                                                            12 __instantiated_quicksort1
+                                                            15 __instantiated_quicksort1
                                                             ()
                                                             [((ArrayPhysicalCast
-                                                                (Var 19 arr)
+                                                                (Var 22 arr)
                                                                 DescriptorArray
                                                                 DescriptorArray
                                                                 (Array
@@ -2331,15 +2615,15 @@
                                                                 )
                                                                 ()
                                                             ))
-                                                            ((Var 19 low))
-                                                            ((Var 19 last))]
+                                                            ((Var 22 low))
+                                                            ((Var 22 last))]
                                                             ()
                                                         )
                                                         (SubroutineCall
-                                                            12 __instantiated_quicksort1
+                                                            15 __instantiated_quicksort1
                                                             ()
                                                             [((ArrayPhysicalCast
-                                                                (Var 19 arr)
+                                                                (Var 22 arr)
                                                                 DescriptorArray
                                                                 DescriptorArray
                                                                 (Array
@@ -2351,13 +2635,13 @@
                                                                 ()
                                                             ))
                                                             ((IntegerBinOp
-                                                                (Var 19 last)
+                                                                (Var 22 last)
                                                                 Add
                                                                 (IntegerConstant 2 (Integer 4))
                                                                 (Integer 4)
                                                                 ()
                                                             ))
-                                                            ((Var 19 high))]
+                                                            ((Var 22 high))]
                                                             ()
                                                         )]
                                                         []
@@ -2368,9 +2652,362 @@
                                                     .false.
                                                     ()
                                                 ),
+                                            __instantiated_quicksort2:
+                                                (Function
+                                                    (SymbolTable
+                                                        25
+                                                        {
+                                                            arr:
+                                                                (Variable
+                                                                    25
+                                                                    arr
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Array
+                                                                        (Struct
+                                                                            5 my_type
+                                                                        )
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            high:
+                                                                (Variable
+                                                                    25
+                                                                    high
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            i:
+                                                                (Variable
+                                                                    25
+                                                                    i
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            last:
+                                                                (Variable
+                                                                    25
+                                                                    last
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            low:
+                                                                (Variable
+                                                                    25
+                                                                    low
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            pivot:
+                                                                (Variable
+                                                                    25
+                                                                    pivot
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Struct
+                                                                        5 my_type
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    __instantiated_quicksort2
+                                                    (FunctionType
+                                                        [(Array
+                                                            (Struct
+                                                                5 my_type
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                        (Integer 4)
+                                                        (Integer 4)]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    [__asr___instantiated_swap3
+                                                    __asr___instantiated_swap12
+                                                    __instantiated_quicksort2]
+                                                    [(Var 25 arr)
+                                                    (Var 25 low)
+                                                    (Var 25 high)]
+                                                    [(If
+                                                        (IntegerCompare
+                                                            (Var 25 low)
+                                                            Lt
+                                                            (Var 25 high)
+                                                            (Logical 4)
+                                                            ()
+                                                        )
+                                                        [(=
+                                                            (Var 25 pivot)
+                                                            (ArrayItem
+                                                                (Var 25 arr)
+                                                                [(()
+                                                                (Var 25 high)
+                                                                ())]
+                                                                (Struct
+                                                                    5 my_type
+                                                                )
+                                                                ColMajor
+                                                                ()
+                                                            )
+                                                            ()
+                                                        )
+                                                        (=
+                                                            (Var 25 last)
+                                                            (IntegerBinOp
+                                                                (Var 25 low)
+                                                                Sub
+                                                                (IntegerConstant 1 (Integer 4))
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            ()
+                                                        )
+                                                        (DoLoop
+                                                            ()
+                                                            ((Var 25 i)
+                                                            (Var 25 low)
+                                                            (IntegerBinOp
+                                                                (Var 25 high)
+                                                                Sub
+                                                                (IntegerConstant 1 (Integer 4))
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            ())
+                                                            [(If
+                                                                (FunctionCall
+                                                                    5 lt_my_type
+                                                                    ()
+                                                                    [((ArrayItem
+                                                                        (Var 25 arr)
+                                                                        [(()
+                                                                        (Var 25 i)
+                                                                        ())]
+                                                                        (Struct
+                                                                            5 my_type
+                                                                        )
+                                                                        ColMajor
+                                                                        ()
+                                                                    ))
+                                                                    ((Var 25 pivot))]
+                                                                    (Logical 4)
+                                                                    ()
+                                                                    ()
+                                                                )
+                                                                [(=
+                                                                    (Var 25 last)
+                                                                    (IntegerBinOp
+                                                                        (Var 25 last)
+                                                                        Add
+                                                                        (IntegerConstant 1 (Integer 4))
+                                                                        (Integer 4)
+                                                                        ()
+                                                                    )
+                                                                    ()
+                                                                )
+                                                                (SubroutineCall
+                                                                    15 __asr___instantiated_swap3
+                                                                    ()
+                                                                    [((ArrayItem
+                                                                        (Var 25 arr)
+                                                                        [(()
+                                                                        (Var 25 last)
+                                                                        ())]
+                                                                        (Struct
+                                                                            5 my_type
+                                                                        )
+                                                                        ColMajor
+                                                                        ()
+                                                                    ))
+                                                                    ((ArrayItem
+                                                                        (Var 25 arr)
+                                                                        [(()
+                                                                        (Var 25 i)
+                                                                        ())]
+                                                                        (Struct
+                                                                            5 my_type
+                                                                        )
+                                                                        ColMajor
+                                                                        ()
+                                                                    ))]
+                                                                    ()
+                                                                )]
+                                                                []
+                                                            )]
+                                                        )
+                                                        (SubroutineCall
+                                                            15 __asr___instantiated_swap12
+                                                            ()
+                                                            [((ArrayItem
+                                                                (Var 25 arr)
+                                                                [(()
+                                                                (IntegerBinOp
+                                                                    (Var 25 last)
+                                                                    Add
+                                                                    (IntegerConstant 1 (Integer 4))
+                                                                    (Integer 4)
+                                                                    ()
+                                                                )
+                                                                ())]
+                                                                (Struct
+                                                                    5 my_type
+                                                                )
+                                                                ColMajor
+                                                                ()
+                                                            ))
+                                                            ((ArrayItem
+                                                                (Var 25 arr)
+                                                                [(()
+                                                                (Var 25 high)
+                                                                ())]
+                                                                (Struct
+                                                                    5 my_type
+                                                                )
+                                                                ColMajor
+                                                                ()
+                                                            ))]
+                                                            ()
+                                                        )
+                                                        (SubroutineCall
+                                                            15 __instantiated_quicksort2
+                                                            ()
+                                                            [((ArrayPhysicalCast
+                                                                (Var 25 arr)
+                                                                DescriptorArray
+                                                                DescriptorArray
+                                                                (Array
+                                                                    (Struct
+                                                                        5 my_type
+                                                                    )
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
+                                                                )
+                                                                ()
+                                                            ))
+                                                            ((Var 25 low))
+                                                            ((Var 25 last))]
+                                                            ()
+                                                        )
+                                                        (SubroutineCall
+                                                            15 __instantiated_quicksort2
+                                                            ()
+                                                            [((ArrayPhysicalCast
+                                                                (Var 25 arr)
+                                                                DescriptorArray
+                                                                DescriptorArray
+                                                                (Array
+                                                                    (Struct
+                                                                        5 my_type
+                                                                    )
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
+                                                                )
+                                                                ()
+                                                            ))
+                                                            ((IntegerBinOp
+                                                                (Var 25 last)
+                                                                Add
+                                                                (IntegerConstant 2 (Integer 4))
+                                                                (Integer 4)
+                                                                ()
+                                                            ))
+                                                            ((Var 25 high))]
+                                                            ()
+                                                        )]
+                                                        []
+                                                    )]
+                                                    ()
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            i:
+                                                (Variable
+                                                    15
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
                                             xi:
                                                 (Variable
-                                                    12
+                                                    15
                                                     xi
                                                     []
                                                     Local
@@ -2389,9 +3026,32 @@
                                                     Required
                                                     .false.
                                                 ),
+                                            xm:
+                                                (Variable
+                                                    15
+                                                    xm
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Struct
+                                                            5 my_type
+                                                        )
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 10 (Integer 4)))]
+                                                        FixedSizeArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
                                             xr:
                                                 (Variable
-                                                    12
+                                                    15
                                                     xr
                                                     []
                                                     Local
@@ -2429,7 +3089,7 @@
                                     []
                                     []
                                     [(=
-                                        (Var 12 xi)
+                                        (Var 15 xi)
                                         (ArrayConstant
                                             [(IntegerConstant 2 (Integer 4))
                                             (IntegerConstant 4 (Integer 4))
@@ -2452,7 +3112,7 @@
                                         ()
                                     )
                                     (=
-                                        (Var 12 xr)
+                                        (Var 15 xr)
                                         (ArrayConstant
                                             [(Cast
                                                 (IntegerConstant 2 (Integer 4))
@@ -2554,11 +3214,48 @@
                                         )
                                         ()
                                     )
+                                    (DoLoop
+                                        ()
+                                        ((Var 15 i)
+                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 10 (Integer 4))
+                                        ())
+                                        [(=
+                                            (ArrayItem
+                                                (Var 15 xm)
+                                                [(()
+                                                (Var 15 i)
+                                                ())]
+                                                (Struct
+                                                    5 my_type
+                                                )
+                                                ColMajor
+                                                ()
+                                            )
+                                            (StructTypeConstructor
+                                                5 my_type
+                                                [((ArrayItem
+                                                    (Var 15 xr)
+                                                    [(()
+                                                    (Var 15 i)
+                                                    ())]
+                                                    (Real 4)
+                                                    ColMajor
+                                                    ()
+                                                ))]
+                                                (Struct
+                                                    5 my_type
+                                                )
+                                                ()
+                                            )
+                                            ()
+                                        )]
+                                    )
                                     (SubroutineCall
-                                        12 __instantiated_quicksort
+                                        15 __instantiated_quicksort
                                         ()
                                         [((ArrayPhysicalCast
-                                            (Var 12 xi)
+                                            (Var 15 xi)
                                             FixedSizeArray
                                             DescriptorArray
                                             (Array
@@ -2574,10 +3271,10 @@
                                         ()
                                     )
                                     (SubroutineCall
-                                        12 __instantiated_quicksort1
+                                        15 __instantiated_quicksort1
                                         ()
                                         [((ArrayPhysicalCast
-                                            (Var 12 xr)
+                                            (Var 15 xr)
                                             FixedSizeArray
                                             DescriptorArray
                                             (Array
@@ -2592,13 +3289,39 @@
                                         ((IntegerConstant 10 (Integer 4)))]
                                         ()
                                     )
+                                    (SubroutineCall
+                                        15 __instantiated_quicksort2
+                                        ()
+                                        [((ArrayPhysicalCast
+                                            (Var 15 xm)
+                                            FixedSizeArray
+                                            DescriptorArray
+                                            (Array
+                                                (Struct
+                                                    5 my_type
+                                                )
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 10 (Integer 4)))]
+                                                DescriptorArray
+                                            )
+                                            ()
+                                        ))
+                                        ((IntegerConstant 1 (Integer 4)))
+                                        ((IntegerConstant 10 (Integer 4)))]
+                                        ()
+                                    )
                                     (Print
-                                        [(Var 12 xi)]
+                                        [(Var 15 xi)]
                                         ()
                                         ()
                                     )
                                     (Print
-                                        [(Var 12 xr)]
+                                        [(Var 15 xr)]
+                                        ()
+                                        ()
+                                    )
+                                    (Print
+                                        [(Var 15 xm)]
                                         ()
                                         ()
                                     )]
@@ -2610,7 +3333,170 @@
                                 )
                         })
                     template_sort_02_m
-                    [template_sort_02_m]
+                    [template_sort_02_type
+                    template_sort_02_m]
+                    .false.
+                    .false.
+                ),
+            template_sort_02_type:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            lt_my_type:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            1_my_type_d:
+                                                (ExternalSymbol
+                                                    4
+                                                    1_my_type_d
+                                                    3 d
+                                                    my_type
+                                                    []
+                                                    d
+                                                    Public
+                                                ),
+                                            lhs:
+                                                (Variable
+                                                    4
+                                                    lhs
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        2 my_type
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            res:
+                                                (Variable
+                                                    4
+                                                    res
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            rhs:
+                                                (Variable
+                                                    4
+                                                    rhs
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        2 my_type
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    lt_my_type
+                                    (FunctionType
+                                        [(Struct
+                                            2 my_type
+                                        )
+                                        (Struct
+                                            2 my_type
+                                        )]
+                                        (Logical 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 4 lhs)
+                                    (Var 4 rhs)]
+                                    [(=
+                                        (Var 4 res)
+                                        (RealCompare
+                                            (StructInstanceMember
+                                                (Var 4 lhs)
+                                                4 1_my_type_d
+                                                (Real 4)
+                                                ()
+                                            )
+                                            LtE
+                                            (StructInstanceMember
+                                                (Var 4 rhs)
+                                                4 1_my_type_d
+                                                (Real 4)
+                                                ()
+                                            )
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 4 res)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            my_type:
+                                (StructType
+                                    (SymbolTable
+                                        3
+                                        {
+                                            d:
+                                                (Variable
+                                                    3
+                                                    d
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    my_type
+                                    []
+                                    [d]
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                )
+                        })
+                    template_sort_02_type
+                    []
                     .false.
                     .false.
                 )

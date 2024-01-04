@@ -37,6 +37,36 @@
                                     f_string
                                     Public
                                 ),
+                            f_string_cptr@f_string:
+                                (ExternalSymbol
+                                    2
+                                    f_string_cptr@f_string
+                                    4 f_string_cptr
+                                    fpm_strings
+                                    []
+                                    f_string_cptr
+                                    Public
+                                ),
+                            f_string_cptr_n@f_string:
+                                (ExternalSymbol
+                                    2
+                                    f_string_cptr_n@f_string
+                                    4 f_string_cptr_n
+                                    fpm_strings
+                                    []
+                                    f_string_cptr_n
+                                    Public
+                                ),
+                            f_string~genericprocedure@f_string:
+                                (ExternalSymbol
+                                    2
+                                    f_string~genericprocedure@f_string
+                                    4 f_string~genericprocedure
+                                    fpm_strings
+                                    []
+                                    f_string~genericprocedure
+                                    Public
+                                ),
                             get_temp_filename:
                                 (Function
                                     (SymbolTable
@@ -56,7 +86,7 @@
                                                             (Character 1 1 ())
                                                             [(()
                                                             ())]
-                                                            DescriptorArray
+                                                            CharacterArraySinglePointer
                                                         )
                                                     )
                                                     ()
@@ -578,7 +608,7 @@
                                                         (Character 1 1 ())
                                                         [(()
                                                         ())]
-                                                        DescriptorArray
+                                                        CharacterArraySinglePointer
                                                     )
                                                     ()
                                                     Source
@@ -611,7 +641,7 @@
                                             (Character 1 1 ())
                                             [(()
                                             ())]
-                                            DescriptorArray
+                                            CharacterArraySinglePointer
                                         )]
                                         (Allocatable
                                             (Character 1 -2 ())
