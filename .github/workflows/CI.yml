@@ -503,8 +503,8 @@ jobs:
         run: |
             git clone https://github.com/Pranavchiku/stdlib-fortran-lang.git
             cd stdlib-fortran-lang
-            git checkout -t origin/lf14
-            git checkout 9e40e4d2f55e884bd4ce02b1e1a199bb11d1553f
+            git checkout -t origin/lf-special-function-gamma
+            git checkout 1a048c08aa140937a8011bcafb9069155299945b
             micromamba activate lf
             micromamba install -c conda-forge fypp
             FC=$(pwd)/../src/bin/lfortran cmake .
