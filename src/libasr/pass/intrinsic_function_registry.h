@@ -953,7 +953,7 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
         return b.Call(s, new_args, expr_type(f->m_return_var));
     }
     fill_func_arg("x", arg_type);
-    auto result = declare(new_name, return_type, ReturnVar);
+    auto result = declare(new_name, ASRUtils::extract_type(return_type), ReturnVar);
 
     {
         SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
@@ -2927,7 +2927,7 @@ namespace Repeat {
                 character(len=*), intent(in) :: s
                 integer, intent(in) :: n
                 character(len=n*len(s)) :: r
-                integer :: i 
+                integer :: i
                 i = n
                 do while (i > 0)
                     r = s // r
@@ -2935,7 +2935,7 @@ namespace Repeat {
                 end do
             end function
         */
-        
+
         ASR::expr_t* empty_str =  StringConstant("", arg_types[0]);
         body.push_back(al, b.Assignment(result, empty_str));
         body.push_back(al, b.Assignment(itr, args[1]));
