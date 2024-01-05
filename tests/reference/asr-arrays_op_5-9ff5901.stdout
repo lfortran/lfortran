@@ -295,7 +295,7 @@
                                                     (Var 3 op_code)
                                                     [(CaseStmt
                                                         [(IntegerConstant 0 (Integer 4))]
-                                                        [(=
+                                                        [(Assignment
                                                             (Var 3 left)
                                                             (Cast
                                                                 (IntegerBinOp
@@ -317,7 +317,7 @@
                                                             )
                                                             ()
                                                         )
-                                                        (=
+                                                        (Assignment
                                                             (Var 3 right)
                                                             (Cast
                                                                 (IntegerBinOp
@@ -406,7 +406,7 @@
                                                     )
                                                     (CaseStmt
                                                         [(IntegerConstant 1 (Integer 4))]
-                                                        [(=
+                                                        [(Assignment
                                                             (Var 3 left)
                                                             (Cast
                                                                 (IntegerBinOp
@@ -428,7 +428,7 @@
                                                             )
                                                             ()
                                                         )
-                                                        (=
+                                                        (Assignment
                                                             (Var 3 right)
                                                             (Cast
                                                                 (IntegerBinOp
@@ -599,7 +599,7 @@
                                 (IntegerConstant 1 (Integer 4))
                                 (IntegerConstant 1 (Integer 4))
                                 ())
-                                [(=
+                                [(Assignment
                                     (ArrayItem
                                         (Var 2 a)
                                         [(()
@@ -630,7 +630,7 @@
                                     )
                                     ()
                                 )
-                                (=
+                                (Assignment
                                     (ArrayItem
                                         (Var 2 b)
                                         [(()
@@ -664,7 +664,7 @@
                             )]
                         )]
                     )
-                    (=
+                    (Assignment
                         (Var 2 c)
                         (ComplexBinOp
                             (Cast
@@ -789,7 +789,7 @@
                         ((IntegerConstant 0 (Integer 4)))]
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 c)
                         (ComplexBinOp
                             (Cast

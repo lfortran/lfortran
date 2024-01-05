@@ -158,6 +158,7 @@ std::string str_escape_c(const std::string &s) {
             case '\n': o << "\\n"; break;
             case '\r': o << "\\r"; break;
             case '\t': o << "\\t"; break;
+            case '\v': o << "\\v"; break;
             default:
                 if ('\x00' <= *c && *c <= '\x1f') {
                     o << "\\u"

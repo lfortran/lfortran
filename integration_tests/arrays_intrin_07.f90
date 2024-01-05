@@ -1,4 +1,4 @@
-module min_three_args
+module arrays_intrin_07_mod
     implicit none
 contains
     subroutine take_min(arr)
@@ -12,10 +12,10 @@ contains
         if (size(arr) /= 2) error stop
 
     end subroutine take_min
-end module min_three_args
-program name
-    use min_three_args
+end module arrays_intrin_07_mod
+program arrays_intrin_07
+    use arrays_intrin_07_mod
     implicit none
     real(8) :: arr(1, 2)
     call take_min(arr)
-end program name
+end program arrays_intrin_07

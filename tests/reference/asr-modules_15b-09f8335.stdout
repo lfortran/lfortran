@@ -2340,7 +2340,7 @@
                                     )
                                     [f_string0]
                                     [(Var 51 s)]
-                                    [(=
+                                    [(Assignment
                                         (Var 51 r)
                                         (FunctionCall
                                             2 f_string0
@@ -2480,7 +2480,7 @@
                                     )
                                     []
                                     [(Var 56 i)]
-                                    [(=
+                                    [(Assignment
                                         (Var 56 r)
                                         (RealBinOp
                                             (Var 56 i)
@@ -2555,7 +2555,7 @@
                                     )
                                     []
                                     [(Var 57 i)]
-                                    [(=
+                                    [(Assignment
                                         (Var 57 r)
                                         (RealBinOp
                                             (Var 57 i)
@@ -2630,7 +2630,7 @@
                                     )
                                     []
                                     [(Var 58 i)]
-                                    [(=
+                                    [(Assignment
                                         (Var 58 r)
                                         (RealBinOp
                                             (Var 58 i)
@@ -2705,7 +2705,7 @@
                                     )
                                     []
                                     [(Var 59 i)]
-                                    [(=
+                                    [(Assignment
                                         (Var 59 r)
                                         (RealBinOp
                                             (Var 59 i)
@@ -2780,7 +2780,7 @@
                                     )
                                     []
                                     [(Var 52 i)]
-                                    [(=
+                                    [(Assignment
                                         (Var 52 r)
                                         (IntegerBinOp
                                             (Var 52 i)
@@ -2852,7 +2852,7 @@
                                     )
                                     []
                                     [(Var 53 i)]
-                                    [(=
+                                    [(Assignment
                                         (Var 53 r)
                                         (IntegerBinOp
                                             (Var 53 i)
@@ -2924,7 +2924,7 @@
                                     )
                                     []
                                     [(Var 54 i)]
-                                    [(=
+                                    [(Assignment
                                         (Var 54 r)
                                         (IntegerBinOp
                                             (Var 54 i)
@@ -3001,7 +3001,7 @@
                                     )
                                     []
                                     [(Var 55 i)]
-                                    [(=
+                                    [(Assignment
                                         (Var 55 r)
                                         (IntegerBinOp
                                             (Var 55 i)

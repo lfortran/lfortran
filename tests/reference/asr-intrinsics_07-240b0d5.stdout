@@ -45,16 +45,15 @@
                                     dp
                                     []
                                     Local
-                                    (FunctionCall
-                                        2 kind
-                                        ()
-                                        [((RealConstant
+                                    (IntrinsicScalarFunction
+                                        Kind
+                                        [(RealConstant
                                             0.000000
                                             (Real 8)
-                                        ))]
+                                        )]
+                                        0
                                         (Integer 4)
                                         (IntegerConstant 8 (Integer 4))
-                                        ()
                                     )
                                     (IntegerConstant 8 (Integer 4))
                                     Parameter
@@ -65,32 +64,21 @@
                                     Required
                                     .false.
                                 ),
-                            kind:
-                                (ExternalSymbol
-                                    2
-                                    kind
-                                    4 kind
-                                    lfortran_intrinsic_kind
-                                    []
-                                    kind
-                                    Private
-                                ),
                             sp:
                                 (Variable
                                     2
                                     sp
                                     []
                                     Local
-                                    (FunctionCall
-                                        2 kind
-                                        ()
-                                        [((RealConstant
+                                    (IntrinsicScalarFunction
+                                        Kind
+                                        [(RealConstant
                                             0.000000
                                             (Real 4)
-                                        ))]
+                                        )]
+                                        0
                                         (Integer 4)
                                         (IntegerConstant 4 (Integer 4))
-                                        ()
                                     )
                                     (IntegerConstant 4 (Integer 4))
                                     Parameter
@@ -107,16 +95,15 @@
                                     sp2
                                     []
                                     Local
-                                    (FunctionCall
-                                        2 kind
-                                        ()
-                                        [((RealConstant
+                                    (IntrinsicScalarFunction
+                                        Kind
+                                        [(RealConstant
                                             0.000000
                                             (Real 4)
-                                        ))]
+                                        )]
+                                        0
                                         (Integer 4)
                                         (IntegerConstant 4 (Integer 4))
-                                        ()
                                     )
                                     (IntegerConstant 4 (Integer 4))
                                     Parameter
@@ -129,8 +116,8 @@
                                 )
                         })
                     intrinsics_07
-                    [lfortran_intrinsic_kind]
-                    [(=
+                    []
+                    [(Assignment
                         (Var 2 a)
                         (Cast
                             (IntegerConstant 5 (Integer 4))
@@ -143,7 +130,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 b)
                         (Cast
                             (Var 2 a)
@@ -153,9 +140,7 @@
                         )
                         ()
                     )]
-                ),
-            lfortran_intrinsic_kind:
-                (IntrinsicModule lfortran_intrinsic_kind)
+                )
         })
     []
 )

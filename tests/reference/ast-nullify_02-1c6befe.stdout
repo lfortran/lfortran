@@ -91,25 +91,25 @@
                 (EndOfLine)]
             )
         )]
-        [(=>
+        [(Associate
             0
             p1
             t1
             ()
         )
-        (=
+        (Assignment
             0
             p1
             1
             ()
         )
-        (=>
+        (Associate
             0
             p2
             t2
             ()
         )
-        (=
+        (Assignment
             0
             p2
             (Real "2.")

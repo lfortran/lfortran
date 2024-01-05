@@ -39,7 +39,7 @@
             [(RankExpr
                 0
                 ()
-                [(=
+                [(Assignment
                     0
                     x
                     0
@@ -67,7 +67,7 @@
                         []
                         []
                     ) 2)
-                    [(=
+                    [(Assignment
                         0
                         (FuncCallOrArray
                             x
@@ -215,7 +215,7 @@
                         "! special case the scalar case"
                     )]
                 )
-                [(=
+                [(Assignment
                     0
                     arg
                     (Real "0.0")
@@ -232,7 +232,7 @@
                     1
                     size
                     ()
-                    [(=
+                    [(Assignment
                         0
                         (FuncCallOrArray
                             arg

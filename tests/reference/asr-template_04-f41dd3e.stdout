@@ -268,7 +268,7 @@
                                             (IntegerConstant 1 (Integer 4))
                                             (Var 121 n)
                                             ())
-                                            [(=
+                                            [(Assignment
                                                 (ArrayItem
                                                     (StructInstanceMember
                                                         (Var 125 combined)
@@ -530,7 +530,7 @@
                                             (IntegerConstant 1 (Integer 4))
                                             (Var 121 n)
                                             ())
-                                            [(=
+                                            [(Assignment
                                                 (Var 126 dot)
                                                 (FunctionCall
                                                     121 zero_integer
@@ -548,7 +548,7 @@
                                                 (IntegerConstant 1 (Integer 4))
                                                 (Var 121 n)
                                                 ())
-                                                [(=
+                                                [(Assignment
                                                     (Var 126 dot)
                                                     (FunctionCall
                                                         121 ~add_intrinsic
@@ -616,7 +616,7 @@
                                                     ()
                                                 )]
                                             )
-                                            (=
+                                            (Assignment
                                                 (ArrayItem
                                                     (StructInstanceMember
                                                         (Var 126 combined)
@@ -1031,7 +1031,7 @@
                                             (IntegerConstant 1 (Integer 4))
                                             (Var 121 n)
                                             ())
-                                            [(=
+                                            [(Assignment
                                                 (ArrayItem
                                                     (StructInstanceMember
                                                         (Var 130 combined)
@@ -1293,7 +1293,7 @@
                                             (IntegerConstant 1 (Integer 4))
                                             (Var 121 n)
                                             ())
-                                            [(=
+                                            [(Assignment
                                                 (Var 131 dot)
                                                 (FunctionCall
                                                     121 zero_real
@@ -1311,7 +1311,7 @@
                                                 (IntegerConstant 1 (Integer 4))
                                                 (Var 121 n)
                                                 ())
-                                                [(=
+                                                [(Assignment
                                                     (Var 131 dot)
                                                     (FunctionCall
                                                         121 ~add_intrinsic1
@@ -1379,7 +1379,7 @@
                                                     ()
                                                 )]
                                             )
-                                            (=
+                                            (Assignment
                                                 (ArrayItem
                                                     (StructInstanceMember
                                                         (Var 131 combined)
@@ -1566,7 +1566,7 @@
                                     []
                                     [(Var 122 arg0)
                                     (Var 122 arg1)]
-                                    [(=
+                                    [(Assignment
                                         (Var 122 ret)
                                         (IntegerBinOp
                                             (Var 122 arg0)
@@ -1656,7 +1656,7 @@
                                     []
                                     [(Var 127 arg0)
                                     (Var 127 arg1)]
-                                    [(=
+                                    [(Assignment
                                         (Var 127 ret)
                                         (RealBinOp
                                             (Var 127 arg0)
@@ -1754,7 +1754,7 @@
                                     []
                                     [(Var 123 arg0)
                                     (Var 123 arg1)]
-                                    [(=
+                                    [(Assignment
                                         (Var 123 ret)
                                         (IntegerBinOp
                                             (Var 123 arg0)
@@ -1844,7 +1844,7 @@
                                     []
                                     [(Var 128 arg0)
                                     (Var 128 arg1)]
-                                    [(=
+                                    [(Assignment
                                         (Var 128 ret)
                                         (RealBinOp
                                             (Var 128 arg0)
@@ -1865,7 +1865,7 @@
                     template_04
                     [template_04_matrix
                     template_04_func]
-                    [(=
+                    [(Assignment
                         (ArrayItem
                             (StructInstanceMember
                                 (Var 121 m1)
@@ -1893,7 +1893,7 @@
                         (IntegerConstant 1 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (StructInstanceMember
                                 (Var 121 m1)
@@ -1921,7 +1921,7 @@
                         (IntegerConstant 0 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (StructInstanceMember
                                 (Var 121 m1)
@@ -1949,7 +1949,7 @@
                         (IntegerConstant 0 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (StructInstanceMember
                                 (Var 121 m1)
@@ -1977,7 +1977,7 @@
                         (IntegerConstant 1 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (StructInstanceMember
                                 (Var 121 m2)
@@ -2005,7 +2005,7 @@
                         (IntegerConstant 1 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (StructInstanceMember
                                 (Var 121 m2)
@@ -2033,7 +2033,7 @@
                         (IntegerConstant 2 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (StructInstanceMember
                                 (Var 121 m2)
@@ -2061,7 +2061,7 @@
                         (IntegerConstant 2 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (StructInstanceMember
                                 (Var 121 m2)
@@ -2089,7 +2089,7 @@
                         (IntegerConstant 1 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 121 m3)
                         (FunctionCall
                             121 integer_plus_matrix
@@ -2220,7 +2220,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 121 m4)
                         (FunctionCall
                             121 integer_times_matrix
@@ -2351,7 +2351,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (StructInstanceMember
                                 (Var 121 r1)
@@ -2382,7 +2382,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (StructInstanceMember
                                 (Var 121 r1)
@@ -2418,7 +2418,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (StructInstanceMember
                                 (Var 121 r1)
@@ -2454,7 +2454,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (StructInstanceMember
                                 (Var 121 r1)
@@ -2490,7 +2490,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (StructInstanceMember
                                 (Var 121 r2)
@@ -2526,7 +2526,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (StructInstanceMember
                                 (Var 121 r2)
@@ -2557,7 +2557,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (StructInstanceMember
                                 (Var 121 r2)
@@ -2593,7 +2593,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (StructInstanceMember
                                 (Var 121 r2)
@@ -2629,7 +2629,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 121 r3)
                         (FunctionCall
                             121 real_plus_matrix
@@ -2760,7 +2760,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 121 r4)
                         (FunctionCall
                             121 real_times_matrix
@@ -3078,7 +3078,7 @@
                                                     [divide
                                                     one]
                                                     [(Var 95 x)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 95 inverse)
                                                         (FunctionCall
                                                             87 divide
@@ -3685,7 +3685,7 @@
                                                     invert]
                                                     [(Var 104 x)
                                                     (Var 104 y)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 104 quotient)
                                                         (FunctionCall
                                                             96 mult
@@ -6219,7 +6219,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 118 z)
                                         (IntegerConstant 1 (Integer 4))
                                         ()
@@ -6269,7 +6269,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 120 z)
                                         (Cast
                                             (IntegerConstant 1 (Integer 4))
@@ -6327,7 +6327,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 117 z)
                                         (IntegerConstant 0 (Integer 4))
                                         ()
@@ -6377,7 +6377,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 119 z)
                                         (Cast
                                             (IntegerConstant 0 (Integer 4))
@@ -6590,7 +6590,7 @@
                                                     [zero_t
                                                     one_t]
                                                     []
-                                                    [(=
+                                                    [(Assignment
                                                         (StructInstanceMember
                                                             (Var 115 one)
                                                             115 1_matrix_elements
@@ -6662,7 +6662,7 @@
                                                         (IntegerConstant 1 (Integer 4))
                                                         (Var 106 n)
                                                         ())
-                                                        [(=
+                                                        [(Assignment
                                                             (ArrayItem
                                                                 (StructInstanceMember
                                                                     (Var 115 one)
@@ -6899,7 +6899,7 @@
                                                             (IntegerConstant 1 (Integer 4))
                                                             (Var 106 n)
                                                             ())
-                                                            [(=
+                                                            [(Assignment
                                                                 (ArrayItem
                                                                     (StructInstanceMember
                                                                         (Var 112 combined)
@@ -7288,7 +7288,7 @@
                                                             (IntegerConstant 1 (Integer 4))
                                                             (Var 106 n)
                                                             ())
-                                                            [(=
+                                                            [(Assignment
                                                                 (Var 114 dot)
                                                                 (FunctionCall
                                                                     106 zero_t
@@ -7308,7 +7308,7 @@
                                                                 (IntegerConstant 1 (Integer 4))
                                                                 (Var 106 n)
                                                                 ())
-                                                                [(=
+                                                                [(Assignment
                                                                     (Var 114 dot)
                                                                     (FunctionCall
                                                                         106 plus_t
@@ -7388,7 +7388,7 @@
                                                                     ()
                                                                 )]
                                                             )
-                                                            (=
+                                                            (Assignment
                                                                 (ArrayItem
                                                                     (StructInstanceMember
                                                                         (Var 114 combined)
@@ -7573,7 +7573,7 @@
                                                     )
                                                     [zero_t]
                                                     []
-                                                    [(=
+                                                    [(Assignment
                                                         (StructInstanceMember
                                                             (Var 113 zero)
                                                             113 1_matrix_elements
@@ -8037,7 +8037,7 @@
                                                             (Logical 4)
                                                             ()
                                                         )
-                                                        [(=
+                                                        [(Assignment
                                                             (Var 27 combined)
                                                             (ArrayItem
                                                                 (Var 27 list)
@@ -8063,7 +8063,7 @@
                                                                 ()
                                                             )
                                                             ())
-                                                            [(=
+                                                            [(Assignment
                                                                 (Var 27 combined)
                                                                 (FunctionCall
                                                                     23 combine
@@ -8089,7 +8089,7 @@
                                                                 ()
                                                             )]
                                                         )]
-                                                        [(=
+                                                        [(Assignment
                                                             (Var 27 combined)
                                                             (FunctionCall
                                                                 23 empty
@@ -8223,7 +8223,7 @@
                                                         )]
                                                         []
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 26 repeated)
                                                         (Var 26 a)
                                                         ()
@@ -8234,7 +8234,7 @@
                                                         (IntegerConstant 2 (Integer 4))
                                                         (Var 26 n)
                                                         ())
-                                                        [(=
+                                                        [(Assignment
                                                             (Var 26 repeated)
                                                             (FunctionCall
                                                                 23 combine
@@ -9138,7 +9138,7 @@
                                                             (Logical 4)
                                                             ()
                                                         )
-                                                        [(=
+                                                        [(Assignment
                                                             (Var 11 combined)
                                                             (ArrayItem
                                                                 (Var 11 list)
@@ -9164,7 +9164,7 @@
                                                                 ()
                                                             )
                                                             ())
-                                                            [(=
+                                                            [(Assignment
                                                                 (Var 11 combined)
                                                                 (FunctionCall
                                                                     9 combine
@@ -9316,7 +9316,7 @@
                                                         )]
                                                         []
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 12 repeated)
                                                         (Var 12 a)
                                                         ()
@@ -9327,7 +9327,7 @@
                                                         (IntegerConstant 2 (Integer 4))
                                                         (Var 12 n)
                                                         ())
-                                                        [(=
+                                                        [(Assignment
                                                             (Var 12 repeated)
                                                             (FunctionCall
                                                                 9 combine
@@ -10313,7 +10313,7 @@
                                                     negate]
                                                     [(Var 60 x)
                                                     (Var 60 y)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 60 difference)
                                                         (FunctionCall
                                                             54 plus

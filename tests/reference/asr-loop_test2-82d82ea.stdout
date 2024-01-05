@@ -243,7 +243,7 @@
                             (IntegerConstant 1 (Integer 4))
                             (Var 2 m)
                             ())
-                            [(=
+                            [(Assignment
                                 (ArrayItem
                                     (Var 2 wrk5)
                                     [(()
@@ -281,7 +281,7 @@
                             (IntegerConstant 1 (Integer 4))
                             (Var 2 m)
                             ())
-                            [(=
+                            [(Assignment
                                 (ArrayItem
                                     (Var 2 ve)
                                     [(()
@@ -318,12 +318,12 @@
                             140
                         )]
                     )
-                    (=
+                    (Assignment
                         (Var 2 indx)
                         (IntegerConstant 1 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 zero)
                         (Cast
                             (RealConstant
@@ -351,7 +351,7 @@
                             (IntegerConstant 1 (Integer 4))
                             (Var 2 l1)
                             ())
-                            [(=
+                            [(Assignment
                                 (ArrayItem
                                     (Var 2 vev)
                                     [(()
@@ -373,7 +373,7 @@
                                 (IntegerConstant 1 (Integer 4))
                                 (Var 2 m)
                                 ())
-                                [(=
+                                [(Assignment
                                     (ArrayItem
                                         (Var 2 vev)
                                         [(()
@@ -445,7 +445,7 @@
                                     210
                                 )]
                             )
-                            (=
+                            (Assignment
                                 (ArrayItem
                                     (Var 2 vev)
                                     [(()

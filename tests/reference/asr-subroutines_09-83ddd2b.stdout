@@ -45,6 +45,26 @@
                                     Required
                                     .false.
                                 ),
+                            get_elem_table@get_value:
+                                (ExternalSymbol
+                                    5
+                                    get_elem_table@get_value
+                                    2 get_elem_table
+                                    subroutines_09_tomlf_build_array
+                                    []
+                                    get_elem_table
+                                    Public
+                                ),
+                            get_elem_value_string@get_value:
+                                (ExternalSymbol
+                                    5
+                                    get_elem_value_string@get_value
+                                    2 get_elem_value_string
+                                    subroutines_09_tomlf_build_array
+                                    []
+                                    get_elem_value_string
+                                    Public
+                                ),
                             get_value:
                                 (ExternalSymbol
                                     5
@@ -237,7 +257,7 @@
                                     [(Nullify
                                         [3 ptr]
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 stat)
                                         (LogicalConstant
                                             .true.
@@ -369,7 +389,7 @@
                                     [(Nullify
                                         [4 ptr]
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 stat)
                                         (LogicalConstant
                                             .true.

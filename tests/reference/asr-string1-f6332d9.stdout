@@ -167,7 +167,7 @@
                                     )
                                     [f_string_cptr_n]
                                     [(Var 11 cptr)]
-                                    [(=
+                                    [(Assignment
                                         (Var 11 s)
                                         (FunctionCall
                                             2 f_string_cptr_n
@@ -302,7 +302,7 @@
                                                         (Character 1 1 ())
                                                         [(()
                                                         ())]
-                                                        DescriptorArray
+                                                        CharacterArraySinglePointer
                                                     )
                                                     ()
                                                     Source
@@ -335,7 +335,7 @@
                                             (Character 1 1 ())
                                             [(()
                                             ())]
-                                            DescriptorArray
+                                            CharacterArraySinglePointer
                                         )]
                                         (Allocatable
                                             (Character 1 -2 ())

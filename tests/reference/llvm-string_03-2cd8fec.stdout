@@ -90,15 +90,6 @@ define i32 @main(i32 %0, i8** %1) {
   store i8* %40, i8** %combined, align 8
   %41 = load i8*, i8** %combined, align 8
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @8, i32 0, i32 0), i8* %41, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0))
-  call void (i8*, ...) @_lfortran_free(i8* %3)
-  call void (i8*, ...) @_lfortran_free(i8* %5)
-  call void (i8*, ...) @_lfortran_free(i8* %7)
-  call void (i8*, ...) @_lfortran_free(i8* %9)
-  call void (i8*, ...) @_lfortran_free(i8* %11)
-  call void (i8*, ...) @_lfortran_free(i8* %16)
-  call void (i8*, ...) @_lfortran_free(i8* %22)
-  call void (i8*, ...) @_lfortran_free(i8* %28)
-  call void (i8*, ...) @_lfortran_free(i8* %34)
   ret i32 0
 }
 
@@ -113,5 +104,3 @@ declare void @_lfortran_strcpy(i8**, i8*, i8)
 declare void @_lfortran_strcat(i8**, i8**, i8**)
 
 declare void @_lfortran_printf(i8*, ...)
-
-declare void @_lfortran_free(i8*, ...)

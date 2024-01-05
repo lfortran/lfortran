@@ -340,7 +340,7 @@
                                                             (Character 1 5 ())
                                                             [(()
                                                             ())]
-                                                            DescriptorArray
+                                                            CharacterArraySinglePointer
                                                         )
                                                     )
                                                     ()
@@ -641,6 +641,7 @@
                                                     update_dependency
                                                     9 update_dependency
                                                     Source
+                                                    .false.
                                                     .false.
                                                 ),
                                             verbosity:

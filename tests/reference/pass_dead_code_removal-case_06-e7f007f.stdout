@@ -266,7 +266,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 marks)
                         (IntegerConstant 94 (Integer 4))
                         ()

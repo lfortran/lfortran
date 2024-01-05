@@ -109,7 +109,7 @@
                                                             (Character 1 -2 ())
                                                             [(()
                                                             ())]
-                                                            DescriptorArray
+                                                            CharacterArraySinglePointer
                                                         )
                                                     )
                                                     ()
@@ -156,7 +156,7 @@
                                     )
                                     []
                                     [(Var 8 settings)]
-                                    [(=
+                                    [(Assignment
                                         (Var 8 littlefile)
                                         (ArrayConstant
                                             [(StringConstant
@@ -309,7 +309,7 @@
                                                         (Character 1 -1 ())
                                                         [(()
                                                         ())]
-                                                        DescriptorArray
+                                                        CharacterArraySinglePointer
                                                     )
                                                     ()
                                                     Source
@@ -341,7 +341,7 @@
                                             (Character 1 -1 ())
                                             [(()
                                             ())]
-                                            DescriptorArray
+                                            CharacterArraySinglePointer
                                         )]
                                         ()
                                         Source

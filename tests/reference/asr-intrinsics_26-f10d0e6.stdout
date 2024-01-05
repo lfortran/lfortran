@@ -168,7 +168,7 @@
                                     []
                                     [(Var 3 x)
                                     (Var 3 num_bits)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 res)
                                         (LogicalConstant
                                             .true.
@@ -202,7 +202,7 @@
                                                 (Logical 4)
                                                 ()
                                             )
-                                            [(=
+                                            [(Assignment
                                                 (Var 3 res)
                                                 (LogicalConstant
                                                     .false.

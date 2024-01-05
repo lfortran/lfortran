@@ -11,7 +11,7 @@
                                 (ExternalSymbol
                                     2
                                     acosh
-                                    13 acosh
+                                    4 acosh
                                     lfortran_intrinsic_math
                                     []
                                     acosh
@@ -21,7 +21,7 @@
                                 (ExternalSymbol
                                     2
                                     acosh@sacosh
-                                    13 sacosh
+                                    4 sacosh
                                     lfortran_intrinsic_math
                                     []
                                     sacosh
@@ -31,7 +31,7 @@
                                 (ExternalSymbol
                                     2
                                     asinh
-                                    13 asinh
+                                    4 asinh
                                     lfortran_intrinsic_math
                                     []
                                     asinh
@@ -41,7 +41,7 @@
                                 (ExternalSymbol
                                     2
                                     asinh@sasinh
-                                    13 sasinh
+                                    4 sasinh
                                     lfortran_intrinsic_math
                                     []
                                     sasinh
@@ -51,7 +51,7 @@
                                 (ExternalSymbol
                                     2
                                     atanh
-                                    13 atanh
+                                    4 atanh
                                     lfortran_intrinsic_math
                                     []
                                     atanh
@@ -61,7 +61,7 @@
                                 (ExternalSymbol
                                     2
                                     atanh@satanh
-                                    13 satanh
+                                    4 satanh
                                     lfortran_intrinsic_math
                                     []
                                     satanh
@@ -71,7 +71,7 @@
                                 (ExternalSymbol
                                     2
                                     datan
-                                    13 datan
+                                    4 datan
                                     lfortran_intrinsic_math
                                     []
                                     datan
@@ -83,16 +83,15 @@
                                     dp
                                     []
                                     Local
-                                    (FunctionCall
-                                        2 kind
-                                        ()
-                                        [((RealConstant
+                                    (IntrinsicScalarFunction
+                                        Kind
+                                        [(RealConstant
                                             0.000000
                                             (Real 8)
-                                        ))]
+                                        )]
+                                        0
                                         (Integer 4)
                                         (IntegerConstant 8 (Integer 4))
-                                        ()
                                     )
                                     (IntegerConstant 8 (Integer 4))
                                     Parameter
@@ -102,16 +101,6 @@
                                     Public
                                     Required
                                     .false.
-                                ),
-                            kind:
-                                (ExternalSymbol
-                                    2
-                                    kind
-                                    4 kind
-                                    lfortran_intrinsic_kind
-                                    []
-                                    kind
-                                    Private
                                 ),
                             x:
                                 (Variable
@@ -131,8 +120,8 @@
                                 )
                         })
                     intrinsics_06
-                    [lfortran_intrinsic_kind]
-                    [(=
+                    []
+                    [(Assignment
                         (Var 2 x)
                         (IntrinsicScalarFunction
                             Asin
@@ -154,7 +143,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (IntrinsicScalarFunction
                             Acos
@@ -176,7 +165,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (IntrinsicScalarFunction
                             Atan
@@ -198,7 +187,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (Cast
                             (FunctionCall
@@ -229,7 +218,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (FunctionCall
                             2 asinh@sasinh
@@ -252,7 +241,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (FunctionCall
                             2 acosh@sacosh
@@ -275,7 +264,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (FunctionCall
                             2 atanh@satanh
@@ -305,8 +294,6 @@
                 (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
             lfortran_intrinsic_builtin:
                 (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_kind:
-                (IntrinsicModule lfortran_intrinsic_kind),
             lfortran_intrinsic_math:
                 (IntrinsicModule lfortran_intrinsic_math)
         })

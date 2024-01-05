@@ -1,0 +1,413 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            derived_types_30:
+                (Program
+                    (SymbolTable
+                        6
+                        {
+                            1_unittest_type_test:
+                                (ExternalSymbol
+                                    6
+                                    1_unittest_type_test
+                                    4 test
+                                    unittest_type
+                                    []
+                                    test
+                                    Public
+                                ),
+                            error:
+                                (Variable
+                                    6
+                                    error
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            run_unittest:
+                                (ExternalSymbol
+                                    6
+                                    run_unittest
+                                    2 run_unittest
+                                    testdrive
+                                    []
+                                    run_unittest
+                                    Public
+                                ),
+                            test_impl:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            error:
+                                                (Variable
+                                                    7
+                                                    error
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    test_impl
+                                    (FunctionType
+                                        [(Integer 4)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 7 error)]
+                                    [(Assignment
+                                        (Var 7 error)
+                                        (IntegerConstant 1 (Integer 4))
+                                        ()
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            test_interface:
+                                (ExternalSymbol
+                                    6
+                                    test_interface
+                                    2 test_interface
+                                    testdrive
+                                    []
+                                    test_interface
+                                    Public
+                                ),
+                            unittest_type:
+                                (ExternalSymbol
+                                    6
+                                    unittest_type
+                                    2 unittest_type
+                                    testdrive
+                                    []
+                                    unittest_type
+                                    Public
+                                ),
+                            var:
+                                (Variable
+                                    6
+                                    var
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        6 unittest_type
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    derived_types_30
+                    [testdrive]
+                    [(Associate
+                        (StructInstanceMember
+                            (Var 6 var)
+                            6 1_unittest_type_test
+                            (FunctionType
+                                [(Integer 4)]
+                                ()
+                                Source
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                            )
+                            ()
+                        )
+                        (Var 6 test_impl)
+                    )
+                    (SubroutineCall
+                        6 run_unittest
+                        ()
+                        [((Var 6 var))
+                        ((Var 6 error))]
+                        ()
+                    )
+                    (Print
+                        [(Var 6 error)]
+                        ()
+                        ()
+                    )]
+                ),
+            testdrive:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            run_unittest:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            1_test:
+                                                (ExternalSymbol
+                                                    5
+                                                    1_test
+                                                    4 test
+                                                    unittest_type
+                                                    []
+                                                    test
+                                                    Public
+                                                ),
+                                            error:
+                                                (Variable
+                                                    5
+                                                    error
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            test_var:
+                                                (Variable
+                                                    5
+                                                    test_var
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        2 unittest_type
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    run_unittest
+                                    (FunctionType
+                                        [(Struct
+                                            2 unittest_type
+                                        )
+                                        (Integer 4)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 5 test_var)
+                                    (Var 5 error)]
+                                    [(SubroutineCall
+                                        5 1_test
+                                        ()
+                                        [((Var 5 error))]
+                                        (Var 5 test_var)
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            test_interface:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            error:
+                                                (Variable
+                                                    3
+                                                    error
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    test_interface
+                                    (FunctionType
+                                        [(Integer 4)]
+                                        ()
+                                        Source
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 3 error)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            unittest_type:
+                                (StructType
+                                    (SymbolTable
+                                        4
+                                        {
+                                            should_fail:
+                                                (Variable
+                                                    4
+                                                    should_fail
+                                                    []
+                                                    Local
+                                                    (LogicalConstant
+                                                        .false.
+                                                        (Logical 4)
+                                                    )
+                                                    (LogicalConstant
+                                                        .false.
+                                                        (Logical 4)
+                                                    )
+                                                    Save
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            test:
+                                                (Variable
+                                                    4
+                                                    test
+                                                    []
+                                                    Local
+                                                    (PointerNullConstant
+                                                        (FunctionType
+                                                            [(Integer 4)]
+                                                            ()
+                                                            Source
+                                                            Interface
+                                                            ()
+                                                            .false.
+                                                            .false.
+                                                            .false.
+                                                            .false.
+                                                            .false.
+                                                            []
+                                                            .false.
+                                                        )
+                                                    )
+                                                    (PointerNullConstant
+                                                        (FunctionType
+                                                            [(Integer 4)]
+                                                            ()
+                                                            Source
+                                                            Interface
+                                                            ()
+                                                            .false.
+                                                            .false.
+                                                            .false.
+                                                            .false.
+                                                            .false.
+                                                            []
+                                                            .false.
+                                                        )
+                                                    )
+                                                    Save
+                                                    (FunctionType
+                                                        [(Integer 4)]
+                                                        ()
+                                                        Source
+                                                        Interface
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    2 test_interface
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    unittest_type
+                                    []
+                                    [test
+                                    should_fail]
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                )
+                        })
+                    testdrive
+                    [testdrive]
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

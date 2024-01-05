@@ -194,6 +194,7 @@
                                                     4 next_token
                                                     Source
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     toml_character_tokenizer
@@ -392,7 +393,7 @@
                                     [(Nullify
                                         [13 table]
                                     )
-                                    (=>
+                                    (Associate
                                         (StructInstanceMember
                                             (Var 13 de)
                                             13 1_toml_tokenizer_current
@@ -496,6 +497,7 @@
                                                     8 next_token
                                                     Source
                                                     .true.
+                                                    .false.
                                                 )
                                         })
                                     toml_tokenizer

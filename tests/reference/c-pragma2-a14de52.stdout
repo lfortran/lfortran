@@ -8,7 +8,7 @@
 
 struct dimension_descriptor
 {
-    int32_t lower_bound, length;
+    int32_t lower_bound, length, stride;
 };
 
 struct r32
@@ -16,6 +16,7 @@ struct r32
     float *data;
     struct dimension_descriptor dims[32];
     int32_t n_dims;
+    int32_t offset;
     bool is_allocated;
 };
 

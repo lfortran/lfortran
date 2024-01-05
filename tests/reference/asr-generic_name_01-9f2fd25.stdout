@@ -45,6 +45,7 @@
                                                     2 integer_add_subrout
                                                     Source
                                                     .false.
+                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -70,6 +71,7 @@
                                                     real_add_subrout
                                                     2 real_add_subrout
                                                     Source
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -214,7 +216,7 @@
                                         ()
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (StructInstanceMember
                                             (Var 4 sum)
                                             4 1_complextype_r
@@ -240,7 +242,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (StructInstanceMember
                                             (Var 4 sum)
                                             4 1_complextype_i
@@ -401,7 +403,7 @@
                                         ()
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (StructInstanceMember
                                             (Var 5 sum)
                                             5 1_complextype_r
@@ -422,7 +424,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (StructInstanceMember
                                             (Var 5 sum)
                                             5 1_complextype_i
@@ -655,7 +657,7 @@
                         })
                     generic_name_01
                     [complex_module]
-                    [(=
+                    [(Assignment
                         (Var 6 fpone)
                         (RealConstant
                             1.000000
@@ -663,7 +665,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 fptwo)
                         (RealConstant
                             2.000000
@@ -671,7 +673,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 fpzero)
                         (RealConstant
                             0.000000
@@ -679,17 +681,17 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 ione)
                         (IntegerConstant 1 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 izero)
                         (IntegerConstant 0 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 negfpone)
                         (RealUnaryMinus
                             (RealConstant
@@ -704,7 +706,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 c)
                         (StructTypeConstructor
                             6 complextype

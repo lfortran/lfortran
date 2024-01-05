@@ -36,7 +36,7 @@
                         })
                     nested_04
                     [nested_04_a]
-                    [(=
+                    [(Assignment
                         (Var 5 test)
                         (FunctionCall
                             5 b
@@ -145,7 +145,7 @@
                                                         ()
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 4 c)
                                                         (Var 4 z)
                                                         ()
@@ -222,7 +222,7 @@
                                     )
                                     []
                                     [(Var 3 x)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 yy)
                                         (RealConstant
                                             6.600000
@@ -230,7 +230,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 y)
                                         (Var 3 x)
                                         ()
@@ -243,7 +243,7 @@
                                         ()
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 b)
                                         (FunctionCall
                                             3 c

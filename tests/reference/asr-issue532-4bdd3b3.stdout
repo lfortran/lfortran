@@ -101,7 +101,7 @@
                                     [sfloor]
                                     [(Var 4 x)
                                     (Var 4 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 4 r)
                                         (IntegerBinOp
                                             (FunctionCall
@@ -185,7 +185,7 @@
                                     )
                                     []
                                     [(Var 3 x)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 r)
                                         (Cast
                                             (Var 3 x)

@@ -94,7 +94,7 @@
                         })
                     intrinsics_03
                     [iso_fortran_env]
-                    [(=
+                    [(Assignment
                         (Var 2 a)
                         (RealConstant
                             4.200000
@@ -102,7 +102,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (IntrinsicScalarFunction
                             Cos
@@ -300,7 +300,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 r1)
                         (IntrinsicScalarFunction
                             Cos
@@ -311,7 +311,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 r2)
                         (RealUnaryMinus
                             (RealConstant

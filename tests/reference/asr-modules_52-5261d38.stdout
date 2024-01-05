@@ -38,7 +38,7 @@
                                                             (Character 1 -2 ())
                                                             [(()
                                                             ())]
-                                                            DescriptorArray
+                                                            CharacterArraySinglePointer
                                                         )
                                                     )
                                                     ()
@@ -87,6 +87,26 @@
                                                     toml_parse_string
                                                     Private
                                                 ),
+                                            toml_parse_string@toml_parse:
+                                                (ExternalSymbol
+                                                    3
+                                                    toml_parse_string@toml_parse
+                                                    5 toml_parse_string
+                                                    module_52_tomlf_de
+                                                    []
+                                                    toml_parse_string
+                                                    Public
+                                                ),
+                                            toml_parse_unit@toml_parse:
+                                                (ExternalSymbol
+                                                    3
+                                                    toml_parse_unit@toml_parse
+                                                    5 toml_parse_unit
+                                                    module_52_tomlf_de
+                                                    []
+                                                    toml_parse_unit
+                                                    Public
+                                                ),
                                             toml_table:
                                                 (ExternalSymbol
                                                     3
@@ -105,7 +125,7 @@
                                                 (Character 1 -2 ())
                                                 [(()
                                                 ())]
-                                                DescriptorArray
+                                                CharacterArraySinglePointer
                                             )
                                         )]
                                         ()

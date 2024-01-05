@@ -46,6 +46,7 @@
                                                     2 circle_area
                                                     Source
                                                     .false.
+                                                    .false.
                                                 ),
                                             circle_print:
                                                 (ClassProcedure
@@ -55,6 +56,7 @@
                                                     circle_print
                                                     2 circle_print
                                                     Source
+                                                    .false.
                                                     .false.
                                                 ),
                                             radius:
@@ -154,7 +156,7 @@
                                     )
                                     []
                                     [(Var 4 this)]
-                                    [(=
+                                    [(Assignment
                                         (Var 4 circle_area)
                                         (RealBinOp
                                             (Var 2 pi)
@@ -269,7 +271,7 @@
                                     )
                                     []
                                     [(Var 5 this)]
-                                    [(=
+                                    [(Assignment
                                         (Var 5 area)
                                         (FunctionCall
                                             5 1_circle_area
@@ -367,7 +369,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 6 c)
                                         (StructTypeConstructor
                                             2 circle
@@ -382,7 +384,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (StructInstanceMember
                                             (Var 6 c)
                                             6 1_circle_radius

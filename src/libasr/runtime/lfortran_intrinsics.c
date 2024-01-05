@@ -108,6 +108,16 @@ LFORTRAN_API void _lfortran_random_number(int n, double *v)
     }
 }
 
+LFORTRAN_API void _lfortran_init_random_seed(unsigned seed)
+{
+    srand(seed);
+}
+
+LFORTRAN_API void _lfortran_init_random_clock()
+{
+    srand((unsigned int)clock());
+}
+
 LFORTRAN_API double _lfortran_random()
 {
     return (rand() / (double) RAND_MAX);
@@ -297,6 +307,12 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
         i--;
     }
 
+    int exp = 2;
+    char* exp_loc = strchr(num_pos, 'e');
+    if (exp_loc != NULL) {
+        exp = atoi(++exp_loc);
+    }
+
     char* ptr = strchr(val_str, '.');
     if (ptr != NULL) {
         memmove(ptr, ptr + 1, strlen(ptr));
@@ -311,7 +327,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
         memmove(val_str, val_str + 1, strlen(val_str));
         decimal--;
     }
-    if (format[1] == 'S') {
+    if (tolower(format[1]) == 's') {
         scale = 1;
         decimal--;
     }
@@ -395,7 +411,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     if (atoi(num_pos) == 0) {
         sprintf(exponent, "%+02d", (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
     } else {
-        sprintf(exponent, "%+03d", (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
+        sprintf(exponent, "%+0*d", exp+1, (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
     }
 
     strcat(formatted_value, exponent);
@@ -434,6 +450,9 @@ char** parse_fortran_format(char* format, int *count, int *item_start) {
             case '/' :
                 format_values_2[format_values_count++] = substring(format, index, index+1);
                 break;
+            case '*' :
+                format_values_2[format_values_count++] = substring(format, index, index+1);
+                break;
             case '"' :
                 start = index++;
                 while (format[index] != '"') {
@@ -462,10 +481,18 @@ char** parse_fortran_format(char* format, int *count, int *item_start) {
             case 'e' :
             case 'f' :
                 start = index++;
+                bool dot = false;
                 if(tolower(format[index]) == 's') index++;
                 while (isdigit(format[index])) index++;
-                if (format[index] == '.') index++;
+                if (format[index] == '.') {
+                    dot = true;
+                    index++;
+                }
                 while (isdigit(format[index])) index++;
+                if (dot && tolower(format[index]) == 'e') {
+                    index++;
+                    while (isdigit(format[index])) index++;
+                }
                 format_values_2[format_values_count++] = substring(format, start, index);
                 index--;
                 break;
@@ -534,6 +561,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
     char* result = (char*)malloc(sizeof(char));
     result[0] = '\0';
     int item_start = 0;
+    bool array = false;
     while (1) {
         int scale = 0;
         for (int i = item_start; i < format_values_count; i++) {
@@ -567,6 +595,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
 
             if (value[0] == '/') {
                 result = append_to_string(result, "\n");
+            } else if (value[0] == '*') {
+                array = true;
             } else if (isdigit(value[0]) && tolower(value[1]) == 'p') {
                 // Scale Factor nP
                 scale = atoi(&value[0]);
@@ -627,12 +657,16 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 double val = va_arg(args, double);
                 handle_float(value, val, &result);
             } else if (strlen(value) != 0) {
+                if ( count == 0 ) break;
+                count--;
                 printf("Printing support is not available for %s format.\n",value);
             }
 
         }
         if ( count > 0 ) {
-            result = append_to_string(result, "\n");
+            if (!array) {
+                result = append_to_string(result, "\n");
+            }
             item_start = item_start_idx;
         } else {
             break;
@@ -1192,6 +1226,38 @@ LFORTRAN_API double_complex_t _lfortran_zatanh(double_complex_t x)
     return catanh(x);
 }
 
+// trunc -----------------------------------------------------------------------
+
+LFORTRAN_API float _lfortran_strunc(float x)
+{
+    return truncf(x);
+}
+
+LFORTRAN_API double _lfortran_dtrunc(double x)
+{
+    return trunc(x);
+}
+
+// fix -----------------------------------------------------------------------
+
+LFORTRAN_API float _lfortran_sfix(float x)
+{
+    if (x > 0.0) {
+        return floorf(x);
+    } else {
+        return ceilf(x);
+    }
+}
+
+LFORTRAN_API double _lfortran_dfix(double x)
+{
+    if (x > 0.0) {
+        return floor(x);
+    } else {
+        return ceil(x);
+    }
+}
+
 // phase --------------------------------------------------------------------
 
 LFORTRAN_API float _lfortran_cphase(float_complex_t x)
@@ -1234,10 +1300,10 @@ LFORTRAN_API void _lfortran_strcpy(char** x, char *y, int8_t free_target)
         if (*x) {
             free((void *)*x);
         }
-        *x = (char *) malloc(strlen(y)*sizeof(char));
-        _lfortran_string_init(strlen(y)+1, *x);
     }
-    for (size_t i = 0; i < strlen(*x); i ++) {
+    *x = (char*) malloc((strlen(y) + 1) * sizeof(char));
+    _lfortran_string_init(strlen(y) + 1, *x);
+    for (size_t i = 0; i < strlen(*x); i++) {
         if (i < strlen(y)) {
             x[0][i] = y[i];
         } else {
@@ -1783,13 +1849,13 @@ LFORTRAN_API void _lfortran_cpu_time(double *t) {
 
 LFORTRAN_API void _lfortran_i32sys_clock(
         int32_t *count, int32_t *rate, int32_t *max) {
-#if defined(_MSC_VER) || defined(__MACH__)
+#if defined(_MSC_VER)
         *count = - INT_MAX;
         *rate = 0;
         *max = 0;
 #else
     struct timespec ts;
-    if(clock_gettime(CLOCK_MONOTONIC, &ts) == -1) {
+    if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
         *count = (int32_t)(ts.tv_nsec / 1000000) + ((int32_t)ts.tv_sec * 1000);
         *rate = 1e3; // milliseconds
         *max = INT_MAX;
@@ -1803,13 +1869,13 @@ LFORTRAN_API void _lfortran_i32sys_clock(
 
 LFORTRAN_API void _lfortran_i64sys_clock(
         uint64_t *count, int64_t *rate, int64_t *max) {
-#if defined(_MSC_VER) || defined(__MACH__)
+#if defined(_MSC_VER)
         *count = - INT_MAX;
         *rate = 0;
         *max = 0;
 #else
     struct timespec ts;
-    if(clock_gettime(CLOCK_MONOTONIC, &ts) == -1) {
+    if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
         *count = (uint64_t)(ts.tv_nsec) + ((uint64_t)ts.tv_sec * 1000000000);
         // FIXME: Rate can be in microseconds or nanoseconds depending on
         //          resolution of the underlying platform clock.

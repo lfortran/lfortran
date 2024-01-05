@@ -188,7 +188,7 @@
                         })
                     flip_sign
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 rxsp)
                         (RealBinOp
                             (Var 2 rxsp)
@@ -242,7 +242,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 rxsp)
                         (RealBinOp
                             (Var 2 rxsp)
@@ -300,7 +300,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 rxdp)
                         (RealBinOp
                             (Var 2 rxdp)
@@ -362,7 +362,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 rxdp)
                         (RealBinOp
                             (Var 2 rxdp)
@@ -428,7 +428,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 ixsp)
                         (IntegerBinOp
                             (Var 2 ixsp)
@@ -464,7 +464,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 ixdp)
                         (IntegerBinOp
                             (Var 2 ixdp)

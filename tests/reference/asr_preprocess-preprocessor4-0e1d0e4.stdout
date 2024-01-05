@@ -42,7 +42,7 @@
                         })
                     preprocessor4
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 x)
                         (IntegerBinOp
                             (IntegerBinOp

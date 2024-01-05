@@ -2,16 +2,14 @@
     (SymbolTable
         1
         {
-            lfortran_intrinsic_kind:
-                (IntrinsicModule lfortran_intrinsic_kind),
             template_03:
                 (Program
                     (SymbolTable
-                        22
+                        13
                         {
                             f:
                                 (ExternalSymbol
-                                    22
+                                    13
                                     f
                                     2 f
                                     template_03_m
@@ -23,7 +21,7 @@
                     template_03
                     [template_03_m]
                     [(SubroutineCall
-                        22 f
+                        13 f
                         ()
                         []
                         ()
@@ -174,7 +172,7 @@
                                                             ()
                                                         )
                                                         ())
-                                                        [(=
+                                                        [(Assignment
                                                             (ArrayItem
                                                                 (Var 8 y)
                                                                 [(()
@@ -538,11 +536,11 @@
                                             axpy:
                                                 (Function
                                                     (SymbolTable
-                                                        21
+                                                        12
                                                         {
                                                             a:
                                                                 (Variable
-                                                                    21
+                                                                    12
                                                                     a
                                                                     []
                                                                     In
@@ -558,7 +556,7 @@
                                                                 ),
                                                             i:
                                                                 (Variable
-                                                                    21
+                                                                    12
                                                                     i
                                                                     []
                                                                     Local
@@ -574,7 +572,7 @@
                                                                 ),
                                                             x:
                                                                 (Variable
-                                                                    21
+                                                                    12
                                                                     x
                                                                     []
                                                                     In
@@ -595,7 +593,7 @@
                                                                 ),
                                                             y:
                                                                 (Variable
-                                                                    21
+                                                                    12
                                                                     y
                                                                     []
                                                                     InOut
@@ -644,25 +642,25 @@
                                                     )
                                                     [~mul_intrinsic
                                                     ~add_intrinsic]
-                                                    [(Var 21 a)
-                                                    (Var 21 x)
-                                                    (Var 21 y)]
+                                                    [(Var 12 a)
+                                                    (Var 12 x)
+                                                    (Var 12 y)]
                                                     [(DoLoop
                                                         ()
-                                                        ((Var 21 i)
+                                                        ((Var 12 i)
                                                         (IntegerConstant 1 (Integer 4))
                                                         (ArraySize
-                                                            (Var 21 x)
+                                                            (Var 12 x)
                                                             ()
                                                             (Integer 4)
                                                             ()
                                                         )
                                                         ())
-                                                        [(=
+                                                        [(Assignment
                                                             (ArrayItem
-                                                                (Var 21 y)
+                                                                (Var 12 y)
                                                                 [(()
-                                                                (Var 21 i)
+                                                                (Var 12 i)
                                                                 ())]
                                                                 (Real 4)
                                                                 ColMajor
@@ -672,9 +670,9 @@
                                                                 9 ~add_intrinsic
                                                                 ()
                                                                 [((ArrayItem
-                                                                    (Var 21 y)
+                                                                    (Var 12 y)
                                                                     [(()
-                                                                    (Var 21 i)
+                                                                    (Var 12 i)
                                                                     ())]
                                                                     (Real 4)
                                                                     ColMajor
@@ -683,11 +681,11 @@
                                                                 ((FunctionCall
                                                                     9 ~mul_intrinsic
                                                                     ()
-                                                                    [((Var 21 a))
+                                                                    [((Var 12 a))
                                                                     ((ArrayItem
-                                                                        (Var 21 x)
+                                                                        (Var 12 x)
                                                                         [(()
-                                                                        (Var 21 i)
+                                                                        (Var 12 i)
                                                                         ())]
                                                                         (Integer 4)
                                                                         ColMajor
@@ -716,16 +714,15 @@
                                                     dp
                                                     []
                                                     Local
-                                                    (FunctionCall
-                                                        9 kind
-                                                        ()
-                                                        [((RealConstant
+                                                    (IntrinsicScalarFunction
+                                                        Kind
+                                                        [(RealConstant
                                                             1.000000
                                                             (Real 8)
-                                                        ))]
+                                                        )]
+                                                        0
                                                         (Integer 4)
                                                         (IntegerConstant 8 (Integer 4))
-                                                        ()
                                                     )
                                                     (IntegerConstant 8 (Integer 4))
                                                     Parameter
@@ -736,32 +733,21 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            kind:
-                                                (ExternalSymbol
-                                                    9
-                                                    kind
-                                                    11 kind
-                                                    lfortran_intrinsic_kind
-                                                    []
-                                                    kind
-                                                    Private
-                                                ),
                                             sp:
                                                 (Variable
                                                     9
                                                     sp
                                                     []
                                                     Local
-                                                    (FunctionCall
-                                                        9 kind
-                                                        ()
-                                                        [((RealConstant
+                                                    (IntrinsicScalarFunction
+                                                        Kind
+                                                        [(RealConstant
                                                             1.000000
                                                             (Real 4)
-                                                        ))]
+                                                        )]
+                                                        0
                                                         (Integer 4)
                                                         (IntegerConstant 4 (Integer 4))
-                                                        ()
                                                     )
                                                     (IntegerConstant 4 (Integer 4))
                                                     Parameter
@@ -824,11 +810,11 @@
                                             ~add_intrinsic:
                                                 (Function
                                                     (SymbolTable
-                                                        19
+                                                        10
                                                         {
                                                             arg0:
                                                                 (Variable
-                                                                    19
+                                                                    10
                                                                     arg0
                                                                     []
                                                                     In
@@ -844,7 +830,7 @@
                                                                 ),
                                                             arg1:
                                                                 (Variable
-                                                                    19
+                                                                    10
                                                                     arg1
                                                                     []
                                                                     In
@@ -860,7 +846,7 @@
                                                                 ),
                                                             ret:
                                                                 (Variable
-                                                                    19
+                                                                    10
                                                                     ret
                                                                     []
                                                                     ReturnVar
@@ -892,20 +878,20 @@
                                                         .false.
                                                     )
                                                     []
-                                                    [(Var 19 arg0)
-                                                    (Var 19 arg1)]
-                                                    [(=
-                                                        (Var 19 ret)
+                                                    [(Var 10 arg0)
+                                                    (Var 10 arg1)]
+                                                    [(Assignment
+                                                        (Var 10 ret)
                                                         (RealBinOp
-                                                            (Var 19 arg0)
+                                                            (Var 10 arg0)
                                                             Add
-                                                            (Var 19 arg1)
+                                                            (Var 10 arg1)
                                                             (Real 4)
                                                             ()
                                                         )
                                                         ()
                                                     )]
-                                                    (Var 19 ret)
+                                                    (Var 10 ret)
                                                     Public
                                                     .false.
                                                     .true.
@@ -921,11 +907,11 @@
                                             ~mul_intrinsic:
                                                 (Function
                                                     (SymbolTable
-                                                        20
+                                                        11
                                                         {
                                                             arg0:
                                                                 (Variable
-                                                                    20
+                                                                    11
                                                                     arg0
                                                                     []
                                                                     In
@@ -941,7 +927,7 @@
                                                                 ),
                                                             arg1:
                                                                 (Variable
-                                                                    20
+                                                                    11
                                                                     arg1
                                                                     []
                                                                     In
@@ -957,7 +943,7 @@
                                                                 ),
                                                             ret:
                                                                 (Variable
-                                                                    20
+                                                                    11
                                                                     ret
                                                                     []
                                                                     ReturnVar
@@ -989,15 +975,15 @@
                                                         .false.
                                                     )
                                                     []
-                                                    [(Var 20 arg0)
-                                                    (Var 20 arg1)]
-                                                    [(=
-                                                        (Var 20 ret)
+                                                    [(Var 11 arg0)
+                                                    (Var 11 arg1)]
+                                                    [(Assignment
+                                                        (Var 11 ret)
                                                         (RealBinOp
-                                                            (Var 20 arg0)
+                                                            (Var 11 arg0)
                                                             Mul
                                                             (Cast
-                                                                (Var 20 arg1)
+                                                                (Var 11 arg1)
                                                                 IntegerToReal
                                                                 (Real 4)
                                                                 ()
@@ -1007,7 +993,7 @@
                                                         )
                                                         ()
                                                     )]
-                                                    (Var 20 ret)
+                                                    (Var 11 ret)
                                                     Public
                                                     .false.
                                                     .true.
@@ -1031,7 +1017,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 9 a)
                                         (RealConstant
                                             0.500000
@@ -1039,7 +1025,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 9 x)
                                         (ArrayBroadcast
                                             (IntegerConstant 2 (Integer 4))
@@ -1074,7 +1060,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 9 y)
                                         (ArrayBroadcast
                                             (Cast
@@ -1343,8 +1329,7 @@
                                 )
                         })
                     template_03_m
-                    [lfortran_intrinsic_kind
-                    template_03_m]
+                    [template_03_m]
                     .false.
                     .false.
                 )

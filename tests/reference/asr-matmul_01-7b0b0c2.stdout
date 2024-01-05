@@ -8,8 +8,6 @@
                 (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
             lfortran_intrinsic_builtin:
                 (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_kind:
-                (IntrinsicModule lfortran_intrinsic_kind),
             lfortran_intrinsic_math:
                 (IntrinsicModule lfortran_intrinsic_math),
             matmul_01:
@@ -121,7 +119,7 @@
                                 (ExternalSymbol
                                     6
                                     cpu_time
-                                    17 cpu_time
+                                    8 cpu_time
                                     lfortran_intrinsic_math
                                     []
                                     cpu_time
@@ -133,20 +131,35 @@
                                     dp
                                     []
                                     Local
-                                    (FunctionCall
-                                        6 kind
-                                        ()
-                                        [((RealConstant
+                                    (IntrinsicScalarFunction
+                                        Kind
+                                        [(RealConstant
                                             0.000000
                                             (Real 8)
-                                        ))]
+                                        )]
+                                        0
                                         (Integer 4)
                                         (IntegerConstant 8 (Integer 4))
-                                        ()
                                     )
                                     (IntegerConstant 8 (Integer 4))
                                     Parameter
                                     (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            err:
+                                (Variable
+                                    6
+                                    err
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -233,16 +246,6 @@
                                     Required
                                     .false.
                                 ),
-                            kind:
-                                (ExternalSymbol
-                                    6
-                                    kind
-                                    8 kind
-                                    lfortran_intrinsic_kind
-                                    []
-                                    kind
-                                    Private
-                                ),
                             matmul1:
                                 (ExternalSymbol
                                     6
@@ -315,7 +318,7 @@
                                 (ExternalSymbol
                                     6
                                     random_number
-                                    17 random_number
+                                    8 random_number
                                     lfortran_intrinsic_math
                                     []
                                     random_number
@@ -325,7 +328,7 @@
                                 (ExternalSymbol
                                     6
                                     random_number@sp_rand_num
-                                    17 sp_rand_num
+                                    8 sp_rand_num
                                     lfortran_intrinsic_math
                                     []
                                     sp_rand_num
@@ -381,14 +384,13 @@
                                 )
                         })
                     matmul_01
-                    [matmul_01_cpu
-                    lfortran_intrinsic_kind]
-                    [(=
+                    [matmul_01_cpu]
+                    [(Assignment
                         (Var 6 n)
                         (IntegerConstant 96 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 iter)
                         (IntegerConstant 1 (Integer 4))
                         ()
@@ -530,7 +532,7 @@
                         (IntegerConstant 1 (Integer 4))
                         (Var 6 iter)
                         ())
-                        [(=
+                        [(Assignment
                             (Var 6 c)
                             (IntrinsicArrayFunction
                                 MatMul
@@ -558,7 +560,7 @@
                         [((Var 6 t2))]
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 t)
                         (RealBinOp
                             (RealBinOp
@@ -580,7 +582,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 ghz)
                         (RealConstant
                             1000000000.000000
@@ -588,7 +590,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 fma_clock)
                         (RealConstant
                             0.062500
@@ -596,7 +598,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 freq)
                         (RealBinOp
                             (RealConstant
@@ -610,7 +612,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 measured)
                         (RealBinOp
                             (RealBinOp
@@ -638,7 +640,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 percent_peak)
                         (RealBinOp
                             (RealBinOp
@@ -759,11 +761,8 @@
                         [((Var 6 t2))]
                         ()
                     )
-                    (Print
-                        [(StringConstant
-                            "Error:"
-                            (Character 1 6 ())
-                        )
+                    (Assignment
+                        (Var 6 err)
                         (IntrinsicArrayFunction
                             MaxVal
                             [(IntrinsicScalarFunction
@@ -796,11 +795,19 @@
                             0
                             (Real 4)
                             ()
-                        )]
+                        )
+                        ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "Error:"
+                            (Character 1 6 ())
+                        )
+                        (Var 6 err)]
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 t)
                         (RealBinOp
                             (RealBinOp
@@ -822,7 +829,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 ghz)
                         (RealConstant
                             1000000000.000000
@@ -830,7 +837,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 fma_clock)
                         (RealConstant
                             0.062500
@@ -838,7 +845,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 freq)
                         (RealBinOp
                             (RealConstant
@@ -852,7 +859,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 measured)
                         (RealBinOp
                             (RealBinOp
@@ -880,7 +887,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 percent_peak)
                         (RealBinOp
                             (RealBinOp
@@ -960,6 +967,22 @@
                         )]
                         ()
                         ()
+                    )
+                    (If
+                        (RealCompare
+                            (Var 6 err)
+                            Gt
+                            (RealConstant
+                                0.001000
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
                     )
                     (Print
                         []
@@ -1001,11 +1024,8 @@
                         [((Var 6 t2))]
                         ()
                     )
-                    (Print
-                        [(StringConstant
-                            "Error:"
-                            (Character 1 6 ())
-                        )
+                    (Assignment
+                        (Var 6 err)
                         (IntrinsicArrayFunction
                             MaxVal
                             [(IntrinsicScalarFunction
@@ -1038,11 +1058,19 @@
                             0
                             (Real 4)
                             ()
-                        )]
+                        )
+                        ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "Error:"
+                            (Character 1 6 ())
+                        )
+                        (Var 6 err)]
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 t)
                         (RealBinOp
                             (RealBinOp
@@ -1064,7 +1092,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 ghz)
                         (RealConstant
                             1000000000.000000
@@ -1072,7 +1100,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 fma_clock)
                         (RealConstant
                             0.062500
@@ -1080,7 +1108,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 freq)
                         (RealBinOp
                             (RealConstant
@@ -1094,7 +1122,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 measured)
                         (RealBinOp
                             (RealBinOp
@@ -1122,7 +1150,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 percent_peak)
                         (RealBinOp
                             (RealBinOp
@@ -1202,6 +1230,22 @@
                         )]
                         ()
                         ()
+                    )
+                    (If
+                        (RealCompare
+                            (Var 6 err)
+                            Gt
+                            (RealConstant
+                                0.001000
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
                     )
                     (ImplicitDeallocate
                         [(Var 6 a)
@@ -1798,7 +1842,7 @@
                                     (Var 4 y)
                                     (Var 4 i1)
                                     (Var 4 s1)]
-                                    [(=
+                                    [(Assignment
                                         (Var 4 u00)
                                         (ArraySection
                                             (Var 4 c)
@@ -1830,7 +1874,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 u01)
                                         (ArraySection
                                             (Var 4 c)
@@ -1868,7 +1912,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 u10)
                                         (ArraySection
                                             (Var 4 c)
@@ -1900,7 +1944,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 u11)
                                         (ArraySection
                                             (Var 4 c)
@@ -1938,7 +1982,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 u20)
                                         (ArraySection
                                             (Var 4 c)
@@ -1970,7 +2014,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 u21)
                                         (ArraySection
                                             (Var 4 c)
@@ -2008,7 +2052,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 u30)
                                         (ArraySection
                                             (Var 4 c)
@@ -2040,7 +2084,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 u31)
                                         (ArraySection
                                             (Var 4 c)
@@ -2078,7 +2122,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 u40)
                                         (ArraySection
                                             (Var 4 c)
@@ -2110,7 +2154,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 u41)
                                         (ArraySection
                                             (Var 4 c)
@@ -2148,7 +2192,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 u50)
                                         (ArraySection
                                             (Var 4 c)
@@ -2180,7 +2224,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 u51)
                                         (ArraySection
                                             (Var 4 c)
@@ -2236,37 +2280,48 @@
                                             ()
                                         )
                                         ())
-                                        [(=
+                                        [(Assignment
                                             (Var 4 a0)
-                                            (ArrayBroadcast
-                                                (ArrayItem
-                                                    (Var 4 a)
-                                                    [(()
-                                                    (Var 4 k)
-                                                    ())
-                                                    (()
-                                                    (IntegerBinOp
-                                                        (Var 4 x)
-                                                        Add
-                                                        (IntegerConstant 0 (Integer 4))
-                                                        (Integer 4)
+                                            (ArrayPhysicalCast
+                                                (ArrayBroadcast
+                                                    (ArrayItem
+                                                        (Var 4 a)
+                                                        [(()
+                                                        (Var 4 k)
+                                                        ())
+                                                        (()
+                                                        (IntegerBinOp
+                                                            (Var 4 x)
+                                                            Add
+                                                            (IntegerConstant 0 (Integer 4))
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ())]
+                                                        (Real 4)
+                                                        ColMajor
                                                         ()
                                                     )
-                                                    ())]
-                                                    (Real 4)
-                                                    ColMajor
-                                                    ()
-                                                )
-                                                (ArrayConstant
-                                                    [(IntegerConstant 8 (Integer 4))]
+                                                    (ArrayConstant
+                                                        [(IntegerConstant 8 (Integer 4))]
+                                                        (Array
+                                                            (Integer 4)
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4)))]
+                                                            FixedSizeArray
+                                                        )
+                                                        ColMajor
+                                                    )
                                                     (Array
-                                                        (Integer 4)
+                                                        (Real 4)
                                                         [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 1 (Integer 4)))]
+                                                        (IntegerConstant 8 (Integer 4)))]
                                                         FixedSizeArray
                                                     )
-                                                    ColMajor
+                                                    ()
                                                 )
+                                                FixedSizeArray
+                                                SIMDArray
                                                 (Array
                                                     (Real 4)
                                                     [((IntegerConstant 1 (Integer 4))
@@ -2277,7 +2332,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 u00)
                                             (RealBinOp
                                                 (Var 4 u00)
@@ -2325,7 +2380,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 u01)
                                             (RealBinOp
                                                 (Var 4 u01)
@@ -2379,37 +2434,48 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 a1)
-                                            (ArrayBroadcast
-                                                (ArrayItem
-                                                    (Var 4 a)
-                                                    [(()
-                                                    (Var 4 k)
-                                                    ())
-                                                    (()
-                                                    (IntegerBinOp
-                                                        (Var 4 x)
-                                                        Add
-                                                        (IntegerConstant 1 (Integer 4))
-                                                        (Integer 4)
+                                            (ArrayPhysicalCast
+                                                (ArrayBroadcast
+                                                    (ArrayItem
+                                                        (Var 4 a)
+                                                        [(()
+                                                        (Var 4 k)
+                                                        ())
+                                                        (()
+                                                        (IntegerBinOp
+                                                            (Var 4 x)
+                                                            Add
+                                                            (IntegerConstant 1 (Integer 4))
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ())]
+                                                        (Real 4)
+                                                        ColMajor
                                                         ()
                                                     )
-                                                    ())]
-                                                    (Real 4)
-                                                    ColMajor
-                                                    ()
-                                                )
-                                                (ArrayConstant
-                                                    [(IntegerConstant 8 (Integer 4))]
+                                                    (ArrayConstant
+                                                        [(IntegerConstant 8 (Integer 4))]
+                                                        (Array
+                                                            (Integer 4)
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4)))]
+                                                            FixedSizeArray
+                                                        )
+                                                        ColMajor
+                                                    )
                                                     (Array
-                                                        (Integer 4)
+                                                        (Real 4)
                                                         [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 1 (Integer 4)))]
+                                                        (IntegerConstant 8 (Integer 4)))]
                                                         FixedSizeArray
                                                     )
-                                                    ColMajor
+                                                    ()
                                                 )
+                                                FixedSizeArray
+                                                SIMDArray
                                                 (Array
                                                     (Real 4)
                                                     [((IntegerConstant 1 (Integer 4))
@@ -2420,7 +2486,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 u10)
                                             (RealBinOp
                                                 (Var 4 u10)
@@ -2468,7 +2534,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 u11)
                                             (RealBinOp
                                                 (Var 4 u11)
@@ -2522,37 +2588,48 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 a2)
-                                            (ArrayBroadcast
-                                                (ArrayItem
-                                                    (Var 4 a)
-                                                    [(()
-                                                    (Var 4 k)
-                                                    ())
-                                                    (()
-                                                    (IntegerBinOp
-                                                        (Var 4 x)
-                                                        Add
-                                                        (IntegerConstant 2 (Integer 4))
-                                                        (Integer 4)
+                                            (ArrayPhysicalCast
+                                                (ArrayBroadcast
+                                                    (ArrayItem
+                                                        (Var 4 a)
+                                                        [(()
+                                                        (Var 4 k)
+                                                        ())
+                                                        (()
+                                                        (IntegerBinOp
+                                                            (Var 4 x)
+                                                            Add
+                                                            (IntegerConstant 2 (Integer 4))
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ())]
+                                                        (Real 4)
+                                                        ColMajor
                                                         ()
                                                     )
-                                                    ())]
-                                                    (Real 4)
-                                                    ColMajor
-                                                    ()
-                                                )
-                                                (ArrayConstant
-                                                    [(IntegerConstant 8 (Integer 4))]
+                                                    (ArrayConstant
+                                                        [(IntegerConstant 8 (Integer 4))]
+                                                        (Array
+                                                            (Integer 4)
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4)))]
+                                                            FixedSizeArray
+                                                        )
+                                                        ColMajor
+                                                    )
                                                     (Array
-                                                        (Integer 4)
+                                                        (Real 4)
                                                         [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 1 (Integer 4)))]
+                                                        (IntegerConstant 8 (Integer 4)))]
                                                         FixedSizeArray
                                                     )
-                                                    ColMajor
+                                                    ()
                                                 )
+                                                FixedSizeArray
+                                                SIMDArray
                                                 (Array
                                                     (Real 4)
                                                     [((IntegerConstant 1 (Integer 4))
@@ -2563,7 +2640,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 u20)
                                             (RealBinOp
                                                 (Var 4 u20)
@@ -2611,7 +2688,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 u21)
                                             (RealBinOp
                                                 (Var 4 u21)
@@ -2665,37 +2742,48 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 a3)
-                                            (ArrayBroadcast
-                                                (ArrayItem
-                                                    (Var 4 a)
-                                                    [(()
-                                                    (Var 4 k)
-                                                    ())
-                                                    (()
-                                                    (IntegerBinOp
-                                                        (Var 4 x)
-                                                        Add
-                                                        (IntegerConstant 3 (Integer 4))
-                                                        (Integer 4)
+                                            (ArrayPhysicalCast
+                                                (ArrayBroadcast
+                                                    (ArrayItem
+                                                        (Var 4 a)
+                                                        [(()
+                                                        (Var 4 k)
+                                                        ())
+                                                        (()
+                                                        (IntegerBinOp
+                                                            (Var 4 x)
+                                                            Add
+                                                            (IntegerConstant 3 (Integer 4))
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ())]
+                                                        (Real 4)
+                                                        ColMajor
                                                         ()
                                                     )
-                                                    ())]
-                                                    (Real 4)
-                                                    ColMajor
-                                                    ()
-                                                )
-                                                (ArrayConstant
-                                                    [(IntegerConstant 8 (Integer 4))]
+                                                    (ArrayConstant
+                                                        [(IntegerConstant 8 (Integer 4))]
+                                                        (Array
+                                                            (Integer 4)
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4)))]
+                                                            FixedSizeArray
+                                                        )
+                                                        ColMajor
+                                                    )
                                                     (Array
-                                                        (Integer 4)
+                                                        (Real 4)
                                                         [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 1 (Integer 4)))]
+                                                        (IntegerConstant 8 (Integer 4)))]
                                                         FixedSizeArray
                                                     )
-                                                    ColMajor
+                                                    ()
                                                 )
+                                                FixedSizeArray
+                                                SIMDArray
                                                 (Array
                                                     (Real 4)
                                                     [((IntegerConstant 1 (Integer 4))
@@ -2706,7 +2794,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 u30)
                                             (RealBinOp
                                                 (Var 4 u30)
@@ -2754,7 +2842,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 u31)
                                             (RealBinOp
                                                 (Var 4 u31)
@@ -2808,37 +2896,48 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 a4)
-                                            (ArrayBroadcast
-                                                (ArrayItem
-                                                    (Var 4 a)
-                                                    [(()
-                                                    (Var 4 k)
-                                                    ())
-                                                    (()
-                                                    (IntegerBinOp
-                                                        (Var 4 x)
-                                                        Add
-                                                        (IntegerConstant 4 (Integer 4))
-                                                        (Integer 4)
+                                            (ArrayPhysicalCast
+                                                (ArrayBroadcast
+                                                    (ArrayItem
+                                                        (Var 4 a)
+                                                        [(()
+                                                        (Var 4 k)
+                                                        ())
+                                                        (()
+                                                        (IntegerBinOp
+                                                            (Var 4 x)
+                                                            Add
+                                                            (IntegerConstant 4 (Integer 4))
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ())]
+                                                        (Real 4)
+                                                        ColMajor
                                                         ()
                                                     )
-                                                    ())]
-                                                    (Real 4)
-                                                    ColMajor
-                                                    ()
-                                                )
-                                                (ArrayConstant
-                                                    [(IntegerConstant 8 (Integer 4))]
+                                                    (ArrayConstant
+                                                        [(IntegerConstant 8 (Integer 4))]
+                                                        (Array
+                                                            (Integer 4)
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4)))]
+                                                            FixedSizeArray
+                                                        )
+                                                        ColMajor
+                                                    )
                                                     (Array
-                                                        (Integer 4)
+                                                        (Real 4)
                                                         [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 1 (Integer 4)))]
+                                                        (IntegerConstant 8 (Integer 4)))]
                                                         FixedSizeArray
                                                     )
-                                                    ColMajor
+                                                    ()
                                                 )
+                                                FixedSizeArray
+                                                SIMDArray
                                                 (Array
                                                     (Real 4)
                                                     [((IntegerConstant 1 (Integer 4))
@@ -2849,7 +2948,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 u40)
                                             (RealBinOp
                                                 (Var 4 u40)
@@ -2897,7 +2996,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 u41)
                                             (RealBinOp
                                                 (Var 4 u41)
@@ -2951,37 +3050,48 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 a5)
-                                            (ArrayBroadcast
-                                                (ArrayItem
-                                                    (Var 4 a)
-                                                    [(()
-                                                    (Var 4 k)
-                                                    ())
-                                                    (()
-                                                    (IntegerBinOp
-                                                        (Var 4 x)
-                                                        Add
-                                                        (IntegerConstant 5 (Integer 4))
-                                                        (Integer 4)
+                                            (ArrayPhysicalCast
+                                                (ArrayBroadcast
+                                                    (ArrayItem
+                                                        (Var 4 a)
+                                                        [(()
+                                                        (Var 4 k)
+                                                        ())
+                                                        (()
+                                                        (IntegerBinOp
+                                                            (Var 4 x)
+                                                            Add
+                                                            (IntegerConstant 5 (Integer 4))
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ())]
+                                                        (Real 4)
+                                                        ColMajor
                                                         ()
                                                     )
-                                                    ())]
-                                                    (Real 4)
-                                                    ColMajor
-                                                    ()
-                                                )
-                                                (ArrayConstant
-                                                    [(IntegerConstant 8 (Integer 4))]
+                                                    (ArrayConstant
+                                                        [(IntegerConstant 8 (Integer 4))]
+                                                        (Array
+                                                            (Integer 4)
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4)))]
+                                                            FixedSizeArray
+                                                        )
+                                                        ColMajor
+                                                    )
                                                     (Array
-                                                        (Integer 4)
+                                                        (Real 4)
                                                         [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 1 (Integer 4)))]
+                                                        (IntegerConstant 8 (Integer 4)))]
                                                         FixedSizeArray
                                                     )
-                                                    ColMajor
+                                                    ()
                                                 )
+                                                FixedSizeArray
+                                                SIMDArray
                                                 (Array
                                                     (Real 4)
                                                     [((IntegerConstant 1 (Integer 4))
@@ -2992,7 +3102,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 u50)
                                             (RealBinOp
                                                 (Var 4 u50)
@@ -3040,7 +3150,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 u51)
                                             (RealBinOp
                                                 (Var 4 u51)
@@ -3095,7 +3205,7 @@
                                             ()
                                         )]
                                     )
-                                    (=
+                                    (Assignment
                                         (ArraySection
                                             (Var 4 c)
                                             [((Var 4 y)
@@ -3127,7 +3237,7 @@
                                         (Var 4 u00)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArraySection
                                             (Var 4 c)
                                             [((IntegerBinOp
@@ -3165,7 +3275,7 @@
                                         (Var 4 u01)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArraySection
                                             (Var 4 c)
                                             [((Var 4 y)
@@ -3197,7 +3307,7 @@
                                         (Var 4 u10)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArraySection
                                             (Var 4 c)
                                             [((IntegerBinOp
@@ -3235,7 +3345,7 @@
                                         (Var 4 u11)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArraySection
                                             (Var 4 c)
                                             [((Var 4 y)
@@ -3267,7 +3377,7 @@
                                         (Var 4 u20)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArraySection
                                             (Var 4 c)
                                             [((IntegerBinOp
@@ -3305,7 +3415,7 @@
                                         (Var 4 u21)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArraySection
                                             (Var 4 c)
                                             [((Var 4 y)
@@ -3337,7 +3447,7 @@
                                         (Var 4 u30)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArraySection
                                             (Var 4 c)
                                             [((IntegerBinOp
@@ -3375,7 +3485,7 @@
                                         (Var 4 u31)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArraySection
                                             (Var 4 c)
                                             [((Var 4 y)
@@ -3407,7 +3517,7 @@
                                         (Var 4 u40)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArraySection
                                             (Var 4 c)
                                             [((IntegerBinOp
@@ -3445,7 +3555,7 @@
                                         (Var 4 u41)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArraySection
                                             (Var 4 c)
                                             [((Var 4 y)
@@ -3477,7 +3587,7 @@
                                         (Var 4 u50)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArraySection
                                             (Var 4 c)
                                             [((IntegerBinOp
@@ -3702,7 +3812,7 @@
                                     [(Var 3 a)
                                     (Var 3 b)
                                     (Var 3 c)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 n)
                                         (ArraySize
                                             (Var 3 a)
@@ -3712,7 +3822,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 c)
                                         (ArrayBroadcast
                                             (Cast
@@ -3766,7 +3876,7 @@
                                                 (IntegerConstant 1 (Integer 4))
                                                 (Var 3 n)
                                                 ())
-                                                [(=
+                                                [(Assignment
                                                     (ArrayItem
                                                         (Var 3 c)
                                                         [(()
@@ -4097,7 +4207,7 @@
                                     [(Var 5 a)
                                     (Var 5 b)
                                     (Var 5 c)]
-                                    [(=
+                                    [(Assignment
                                         (Var 5 n)
                                         (ArraySize
                                             (Var 5 a)
@@ -4107,22 +4217,22 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 5 s3)
                                         (IntegerConstant 48 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 5 s2)
                                         (IntegerConstant 12 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 5 s1)
                                         (IntegerConstant 24 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 5 c)
                                         (ArrayBroadcast
                                             (Cast

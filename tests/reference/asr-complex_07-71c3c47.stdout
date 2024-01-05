@@ -222,7 +222,7 @@
                         })
                     complex_07
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 c1)
                         (Cast
                             (ComplexConstructor
@@ -246,7 +246,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x2)
                         (ComplexConstructor
                             (Var 2 real_part)
@@ -263,7 +263,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 y2)
                         (ComplexConstructor
                             (Var 2 img_part)
@@ -280,7 +280,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 z2)
                         (ComplexConstructor
                             (Var 2 real_part)

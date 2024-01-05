@@ -138,6 +138,26 @@ filename = "../integration_tests/template_simple_03.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/template_simple_04.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/template_sort_01.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/template_sort_02.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/template_lapack_01.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/template_interface_01.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/test_backspace_01.f90"
 asr = true
 
@@ -349,7 +369,11 @@ filename = "errors/cpp8.f90"
 asr_preprocess = true
 
 [[test]]
-filename = "errors/template_error_01.f90"
+filename = "errors/template_error_01a.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_error_01b.f90"
 asr = true
 
 [[test]]
@@ -394,6 +418,10 @@ asr = true
 
 [[test]]
 filename = "warnings/dim_assgn_test.f90"
+asr = true
+
+[[test]]
+filename = "warnings/character_01.f90"
 asr = true
 
 [[test]]
@@ -533,7 +561,7 @@ filename = "wasm_main_program.f90"
 wat = true
 
 [[test]]
-filename = "wasm_bind_c.f90"
+filename = "wasm_bind_js.f90"
 wat = true
 
 [[test]]
@@ -994,7 +1022,6 @@ llvm = true
 [[test]]
 filename = "../integration_tests/arrays_op_6.f90"
 asr = true
-llvm = true
 
 [[test]]
 filename = "../integration_tests/arrays_op_7.f90"
@@ -1210,6 +1237,10 @@ filename = "../integration_tests/derived_types_17.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/derived_types_30.f90"
+asr = true
+
+[[test]]
 filename = "derived_types_04.f90"
 asr = true
 
@@ -1361,12 +1392,10 @@ llvm = true
 [[test]]
 filename = "../integration_tests/allocate_01.f90"
 asr = true
-llvm = true
 
 [[test]]
 filename = "../integration_tests/allocate_02.f90"
 asr = true
-llvm = true
 
 [[test]]
 filename = "../integration_tests/allocate_03.f90"
@@ -2157,7 +2186,6 @@ llvm = true
 [[test]]
 filename = "../integration_tests/string_04.f90"
 asr = true
-llvm = true
 
 [[test]]
 filename = "../integration_tests/string_10.f90"
@@ -3321,6 +3349,10 @@ filename = "errors/kind1.f90"
 asr = true
 
 [[test]]
+filename = "errors/kind2.f90"
+asr = true
+
+[[test]]
 filename = "errors/intent1.f90"
 asr = true
 
@@ -3570,3 +3602,23 @@ run_with_dbg = true
 [[test]]
 filename = "../integration_tests/legacy_array_sections_01.f90"
 llvm = true
+
+[[test]]
+filename = "format2.f90"
+llvm = true
+
+[[test]]
+filename = "errors/type_conflict1.f90"
+asr = true
+
+[[test]]
+filename = "char1.f90"
+fortran = true
+
+[[test]]
+filename = "errors/loop_test.f90"
+asr = true
+
+[[test]]
+filename = "errors/parameter_01.f90"
+asr = true

@@ -65,19 +65,19 @@
             ())]
             ()
         )]
-        [(=
+        [(Assignment
             0
             a
             3
             ()
         )
-        (=
+        (Assignment
             0
             b
             4
             ()
         )
-        (=
+        (Assignment
             0
             c
             5
@@ -87,55 +87,55 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             x
             (* 2 3)
             ()
         )
-        (=
+        (Assignment
             0
             x
             (* (u- 2) 3)
             ()
         )
-        (=
+        (Assignment
             0
             x
             (* 2 (u- 3))
             ()
         )
-        (=
+        (Assignment
             0
             x
             (* (u- 2) (u- 3))
             ()
         )
-        (=
+        (Assignment
             0
             x
             (* (u- 2) (u- 3))
             ()
         )
-        (=
+        (Assignment
             0
             x
             (u- (** 2 3))
             ()
         )
-        (=
+        (Assignment
             0
             x
             (u- (** 2 3))
             ()
         )
-        (=
+        (Assignment
             0
             x
             (u- (* 2 3))
             ()
         )
-        (=
+        (Assignment
             0
             x
             (** 2 (u- 3))
@@ -145,13 +145,13 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             x
             a
             ()
         )
-        (=
+        (Assignment
             0
             x
             (Parenthesis
@@ -159,31 +159,31 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             x
             (* a b)
             ()
         )
-        (=
+        (Assignment
             0
             x
             (* (u- a) b)
             ()
         )
-        (=
+        (Assignment
             0
             x
             (u- (* a b))
             ()
         )
-        (=
+        (Assignment
             0
             x
             (* a (u- b))
             ()
         )
-        (=
+        (Assignment
             0
             x
             (* (u- a) (u- b))
@@ -193,31 +193,31 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             x
             (* (* a b) c)
             ()
         )
-        (=
+        (Assignment
             0
             x
             (* (* (u- a) b) c)
             ()
         )
-        (=
+        (Assignment
             0
             x
             (* (* a (u- b)) c)
             ()
         )
-        (=
+        (Assignment
             0
             x
             (* (* a b) (u- c))
             ()
         )
-        (=
+        (Assignment
             0
             x
             (* (* (u- a) (u- b)) (u- c))
@@ -227,79 +227,79 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             x
             (+ 3 (* 4 5))
             ()
         )
-        (=
+        (Assignment
             0
             x
             (* (+ 3 4) 5)
             ()
         )
-        (=
+        (Assignment
             0
             x
             (* a (+ b (* 5 (- c b))))
             ()
         )
-        (=
+        (Assignment
             0
             x
             (* (- 3 (* (* 2 a) b)) 5)
             ()
         )
-        (=
+        (Assignment
             0
             x
             (* (+ (* (* (u- 2) a) b) 3) 5)
             ()
         )
-        (=
+        (Assignment
             0
             x
             (* (+ (* (* (u- 2) a) b) (* (* 3 b) a)) 5)
             ()
         )
-        (=
+        (Assignment
             0
             x
             (* (+ (* (u- 2) (/ a b)) (** (+ a (u- b)) 2)) 5)
             ()
         )
-        (=
+        (Assignment
             0
             x
             (* (+ (* (* (u+ 2) a) b) 3) 5)
             ()
         )
-        (=
+        (Assignment
             0
             x
             (+ (+ (** a 2) (* (* 2 a) b)) (** b 2))
             ()
         )
-        (=
+        (Assignment
             0
             x
             (* (+ a b) (- a b))
             ()
         )
-        (=
+        (Assignment
             0
             x
             (** (+ a b) 2)
             ()
         )
-        (=
+        (Assignment
             0
             x
             (* (+ a b) (+ (- (** a 2) (* a b)) (** b 2)))
             ()
         )
-        (=
+        (Assignment
             0
             x
             (* (* (- a b) (+ a b)) (+ (** a 2) (** b 2)))
@@ -309,19 +309,19 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             x
             (/ 1 (* a b))
             ()
         )
-        (=
+        (Assignment
             0
             x
             (* (/ 1 a) b)
             ()
         )
-        (=
+        (Assignment
             0
             x
             (* (/ 1 a) b)
@@ -331,19 +331,19 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             x
             (/ 1 (+ (* a b) 1))
             ()
         )
-        (=
+        (Assignment
             0
             x
             (+ (* (/ 1 a) b) 1)
             ()
         )
-        (=
+        (Assignment
             0
             x
             (+ (* (/ 1 a) b) 1)
@@ -353,73 +353,73 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             x
             (- 2 (u- 2))
             ()
         )
-        (=
+        (Assignment
             0
             x
             (- a (- (u- b) c))
             ()
         )
-        (=
+        (Assignment
             0
             x
             (- a (* (u- 2) b))
             ()
         )
-        (=
+        (Assignment
             0
             x
             (- c (/ (u- 2) b))
             ()
         )
-        (=
+        (Assignment
             0
             x
             (- a (+ (+ 2 3) 4))
             ()
         )
-        (=
+        (Assignment
             0
             x
             (+ a (+ (+ 2 3) 4))
             ()
         )
-        (=
+        (Assignment
             0
             x
             (- (+ (* 2 a) (* a b)) (+ (* a b) (* 2 a)))
             ()
         )
-        (=
+        (Assignment
             0
             x
             (- (+ (* 2 a) (* a b)) (- (* a b) (* 2 a)))
             ()
         )
-        (=
+        (Assignment
             0
             x
             (- a (- b (- c 1)))
             ()
         )
-        (=
+        (Assignment
             0
             x
             (- a b)
             ()
         )
-        (=
+        (Assignment
             0
             x
             (- a (- b c))
             ()
         )
-        (=
+        (Assignment
             0
             x
             (- (- a b) c)
@@ -429,19 +429,19 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             x
             (u- (- a (+ (u- b) (- (u- b) (* (u- b) b)))))
             ()
         )
-        (=
+        (Assignment
             0
             x
             (u- (+ 3 5))
             ()
         )
-        (=
+        (Assignment
             0
             x
             (u- (+ a 5))
@@ -451,7 +451,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             l
             (BoolOp
@@ -477,7 +477,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             l
             (BoolOp
@@ -491,7 +491,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             l
             (BoolOp
@@ -505,7 +505,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             l
             (BoolOp
@@ -519,7 +519,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             l
             (BoolOp
@@ -533,7 +533,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             l
             (BoolOp
@@ -547,7 +547,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             l
             (BoolOp
@@ -561,7 +561,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             l
             (BoolOp
@@ -575,7 +575,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             l
             (BoolOp
@@ -589,7 +589,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             l
             (BoolOp

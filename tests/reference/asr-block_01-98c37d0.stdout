@@ -67,7 +67,7 @@
                                                                 )
                                                         })
                                                     block
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 4 b)
                                                         (Cast
                                                             (IntegerConstant 3 (Integer 4))
@@ -80,7 +80,7 @@
                                                         )
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 4 c)
                                                         (Cast
                                                             (IntegerUnaryMinus
@@ -97,7 +97,7 @@
                                                         )
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 2 d)
                                                         (Cast
                                                             (IntrinsicScalarFunction
@@ -140,7 +140,7 @@
                                                 )
                                         })
                                     associate_block
-                                    [(=>
+                                    [(Associate
                                         (Var 3 n)
                                         (Var 2 a)
                                     )
@@ -184,12 +184,12 @@
                         })
                     block_01
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 a)
                         (IntegerConstant 1 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 b)
                         (IntegerConstant 2 (Integer 4))
                         ()

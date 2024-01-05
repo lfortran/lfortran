@@ -110,6 +110,7 @@ public:
             }
             // Visit the statement
             LCOMPILERS_ASSERT(current_body != nullptr)
+            tmp = nullptr;
             this->visit_stmt(*m_body[i]);
             if (tmp != nullptr) {
                 ASR::stmt_t* tmp_stmt = ASRUtils::STMT(tmp);
@@ -298,7 +299,7 @@ public:
         for( std::uint32_t i = 0; i < x.n_kwargs; i++ ) {
             AST::keyword_t kwarg = x.m_kwargs[i];
             std::string m_arg_str(kwarg.m_arg);
-            if( m_arg_str == std::string("unit") ) {
+            if( to_lower(m_arg_str) == std::string("unit") ) {
                 if( a_unit != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `unit` found, `unit` has already been specified via argument or keyword arguments)""",
                                         x.base.base.loc);
@@ -309,7 +310,7 @@ public:
                 if (!ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_newunit_type))) {
                         throw SemanticError("`unit` must be of type, Integer or IntegerPointer", x.base.base.loc);
                 }
-            } else if( m_arg_str == std::string("iostat") ) {
+            } else if( to_lower(m_arg_str) == std::string("iostat") ) {
                 if( a_iostat != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `iostat` found, unit has already been specified via arguments or keyword arguments)""",
                                         x.base.base.loc);
@@ -321,7 +322,7 @@ public:
                     (!ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_iostat_type))) ) {
                         throw SemanticError("`iostat` must be a variable of type, Integer or IntegerPointer", x.base.base.loc);
                 }
-            } else if( m_arg_str == std::string("iomsg") ) {
+            } else if( to_lower(m_arg_str) == std::string("iomsg") ) {
                 if( a_iomsg != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `iomsg` found, unit has already been specified via arguments or keyword arguments)""",
                                         x.base.base.loc);
@@ -333,7 +334,7 @@ public:
                     (!ASRUtils::is_character(*a_iomsg_type)) ) {
                         throw SemanticError("`iomsg` must be of type, Character or CharacterPointer", x.base.base.loc);
                     }
-            } else if( m_arg_str == std::string("status") ) {
+            } else if( to_lower(m_arg_str) == std::string("status") ) {
                 if( a_status != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `status` found, unit has already been specified via arguments or keyword arguments)""",
                                         x.base.base.loc);
@@ -344,7 +345,7 @@ public:
                 if (!ASRUtils::is_character(*a_status_type)) {
                         throw SemanticError("`status` must be of type, Character or CharacterPointer", x.base.base.loc);
                 }
-            } else if( m_arg_str == std::string("err") ) {
+            } else if( to_lower(m_arg_str) == std::string("err") ) {
                 if( a_err != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `err` found, `err` has already been specified via arguments or keyword arguments)""",
                                         x.base.base.loc);
@@ -465,6 +466,7 @@ public:
         for( std::uint32_t i = 0; i < n_kwargs; i++ ) {
             AST::kw_argstar_t kwarg = m_kwargs[i];
             std::string m_arg_str(kwarg.m_arg);
+            m_arg_str = to_lower(m_arg_str);
             if( m_arg_str == std::string("unit") ) {
                 if( a_unit != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `unit` found, `unit` has already been specified via argument or keyword arguments)""",
@@ -513,7 +515,7 @@ public:
                 if (!ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_pointer(a_status_type))) {
                         throw SemanticError("`status` must be of type Character", loc);
                 }
-            } else if( to_lower(m_arg_str) == std::string("fmt")  ) {
+            } else if( m_arg_str == std::string("fmt")  ) {
                 if( a_fmt != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `fmt` found, it has already been specified via arguments or keyword arguments)""",
                                         loc);
@@ -527,10 +529,6 @@ public:
                     a_fmt = ASRUtils::EXPR(tmp);
                 }
             } else if( m_arg_str == std::string("advance") ) {
-                if( a_fmt == nullptr ) {
-                    throw SemanticError(R"""(List directed format(*) is not allowed with a ADVANCE= specifier)""",
-                                        loc);
-                }
                 if( a_end != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `advance` found, it has already been specified via arguments or keyword arguments)""",
                                         loc);
@@ -567,7 +565,8 @@ public:
                     body.reserve(al, 1);
                     body.push_back(al, ASRUtils::STMT(
                         ASR::make_FileWrite_t(al, loc, 0, a_unit,
-                        nullptr, nullptr, nullptr, nullptr, 0, nullptr, newline)));
+                        nullptr, nullptr, nullptr,
+                        nullptr, 0, nullptr, newline)));
                     // TODO: Compare with "no" (case-insensitive) in else part
                     // Throw runtime error if advance expression does not match "no"
                     tmp_vec.push_back(ASR::make_If_t(al, loc, test, body.p,
@@ -575,6 +574,10 @@ public:
                     a_end = empty;
                 }
             }
+        }
+        if( a_fmt == nullptr && a_end != nullptr ) {
+            throw SemanticError(R"""(List directed format(*) is not allowed with a ADVANCE= specifier)""",
+                                loc);
         }
         if (_type == AST::stmtType::Write) {
             a_fmt_constant = a_fmt;
@@ -596,7 +599,8 @@ public:
             if (format_statements.find(label) == format_statements.end()) {
                 if( _type == AST::stmtType::Write ) {
                     tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
-                                            a_iomsg, a_iostat, a_id, a_values_vec.p, a_values_vec.size(), a_separator, a_end);
+                        a_iomsg, a_iostat, a_id, a_values_vec.p,
+                        a_values_vec.size(), a_separator, a_end);
                     print_statements[tmp] = std::make_pair(&w->base,label);
                 } else if( _type == AST::stmtType::Read ) {
                     tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
@@ -621,7 +625,8 @@ public:
             write_args.push_back(al, string_format);
             if( _type == AST::stmtType::Write ) {
                 tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
-                                        a_iomsg, a_iostat, a_id, write_args.p, write_args.size(), a_separator, a_end);
+                    a_iomsg, a_iostat, a_id, write_args.p,
+                    write_args.size(), a_separator, a_end);
             } else if( _type == AST::stmtType::Read ) {
                 tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
                                     a_iomsg, a_iostat, a_id, write_args.p, write_args.size());
@@ -629,7 +634,8 @@ public:
         } else {
             if( _type == AST::stmtType::Write ) {
                 tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
-                                        a_iomsg, a_iostat, a_id, a_values_vec.p, a_values_vec.size(), a_separator, a_end);
+                    a_iomsg, a_iostat, a_id, a_values_vec.p,
+                    a_values_vec.size(), a_separator, a_end);
             } else if( _type == AST::stmtType::Read ) {
                 tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
                                     a_iomsg, a_iostat, a_id, a_values_vec.p, a_values_vec.size());
@@ -715,9 +721,11 @@ public:
             for (size_t i = 0; i < x.n_symbols; i++){
                 AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
                 std::string generic_name = to_lower(use_symbol->m_remote_sym);
-                ASR::symbol_t *s = temp->m_symtab->resolve_symbol(generic_name);
+                ASR::symbol_t *s = temp->m_symtab->get_symbol(generic_name);
+
                 std::string new_s_name = to_lower(use_symbol->m_local_rename);
                 context_map[generic_name] = new_s_name;
+
                 if (ASR::is_a<ASR::Function_t>(*s)) {
                     ASR::Function_t *new_f = ASR::down_cast<ASR::Function_t>(
                         current_scope->resolve_symbol(new_s_name));
@@ -737,6 +745,8 @@ public:
                                 temp_f->m_symtab, new_f, temp_f);
                         }
                     }
+                } else {
+                    throw LCompilersException("Unsupported symbol to be instantiated");
                 }
             }
         }
@@ -804,9 +814,10 @@ public:
         ASR::expr_t* value = ASRUtils::EXPR(tmp);
         ASR::ttype_t* value_type = ASRUtils::expr_type(value);
         bool is_target_pointer = ASRUtils::is_pointer(target_type);
-        if ( !is_target_pointer ) {
+        if ( !is_target_pointer && !ASR::is_a<ASR::FunctionType_t>(*target_type) ) {
             throw SemanticError("Only a pointer variable can be associated with another variable.", x.base.base.loc);
         }
+
         if( ASRUtils::types_equal(target_type, value_type) ) {
             tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
         }
@@ -1416,23 +1427,8 @@ public:
                                      select_type_default.p, select_type_default.size());
     }
 
-    void visit_Submodule(const AST::Submodule_t &x) {
-        SymbolTable *old_scope = current_scope;
-        ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
-        ASR::Module_t *v = ASR::down_cast<ASR::Module_t>(t);
-        current_scope = v->m_symtab;
-        current_module = v;
-
-        for (size_t i=0; i<x.n_contains; i++) {
-            visit_program_unit(*x.m_contains[i]);
-        }
-
-        current_scope = old_scope;
-        current_module = nullptr;
-        tmp = nullptr;
-    }
-
-    void visit_Module(const AST::Module_t &x) {
+    template <typename T>
+    void visit_SubmoduleModuleCommon(const T& x) {
         SymbolTable *old_scope = current_scope;
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
         ASR::Module_t *v = ASR::down_cast<ASR::Module_t>(t);
@@ -1466,6 +1462,14 @@ public:
         current_scope = old_scope;
         current_module = nullptr;
         tmp = nullptr;
+    }
+
+    void visit_Submodule(const AST::Submodule_t &x) {
+        visit_SubmoduleModuleCommon(x);
+    }
+
+    void visit_Module(const AST::Module_t &x) {
+        visit_SubmoduleModuleCommon(x);
     }
 
     void visit_Use(const AST::Use_t& /* x */) {
@@ -1661,7 +1665,7 @@ public:
 
         } else {
             stmt = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al,loc, master_function_sym,
-                                        master_function_sym, args.p, args.n, nullptr, nullptr, compiler_options.implicit_argument_casting));
+                                        master_function_sym, args.p, args.n, nullptr, nullptr, compiler_options.implicit_argument_casting, false));
         }
         LCOMPILERS_ASSERT(stmt != nullptr);
 
@@ -2271,6 +2275,43 @@ public:
             [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }) ) {
             overloaded_stmt = ASRUtils::STMT(asr);
         }
+        if (ASR::is_a<ASR::Cast_t>(*target)) {
+            ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(target);
+            if (cast->m_kind == ASR::cast_kindType::ComplexToReal) {
+                /*
+                    Case: x%re = y
+                    we do: x = cmplx(y, x%im)
+                    i.e. target = x, value = cmplx(y, x%im)
+                */
+                target = cast->m_arg;
+                ASR::expr_t* y = value;
+                const Location& loc = x.base.base.loc;
+                ASR::expr_t *val = target;
+                ASR::symbol_t *fn_aimag = resolve_intrinsic_function(loc, "aimag");
+                Vec<ASR::call_arg_t> args; args.reserve(al, 1);
+                ASR::call_arg_t val_arg; val_arg.loc = val->base.loc; val_arg.m_value = val;
+                args.push_back(al, val_arg);
+                ASR::expr_t *im = ASRUtils::EXPR(create_FunctionCall(loc, fn_aimag, args));
+                ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(al, loc, y, im, ASRUtils::expr_type(target), nullptr));
+                value = cmplx;
+            }
+        } else if (ASR::is_a<ASR::FunctionCall_t>(*target)) {
+            ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(target);
+            ASR::symbol_t* original_sym = fc->m_original_name;
+            if (std::string(ASRUtils::symbol_name(original_sym)) == "aimag") {
+                /*
+                    Case: x % im = y
+                    we do: x = cmplx(x%re, y)
+                    i.e. target = x, value = cmplx(x%re, y)
+                */
+                target = fc->m_args[0].m_value;
+                ASR::expr_t* y = value;
+                const Location& loc = x.base.base.loc;
+                ASR::expr_t* re = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, target, ASR::cast_kindType::ComplexToReal, ASRUtils::expr_type(y), nullptr));
+                ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(al, loc, re, y, ASRUtils::expr_type(target), nullptr));
+                value = cmplx;
+            }
+        }
         ASR::ttype_t *target_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(target));
         if( target->type != ASR::exprType::Var &&
             target->type != ASR::exprType::ArrayItem &&
@@ -2429,11 +2470,8 @@ public:
         std::string sub_name = to_lower(x.m_name);
         if (x.n_temp_args > 0) {
             ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
-            bool is_nested = ASR::is_a<ASR::Template_t>(*ASRUtils::get_asr_owner(owner_sym));
-            handle_templated(x.m_name, is_nested, x.m_temp_args, x.n_temp_args, x.base.base.loc);
-            if (!is_nested) {
-                sub_name = "__templated_" + sub_name;
-            }
+            sub_name = handle_templated(x.m_name, ASR::is_a<ASR::Template_t>(*ASRUtils::get_asr_owner(owner_sym)),
+                x.m_temp_args, x.n_temp_args, x.base.base.loc);
         }
         SymbolTable* scope = current_scope;
         ASR::symbol_t *original_sym;
@@ -2452,6 +2490,7 @@ public:
                 }
             }
         }
+
         // If this is a type bound procedure (in a class) it won't be in the
         // main symbol table. Need to check n_member.
         if (x.n_member >= 1) {
@@ -2593,99 +2632,21 @@ public:
             }
         }
         ASR::symbol_t *final_sym=nullptr;
+        bool nopass = false;
         switch (original_sym->type) {
             case (ASR::symbolType::Function) : {
-                f = ASR::down_cast<ASR::Function_t>(original_sym);
-                final_sym=original_sym;
+                final_sym = original_sym;
                 original_sym = nullptr;
-                if (compiler_options.legacy_array_sections) {
-                    // call b(w(icon)) -> call b(w(icon:)) if b is expecting an array
-                    ASR::FunctionType_t* f_type = ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
-                    std::map<int, ASR::ttype_t*> array_arg_idx;
-                    for (size_t i = 0; i < f->n_args; i++) {
-                        if (ASRUtils::is_array(ASRUtils::expr_type(f->m_args[i]))) {
-                            array_arg_idx[i] = f_type->m_arg_types[i];
-                        }
-                    }
-                    Vec<ASR::call_arg_t> args_with_array_section;
-                    args_with_array_section.reserve(al, args.size());
-                    for (size_t i = 0; i < args.size(); i++) {
-                        // check if i is in array_arg_idx
-                        if (array_arg_idx.find(i) != array_arg_idx.end()) {
-                            ASR::call_arg_t arg = args[i];
-                            ASR::ttype_t* expected_arg_type = ASRUtils::duplicate_type(al, array_arg_idx[i]);
-                            ASR::expr_t* arg_expr = arg.m_value;
-                            if (ASR::is_a<ASR::ArrayItem_t>(*arg_expr)) {
-                                ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(arg_expr);
-                                ASR::expr_t* array_expr = array_item->m_v;
-                                LCOMPILERS_ASSERT(array_item->n_args > 0);
-                                ASR::array_index_t last_arg = array_item->m_args[array_item->n_args - 1];
-                                ASR::expr_t* idx = last_arg.m_right;
-
-                                Vec<ASR::dimension_t> dims;
-                                dims.reserve(al, 1);
-                                ASR::dimension_t dim;
-                                dim.loc = x.base.base.loc;
-                                dim.m_length = nullptr;
-                                dim.m_start = nullptr;
-                                dims.push_back(al, dim);
-                                ASR::asr_t* descriptor_array = ASR::make_Array_t(al, x.base.base.loc, ASRUtils::type_get_past_array(expected_arg_type),
-                                                                dims.p, dims.size(), ASR::array_physical_typeType::DescriptorArray);
-
-                                ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(expected_arg_type);
-                                ASR::asr_t* expected_array = ASR::make_Array_t(al, x.base.base.loc, ASRUtils::type_get_past_array(expected_arg_type),
-                                                                array_t->m_dims, array_t->n_dims, ASRUtils::extract_physical_type(expected_arg_type));
-
-                                // make ArraySection
-                                Vec<ASR::array_index_t> array_indices;
-                                array_indices.reserve(al, array_item->n_args);
-
-                                for (size_t i = 0; i < array_item->n_args - 1; i++) {
-                                    array_indices.push_back(al, array_item->m_args[i]);
-                                }
-
-                                ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-                                ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
-
-                                ASR::expr_t* array_bound = ASRUtils::get_bound<SemanticError>(array_expr, array_item->n_args, "ubound", al);
-
-                                ASR::array_index_t array_idx;
-                                array_idx.loc = array_item->base.base.loc;
-                                array_idx.m_left = idx;
-                                array_idx.m_right = array_bound;
-                                array_idx.m_step = one;
-
-                                array_indices.push_back(al, array_idx);
-
-                                ASR::expr_t* array_section = ASRUtils::EXPR(ASR::make_ArraySection_t(al, array_item->base.base.loc,
-                                                            array_expr, array_indices.p, array_indices.size(),
-                                                            ASRUtils::TYPE(descriptor_array), nullptr));
-
-                                ASR::asr_t* array_cast = ASRUtils::make_ArrayPhysicalCast_t_util(al, array_item->base.base.loc, array_section,
-                                                        ASRUtils::extract_physical_type(ASRUtils::TYPE(descriptor_array)), ASRUtils::extract_physical_type(expected_arg_type), ASRUtils::TYPE(expected_array), nullptr);
-
-                                ASR::expr_t* array_section_cast = ASRUtils::EXPR(array_cast);
-
-                                arg.m_value = array_section_cast;
-
-                                args_with_array_section.push_back(al, arg);
-                            } else {
-                                args_with_array_section.push_back(al, args[i]);
-                            }
-                        } else {
-                            args_with_array_section.push_back(al, args[i]);
-                        }
-                    }
-                    args = args_with_array_section;
-                }
+                legacy_array_sections_helper(final_sym, args, x.base.base.loc);
                 break;
             }
             case (ASR::symbolType::GenericProcedure) : {
                 ASR::GenericProcedure_t *p = ASR::down_cast<ASR::GenericProcedure_t>(original_sym);
-                std::string s_name = "1_" + std::string(p->m_name);
                 ASR::symbol_t* original_sym_owner = ASRUtils::get_asr_owner(original_sym);
-                std::string original_sym_owner_name = ASRUtils::symbol_name(original_sym_owner);
-                if( !ASR::is_a<ASR::Module_t>(*original_sym_owner) ) {
+                if( !ASR::is_a<ASR::Module_t>(*original_sym_owner) &&
+                    !ASR::is_a<ASR::Program_t>(*original_sym_owner) ) {
+                    std::string s_name = "1_" + std::string(p->m_name);
+                    std::string original_sym_owner_name = ASRUtils::symbol_name(original_sym_owner);
                     if( current_scope->resolve_symbol(original_sym_owner_name) == nullptr ) {
                         std::string original_sym_owner_name_ = "1_" + original_sym_owner_name;
                         if( current_scope->resolve_symbol(original_sym_owner_name) == nullptr ) {
@@ -2699,11 +2660,11 @@ public:
                             original_sym_owner_name = original_sym_owner_name_;
                         }
                     }
+                    original_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
+                        p->base.base.loc, current_scope, s2c(al, s_name), original_sym,
+                        s2c(al, original_sym_owner_name), nullptr, 0, p->m_name, ASR::accessType::Private));
+                    current_scope->add_or_overwrite_symbol(s_name, original_sym);
                 }
-                original_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
-                    p->base.base.loc, current_scope, s2c(al, s_name), original_sym,
-                    s2c(al, original_sym_owner_name), nullptr, 0, p->m_name, ASR::accessType::Private));
-                current_scope->add_or_overwrite_symbol(s_name, original_sym);
                 int idx;
                 if( x.n_member >= 1 ) {
                     idx = ASRUtils::select_generic_procedure(args_with_mdt, *p, x.base.base.loc,
@@ -2764,6 +2725,15 @@ public:
                     } else {
                         final_sym = current_scope->get_symbol(local_sym);
                     }
+                } else if (ASR::is_a<ASR::ClassProcedure_t>(*final_sym)) {
+                    ASR::ClassProcedure_t* class_proc = ASR::down_cast<ASR::ClassProcedure_t>(final_sym);
+                    nopass = class_proc->m_is_nopass;
+                    final_sym = original_sym;
+                    original_sym = nullptr;
+                } else if (ASR::is_a<ASR::Variable_t>(*final_sym)) {
+                    nopass = true;
+                    final_sym = original_sym;
+                    original_sym = nullptr;
                 } else {
                     if (!ASR::is_a<ASR::Function_t>(*final_sym) &&
                         !ASR::is_a<ASR::ClassProcedure_t>(*final_sym)) {
@@ -2828,11 +2798,11 @@ public:
         }
         ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
         if( f ) {
-            ASRUtils::set_absent_optional_arguments_to_null(args, f, al, v_expr);
+            ASRUtils::set_absent_optional_arguments_to_null(args, f, al, v_expr, nopass);
         }
         ASR::stmt_t* cast_stmt = nullptr;
         tmp = ASRUtils::make_SubroutineCall_t_util(al, x.base.base.loc,
-                final_sym, original_sym, args.p, args.size(), v_expr, &cast_stmt, compiler_options.implicit_argument_casting);
+                final_sym, original_sym, args.p, args.size(), v_expr, &cast_stmt, compiler_options.implicit_argument_casting, nopass);
 
         if (cast_stmt != nullptr) {
             current_body->push_back(al, cast_stmt);

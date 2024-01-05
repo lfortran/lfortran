@@ -1,0 +1,13 @@
+{
+    "basename": "asr-kind2-191347a",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/kind2.f90",
+    "infile_hash": "fe00584d15da135638cfe95fce629f431f82a273029cfb742ef534f3",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-kind2-191347a.stderr",
+    "stderr_hash": "eaa6cf89bba5d3dfb23b915a22737aa52e0c11aa01eae1a4e3e3e2e0",
+    "returncode": 2
+}

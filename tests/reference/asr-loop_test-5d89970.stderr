@@ -1,0 +1,5 @@
+semantic error: Assignment to loop variable `i` is not allowed
+ --> tests/errors/loop_test.f90:4:8
+  |
+4 |        i = i + 1
+  |        ^ 

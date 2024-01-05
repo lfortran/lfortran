@@ -378,7 +378,7 @@
                                             (Logical 4)
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 7 cmd_settings)
                                             (StructTypeConstructor
                                                 4 fpm_new_settings
@@ -504,7 +504,7 @@
                                     )
                                     []
                                     [(Var 10 key)]
-                                    [(=
+                                    [(Assignment
                                         (Var 10 specified)
                                         (LogicalConstant
                                             .false.

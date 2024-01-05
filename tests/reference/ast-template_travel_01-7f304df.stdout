@@ -102,7 +102,7 @@
                 ())]
                 ()
             )]
-            [(=
+            [(Assignment
                 0
                 total
                 (+ x y)
@@ -170,7 +170,7 @@
                 ())]
                 ()
             )]
-            [(=
+            [(Assignment
                 0
                 total
                 (/ x y)
@@ -684,7 +684,7 @@
                     ())]
                     ()
                 )]
-                [(=
+                [(Assignment
                     0
                     avg
                     (FuncCallOrArray
@@ -817,7 +817,7 @@
                     ())]
                     ()
                 )]
-                [(=
+                [(Assignment
                     0
                     avg
                     (FuncCallOrArray
@@ -1026,7 +1026,7 @@
                 ())]
                 ()
             )]
-            [(=
+            [(Assignment
                 0
                 s1
                 (FuncCallOrArray
@@ -1054,7 +1054,7 @@
                 )
                 ()
             )
-            (=
+            (Assignment
                 0
                 s2
                 (FuncCallOrArray

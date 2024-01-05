@@ -174,7 +174,7 @@
                                                     [(Var 5 n)
                                                     (Var 5 lst)
                                                     (Var 5 i)]
-                                                    [(=
+                                                    [(Assignment
                                                         (ArrayItem
                                                             (Var 5 lst)
                                                             [(()
@@ -189,7 +189,7 @@
                                                         (Var 5 i)
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 5 r)
                                                         (ArrayItem
                                                             (Var 5 lst)
@@ -411,7 +411,7 @@
                                                     [(Var 7 n)
                                                     (Var 7 lst)
                                                     (Var 7 i)]
-                                                    [(=
+                                                    [(Assignment
                                                         (ArrayItem
                                                             (Var 7 lst)
                                                             [(()
@@ -424,7 +424,7 @@
                                                         (Var 7 i)
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 7 r)
                                                         (ArrayItem
                                                             (Var 7 lst)
@@ -477,7 +477,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (ArrayItem
                                             (Var 6 a)
                                             [(()
@@ -490,7 +490,7 @@
                                         (IntegerConstant 0 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 6 i)
                                         (IntegerConstant 1 (Integer 4))
                                         ()
@@ -508,7 +508,7 @@
                                         ()
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 6 r)
                                         (FunctionCall
                                             6 insert_int

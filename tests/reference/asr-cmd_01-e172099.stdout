@@ -104,7 +104,7 @@
                         })
                     test_get_command_argument
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 count)
                         (FunctionCall
                             2 command_argument_count

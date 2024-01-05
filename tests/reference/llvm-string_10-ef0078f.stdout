@@ -177,8 +177,6 @@ else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  call void (i8*, ...) @_lfortran_free(i8* %3)
-  call void (i8*, ...) @_lfortran_free(i8* %5)
   ret i32 0
 }
 
@@ -203,5 +201,3 @@ declare i1 @_lpython_str_compare_noteq(i8**, i8**)
 declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @exit(i32)
-
-declare void @_lfortran_free(i8*, ...)

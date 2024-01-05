@@ -30,13 +30,13 @@
             ())]
             ()
         )]
-        [(=
+        [(Assignment
             0
             i
             0
             ()
         )
-        (=
+        (Assignment
             0
             j
             0
@@ -46,13 +46,13 @@
             0
             ()
             (< i 10)
-            [(=
+            [(Assignment
                 0
                 i
                 (+ i 1)
                 ()
             )
-            (=
+            (Assignment
                 0
                 j
                 (+ j i)
@@ -91,13 +91,13 @@
             ()
             ()
         )
-        (=
+        (Assignment
             0
             i
             0
             ()
         )
-        (=
+        (Assignment
             0
             j
             0
@@ -107,7 +107,7 @@
             0
             ()
             (< i 10)
-            [(=
+            [(Assignment
                 0
                 i
                 (+ i 1)
@@ -127,7 +127,7 @@
                 ()
                 ()
             )
-            (=
+            (Assignment
                 0
                 j
                 (+ j i)
@@ -166,13 +166,13 @@
             ()
             ()
         )
-        (=
+        (Assignment
             0
             i
             0
             ()
         )
-        (=
+        (Assignment
             0
             j
             0
@@ -182,7 +182,7 @@
             0
             ()
             (< i 10)
-            [(=
+            [(Assignment
                 0
                 i
                 (+ i 1)
@@ -202,7 +202,7 @@
                 ()
                 ()
             )
-            (=
+            (Assignment
                 0
                 j
                 (+ j i)

@@ -162,7 +162,7 @@
                                                     [f]
                                                     [(Var 7 x)
                                                     (Var 7 y)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 7 z)
                                                         (FunctionCall
                                                             5 f
@@ -376,7 +376,7 @@
                                     []
                                     [(Var 9 x)
                                     (Var 9 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 9 z)
                                         (IntegerBinOp
                                             (Var 9 x)
@@ -466,7 +466,7 @@
                                     []
                                     [(Var 8 x)
                                     (Var 8 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 8 z)
                                         (RealBinOp
                                             (Var 8 x)
@@ -698,7 +698,7 @@
                                                     [func_arg_int]
                                                     [(Var 12 x)
                                                     (Var 12 y)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 12 z)
                                                         (FunctionCall
                                                             2 func_arg_int
@@ -790,7 +790,7 @@
                                                     [func_arg_real]
                                                     [(Var 11 x)
                                                     (Var 11 y)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 11 z)
                                                         (FunctionCall
                                                             2 func_arg_real
@@ -875,7 +875,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 10 x)
                                         (RealConstant
                                             5.100000
@@ -883,7 +883,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 10 y)
                                         (RealConstant
                                             7.200000
@@ -947,12 +947,12 @@
                                         )]
                                         []
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 10 a)
                                         (IntegerConstant 5 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 10 b)
                                         (IntegerConstant 9 (Integer 4))
                                         ()

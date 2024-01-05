@@ -149,7 +149,7 @@
                 (EndOfLine)]
             )
         )]
-        [(=
+        [(Assignment
             0
             a
             (ArrayInitializer
@@ -159,7 +159,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             b
             (ArrayInitializer
@@ -175,7 +175,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             b
             (ArrayInitializer
@@ -191,7 +191,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             d
             (ArrayInitializer
@@ -213,7 +213,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             a
             (ArrayInitializer
@@ -224,7 +224,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             b
             (ArrayInitializer
@@ -241,7 +241,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             b
             (ArrayInitializer
@@ -258,7 +258,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             d
             (ArrayInitializer

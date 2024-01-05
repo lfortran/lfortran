@@ -98,7 +98,7 @@
                                     []
                                     [(Var 6 self)
                                     (Var 6 dependency)]
-                                    [(=
+                                    [(Assignment
                                         (Var 6 id)
                                         (FunctionCall
                                             6 1_find_dependency
@@ -292,6 +292,7 @@
                                                     2 add_dependency
                                                     Source
                                                     .false.
+                                                    .false.
                                                 ),
                                             cache:
                                                 (Variable
@@ -369,6 +370,7 @@
                                                     find_dependency
                                                     2 find_dependency
                                                     Source
+                                                    .false.
                                                     .false.
                                                 ),
                                             ndep:

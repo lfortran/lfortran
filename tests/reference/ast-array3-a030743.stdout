@@ -42,7 +42,7 @@
                 (EndOfLine)]
             )
         )]
-        [(=
+        [(Assignment
             0
             a
             (ArrayInitializer
@@ -54,7 +54,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             b
             (ArrayInitializer

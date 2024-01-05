@@ -1,0 +1,39 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            character_01:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            c_null_char:
+                                (Variable
+                                    2
+                                    c_null_char
+                                    []
+                                    Local
+                                    (StringConstant
+                                        ""
+                                        (Character 1 0 ())
+                                    )
+                                    (StringConstant
+                                        ""
+                                        (Character 1 0 ())
+                                    )
+                                    Parameter
+                                    (Character 1 1 ())
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    character_01
+                    []
+                    []
+                )
+        })
+    []
+)

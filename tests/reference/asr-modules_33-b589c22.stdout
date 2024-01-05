@@ -414,6 +414,7 @@
                                                     7 add_project
                                                     Source
                                                     .false.
+                                                    .false.
                                                 ),
                                             add_project_dependencies:
                                                 (ClassProcedure
@@ -423,6 +424,7 @@
                                                     add_project_dependencies
                                                     7 add_project_dependencies
                                                     Source
+                                                    .false.
                                                     .false.
                                                 ),
                                             cache:
@@ -533,6 +535,7 @@
                                                     update_dependency
                                                     7 update_dependency
                                                     Source
+                                                    .false.
                                                     .false.
                                                 ),
                                             verbosity:

@@ -78,11 +78,11 @@
                         })
                     nullify_02
                     []
-                    [(=>
+                    [(Associate
                         (Var 2 p1)
                         (Var 2 t1)
                     )
-                    (=
+                    (Assignment
                         (Var 2 p1)
                         (Cast
                             (IntegerConstant 1 (Integer 4))
@@ -95,11 +95,11 @@
                         )
                         ()
                     )
-                    (=>
+                    (Associate
                         (Var 2 p2)
                         (Var 2 t2)
                     )
-                    (=
+                    (Assignment
                         (Var 2 p2)
                         (Cast
                             (RealConstant

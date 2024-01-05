@@ -38,6 +38,9 @@ if (WITH_JSON)
     )
 endif()
 add_library(lfortran_lib STATIC ${SRC})
+target_include_directories(lfortran_lib PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
+
+configure_file(config.h.cmakein config.h @ONLY)
 target_link_libraries(lfortran_lib asr lfortran_runtime_static)
 
 if (WITH_ZLIB)

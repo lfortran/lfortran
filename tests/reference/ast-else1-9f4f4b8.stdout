@@ -33,7 +33,7 @@
                 []
                 []
             ))
-            [(=
+            [(Assignment
                 0
                 cs
                 (/ bjv0 f)
@@ -44,7 +44,7 @@
             ()
             ()
         )
-        (=
+        (Assignment
             0
             elsecs
             (/ bjv1 f2)
@@ -67,7 +67,7 @@
             0
             ()
             (Logical .true.)
-            [(=
+            [(Assignment
                 0
                 x
                 1
@@ -97,7 +97,7 @@
                     []
                     []
                 ))
-                [(=
+                [(Assignment
                     0
                     cs
                     (/ bjv0 f)
@@ -108,7 +108,7 @@
                 ()
                 ()
             )
-            (=
+            (Assignment
                 0
                 elsecs
                 (/ bjv1 f2)
@@ -136,7 +136,7 @@
             0
             ()
             (Logical .true.)
-            [(=
+            [(Assignment
                 0
                 x
                 1
@@ -166,13 +166,13 @@
                     []
                     []
                 ))
-                [(=
+                [(Assignment
                     0
                     cs
                     (/ bjv0 f)
                     ()
                 )]
-                [(=
+                [(Assignment
                     0
                     cs
                     (/ bjv1 f2)

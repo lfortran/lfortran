@@ -183,7 +183,7 @@
             []
             []
             []
-            [(=
+            [(Assignment
                 0
                 real
                 (* 2 integer)
@@ -277,7 +277,7 @@
                 (EndOfLine)]
             )
         )]
-        [(=
+        [(Assignment
             0
             integer
             character
@@ -290,7 +290,7 @@
                 )]
             )
         )
-        (=
+        (Assignment
             0
             types
             (FuncCallOrArray
@@ -381,7 +381,7 @@
                 0
                 endif
                 then
-                [(=
+                [(Assignment
                     0
                     if
                     then
@@ -391,13 +391,13 @@
                     0
                     ()
                     else
-                    [(=
+                    [(Assignment
                         0
                         if
                         else
                         ()
                     )]
-                    [(=
+                    [(Assignment
                         0
                         if
                         (BoolOp

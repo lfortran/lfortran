@@ -134,13 +134,13 @@
             ())]
             ()
         )]
-        [(=
+        [(Assignment
             0
             a_1
             0
             ()
         )
-        (=
+        (Assignment
             0
             n
             10
@@ -249,7 +249,7 @@
             )
             Arrow
             ())]
-            [(=
+            [(Assignment
                 0
                 (FuncCallOrArray
                     x
@@ -265,7 +265,7 @@
                 (+ a_1 5)
                 ()
             )
-            (=
+            (Assignment
                 0
                 (FuncCallOrArray
                     y
@@ -289,7 +289,7 @@
                 3
                 ()
             )
-            (=
+            (Assignment
                 0
                 (FuncCallOrArray
                     z
@@ -337,7 +337,7 @@
             ()
             ()
         )
-        (=
+        (Assignment
             0
             a_1
             (FuncCallOrArray
@@ -379,7 +379,7 @@
             ()
             ()
         )
-        (=
+        (Assignment
             0
             c_234
             (FuncCallOrArray
@@ -403,7 +403,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             c_121
             (FuncCallOrArray

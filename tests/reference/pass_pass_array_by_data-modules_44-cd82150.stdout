@@ -109,7 +109,7 @@
                                                             (Character 1 -2 ())
                                                             [(()
                                                             ())]
-                                                            DescriptorArray
+                                                            CharacterArraySinglePointer
                                                         )
                                                     )
                                                     ()
@@ -156,7 +156,7 @@
                                     )
                                     []
                                     [(Var 8 settings)]
-                                    [(=
+                                    [(Assignment
                                         (Var 8 littlefile)
                                         (ArrayConstant
                                             [(StringConstant
@@ -190,7 +190,7 @@
                                         ))
                                         ((ArrayPhysicalCast
                                             (Var 8 littlefile)
-                                            DescriptorArray
+                                            CharacterArraySinglePointer
                                             PointerToDataArray
                                             (Allocatable
                                                 (Array
@@ -345,7 +345,7 @@
                                                         (Character 1 -1 ())
                                                         [(()
                                                         ())]
-                                                        DescriptorArray
+                                                        CharacterArraySinglePointer
                                                     )
                                                     ()
                                                     Source
@@ -377,7 +377,7 @@
                                             (Character 1 -1 ())
                                             [(()
                                             ())]
-                                            DescriptorArray
+                                            CharacterArraySinglePointer
                                         )]
                                         ()
                                         Source

@@ -139,6 +139,7 @@ integer, parameter :: dp = kind(0.d0)
 integer :: n, iter, i
 real(dp) :: t1, t2, t, GHz, fma_clock, freq, measured, percent_peak
 real, allocatable :: A(:,:), B(:,:), C(:,:), C2(:,:)
+real :: err
 
 ! Use n = 960 for a good benchmark
 n = 96
@@ -179,7 +180,8 @@ do i = 1, iter
     call matmul2(A, B, C2)
 end do
 call cpu_time(t2)
-print *, "Error:", maxval(abs(C-C2))
+err = maxval(abs(C-C2))
+print *, "Error:", err
 t = (t2-t1)/iter
 GHz = 1e9_dp
 fma_clock = 0.0625_dp
@@ -191,6 +193,7 @@ print *, "Clock cycles per element:"
 print *, "Theoretical performance peak:", fma_clock, "cycles"
 print *, "Measured:                    ", measured, "cycles"
 print *, "Percent peak:                ", percent_peak, "%"
+if (err > 1e-3) error stop
 
 print *
 print *, "matmul1:"
@@ -199,7 +202,8 @@ do i = 1, iter
     call matmul1(A, B, C2)
 end do
 call cpu_time(t2)
-print *, "Error:", maxval(abs(C-C2))
+err = maxval(abs(C-C2))
+print *, "Error:", err
 t = (t2-t1)/iter
 GHz = 1e9_dp
 fma_clock = 0.0625_dp
@@ -211,5 +215,6 @@ print *, "Clock cycles per element:"
 print *, "Theoretical performance peak:", fma_clock, "cycles"
 print *, "Measured:                    ", measured, "cycles"
 print *, "Percent peak:                ", percent_peak, "%"
+if (err > 1e-3) error stop
 
 end program

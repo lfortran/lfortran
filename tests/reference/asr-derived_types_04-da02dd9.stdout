@@ -348,7 +348,7 @@
                                                     ()
                                                 )
                                             )
-                                            (=
+                                            (Assignment
                                                 (Var 8 lhs)
                                                 (StringConcat
                                                     (Var 8 lhs)
@@ -378,7 +378,7 @@
                                                 ()
                                                 ()
                                             )
-                                            [(=
+                                            [(Assignment
                                                 (Var 8 lhs)
                                                 (StructInstanceMember
                                                     (Var 8 rhs)
@@ -619,7 +619,7 @@
                                             ()
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (StructInstanceMember
                                                 (Var 9 self)
                                                 9 1_toml_time_hour
@@ -640,7 +640,7 @@
                                             ()
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (StructInstanceMember
                                                 (Var 9 self)
                                                 9 1_toml_time_minute
@@ -661,7 +661,7 @@
                                             ()
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (StructInstanceMember
                                                 (Var 9 self)
                                                 9 1_toml_time_second
@@ -682,7 +682,7 @@
                                             ()
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (StructInstanceMember
                                                 (Var 9 self)
                                                 9 1_toml_time_millisec
@@ -705,7 +705,7 @@
                                             ()
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (StructInstanceMember
                                                 (Var 9 self)
                                                 9 1_toml_time_zone
@@ -1001,7 +1001,7 @@
                                             ()
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 7 lhs)
                                             (StringConcat
                                                 (Var 7 lhs)
@@ -1092,6 +1092,7 @@
                                                     date_to_string
                                                     2 date_to_string
                                                     Source
+                                                    .false.
                                                     .false.
                                                 ),
                                             year:
@@ -1184,6 +1185,7 @@
                                                     datetime_to_string
                                                     2 datetime_to_string
                                                     Source
+                                                    .false.
                                                     .false.
                                                 ),
                                             ~assign:
@@ -1285,6 +1287,7 @@
                                                     time_to_string
                                                     2 time_to_string
                                                     Source
+                                                    .false.
                                                     .false.
                                                 ),
                                             zone:

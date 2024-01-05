@@ -13,16 +13,15 @@
                                     dp
                                     []
                                     Local
-                                    (FunctionCall
-                                        2 kind
-                                        ()
-                                        [((RealConstant
+                                    (IntrinsicScalarFunction
+                                        Kind
+                                        [(RealConstant
                                             0.000000
                                             (Real 8)
-                                        ))]
+                                        )]
+                                        0
                                         (Integer 4)
                                         (IntegerConstant 8 (Integer 4))
-                                        ()
                                     )
                                     (IntegerConstant 8 (Integer 4))
                                     Parameter
@@ -32,16 +31,6 @@
                                     Public
                                     Required
                                     .false.
-                                ),
-                            kind:
-                                (ExternalSymbol
-                                    2
-                                    kind
-                                    4 kind
-                                    lfortran_intrinsic_kind
-                                    []
-                                    kind
-                                    Private
                                 ),
                             pi:
                                 (Variable
@@ -207,7 +196,7 @@
                                 )
                         })
                     intrinsics_20
-                    [lfortran_intrinsic_kind]
+                    []
                     [(Print
                         [(Var 2 pi)]
                         ()
@@ -223,7 +212,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 y)
                         (IntegerConstant 3 (Integer 4))
                         ()
@@ -439,9 +428,7 @@
                         ()
                         ()
                     )]
-                ),
-            lfortran_intrinsic_kind:
-                (IntrinsicModule lfortran_intrinsic_kind)
+                )
         })
     []
 )

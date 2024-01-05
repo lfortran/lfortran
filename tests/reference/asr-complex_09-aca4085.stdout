@@ -80,7 +80,7 @@
                         })
                     complex_09
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 z1)
                         (ComplexConstructor
                             (Cast
@@ -114,7 +114,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 z2)
                         (Var 2 z2)
                         ()

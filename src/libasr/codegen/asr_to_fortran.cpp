@@ -645,7 +645,11 @@ public:
         }
         r += " :: ";
         r.append(x.m_name);
-        if (x.m_value) {
+        if (x.m_symbolic_value && x.m_value && ASR::is_a<ASR::StringChr_t>(*x.m_symbolic_value) && ASR::is_a<ASR::StringConstant_t>(*x.m_value)) {
+            r += " = ";
+            visit_expr(*x.m_symbolic_value);
+            r += s;
+        } else if (x.m_value) {
             r += " = ";
             visit_expr(*x.m_value);
             r += s;

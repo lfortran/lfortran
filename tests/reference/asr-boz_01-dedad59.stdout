@@ -68,7 +68,7 @@
                         })
                     boz_01
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 boz_1)
                         (FunctionCall
                             2 int
@@ -85,7 +85,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 boz_2)
                         (FunctionCall
                             2 int
@@ -102,7 +102,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 boz_3)
                         (FunctionCall
                             2 int

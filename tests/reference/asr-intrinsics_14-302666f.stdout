@@ -351,7 +351,7 @@
                         })
                     intrinsics_14
                     [lfortran_intrinsic_kind]
-                    [(=
+                    [(Assignment
                         (Var 2 s1)
                         (StringConstant
                             "default"
@@ -359,7 +359,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 i1)
                         (IntegerConstant 5 (Integer 4))
                         ()

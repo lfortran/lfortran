@@ -330,7 +330,7 @@
                                     )
                                     [f]
                                     [(Var 4 a)]
-                                    [(=
+                                    [(Assignment
                                         (Var 4 x)
                                         (Cast
                                             (IntegerConstant 2 (Integer 4))
@@ -343,7 +343,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 a_f_real)
                                         (RealConstant
                                             0.000000
@@ -362,7 +362,7 @@
                                             (Logical 4)
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 4 b_f_real)
                                             (RealConstant
                                                 2.000000
@@ -370,7 +370,7 @@
                                             )
                                             ()
                                         )]
-                                        [(=
+                                        [(Assignment
                                             (Var 4 b_f_real)
                                             (RealBinOp
                                                 (Var 4 a_f_real)
@@ -392,7 +392,7 @@
                                             ()
                                         )]
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 b)
                                         (RealBinOp
                                             (Var 4 a)
@@ -555,7 +555,7 @@
                                             (Logical 4)
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 5 b)
                                             (RealConstant
                                                 2.000000
@@ -563,7 +563,7 @@
                                             )
                                             ()
                                         )]
-                                        [(=
+                                        [(Assignment
                                             (Var 5 a_f)
                                             (RealConstant
                                                 1.000000
@@ -571,7 +571,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 5 x_f)
                                             (Cast
                                                 (IntegerConstant 2 (Integer 4))
@@ -584,7 +584,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 5 a_f_real_f)
                                             (RealConstant
                                                 0.000000
@@ -603,7 +603,7 @@
                                                 (Logical 4)
                                                 ()
                                             )
-                                            [(=
+                                            [(Assignment
                                                 (Var 5 b_f_real_f)
                                                 (RealConstant
                                                     2.000000
@@ -611,7 +611,7 @@
                                                 )
                                                 ()
                                             )]
-                                            [(=
+                                            [(Assignment
                                                 (Var 5 b_f_real_f)
                                                 (RealBinOp
                                                     (Var 5 a_f_real_f)
@@ -633,7 +633,7 @@
                                                 ()
                                             )]
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 5 b_f)
                                             (RealBinOp
                                                 (Var 5 a_f)
@@ -644,7 +644,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 5 b)
                                             (RealBinOp
                                                 (Var 5 a)
@@ -783,12 +783,12 @@
                         })
                     functions_08
                     []
-                    [(=
+                    [(Assignment
                         (Var 3 a_f)
                         (Var 3 x)
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 3 x_f)
                         (Cast
                             (IntegerConstant 2 (Integer 4))
@@ -801,7 +801,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 3 a_f_real_f)
                         (RealConstant
                             0.000000
@@ -820,7 +820,7 @@
                             (Logical 4)
                             ()
                         )
-                        [(=
+                        [(Assignment
                             (Var 3 b_f_real_f)
                             (RealConstant
                                 2.000000
@@ -828,7 +828,7 @@
                             )
                             ()
                         )]
-                        [(=
+                        [(Assignment
                             (Var 3 b_f_real_f)
                             (RealBinOp
                                 (Var 3 a_f_real_f)
@@ -850,7 +850,7 @@
                             ()
                         )]
                     )
-                    (=
+                    (Assignment
                         (Var 3 b_f)
                         (RealBinOp
                             (Var 3 a_f)
@@ -861,7 +861,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 3 y)
                         (Var 3 b_f)
                         ()
@@ -871,7 +871,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 3 a_f_real)
                         (Var 3 p)
                         ()
@@ -887,7 +887,7 @@
                             (Logical 4)
                             ()
                         )
-                        [(=
+                        [(Assignment
                             (Var 3 b_f_real)
                             (RealConstant
                                 2.000000
@@ -895,7 +895,7 @@
                             )
                             ()
                         )]
-                        [(=
+                        [(Assignment
                             (Var 3 a_f_f_real)
                             (RealConstant
                                 1.000000
@@ -903,7 +903,7 @@
                             )
                             ()
                         )
-                        (=
+                        (Assignment
                             (Var 3 x_f_f_real)
                             (Cast
                                 (IntegerConstant 2 (Integer 4))
@@ -916,7 +916,7 @@
                             )
                             ()
                         )
-                        (=
+                        (Assignment
                             (Var 3 a_f_real_f_f_real)
                             (RealConstant
                                 0.000000
@@ -935,7 +935,7 @@
                                 (Logical 4)
                                 ()
                             )
-                            [(=
+                            [(Assignment
                                 (Var 3 b_f_real_f_f_real)
                                 (RealConstant
                                     2.000000
@@ -943,7 +943,7 @@
                                 )
                                 ()
                             )]
-                            [(=
+                            [(Assignment
                                 (Var 3 b_f_real_f_f_real)
                                 (RealBinOp
                                     (Var 3 a_f_real_f_f_real)
@@ -965,7 +965,7 @@
                                 ()
                             )]
                         )
-                        (=
+                        (Assignment
                             (Var 3 b_f_f_real)
                             (RealBinOp
                                 (Var 3 a_f_f_real)
@@ -976,7 +976,7 @@
                             )
                             ()
                         )
-                        (=
+                        (Assignment
                             (Var 3 b_f_real)
                             (RealBinOp
                                 (Var 3 a_f_real)
@@ -988,7 +988,7 @@
                             ()
                         )]
                     )
-                    (=
+                    (Assignment
                         (Var 3 q)
                         (Var 3 b_f_real)
                         ()

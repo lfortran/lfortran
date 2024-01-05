@@ -74,17 +74,17 @@
                         })
                     doloop_02
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 j)
                         (IntegerConstant 0 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 a)
                         (IntegerConstant 1 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 b)
                         (IntegerConstant 10 (Integer 4))
                         ()
@@ -95,7 +95,7 @@
                         (Var 2 a)
                         (Var 2 b)
                         ())
-                        [(=
+                        [(Assignment
                             (Var 2 j)
                             (IntegerBinOp
                                 (Var 2 j)
@@ -125,7 +125,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 a)
                         (IntegerConstant 0 (Integer 4))
                         ()
@@ -142,7 +142,7 @@
                             (IntegerConstant 1 (Integer 4))
                             (IntegerConstant 10 (Integer 4))
                             ())
-                            [(=
+                            [(Assignment
                                 (Var 2 a)
                                 (IntegerBinOp
                                     (IntegerBinOp
@@ -203,7 +203,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 a)
                         (IntegerConstant 0 (Integer 4))
                         ()
@@ -220,7 +220,7 @@
                             (IntegerConstant 1 (Integer 4))
                             (Var 2 i)
                             ())
-                            [(=
+                            [(Assignment
                                 (Var 2 a)
                                 (IntegerBinOp
                                     (Var 2 a)

@@ -133,7 +133,7 @@
                 0
                 ()
                 []
-                [(=
+                [(Assignment
                     0
                     job
                     (CoarrayRef
@@ -149,7 +149,7 @@
                     )
                     ()
                 )
-                (=
+                (Assignment
                     0
                     (CoarrayRef
                         joblist
@@ -179,7 +179,7 @@
                 0
                 ()
                 []
-                [(=
+                [(Assignment
                     0
                     IntegerSample
                     0
@@ -194,7 +194,7 @@
                 [(AttrStat
                     IntegerSample
                 )]
-                [(=
+                [(Assignment
                     0
                     Sample
                     (String
@@ -211,7 +211,7 @@
                 [(AttrErrmsg
                     Sample
                 )]
-                [(=
+                [(Assignment
                     0
                     Sample
                     (String
@@ -233,7 +233,7 @@
                 0
                 ()
                 (> job 0)
-                [(=
+                [(Assignment
                     0
                     b
                     (+ (** a 2) (** b 2))

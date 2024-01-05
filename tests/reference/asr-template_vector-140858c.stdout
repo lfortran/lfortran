@@ -156,7 +156,7 @@
                                                     []
                                                     [(Var 9 this)
                                                     (Var 9 item)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 9 new_size)
                                                         (IntegerBinOp
                                                             (StructInstanceMember
@@ -178,7 +178,7 @@
                                                         [((Var 9 new_size))]
                                                         (Var 9 this)
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (ArrayItem
                                                             (StructInstanceMember
                                                                 (Var 9 this)
@@ -203,7 +203,7 @@
                                                         (Var 9 item)
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (StructInstanceMember
                                                             (Var 9 this)
                                                             9 1_intvector_sz
@@ -441,7 +441,7 @@
                                                             ()
                                                         )
                                                         ())
-                                                        [(=
+                                                        [(Assignment
                                                             (ArrayItem
                                                                 (Var 10 tmp)
                                                                 [(()
@@ -497,7 +497,7 @@
                                                         ()
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (ArraySection
                                                             (StructInstanceMember
                                                                 (Var 10 this)
@@ -597,6 +597,7 @@
                                                                     7 __asr_intvector_push_back
                                                                     Source
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             resize:
                                                                 (ClassProcedure
@@ -606,6 +607,7 @@
                                                                     __asr_intvector_resize
                                                                     7 __asr_intvector_resize
                                                                     Source
+                                                                    .false.
                                                                     .false.
                                                                 ),
                                                             sz:
@@ -673,7 +675,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 7 v)
                                         (StructTypeConstructor
                                             7 intvector
@@ -808,7 +810,7 @@
                                                     []
                                                     [(Var 5 this)
                                                     (Var 5 item)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 5 new_size)
                                                         (IntegerBinOp
                                                             (StructInstanceMember
@@ -830,7 +832,7 @@
                                                         [((Var 5 new_size))]
                                                         (Var 5 this)
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (ArrayItem
                                                             (StructInstanceMember
                                                                 (Var 5 this)
@@ -859,7 +861,7 @@
                                                         (Var 5 item)
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (StructInstanceMember
                                                             (Var 5 this)
                                                             5 1_vector_sz
@@ -1103,7 +1105,7 @@
                                                             ()
                                                         )
                                                         ())
-                                                        [(=
+                                                        [(Assignment
                                                             (ArrayItem
                                                                 (Var 6 tmp)
                                                                 [(()
@@ -1167,7 +1169,7 @@
                                                         ()
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (ArraySection
                                                             (StructInstanceMember
                                                                 (Var 6 this)
@@ -1273,6 +1275,7 @@
                                                                     3 push_back
                                                                     Source
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             resize:
                                                                 (ClassProcedure
@@ -1282,6 +1285,7 @@
                                                                     resize
                                                                     3 resize
                                                                     Source
+                                                                    .false.
                                                                     .false.
                                                                 ),
                                                             sz:

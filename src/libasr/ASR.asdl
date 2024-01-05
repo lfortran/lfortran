@@ -108,7 +108,7 @@ symbol
         abi abi, access access, presence presence, bool value_attr)
     | ClassType(symbol_table symtab, identifier name, abi abi, access access)
     | ClassProcedure(symbol_table parent_symtab, identifier name, identifier? self_argument,
-        identifier proc_name, symbol proc, abi abi, bool is_deferred)
+        identifier proc_name, symbol proc, abi abi, bool is_deferred, bool is_nopass)
     | AssociateBlock(symbol_table symtab, identifier name, stmt* body)
     | Block(symbol_table symtab, identifier name, stmt* body)
     | Requirement(symbol_table symtab, identifier name, identifier* args,
@@ -147,6 +147,10 @@ presence = Required | Optional
 -- LPython manages the conversion of arguments to be passed to such symbols
 -- and also converts the return values from such symbols.
 
+-- abi=BindJS: the symbol's implementation is
+-- available with Javascript.
+-- This abi type is to be mainly used with the WASM Backend.
+
 -- abi=Interactive: the symbol's implementation has been provided by the
 -- previous REPL execution (e.g., if LLVM backend is used for the interactive
 -- mode, the previous execution generated machine code for this symbol's
@@ -164,6 +168,7 @@ abi                   -- External     ABI
     | GFortranModule  --   Yes        GFortran
     | BindC           --   Yes        C
     | BindPython      --   Yes        Python
+    | BindJS          --   Yes        Javascript
     | Interactive     --   Yes        Unspecified
     | Intrinsic       --   Yes        Unspecified
 
@@ -330,6 +335,7 @@ expr
     | OverloadedCompare(expr left, cmpop op, expr right, ttype type, expr? value, expr overloaded)
     | OverloadedBinOp(expr left, binop op, expr right, ttype type, expr? value, expr overloaded)
     | OverloadedUnaryMinus(expr arg, ttype type, expr? value, expr overloaded)
+    | OverloadedStringConcat(expr left, expr right, ttype type, expr? value, expr overloaded)
     -- This Cast changes the value (the bits) of the `arg`:
     | Cast(expr arg, cast_kind kind, ttype type, expr? value)
     -- This ArrayPhysicalCast we only change the physical type, the logical type does not change
@@ -422,6 +428,7 @@ array_physical_type
     | PointerToDataArray
     | UnboundedPointerToDataArray
     | FixedSizeArray
+    | CharacterArraySinglePointer
     | NumPyArray
     | ISODescriptorArray
     | SIMDArray

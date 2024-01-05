@@ -34,16 +34,15 @@
                                     dp
                                     []
                                     Local
-                                    (FunctionCall
-                                        2 kind
-                                        ()
-                                        [((RealConstant
+                                    (IntrinsicScalarFunction
+                                        Kind
+                                        [(RealConstant
                                             0.000000
                                             (Real 8)
-                                        ))]
+                                        )]
+                                        0
                                         (Integer 4)
                                         (IntegerConstant 8 (Integer 4))
-                                        ()
                                     )
                                     (IntegerConstant 8 (Integer 4))
                                     Parameter
@@ -53,16 +52,6 @@
                                     Public
                                     Required
                                     .false.
-                                ),
-                            kind:
-                                (ExternalSymbol
-                                    2
-                                    kind
-                                    4 kind
-                                    lfortran_intrinsic_kind
-                                    []
-                                    kind
-                                    Private
                                 ),
                             n:
                                 (Variable
@@ -109,7 +98,7 @@
                     []
                     [(Var 2 n)
                     (Var 2 a)]
-                    [(=
+                    [(Assignment
                         (Var 2 a)
                         (ArrayBroadcast
                             (RealConstant
@@ -146,29 +135,26 @@
                 ),
             lfortran_intrinsic_builtin:
                 (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_kind:
-                (IntrinsicModule lfortran_intrinsic_kind),
             main:
                 (Program
                     (SymbolTable
-                        12
+                        3
                         {
                             dp:
                                 (Variable
-                                    12
+                                    3
                                     dp
                                     []
                                     Local
-                                    (FunctionCall
-                                        12 kind
-                                        ()
-                                        [((RealConstant
+                                    (IntrinsicScalarFunction
+                                        Kind
+                                        [(RealConstant
                                             0.000000
                                             (Real 8)
-                                        ))]
+                                        )]
+                                        0
                                         (Integer 4)
                                         (IntegerConstant 8 (Integer 4))
-                                        ()
                                     )
                                     (IntegerConstant 8 (Integer 4))
                                     Parameter
@@ -182,11 +168,11 @@
                             idzp_svd:
                                 (Function
                                     (SymbolTable
-                                        13
+                                        4
                                         {
                                             isi:
                                                 (Variable
-                                                    13
+                                                    4
                                                     isi
                                                     []
                                                     Local
@@ -202,7 +188,7 @@
                                                 ),
                                             ls:
                                                 (Variable
-                                                    13
+                                                    4
                                                     ls
                                                     []
                                                     Unspecified
@@ -218,9 +204,9 @@
                                                 ),
                                             real:
                                                 (ExternalSymbol
-                                                    13
+                                                    4
                                                     real
-                                                    15 real
+                                                    6 real
                                                     lfortran_intrinsic_builtin
                                                     []
                                                     real
@@ -228,7 +214,7 @@
                                                 ),
                                             w:
                                                 (Variable
-                                                    13
+                                                    4
                                                     w
                                                     []
                                                     Unspecified
@@ -249,7 +235,7 @@
                                                 ),
                                             w_cast:
                                                 (Variable
-                                                    13
+                                                    4
                                                     w_cast
                                                     []
                                                     Local
@@ -293,10 +279,10 @@
                                         .false.
                                     )
                                     [idz_realcomp]
-                                    [(Var 13 ls)
-                                    (Var 13 w)]
-                                    [(=
-                                        (Var 13 isi)
+                                    [(Var 4 ls)
+                                    (Var 4 w)]
+                                    [(Assignment
+                                        (Var 4 isi)
                                         (IntegerConstant 1 (Integer 4))
                                         ()
                                     )
@@ -304,9 +290,9 @@
                                         (PointerToCPtr
                                             (GetPointer
                                                 (ArrayItem
-                                                    (Var 13 w)
+                                                    (Var 4 w)
                                                     [(()
-                                                    (Var 13 isi)
+                                                    (Var 4 isi)
                                                     ())]
                                                     (Complex 8)
                                                     ColMajor
@@ -320,7 +306,7 @@
                                             (CPtr)
                                             ()
                                         )
-                                        (Var 13 w_cast)
+                                        (Var 4 w_cast)
                                         (ArrayConstant
                                             [(IntegerConstant 1000 (Integer 4))]
                                             (Array
@@ -337,14 +323,14 @@
                                         1 idz_realcomp
                                         ()
                                         [((IntegerBinOp
-                                            (Var 13 ls)
+                                            (Var 4 ls)
                                             Mul
                                             (IntegerConstant 2 (Integer 4))
                                             (Integer 4)
                                             ()
                                         ))
                                         ((ArrayPhysicalCast
-                                            (Var 13 w_cast)
+                                            (Var 4 w_cast)
                                             DescriptorArray
                                             PointerToDataArray
                                             (Pointer
@@ -361,9 +347,9 @@
                                     )
                                     (Print
                                         [(ArrayItem
-                                            (Var 13 w)
+                                            (Var 4 w)
                                             [(()
-                                            (Var 13 isi)
+                                            (Var 4 isi)
                                             ())]
                                             (Complex 8)
                                             ColMajor
@@ -379,9 +365,9 @@
                                                 [(RealBinOp
                                                     (Cast
                                                         (ArrayItem
-                                                            (Var 13 w)
+                                                            (Var 4 w)
                                                             [(()
-                                                            (Var 13 isi)
+                                                            (Var 4 isi)
                                                             ())]
                                                             (Complex 8)
                                                             ColMajor
@@ -430,19 +416,9 @@
                                     .false.
                                     ()
                                 ),
-                            kind:
-                                (ExternalSymbol
-                                    12
-                                    kind
-                                    4 kind
-                                    lfortran_intrinsic_kind
-                                    []
-                                    kind
-                                    Private
-                                ),
                             w:
                                 (Variable
-                                    12
+                                    3
                                     w
                                     []
                                     Local
@@ -463,13 +439,13 @@
                                 )
                         })
                     main
-                    [lfortran_intrinsic_kind]
+                    []
                     [(SubroutineCall
-                        12 idzp_svd
+                        3 idzp_svd
                         ()
                         [((IntegerConstant 5 (Integer 4)))
                         ((ArrayPhysicalCast
-                            (Var 12 w)
+                            (Var 3 w)
                             FixedSizeArray
                             DescriptorArray
                             (Array

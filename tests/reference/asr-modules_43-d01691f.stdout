@@ -218,7 +218,7 @@
                                             (Logical 4)
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 4 sources)
                                             (ArrayPack
                                                 (Var 4 dir_sources)
@@ -253,7 +253,7 @@
                                             )
                                             ()
                                         )]
-                                        [(=
+                                        [(Assignment
                                             (Var 4 sources)
                                             (ArrayConstant
                                                 [(Var 4 sources)

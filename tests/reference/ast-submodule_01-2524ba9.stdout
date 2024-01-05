@@ -398,7 +398,7 @@
             []
             []
             []
-            [(=
+            [(Assignment
                 0
                 func1
                 20
@@ -472,7 +472,7 @@
                 ())]
                 ()
             )]
-            [(=
+            [(Assignment
                 0
                 func2
                 b
@@ -763,21 +763,21 @@
             ())]
             ()
         )]
-        [(=>
+        [(Associate
             0
             pp1 [(c1
             [])]
             sub1
             ()
         )
-        (=>
+        (Associate
             0
             pp2 [(c1
             [])]
             func1
             ()
         )
-        (=>
+        (Associate
             0
             pp3 [(c1
             [])]

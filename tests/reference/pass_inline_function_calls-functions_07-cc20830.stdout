@@ -179,22 +179,22 @@
                         })
                     functions_07
                     [functions_07_c]
-                    [(=
+                    [(Assignment
                         (Var 8 w_f_c)
                         (Var 8 p)
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 8 x_f_b_f_c)
                         (Var 8 w_f_c)
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 8 u_f_a_f_b_f_c)
                         (Var 8 x_f_b_f_c)
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 8 v_f_a_f_b_f_c)
                         (RealBinOp
                             (Var 8 u_f_a_f_b_f_c)
@@ -208,7 +208,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 8 y_f_b_f_c)
                         (RealBinOp
                             (Var 8 v_f_a_f_b_f_c)
@@ -222,7 +222,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 8 z_f_c)
                         (RealBinOp
                             (Var 8 y_f_b_f_c)
@@ -236,7 +236,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 8 q)
                         (Var 8 z_f_c)
                         ()
@@ -307,7 +307,7 @@
                                     )
                                     []
                                     [(Var 3 u)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 v)
                                         (RealBinOp
                                             (Var 3 u)
@@ -435,12 +435,12 @@
                                     )
                                     []
                                     [(Var 5 x)]
-                                    [(=
+                                    [(Assignment
                                         (Var 5 u_f_a)
                                         (Var 5 x)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 5 v_f_a)
                                         (RealBinOp
                                             (Var 5 u_f_a)
@@ -454,7 +454,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 5 y)
                                         (RealBinOp
                                             (Var 5 v_f_a)
@@ -624,17 +624,17 @@
                                     )
                                     []
                                     [(Var 7 w)]
-                                    [(=
+                                    [(Assignment
                                         (Var 7 x_f_b)
                                         (Var 7 w)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 7 u_f_a_f_b)
                                         (Var 7 x_f_b)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 7 v_f_a_f_b)
                                         (RealBinOp
                                             (Var 7 u_f_a_f_b)
@@ -648,7 +648,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 7 y_f_b)
                                         (RealBinOp
                                             (Var 7 v_f_a_f_b)
@@ -662,7 +662,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 7 z)
                                         (RealBinOp
                                             (Var 7 y_f_b)

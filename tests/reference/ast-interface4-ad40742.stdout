@@ -170,7 +170,7 @@
                     []
                     []
                 ))
-                [(=
+                [(Assignment
                     0
                     MATRIX_ERROR
                     (Logical .true.)
@@ -193,7 +193,7 @@
                     (EndOfLine)]
                 )
             )
-            (=
+            (Assignment
                 0
                 MULT
                 (Real "0.0")
@@ -217,7 +217,7 @@
                     []
                 )
                 ()
-                [(=
+                [(Assignment
                     0
                     MULT
                     (+ MULT (* (FuncCallOrArray
@@ -266,7 +266,7 @@
                 0
                 ()
                 OVERFLOW
-                [(=
+                [(Assignment
                     0
                     MATRIX_ERROR
                     (Logical .true.)

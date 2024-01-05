@@ -92,6 +92,9 @@ public:
                     format_args.push_back(al, string_format);
                     print_stmt = ASRUtils::STMT(ASR::make_Print_t(al, loc,
                         format_args.p, format_args.size(), nullptr, empty_space));
+                } else if (ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_array(ASRUtils::expr_type(print_args[0]))))) {
+                    print_stmt = ASRUtils::STMT(ASR::make_Print_t(al, loc,
+                        print_args.p, print_args.size(), nullptr, empty_space));
                 } else {
                     print_stmt = ASRUtils::STMT(ASR::make_Print_t(al, loc,
                         print_args.p, print_args.size(), nullptr, space));
@@ -142,7 +145,7 @@ public:
         ASR::stmt_t* statement = nullptr;
         if (_type == ASR::stmtType::Print) {
             statement = ASRUtils::STMT(ASR::make_Print_t(al, loc,
-            print_args.p, print_args.size(), nullptr, nullptr));
+                print_args.p, print_args.size(), nullptr, nullptr));
         } else if (_type == ASR::stmtType::FileWrite) {
             statement = ASRUtils::STMT(ASR::make_FileWrite_t(al, loc, 0, unit,
                 nullptr, nullptr, nullptr, print_args.p, print_args.size(), separator, end));
@@ -155,7 +158,7 @@ public:
         std::vector<ASR::expr_t*> print_body;
         ASR::stmt_t* empty_print_endl;
         ASR::stmt_t* print_stmt;
-        if (x.m_values[0] != nullptr && ASR::is_a<ASR::StringFormat_t>(*x.m_values[0])) {
+        if (x.n_values > 0 && ASR::is_a<ASR::StringFormat_t>(*x.m_values[0])) {
             empty_print_endl = ASRUtils::STMT(ASR::make_Print_t(al, x.base.base.loc,
                 nullptr, 0, nullptr, nullptr));
             ASR::StringFormat_t* format = ASR::down_cast<ASR::StringFormat_t>(x.m_values[0]);
@@ -262,7 +265,7 @@ public:
         ASR::expr_t *empty_space = ASRUtils::EXPR(ASR::make_StringConstant_t(
             al, loc, s2c(al, ""), str_type_len));
         ASR::stmt_t* empty_file_write_endl = ASRUtils::STMT(ASR::make_FileWrite_t(al, loc,
-                                            0, unit, nullptr, nullptr, nullptr,nullptr, 0, nullptr, nullptr));
+                0, unit, nullptr, nullptr, nullptr, nullptr, 0, nullptr, nullptr));
         for( int i = n_dims - 1; i >= 0; i-- ) {
             ASR::do_loop_head_t head;
             head.m_v = idx_vars[i];
@@ -286,10 +289,12 @@ public:
                     format_args.reserve(al, 1);
                     format_args.push_back(al, string_format);
                     write_stmt = ASRUtils::STMT(ASR::make_FileWrite_t(
-                        al, loc, i, unit, nullptr, nullptr, nullptr, format_args.p, format_args.size(), nullptr, empty_space));
+                        al, loc, i, unit, nullptr, nullptr, nullptr,
+                        format_args.p, format_args.size(), nullptr, empty_space));
                 } else {
                     write_stmt = ASRUtils::STMT(ASR::make_FileWrite_t(
-                        al, loc, i, unit, nullptr, nullptr, nullptr, print_args.p, print_args.size(), nullptr, nullptr));
+                        al, loc, i, unit, nullptr, nullptr, nullptr,
+                        print_args.p, print_args.size(), nullptr, nullptr));
                 }
                 doloop_body.push_back(al, write_stmt);
             } else {
@@ -305,7 +310,8 @@ public:
         Vec<ASR::expr_t*> body;
         body.from_pointer_n_copy(al, write_body.data(), write_body.size());
         ASR::stmt_t* write_stmt = ASRUtils::STMT(ASR::make_FileWrite_t(
-            al, x.base.base.loc, x.m_label, x.m_unit, x.m_iomsg, x.m_iostat, x.m_id, body.p, body.size(), x.m_separator, x.m_end));
+            al, x.base.base.loc, x.m_label, x.m_unit, x.m_iomsg,
+            x.m_iostat, x.m_id, body.p, body.size(), x.m_separator, x.m_end));
         pass_result.push_back(al, write_stmt);
         write_body.clear();
     }
@@ -318,7 +324,7 @@ public:
         std::vector<ASR::expr_t*> write_body;
         ASR::stmt_t* write_stmt;
         ASR::stmt_t* empty_file_write_endl = ASRUtils::STMT(ASR::make_FileWrite_t(al, x.base.base.loc,
-                                            x.m_label, x.m_unit, nullptr, nullptr, nullptr, nullptr, 0, nullptr, nullptr));
+            x.m_label, x.m_unit, nullptr, nullptr, nullptr, nullptr, 0, nullptr, nullptr));
         if(x.m_values && x.m_values[0] != nullptr && ASR::is_a<ASR::StringFormat_t>(*x.m_values[0])){
             ASR::StringFormat_t* format = ASR::down_cast<ASR::StringFormat_t>(x.m_values[0]);
             for (size_t i=0; i<format->n_args; i++) {

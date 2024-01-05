@@ -93,7 +93,7 @@
                     [(Var 3 a)
                     (Var 3 b)
                     (Var 3 c)]
-                    [(=
+                    [(Assignment
                         (Var 3 _lcompilers_optimization_fma_f32)
                         (RealBinOp
                             (Var 3 a)
@@ -207,7 +207,7 @@
                     [(Var 4 a)
                     (Var 4 b)
                     (Var 4 c)]
-                    [(=
+                    [(Assignment
                         (Var 4 _lcompilers_optimization_fma_f321)
                         (RealBinOp
                             (Var 4 a)
@@ -321,7 +321,7 @@
                     [(Var 5 a)
                     (Var 5 b)
                     (Var 5 c)]
-                    [(=
+                    [(Assignment
                         (Var 5 _lcompilers_optimization_fma_f64)
                         (RealBinOp
                             (Var 5 a)
@@ -486,7 +486,7 @@
                         })
                     fma
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 x)
                         (FunctionCall
                             1 _lcompilers_optimization_fma_f321
@@ -540,7 +540,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 z)
                         (FunctionCall
                             1 _lcompilers_optimization_fma_f64

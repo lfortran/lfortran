@@ -95,7 +95,7 @@
                     []
                     [(Var 2 z)
                     (Var 2 i)]
-                    [(=
+                    [(Assignment
                         (Var 2 z)
                         (Cast
                             (IntegerConstant 5 (Integer 4))
@@ -188,7 +188,7 @@
                     []
                     [(Var 3 z)
                     (Var 3 i)]
-                    [(=
+                    [(Assignment
                         (Var 3 z)
                         (Cast
                             (IntegerConstant 5 (Integer 4))

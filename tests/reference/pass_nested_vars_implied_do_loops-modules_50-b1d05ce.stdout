@@ -267,7 +267,7 @@
                                                     )
                                                     []
                                                     []
-                                                    [(=
+                                                    [(Assignment
                                                         (StructInstanceMember
                                                             (ArrayItem
                                                                 (Var 6 __lcompilers_created__nested_context__prune_build_targets_modules_used)
@@ -305,7 +305,7 @@
                                                         ()
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 6 __1_k)
                                                         (ArrayBound
                                                             (Var 6 __libasr__created__var__0__array_constant_)
@@ -334,7 +334,7 @@
                                                             ()
                                                         )
                                                         ())
-                                                        [(=
+                                                        [(Assignment
                                                             (ArrayItem
                                                                 (Var 6 __libasr__created__var__0__array_constant_)
                                                                 [(()
@@ -359,7 +359,7 @@
                                                             )
                                                             ()
                                                         )
-                                                        (=
+                                                        (Assignment
                                                             (Var 6 __1_k)
                                                             (IntegerBinOp
                                                                 (Var 6 __1_k)
@@ -371,7 +371,7 @@
                                                             ()
                                                         )]
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 6 __lcompilers_created__nested_context__prune_build_targets_modules_used)
                                                         (Var 6 __libasr__created__var__0__array_constant_)
                                                         ()
@@ -435,7 +435,7 @@
                                         ()
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (StructInstanceMember
                                             (ArrayItem
                                                 (Var 5 modules_used)
@@ -455,7 +455,7 @@
                                         (IntegerConstant 0 (Integer 4))
                                         ()
                                     )
-                                    (=>
+                                    (Associate
                                         (Var 5 __lcompilers_created__nested_context__prune_build_targets_modules_used)
                                         (Var 5 modules_used)
                                     )
@@ -465,7 +465,7 @@
                                         []
                                         ()
                                     )
-                                    (=>
+                                    (Associate
                                         (Var 5 modules_used)
                                         (Var 5 __lcompilers_created__nested_context__prune_build_targets_modules_used)
                                     )

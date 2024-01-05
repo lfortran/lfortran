@@ -1,13 +1,13 @@
 ! Reference - http://fortranwiki.org/fortran/show/Submodules
-module stdlib_kinds
+module stdlib_kinds_submodule_02
 use iso_fortran_env, only: rkind1 => real32
 use iso_fortran_env, only: int32
 implicit none
 public rkind1, int32
-end module stdlib_kinds
+end module stdlib_kinds_submodule_02
 
 module points
-  use :: stdlib_kinds, only: rkind  => rkind1
+  use :: stdlib_kinds_submodule_02, only: rkind  => rkind1
   implicit none
 
   type :: point

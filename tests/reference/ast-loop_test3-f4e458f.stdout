@@ -13,7 +13,7 @@
             1
             mp
             ()
-            [(=
+            [(Assignment
                 0
                 (FuncCallOrArray
                     con
@@ -51,7 +51,7 @@
                 1
                 n
                 ()
-                [(=
+                [(Assignment
                     220
                     (FuncCallOrArray
                         w
@@ -102,7 +102,7 @@
                 1
                 n
                 ()
-                [(=
+                [(Assignment
                     0
                     temp
                     (Real "0.0d0")
@@ -116,7 +116,7 @@
                     1
                     n
                     ()
-                    [(=
+                    [(Assignment
                         230
                         temp
                         (+ temp (* (FuncCallOrArray
@@ -153,7 +153,7 @@
                     0
                     ()
                     (== k mp)
-                    [(=
+                    [(Assignment
                         0
                         temp
                         (u- temp)
@@ -164,7 +164,7 @@
                     ()
                     ()
                 )
-                (=
+                (Assignment
                     240
                     (FuncCallOrArray
                         a

@@ -42,7 +42,7 @@
             ())]
             ()
         )]
-        [(=
+        [(Assignment
             0
             j
             0
@@ -56,7 +56,7 @@
             1
             5
             ()
-            [(=
+            [(Assignment
                 15
                 j
                 (+ j i)
@@ -69,7 +69,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             j
             0
@@ -83,7 +83,7 @@
             1
             5
             ()
-            [(=
+            [(Assignment
                 16
                 enddo
                 5
@@ -96,7 +96,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             j
             0
@@ -110,7 +110,7 @@
             1
             6
             2
-            [(=
+            [(Assignment
                 20
                 j
                 (+ j i)
@@ -123,7 +123,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             k
             0
@@ -149,7 +149,7 @@
                     31
                     ()
                 )
-                (=
+                (Assignment
                     35
                     k
                     (+ k 1)
@@ -162,7 +162,7 @@
                 33
                 ()
             )
-            (=
+            (Assignment
                 30
                 k
                 (+ k 1)

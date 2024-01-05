@@ -122,12 +122,12 @@
                                                 ColMajor
                                             )
                                             FixedSizeArray
-                                            DescriptorArray
+                                            CharacterArraySinglePointer
                                             (Array
                                                 (Character 1 1 ())
                                                 [((IntegerConstant 1 (Integer 4))
                                                 (IntegerConstant 1 (Integer 4)))]
-                                                DescriptorArray
+                                                CharacterArraySinglePointer
                                             )
                                             ()
                                         ))]
@@ -188,7 +188,7 @@
                                                         (Character 1 -1 ())
                                                         [(()
                                                         ())]
-                                                        DescriptorArray
+                                                        CharacterArraySinglePointer
                                                     )
                                                     ()
                                                     Source
@@ -220,7 +220,7 @@
                                             (Character 1 -1 ())
                                             [(()
                                             ())]
-                                            DescriptorArray
+                                            CharacterArraySinglePointer
                                         )]
                                         ()
                                         Source

@@ -46,7 +46,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 5 a)
                                         (IntegerBinOp
                                             (IntegerConstant 3 (Integer 4))
@@ -130,7 +130,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 3 b)
                                         (IntegerConstant 5 (Integer 4))
                                         ()

@@ -126,12 +126,12 @@
                         })
                     array_op_1
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 i)
                         (IntegerConstant 0 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 a)
                         (ArrayConstant
                             [(IntegerBinOp
@@ -172,7 +172,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 b)
                         (ArrayConstant
                             [(IntegerBinOp
@@ -269,7 +269,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 c)
                             [(()
@@ -293,7 +293,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 c)
                             [(()
@@ -317,7 +317,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 c)
                             [(()
@@ -341,7 +341,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 c)
                             [(()
@@ -485,7 +485,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 d)
                         (RealBinOp
                             (Cast
@@ -658,7 +658,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 d)
                         (RealBinOp
                             (Cast
@@ -848,7 +848,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 d)
                         (RealBinOp
                             (Cast
@@ -1021,7 +1021,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 d)
                         (RealBinOp
                             (Cast

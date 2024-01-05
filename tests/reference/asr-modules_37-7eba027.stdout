@@ -87,7 +87,7 @@
                                                                 )
                                                         })
                                                     associate_block
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 12 target)
                                                         (StructInstanceMember
                                                             (ArrayItem
@@ -111,7 +111,7 @@
                                                         )
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (StructInstanceMember
                                                             (Var 9 temp)
                                                             12 1_string_t_s
@@ -130,7 +130,7 @@
                                                         )
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 9 build_dirs)
                                                         (ArrayConstant
                                                             [(Var 9 build_dirs)

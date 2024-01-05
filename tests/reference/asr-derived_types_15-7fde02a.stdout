@@ -94,7 +94,7 @@
                                     []
                                     [(Var 4 self)
                                     (Var 4 j)]
-                                    [(=
+                                    [(Assignment
                                         (Var 4 res)
                                         (RealBinOp
                                             (StructInstanceMember
@@ -203,7 +203,7 @@
                                     []
                                     [(Var 5 self)
                                     (Var 5 j)]
-                                    [(=
+                                    [(Assignment
                                         (Var 5 res)
                                         (RealBinOp
                                             (StructInstanceMember
@@ -277,6 +277,7 @@
                                                     2 multiply
                                                     Source
                                                     .false.
+                                                    .false.
                                                 ),
                                             sqrt_subtract:
                                                 (ClassProcedure
@@ -286,6 +287,7 @@
                                                     sqrt_subtract
                                                     2 sqrt_subtract
                                                     Source
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -392,7 +394,7 @@
                         })
                     name
                     [derived_types_15_module_1]
-                    [(=
+                    [(Assignment
                         (StructInstanceMember
                             (Var 6 type_1)
                             6 1_t_1_i

@@ -60,6 +60,7 @@ contains
         end do
         s_i = generic_sum{integer, operator(+), cast_integer}(a_i)
         s_r = generic_sum{real, operator(+), cast_real}(a_r)
+        s_i = generic_sum{integer, operator(+), cast_integer}(a_i)
         print *, s_i
         print *, s_r
     end subroutine

@@ -446,7 +446,7 @@
             ())]
             ()
         )]
-        [(=
+        [(Assignment
             0
             epmach
             (FuncCallOrArray
@@ -462,7 +462,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             uflow
             (FuncCallOrArray
@@ -478,25 +478,25 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             ier
             6
             ()
         )
-        (=
+        (Assignment
             0
             neval
             0
             ()
         )
-        (=
+        (Assignment
             0
             last
             0
             ()
         )
-        (=
+        (Assignment
             0
             (FuncCallOrArray
                 rlist
@@ -512,7 +512,7 @@
             (Real "0.0d+00")
             ()
         )
-        (=
+        (Assignment
             0
             (FuncCallOrArray
                 elist
@@ -528,7 +528,7 @@
             (Real "0.0d+00")
             ()
         )
-        (=
+        (Assignment
             0
             (FuncCallOrArray
                 iord
@@ -544,13 +544,13 @@
             0
             ()
         )
-        (=
+        (Assignment
             0
             result
             (Real "0.0d+00")
             ()
         )
-        (=
+        (Assignment
             0
             abserr
             (Real "0.0d+00")
@@ -614,7 +614,7 @@
             ()
             ()
         )
-        (=
+        (Assignment
             0
             ier
             0
@@ -656,7 +656,7 @@
             []
             ()
         )
-        (=
+        (Assignment
             0
             centre
             (* (Real "0.5d+00") (+ b a))
@@ -734,7 +734,7 @@
             []
             ()
         )
-        (=
+        (Assignment
             0
             neval
             nev
@@ -812,31 +812,31 @@
             []
             ()
         )
-        (=
+        (Assignment
             0
             last
             2
             ()
         )
-        (=
+        (Assignment
             0
             neval
             (+ neval nev)
             ()
         )
-        (=
+        (Assignment
             0
             result
             (+ area1 area2)
             ()
         )
-        (=
+        (Assignment
             0
             abserr
             (+ error1 error2)
             ()
         )
-        (=
+        (Assignment
             0
             errbnd
             (FuncCallOrArray
@@ -882,7 +882,7 @@
             ()
             ()
         )
-        (=
+        (Assignment
             0
             (FuncCallOrArray
                 alist
@@ -898,7 +898,7 @@
             a
             ()
         )
-        (=
+        (Assignment
             0
             (FuncCallOrArray
                 alist
@@ -914,7 +914,7 @@
             centre
             ()
         )
-        (=
+        (Assignment
             0
             (FuncCallOrArray
                 blist
@@ -930,7 +930,7 @@
             centre
             ()
         )
-        (=
+        (Assignment
             0
             (FuncCallOrArray
                 blist
@@ -946,7 +946,7 @@
             b
             ()
         )
-        (=
+        (Assignment
             0
             (FuncCallOrArray
                 rlist
@@ -962,7 +962,7 @@
             area1
             ()
         )
-        (=
+        (Assignment
             0
             (FuncCallOrArray
                 rlist
@@ -978,7 +978,7 @@
             area2
             ()
         )
-        (=
+        (Assignment
             0
             (FuncCallOrArray
                 elist
@@ -994,7 +994,7 @@
             error1
             ()
         )
-        (=
+        (Assignment
             0
             (FuncCallOrArray
                 elist
@@ -1017,7 +1017,7 @@
             []
             ()
         )
-        (=
+        (Assignment
             10
             (FuncCallOrArray
                 alist
@@ -1033,7 +1033,7 @@
             centre
             ()
         )
-        (=
+        (Assignment
             0
             (FuncCallOrArray
                 alist
@@ -1049,7 +1049,7 @@
             a
             ()
         )
-        (=
+        (Assignment
             0
             (FuncCallOrArray
                 blist
@@ -1065,7 +1065,7 @@
             b
             ()
         )
-        (=
+        (Assignment
             0
             (FuncCallOrArray
                 blist
@@ -1081,7 +1081,7 @@
             centre
             ()
         )
-        (=
+        (Assignment
             0
             (FuncCallOrArray
                 rlist
@@ -1097,7 +1097,7 @@
             area2
             ()
         )
-        (=
+        (Assignment
             0
             (FuncCallOrArray
                 rlist
@@ -1113,7 +1113,7 @@
             area1
             ()
         )
-        (=
+        (Assignment
             0
             (FuncCallOrArray
                 elist
@@ -1129,7 +1129,7 @@
             error2
             ()
         )
-        (=
+        (Assignment
             0
             (FuncCallOrArray
                 elist
@@ -1145,7 +1145,7 @@
             error1
             ()
         )
-        (=
+        (Assignment
             20
             (FuncCallOrArray
                 iord
@@ -1161,7 +1161,7 @@
             1
             ()
         )
-        (=
+        (Assignment
             0
             (FuncCallOrArray
                 iord
@@ -1181,7 +1181,7 @@
             0
             ()
             (== limit 2)
-            [(=
+            [(Assignment
                 0
                 ier
                 1
@@ -1212,7 +1212,7 @@
             ()
             ()
         )
-        (=
+        (Assignment
             0
             errmax
             (FuncCallOrArray
@@ -1228,37 +1228,37 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             maxerr
             1
             ()
         )
-        (=
+        (Assignment
             0
             nrmax
             1
             ()
         )
-        (=
+        (Assignment
             0
             area
             result
             ()
         )
-        (=
+        (Assignment
             0
             errsum
             abserr
             ()
         )
-        (=
+        (Assignment
             0
             iroff1
             0
             ()
         )
-        (=
+        (Assignment
             0
             iroff2
             0
@@ -1272,7 +1272,7 @@
             3
             limit
             ()
-            [(=
+            [(Assignment
                 0
                 a1
                 (FuncCallOrArray
@@ -1288,7 +1288,7 @@
                 )
                 ()
             )
-            (=
+            (Assignment
                 0
                 b1
                 (* (Real "0.5d+00") (+ (FuncCallOrArray
@@ -1314,13 +1314,13 @@
                 )))
                 ()
             )
-            (=
+            (Assignment
                 0
                 a2
                 b1
                 ()
             )
-            (=
+            (Assignment
                 0
                 b2
                 (FuncCallOrArray
@@ -1408,7 +1408,7 @@
                 []
                 ()
             )
-            (=
+            (Assignment
                 0
                 neval
                 (+ neval nev)
@@ -1486,31 +1486,31 @@
                 []
                 ()
             )
-            (=
+            (Assignment
                 0
                 neval
                 (+ neval nev)
                 ()
             )
-            (=
+            (Assignment
                 0
                 area12
                 (+ area1 area2)
                 ()
             )
-            (=
+            (Assignment
                 0
                 erro12
                 (+ error1 error2)
                 ()
             )
-            (=
+            (Assignment
                 0
                 errsum
                 (- (+ errsum erro12) errmax)
                 ()
             )
-            (=
+            (Assignment
                 0
                 area
                 (- (+ area area12) (FuncCallOrArray
@@ -1604,7 +1604,7 @@
                     And
                     (>= erro12 (* (Real "0.99d+00") errmax))
                 )
-                [(=
+                [(Assignment
                     0
                     iroff1
                     (+ iroff1 1)
@@ -1623,7 +1623,7 @@
                     And
                     (> erro12 errmax)
                 )
-                [(=
+                [(Assignment
                     0
                     iroff2
                     (+ iroff2 1)
@@ -1634,7 +1634,7 @@
                 ()
                 ()
             )
-            (=
+            (Assignment
                 30
                 (FuncCallOrArray
                     rlist
@@ -1650,7 +1650,7 @@
                 area1
                 ()
             )
-            (=
+            (Assignment
                 0
                 (FuncCallOrArray
                     rlist
@@ -1666,7 +1666,7 @@
                 area2
                 ()
             )
-            (=
+            (Assignment
                 0
                 errbnd
                 (FuncCallOrArray
@@ -1716,7 +1716,7 @@
                 0
                 ()
                 (== last limit)
-                [(=
+                [(Assignment
                     0
                     ier
                     1
@@ -1735,7 +1735,7 @@
                     Or
                     (>= iroff2 20)
                 )
-                [(=
+                [(Assignment
                     0
                     ier
                     2
@@ -1794,7 +1794,7 @@
                     []
                     []
                 ) (* (Real "0.1d+04") uflow))))
-                [(=
+                [(Assignment
                     0
                     ier
                     3
@@ -1821,7 +1821,7 @@
                 ()
                 ()
             )
-            (=
+            (Assignment
                 0
                 (FuncCallOrArray
                     alist
@@ -1837,7 +1837,7 @@
                 a2
                 ()
             )
-            (=
+            (Assignment
                 0
                 (FuncCallOrArray
                     blist
@@ -1853,7 +1853,7 @@
                 b1
                 ()
             )
-            (=
+            (Assignment
                 0
                 (FuncCallOrArray
                     blist
@@ -1869,7 +1869,7 @@
                 b2
                 ()
             )
-            (=
+            (Assignment
                 0
                 (FuncCallOrArray
                     elist
@@ -1885,7 +1885,7 @@
                 error1
                 ()
             )
-            (=
+            (Assignment
                 0
                 (FuncCallOrArray
                     elist
@@ -1908,7 +1908,7 @@
                 []
                 ()
             )
-            (=
+            (Assignment
                 40
                 (FuncCallOrArray
                     alist
@@ -1924,7 +1924,7 @@
                 a2
                 ()
             )
-            (=
+            (Assignment
                 0
                 (FuncCallOrArray
                     alist
@@ -1940,7 +1940,7 @@
                 a1
                 ()
             )
-            (=
+            (Assignment
                 0
                 (FuncCallOrArray
                     blist
@@ -1956,7 +1956,7 @@
                 b1
                 ()
             )
-            (=
+            (Assignment
                 0
                 (FuncCallOrArray
                     rlist
@@ -1972,7 +1972,7 @@
                 area2
                 ()
             )
-            (=
+            (Assignment
                 0
                 (FuncCallOrArray
                     rlist
@@ -1988,7 +1988,7 @@
                 area1
                 ()
             )
-            (=
+            (Assignment
                 0
                 (FuncCallOrArray
                     elist
@@ -2004,7 +2004,7 @@
                 error2
                 ()
             )
-            (=
+            (Assignment
                 0
                 (FuncCallOrArray
                     elist
@@ -2083,7 +2083,7 @@
             ()
             ()
         )
-        (=
+        (Assignment
             70
             result
             (Real "0.0d+00")
@@ -2097,7 +2097,7 @@
             1
             last
             ()
-            [(=
+            [(Assignment
                 0
                 result
                 (+ result (FuncCallOrArray
@@ -2120,7 +2120,7 @@
             ()
             ()
         )
-        (=
+        (Assignment
             0
             abserr
             errsum

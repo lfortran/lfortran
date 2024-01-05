@@ -149,7 +149,7 @@
                     )
                     []
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 s)
                         (FunctionCall
                             2 max@dmax_3args

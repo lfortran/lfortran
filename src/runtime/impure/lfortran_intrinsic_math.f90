@@ -35,10 +35,6 @@ interface erfc
     module procedure serfc, derfc
 end interface
 
-interface gamma
-    module procedure sgamma, dgamma
-end interface
-
 interface log_gamma
     module procedure slog_gamma, dlog_gamma
 end interface
@@ -374,30 +370,6 @@ interface
     end function
 end interface
 r = c_derfc(x)
-end function
-
-! gamma ------------------------------------------------------------------------
-
-elemental real(sp) function sgamma(x) result(r)
-real(sp), intent(in) :: x
-interface
-    pure real(c_float) function c_sgamma(x) bind(c, name="_lfortran_sgamma")
-    import :: c_float
-    real(c_float), intent(in), value :: x
-    end function
-end interface
-r = c_sgamma(x)
-end function
-
-elemental real(dp) function dgamma(x) result(r)
-real(dp), intent(in) :: x
-interface
-    pure real(c_double) function c_dgamma(x) bind(c, name="_lfortran_dgamma")
-    import :: c_double
-    real(c_double), intent(in), value :: x
-    end function
-end interface
-r = c_dgamma(x)
 end function
 
 ! log_gamma --------------------------------------------------------------------
@@ -1106,7 +1078,7 @@ end subroutine
 ! system_clock------------------------------------------------------------------
 
 pure subroutine i32sys_clock(count, count_rate, count_max)
-integer(4), intent(out) :: count, count_rate, count_max
+integer(4), intent(out), optional :: count, count_rate, count_max
 interface
     pure subroutine c_i32sys_clock(count, count_rate, count_max) &
         bind(c, name="_lfortran_i32sys_clock")
@@ -1117,7 +1089,8 @@ call c_i32sys_clock(count, count_rate, count_max)
 end subroutine
 
 pure subroutine i64sys_clock(count, count_rate, count_max)
-integer(8), intent(out) :: count, count_rate, count_max
+integer(8), intent(out) :: count
+integer(8), intent(out), optional :: count_rate, count_max
 interface
     pure subroutine c_i64sys_clock(count, count_rate, count_max) &
         bind(c, name="_lfortran_i64sys_clock")

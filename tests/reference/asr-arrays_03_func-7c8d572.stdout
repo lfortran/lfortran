@@ -104,7 +104,7 @@
                                     )
                                     []
                                     [(Var 3 a)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 r)
                                         (IntegerConstant 0 (Integer 4))
                                         ()
@@ -120,7 +120,7 @@
                                             ()
                                         )
                                         ())
-                                        [(=
+                                        [(Assignment
                                             (Var 3 r)
                                             (IntegerBinOp
                                                 (Var 3 r)
@@ -197,7 +197,7 @@
                             (IntegerConstant 10 (Integer 4))
                         )
                         ())
-                        [(=
+                        [(Assignment
                             (ArrayItem
                                 (Var 2 x)
                                 [(()
@@ -211,7 +211,7 @@
                             ()
                         )]
                     )
-                    (=
+                    (Assignment
                         (Var 2 s)
                         (FunctionCall
                             2 mysum

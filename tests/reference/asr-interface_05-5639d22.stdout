@@ -17,6 +17,26 @@
                                     a
                                     Public
                                 ),
+                            a1@a:
+                                (ExternalSymbol
+                                    5
+                                    a1@a
+                                    2 a1
+                                    interface_05_mod
+                                    []
+                                    a1
+                                    Public
+                                ),
+                            a2@a:
+                                (ExternalSymbol
+                                    5
+                                    a2@a
+                                    2 a2
+                                    interface_05_mod
+                                    []
+                                    a2
+                                    Public
+                                ),
                             a@a1:
                                 (ExternalSymbol
                                     5
@@ -72,12 +92,12 @@
                         })
                     interface_05
                     [interface_05_mod]
-                    [(=
+                    [(Assignment
                         (Var 5 i)
                         (IntegerConstant 5 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 5 i)
                         (FunctionCall
                             5 a@a1
@@ -102,7 +122,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 5 r)
                         (Cast
                             (IntegerConstant 6 (Integer 4))
@@ -115,7 +135,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 5 r)
                         (FunctionCall
                             5 a@a2
@@ -148,12 +168,12 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 5 i)
                         (IntegerConstant 7 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 5 i)
                         (FunctionCall
                             5 a@a1
@@ -247,7 +267,7 @@
                                     )
                                     []
                                     [(Var 3 a)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 a1)
                                         (IntegerBinOp
                                             (Var 3 a)
@@ -319,7 +339,7 @@
                                     )
                                     []
                                     [(Var 4 a)]
-                                    [(=
+                                    [(Assignment
                                         (Var 4 a2)
                                         (RealBinOp
                                             (Var 4 a)
