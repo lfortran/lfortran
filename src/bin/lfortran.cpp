@@ -815,12 +815,19 @@ int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
 
             LCOMPILERS_ASSERT(LCompilers::asr_verify(u, true, diagnostics));
 
-	    std::filesystem::path filename { std::string(m->m_name) + ".mod" };
+            std::filesystem::path filename { std::string(m->m_name) + ".mod" };
             std::filesystem::path fullpath = compiler_options.po.mod_files_dir / filename;
             {
                 std::ofstream out;
-		out.open(fullpath, std::ofstream::out | std::ofstream::binary);
+                out.open(fullpath, std::ofstream::out | std::ofstream::binary);
                 out << modfile_binary;
+                out.close();
+                if (!compiler_options.po.include_dirs.empty()) {
+                    fullpath = compiler_options.po.include_dirs[0] / filename;
+                    out.open(fullpath, std::ofstream::out | std::ofstream::binary);
+                    out << modfile_binary;
+                    out.close();
+                }
             }
         }
     }
