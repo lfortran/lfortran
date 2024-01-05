@@ -596,6 +596,7 @@ RUN(NAME intrinsics_98 LABELS gfortran llvm)#shape
 RUN(NAME intrinsics_99 LABELS gfortran llvm)
 RUN(NAME intrinsics_100 LABELS gfortran llvm) # mod
 RUN(NAME intrinsics_101 LABELS gfortran llvm)#repeat
+RUN(NAME intrinsics_102 LABELS gfortran llvm)
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
