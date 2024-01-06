@@ -1942,7 +1942,7 @@ namespace Sqrt {
             Vec<ASR::call_arg_t>& new_args, int64_t overload_id) {
         ASR::ttype_t* arg_type = arg_types[0];
         if (is_real(*arg_type)) {
-            return EXPR(ASR::make_IntrinsicFunctionSqrt_t(al, loc,
+            return EXPR(ASR::make_RealSqrt_t(al, loc,
                 new_args[0].m_value, return_type, nullptr));
         } else {
             return UnaryIntrinsicFunction::instantiate_functions(al, loc, scope,

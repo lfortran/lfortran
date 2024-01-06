@@ -6,8 +6,8 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "run-array14-c9f6829.stdout",
-    "stdout_hash": "7a8a7173c0f2dcc866fc8e5f70fd45f8abbc2ad7015b8e3a4c9f0972",
-    "stderr": null,
-    "stderr_hash": null,
-    "returncode": 0
+    "stdout_hash": "5a67dc18dc3a1b8470266082c07bcf981462bb6802f01fd777a5429b",
+    "stderr": "run-array14-c9f6829.stderr",
+    "stderr_hash": "c0794437e184ce2d528137ad79a8118ab26d2e608cc7d9421ef4d75f",
+    "returncode": 10
 }

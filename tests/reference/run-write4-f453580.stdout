@@ -1,4 +1,1 @@
-hi, how are you?
-I 
-am
-doing good
+The command 'clang -o write4.out write4.out.tmp.o  -L"$DIR/src/bin/../runtime" -Wl,-rpath,"$DIR/src/bin/../runtime" -llfortran_runtime -lm' failed.

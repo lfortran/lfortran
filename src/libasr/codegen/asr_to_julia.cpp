@@ -1173,7 +1173,7 @@ public:
         src += indent + "exit(1)\n";
     }
 
-    void visit_IntrinsicFunctionSqrt(const ASR::IntrinsicFunctionSqrt_t &x) {
+    void visit_RealSqrt(const ASR::RealSqrt_t &x) {
         /*
         if (x.m_value) {
             this->visit_expr(*x.m_value);

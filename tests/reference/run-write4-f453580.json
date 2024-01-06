@@ -6,8 +6,8 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "run-write4-f453580.stdout",
-    "stdout_hash": "53a3d179203f266f36431d4b08c3759a60fd29395f9c14e7097066d7",
-    "stderr": null,
-    "stderr_hash": null,
-    "returncode": 0
+    "stdout_hash": "0926932ed674f6283d8408ef0a40f1bb4e41ee37331af05d10edd9c6",
+    "stderr": "run-write4-f453580.stderr",
+    "stderr_hash": "c0794437e184ce2d528137ad79a8118ab26d2e608cc7d9421ef4d75f",
+    "returncode": 10
 }
