@@ -793,6 +793,8 @@ RUN(NAME logical2 LABELS gfortran llvm wasm fortran)
 RUN(NAME logical3 LABELS gfortran llvm wasm)
 RUN(NAME logical4 LABELS gfortran llvm wasm fortran)
 
+RUN(NAME tsunami LABELS gfortran llvm)
+
 RUN(NAME derived_types_01 LABELS gfortran llvm)
 RUN(NAME derived_types_02 LABELS gfortran)
 RUN(NAME derived_types_03 LABELS gfortran)
