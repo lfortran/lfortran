@@ -49,6 +49,23 @@ std::vector<std::string> order_deps(std::map<std::string, std::vector<std::strin
     return result;
 }
 
+std::vector<std::string> remove_duplicate_intrinsic_module_dependencies(
+        std::vector<std::string> module_dependencies) {
+    std::vector<std::string> new_module_dependencies;
+    for (auto &item : module_dependencies) {
+        if (startswith(item, "lfortran_intrinsic")) {
+            std::string mod_name = item.substr(19);
+            if (std::find(new_module_dependencies.begin(),
+                        new_module_dependencies.end(), mod_name)
+                    != new_module_dependencies.end()) {
+                continue;
+            }
+        }
+        new_module_dependencies.push_back(item);
+    }
+    return new_module_dependencies;
+}
+
 std::vector<std::string> determine_module_dependencies(
         const ASR::TranslationUnit_t &unit)
 {

@@ -38,7 +38,7 @@ class CreateFunctionFromSubroutine: public PassUtils::PassVisitor<CreateFunction
             }
 
             std::vector<std::string> build_order
-                = ASRUtils::determine_module_dependencies(x);
+                = ASRUtils::remove_duplicate_intrinsic_module_dependencies(ASRUtils::determine_module_dependencies(x));
             for (auto &item : build_order) {
                 LCOMPILERS_ASSERT(x.m_symtab->get_symbol(item));
                 ASR::symbol_t *mod = x.m_symtab->get_symbol(item);
