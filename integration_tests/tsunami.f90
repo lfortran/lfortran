@@ -55,5 +55,6 @@ program tsunami
     print fmt, n, h
 
   end do time_loop
-
+print *, "sum(h): ", sum(h)
+if (abs(sum(h) - 12.5331345) > 1e-7) error stop
 end program tsunami
