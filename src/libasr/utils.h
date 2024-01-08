@@ -28,7 +28,7 @@ struct PassOptions {
     std::filesystem::path mod_files_dir;
     std::vector<std::filesystem::path> include_dirs;
 
-    int default_integer_kind;
+    int default_integer_kind = 4;
 
     std::string run_fun; // for global_stmts pass
     // TODO: Convert to std::filesystem::path (also change find_and_load_module())
