@@ -6620,9 +6620,24 @@ public:
     }
 
     void visit_Var(const ASR::Var_t &x) {
-        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
-                symbol_get_past_external(x.m_v));
-        fetch_var(v);
+        ASR::symbol_t* x_m_v = ASRUtils::symbol_get_past_external(x.m_v);
+        switch( x_m_v->type ) {
+            case ASR::symbolType::Variable: {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(x_m_v);
+                fetch_var(v);
+                return ;
+            }
+            case ASR::symbolType::Function: {
+                uint32_t h = get_hash((ASR::asr_t*)x_m_v);
+                if( llvm_symtab_fn.find(h) != llvm_symtab_fn.end() ) {
+                    tmp = llvm_symtab_fn[h];
+                }
+                return;
+            }
+            default: {
+                throw CodeGenError("Only function and variables supported so far");
+            }
+        }
     }
 
     inline ASR::ttype_t* extract_ttype_t_from_expr(ASR::expr_t* expr) {
@@ -8340,6 +8355,23 @@ public:
                 return ;
             }
         }
+
+        std::vector<llvm::Value*> args;
+        if( x.m_dt && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt) ) {
+            uint64_t ptr_loads_copy = ptr_loads;
+            ptr_loads = 1;
+            this->visit_expr(*x.m_dt);
+            ptr_loads = ptr_loads_copy;
+            llvm::Value* callee = LLVM::CreateLoad(*builder, tmp);
+
+            args = convert_call_args(x, false);
+            llvm::FunctionType* fntype = llvm_utils->get_function_type(
+                ASR::down_cast<ASR::FunctionType_t>(ASRUtils::expr_type(x.m_dt)),
+                module.get());
+            tmp = builder->CreateCall(fntype, callee, args);
+            return ;
+        }
+
         const ASR::symbol_t *proc_sym = symbol_get_past_external(x.m_name);
         std::string proc_sym_name = "";
         bool is_deferred = false;
@@ -8356,7 +8388,6 @@ public:
             return ;
         }
         ASR::Function_t *s;
-        std::vector<llvm::Value*> args;
         char* self_argument = nullptr;
         llvm::Value* pass_arg = nullptr;
         if (ASR::is_a<ASR::Function_t>(*proc_sym)) {
