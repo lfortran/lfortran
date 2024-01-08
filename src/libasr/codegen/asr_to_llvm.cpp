@@ -8357,7 +8357,9 @@ public:
         }
 
         std::vector<llvm::Value*> args;
-        if( x.m_dt && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt) ) {
+        if( x.m_dt && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt) &&
+            ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(x.m_name)) &&
+            ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(x.m_name)) ) {
             uint64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 1;
             this->visit_expr(*x.m_dt);
