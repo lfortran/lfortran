@@ -11,8 +11,6 @@ source_filename = "LFortran"
 @7 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @8 = private unnamed_addr constant [7 x i8] c"%lld%s\00", align 1
 
-declare i32 @__module_lfortran_intrinsic_builtin_bit_size(i32*)
-
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   call void @_lpython_set_argv(i32 %0, i8** %1)
