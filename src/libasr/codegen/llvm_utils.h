@@ -282,6 +282,10 @@ namespace LCompilers {
 
             std::vector<llvm::Type*> convert_args(const ASR::Function_t &x, llvm::Module* module);
 
+            llvm::FunctionType* get_function_type(ASR::FunctionType_t* x, llvm::Module* module);
+
+            std::vector<llvm::Type*> convert_args(ASR::FunctionType_t* x, llvm::Module* module);
+
             llvm::Type* get_type_from_ttype_t(ASR::ttype_t* asr_type,
                 ASR::symbol_t *type_declaration, ASR::storage_typeType m_storage,
                 bool& is_array_type, bool& is_malloc_array_type, bool& is_list,
