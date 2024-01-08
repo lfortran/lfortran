@@ -96,8 +96,13 @@ jobs:
             xonsh ci\test.xsh
 
   scipy:
-    name: Check SciPy Build and Test Run
-    runs-on: ubuntu-latest
+    name: Check SciPy Build and Test Run, ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["macos-latest", "ubuntu-latest"]
+        python-version: ["3.10"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -105,30 +110,37 @@ jobs:
 
       - uses: mamba-org/setup-micromamba@v1
         with:
-          environment-file: ci/environment_linux.yml
+          environment-file: ci/environment.yml
           create-args: >-
-            python=3.10
+            python=${{ matrix.python-version }}
+
+      - name: Install Linux / macOS Packages
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        shell: bash -e -l {0}
+        run: micromamba install bison=3.4
+
+      - name: Install GFortran macOS
+        if: contains(matrix.os, 'macos')
+        shell: bash -e -l {0}
+        run: micromamba install gfortran
 
       - uses: hendrikmuhs/ccache-action@main
         with:
-          variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
 
-      - name: Build Linux
+      - name: Setup Platform
         shell: bash -e -l {0}
         run: |
-            ./build0.sh
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+            echo "LFORTRAN_CMAKE_GENERATOR=Ninja" >> $GITHUB_ENV
+            echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+            echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+            echo "ENABLE_RUNTIME_STACKTRACE=yes" >> $GITHUB_ENV
 
-            cmake --build . -j16 --target install
+      - name: Build (Linux / macOS)
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        run: |
+            xonsh ci/build_tmp.xsh
 
       - name: Test SciPy
         shell: bash -e -x -l {0}
@@ -462,8 +474,12 @@ jobs:
             test -f inst/man/O/man/man1/lfortran.1
 
   third_party_code_compile:
-    name: Check Third Party Code Compilation
-    runs-on: ubuntu-latest
+    name: Check Third Party Code Compilation, ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["macos-latest", "ubuntu-latest"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -471,32 +487,39 @@ jobs:
 
       - uses: mamba-org/setup-micromamba@v1
         with:
-          environment-file: ci/environment_linux.yml
+          environment-file: ci/environment.yml
           create-args: >-
             python=3.10
             openblas=0.3.21
-            llvm-openmp=11.1.0
+            llvm-openmp=14.0.4
+
+      - name: Install Linux / macOS Packages
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        shell: bash -e -l {0}
+        run: micromamba install bison=3.4
+
+      - name: Install GFortran macOS
+        if: contains(matrix.os, 'macos')
+        shell: bash -e -l {0}
+        run: micromamba install gfortran
 
       - uses: hendrikmuhs/ccache-action@main
         with:
-          variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
 
-      - name: Build Linux
+      - name: Setup Platform
         shell: bash -e -l {0}
         run: |
-            ./build0.sh
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+            echo "LFORTRAN_CMAKE_GENERATOR=Ninja" >> $GITHUB_ENV
+            echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+            echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+            echo "ENABLE_RUNTIME_STACKTRACE=yes" >> $GITHUB_ENV
 
-            cmake --build . -j16 --target install
+      - name: Build (Linux / macOS)
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        run: |
+            xonsh ci/build_tmp.xsh
 
       - name: Test stdlib (specialfunctions_gamma)
         shell: bash -e -x -l {0}
@@ -528,7 +551,7 @@ jobs:
             git checkout 409ba02a107f47ee835f3976952bbc64dd46de8a
             mkdir lf
             cd lf
-            FC=$(pwd)/../../src/bin/lfortran cmake ..
+            FC=$(pwd)/../../src/bin/lfortran cmake -DCMAKE_Fortran_FLAGS=--verbose ..
             make
             examples/example_hybrd
             examples/example_hybrd1
@@ -589,15 +612,15 @@ jobs:
             git checkout -t origin/lf6
             git checkout bc04dbf476b6173b0bb945ff920119ffaf4a290d
             echo $CONDA_PREFIX
-            FC=$(pwd)/../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
+            FC=$(pwd)/../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_Fortran_FLAGS=--verbose .
             make
             ls -l ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
             file ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
-            ldd ./gpt2
-            ldd ./chat
-            ldd ./test_basic_input
-            ldd ./test_chat
-            ldd ./test_more_inputs
+            ./gpt2
+            ./chat
+            ./test_basic_input
+            ./test_chat
+            ./test_more_inputs
 
             git clean -dfx
             git checkout -t origin/lf36run
