@@ -118,6 +118,18 @@ return:                                           ; preds = %ifcont
   ret i1 %9
 }
 
+define i1 @__module_operator_overloading_01_overload_comp_m_less_than_overload_use(i1* %log1, i1* %log2) {
+.entry:
+  %less_than_overload_use = alloca i1, align 1
+  %0 = call i1 @__module_operator_overloading_01_overload_comp_m_less_than_inverse(i1* %log1, i1* %log2)
+  store i1 %0, i1* %less_than_overload_use, align 1
+  br label %return
+
+return:                                           ; preds = %.entry
+  %1 = load i1, i1* %less_than_overload_use, align 1
+  ret i1 %1
+}
+
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   call void @_lpython_set_argv(i32 %0, i8** %1)

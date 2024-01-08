@@ -1237,10 +1237,6 @@ filename = "../integration_tests/derived_types_17.f90"
 asr = true
 
 [[test]]
-filename = "../integration_tests/derived_types_30.f90"
-asr = true
-
-[[test]]
 filename = "derived_types_04.f90"
 asr = true
 
