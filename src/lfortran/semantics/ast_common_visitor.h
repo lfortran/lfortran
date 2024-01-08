@@ -3451,12 +3451,18 @@ public:
             Str name;
             name.from_str(al, local_sym);
             char *cname = name.c_str(al);
+            std::string final_sym_owner_name = ASRUtils::symbol_name(ASRUtils::get_asr_owner(final_sym));
+            if (final_sym_owner_name == "lfortran_intrinsic_ieee_arithmetic" ||
+                final_sym_owner_name == "lfortran_intrinsic_iso_fortran_env" ||
+                final_sym_owner_name == "lfortran_intrinsic_iso_c_binding") {
+                final_sym_owner_name = final_sym_owner_name.substr(19);
+            }
             ASR::asr_t *sub = ASR::make_ExternalSymbol_t(
                 al, g->base.base.loc,
                 /* a_symtab */ current_scope,
                 /* a_name */ cname,
                 final_sym,
-                ASRUtils::symbol_name(ASRUtils::get_asr_owner(final_sym)),
+                s2c(al, final_sym_owner_name),
                 nullptr, 0, ASRUtils::symbol_name(final_sym),
                 ASR::accessType::Private
                 );

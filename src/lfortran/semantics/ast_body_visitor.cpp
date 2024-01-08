@@ -1453,7 +1453,13 @@ public:
             SetChar module_dependencies;
             module_dependencies.from_pointer_n_copy(al, v->m_dependencies, v->n_dependencies);
             for( size_t i = 0; i < current_module_dependencies.size(); i++ ) {
-                module_dependencies.push_back(al, current_module_dependencies[i]);
+                std::string dep_name = std::string(current_module_dependencies[i]);
+                if (dep_name == "lfortran_intrinsic_ieee_arithmetic" ||
+                    dep_name == "lfortran_intrinsic_iso_fortran_env" ||
+                    dep_name == "lfortran_intrinsic_iso_c_binding") {
+                    dep_name = dep_name.substr(19);
+                }
+                module_dependencies.push_back(al, s2c(al, dep_name));
             }
             v->m_dependencies = module_dependencies.p;
             v->n_dependencies = module_dependencies.size();
