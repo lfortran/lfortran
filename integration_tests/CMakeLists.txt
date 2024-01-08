@@ -428,6 +428,7 @@ RUN(NAME arrays_31 LABELS gfortran llvm llvmStackArray wasm) # init expr with fi
 RUN(NAME arrays_32 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_33 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_34 LABELS gfortran llvm llvmStackArray)
+RUN(NAME arrays_35 LABELS gfortran llvm)
 
 
 # GFortran
