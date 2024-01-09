@@ -1936,6 +1936,7 @@ namespace LCompilers {
             };
             case ASR::ttypeType::Allocatable:
             case ASR::ttypeType::Character:
+            case ASR::ttypeType::FunctionType:
             case ASR::ttypeType::CPtr: {
                 LLVM::CreateStore(*builder, src, dest);
                 break ;
@@ -1991,7 +1992,7 @@ namespace LCompilers {
             }
             default: {
                 throw LCompilersException("LLVMUtils::deepcopy isn't implemented for " +
-                                          ASRUtils::type_to_str_python(asr_type));
+                                          ASRUtils::type_to_str(asr_type));
             }
         }
     }
