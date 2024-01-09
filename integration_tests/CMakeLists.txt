@@ -830,6 +830,7 @@ RUN(NAME derived_types_27 LABELS gfortran llvm fortran)
 RUN(NAME derived_types_28 LABELS gfortran llvm)
 RUN(NAME derived_types_29 LABELS gfortran llvm fortran)
 RUN(NAME derived_types_30 LABELS gfortran llvm)
+RUN(NAME derived_types_31 LABELS gfortran llvm)
 
 RUN(NAME line_continuation_01 LABELS gfortran llvm wasm)
 RUN(NAME line_continuation_02 LABELS gfortran llvm wasm)
