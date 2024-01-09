@@ -17,6 +17,26 @@
                                     a
                                     Public
                                 ),
+                            a1@a:
+                                (ExternalSymbol
+                                    5
+                                    a1@a
+                                    2 a1
+                                    interface_01_mod
+                                    []
+                                    a1
+                                    Public
+                                ),
+                            a2@a:
+                                (ExternalSymbol
+                                    5
+                                    a2@a
+                                    2 a2
+                                    interface_01_mod
+                                    []
+                                    a2
+                                    Public
+                                ),
                             a@a1:
                                 (ExternalSymbol
                                     5

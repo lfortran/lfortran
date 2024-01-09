@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-char1-046b501",
+    "cmd": "lfortran --show-fortran --no-color {infile} -o {outfile}",
+    "infile": "tests/char1.f90",
+    "infile_hash": "78e727aecb70503bac5e780ad046d418a533f576cf7b276702bb6be1",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-char1-046b501.stdout",
+    "stdout_hash": "70340b6836155a639a14ae6fefdf51a25c5bdf6a0119823a34cf722a",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -627,6 +627,33 @@ namespace LCompilers {
                                             v_type->m_dims, v_type->n_dims))->getPointerTo();
                         break;
                     }
+                    case ASR::array_physical_typeType::CharacterArraySinglePointer: {
+                        // type = character_type->getPointerTo();
+                        // is_array_type = true;
+                        // llvm::Type* el_type = get_el_type(v_type->m_type, module);
+                        // type = arr_api->get_array_type(asr_type, el_type, get_pointer);
+                        // break;
+                        if (ASRUtils::is_fixed_size_array(v_type->m_dims, v_type->n_dims)) {
+                            // llvm_type = character_type; -- @character_01.c = internal global i8* null
+                            // llvm_type = character_type->getPointerTo(); -- @character_01.c = internal global i8** null
+                            // llvm_type = llvm::ArrayType::get(character_type,
+                            //     ASRUtils::get_fixed_size_of_array(v_type->m_dims, v_type->n_dims))->getPointerTo();
+                            // -- @character_01 = internal global [2 x i8*]* zeroinitializer
+
+                            type = llvm::ArrayType::get(character_type,
+                                ASRUtils::get_fixed_size_of_array(v_type->m_dims, v_type->n_dims));
+                            break;
+                        } else if (ASRUtils::is_dimension_empty(v_type->m_dims, v_type->n_dims)) {
+                            // Treat it as a DescriptorArray
+                            is_array_type = true;
+                            llvm::Type* el_type = character_type;
+                            type = arr_api->get_array_type(asr_type, el_type);
+                            break;
+                        } else {
+                            LCOMPILERS_ASSERT(false);
+                            break;
+                        }
+                    }
                     default: {
                         LCOMPILERS_ASSERT(false);
                     }
@@ -1151,6 +1178,22 @@ namespace LCompilers {
                         llvm_type = llvm::VectorType::get(get_el_type(v_type->m_type, module),
                             ASRUtils::get_fixed_size_of_array(v_type->m_dims, v_type->n_dims), false);
                         break;
+                    }
+                    case ASR::array_physical_typeType::CharacterArraySinglePointer: {
+                        if (ASRUtils::is_fixed_size_array(v_type->m_dims, v_type->n_dims)) {
+                            llvm_type = llvm::ArrayType::get(character_type,
+                                ASRUtils::get_fixed_size_of_array(v_type->m_dims, v_type->n_dims));
+                            break;
+                        } else if (ASRUtils::is_dimension_empty(v_type->m_dims, v_type->n_dims)) {
+                            // Treat it as a DescriptorArray
+                            is_array_type = true;
+                            llvm::Type* el_type = character_type;
+                            llvm_type = arr_api->get_array_type(asr_type, el_type);
+                            break;
+                        } else {
+                            LCOMPILERS_ASSERT(false);
+                            break;
+                        }
                     }
                     default: {
                         LCOMPILERS_ASSERT(false);

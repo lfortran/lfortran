@@ -80,7 +80,8 @@
                                 2 index
                                 ()
                                 [((Var 2 mystring))
-                                ((Var 2 teststring))]
+                                ((Var 2 teststring))
+                                (())]
                                 (Integer 4)
                                 ()
                                 ()
@@ -107,7 +108,8 @@
                                 2 index
                                 ()
                                 [((Var 2 mystring))
-                                ((Var 2 teststring))]
+                                ((Var 2 teststring))
+                                (())]
                                 (Integer 4)
                                 ()
                                 ()

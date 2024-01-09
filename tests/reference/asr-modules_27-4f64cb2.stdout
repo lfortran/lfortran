@@ -25,65 +25,65 @@
                     (SymbolTable
                         2
                         {
-                            @get_elem_array@:
+                            get_elem_array@get_value:
                                 (ExternalSymbol
                                     2
-                                    @get_elem_array@
+                                    get_elem_array@get_value
                                     4 get_elem_array
                                     tomlf_build_array
                                     []
                                     get_elem_array
                                     Public
                                 ),
-                            @get_elem_keyval@:
+                            get_elem_keyval@get_value:
                                 (ExternalSymbol
                                     2
-                                    @get_elem_keyval@
+                                    get_elem_keyval@get_value
                                     4 get_elem_keyval
                                     tomlf_build_array
                                     []
                                     get_elem_keyval
                                     Public
                                 ),
-                            @get_elem_table@:
+                            get_elem_table@get_value:
                                 (ExternalSymbol
                                     2
-                                    @get_elem_table@
+                                    get_elem_table@get_value
                                     4 get_elem_table
                                     tomlf_build_array
                                     []
                                     get_elem_table
                                     Public
                                 ),
-                            @get_value_float_dp@:
+                            get_value:
+                                (GenericProcedure
+                                    2
+                                    get_value
+                                    [2 get_elem_table@get_value
+                                    2 get_elem_array@get_value
+                                    2 get_elem_keyval@get_value
+                                    2 get_value_float_sp@get_value
+                                    2 get_value_float_dp@get_value]
+                                    Public
+                                ),
+                            get_value_float_dp@get_value:
                                 (ExternalSymbol
                                     2
-                                    @get_value_float_dp@
+                                    get_value_float_dp@get_value
                                     9 get_value_float_dp
                                     tomlf_build_keyval
                                     []
                                     get_value_float_dp
                                     Public
                                 ),
-                            @get_value_float_sp@:
+                            get_value_float_sp@get_value:
                                 (ExternalSymbol
                                     2
-                                    @get_value_float_sp@
+                                    get_value_float_sp@get_value
                                     9 get_value_float_sp
                                     tomlf_build_keyval
                                     []
                                     get_value_float_sp
-                                    Public
-                                ),
-                            get_value:
-                                (GenericProcedure
-                                    2
-                                    get_value
-                                    [2 @get_elem_table@
-                                    2 @get_elem_array@
-                                    2 @get_elem_keyval@
-                                    2 @get_value_float_sp@
-                                    2 @get_value_float_dp@]
                                     Public
                                 )
                         })
@@ -438,10 +438,30 @@
                                     get_value_float_dp
                                     Public
                                 ),
+                            get_value_float_dp@get_value:
+                                (ExternalSymbol
+                                    4
+                                    get_value_float_dp@get_value
+                                    9 get_value_float_dp
+                                    tomlf_build_keyval
+                                    []
+                                    get_value_float_dp
+                                    Public
+                                ),
                             get_value_float_sp:
                                 (ExternalSymbol
                                     4
                                     get_value_float_sp
+                                    9 get_value_float_sp
+                                    tomlf_build_keyval
+                                    []
+                                    get_value_float_sp
+                                    Public
+                                ),
+                            get_value_float_sp@get_value:
+                                (ExternalSymbol
+                                    4
+                                    get_value_float_sp@get_value
                                     9 get_value_float_sp
                                     tomlf_build_keyval
                                     []

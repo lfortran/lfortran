@@ -19,3 +19,4 @@ dependencies:
   - rapidjson
   - ninja
   - pandoc
+  - kokkos
