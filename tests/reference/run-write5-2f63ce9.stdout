@@ -1,1 +1,3 @@
-The command 'clang -o write5.out write5.out.tmp.o  -L"$DIR/src/bin/../runtime" -Wl,-rpath,"$DIR/src/bin/../runtime" -llfortran_runtime -lm' failed.
+hibye
+first, last
+Hello world!

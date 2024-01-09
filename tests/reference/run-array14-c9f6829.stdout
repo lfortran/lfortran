@@ -1,1 +1,2 @@
-The command 'clang -o array14.out array14.out.tmp.o  -L"$DIR/src/bin/../runtime" -Wl,-rpath,"$DIR/src/bin/../runtime" -llfortran_runtime -lm' failed.
+5.00000000e+00 -1.00000000e+00 3.00000000e+00 4.00000000e+00 2.00000000e+00 
+5.00000000e+00 -1.00000000e+00 3.00000000e+00 

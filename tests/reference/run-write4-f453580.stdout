@@ -1,1 +1,4 @@
-The command 'clang -o write4.out write4.out.tmp.o  -L"$DIR/src/bin/../runtime" -Wl,-rpath,"$DIR/src/bin/../runtime" -llfortran_runtime -lm' failed.
+hi, how are you?
+I 
+am
+doing good

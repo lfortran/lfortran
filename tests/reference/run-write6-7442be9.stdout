@@ -1,1 +1,4 @@
-The command 'clang -o write6.out write6.out.tmp.o  -L"$DIR/src/bin/../runtime" -Wl,-rpath,"$DIR/src/bin/../runtime" -llfortran_runtime -lm' failed.
+12345
+0002
+-003
+file04.txt
