@@ -670,7 +670,7 @@ jobs:
             git checkout lf14
             git checkout 6efd1982ba81a6bd8e21ea26173dafd42e8af8ab
             export PATH="$(pwd)/../src/bin:$PATH"
-            lfortran subprojects/test-drive/src/testdrive.F90 --show-asr --no-indent
+            lfortran subprojects/test-drive/src/testdrive.F90 --show-llvm
 
   test_llvm:
     name: Test LLVM ${{ matrix.llvm-version }}
