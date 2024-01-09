@@ -893,6 +893,8 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
     }
     if (ASR::is_a<ASR::IntegerConstant_t>(*a_value)) {
         // OK
+    } else if (ASR::is_a<ASR::IntegerBOZ_t>(*a_value)) {
+        // OK
     } else if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*a_value)) {
         ASR::expr_t *val = ASR::down_cast<ASR::IntegerUnaryMinus_t>(
             a_value)->m_value;
@@ -1174,6 +1176,11 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
         case ASR::exprType::IntegerConstant: {
             ASR::IntegerConstant_t* const_int = ASR::down_cast<ASR::IntegerConstant_t>(value_expr);
             value = (T) const_int->m_n;
+            break;
+        }
+        case ASR::exprType::IntegerBOZ: {
+            ASR::IntegerBOZ_t* int_boz = ASR::down_cast<ASR::IntegerBOZ_t>(value_expr);
+            value = (T) int_boz->m_v;
             break;
         }
         case ASR::exprType::IntegerUnaryMinus: {
