@@ -893,6 +893,8 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
     }
     if (ASR::is_a<ASR::IntegerConstant_t>(*a_value)) {
         // OK
+    } else if (ASR::is_a<ASR::IntegerBOZ_t>(*a_value)) {
+        // OK
     } else if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*a_value)) {
         ASR::expr_t *val = ASR::down_cast<ASR::IntegerUnaryMinus_t>(
             a_value)->m_value;
@@ -934,7 +936,14 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
         if( !ASRUtils::is_intrinsic_symbol(ASRUtils::symbol_get_past_external(func_call_t->m_name)) ) {
             return false;
         }
+
+        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
+            ASRUtils::symbol_get_past_external(func_call_t->m_name));
         for( size_t i = 0; i < func_call_t->n_args; i++ ) {
+            if (func_call_t->m_args[i].m_value == nullptr &&
+                ASRUtils::EXPR2VAR(func->m_args[i])->m_presence == ASR::presenceType::Optional) {
+                continue;
+            }
             if( !ASRUtils::is_value_constant(func_call_t->m_args[i].m_value) ) {
                 return false;
             }
@@ -980,6 +989,9 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
             }
         }
         return is_constant;
+    } else if( ASR::is_a<ASR::IntegerBinOp_t>(*a_value) ) {
+        ASR::IntegerBinOp_t* int_binop = ASR::down_cast<ASR::IntegerBinOp_t>(a_value);
+        return is_value_constant(int_binop->m_value);
     } else {
         return false;
     }
@@ -1173,6 +1185,11 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
             value = (T) const_int->m_n;
             break;
         }
+        case ASR::exprType::IntegerBOZ: {
+            ASR::IntegerBOZ_t* int_boz = ASR::down_cast<ASR::IntegerBOZ_t>(value_expr);
+            value = (T) int_boz->m_v;
+            break;
+        }
         case ASR::exprType::IntegerUnaryMinus: {
             ASR::IntegerUnaryMinus_t*
                 const_int = ASR::down_cast<ASR::IntegerUnaryMinus_t>(value_expr);
@@ -1215,6 +1232,13 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
         case ASR::exprType::FunctionCall: {
             ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(value_expr);
             if (!extract_value(func_call->m_value, value)) {
+                return false;
+            }
+            break;
+        }
+        case ASR::exprType::IntegerBinOp: {
+            ASR::IntegerBinOp_t* int_binop = ASR::down_cast<ASR::IntegerBinOp_t>(value_expr);
+            if (!extract_value(int_binop->m_value, value)) {
                 return false;
             }
             break;
