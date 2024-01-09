@@ -663,6 +663,22 @@ public:
             arg, x->m_old, x->m_new, ttype, value);
     }
 
+    ASR::asr_t* duplicate_ArraySection(ASR::ArraySection_t *x) {
+        ASR::expr_t *v = duplicate_expr(x->m_v);
+
+        Vec<ASR::array_index_t> args;
+        args.reserve(al, x->n_args);
+        for (size_t i=0; i<x->n_args; i++) {
+            args.push_back(al, duplicate_array_index(x->m_args[i]));
+        }
+
+        ASR::ttype_t *ttype = substitute_type(x->m_type);
+        ASR::expr_t *value = duplicate_expr(x->m_value);
+
+        return ASR::make_ArraySection_t(al, x->base.base.loc,
+            v, args.p, args.size(), ttype, value);
+    }
+
     ASR::ttype_t* substitute_type(ASR::ttype_t *ttype) {
         switch (ttype->type) {
             case (ASR::ttypeType::TypeParameter) : {
