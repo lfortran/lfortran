@@ -92,6 +92,7 @@ src/runtime/tests/test_tan
 integration_tests/test-*
 input.txt
 input
+inst/
 src/libasr/libasr.a.*
 *.html
 *.o.tmp.c
@@ -211,4 +212,5 @@ build.ninja
 /compile_commands.json
 
 ## Docs
+doc/man/lfortran.1
 !doc/src/javascripts/*.js

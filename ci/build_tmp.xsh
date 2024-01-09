@@ -46,6 +46,8 @@ pushd src/lfortran/parser && re2c -W -b tokenizer.re -o tokenizer.cpp && popd
 pushd src/lfortran/parser && re2c -W -b preprocessor.re -o preprocessor.cpp && popd
 pushd src/lfortran/parser && bison -Wall -d -r all parser.yy && popd
 
+pandoc --standalone --to man doc/man/lfortran.md -o doc/man/lfortran.1
+
 $lfortran_version=$(cat version).strip()
 $dest="lfortran-" + $lfortran_version
 bash ci/create_source_tarball0.sh

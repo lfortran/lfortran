@@ -1187,6 +1187,8 @@ public:
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
         // Handle templated functions
+        std::map<AST::intrinsicopType, std::vector<std::string>> ext_overloaded_op_procs;
+
         if (x.n_temp_args > 0) {
             is_template = true;
 
@@ -1195,7 +1197,11 @@ public:
             for (size_t i=0; i < x.n_temp_args; i++) {
                 current_procedure_args.push_back(to_lower(x.m_temp_args[i]));
                 temp_args.push_back(al, s2c(al, to_lower(x.m_temp_args[i])));
+            } 
+            for (auto &proc: overloaded_op_procs) {
+                ext_overloaded_op_procs[proc.first] = proc.second;
             }
+            overloaded_op_procs.clear();
 
             Vec<ASR::require_instantiation_t*> reqs;
             reqs.reserve(al, x.n_decl);
@@ -1208,7 +1214,6 @@ public:
                         tmp = nullptr;
                     }
                 }
-
                 if (AST::is_a<AST::DerivedType_t>(*x.m_decl[i])) {
                     AST::DerivedType_t *dt = AST::down_cast<AST::DerivedType_t>(x.m_decl[i]);
                     if (std::find(current_procedure_args.begin(),
@@ -1221,7 +1226,6 @@ public:
 
             ASR::asr_t *temp = ASR::make_Template_t(al, x.base.base.loc,
                 current_scope, s2c(al, sym_name), temp_args.p, temp_args.size(), reqs.p, reqs.size());
-
             parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(temp));
             parent_scope = current_scope;
             current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -1450,7 +1454,6 @@ public:
             }
         }
 
-
         SetChar func_deps;
         func_deps.reserve(al, current_function_dependencies.size());
         for( auto& itr: current_function_dependencies ) {
@@ -1487,6 +1490,10 @@ public:
             create_template_entry_function(x.base.base.loc, sym_name+"_main__lcompilers", master_args, true, true, sym_name);
         }
         if (x.n_temp_args > 0) {
+            add_overloaded_procedures();
+            for (auto &proc: ext_overloaded_op_procs) {
+                overloaded_op_procs[proc.first] = proc.second;
+            }
             current_scope = grandparent_scope;
         } else {
             current_scope = parent_scope;
@@ -2836,6 +2843,12 @@ public:
             current_procedure_args.push_back(to_lower(x.m_namelist[i]));
         }
 
+        std::map<AST::intrinsicopType, std::vector<std::string>> ext_overloaded_op_procs;
+        for (auto &proc: overloaded_op_procs) {
+            ext_overloaded_op_procs[proc.first] = proc.second;
+        }
+        overloaded_op_procs.clear();
+
         Vec<ASR::require_instantiation_t*> reqs;
         reqs.reserve(al, x.n_decl);
         // For interface and type parameters (derived type)
@@ -2863,7 +2876,12 @@ public:
             args.push_back(al, s2c(al, arg));
         }
 
+        add_overloaded_procedures();
         add_class_procedures();
+
+        for (auto &proc: ext_overloaded_op_procs) {
+            overloaded_op_procs[proc.first] = proc.second;
+        }
 
         ASR::asr_t *temp = ASR::make_Template_t(al, x.base.base.loc,
             current_scope, x.m_name, args.p, args.size(), reqs.p, reqs.size());
@@ -2912,7 +2930,6 @@ public:
         for (size_t i=0; i<x.n_args; i++) {
             std::string param = temp->m_args[i];
             ASR::symbol_t *param_sym = temp->m_symtab->get_symbol(param);
-            ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
             if (AST::is_a<AST::AttrType_t>(*x.m_args[i])) {
                 // Handling types as instantiate's arguments
                 Vec<ASR::dimension_t> dims;
@@ -2920,9 +2937,10 @@ public:
                 ASR::symbol_t *type_declaration;
                 ASR::ttype_t *arg_type = determine_type(x.m_args[i]->base.loc, param,
                     x.m_args[i], false, false, dims, type_declaration, current_procedure_abi_type);
+                ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
                 if (!ASRUtils::is_type_parameter(*param_type)) {
                     throw SemanticError("The type " + ASRUtils::type_to_str(arg_type) +
-                        " cannot be applied to non-type parameter " + param, x.base.base.loc);
+                        " cannot be applied to non-type parameter " + param, x.m_args[i]->base.loc);
                 }
                 type_subs[param] = arg_type;
             } else if (AST::is_a<AST::AttrNamelist_t>(*x.m_args[i])) {
@@ -2943,28 +2961,30 @@ public:
                             x.m_args[i]->base.loc);
                     }
                     report_check_restriction(type_subs, symbol_subs, f, f_arg0, x.base.base.loc, diag);
-                } else if (ASRUtils::is_type_parameter(*param_type)) {
-                    // Handling type parameters passed as instantiate's arguments
-                    ASR::symbol_t *arg_sym = current_scope->resolve_symbol(arg);
-                    ASR::ttype_t *arg_type = ASRUtils::symbol_type(arg_sym);
-                    if (ASRUtils::is_type_parameter(*arg_type)) {
-                        type_subs[param] = ASRUtils::TYPE(ASR::make_TypeParameter_t(al,
-                            x.base.base.loc, ASR::down_cast<ASR::TypeParameter_t>(arg_type)->m_param));
-                    } else {
-                        throw SemanticError("The type " + arg + " is not yet handled for "
-                            + "template instantiation", x.base.base.loc);
-                    }
                 } else {
-                    // Handling local variables passed as instantiate's arguments
-                    ASR::symbol_t *arg_sym = current_scope->resolve_symbol(arg);
-                    ASR::ttype_t *arg_type = ASRUtils::symbol_type(arg_sym);
-                    if (!ASRUtils::check_equal_type(arg_type, param_type)) {
-                        throw SemanticError("The type of " + arg + " does not match the type of " + param,
-                            x.base.base.loc);
+                    ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
+                    if (ASRUtils::is_type_parameter(*param_type)) {
+                        // Handling types passed as instantiate's arguments
+                        ASR::symbol_t *arg_sym0 = current_scope->resolve_symbol(arg);
+                        ASR::symbol_t *arg_sym = ASRUtils::symbol_get_past_external(arg_sym0);
+                        ASR::ttype_t *arg_type = nullptr;
+                        if (ASR::is_a<ASR::StructType_t>(*arg_sym)) {
+                            arg_type = ASRUtils::TYPE(ASR::make_Struct_t(al, x.m_args[i]->base.loc, arg_sym0));
+                        } else {
+                            arg_type = ASRUtils::symbol_type(arg_sym);
+                        }
+                        type_subs[param] = ASRUtils::duplicate_type(al, arg_type);
+                    } else {
+                        // Handling local variables passed as instantiate's arguments
+                        ASR::symbol_t *arg_sym = current_scope->resolve_symbol(arg);
+                        ASR::ttype_t *arg_type = ASRUtils::symbol_type(arg_sym);
+                        if (!ASRUtils::check_equal_type(arg_type, param_type)) {
+                            throw SemanticError("The type of " + arg + " does not match the type of " + param,
+                                x.m_args[i]->base.loc);
+                        }
+                        symbol_subs[param] = arg_sym;
                     }
-                    symbol_subs[param] = arg_sym;
                 }
-
             } else if (AST::is_a<AST::AttrIntrinsicOperator_t>(*x.m_args[i])) {
                 AST::AttrIntrinsicOperator_t *intrinsic_op
                     = AST::down_cast<AST::AttrIntrinsicOperator_t>(x.m_args[i]);

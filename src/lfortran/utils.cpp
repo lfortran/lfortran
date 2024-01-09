@@ -62,7 +62,7 @@ std::string get_runtime_library_dir()
         return dirname + "/../../runtime";
     } else {
         // Installed version
-        return CMAKE_INSTALL_FULL_LIBDIR;
+        return dirname + "/" + CMAKE_INSTALL_LIBDIR_RELATIVE;
     }
 }
 
@@ -71,8 +71,11 @@ std::string get_runtime_library_header_dir()
     char *env_p = std::getenv("LFORTRAN_RUNTIME_LIBRARY_HEADER_DIR");
     if (env_p) return env_p;
 
-    std::string install_p = CMAKE_INSTALL_FULL_INCLUDEDIR;
-    return install_p + "/lfortran/impure";
+    std::string path;
+    int dirname_length;
+    get_executable_path(path, dirname_length);
+    std::string dirname = path.substr(0,dirname_length);
+    return dirname + "/" + CMAKE_INSTALL_INCLUDEDIR_RELATIVE + "/lfortran/impure";
 }
 
 std::string get_runtime_library_c_header_dir()
@@ -97,7 +100,7 @@ std::string get_runtime_library_c_header_dir()
         return dirname + "/../../libasr/runtime";
     } else {
         // Installed version
-        return dirname + "/../share/lpython/lib/impure";
+        return dirname + "/" + CMAKE_INSTALL_INCLUDEDIR_RELATIVE + "/lfortran/impure";
     }
 
     return path;

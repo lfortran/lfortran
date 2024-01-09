@@ -130,23 +130,46 @@ public:
     }
 
     ASR::symbol_t* duplicate_Variable(ASR::Variable_t *x) {
-        ASR::ttype_t *t = x->m_type;
-
-        if (ASR::is_a<ASR::TypeParameter_t>(*t)) {
-            ASR::TypeParameter_t *tp = ASR::down_cast<ASR::TypeParameter_t>(t);
-            LCOMPILERS_ASSERT(type_subs.find(tp->m_param) != type_subs.end());
-            t = ASRUtils::duplicate_type(al, type_subs[tp->m_param]);
+        ASR::symbol_t *v = current_scope->get_symbol(x->m_name);
+        if (!v) {
+            ASR::ttype_t *t = substitute_type(x->m_type);
+            v = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+                al, x->base.base.loc, current_scope, x->m_name, x->m_dependencies,
+                x->n_dependencies, x->m_intent, x->m_symbolic_value,
+                x->m_value, x->m_storage, t, x->m_type_declaration,
+                x->m_abi, x->m_access, x->m_presence, x->m_value_attr));
+            current_scope->add_symbol(x->m_name, v);
         }
+        return v;
+    }
 
-        ASR::symbol_t* new_v = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
-            al, x->base.base.loc, current_scope, x->m_name, x->m_dependencies,
-            x->n_dependencies, x->m_intent, x->m_symbolic_value,
-            x->m_value, x->m_storage, t, x->m_type_declaration,
-            x->m_abi, x->m_access, x->m_presence, x->m_value_attr));
-
-        current_scope->add_symbol(x->m_name, new_v);
-
-        return new_v;
+    ASR::ttype_t* substitute_type(ASR::ttype_t *ttype) {
+        switch (ttype->type) {
+            case (ASR::ttypeType::TypeParameter) : {
+                ASR::TypeParameter_t *tp = ASR::down_cast<ASR::TypeParameter_t>(ttype);
+                LCOMPILERS_ASSERT(type_subs.find(tp->m_param) != type_subs.end());
+                return ASRUtils::duplicate_type(al, type_subs[tp->m_param]);
+            }
+            case (ASR::ttypeType::Array) : {
+                ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(ttype);
+                ASR::ttype_t *t = substitute_type(a->m_type);
+                ASR::dimension_t* m_dims = nullptr;
+                size_t n_dims = ASRUtils::extract_dimensions_from_ttype(ttype, m_dims);
+                Vec<ASR::dimension_t> new_dims;
+                new_dims.reserve(al, n_dims);
+                for (size_t i = 0; i < n_dims; i++) {
+                    ASR::dimension_t old_dim = m_dims[i];
+                    ASR::dimension_t new_dim;
+                    new_dim.loc = old_dim.loc;
+                    new_dim.m_start = duplicate_expr(old_dim.m_start);
+                    new_dim.m_length = duplicate_expr(old_dim.m_length);
+                    new_dims.push_back(al, new_dim);
+                }
+                return ASRUtils::make_Array_t_util(al, t->base.loc,
+                    t, new_dims.p, new_dims.size());
+            }
+            default : return ttype;
+        }
     }
 
 };
@@ -359,26 +382,25 @@ public:
             return current_scope->get_symbol(sym_name);
         }
 
-        ASR::symbol_t* new_symbol = nullptr;
         switch (x->type) {
             case ASR::symbolType::Variable: {
-                new_symbol = duplicate_Variable(ASR::down_cast<ASR::Variable_t>(x));
-                break;
+                return duplicate_Variable(ASR::down_cast<ASR::Variable_t>(x));
             }
             case ASR::symbolType::ExternalSymbol: {
-                new_symbol = duplicate_ExternalSymbol(ASR::down_cast<ASR::ExternalSymbol_t>(x));
-                break;
+                return duplicate_ExternalSymbol(ASR::down_cast<ASR::ExternalSymbol_t>(x));
             }
             case ASR::symbolType::ClassProcedure: {
-                new_symbol = duplicate_ClassProcedure(ASR::down_cast<ASR::ClassProcedure_t>(x));
-                break;
+                return duplicate_ClassProcedure(ASR::down_cast<ASR::ClassProcedure_t>(x));
+            }
+            case ASR::symbolType::CustomOperator: {
+                return duplicate_CustomOperator(ASR::down_cast<ASR::CustomOperator_t>(x));
             }
             default: {
                 throw LCompilersException("Unsupported symbol for template instantiation");
             }
         }
 
-        return new_symbol;
+        return nullptr;
     }
 
     ASR::symbol_t* duplicate_Variable(ASR::Variable_t *x) {
@@ -437,6 +459,10 @@ public:
         current_scope->add_symbol(x->m_name, new_x);
 
         return new_x;
+    }
+
+    ASR::symbol_t* duplicate_CustomOperator(ASR::CustomOperator_t *x) {
+        return func_scope->resolve_symbol(x->m_name);
     }
 
     ASR::asr_t* duplicate_Var(ASR::Var_t *x) {
@@ -564,10 +590,14 @@ public:
                 throw LCompilersException("Cannot handle instantiation for the function call " + call_name);
             }
         }
+
+        ASR::symbol_t *original_name = x->m_original_name != nullptr ? duplicate_symbol(x->m_original_name) : nullptr;
+
         if (ASRUtils::symbol_parent_symtab(name)->get_counter() != current_scope->get_counter() && !ASR::is_a<ASR::ExternalSymbol_t>(*name)) {
             ADD_ASR_DEPENDENCIES(current_scope, name, dependencies);
         }
-        return ASRUtils::make_FunctionCall_t_util(al, x->base.base.loc, name, x->m_original_name,
+
+        return ASRUtils::make_FunctionCall_t_util(al, x->base.base.loc, name, /* x->m_original_name */ original_name,
             args.p, args.size(), type, value, dt);
     }
 
@@ -653,39 +683,7 @@ public:
         switch (ttype->type) {
             case (ASR::ttypeType::TypeParameter) : {
                 ASR::TypeParameter_t *param = ASR::down_cast<ASR::TypeParameter_t>(ttype);
-                ASR::ttype_t *t = type_subs[param->m_param];
-                switch (t->type) {
-                    case ASR::ttypeType::Integer: {
-                        ASR::Integer_t* tnew = ASR::down_cast<ASR::Integer_t>(t);
-                        t = ASRUtils::TYPE(ASR::make_Integer_t(al, t->base.loc, tnew->m_kind));
-                        break;
-                    }
-                    case ASR::ttypeType::Real: {
-                        ASR::Real_t* tnew = ASR::down_cast<ASR::Real_t>(t);
-                        t = ASRUtils::TYPE(ASR::make_Real_t(al, t->base.loc, tnew->m_kind));
-                        break;
-                    }
-                    case ASR::ttypeType::Character: {
-                        ASR::Character_t* tnew = ASR::down_cast<ASR::Character_t>(t);
-                        t = ASRUtils::TYPE(ASR::make_Character_t(al, t->base.loc,
-                                    tnew->m_kind, tnew->m_len, tnew->m_len_expr));
-                        break;
-                    }
-                    case ASR::ttypeType::Complex: {
-                        ASR::Complex_t* tnew = ASR::down_cast<ASR::Complex_t>(t);
-                        t = ASRUtils::TYPE(ASR::make_Complex_t(al, t->base.loc, tnew->m_kind));
-                        break;
-                    }
-                    case ASR::ttypeType::TypeParameter: {
-                        ASR::TypeParameter_t* tnew = ASR::down_cast<ASR::TypeParameter_t>(t);
-                        t = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, t->base.loc, tnew->m_param));
-                        break;
-                    }
-                    default: {
-                        LCOMPILERS_ASSERT(false);
-                    }
-                }
-                return t;
+                return ASRUtils::duplicate_type(al, type_subs[param->m_param]);
             }
             case (ASR::ttypeType::List) : {
                 ASR::List_t *tlist = ASR::down_cast<ASR::List_t>(ttype);
