@@ -24,6 +24,12 @@ contains
         call test_var%test(error)
     end subroutine run_unittest
 
+    subroutine test_impl1(error)
+        integer, intent(out) :: error
+        error = 2
+    end subroutine test_impl1
+
+
 end module testdrive
 
 program derived_types_30
@@ -32,11 +38,16 @@ implicit none
 
     type(unittest_type) :: var
     integer :: error
+
     var % test => test_impl
-
     call run_unittest(var, error)
-
     print *, error
+    if( error /= 1 ) error stop
+
+    var % test => test_impl1
+    call run_unittest(var, error)
+    print *, error
+    if( error /= 2 ) error stop
 
 contains
 
