@@ -667,8 +667,8 @@ jobs:
         run: |
             git clone https://github.com/czgdp1807/stdlib.git
             cd stdlib
-            git checkout lf13_test_drive
-            git checkout 9897ea3a196533bc37487248b2909701589c51aa
+            git checkout lf14
+            git checkout 6efd1982ba81a6bd8e21ea26173dafd42e8af8ab
             export PATH="$(pwd)/../src/bin:$PATH"
             lfortran subprojects/test-drive/src/testdrive.F90 --show-asr --no-indent
 
