@@ -7972,6 +7972,20 @@ public:
                                     builder->CreateStore(tmp, target);
                                     tmp = target;
                                 }
+                            } else {
+                                if( orig_arg &&
+                                    !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
+                                    LLVM::is_llvm_pointer(*arg->m_type) &&
+                                    ASRUtils::check_equal_type(
+                                        ASRUtils::type_get_past_allocatable(
+                                            ASRUtils::type_get_past_pointer(orig_arg->m_type)),
+                                        ASRUtils::type_get_past_allocatable(
+                                            ASRUtils::type_get_past_pointer(arg->m_type))) &&
+                                    !ASRUtils::is_character(*arg->m_type) ) {
+                                    // TODO: Remove call to ASRUtils::check_equal_type
+                                    // pass(rhs) is not respected in integration_tests/class_08.f90
+                                    tmp = LLVM::CreateLoad(*builder, tmp);
+                                }
                             }
                         } else {
                             if( orig_arg &&
