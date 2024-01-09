@@ -145,11 +145,15 @@ public:
             std::string name = f->m_name;
             uint64_t h = get_hash((ASR::asr_t*)f);
             fn_used[h] = name;
+            h = get_hash((ASR::asr_t*)x.m_v);
+            fn_used[h] = name;
         }
         if (ASR::is_a<ASR::GenericProcedure_t>(*s)) {
             ASR::GenericProcedure_t *g = ASR::down_cast<ASR::GenericProcedure_t>(s);
             std::string name = g->m_name;
             uint64_t h = get_hash((ASR::asr_t*)g);
+            fn_used[h] = name;
+            h = get_hash((ASR::asr_t*)x.m_v);
             fn_used[h] = name;
         }
     }

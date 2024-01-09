@@ -4710,8 +4710,14 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
 
     Call_t_body(al, a_name, a_args, n_args, a_dt, cast_stmt, implicit_argument_casting, nopass);
 
-    return ASR::make_SubroutineCall_t(al, a_loc, a_name, a_original_name,
-            a_args, n_args, a_dt);
+    if( a_dt && ASR::is_a<ASR::Variable_t>(
+        *ASRUtils::symbol_get_past_external(a_name)) &&
+        ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(a_name)) ) {
+        a_dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, a_loc,
+            a_dt, a_name, ASRUtils::symbol_type(a_name), nullptr));
+    }
+
+    return ASR::make_SubroutineCall_t(al, a_loc, a_name, a_original_name, a_args, n_args, a_dt);
 }
 
 static inline ASR::expr_t* cast_to_descriptor(Allocator& al, ASR::expr_t* arg) {

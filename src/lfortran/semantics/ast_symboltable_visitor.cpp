@@ -3156,12 +3156,16 @@ public:
                         target, value, nullptr));
                     body.push_back(al, assignment);
 
+                    ASR::FunctionType_t *req_type = ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
+
                     ASR::asr_t *op_function = ASRUtils::make_Function_t_util(
                         al, x.base.base.loc, current_scope, s2c(al, func_name),
                         nullptr, 0, args.p, 2, body.p, 1, return_expr,
                         ASR::abiType::Source, ASR::accessType::Public,
-                        ASR::deftypeType::Implementation, nullptr, false, true,
-                        false, false, false, nullptr, 0, false, false, true);
+                        ASR::deftypeType::Implementation, nullptr, req_type->m_elemental,
+                        req_type->m_pure, req_type->m_module, req_type->m_inline,
+                        req_type->m_static, nullptr, 0, f->m_deterministic,
+                        f->m_side_effect_free, true);
                     ASR::symbol_t *op_sym = ASR::down_cast<ASR::symbol_t>(op_function);
                     parent_scope->add_symbol(func_name, op_sym);
 

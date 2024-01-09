@@ -428,6 +428,7 @@ RUN(NAME arrays_31 LABELS gfortran llvm llvmStackArray wasm) # init expr with fi
 RUN(NAME arrays_32 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_33 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_34 LABELS gfortran llvm llvmStackArray)
+RUN(NAME arrays_35 LABELS gfortran llvm)
 
 
 # GFortran
@@ -793,6 +794,8 @@ RUN(NAME logical2 LABELS gfortran llvm wasm fortran)
 RUN(NAME logical3 LABELS gfortran llvm wasm)
 RUN(NAME logical4 LABELS gfortran llvm wasm fortran)
 
+RUN(NAME tsunami LABELS gfortran llvm)
+
 RUN(NAME derived_types_01 LABELS gfortran llvm)
 RUN(NAME derived_types_02 LABELS gfortran)
 RUN(NAME derived_types_03 LABELS gfortran)
@@ -826,7 +829,7 @@ RUN(NAME derived_types_26 LABELS gfortran llvm)
 RUN(NAME derived_types_27 LABELS gfortran llvm fortran)
 RUN(NAME derived_types_28 LABELS gfortran llvm)
 RUN(NAME derived_types_29 LABELS gfortran llvm fortran)
-RUN(NAME derived_types_30 LABELS gfortran)
+RUN(NAME derived_types_30 LABELS gfortran llvm)
 
 RUN(NAME line_continuation_01 LABELS gfortran llvm wasm)
 RUN(NAME line_continuation_02 LABELS gfortran llvm wasm)
@@ -1032,7 +1035,6 @@ RUN(NAME conv_complex2real LABELS gfortran llvm wasm)
 RUN(NAME template_01 LABELS llvm wasm)
 RUN(NAME template_02 LABELS llvm)
 RUN(NAME template_03 LABELS llvm wasm)
-RUN(NAME template_03b LABELS llvm wasm)
 RUN(NAME template_04 LABELS llvm)
 RUN(NAME template_add_01 LABELS llvm wasm)
 RUN(NAME template_add_01b LABELS llvm wasm)
@@ -1295,3 +1297,5 @@ RUN(NAME present_01 LABELS gfortran llvm)
 RUN(NAME types_20 LABELS gfortran llvm)
 RUN(NAME arrayprint_01 LABELS gfortran llvm)
 RUN(NAME print_arr_05 LABELS gfortran llvm)
+
+RUN(NAME binop_01 LABELS gfortran llvm)
