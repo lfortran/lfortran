@@ -936,7 +936,14 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
         if( !ASRUtils::is_intrinsic_symbol(ASRUtils::symbol_get_past_external(func_call_t->m_name)) ) {
             return false;
         }
+
+        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
+            ASRUtils::symbol_get_past_external(func_call_t->m_name));
         for( size_t i = 0; i < func_call_t->n_args; i++ ) {
+            if (func_call_t->m_args[i].m_value == nullptr &&
+                ASRUtils::EXPR2VAR(func->m_args[i])->m_presence == ASR::presenceType::Optional) {
+                continue;
+            }
             if( !ASRUtils::is_value_constant(func_call_t->m_args[i].m_value) ) {
                 return false;
             }
