@@ -455,11 +455,11 @@
                             f:
                                 (Function
                                     (SymbolTable
-                                        9
+                                        12
                                         {
                                             a:
                                                 (Variable
-                                                    9
+                                                    12
                                                     a
                                                     []
                                                     Local
@@ -476,11 +476,11 @@
                                             axpy:
                                                 (Function
                                                     (SymbolTable
-                                                        12
+                                                        15
                                                         {
                                                             a:
                                                                 (Variable
-                                                                    12
+                                                                    15
                                                                     a
                                                                     []
                                                                     In
@@ -496,7 +496,7 @@
                                                                 ),
                                                             x:
                                                                 (Variable
-                                                                    12
+                                                                    15
                                                                     x
                                                                     []
                                                                     In
@@ -517,7 +517,7 @@
                                                                 ),
                                                             y:
                                                                 (Variable
-                                                                    12
+                                                                    15
                                                                     y
                                                                     []
                                                                     InOut
@@ -566,21 +566,21 @@
                                                     )
                                                     [~mul_intrinsic
                                                     ~add_intrinsic]
-                                                    [(Var 12 a)
-                                                    (Var 12 x)
-                                                    (Var 12 y)]
+                                                    [(Var 15 a)
+                                                    (Var 15 x)
+                                                    (Var 15 y)]
                                                     [(=
-                                                        (Var 12 y)
+                                                        (Var 15 y)
                                                         (ArrayBroadcast
                                                             (FunctionCall
-                                                                9 ~add_intrinsic
+                                                                12 ~add_intrinsic
                                                                 ()
-                                                                [((Var 12 y))
+                                                                [((Var 15 y))
                                                                 ((FunctionCall
-                                                                    9 ~mul_intrinsic
+                                                                    12 ~mul_intrinsic
                                                                     ()
-                                                                    [((Var 12 a))
-                                                                    ((Var 12 x))]
+                                                                    [((Var 15 a))
+                                                                    ((Var 15 x))]
                                                                     (Real 4)
                                                                     ()
                                                                     ()
@@ -591,7 +591,7 @@
                                                             )
                                                             (IntrinsicArrayFunction
                                                                 Shape
-                                                                [(Var 12 y)]
+                                                                [(Var 15 y)]
                                                                 0
                                                                 (Array
                                                                     (Integer 4)
@@ -621,7 +621,7 @@
                                                 ),
                                             dp:
                                                 (Variable
-                                                    9
+                                                    12
                                                     dp
                                                     []
                                                     Local
@@ -646,7 +646,7 @@
                                                 ),
                                             sp:
                                                 (Variable
-                                                    9
+                                                    12
                                                     sp
                                                     []
                                                     Local
@@ -671,7 +671,7 @@
                                                 ),
                                             x:
                                                 (Variable
-                                                    9
+                                                    12
                                                     x
                                                     []
                                                     Local
@@ -692,7 +692,7 @@
                                                 ),
                                             y:
                                                 (Variable
-                                                    9
+                                                    12
                                                     y
                                                     []
                                                     Local
@@ -713,19 +713,19 @@
                                                 ),
                                             ~add:
                                                 (CustomOperator
-                                                    9
+                                                    12
                                                     ~add
-                                                    [9 ~add_intrinsic]
+                                                    [12 ~add_intrinsic]
                                                     Public
                                                 ),
                                             ~add_intrinsic:
                                                 (Function
                                                     (SymbolTable
-                                                        10
+                                                        13
                                                         {
                                                             arg0:
                                                                 (Variable
-                                                                    10
+                                                                    13
                                                                     arg0
                                                                     []
                                                                     In
@@ -741,7 +741,7 @@
                                                                 ),
                                                             arg1:
                                                                 (Variable
-                                                                    10
+                                                                    13
                                                                     arg1
                                                                     []
                                                                     In
@@ -757,7 +757,7 @@
                                                                 ),
                                                             ret:
                                                                 (Variable
-                                                                    10
+                                                                    13
                                                                     ret
                                                                     []
                                                                     ReturnVar
@@ -789,15 +789,15 @@
                                                         .false.
                                                     )
                                                     []
-                                                    [(Var 10 arg0)
-                                                    (Var 10 arg1)]
+                                                    [(Var 13 arg0)
+                                                    (Var 13 arg1)]
                                                     [(=
-                                                        (Var 10 ret)
+                                                        (Var 13 ret)
                                                         (RealBinOp
-                                                            (Var 10 arg0)
+                                                            (Var 13 arg0)
                                                             Add
                                                             (Cast
-                                                                (Var 10 arg1)
+                                                                (Var 13 arg1)
                                                                 RealToReal
                                                                 (Real 8)
                                                                 ()
@@ -807,7 +807,7 @@
                                                         )
                                                         ()
                                                     )]
-                                                    (Var 10 ret)
+                                                    (Var 13 ret)
                                                     Public
                                                     .false.
                                                     .true.
@@ -815,19 +815,19 @@
                                                 ),
                                             ~mul:
                                                 (CustomOperator
-                                                    9
+                                                    12
                                                     ~mul
-                                                    [9 ~mul_intrinsic]
+                                                    [12 ~mul_intrinsic]
                                                     Public
                                                 ),
                                             ~mul_intrinsic:
                                                 (Function
                                                     (SymbolTable
-                                                        11
+                                                        14
                                                         {
                                                             arg0:
                                                                 (Variable
-                                                                    11
+                                                                    14
                                                                     arg0
                                                                     []
                                                                     In
@@ -843,7 +843,7 @@
                                                                 ),
                                                             arg1:
                                                                 (Variable
-                                                                    11
+                                                                    14
                                                                     arg1
                                                                     []
                                                                     In
@@ -859,7 +859,7 @@
                                                                 ),
                                                             ret:
                                                                 (Variable
-                                                                    11
+                                                                    14
                                                                     ret
                                                                     []
                                                                     ReturnVar
@@ -891,15 +891,15 @@
                                                         .false.
                                                     )
                                                     []
-                                                    [(Var 11 arg0)
-                                                    (Var 11 arg1)]
+                                                    [(Var 14 arg0)
+                                                    (Var 14 arg1)]
                                                     [(=
-                                                        (Var 11 ret)
+                                                        (Var 14 ret)
                                                         (RealBinOp
-                                                            (Var 11 arg0)
+                                                            (Var 14 arg0)
                                                             Mul
                                                             (Cast
-                                                                (Var 11 arg1)
+                                                                (Var 14 arg1)
                                                                 IntegerToReal
                                                                 (Real 4)
                                                                 ()
@@ -909,7 +909,7 @@
                                                         )
                                                         ()
                                                     )]
-                                                    (Var 11 ret)
+                                                    (Var 14 ret)
                                                     Public
                                                     .false.
                                                     .true.
@@ -934,7 +934,7 @@
                                     []
                                     []
                                     [(=
-                                        (Var 9 a)
+                                        (Var 12 a)
                                         (RealConstant
                                             0.500000
                                             (Real 4)
@@ -942,7 +942,7 @@
                                         ()
                                     )
                                     (=
-                                        (Var 9 x)
+                                        (Var 12 x)
                                         (ArrayBroadcast
                                             (IntegerConstant 2 (Integer 4))
                                             (ArrayConstant
@@ -977,7 +977,7 @@
                                         ()
                                     )
                                     (=
-                                        (Var 9 y)
+                                        (Var 12 y)
                                         (ArrayBroadcast
                                             (Cast
                                                 (IntegerConstant 2 (Integer 4))
@@ -1044,11 +1044,11 @@
                                         ()
                                     )
                                     (SubroutineCall
-                                        9 axpy
+                                        12 axpy
                                         ()
-                                        [((Var 9 a))
+                                        [((Var 12 a))
                                         ((ArrayPhysicalCast
-                                            (Var 9 x)
+                                            (Var 12 x)
                                             FixedSizeArray
                                             DescriptorArray
                                             (Array
@@ -1060,7 +1060,7 @@
                                             ()
                                         ))
                                         ((ArrayPhysicalCast
-                                            (Var 9 y)
+                                            (Var 12 y)
                                             FixedSizeArray
                                             DescriptorArray
                                             (Array
@@ -1074,6 +1074,465 @@
                                         ()
                                     )]
                                     ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            my_add:
+                                (Function
+                                    (SymbolTable
+                                        10
+                                        {
+                                            a:
+                                                (Variable
+                                                    10
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            b:
+                                                (Variable
+                                                    10
+                                                    b
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            dp:
+                                                (Variable
+                                                    10
+                                                    dp
+                                                    []
+                                                    Local
+                                                    (IntrinsicScalarFunction
+                                                        Kind
+                                                        [(RealConstant
+                                                            1.000000
+                                                            (Real 8)
+                                                        )]
+                                                        0
+                                                        (Integer 4)
+                                                        (IntegerConstant 8 (Integer 4))
+                                                    )
+                                                    (IntegerConstant 8 (Integer 4))
+                                                    Parameter
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            op:
+                                                (Variable
+                                                    10
+                                                    op
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            sp:
+                                                (Variable
+                                                    10
+                                                    sp
+                                                    []
+                                                    Local
+                                                    (IntrinsicScalarFunction
+                                                        Kind
+                                                        [(RealConstant
+                                                            1.000000
+                                                            (Real 4)
+                                                        )]
+                                                        0
+                                                        (Integer 4)
+                                                        (IntegerConstant 4 (Integer 4))
+                                                    )
+                                                    (IntegerConstant 4 (Integer 4))
+                                                    Parameter
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    my_add
+                                    (FunctionType
+                                        [(Real 8)
+                                        (Real 4)]
+                                        (Real 8)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 10 a)
+                                    (Var 10 b)]
+                                    [(=
+                                        (Var 10 op)
+                                        (RealBinOp
+                                            (Var 10 a)
+                                            Add
+                                            (Cast
+                                                (Var 10 b)
+                                                RealToReal
+                                                (Real 8)
+                                                ()
+                                            )
+                                            (Real 8)
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 10 op)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            my_axpy:
+                                (Function
+                                    (SymbolTable
+                                        11
+                                        {
+                                            a:
+                                                (Variable
+                                                    11
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            dp:
+                                                (Variable
+                                                    11
+                                                    dp
+                                                    []
+                                                    Local
+                                                    (IntrinsicScalarFunction
+                                                        Kind
+                                                        [(RealConstant
+                                                            1.000000
+                                                            (Real 8)
+                                                        )]
+                                                        0
+                                                        (Integer 4)
+                                                        (IntegerConstant 8 (Integer 4))
+                                                    )
+                                                    (IntegerConstant 8 (Integer 4))
+                                                    Parameter
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            sp:
+                                                (Variable
+                                                    11
+                                                    sp
+                                                    []
+                                                    Local
+                                                    (IntrinsicScalarFunction
+                                                        Kind
+                                                        [(RealConstant
+                                                            1.000000
+                                                            (Real 4)
+                                                        )]
+                                                        0
+                                                        (Integer 4)
+                                                        (IntegerConstant 4 (Integer 4))
+                                                    )
+                                                    (IntegerConstant 4 (Integer 4))
+                                                    Parameter
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            x:
+                                                (Variable
+                                                    11
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Integer 4)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            y:
+                                                (Variable
+                                                    11
+                                                    y
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Real 8)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    my_axpy
+                                    (FunctionType
+                                        [(Real 4)
+                                        (Array
+                                            (Integer 4)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )
+                                        (Array
+                                            (Real 8)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    [my_mul
+                                    my_add]
+                                    [(Var 11 a)
+                                    (Var 11 x)
+                                    (Var 11 y)]
+                                    [(=
+                                        (Var 11 y)
+                                        (ArrayBroadcast
+                                            (FunctionCall
+                                                2 my_add
+                                                ()
+                                                [((Var 11 y))
+                                                ((FunctionCall
+                                                    2 my_mul
+                                                    ()
+                                                    [((Var 11 a))
+                                                    ((Var 11 x))]
+                                                    (Real 4)
+                                                    ()
+                                                    ()
+                                                ))]
+                                                (Real 8)
+                                                ()
+                                                ()
+                                            )
+                                            (IntrinsicArrayFunction
+                                                Shape
+                                                [(Var 11 y)]
+                                                0
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4)))]
+                                                    FixedSizeArray
+                                                )
+                                                ()
+                                            )
+                                            (Array
+                                                (Real 8)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            my_mul:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            a:
+                                                (Variable
+                                                    9
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            b:
+                                                (Variable
+                                                    9
+                                                    b
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            op:
+                                                (Variable
+                                                    9
+                                                    op
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            sp:
+                                                (Variable
+                                                    9
+                                                    sp
+                                                    []
+                                                    Local
+                                                    (IntrinsicScalarFunction
+                                                        Kind
+                                                        [(RealConstant
+                                                            1.000000
+                                                            (Real 4)
+                                                        )]
+                                                        0
+                                                        (Integer 4)
+                                                        (IntegerConstant 4 (Integer 4))
+                                                    )
+                                                    (IntegerConstant 4 (Integer 4))
+                                                    Parameter
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    my_mul
+                                    (FunctionType
+                                        [(Real 4)
+                                        (Integer 4)]
+                                        (Real 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 9 a)
+                                    (Var 9 b)]
+                                    [(=
+                                        (Var 9 op)
+                                        (RealBinOp
+                                            (Var 9 a)
+                                            Mul
+                                            (Cast
+                                                (Var 9 b)
+                                                IntegerToReal
+                                                (Real 4)
+                                                ()
+                                            )
+                                            (Real 4)
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 9 op)
                                     Public
                                     .false.
                                     .false.

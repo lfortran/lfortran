@@ -49,7 +49,7 @@ contains
         real(sp), intent(in) :: a
         integer, intent(in) :: x(:)
         real(dp), intent(inout) :: y(:)
-        y = my?add(y, my_mul(a, x))
+        y = my_add(y, my_mul(a, x))
     end subroutine
 
     subroutine f()
