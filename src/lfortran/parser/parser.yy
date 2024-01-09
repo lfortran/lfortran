@@ -1468,6 +1468,7 @@ var_type
     | KW_COMPLEX { $$ = ATTR_TYPE(Complex, @$); }
     | KW_COMPLEX "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Complex, $3, @$); }
     | KW_COMPLEX "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Complex, DIV2($3), @$); }
+    | KW_COMPLEX "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Complex, $3, @$);  WARN_COMPLEXSTAR($3, @$);}
     | KW_LOGICAL { $$ = ATTR_TYPE(Logical, @$); }
     | KW_LOGICAL "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Logical, $3, @$); }
     | KW_LOGICAL "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Logical, $3, @$); }
