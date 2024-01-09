@@ -113,7 +113,7 @@
                         (IntegerConstant 1 (Integer 4))
                         (IntegerConstant 3 (Integer 4))
                         ())
-                        [(=
+                        [(Assignment
                             (ArrayItem
                                 (Var 2 a)
                                 [(()
@@ -231,7 +231,7 @@
                         (IntegerConstant 11 (Integer 4))
                         (IntegerConstant 14 (Integer 4))
                         ())
-                        [(=
+                        [(Assignment
                             (ArrayItem
                                 (Var 2 b)
                                 [(()
@@ -378,7 +378,7 @@
                         (IntegerConstant 1 (Integer 4))
                         (IntegerConstant 3 (Integer 4))
                         ())
-                        [(=
+                        [(Assignment
                             (ArrayItem
                                 (Var 2 b)
                                 [(()
@@ -501,7 +501,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 b)
                             [(()
@@ -593,7 +593,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 b)
                             [(()
@@ -655,7 +655,7 @@
                             (IntegerConstant 1 (Integer 4))
                             (IntegerConstant 2 (Integer 4))
                             ())
-                            [(=
+                            [(Assignment
                                 (ArrayItem
                                     (Var 2 c)
                                     [(()

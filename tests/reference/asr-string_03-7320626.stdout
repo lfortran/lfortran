@@ -100,7 +100,7 @@
                         })
                     string_03
                     [string_03_mod]
-                    [(=
+                    [(Assignment
                         (Var 3 verb)
                         (StringConstant
                             "learned "
@@ -108,7 +108,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 3 posit)
                         (StringConstant
                             "from "
@@ -116,7 +116,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 3 title)
                         (StringConstant
                             "the "
@@ -124,7 +124,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 3 last_name)
                         (StringConstant
                             "best"
@@ -132,7 +132,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 3 combined)
                         (StringConcat
                             (StringConcat

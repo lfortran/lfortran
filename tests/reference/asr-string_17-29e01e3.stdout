@@ -111,7 +111,7 @@
                                             ()
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 4 length)
                                             (StringLen
                                                 (StructInstanceMember
@@ -127,7 +127,7 @@
                                             )
                                             ()
                                         )]
-                                        [(=
+                                        [(Assignment
                                             (Var 4 length)
                                             (IntegerConstant 0 (Integer 4))
                                             ()
@@ -254,7 +254,7 @@
                                             ()
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 5 maybe_string)
                                             (StructInstanceMember
                                                 (Var 5 string)
@@ -266,7 +266,7 @@
                                             )
                                             ()
                                         )]
-                                        [(=
+                                        [(Assignment
                                             (Var 5 maybe_string)
                                             (StringConstant
                                                 ""

@@ -43,7 +43,7 @@
             ())]
             ()
         )]
-        [(=
+        [(Assignment
             0
             iam
             (FuncCallOrArray
@@ -64,7 +64,7 @@
             0
             ()
             (== iam 1)
-            [(=
+            [(Assignment
                 0
                 x
                 (Real "1.0")

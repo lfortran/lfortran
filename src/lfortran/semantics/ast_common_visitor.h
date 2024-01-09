@@ -708,6 +708,7 @@ public:
         {"atan2", {IntrinsicSignature({}, 2, 2)}},
         {"shape", {IntrinsicSignature({"kind"}, 1, 2)}},
         {"mod", {IntrinsicSignature({"mod"}, 1, 2)}},
+        {"repeat", {IntrinsicSignature({"repeat"}, 2, 2)}},
         {"hypot", {IntrinsicSignature({"hypot"}, 2, 2)}},
     };
 
@@ -2559,13 +2560,16 @@ public:
                                     lhs_len = rhs_len;
                                 } else if (lhs_len >= 0) {
                                     if (lhs_len != rhs_len) {
-                                        // Note: this might be valid, perhaps
-                                        // change this to a warning
-                                        throw SemanticError("The LHS character len="
-                                            + std::to_string(lhs_len)
-                                            + " and the RHS character len="
-                                            + std::to_string(rhs_len)
-                                            + " are not equal.", x.base.base.loc);
+                                        diag.semantic_warning_label(
+                                            "The LHS character len="
+                                                + std::to_string(lhs_len)
+                                                + " and the RHS character len="
+                                                + std::to_string(rhs_len)
+                                                + " are not equal.",
+                                            {x.base.base.loc},
+                                            "help: consider changing the RHS character len to match the LHS character len"
+                                        );
+                                        rhs_len = lhs_len;
                                     }
                                 } else {
                                     LCOMPILERS_ASSERT(lhs_len == -2)
@@ -3225,22 +3229,6 @@ public:
         Vec<ASR::expr_t*> body;
         body.reserve(al, x.n_args);
         ASR::ttype_t *type = nullptr;
-        for (size_t i=0; i<x.n_args; i++) {
-            this->visit_expr(*x.m_args[i]);
-            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
-            if (type == nullptr) {
-                type = ASRUtils::expr_type(expr);
-            } else {
-                if (!ASRUtils::check_equal_type(ASRUtils::expr_type(expr), type)) {
-                    throw SemanticError(std::string("Type mismatch in array initializer ") +
-                        ASRUtils::get_type_code(ASRUtils::expr_type(expr))
-                        + " and " +
-                        ASRUtils::get_type_code(type) + ".",
-                        x.base.base.loc);
-                }
-            }
-            body.push_back(al, expr);
-        }
         Vec<ASR::dimension_t> dims;
         dims.reserve(al, 1);
         if (x.m_vartype != nullptr) {
@@ -3252,6 +3240,18 @@ public:
             if (x.n_args == 0) {
                 throw SemanticError("Empty array constructor is not allowed", x.base.base.loc);
             }
+        }
+        for (size_t i=0; i<x.n_args; i++) {
+            this->visit_expr(*x.m_args[i]);
+            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
+            if (type == nullptr) {
+                type = ASRUtils::expr_type(expr);
+            } else {
+                if (!ASRUtils::check_equal_type(ASRUtils::expr_type(expr), type)) {
+                    ImplicitCastRules::set_converted_value(al, expr->base.loc, &expr, ASRUtils::expr_type(expr), type);
+                }
+            }
+            body.push_back(al, expr);
         }
         ASR::dimension_t dim;
         dim.loc = x.base.base.loc;

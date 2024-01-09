@@ -62,15 +62,15 @@
                         })
                     nullify_01
                     []
-                    [(=>
+                    [(Associate
                         (Var 2 p1)
                         (Var 2 t1)
                     )
-                    (=>
+                    (Associate
                         (Var 2 p2)
                         (Var 2 t1)
                     )
-                    (=
+                    (Assignment
                         (Var 2 p1)
                         (IntegerConstant 1 (Integer 4))
                         ()

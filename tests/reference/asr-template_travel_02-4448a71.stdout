@@ -226,7 +226,7 @@
                                                     (Var 27 t1)
                                                     (Var 27 d2)
                                                     (Var 27 t2)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 27 avg)
                                                         (FunctionCall
                                                             23 slash_real
@@ -370,7 +370,7 @@
                                                     (Var 25 s1)
                                                     (Var 25 d2)
                                                     (Var 25 s2)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 25 avg)
                                                         (FunctionCall
                                                             24 __asr_avg_s_from_t
@@ -441,7 +441,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 24 s)
                                         (FunctionCall
                                             24 avg_real_s_from_s
@@ -589,7 +589,7 @@
                                     []
                                     [(Var 3 x)
                                     (Var 3 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 total)
                                         (RealBinOp
                                             (Var 3 x)
@@ -679,7 +679,7 @@
                                     []
                                     [(Var 4 x)
                                     (Var 4 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 4 total)
                                         (RealBinOp
                                             (Var 4 x)
@@ -1300,7 +1300,7 @@
                                                     (Var 17 s1)
                                                     (Var 17 d2)
                                                     (Var 17 s2)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 17 avg)
                                                         (FunctionCall
                                                             11 avg_s_from_t
@@ -1474,7 +1474,7 @@
                                                     (Var 16 t1)
                                                     (Var 16 d2)
                                                     (Var 16 t2)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 16 avg)
                                                         (FunctionCall
                                                             11 d_divided_by_t
@@ -2092,7 +2092,7 @@
                                                     (Var 21 s1)
                                                     (Var 21 d2)
                                                     (Var 21 s2)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 21 avg)
                                                         (FunctionCall
                                                             18 avg_s_from_t
@@ -2265,7 +2265,7 @@
                                                     (Var 22 t1)
                                                     (Var 22 d2)
                                                     (Var 22 t2)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 22 avg)
                                                         (FunctionCall
                                                             18 div

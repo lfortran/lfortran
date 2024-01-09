@@ -231,7 +231,7 @@
                         })
                     intrinsics_31
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 x_ceil)
                         (Cast
                             (FunctionCall
@@ -248,7 +248,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 y_ceil)
                         (Cast
                             (FunctionCall
@@ -265,7 +265,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 z_ceil)
                         (FunctionCall
                             2 ceiling@dceiling
@@ -277,7 +277,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 w_ceil)
                         (FunctionCall
                             2 ceiling@dceiling

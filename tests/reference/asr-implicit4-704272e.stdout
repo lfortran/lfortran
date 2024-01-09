@@ -203,7 +203,7 @@
                     [(Var 2 x)
                     (Var 2 y)
                     (Var 2 w)]
-                    [(=
+                    [(Assignment
                         (Var 2 ialbetas)
                         (Cast
                             (ArrayItem
@@ -221,7 +221,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 iixs)
                         (Cast
                             (ArrayItem
@@ -239,7 +239,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 nsteps)
                         (Cast
                             (ArrayItem
@@ -257,7 +257,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 iww)
                         (Cast
                             (ArrayItem
@@ -275,7 +275,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 n)
                         (Cast
                             (ArrayItem

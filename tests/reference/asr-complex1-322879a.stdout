@@ -26,7 +26,7 @@
                         })
                     complex1
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 x)
                         (ComplexConstructor
                             (RealConstant

@@ -46,7 +46,7 @@
                         })
                     main
                     [recursion_02]
-                    [(=
+                    [(Assignment
                         (Var 7 r)
                         (FunctionCall
                             7 sub1
@@ -206,7 +206,7 @@
                                     [sub1]
                                     [(Var 3 f)
                                     (Var 3 iter)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 f_val)
                                         (FunctionCall
                                             3 f
@@ -227,7 +227,7 @@
                                         ()
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 solver)
                                         (FunctionCall
                                             2 sub1
@@ -246,7 +246,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 f_val)
                                         (FunctionCall
                                             3 f
@@ -326,7 +326,7 @@
                                                         ()
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 6 getx)
                                                         (Var 5 x)
                                                         ()
@@ -437,7 +437,7 @@
                                     [solver]
                                     [(Var 5 y)
                                     (Var 5 iter)]
-                                    [(=
+                                    [(Assignment
                                         (Var 5 x)
                                         (Var 5 y)
                                         ()
@@ -458,7 +458,7 @@
                                             (Logical 4)
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 5 sub1)
                                             (IntegerConstant 1 (Integer 4))
                                             ()
@@ -466,7 +466,7 @@
                                         (Return)]
                                         []
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 5 tmp)
                                         (FunctionCall
                                             5 getx
@@ -478,7 +478,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 5 sub1)
                                         (FunctionCall
                                             2 solver

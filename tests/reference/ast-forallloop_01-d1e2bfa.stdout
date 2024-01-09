@@ -80,13 +80,13 @@
             ())]
             ()
         )]
-        [(=
+        [(Assignment
             0
             scalar
             10
             ()
         )
-        (=
+        (Assignment
             0
             nsize
             (FuncCallOrArray
@@ -113,7 +113,7 @@
             )]
             ()
             []
-            [(=
+            [(Assignment
                 0
                 (FuncCallOrArray
                     a
@@ -129,7 +129,7 @@
                 5
                 ()
             )
-            (=
+            (Assignment
                 0
                 (FuncCallOrArray
                     b
@@ -279,7 +279,7 @@
                 ())]
                 ()
             )]
-            [(=
+            [(Assignment
                 0
                 N
                 (FuncCallOrArray
@@ -305,7 +305,7 @@
                     ()
                 )]
                 ()
-                (=
+                (Assignment
                     0
                     (FuncCallOrArray
                         c

@@ -158,13 +158,13 @@
             ())]
             ()
         )]
-        [(=
+        [(Assignment
             0
             A
             10
             ()
         )
-        (=
+        (Assignment
             0
             B
             20

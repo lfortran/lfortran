@@ -72,7 +72,7 @@
             ())]
             ()
         )]
-        [(=
+        [(Assignment
             0
             N
             (FuncCallOrArray
@@ -88,7 +88,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             s
             0
@@ -108,7 +108,7 @@
                 ReduceMul
                 [s]
             )]
-            [(=
+            [(Assignment
                 0
                 s
                 (+ s (FuncCallOrArray
@@ -141,7 +141,7 @@
                 ReduceMIN
                 [s]
             )]
-            [(=
+            [(Assignment
                 0
                 s
                 (+ s (FuncCallOrArray
@@ -174,7 +174,7 @@
                 ReduceMAX
                 [s]
             )]
-            [(=
+            [(Assignment
                 0
                 s
                 (+ s (FuncCallOrArray

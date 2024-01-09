@@ -260,7 +260,7 @@
                                                         ()
                                                     )
                                                 )
-                                                [(=>
+                                                [(Associate
                                                     (Var 13 ptr)
                                                     (StructInstanceMember
                                                         (ArrayItem
@@ -402,7 +402,7 @@
                                     []
                                     [(Var 12 self)
                                     (Var 12 n)]
-                                    [(=
+                                    [(Assignment
                                         (StructInstanceMember
                                             (Var 12 self)
                                             12 1_toml_vector_n
@@ -944,7 +944,7 @@
                                             ()
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 5 match)
                                             (StringCompare
                                                 (Var 5 key)
@@ -962,7 +962,7 @@
                                             )
                                             ()
                                         )]
-                                        [(=
+                                        [(Assignment
                                             (Var 5 match)
                                             (LogicalConstant
                                                 .false.

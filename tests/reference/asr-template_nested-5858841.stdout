@@ -152,7 +152,7 @@
                                                     [f]
                                                     [(Var 7 x)
                                                     (Var 7 y)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 7 z)
                                                         (FunctionCall
                                                             5 f
@@ -258,7 +258,7 @@
                                                     [add_generic]
                                                     [(Var 8 x)
                                                     (Var 8 y)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 8 z)
                                                         (FunctionCall
                                                             5 add_generic
@@ -472,7 +472,7 @@
                                     []
                                     [(Var 9 x)
                                     (Var 9 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 9 z)
                                         (RealBinOp
                                             (Var 9 x)
@@ -688,7 +688,7 @@
                                                     [func_arg_real]
                                                     [(Var 13 x)
                                                     (Var 13 y)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 13 z)
                                                         (FunctionCall
                                                             2 func_arg_real
@@ -796,7 +796,7 @@
                                                     [__asr_add_generic]
                                                     [(Var 11 x)
                                                     (Var 11 y)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 11 z)
                                                         (FunctionCall
                                                             10 __asr_add_generic
@@ -881,7 +881,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 10 x)
                                         (RealConstant
                                             5.100000
@@ -889,7 +889,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 10 y)
                                         (RealConstant
                                             7.200000

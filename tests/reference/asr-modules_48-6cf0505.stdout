@@ -246,7 +246,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 8 char_str_alloc)
                         (StringConstant
                             "runningmodules_48_1"
@@ -254,7 +254,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (StructInstanceMember
                             (ArrayItem
                                 (Var 8 string_var)
@@ -276,7 +276,7 @@
                         (Var 8 char_str_alloc)
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 8 char_str)
                         (StringConstant
                             "runningmodules_48_2"
@@ -284,7 +284,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (StructInstanceMember
                             (ArrayItem
                                 (Var 8 string_var)
@@ -306,7 +306,7 @@
                         (Var 8 char_str)
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 8 char_str_hash1)
                         (FunctionCall
                             8 fnv_1a@fnv_1a_char
@@ -319,7 +319,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 8 char_str_hash2)
                         (FunctionCall
                             8 fnv_1a@fnv_1a_char
@@ -351,7 +351,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 8 char_str_hash3)
                         (FunctionCall
                             8 fnv_1a_string_t
@@ -377,7 +377,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 8 char_str_hash4)
                         (FunctionCall
                             8 fnv_1a_string_t
@@ -422,7 +422,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 8 cat_str_alloc)
                         (FunctionCall
                             8 string_cat
@@ -496,7 +496,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 8 cat_str_alloc)
                         (FunctionCall
                             8 string_cat
@@ -749,12 +749,12 @@
                                             ()
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 4 hash)
                                             (Var 4 seed)
                                             ()
                                         )]
-                                        [(=
+                                        [(Assignment
                                             (Var 4 hash)
                                             (Var 4 fnv_offset_32)
                                             ()
@@ -770,7 +770,7 @@
                                             ()
                                         )
                                         ())
-                                        [(=
+                                        [(Assignment
                                             (Var 4 hash)
                                             (IntegerBinOp
                                                 (FunctionCall
@@ -918,7 +918,7 @@
                                     [fnv_1a_char]
                                     [(Var 5 input)
                                     (Var 5 seed)]
-                                    [(=
+                                    [(Assignment
                                         (Var 5 hash)
                                         (FunctionCall
                                             2 fnv_1a_char
@@ -959,7 +959,7 @@
                                             ()
                                         )
                                         ())
-                                        [(=
+                                        [(Assignment
                                             (Var 5 hash)
                                             (FunctionCall
                                                 2 fnv_1a_char
@@ -1213,7 +1213,7 @@
                                     )
                                     []
                                     [(Var 6 line)]
-                                    [(=
+                                    [(Assignment
                                         (Var 6 name)
                                         (FunctionCall
                                             6 trim
@@ -1244,7 +1244,7 @@
                                             (Logical 4)
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 6 lout)
                                             (LogicalBinOp
                                                 (LogicalBinOp
@@ -1331,7 +1331,7 @@
                                             )
                                             ()
                                         )]
-                                        [(=
+                                        [(Assignment
                                             (Var 6 lout)
                                             (LogicalConstant
                                                 .false.
@@ -1507,7 +1507,7 @@
                                             (Logical 4)
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 7 cat)
                                             (StringConstant
                                                 ""
@@ -1527,12 +1527,12 @@
                                             ()
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 7 delim_str)
                                             (Var 7 delim)
                                             ()
                                         )]
-                                        [(=
+                                        [(Assignment
                                             (Var 7 delim_str)
                                             (StringConstant
                                                 ""
@@ -1541,7 +1541,7 @@
                                             ()
                                         )]
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 7 cat)
                                         (StructInstanceMember
                                             (ArrayItem
@@ -1574,7 +1574,7 @@
                                             ()
                                         )
                                         ())
-                                        [(=
+                                        [(Assignment
                                             (Var 7 cat)
                                             (StringConcat
                                                 (StringConcat

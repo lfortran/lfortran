@@ -229,7 +229,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 6 z)
                                         (IntegerConstant 5 (Integer 4))
                                         ()

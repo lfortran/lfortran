@@ -110,7 +110,7 @@
                                     )
                                     []
                                     [(Var 3 x)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 q_return_var_name)
                                         (LogicalNot
                                             (LogicalBinOp

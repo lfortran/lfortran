@@ -42,25 +42,25 @@
             ())]
             ()
         )]
-        [(=
+        [(Assignment
             0
             i
             1
             ()
         )
-        (=
+        (Assignment
             0
             j
             1
             ()
         )
-        (=
+        (Assignment
             0
             k
             1
             ()
         )
-        (=
+        (Assignment
             0
             l
             1
@@ -307,7 +307,7 @@
                 ())]
                 ()
             )]
-            [(=
+            [(Assignment
                 0
                 b
                 (+ (+ (+ a 1) c) d)

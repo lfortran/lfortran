@@ -78,7 +78,7 @@
                                     []
                                     [(Var 4 lhs)
                                     (Var 4 rhs)]
-                                    [(=
+                                    [(Assignment
                                         (StructInstanceMember
                                             (Var 4 lhs)
                                             4 1_string_type_raw
@@ -204,7 +204,7 @@
                                     )
                                     [assign_string_char]
                                     [(Var 5 string)]
-                                    [(=
+                                    [(Assignment
                                         (Var 5 trimmed_string)
                                         (StructInstanceMember
                                             (Var 5 string)

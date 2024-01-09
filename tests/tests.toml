@@ -374,7 +374,11 @@ filename = "errors/cpp8.f90"
 asr_preprocess = true
 
 [[test]]
-filename = "errors/template_error_01.f90"
+filename = "errors/template_error_01a.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_error_01b.f90"
 asr = true
 
 [[test]]
@@ -419,6 +423,10 @@ asr = true
 
 [[test]]
 filename = "warnings/dim_assgn_test.f90"
+asr = true
+
+[[test]]
+filename = "warnings/character_01.f90"
 asr = true
 
 [[test]]
@@ -1231,10 +1239,6 @@ asr = true
 
 [[test]]
 filename = "../integration_tests/derived_types_17.f90"
-asr = true
-
-[[test]]
-filename = "../integration_tests/derived_types_30.f90"
 asr = true
 
 [[test]]

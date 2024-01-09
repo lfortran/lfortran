@@ -42,7 +42,7 @@
                         })
                     types_03
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 r)
                         (RealConstant
                             1.500000
@@ -55,7 +55,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 i)
                         (Cast
                             (Var 2 r)

@@ -1131,6 +1131,208 @@ namespace LCompilers {
         return function_type;
     }
 
+    std::vector<llvm::Type*> LLVMUtils::convert_args(ASR::FunctionType_t* x, llvm::Module* module) {
+        std::vector<llvm::Type*> args;
+        for (size_t i=0; i < x->n_arg_types; i++) {
+            llvm::Type *type = nullptr, *type_original = nullptr;
+            int n_dims = 0, a_kind = 4;
+            bool is_array_type = false;
+            type_original = get_arg_type_from_ttype_t(x->m_arg_types[i],
+                nullptr, x->m_abi, x->m_abi, ASR::storage_typeType::Default,
+                false, n_dims, a_kind, is_array_type, ASR::intentType::Unspecified,
+                module, false);
+            if( is_array_type ) {
+                type = type_original->getPointerTo();
+            } else {
+                type = type_original;
+            }
+            args.push_back(type);
+        }
+        return args;
+    }
+
+    llvm::FunctionType* LLVMUtils::get_function_type(ASR::FunctionType_t* x, llvm::Module* module) {
+        llvm::Type *return_type;
+        if (x->m_return_var_type) {
+            ASR::ttype_t* return_var_type0 = x->m_return_var_type;
+            ASR::ttypeType return_var_type = return_var_type0->type;
+            switch (return_var_type) {
+                case (ASR::ttypeType::Integer) : {
+                    int a_kind = ASR::down_cast<ASR::Integer_t>(return_var_type0)->m_kind;
+                    return_type = getIntType(a_kind);
+                    break;
+                }
+                case (ASR::ttypeType::UnsignedInteger) : {
+                    int a_kind = ASR::down_cast<ASR::UnsignedInteger_t>(return_var_type0)->m_kind;
+                    return_type = getIntType(a_kind);
+                    break;
+                }
+                case (ASR::ttypeType::Real) : {
+                    int a_kind = ASR::down_cast<ASR::Real_t>(return_var_type0)->m_kind;
+                    return_type = getFPType(a_kind);
+                    break;
+                }
+                case (ASR::ttypeType::Complex) : {
+                    int a_kind = ASR::down_cast<ASR::Complex_t>(return_var_type0)->m_kind;
+                    if (a_kind == 4) {
+                        if (x->m_abi == ASR::abiType::BindC) {
+                            if (compiler_options.platform == Platform::Windows) {
+                                // i64
+                                return_type = llvm::Type::getInt64Ty(context);
+                            } else if (compiler_options.platform == Platform::macOS_ARM) {
+                                // {float, float}
+                                return_type = getComplexType(a_kind);
+                            } else {
+                                // <2 x float>
+                                return_type = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2);
+                            }
+                        } else {
+                            return_type = getComplexType(a_kind);
+                        }
+                    } else {
+                        LCOMPILERS_ASSERT(a_kind == 8)
+                        if (x->m_abi == ASR::abiType::BindC) {
+                            if (compiler_options.platform == Platform::Windows) {
+                                // pass as subroutine
+                                return_type = getComplexType(a_kind, true);
+                                std::vector<llvm::Type*> args = convert_args(x, module);
+                                args.insert(args.begin(), return_type);
+                                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                                        llvm::Type::getVoidTy(context), args, false);
+                                return function_type;
+                            } else {
+                                return_type = getComplexType(a_kind);
+                            }
+                        } else {
+                            return_type = getComplexType(a_kind);
+                        }
+                    }
+                    break;
+                }
+                case (ASR::ttypeType::Character) :
+                    return_type = character_type;
+                    break;
+                case (ASR::ttypeType::Logical) :
+                    return_type = llvm::Type::getInt1Ty(context);
+                    break;
+                case (ASR::ttypeType::CPtr) :
+                    return_type = llvm::Type::getVoidTy(context)->getPointerTo();
+                    break;
+                case (ASR::ttypeType::Const) : {
+                    return_type = get_type_from_ttype_t_util(ASRUtils::get_contained_type(return_var_type0), module);
+                    break;
+                }
+                case (ASR::ttypeType::Pointer) : {
+                    return_type = get_type_from_ttype_t_util(ASRUtils::get_contained_type(return_var_type0), module)->getPointerTo();
+                    break;
+                }
+                case (ASR::ttypeType::Allocatable) : {
+                    // TODO: Do getPointerTo as well.
+                    return_type = get_type_from_ttype_t_util(ASRUtils::get_contained_type(return_var_type0), module);
+                    break;
+                }
+                case (ASR::ttypeType::Struct) :
+                    throw CodeGenError("Struct return type not implemented yet");
+                    break;
+                case (ASR::ttypeType::Tuple) : {
+                    ASR::Tuple_t* asr_tuple = ASR::down_cast<ASR::Tuple_t>(return_var_type0);
+                    std::string type_code = ASRUtils::get_type_code(asr_tuple->m_type,
+                                                                    asr_tuple->n_type);
+                    std::vector<llvm::Type*> llvm_el_types;
+                    for( size_t i = 0; i < asr_tuple->n_type; i++ ) {
+                        bool is_local_array_type = false, is_local_malloc_array_type = false;
+                        bool is_local_list = false;
+                        ASR::dimension_t* local_m_dims = nullptr;
+                        int local_n_dims = 0;
+                        int local_a_kind = -1;
+                        ASR::storage_typeType local_m_storage = ASR::storage_typeType::Default;
+                        llvm_el_types.push_back(get_type_from_ttype_t(
+                                asr_tuple->m_type[i], nullptr, local_m_storage,
+                                is_local_array_type, is_local_malloc_array_type,
+                                is_local_list, local_m_dims, local_n_dims, local_a_kind, module));
+                    }
+                    return_type = tuple_api->get_tuple_type(type_code, llvm_el_types);
+                    break;
+                }
+                case (ASR::ttypeType::List) : {
+                    bool is_array_type = false, is_malloc_array_type = false;
+                    bool is_list = true;
+                    ASR::dimension_t *m_dims = nullptr;
+                    ASR::storage_typeType m_storage = ASR::storage_typeType::Default;
+                    int n_dims = 0, a_kind = -1;
+                    ASR::List_t* asr_list = ASR::down_cast<ASR::List_t>(return_var_type0);
+                    llvm::Type* el_llvm_type = get_type_from_ttype_t(asr_list->m_type, nullptr, m_storage,
+                        is_array_type, is_malloc_array_type, is_list, m_dims, n_dims, a_kind, module);
+                    int32_t type_size = -1;
+                    if( LLVM::is_llvm_struct(asr_list->m_type) ||
+                        ASR::is_a<ASR::Character_t>(*asr_list->m_type) ||
+                        ASR::is_a<ASR::Complex_t>(*asr_list->m_type) ) {
+                        llvm::DataLayout data_layout(module);
+                        type_size = data_layout.getTypeAllocSize(el_llvm_type);
+                    } else {
+                        type_size = a_kind;
+                    }
+                    std::string el_type_code = ASRUtils::get_type_code(asr_list->m_type);
+                    return_type = list_api->get_list_type(el_llvm_type, el_type_code, type_size);
+                    break;
+                }
+                case (ASR::ttypeType::Dict) : {
+                    ASR::Dict_t* asr_dict = ASR::down_cast<ASR::Dict_t>(return_var_type0);
+                    std::string key_type_code = ASRUtils::get_type_code(asr_dict->m_key_type);
+                    std::string value_type_code = ASRUtils::get_type_code(asr_dict->m_value_type);
+
+                    bool is_local_array_type = false, is_local_malloc_array_type = false;
+                    bool is_local_list = false;
+                    ASR::dimension_t* local_m_dims = nullptr;
+                    ASR::storage_typeType local_m_storage = ASR::storage_typeType::Default;
+                    int local_n_dims = 0, local_a_kind = -1;
+
+                    llvm::Type* key_llvm_type = get_type_from_ttype_t(asr_dict->m_key_type,
+                        nullptr, local_m_storage, is_local_array_type, is_local_malloc_array_type,
+                        is_local_list, local_m_dims, local_n_dims, local_a_kind, module);
+                    llvm::Type* value_llvm_type = get_type_from_ttype_t(asr_dict->m_value_type,
+                        nullptr, local_m_storage,is_local_array_type, is_local_malloc_array_type,
+                        is_local_list, local_m_dims, local_n_dims, local_a_kind, module);
+                    int32_t key_type_size = get_type_size(asr_dict->m_key_type, key_llvm_type, local_a_kind, module);
+                    int32_t value_type_size = get_type_size(asr_dict->m_value_type, value_llvm_type, local_a_kind, module);
+
+                    set_dict_api(asr_dict);
+
+                    return_type = dict_api->get_dict_type(key_type_code, value_type_code, key_type_size,value_type_size, key_llvm_type, value_llvm_type);
+                    break;
+                }
+                case (ASR::ttypeType::Set) : {
+                    ASR::Set_t* asr_set = ASR::down_cast<ASR::Set_t>(return_var_type0);
+                    std::string el_type_code = ASRUtils::get_type_code(asr_set->m_type);
+
+                    bool is_local_array_type = false, is_local_malloc_array_type = false;
+                    bool is_local_list = false;
+                    ASR::dimension_t* local_m_dims = nullptr;
+                    ASR::storage_typeType local_m_storage = ASR::storage_typeType::Default;
+                    int local_n_dims = 0, local_a_kind = -1;
+
+                    llvm::Type* el_llvm_type = get_type_from_ttype_t(asr_set->m_type,
+                        nullptr, local_m_storage, is_local_array_type, is_local_malloc_array_type,
+                        is_local_list, local_m_dims, local_n_dims, local_a_kind, module);
+                    int32_t el_type_size = get_type_size(asr_set->m_type, el_llvm_type, local_a_kind, module);
+
+                    set_set_api(asr_set);
+
+                    return_type = set_api->get_set_type(el_type_code, el_type_size, el_llvm_type);
+                    break;
+                }
+                default :
+                    throw CodeGenError("Type not implemented " + std::to_string(return_var_type));
+            }
+        } else {
+            return_type = llvm::Type::getVoidTy(context);
+        }
+        std::vector<llvm::Type*> args = convert_args(x, module);
+        llvm::FunctionType *function_type = llvm::FunctionType::get(
+                return_type, args, false);
+        return function_type;
+    }
+
     llvm::Type* LLVMUtils::get_type_from_ttype_t(ASR::ttype_t* asr_type,
         ASR::symbol_t *type_declaration, ASR::storage_typeType m_storage,
         bool& is_array_type, bool& is_malloc_array_type, bool& is_list,
@@ -1329,9 +1531,14 @@ namespace LCompilers {
                 break;
             }
             case (ASR::ttypeType::FunctionType) : {
-                ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(
-                    ASRUtils::symbol_get_past_external(type_declaration));
-                llvm_type = get_function_type(*fn, module)->getPointerTo();
+                if( type_declaration ) {
+                    ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(
+                        ASRUtils::symbol_get_past_external(type_declaration));
+                    llvm_type = get_function_type(*fn, module)->getPointerTo();
+                } else {
+                    ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(asr_type);
+                    llvm_type = get_function_type(func_type, module)->getPointerTo();
+                }
                 break;
             }
             default :

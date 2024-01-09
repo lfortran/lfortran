@@ -120,7 +120,7 @@
                                                     [(Var 8 a)
                                                     (Var 8 x)
                                                     (Var 8 y)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 8 y)
                                                         (ArrayBroadcast
                                                             (FunctionCall
@@ -569,7 +569,7 @@
                                                     [(Var 15 a)
                                                     (Var 15 x)
                                                     (Var 15 y)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 15 y)
                                                         (ArrayBroadcast
                                                             (FunctionCall
@@ -791,7 +791,7 @@
                                                     []
                                                     [(Var 13 arg0)
                                                     (Var 13 arg1)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 13 ret)
                                                         (RealBinOp
                                                             (Var 13 arg0)
@@ -893,7 +893,7 @@
                                                     []
                                                     [(Var 14 arg0)
                                                     (Var 14 arg1)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 14 ret)
                                                         (RealBinOp
                                                             (Var 14 arg0)
@@ -933,7 +933,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 12 a)
                                         (RealConstant
                                             0.500000
@@ -941,7 +941,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 12 x)
                                         (ArrayBroadcast
                                             (IntegerConstant 2 (Integer 4))
@@ -976,7 +976,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 12 y)
                                         (ArrayBroadcast
                                             (Cast
@@ -1202,7 +1202,7 @@
                                     []
                                     [(Var 10 a)
                                     (Var 10 b)]
-                                    [(=
+                                    [(Assignment
                                         (Var 10 op)
                                         (RealBinOp
                                             (Var 10 a)
@@ -1370,7 +1370,7 @@
                                     [(Var 11 a)
                                     (Var 11 x)
                                     (Var 11 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 11 y)
                                         (ArrayBroadcast
                                             (FunctionCall
@@ -1516,7 +1516,7 @@
                                     []
                                     [(Var 9 a)
                                     (Var 9 b)]
-                                    [(=
+                                    [(Assignment
                                         (Var 9 op)
                                         (RealBinOp
                                             (Var 9 a)

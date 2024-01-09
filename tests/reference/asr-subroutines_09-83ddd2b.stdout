@@ -257,7 +257,7 @@
                                     [(Nullify
                                         [3 ptr]
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 stat)
                                         (LogicalConstant
                                             .true.
@@ -389,7 +389,7 @@
                                     [(Nullify
                                         [4 ptr]
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 stat)
                                         (LogicalConstant
                                             .true.

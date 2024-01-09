@@ -305,7 +305,7 @@
                                                 )
                                         })
                                     ~select_type_block_
-                                    [(=>
+                                    [(Associate
                                         (Var 7 an)
                                         (Var 4 p_or_cp)
                                     )
@@ -387,7 +387,7 @@
                                                 )
                                         })
                                     ~select_type_block_1
-                                    [(=>
+                                    [(Associate
                                         (Var 8 an)
                                         (Var 4 p_or_cp)
                                     )
@@ -421,7 +421,7 @@
                         })
                     select_type_02
                     [derived_type_collection]
-                    [(=
+                    [(Assignment
                         (StructInstanceMember
                             (Var 4 p)
                             4 1_point_x
@@ -434,7 +434,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (StructInstanceMember
                             (Var 4 p)
                             4 1_point_y
@@ -447,7 +447,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (StructInstanceMember
                             (Var 4 p3d)
                             4 1_point_x
@@ -460,7 +460,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (StructInstanceMember
                             (Var 4 p3d)
                             4 1_point_y
@@ -473,7 +473,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (StructInstanceMember
                             (Var 4 p3d)
                             4 1_point_3d_z
@@ -486,7 +486,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (StructInstanceMember
                             (Var 4 cp)
                             4 1_point_x
@@ -499,7 +499,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (StructInstanceMember
                             (Var 4 cp)
                             4 1_point_y
@@ -512,7 +512,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (StructInstanceMember
                             (Var 4 cp)
                             4 1_color_point_color
@@ -522,7 +522,7 @@
                         (IntegerConstant 8 (Integer 4))
                         ()
                     )
-                    (=>
+                    (Associate
                         (Var 4 p_or_cp)
                         (Var 4 cp)
                     )

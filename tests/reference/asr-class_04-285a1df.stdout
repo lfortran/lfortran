@@ -292,7 +292,7 @@
                         })
                     main
                     []
-                    [(=
+                    [(Assignment
                         (StructInstanceMember
                             (StructInstanceMember
                                 (Var 2 foo)
@@ -313,7 +313,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (StructInstanceMember
                             (StructInstanceMember
                                 (Var 2 foo)
@@ -330,7 +330,7 @@
                         (IntegerConstant 9 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (StructInstanceMember
                             (StructInstanceMember
                                 (Var 2 foo)

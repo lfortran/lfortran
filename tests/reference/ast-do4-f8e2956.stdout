@@ -36,7 +36,7 @@
             ())]
             ()
         )]
-        [(=
+        [(Assignment
             0
             j
             0
@@ -50,7 +50,7 @@
             1
             5
             ()
-            [(=
+            [(Assignment
                 0
                 j
                 (+ j i)
@@ -67,7 +67,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             j
             0
@@ -81,7 +81,7 @@
             1
             6
             2
-            [(=
+            [(Assignment
                 0
                 j
                 (+ j i)
@@ -98,7 +98,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             k
             0
@@ -120,7 +120,7 @@
                 1
                 5
                 ()
-                [(=
+                [(Assignment
                     0
                     k
                     (+ k 1)

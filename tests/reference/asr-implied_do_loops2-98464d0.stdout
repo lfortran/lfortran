@@ -65,7 +65,7 @@
                         })
                     implied_do_loop2
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 array)
                         (ArrayReshape
                             (ArrayConstant

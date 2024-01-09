@@ -385,12 +385,12 @@
                         })
                     matmul_01
                     [matmul_01_cpu]
-                    [(=
+                    [(Assignment
                         (Var 6 n)
                         (IntegerConstant 96 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 iter)
                         (IntegerConstant 1 (Integer 4))
                         ()
@@ -532,7 +532,7 @@
                         (IntegerConstant 1 (Integer 4))
                         (Var 6 iter)
                         ())
-                        [(=
+                        [(Assignment
                             (Var 6 c)
                             (IntrinsicArrayFunction
                                 MatMul
@@ -560,7 +560,7 @@
                         [((Var 6 t2))]
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 t)
                         (RealBinOp
                             (RealBinOp
@@ -582,7 +582,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 ghz)
                         (RealConstant
                             1000000000.000000
@@ -590,7 +590,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 fma_clock)
                         (RealConstant
                             0.062500
@@ -598,7 +598,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 freq)
                         (RealBinOp
                             (RealConstant
@@ -612,7 +612,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 measured)
                         (RealBinOp
                             (RealBinOp
@@ -640,7 +640,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 percent_peak)
                         (RealBinOp
                             (RealBinOp
@@ -761,7 +761,7 @@
                         [((Var 6 t2))]
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 err)
                         (IntrinsicArrayFunction
                             MaxVal
@@ -807,7 +807,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 t)
                         (RealBinOp
                             (RealBinOp
@@ -829,7 +829,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 ghz)
                         (RealConstant
                             1000000000.000000
@@ -837,7 +837,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 fma_clock)
                         (RealConstant
                             0.062500
@@ -845,7 +845,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 freq)
                         (RealBinOp
                             (RealConstant
@@ -859,7 +859,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 measured)
                         (RealBinOp
                             (RealBinOp
@@ -887,7 +887,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 percent_peak)
                         (RealBinOp
                             (RealBinOp
@@ -1024,7 +1024,7 @@
                         [((Var 6 t2))]
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 err)
                         (IntrinsicArrayFunction
                             MaxVal
@@ -1070,7 +1070,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 t)
                         (RealBinOp
                             (RealBinOp
@@ -1092,7 +1092,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 ghz)
                         (RealConstant
                             1000000000.000000
@@ -1100,7 +1100,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 fma_clock)
                         (RealConstant
                             0.062500
@@ -1108,7 +1108,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 freq)
                         (RealBinOp
                             (RealConstant
@@ -1122,7 +1122,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 measured)
                         (RealBinOp
                             (RealBinOp
@@ -1150,7 +1150,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 6 percent_peak)
                         (RealBinOp
                             (RealBinOp
@@ -1842,7 +1842,7 @@
                                     (Var 4 y)
                                     (Var 4 i1)
                                     (Var 4 s1)]
-                                    [(=
+                                    [(Assignment
                                         (Var 4 u00)
                                         (ArraySection
                                             (Var 4 c)
@@ -1874,7 +1874,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 u01)
                                         (ArraySection
                                             (Var 4 c)
@@ -1912,7 +1912,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 u10)
                                         (ArraySection
                                             (Var 4 c)
@@ -1944,7 +1944,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 u11)
                                         (ArraySection
                                             (Var 4 c)
@@ -1982,7 +1982,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 u20)
                                         (ArraySection
                                             (Var 4 c)
@@ -2014,7 +2014,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 u21)
                                         (ArraySection
                                             (Var 4 c)
@@ -2052,7 +2052,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 u30)
                                         (ArraySection
                                             (Var 4 c)
@@ -2084,7 +2084,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 u31)
                                         (ArraySection
                                             (Var 4 c)
@@ -2122,7 +2122,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 u40)
                                         (ArraySection
                                             (Var 4 c)
@@ -2154,7 +2154,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 u41)
                                         (ArraySection
                                             (Var 4 c)
@@ -2192,7 +2192,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 u50)
                                         (ArraySection
                                             (Var 4 c)
@@ -2224,7 +2224,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 4 u51)
                                         (ArraySection
                                             (Var 4 c)
@@ -2280,7 +2280,7 @@
                                             ()
                                         )
                                         ())
-                                        [(=
+                                        [(Assignment
                                             (Var 4 a0)
                                             (ArrayPhysicalCast
                                                 (ArrayBroadcast
@@ -2332,7 +2332,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 u00)
                                             (RealBinOp
                                                 (Var 4 u00)
@@ -2380,7 +2380,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 u01)
                                             (RealBinOp
                                                 (Var 4 u01)
@@ -2434,7 +2434,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 a1)
                                             (ArrayPhysicalCast
                                                 (ArrayBroadcast
@@ -2486,7 +2486,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 u10)
                                             (RealBinOp
                                                 (Var 4 u10)
@@ -2534,7 +2534,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 u11)
                                             (RealBinOp
                                                 (Var 4 u11)
@@ -2588,7 +2588,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 a2)
                                             (ArrayPhysicalCast
                                                 (ArrayBroadcast
@@ -2640,7 +2640,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 u20)
                                             (RealBinOp
                                                 (Var 4 u20)
@@ -2688,7 +2688,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 u21)
                                             (RealBinOp
                                                 (Var 4 u21)
@@ -2742,7 +2742,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 a3)
                                             (ArrayPhysicalCast
                                                 (ArrayBroadcast
@@ -2794,7 +2794,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 u30)
                                             (RealBinOp
                                                 (Var 4 u30)
@@ -2842,7 +2842,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 u31)
                                             (RealBinOp
                                                 (Var 4 u31)
@@ -2896,7 +2896,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 a4)
                                             (ArrayPhysicalCast
                                                 (ArrayBroadcast
@@ -2948,7 +2948,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 u40)
                                             (RealBinOp
                                                 (Var 4 u40)
@@ -2996,7 +2996,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 u41)
                                             (RealBinOp
                                                 (Var 4 u41)
@@ -3050,7 +3050,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 a5)
                                             (ArrayPhysicalCast
                                                 (ArrayBroadcast
@@ -3102,7 +3102,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 u50)
                                             (RealBinOp
                                                 (Var 4 u50)
@@ -3150,7 +3150,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 4 u51)
                                             (RealBinOp
                                                 (Var 4 u51)
@@ -3205,7 +3205,7 @@
                                             ()
                                         )]
                                     )
-                                    (=
+                                    (Assignment
                                         (ArraySection
                                             (Var 4 c)
                                             [((Var 4 y)
@@ -3237,7 +3237,7 @@
                                         (Var 4 u00)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArraySection
                                             (Var 4 c)
                                             [((IntegerBinOp
@@ -3275,7 +3275,7 @@
                                         (Var 4 u01)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArraySection
                                             (Var 4 c)
                                             [((Var 4 y)
@@ -3307,7 +3307,7 @@
                                         (Var 4 u10)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArraySection
                                             (Var 4 c)
                                             [((IntegerBinOp
@@ -3345,7 +3345,7 @@
                                         (Var 4 u11)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArraySection
                                             (Var 4 c)
                                             [((Var 4 y)
@@ -3377,7 +3377,7 @@
                                         (Var 4 u20)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArraySection
                                             (Var 4 c)
                                             [((IntegerBinOp
@@ -3415,7 +3415,7 @@
                                         (Var 4 u21)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArraySection
                                             (Var 4 c)
                                             [((Var 4 y)
@@ -3447,7 +3447,7 @@
                                         (Var 4 u30)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArraySection
                                             (Var 4 c)
                                             [((IntegerBinOp
@@ -3485,7 +3485,7 @@
                                         (Var 4 u31)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArraySection
                                             (Var 4 c)
                                             [((Var 4 y)
@@ -3517,7 +3517,7 @@
                                         (Var 4 u40)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArraySection
                                             (Var 4 c)
                                             [((IntegerBinOp
@@ -3555,7 +3555,7 @@
                                         (Var 4 u41)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArraySection
                                             (Var 4 c)
                                             [((Var 4 y)
@@ -3587,7 +3587,7 @@
                                         (Var 4 u50)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArraySection
                                             (Var 4 c)
                                             [((IntegerBinOp
@@ -3812,7 +3812,7 @@
                                     [(Var 3 a)
                                     (Var 3 b)
                                     (Var 3 c)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 n)
                                         (ArraySize
                                             (Var 3 a)
@@ -3822,7 +3822,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 c)
                                         (ArrayBroadcast
                                             (Cast
@@ -3876,7 +3876,7 @@
                                                 (IntegerConstant 1 (Integer 4))
                                                 (Var 3 n)
                                                 ())
-                                                [(=
+                                                [(Assignment
                                                     (ArrayItem
                                                         (Var 3 c)
                                                         [(()
@@ -4207,7 +4207,7 @@
                                     [(Var 5 a)
                                     (Var 5 b)
                                     (Var 5 c)]
-                                    [(=
+                                    [(Assignment
                                         (Var 5 n)
                                         (ArraySize
                                             (Var 5 a)
@@ -4217,22 +4217,22 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 5 s3)
                                         (IntegerConstant 48 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 5 s2)
                                         (IntegerConstant 12 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 5 s1)
                                         (IntegerConstant 24 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 5 c)
                                         (ArrayBroadcast
                                             (Cast

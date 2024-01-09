@@ -364,7 +364,7 @@
                         })
                     select_type_01
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 child_target)
                         (StructTypeConstructor
                             2 child
@@ -403,7 +403,7 @@
                         ()
                         ()
                     )
-                    (=>
+                    (Associate
                         (Var 2 bptr)
                         (Var 2 child_target)
                     )
@@ -413,7 +413,7 @@
                         [((Var 2 bptr))]
                         ()
                     )
-                    (=>
+                    (Associate
                         (Var 2 bptr)
                         (Var 2 base_target)
                     )

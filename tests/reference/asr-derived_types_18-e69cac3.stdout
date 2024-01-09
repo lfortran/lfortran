@@ -96,7 +96,7 @@
                         })
                     derived_types_10
                     [derived_types_18_module_1]
-                    [(=
+                    [(Assignment
                         (StructInstanceMember
                             (Var 5 type_1)
                             5 1_t_1_i
@@ -106,7 +106,7 @@
                         (IntegerConstant 123 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (StructInstanceMember
                             (Var 5 type_2)
                             5 1_t_1
@@ -118,7 +118,7 @@
                         (Var 5 type_1)
                         ()
                     )
-                    (=
+                    (Assignment
                         (StructInstanceMember
                             (Var 5 type_2)
                             5 1_t_2_r

@@ -246,7 +246,7 @@
                                     [~add_intrinsic]
                                     [(Var 18 a)
                                     (Var 18 b)]
-                                    [(=
+                                    [(Assignment
                                         (StructInstanceMember
                                             (Var 18 r)
                                             18 1_int_matrix_elements
@@ -433,7 +433,7 @@
                                     [~add_intrinsic]
                                     [(Var 16 a)
                                     (Var 16 b)]
-                                    [(=
+                                    [(Assignment
                                         (StructInstanceMember
                                             (Var 16 r)
                                             16 1_int_vector_elements
@@ -735,7 +735,7 @@
                                     []
                                     [(Var 14 arg0)
                                     (Var 14 arg1)]
-                                    [(=
+                                    [(Assignment
                                         (Var 14 ret)
                                         (IntegerBinOp
                                             (Var 14 arg0)
@@ -761,7 +761,7 @@
                         (IntegerConstant 1 (Integer 4))
                         (Var 13 n)
                         ())
-                        [(=
+                        [(Assignment
                             (ArrayItem
                                 (StructInstanceMember
                                     (Var 13 a)
@@ -784,7 +784,7 @@
                             (Var 13 i)
                             ()
                         )
-                        (=
+                        (Assignment
                             (ArrayItem
                                 (StructInstanceMember
                                     (Var 13 b)
@@ -808,7 +808,7 @@
                             ()
                         )]
                     )
-                    (=
+                    (Assignment
                         (Var 13 c)
                         (FunctionCall
                             13 int_add_vector
@@ -850,7 +850,7 @@
                             (IntegerConstant 1 (Integer 4))
                             (Var 13 n)
                             ())
-                            [(=
+                            [(Assignment
                                 (ArrayItem
                                     (StructInstanceMember
                                         (Var 13 am)
@@ -893,7 +893,7 @@
                                 )
                                 ()
                             )
-                            (=
+                            (Assignment
                                 (ArrayItem
                                     (StructInstanceMember
                                         (Var 13 bm)
@@ -938,7 +938,7 @@
                             )]
                         )]
                     )
-                    (=
+                    (Assignment
                         (Var 13 cm)
                         (FunctionCall
                             13 int_add_matrix
@@ -1076,7 +1076,7 @@
                                                     [plus_t]
                                                     [(Var 12 a)
                                                     (Var 12 b)]
-                                                    [(=
+                                                    [(Assignment
                                                         (StructInstanceMember
                                                             (Var 12 r)
                                                             12 1_matrix_elements
@@ -1578,7 +1578,7 @@
                                                     [plus_t]
                                                     [(Var 8 a)
                                                     (Var 8 b)]
-                                                    [(=
+                                                    [(Assignment
                                                         (StructInstanceMember
                                                             (Var 8 r)
                                                             8 1_vector_elements

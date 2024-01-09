@@ -111,7 +111,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 3 x)
                                         (Cast
                                             (IntegerConstant 6 (Integer 4))

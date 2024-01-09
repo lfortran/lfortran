@@ -92,7 +92,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 3 a)
                                         (ArrayBroadcast
                                             (IntegerConstant 1 (Integer 4))
@@ -131,7 +131,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 b)
                                         (ArrayBroadcast
                                             (IntegerConstant 1 (Integer 4))
@@ -170,7 +170,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArrayItem
                                             (Var 3 b)
                                             [(()
@@ -281,7 +281,7 @@
                         })
                     test_any
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 l)
                         (IntrinsicArrayFunction
                             Any

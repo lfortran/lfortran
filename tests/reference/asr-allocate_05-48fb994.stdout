@@ -53,7 +53,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 num)
                         (StringConstant
                             "abc"
@@ -61,7 +61,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 string)
                         (Var 2 num)
                         ()
@@ -82,7 +82,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (StringSection
                             (Var 2 string)
                             ()

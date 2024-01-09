@@ -42,12 +42,12 @@
                         })
                     x
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 l)
                         (IntegerConstant 3 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 a)
                         (Cast
                             (IntegerConstant 3 (Integer 4))

@@ -291,7 +291,7 @@
                                                                 )
                                                         })
                                                     ~select_type_block_
-                                                    [(=>
+                                                    [(Associate
                                                         (Var 8 ptr)
                                                         (Var 8 tmp)
                                                     )
@@ -304,7 +304,7 @@
                                                             ()
                                                             ()
                                                         )
-                                                        [(=
+                                                        [(Assignment
                                                             (Var 8 stat)
                                                             (StructInstanceMember
                                                                 (Var 2 toml_stat)
@@ -373,7 +373,7 @@
                                                     ()
                                                     ()
                                                 )
-                                                [(=
+                                                [(Assignment
                                                     (Var 8 stat)
                                                     (StructInstanceMember
                                                         (Var 2 toml_stat)

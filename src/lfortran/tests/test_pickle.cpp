@@ -82,8 +82,8 @@ TEST_CASE("Symbolic expressions") {
 
 TEST_CASE("Symbolic assignments") {
     Allocator al(4*1024);
-    CHECK(P("x = y") == "(= 0 x y ())");
-    CHECK(P("x = 2*y") == "(= 0 x (* 2 y) ())");
+    CHECK(P("x = y") == "(Assignment 0 x y ())");
+    CHECK(P("x = 2*y") == "(Assignment 0 x (* 2 y) ())");
 
     CHECK_THROWS_AS(P("x ="), ParserError0);
     CHECK_THROWS_AS(P("x = 2*"), ParserError0);
@@ -150,22 +150,22 @@ TEST_CASE("Multiple units") {
         y = z+1)";
     results = LCompilers::TRY(LCompilers::LFortran::parse(al, s, diagnostics, co));
     CHECK(results->n_items == 2);
-    CHECK(LCompilers::LFortran::pickle(*results->m_items[0]) == "(= 0 x (+ x 1) ())");
-    CHECK(LCompilers::LFortran::pickle(*results->m_items[1]) == "(= 0 y (+ z 1) ())");
+    CHECK(LCompilers::LFortran::pickle(*results->m_items[0]) == "(Assignment 0 x (+ x 1) ())");
+    CHECK(LCompilers::LFortran::pickle(*results->m_items[1]) == "(Assignment 0 y (+ z 1) ())");
 
     s = "x = x+1; ; y = z+1";
     results = LCompilers::TRY(LCompilers::LFortran::parse(al, s, diagnostics, co));
     CHECK(results->n_items == 2);
-    CHECK(LCompilers::LFortran::pickle(*results->m_items[0]) == "(= 0 x (+ x 1) (TriviaNode [] [(Semicolon) (Semicolon)]))");
-    CHECK(LCompilers::LFortran::pickle(*results->m_items[1]) == "(= 0 y (+ z 1) ())");
+    CHECK(LCompilers::LFortran::pickle(*results->m_items[0]) == "(Assignment 0 x (+ x 1) (TriviaNode [] [(Semicolon) (Semicolon)]))");
+    CHECK(LCompilers::LFortran::pickle(*results->m_items[1]) == "(Assignment 0 y (+ z 1) ())");
 
     s = R"(x = x+1;
 
     ; y = z+1)";
     results = LCompilers::TRY(LCompilers::LFortran::parse(al, s, diagnostics, co));
     CHECK(results->n_items == 2);
-    CHECK(LCompilers::LFortran::pickle(*results->m_items[0]) == "(= 0 x (+ x 1) (TriviaNode [] [(Semicolon) (EndOfLine) (EndOfLine) (Semicolon)]))");
-    CHECK(LCompilers::LFortran::pickle(*results->m_items[1]) == "(= 0 y (+ z 1) ())");
+    CHECK(LCompilers::LFortran::pickle(*results->m_items[0]) == "(Assignment 0 x (+ x 1) (TriviaNode [] [(Semicolon) (EndOfLine) (EndOfLine) (Semicolon)]))");
+    CHECK(LCompilers::LFortran::pickle(*results->m_items[1]) == "(Assignment 0 y (+ z 1) ())");
 
     s = R"(x+1
     y = z+1
@@ -173,7 +173,7 @@ TEST_CASE("Multiple units") {
     results = LCompilers::TRY(LCompilers::LFortran::parse(al, s, diagnostics, co));
     CHECK(results->n_items == 3);
     CHECK(LCompilers::LFortran::pickle(*results->m_items[0]) == "(+ x 1)");
-    CHECK(LCompilers::LFortran::pickle(*results->m_items[1]) == "(= 0 y (+ z 1) ())");
+    CHECK(LCompilers::LFortran::pickle(*results->m_items[1]) == "(Assignment 0 y (+ z 1) ())");
     CHECK(LCompilers::LFortran::pickle(*results->m_items[2]) == "a");
 
     s = R"(function g()
@@ -185,9 +185,9 @@ TEST_CASE("Multiple units") {
     a)";
     results = LCompilers::TRY(LCompilers::LFortran::parse(al, s, diagnostics, co));
     CHECK(results->n_items == 4);
-    CHECK(LCompilers::LFortran::pickle(*results->m_items[0]) == "(Function g [] [] () () () [] [] [] [] [(= 0 x y ()) (= 0 x (* 2 y) ())] [] [])");
-    CHECK(LCompilers::LFortran::pickle(*results->m_items[1]) == "(= 0 s x ())");
-    CHECK(LCompilers::LFortran::pickle(*results->m_items[2]) == "(= 0 y (+ z 1) ())");
+    CHECK(LCompilers::LFortran::pickle(*results->m_items[0]) == "(Function g [] [] () () () [] [] [] [] [(Assignment 0 x y ()) (Assignment 0 x (* 2 y) ())] [] [])");
+    CHECK(LCompilers::LFortran::pickle(*results->m_items[1]) == "(Assignment 0 s x ())");
+    CHECK(LCompilers::LFortran::pickle(*results->m_items[2]) == "(Assignment 0 y (+ z 1) ())");
     CHECK(LCompilers::LFortran::pickle(*results->m_items[3]) == "a");
 }
 

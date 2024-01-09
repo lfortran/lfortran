@@ -104,7 +104,7 @@
                                     )
                                     []
                                     [(Var 4 z)]
-                                    [(=
+                                    [(Assignment
                                         (Var 4 zexp_return_var_name)
                                         (FunctionCall
                                             4 dexp

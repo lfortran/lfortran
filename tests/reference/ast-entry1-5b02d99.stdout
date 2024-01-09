@@ -25,7 +25,7 @@
             ())]
             ()
         )]
-        [(=
+        [(Assignment
             0
             dummy
             10
@@ -92,7 +92,7 @@
             dummy]
             ()
         )
-        (=
+        (Assignment
             0
             dummy
             (Real "5.0")

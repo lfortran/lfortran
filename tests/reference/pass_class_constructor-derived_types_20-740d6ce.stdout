@@ -448,7 +448,7 @@
                                             (Logical 4)
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (StructInstanceMember
                                                 (Var 7 cmd_settings)
                                                 7 1_fpm_cmd_settings_verbose
@@ -461,7 +461,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (StructInstanceMember
                                                 (Var 7 cmd_settings)
                                                 7 1_fpm_new_settings_name
@@ -476,7 +476,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (StructInstanceMember
                                                 (Var 7 cmd_settings)
                                                 7 1_fpm_new_settings_with_executable
@@ -489,7 +489,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (StructInstanceMember
                                                 (Var 7 cmd_settings)
                                                 7 1_fpm_new_settings_with_test
@@ -502,7 +502,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (StructInstanceMember
                                                 (Var 7 cmd_settings)
                                                 7 1_fpm_new_settings_with_lib
@@ -515,7 +515,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (StructInstanceMember
                                                 (Var 7 cmd_settings)
                                                 7 1_fpm_new_settings_with_example
@@ -528,7 +528,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (StructInstanceMember
                                                 (Var 7 cmd_settings)
                                                 7 1_fpm_new_settings_backfill
@@ -625,7 +625,7 @@
                                     )
                                     []
                                     [(Var 10 key)]
-                                    [(=
+                                    [(Assignment
                                         (Var 10 specified)
                                         (LogicalConstant
                                             .false.

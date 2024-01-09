@@ -88,7 +88,7 @@
                                             (Logical 4)
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 3 res)
                                             (StringConstant
                                                 "a:j"
@@ -130,7 +130,7 @@
                                                 (Logical 4)
                                                 ()
                                             )
-                                            [(=
+                                            [(Assignment
                                                 (Var 3 res)
                                                 (StringConstant
                                                     "l:p"
@@ -157,7 +157,7 @@
                                                     (Logical 4)
                                                     ()
                                                 )
-                                                [(=
+                                                [(Assignment
                                                     (Var 3 res)
                                                     (StringConstant
                                                         "z"
@@ -173,7 +173,7 @@
                                                     ()
                                                     ()
                                                 )]
-                                                [(=
+                                                [(Assignment
                                                     (Var 3 res)
                                                     (StringConstant
                                                         "not found"

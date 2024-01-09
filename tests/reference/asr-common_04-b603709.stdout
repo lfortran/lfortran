@@ -177,7 +177,7 @@
                         })
                     main
                     []
-                    [(=
+                    [(Assignment
                         (StructInstanceMember
                             (Var 2 struct_instance_block_1)
                             2 1_block_1_a
@@ -187,7 +187,7 @@
                         (IntegerConstant 2 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (StructInstanceMember
                             (Var 2 struct_instance_block_1)
                             2 1_block_1_b
@@ -197,7 +197,7 @@
                         (IntegerConstant 1 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 d)
                         (StructInstanceMember
                             (Var 2 struct_instance_block_1)
@@ -207,7 +207,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (StructInstanceMember
                             (Var 2 struct_instance_block_1)
                             2 1_block_1_c
@@ -254,7 +254,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (StructInstanceMember
                                 (Var 2 struct_instance_block_1)
@@ -277,7 +277,7 @@
                         (IntegerConstant 2 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (StructInstanceMember
                             (Var 2 struct_instance_block_1)
                             2 1_block_1_b

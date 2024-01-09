@@ -52,7 +52,7 @@
                         })
                     array3
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 a)
                         (ArrayConstant
                             [(Cast
@@ -92,7 +92,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 b)
                         (ArrayConstant
                             [(Cast

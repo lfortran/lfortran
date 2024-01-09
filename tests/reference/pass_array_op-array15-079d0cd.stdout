@@ -65,7 +65,7 @@
                             ()
                         )
                         ())
-                        [(=
+                        [(Assignment
                             (ArrayItem
                                 (Var 2 x)
                                 [(()

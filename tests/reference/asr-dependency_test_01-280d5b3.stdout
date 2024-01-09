@@ -98,7 +98,7 @@
                                     []
                                     [(Var 6 self)
                                     (Var 6 dependency)]
-                                    [(=
+                                    [(Assignment
                                         (Var 6 id)
                                         (FunctionCall
                                             6 1_find_dependency

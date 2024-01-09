@@ -158,7 +158,7 @@
                                                     )
                                                     []
                                                     [(Var 14 a)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 14 r)
                                                         (Var 14 a)
                                                         ()
@@ -250,7 +250,7 @@
                                                     )
                                                     []
                                                     [(Var 15 a)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 15 r)
                                                         (Var 15 a)
                                                         ()
@@ -418,7 +418,7 @@
                                                     __instantiated_g1
                                                     add]
                                                     [(Var 9 a)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 9 r)
                                                         (FunctionCall
                                                             7 add
@@ -571,7 +571,7 @@
                                                     )
                                                     []
                                                     [(Var 6 a)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 6 r)
                                                         (Var 6 a)
                                                         ()
@@ -691,7 +691,7 @@
                                                     )
                                                     []
                                                     [(Var 16 a)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 16 r)
                                                         (Var 16 a)
                                                         ()
@@ -802,7 +802,7 @@
                                                     [__instantiated_g
                                                     h]
                                                     [(Var 11 a)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 11 b)
                                                         (FunctionCall
                                                             10 __instantiated_g
@@ -821,7 +821,7 @@
                                                             .false.
                                                             (Logical 4)
                                                         )
-                                                        [(=
+                                                        [(Assignment
                                                             (Var 11 r)
                                                             (FunctionCall
                                                                 10 h
@@ -1063,7 +1063,7 @@
                                                     )
                                                     []
                                                     [(Var 20 a)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 20 r)
                                                         (Var 20 a)
                                                         ()
@@ -1131,7 +1131,7 @@
                                                     __asr___instantiated_g1
                                                     ~add_intrinsic]
                                                     [(Var 19 a)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 19 r)
                                                         (FunctionCall
                                                             12 ~add_intrinsic
@@ -1235,7 +1235,7 @@
                                                     )
                                                     []
                                                     [(Var 17 a)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 17 r)
                                                         (Var 17 a)
                                                         ()
@@ -1334,7 +1334,7 @@
                                                     [__instantiated_g
                                                     __instantiated_h]
                                                     [(Var 21 a)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 21 b)
                                                         (FunctionCall
                                                             12 __instantiated_g
@@ -1351,7 +1351,7 @@
                                                             .false.
                                                             (Logical 4)
                                                         )
-                                                        [(=
+                                                        [(Assignment
                                                             (Var 21 r)
                                                             (FunctionCall
                                                                 12 __instantiated_h
@@ -1483,7 +1483,7 @@
                                                     []
                                                     [(Var 18 arg0)
                                                     (Var 18 arg1)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 18 ret)
                                                         (IntegerBinOp
                                                             (Var 18 arg0)
@@ -1518,12 +1518,12 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 12 a)
                                         (IntegerConstant 10 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 12 r)
                                         (FunctionCall
                                             12 __instantiated_g
@@ -1540,7 +1540,7 @@
                                         ()
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 12 r)
                                         (FunctionCall
                                             12 __instantiated_f
@@ -1557,7 +1557,7 @@
                                         ()
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 12 r)
                                         (FunctionCall
                                             12 __instantiated_h

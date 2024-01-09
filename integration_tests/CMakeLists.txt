@@ -428,6 +428,7 @@ RUN(NAME arrays_31 LABELS gfortran llvm llvmStackArray wasm) # init expr with fi
 RUN(NAME arrays_32 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_33 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_34 LABELS gfortran llvm llvmStackArray)
+RUN(NAME arrays_35 LABELS gfortran llvm)
 
 
 # GFortran
@@ -595,7 +596,8 @@ RUN(NAME intrinsics_97 LABELS gfortran llvm)#tiny
 RUN(NAME intrinsics_98 LABELS gfortran llvm)#shape
 RUN(NAME intrinsics_99 LABELS gfortran llvm)
 RUN(NAME intrinsics_100 LABELS gfortran llvm) # mod
-
+RUN(NAME intrinsics_101 LABELS gfortran llvm)#repeat
+RUN(NAME intrinsics_102 LABELS gfortran llvm)
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
@@ -792,6 +794,8 @@ RUN(NAME logical2 LABELS gfortran llvm wasm fortran)
 RUN(NAME logical3 LABELS gfortran llvm wasm)
 RUN(NAME logical4 LABELS gfortran llvm wasm fortran)
 
+RUN(NAME tsunami LABELS gfortran llvm)
+
 RUN(NAME derived_types_01 LABELS gfortran llvm)
 RUN(NAME derived_types_02 LABELS gfortran)
 RUN(NAME derived_types_03 LABELS gfortran)
@@ -825,7 +829,7 @@ RUN(NAME derived_types_26 LABELS gfortran llvm)
 RUN(NAME derived_types_27 LABELS gfortran llvm fortran)
 RUN(NAME derived_types_28 LABELS gfortran llvm)
 RUN(NAME derived_types_29 LABELS gfortran llvm fortran)
-RUN(NAME derived_types_30 LABELS gfortran)
+RUN(NAME derived_types_30 LABELS gfortran llvm)
 
 RUN(NAME line_continuation_01 LABELS gfortran llvm wasm)
 RUN(NAME line_continuation_02 LABELS gfortran llvm wasm)
@@ -1205,6 +1209,8 @@ RUN(NAME entry_13 LABELS gfortran llvm)
 
 RUN(NAME character_01 LABELS gfortran llvm)
 RUN(NAME character_02 LABELS gfortran llvm)
+RUN(NAME character_03 LABELS gfortran llvm)
+RUN(NAME character_04 LABELS gfortran llvm)
 
 RUN(NAME c_ptr_01 LABELS gfortran llvm)
 
@@ -1289,6 +1295,7 @@ RUN(NAME transfer_02 LABELS gfortran)
 
 RUN(NAME present_01 LABELS gfortran llvm)
 RUN(NAME types_20 LABELS gfortran llvm)
-RUN(NAME character_03 LABELS gfortran llvm)
 RUN(NAME arrayprint_01 LABELS gfortran llvm)
 RUN(NAME print_arr_05 LABELS gfortran llvm)
+
+RUN(NAME binop_01 LABELS gfortran llvm)

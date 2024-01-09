@@ -199,7 +199,7 @@
                         })
                     constant_kinds
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 y)
                         (RealConstant
                             1.000000
@@ -207,7 +207,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 y)
                         (Cast
                             (RealConstant
@@ -223,7 +223,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 y)
                         (RealConstant
                             1.000000
@@ -231,7 +231,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 y)
                         (Cast
                             (RealConstant
@@ -247,17 +247,17 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (IntegerConstant 1 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (IntegerConstant 1 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (Cast
                             (IntegerConstant 1 (Integer 8))

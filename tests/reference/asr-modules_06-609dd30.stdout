@@ -36,7 +36,7 @@
                         })
                     modules_06
                     [modules_06_a]
-                    [(=
+                    [(Assignment
                         (Var 4 i)
                         (FunctionCall
                             4 b
@@ -106,7 +106,7 @@
                                         ()
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 r)
                                         (IntegerConstant 5 (Integer 4))
                                         ()

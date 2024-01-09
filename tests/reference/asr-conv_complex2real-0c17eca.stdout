@@ -42,7 +42,7 @@
                         })
                     conv_complex2real
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 z)
                         (ComplexConstructor
                             (RealConstant
@@ -62,7 +62,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (Cast
                             (Cast

@@ -229,7 +229,7 @@
                                             ()
                                         )
                                         ())
-                                        [(=
+                                        [(Assignment
                                             (ArrayItem
                                                 (Var 4 r)
                                                 [(()
@@ -352,7 +352,7 @@
                                             ()
                                         )
                                         ())
-                                        [(=
+                                        [(Assignment
                                             (ArrayItem
                                                 (Var 5 r)
                                                 [(()
@@ -454,7 +454,7 @@
                                     )
                                     []
                                     [(Var 3 s)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 r)
                                         (FunctionCall
                                             3 trim

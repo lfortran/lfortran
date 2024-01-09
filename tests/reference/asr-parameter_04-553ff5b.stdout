@@ -229,7 +229,7 @@
                         })
                     parameter_04
                     [lfortran_intrinsic_kind]
-                    [(=
+                    [(Assignment
                         (Var 2 l)
                         (LogicalConstant
                             .true.

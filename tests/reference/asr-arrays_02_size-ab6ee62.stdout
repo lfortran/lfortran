@@ -132,7 +132,7 @@
                         })
                     arrays_01
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 size_a4)
                         (ArraySize
                             (Var 2 a)
@@ -142,7 +142,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 size_b4)
                         (ArraySize
                             (Var 2 b)
@@ -152,7 +152,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 size_a8)
                         (ArraySize
                             (Var 2 a)
@@ -162,7 +162,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 size_b8)
                         (ArraySize
                             (Var 2 b)

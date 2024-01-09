@@ -16,13 +16,13 @@
         ())]
         ()
     )
-    (=
+    (Assignment
         0
         x
         6
         ()
     )
-    (=
+    (Assignment
         0
         x
         (+ x 1)

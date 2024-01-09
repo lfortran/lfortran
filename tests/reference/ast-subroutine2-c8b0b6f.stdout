@@ -13,13 +13,13 @@
         []
         []
         []
-        [(=
+        [(Assignment
             0
             x
             y
             ()
         )
-        (=
+        (Assignment
             0
             x
             (* 2 y)
@@ -42,7 +42,7 @@
         []
         []
         []
-        [(=
+        [(Assignment
             0
             x
             y
@@ -52,7 +52,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             x
             (* 2 y)
@@ -76,7 +76,7 @@
         []
         []
         []
-        [(=
+        [(Assignment
             0
             x
             y
@@ -87,7 +87,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             x
             (* 2 y)
@@ -116,7 +116,7 @@
         []
         []
         []
-        [(=
+        [(Assignment
             0
             x
             y
@@ -135,7 +135,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             x
             (* 2 y)
@@ -158,7 +158,7 @@
         []
         []
         []
-        [(=
+        [(Assignment
             0
             x
             y
@@ -168,7 +168,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             x
             (* 2 y)
@@ -195,7 +195,7 @@
         []
         []
         []
-        [(=
+        [(Assignment
             0
             x
             y
@@ -206,7 +206,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             x
             (* 2 y)
@@ -235,7 +235,7 @@
         []
         []
         []
-        [(=
+        [(Assignment
             0
             x
             y
@@ -244,7 +244,7 @@
                 [(Semicolon)]
             )
         )
-        (=
+        (Assignment
             0
             x
             (* 2 y)
@@ -270,13 +270,13 @@
         []
         []
         []
-        [(=
+        [(Assignment
             0
             subroutine
             y
             ()
         )
-        (=
+        (Assignment
             0
             x
             (* 2 subroutine)
@@ -669,7 +669,7 @@
             1
             n
             ()
-            [(=
+            [(Assignment
                 0
                 (FuncCallOrArray
                     y

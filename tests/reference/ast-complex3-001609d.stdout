@@ -80,7 +80,7 @@
             ())]
             ()
         )]
-        [(=
+        [(Assignment
             0
             x
             (Complex (Real "3.0_8") (Real "4.0_8"))
@@ -92,7 +92,7 @@
             [x]
             ()
         )
-        (=
+        (Assignment
             0
             y
             (Complex (Real "3.0_8") (Real "4.0_8"))
@@ -104,7 +104,7 @@
             [y]
             ()
         )
-        (=
+        (Assignment
             0
             z
             (Complex (Real "3.0_4") (Real "4.0_4"))
@@ -116,7 +116,7 @@
             [z]
             ()
         )
-        (=
+        (Assignment
             0
             w
             (Complex (Real "3.0_4") (Real "4.0_4"))

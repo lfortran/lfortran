@@ -19,7 +19,7 @@
             1
             ndiag
             ()
-            [(=
+            [(Assignment
                 0
                 ing
                 len [(diag
@@ -67,7 +67,7 @@
                 ()
                 ()
             )
-            (=
+            (Assignment
                 0
                 ndpwds
                 (+ ndpwds (FuncCallOrArray
@@ -118,13 +118,13 @@
                     1
                     ichunk
                     ()
-                    [(=
+                    [(Assignment
                         0
                         nn
                         (- (+ (+ i j) k) 2)
                         ()
                     )
-                    (=
+                    (Assignment
                         0
                         (FuncCallOrArray
                             indx
@@ -150,7 +150,7 @@
                         ) 1)
                         ()
                     )
-                    (=
+                    (Assignment
                         0
                         ing
                         (FuncCallOrArray
@@ -166,7 +166,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         0
                         ic [(diag
                         [(()
@@ -180,7 +180,7 @@
                         i
                         ()
                     )
-                    (=
+                    (Assignment
                         0
                         j [(diag
                         [(()
@@ -194,7 +194,7 @@
                         j
                         ()
                     )
-                    (=
+                    (Assignment
                         0
                         k [(diag
                         [(()
