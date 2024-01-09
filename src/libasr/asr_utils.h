@@ -980,6 +980,9 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
             }
         }
         return is_constant;
+    } else if( ASR::is_a<ASR::IntegerBinOp_t>(*a_value) ) {
+        ASR::IntegerBinOp_t* int_binop = ASR::down_cast<ASR::IntegerBinOp_t>(a_value);
+        return is_value_constant(int_binop->m_value);
     } else {
         return false;
     }
@@ -1215,6 +1218,13 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
         case ASR::exprType::FunctionCall: {
             ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(value_expr);
             if (!extract_value(func_call->m_value, value)) {
+                return false;
+            }
+            break;
+        }
+        case ASR::exprType::IntegerBinOp: {
+            ASR::IntegerBinOp_t* int_binop = ASR::down_cast<ASR::IntegerBinOp_t>(value_expr);
+            if (!extract_value(int_binop->m_value, value)) {
                 return false;
             }
             break;
