@@ -1170,6 +1170,39 @@ static inline bool extract_value(ASR::expr_t* value_expr,
     return true;
 }
 
+static inline bool extract_string_value(ASR::expr_t* value_expr,
+    std::string& value) {
+    if( !is_value_constant(value_expr) ) {
+        return false;
+    }
+    switch (value_expr->type)
+    {
+        case ASR::exprType::StringConstant: {
+            ASR::StringConstant_t* const_string = ASR::down_cast<ASR::StringConstant_t>(value_expr);
+            value = std::string(const_string->m_s);
+            break;
+        }
+        case ASR::exprType::Var: {
+            ASR::Variable_t* var = EXPR2VAR(value_expr);
+            if (var->m_storage == ASR::storage_typeType::Parameter
+                    && !extract_string_value(var->m_value, value)) {
+                return false;
+            }
+            break;
+        }
+        case ASR::exprType::FunctionCall: {
+            ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(value_expr);
+            if (!extract_string_value(func_call->m_value, value)) {
+                return false;
+            }
+            break;
+        }
+        default:
+            return false;
+    }
+    return true;
+}
+
 template <typename T,
     typename = typename std::enable_if<
         std::is_same<T, std::complex<double>>::value == false &&
