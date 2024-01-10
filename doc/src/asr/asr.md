@@ -1,4 +1,4 @@
-# Abstract Syntax Representation (ASR)
+# Abstract Semantic Representation (ASR)
 
 The aim of ASR is to represent all semantics in a non-redundant way, and that
 has all the semantic information available locally, so that the backend can
@@ -12,13 +12,13 @@ node), while ensuring no semantic information was lost (no lowering was
 done), so one can still generate Fortran code from ASR that will be logically
 equivalent to the original code.
 
-ASR can be used to do Fortran level transformations (such as optimizations).
+ASR can be used to do Fortran-level transformations (such as optimizations).
 
 ## Abstract Syntax Description Language (ASDL)
 
-Abstract Syntax Description Language describes the abstract syntax of compiler
+Abstract Syntax Description Language describes the abstract syntax of the compiler
 IRs and other tree-like data structures. IRs described with ASDL are converted
-into an implementation automatically by tools. Tools generate the data-structure
+into an implementation automatically by tools. Tools generate the data structure
 definitions for a target language, pickling functions, and other codes.
 
 ASDL consists of three fundamental constructs: ***types, constructors***, and
@@ -53,7 +53,7 @@ In the above example, `symbol_table`, `identifier`, `stmt`, `bool`, etc are type
 The **constructors** names must begin with an upper case.
 In above example has three constructors, `Program`, `Module`, and `Function`,
 where the Program constructor has four fields whose values are of type `symbol_table`,
-`identifier`, `identifier*`, and `stmt*`. These are basically, subtrees.
+`identifier`, `identifier*`, and `stmt*`. These are, basically, subtrees.
 
 ## Symbol type
 
@@ -65,23 +65,23 @@ Each symbol has a `name` for easy lookup of the name of the symbol when only
 having a pointer to it.
 
 `abi=Source` means the symbol's implementation is included (full ASR),
-otherwise it is external (interface ASR, such as procedure interface).
+otherwise, it is external (interface ASR, such as procedure interface).
 
-`SubroutineCall`/`FunctionCall` store the actual final resolved subroutine or
+`SubroutineCall`/`FunctionCall` stores the actual final resolved subroutine or
 function (`name` member). They also store the original symbol
 (`original_name`), which can be one of: `null`, `GenericProcedure` or
 `ExternalSymbol`.
 
 When a module is compiled, it is parsed into full ASR, an object file is
-produced, the full ASR (abi=Source, "body" is non-empty) is transformed into
+produced, and the full ASR (abi=Source, "body" is non-empty) is transformed into
 interface ASR (abi=LFortran, "body" is empty). Both interface and full ASR
-is saved into the mod file.
+are saved into the mod file.
 
 When a module is used, it is first looked up in the symbol table (as either
-full or interface ASR) and used if it is present. Otherwise a mod file is
+full or interface ASR) and used if it is present. Otherwise, a mod file is
 found on the disk, loaded (as either full or interface ASR for LFortran's
 mod file, depending on LFortran's compiler options; or for GFortran's mod
-file the corresponding interface ASR is constructed with abi=GFortran) and
+file, the corresponding interface ASR is constructed with abi=GFortran) and
 used. After the ASR is loaded, the symbols that are used are represented as
 ExternalSymbols in the current scope of the symbol table.
 
@@ -89,18 +89,18 @@ ExternalSymbol represents symbols that cannot be looked up in the current
 scoped symbol table. As an example, if a variable is defined in a module,
 but used in a nested subroutine, that is not an external symbol
 because it can be resolved in the current symbol table (nested subroutine)
-by following the parents. However if a symbol is used from a different
-module, then it is an external symbol, because usual symbol resolution by
+by following the parents. However, if a symbol is used from a different
+module, then it is an external symbol because the usual symbol resolution by
 going to the parents will not find the definition. The `module_name` member
-is the name of the module the symbol is in, the `scope_names` is a list of
-names if the symbol is in a nested symbol table. For example if it is a
+is the name of the module the symbol is in, and the `scope_names` is a list of
+names if the symbol is in a nested symbol table. For example, if it is a
 local variable in a function `f` that is nested in function `g`, then
 `scope_names=[g, f]`.
 
-REPL: each cell is parsed into full ASR, compiled + executed, the full ASR
+REPL: each cell is parsed into full ASR, compiled + executed, and the full ASR
 is transformed into interface ASR (abi=LFortran) and kept in the symbol
 table. A new cell starts with an empty symbol table, whose parent symbol
-table is the previous cell. That allows function / declaration shadowing.
+table is the previous cell. That allows function/declaration shadowing.
 
 ## ABI Type
 ```asdl
@@ -114,17 +114,17 @@ abi                   -- External     ABI
     | Interactive     --   Yes        Unspecified
     | Intrinsic       --   Yes        Unspecified
 ```
-- **External Yes**: the symbol's implementation is not part of ASR, the
+- **External Yes**: the symbol's implementation is not part of ASR; the
 symbol is just an interface (e.g., subroutine/function interface, or variable
 marked as external, not allocated by this ASR).
 - **External No**:  the symbol's implementation is part of ASR (e.g.,
 subroutine/function body is included, variables must be allocated).
-- **abi=Source**: The symbol's implementation is included in ASR, the backend is
+- **abi=Source**: The symbol's implementation is included in ASR, and the backend is
 free to use any ABI it wants (it might also decide to inline or eliminate
 the code in optimizations).
 - **abi=LFortranModule/GFortranModule/BindC**: the symbol's implementation is
 stored as machine code in some object file that must be linked in. It
-uses the specified ABI (one of LFortran module, GFortran module or C ABI).
+uses the specified ABI (one of the LFortran modules, GFortran module, or C ABI).
 An interface that uses `iso_c_binding` and `bind(c)` is represented using
 abi=BindC.
 - **abi=BindPython**: the symbol's implementation is
@@ -162,7 +162,7 @@ the `id` is only unique within a procedure.
 the logical type does not change
     > Note: the "new" physical type here will also be part of the "type" member
 
-    This allow to represent any combination, but we'll only support a few, at least we need:
+    This allows to represent any combination, but we'll only support a few; at least we need:
     Maybe it's easier to add an enumeration here:
     - Descriptor -> Pointer
     - Pointer -> Descriptor
@@ -192,8 +192,8 @@ support the following:
 - Character kinds: 1 (utf8 string)
 - Logical kinds: 1, 2, 4: (boolean represented by 1, 2, 4 bytes; the default
 kind is 4, just like the default integer kind, consistent with Python
-and Fortran: in Python "Booleans in Python are implemented as a subclass
-of integers", in Fortran the "default logical kind has the same storage
+and Fortran: in Python, "Booleans in Python are implemented as a subclass
+of integers"; in Fortran the "default logical kind has the same storage
 size as the default integer"; we currently use kind=4 as default
 integer, so we also use kind=4 for the default logical.)
 
