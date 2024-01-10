@@ -52,10 +52,10 @@ In the above example, `symbol_table`, `identifier`, `stmt`, `bool`, etc are type
 #### Constructors
 The **constructors** names must begin with an upper case.
 In above example has three constructors, `Program`, `Module`, and `Function`,
-where the Program constructor has four fields whose values are of type symbol_table,
-identifier, identifier *, and stmt *. These are basically, subtrees.
+where the Program constructor has four fields whose values are of type `symbol_table`,
+`identifier`, `identifier*`, and `stmt*`. These are basically, subtrees.
 
-## Symbol Table
+## Symbol type
 
 Each symbol has either `symtab` (local symbol table) or `parent_symtab`
 (where this symbol is stored). One can get to parent_symtab via symtab, so
@@ -64,16 +64,13 @@ only one is present.
 Each symbol has a `name` for easy lookup of the name of the symbol when only
 having a pointer to it.
 
-Each symbol has a `name` for easy lookup of the name of the symbol when only
-having a pointer to it.
-
-abi=Source means the symbol's implementation is included (full ASR),
+`abi=Source` means the symbol's implementation is included (full ASR),
 otherwise it is external (interface ASR, such as procedure interface).
 
-SubroutineCall/FunctionCall store the actual final resolved subroutine or
+`SubroutineCall`/`FunctionCall` store the actual final resolved subroutine or
 function (`name` member). They also store the original symbol
-(`original_name`), which can be one of: null, GenericProcedure or
-ExternalSymbol.
+(`original_name`), which can be one of: `null`, `GenericProcedure` or
+`ExternalSymbol`.
 
 When a module is compiled, it is parsed into full ASR, an object file is
 produced, the full ASR (abi=Source, "body" is non-empty) is transformed into
@@ -106,6 +103,17 @@ table. A new cell starts with an empty symbol table, whose parent symbol
 table is the previous cell. That allows function / declaration shadowing.
 
 ## ABI Type
+```asdl
+abi                   -- External     ABI
+    = Source          --   No         Unspecified
+    | LFortranModule  --   Yes        LFortran
+    | GFortranModule  --   Yes        GFortran
+    | BindC           --   Yes        C
+    | BindPython      --   Yes        Python
+    | BindJS          --   Yes        Javascript
+    | Interactive     --   Yes        Unspecified
+    | Intrinsic       --   Yes        Unspecified
+```
 - **External Yes**: the symbol's implementation is not part of ASR, the
 symbol is just an interface (e.g., subroutine/function interface, or variable
 marked as external, not allocated by this ASR).
@@ -139,6 +147,15 @@ just an interface.
 
 ## Short notes on ASR nodes
 
+### Stmt nodes
+1. **ExplicitDeallocate**: It deallocates if allocated otherwise throws a runtime error.
+2. **ImplicitDeallocate**: It  deallocates if allocated otherwise does nothing.
+3. **GoTo**: It points to a GoToTarget with the corresponding target_id within
+the same procedure. We currently use `int` IDs to link GoTo with
+GoToTarget to avoid issues with serialization.
+4. **GoToTarget**: An empty statement, a target of zero or more GoTo statements
+the `id` is only unique within a procedure.
+
 ### Expr nodes
 1. **Cast**: It changes the value (the bits) of the `arg`.
 2. **ArrayPhysicalCast**: This ArrayPhysicalCast we only change the physical type,
@@ -155,7 +172,8 @@ the logical type does not change
     - NumPy -> Descriptor
     - ISODescriptor -> Descriptor
     - Descriptor -> ISODescriptor
-3. **ttype**
+
+### Ttype node
     ```asdl
     ttype = Integer(int kind) | UnsignedInteger(int kind) | Real(int kind) | ...
     ```
@@ -178,11 +196,12 @@ of integers", in Fortran the "default logical kind has the same storage
 size as the default integer"; we currently use kind=4 as default
 integer, so we also use kind=4 for the default logical.)
 
-### Stmt nodes
-1. **ExplicitDeallocate**: It deallocates if allocated otherwise throws a runtime error.
-2. **ImplicitDeallocate**: It  deallocates if allocated otherwise does nothing.
-3. **GoTo**: It points to a GoToTarget with the corresponding target_id within
-the same procedure. We currently use `int` IDs to link GoTo with
-GoToTarget to avoid issues with serialization.
-4. **GoToTarget**: An empty statement, a target of zero or more GoTo statements
-the `id` is only unique within a procedure.
+### String format kind
+```asdl
+string_format_kind
+    = FormatFortran        -- "(f8.3,i4.2)", a, b
+    | FormatC              -- "%f: %d", a, b
+    | FormatPythonPercent  -- "%f: %d" % (a, b)
+    | FormatPythonFString  -- f"{a}: {b}"
+    | FormatPythonFormat   -- "{}: {}".format(a, b)
+```
