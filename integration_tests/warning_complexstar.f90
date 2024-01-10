@@ -1,4 +1,3 @@
 program main
-    Complex*4 x
-    Complex*8 y
+    complex*8 :: x
 end program
