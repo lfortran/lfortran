@@ -143,7 +143,7 @@ just an interface.
 1. **Cast**: It changes the value (the bits) of the `arg`.
 2. **ArrayPhysicalCast**: This ArrayPhysicalCast we only change the physical type,
 the logical type does not change
-> Note: the "new" physical type here will also be part of the "type" member
+    > Note: the "new" physical type here will also be part of the "type" member
 
     This allow to represent any combination, but we'll only support a few, at least we need:
     Maybe it's easier to add an enumeration here:
@@ -160,10 +160,10 @@ the logical type does not change
     ttype = Integer(int kind) | UnsignedInteger(int kind) | Real(int kind) | ...
     ```
     **`len`** in Character:
-    - >=0 ... the length of the string, known at compile time
-    - -1 ... character( * ), i.e., inferred at runtime
-    - -2 ... character(:), allocatable (possibly we might use -1 for that also)
-    - -3 ... character(n+3), i.e., a runtime expression stored in `len_expr`
+    - $>=0$ ... the length of the string, known at compile time
+    - $-1$ ... character( * ), i.e., inferred at runtime
+    - $-2$ ... character(:), allocatable (possibly we might use -1 for that also)
+    - $-3$ ... character(n+3), i.e., a runtime expression stored in `len_expr`
 
     **`kind`**: The `kind` member selects the kind of a given type. We currently
     support the following:
