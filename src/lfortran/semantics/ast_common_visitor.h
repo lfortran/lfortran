@@ -701,14 +701,14 @@ public:
         // min0 can accept any arbitrary number of arguments 2<=x<=100
         {"min0", {IntrinsicSignature({}, 2, 100)}},
         {"min", {IntrinsicSignature({}, 2, 100)}},
-        {"merge", {IntrinsicSignature({}, 3, 3)}},
+        {"merge", {IntrinsicSignature({"tsource", "fsource", "mask"}, 3, 3)}},
         {"sign", {IntrinsicSignature({}, 2, 2)}},
         {"aint", {IntrinsicSignature({}, 1, 2)}},
         {"anint", {IntrinsicSignature({}, 1, 2)}},
         {"atan2", {IntrinsicSignature({}, 2, 2)}},
         {"shape", {IntrinsicSignature({"kind"}, 1, 2)}},
         {"mod", {IntrinsicSignature({"mod"}, 1, 2)}},
-        {"repeat", {IntrinsicSignature({"repeat"}, 2, 2)}},
+        {"repeat", {IntrinsicSignature({"string", "ncopies"}, 2, 2)}},
         {"hypot", {IntrinsicSignature({"hypot"}, 2, 2)}},
     };
 
@@ -4034,13 +4034,11 @@ public:
                                 " and at most " + std::to_string(max_args) + " arguments.",
                                 x.base.base.loc);
         }
-
         args.reserve(al, max_args);
 
         for( size_t i = 0; i < max_args; i++ ) {
             args.push_back(al, nullptr);
         }
-
         for( size_t i = 0; i < x.n_args; i++ ) {
             this->visit_expr(*x.m_args[i].m_end);
             args.p[i] = ASRUtils::EXPR(tmp);
@@ -4060,12 +4058,14 @@ public:
         }
 
         int64_t offset = min_args;
+        int64_t max_idx = max_args;
         for( size_t i = 0; i < x.n_keywords; i++ ) {
             std::string curr_kwarg_name = to_lower(x.m_keywords[i].m_arg);
             auto it = std::find(kwarg_names.begin(), kwarg_names.end(),
                                 curr_kwarg_name);
             int64_t kwarg_idx = it - kwarg_names.begin();
-            if( args[kwarg_idx + offset] != nullptr ) {
+            int64_t idx = kwarg_idx + offset;
+            if( (idx < max_idx) && (args[kwarg_idx + offset] != nullptr) ) {
                 if( !raise_error ) {
                     return false;
                 }
@@ -4074,8 +4074,8 @@ public:
                                     "argument to " + intrinsic_name + ".",
                                     x.base.base.loc);
             }
-            this->visit_expr(*x.m_keywords[i].m_value);
-            args.p[kwarg_idx + offset] = ASRUtils::EXPR(tmp);
+            this->visit_expr(*x.m_keywords[i].m_value);   
+            args.p[kwarg_idx] = ASRUtils::EXPR(tmp);
         }
         return true;
     }
