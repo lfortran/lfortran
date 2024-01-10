@@ -1692,11 +1692,11 @@ void add_ws_warning(const Location &loc,
                 msg2);
                 
         } else if (end_token == yytokentype::KW_COMPLEX) {
-                if(a_kind == 4){
+                if(a_kind == 16){
                         diagnostics.parser_style_label(
-                        "Use complex(4) instead of complex*4",
+                        "Use complex(16) instead of complex*16",
                         {loc},
-                        "help: write this as 'complex(4)'");
+                        "help: write this as 'complex(16)'");
                 } else{
                         diagnostics.parser_style_label(
                         "Use complex(8) instead of complex*8",
