@@ -1450,7 +1450,7 @@ public:
         tmp = builder->CreateCall(fn, {mask, size});
     }
 
-    void visit_IntrinsicFunctionSqrt(const ASR::IntrinsicFunctionSqrt_t &x) {
+    void visit_RealSqrt(const ASR::RealSqrt_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -3638,6 +3638,13 @@ public:
         }
     }
 
+    bool is_function_variable(const ASR::symbol_t *v) {
+        if( !ASR::is_a<ASR::Variable_t>(*v) ) {
+            return false;
+        }
+        return is_function_variable(*ASR::down_cast<ASR::Variable_t>(v));
+    }
+
     // F is the function that we are generating and we go over all arguments
     // (F.args()) and handle three cases:
     //     * Variable (`integer :: x`)
@@ -3648,6 +3655,7 @@ public:
         for (llvm::Argument &llvm_arg : F.args()) {
             ASR::symbol_t *s = symbol_get_past_external(
                     ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v);
+            ASR::symbol_t* arg_sym = s;
             if (is_a<ASR::Variable_t>(*s)) {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
                 if (is_function_variable(*v)) {
@@ -3667,10 +3675,13 @@ public:
                 // * Function (`fn`)
                 // Deal with case where procedure passed in as argument
                 ASR::Function_t *arg = ASR::down_cast<ASR::Function_t>(s);
-                uint32_t h = get_hash((ASR::asr_t*)arg);
-                std::string arg_s = arg->m_name;
+                uint32_t h = get_hash((ASR::asr_t*)arg_sym);
+                std::string arg_s = ASRUtils::symbol_name(arg_sym);
                 llvm_arg.setName(arg_s);
                 llvm_symtab_fn_arg[h] = &llvm_arg;
+                if( is_function_variable(arg_sym) ) {
+                    llvm_symtab[h] = &llvm_arg;
+                }
                 if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
                     llvm::FunctionType* fntype = llvm_utils->get_function_type(*arg, module.get());
                     llvm::Function* fn = llvm::Function::Create(fntype, llvm::Function::ExternalLinkage, arg->m_name, module.get());
@@ -6620,9 +6631,24 @@ public:
     }
 
     void visit_Var(const ASR::Var_t &x) {
-        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
-                symbol_get_past_external(x.m_v));
-        fetch_var(v);
+        ASR::symbol_t* x_m_v = ASRUtils::symbol_get_past_external(x.m_v);
+        switch( x_m_v->type ) {
+            case ASR::symbolType::Variable: {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(x_m_v);
+                fetch_var(v);
+                return ;
+            }
+            case ASR::symbolType::Function: {
+                uint32_t h = get_hash((ASR::asr_t*)x_m_v);
+                if( llvm_symtab_fn.find(h) != llvm_symtab_fn.end() ) {
+                    tmp = llvm_symtab_fn[h];
+                }
+                return;
+            }
+            default: {
+                throw CodeGenError("Only function and variables supported so far");
+            }
+        }
     }
 
     inline ASR::ttype_t* extract_ttype_t_from_expr(ASR::expr_t* expr) {
@@ -7517,10 +7543,6 @@ public:
             m_values = down_cast<ASR::StringFormat_t>(m_values[0])->m_args;
         }
         for (size_t i=0; i<n_values; i++) {
-            if ( is_string && !ASRUtils::is_integer(*expr_type(m_values[i])) ) {
-                throw CodeGenError("Only integer type is "
-                    "supported for string write(..) for now");
-            }
             if (i != 0 && !is_string) {
                 fmt.push_back("%s");
                 args.push_back(sep);
@@ -7950,6 +7972,20 @@ public:
                                     builder->CreateStore(tmp, target);
                                     tmp = target;
                                 }
+                            } else {
+                                if( orig_arg &&
+                                    !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
+                                    LLVM::is_llvm_pointer(*arg->m_type) &&
+                                    ASRUtils::check_equal_type(
+                                        ASRUtils::type_get_past_allocatable(
+                                            ASRUtils::type_get_past_pointer(orig_arg->m_type)),
+                                        ASRUtils::type_get_past_allocatable(
+                                            ASRUtils::type_get_past_pointer(arg->m_type))) &&
+                                    !ASRUtils::is_character(*arg->m_type) ) {
+                                    // TODO: Remove call to ASRUtils::check_equal_type
+                                    // pass(rhs) is not respected in integration_tests/class_08.f90
+                                    tmp = LLVM::CreateLoad(*builder, tmp);
+                                }
                             }
                         } else {
                             if( orig_arg &&
@@ -8340,6 +8376,25 @@ public:
                 return ;
             }
         }
+
+        std::vector<llvm::Value*> args;
+        if( x.m_dt && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt) &&
+            ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(x.m_name)) &&
+            ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(x.m_name)) ) {
+            uint64_t ptr_loads_copy = ptr_loads;
+            ptr_loads = 1;
+            this->visit_expr(*x.m_dt);
+            ptr_loads = ptr_loads_copy;
+            llvm::Value* callee = LLVM::CreateLoad(*builder, tmp);
+
+            args = convert_call_args(x, false);
+            llvm::FunctionType* fntype = llvm_utils->get_function_type(
+                ASR::down_cast<ASR::FunctionType_t>(ASRUtils::expr_type(x.m_dt)),
+                module.get());
+            tmp = builder->CreateCall(fntype, callee, args);
+            return ;
+        }
+
         const ASR::symbol_t *proc_sym = symbol_get_past_external(x.m_name);
         std::string proc_sym_name = "";
         bool is_deferred = false;
@@ -8356,7 +8411,6 @@ public:
             return ;
         }
         ASR::Function_t *s;
-        std::vector<llvm::Value*> args;
         char* self_argument = nullptr;
         llvm::Value* pass_arg = nullptr;
         if (ASR::is_a<ASR::Function_t>(*proc_sym)) {
@@ -8366,6 +8420,7 @@ public:
                 ASR::ClassProcedure_t>(proc_sym);
             s = ASR::down_cast<ASR::Function_t>(clss_proc->m_proc);
             self_argument = clss_proc->m_self_argument;
+            proc_sym = clss_proc->m_proc;
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym)) {
             ASR::symbol_t *type_decl = ASR::down_cast<ASR::Variable_t>(proc_sym)->m_type_declaration;
             LCOMPILERS_ASSERT(type_decl);
@@ -8454,11 +8509,11 @@ public:
         if (s_func_type->m_abi == ASR::abiType::LFortranModule) {
             throw CodeGenError("Subroutine LCompilers interfaces not implemented yet");
         } else if (s_func_type->m_abi == ASR::abiType::Interactive) {
-            h = get_hash((ASR::asr_t*)s);
+            h = get_hash((ASR::asr_t*)proc_sym);
         } else if (s_func_type->m_abi == ASR::abiType::Source) {
-            h = get_hash((ASR::asr_t*)s);
+            h = get_hash((ASR::asr_t*)proc_sym);
         } else if (s_func_type->m_abi == ASR::abiType::BindC) {
-            h = get_hash((ASR::asr_t*)s);
+            h = get_hash((ASR::asr_t*)proc_sym);
         } else if (s_func_type->m_abi == ASR::abiType::Intrinsic) {
             if (sub_name == "get_command_argument") {
                 llvm::Function *fn = module->getFunction("_lpython_get_argv");
@@ -8507,7 +8562,7 @@ public:
                 tmp = builder->CreateCall(fn, {CreateLoad(args[0])});
                 return;
             }
-            h = get_hash((ASR::asr_t*)s);
+            h = get_hash((ASR::asr_t*)proc_sym);
         } else {
             throw CodeGenError("ABI type not implemented yet in SubroutineCall.");
         }
@@ -8845,6 +8900,7 @@ public:
             s = ASR::down_cast<ASR::Function_t>(clss_proc->m_proc);
             if (clss_proc->m_self_argument)
             self_argument = std::string(clss_proc->m_self_argument);
+            proc_sym = clss_proc->m_proc;
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym)) {
             ASR::symbol_t *type_decl = ASR::down_cast<ASR::Variable_t>(proc_sym)->m_type_declaration;
             LCOMPILERS_ASSERT(type_decl);
@@ -8968,17 +9024,17 @@ public:
         uint32_t h;
         ASR::FunctionType_t* s_func_type = ASR::down_cast<ASR::FunctionType_t>(s->m_function_signature);
         if (s_func_type->m_abi == ASR::abiType::Source && !intrinsic_function) {
-            h = get_hash((ASR::asr_t*)s);
+            h = get_hash((ASR::asr_t*)proc_sym);
         } else if (s_func_type->m_abi == ASR::abiType::LFortranModule) {
             throw CodeGenError("Function LCompilers interfaces not implemented yet");
         } else if (s_func_type->m_abi == ASR::abiType::Interactive) {
-            h = get_hash((ASR::asr_t*)s);
+            h = get_hash((ASR::asr_t*)proc_sym);
         } else if (s_func_type->m_abi == ASR::abiType::BindC) {
-            h = get_hash((ASR::asr_t*)s);
+            h = get_hash((ASR::asr_t*)proc_sym);
         } else if (s_func_type->m_abi == ASR::abiType::Intrinsic || intrinsic_function) {
             std::string func_name = s->m_name;
             if( fname2arg_type.find(func_name) != fname2arg_type.end() ) {
-                h = get_hash((ASR::asr_t*)s);
+                h = get_hash((ASR::asr_t*)proc_sym);
             } else {
                 if (func_name == "len") {
                     args = convert_call_args(x, is_method);
@@ -9010,7 +9066,7 @@ public:
                 if( ASRUtils::get_FunctionType(s)->m_deftype == ASR::deftypeType::Interface ) {
                     throw CodeGenError("Intrinsic '" + func_name + "' not implemented yet and compile time value is not available.");
                 } else {
-                    h = get_hash((ASR::asr_t*)s);
+                    h = get_hash((ASR::asr_t*)proc_sym);
                 }
             }
         } else {

@@ -179,7 +179,7 @@ expr
     | SizeOfType(ttype arg, ttype type, expr? value)
     | PointerNullConstant(ttype type)
     | PointerAssociated(expr ptr, expr? tgt, ttype type, expr? value)
-    | IntrinsicFunctionSqrt(expr arg, ttype type, expr? value)
+    | RealSqrt(expr arg, ttype type, expr? value)
 
 ttype
     = Integer(int kind)
@@ -224,7 +224,6 @@ case_stmt = CaseStmt(expr* test, stmt* body) | CaseStmt_Range(expr? start, expr?
 type_stmt = TypeStmtName(symbol sym, stmt* body) | ClassStmt(symbol sym, stmt* body) | TypeStmtType(ttype type, stmt* body)
 enumtype = IntegerConsecutiveFromZero | IntegerUnique | IntegerNotUnique | NonInteger
 require_instantiation = Require(identifier name, identifier* args)
--- TODO: prefix the enumerators here, improve the names
 array_physical_type = DescriptorArray | PointerToDataArray | UnboundedPointerToDataArray | FixedSizeArray | CharacterArraySinglePointer | NumPyArray | ISODescriptorArray | SIMDArray
 binop = Add | Sub | Mul | Div | Pow | BitAnd | BitOr | BitXor | BitLShift | BitRShift
 logicalbinop = And | Or | Xor | NEqv | Eqv

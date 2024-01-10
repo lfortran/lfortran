@@ -3229,22 +3229,6 @@ public:
         Vec<ASR::expr_t*> body;
         body.reserve(al, x.n_args);
         ASR::ttype_t *type = nullptr;
-        for (size_t i=0; i<x.n_args; i++) {
-            this->visit_expr(*x.m_args[i]);
-            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
-            if (type == nullptr) {
-                type = ASRUtils::expr_type(expr);
-            } else {
-                if (!ASRUtils::check_equal_type(ASRUtils::expr_type(expr), type)) {
-                    throw SemanticError(std::string("Type mismatch in array initializer ") +
-                        ASRUtils::get_type_code(ASRUtils::expr_type(expr))
-                        + " and " +
-                        ASRUtils::get_type_code(type) + ".",
-                        x.base.base.loc);
-                }
-            }
-            body.push_back(al, expr);
-        }
         Vec<ASR::dimension_t> dims;
         dims.reserve(al, 1);
         if (x.m_vartype != nullptr) {
@@ -3256,6 +3240,18 @@ public:
             if (x.n_args == 0) {
                 throw SemanticError("Empty array constructor is not allowed", x.base.base.loc);
             }
+        }
+        for (size_t i=0; i<x.n_args; i++) {
+            this->visit_expr(*x.m_args[i]);
+            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
+            if (type == nullptr) {
+                type = ASRUtils::expr_type(expr);
+            } else {
+                if (!ASRUtils::check_equal_type(ASRUtils::expr_type(expr), type)) {
+                    ImplicitCastRules::set_converted_value(al, expr->base.loc, &expr, ASRUtils::expr_type(expr), type);
+                }
+            }
+            body.push_back(al, expr);
         }
         ASR::dimension_t dim;
         dim.loc = x.base.base.loc;
@@ -4281,7 +4277,7 @@ public:
         }
         ASR::expr_t* len_compiletime = nullptr;
         std::string input_string;
-        if( ASRUtils::is_value_constant(v_Var, input_string) ) {
+        if( ASRUtils::extract_string_value(v_Var, input_string) ) {
             len_compiletime = make_ConstantWithType(
                 make_IntegerConstant_t, input_string.size(), type, x.base.base.loc);
         }

@@ -1816,7 +1816,7 @@ public:
 
     // void visit_PointerAssociated(const ASR::PointerAssociated_t &x) {}
 
-    void visit_IntrinsicFunctionSqrt(const ASR::IntrinsicFunctionSqrt_t &x) {
+    void visit_RealSqrt(const ASR::RealSqrt_t &x) {
         visit_expr(*x.m_arg);
         s = "sqrt(" + s + ")";
     }

@@ -522,9 +522,7 @@
                                                             (IntegerConstant 1 (Integer 4)))]
                                                             (Allocatable
                                                                 (Array
-                                                                    (TypeParameter
-                                                                        t
-                                                                    )
+                                                                    (Integer 4)
                                                                     [(()
                                                                     ())]
                                                                     DescriptorArray

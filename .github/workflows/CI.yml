@@ -503,8 +503,8 @@ jobs:
         run: |
             git clone https://github.com/Pranavchiku/stdlib-fortran-lang.git
             cd stdlib-fortran-lang
-            git checkout -t origin/lf-special-function-gamma
-            git checkout 1a048c08aa140937a8011bcafb9069155299945b
+            git checkout -t origin/lf-special-function-gamma-2
+            git checkout 6b1c348d02576739df10c755cdcee2520ec18fe6
             micromamba activate lf
             micromamba install -c conda-forge fypp
             FC=$(pwd)/../src/bin/lfortran cmake .
@@ -667,10 +667,10 @@ jobs:
         run: |
             git clone https://github.com/czgdp1807/stdlib.git
             cd stdlib
-            git checkout lf13_test_drive
-            git checkout 9897ea3a196533bc37487248b2909701589c51aa
+            git checkout lf15
+            git checkout 9ba07f7b42edebb33e82e6e94516bf423b9b8784
             export PATH="$(pwd)/../src/bin:$PATH"
-            lfortran subprojects/test-drive/src/testdrive.F90 --show-asr --no-indent
+            lfortran subprojects/test-drive/src/testdrive.F90 --show-llvm
 
   test_llvm:
     name: Test LLVM ${{ matrix.llvm-version }}

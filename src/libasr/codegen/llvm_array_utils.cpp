@@ -598,6 +598,8 @@ namespace LCompilers {
             for( int r = 0, r1 = 0; r < n_args; r++ ) {
                 llvm::Value* curr_llvm_idx = m_args[r];
                 llvm::Value* lval = llvm_diminfo[r1];
+                // first cast curr_llvm_idx to 32 bit
+                curr_llvm_idx = builder->CreateSExtOrTrunc(curr_llvm_idx, llvm::Type::getInt32Ty(context));
                 curr_llvm_idx = builder->CreateSub(curr_llvm_idx, lval);
                 if( check_for_bounds ) {
                     // check_single_element(curr_llvm_idx, arr); TODO: To be implemented

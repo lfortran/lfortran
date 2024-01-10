@@ -893,6 +893,8 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
     }
     if (ASR::is_a<ASR::IntegerConstant_t>(*a_value)) {
         // OK
+    } else if (ASR::is_a<ASR::IntegerBOZ_t>(*a_value)) {
+        // OK
     } else if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*a_value)) {
         ASR::expr_t *val = ASR::down_cast<ASR::IntegerUnaryMinus_t>(
             a_value)->m_value;
@@ -934,7 +936,14 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
         if( !ASRUtils::is_intrinsic_symbol(ASRUtils::symbol_get_past_external(func_call_t->m_name)) ) {
             return false;
         }
+
+        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
+            ASRUtils::symbol_get_past_external(func_call_t->m_name));
         for( size_t i = 0; i < func_call_t->n_args; i++ ) {
+            if (func_call_t->m_args[i].m_value == nullptr &&
+                ASRUtils::EXPR2VAR(func->m_args[i])->m_presence == ASR::presenceType::Optional) {
+                continue;
+            }
             if( !ASRUtils::is_value_constant(func_call_t->m_args[i].m_value) ) {
                 return false;
             }
@@ -980,6 +989,9 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
             }
         }
         return is_constant;
+    } else if( ASR::is_a<ASR::IntegerBinOp_t>(*a_value) ) {
+        ASR::IntegerBinOp_t* int_binop = ASR::down_cast<ASR::IntegerBinOp_t>(a_value);
+        return is_value_constant(int_binop->m_value);
     } else {
         return false;
     }
@@ -1158,6 +1170,39 @@ static inline bool extract_value(ASR::expr_t* value_expr,
     return true;
 }
 
+static inline bool extract_string_value(ASR::expr_t* value_expr,
+    std::string& value) {
+    if( !is_value_constant(value_expr) ) {
+        return false;
+    }
+    switch (value_expr->type)
+    {
+        case ASR::exprType::StringConstant: {
+            ASR::StringConstant_t* const_string = ASR::down_cast<ASR::StringConstant_t>(value_expr);
+            value = std::string(const_string->m_s);
+            break;
+        }
+        case ASR::exprType::Var: {
+            ASR::Variable_t* var = EXPR2VAR(value_expr);
+            if (var->m_storage == ASR::storage_typeType::Parameter
+                    && !extract_string_value(var->m_value, value)) {
+                return false;
+            }
+            break;
+        }
+        case ASR::exprType::FunctionCall: {
+            ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(value_expr);
+            if (!extract_string_value(func_call->m_value, value)) {
+                return false;
+            }
+            break;
+        }
+        default:
+            return false;
+    }
+    return true;
+}
+
 template <typename T,
     typename = typename std::enable_if<
         std::is_same<T, std::complex<double>>::value == false &&
@@ -1171,6 +1216,11 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
         case ASR::exprType::IntegerConstant: {
             ASR::IntegerConstant_t* const_int = ASR::down_cast<ASR::IntegerConstant_t>(value_expr);
             value = (T) const_int->m_n;
+            break;
+        }
+        case ASR::exprType::IntegerBOZ: {
+            ASR::IntegerBOZ_t* int_boz = ASR::down_cast<ASR::IntegerBOZ_t>(value_expr);
+            value = (T) int_boz->m_v;
             break;
         }
         case ASR::exprType::IntegerUnaryMinus: {
@@ -1215,6 +1265,13 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
         case ASR::exprType::FunctionCall: {
             ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(value_expr);
             if (!extract_value(func_call->m_value, value)) {
+                return false;
+            }
+            break;
+        }
+        case ASR::exprType::IntegerBinOp: {
+            ASR::IntegerBinOp_t* int_binop = ASR::down_cast<ASR::IntegerBinOp_t>(value_expr);
+            if (!extract_value(int_binop->m_value, value)) {
                 return false;
             }
             break;
@@ -4710,8 +4767,14 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
 
     Call_t_body(al, a_name, a_args, n_args, a_dt, cast_stmt, implicit_argument_casting, nopass);
 
-    return ASR::make_SubroutineCall_t(al, a_loc, a_name, a_original_name,
-            a_args, n_args, a_dt);
+    if( a_dt && ASR::is_a<ASR::Variable_t>(
+        *ASRUtils::symbol_get_past_external(a_name)) &&
+        ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(a_name)) ) {
+        a_dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, a_loc,
+            a_dt, a_name, ASRUtils::symbol_type(a_name), nullptr));
+    }
+
+    return ASR::make_SubroutineCall_t(al, a_loc, a_name, a_original_name, a_args, n_args, a_dt);
 }
 
 static inline ASR::expr_t* cast_to_descriptor(Allocator& al, ASR::expr_t* arg) {
