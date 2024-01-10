@@ -173,23 +173,24 @@ the logical type does not change
     - ISODescriptor -> Descriptor
     - Descriptor -> ISODescriptor
 
-### Ttype node
-    ```asdl
-    ttype = Integer(int kind) | UnsignedInteger(int kind) | Real(int kind) | ...
-    ```
-    **`len`** in Character:
-    - $>=0$ ... the length of the string, known at compile time
-    - $-1$ ... character( * ), i.e., inferred at runtime
-    - $-2$ ... character(:), allocatable (possibly we might use -1 for that also)
-    - $-3$ ... character(n+3), i.e., a runtime expression stored in `len_expr`
+### Ttype nodes
+```asdl
+ttype = Integer(int kind) | UnsignedInteger(int kind) | Real(int kind) | ...
+```
 
-    **`kind`**: The `kind` member selects the kind of a given type. We currently
-    support the following:
-    - Integer kinds: 1 (i8), 2 (i16), 4 (i32), 8 (i64)
-    - Real kinds: 4 (f32), 8 (f64)
-    - Complex kinds: 4 (c32), 8 (c64)
-    - Character kinds: 1 (utf8 string)
-    - Logical kinds: 1, 2, 4: (boolean represented by 1, 2, 4 bytes; the default
+**`len`** in Character:
+- $>=0$ ... the length of the string, known at compile time
+- $-1$ ... character( * ), i.e., inferred at runtime
+- $-2$ ... character(:), allocatable (possibly we might use -1 for that also)
+- $-3$ ... character(n+3), i.e., a runtime expression stored in `len_expr`
+
+**`kind`**: The `kind` member selects the kind of a given type. We currently
+support the following:
+- Integer kinds: 1 (i8), 2 (i16), 4 (i32), 8 (i64)
+- Real kinds: 4 (f32), 8 (f64)
+- Complex kinds: 4 (c32), 8 (c64)
+- Character kinds: 1 (utf8 string)
+- Logical kinds: 1, 2, 4: (boolean represented by 1, 2, 4 bytes; the default
 kind is 4, just like the default integer kind, consistent with Python
 and Fortran: in Python "Booleans in Python are implemented as a subclass
 of integers", in Fortran the "default logical kind has the same storage
