@@ -1,4 +1,4 @@
-module testdrive
+module testdrive_derived_types_30
     implicit none
 
     public :: unittest_type
@@ -30,10 +30,10 @@ contains
     end subroutine test_impl1
 
 
-end module testdrive
+end module testdrive_derived_types_30
 
 program derived_types_30
-use testdrive
+use testdrive_derived_types_30
 implicit none
 
     type(unittest_type) :: var
