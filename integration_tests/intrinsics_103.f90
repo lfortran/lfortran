@@ -1,4 +1,4 @@
-program expr2
+program intrinsics_103
 implicit none
 
 character(len=*), parameter :: magic_number = char(60 + 5)
