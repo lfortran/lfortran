@@ -4277,7 +4277,7 @@ public:
         }
         ASR::expr_t* len_compiletime = nullptr;
         std::string input_string;
-        if( ASRUtils::is_value_constant(v_Var, input_string) ) {
+        if( ASRUtils::extract_string_value(v_Var, input_string) ) {
             len_compiletime = make_ConstantWithType(
                 make_IntegerConstant_t, input_string.size(), type, x.base.base.loc);
         }
