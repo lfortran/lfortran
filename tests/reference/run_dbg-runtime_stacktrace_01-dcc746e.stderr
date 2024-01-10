@@ -1,9 +1,2 @@
-  File "tests/errors/runtime_stacktrace_01.f90", line 3
-    print *, main()
-  File "tests/errors/runtime_stacktrace_01.f90", line 10
-    print *, g()
-  File "tests/errors/runtime_stacktrace_01.f90", line 20
-    call f()
-  File "tests/errors/runtime_stacktrace_01.f90", line 14
-    stop 1
-STOP
+sh: 1: llvm-dwarfdump: not found
+Error in creating the files used to generate the debug information. This might be caused because either `llvm-dwarfdump` or `Python` are not available. Please activate the CONDA environment and compile again.
