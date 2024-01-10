@@ -1,6 +1,6 @@
 module template_sort_01_type
     implicit none
-    public :: my_type, my_type_lt
+    public :: my_type, lt_my_type
 
     type my_type
         real :: d
