@@ -1,3 +1,8 @@
+-- Abstract Semantic Representation (ASR) definition
+
+-- Documenations are available at:
+-- https://github.com/lfortran/lfortran/tree/main/doc/src/asr/asr.md
+
 module ASR {
 
 unit
@@ -71,6 +76,7 @@ stmt
 
 expr
     = IfExp(expr test, expr body, expr orelse, ttype type, expr? value)
+        -- Such as: (x, y+z), (3.0, 2.0) generally not known at compile time
     | ComplexConstructor(expr re, expr im, ttype type, expr? value)
     | NamedExpr(expr target, expr value, ttype type)
     | FunctionCall(symbol name, symbol? original_name, call_arg* args, ttype type, expr? value, expr? dt)
@@ -218,6 +224,7 @@ case_stmt = CaseStmt(expr* test, stmt* body) | CaseStmt_Range(expr? start, expr?
 type_stmt = TypeStmtName(symbol sym, stmt* body) | ClassStmt(symbol sym, stmt* body) | TypeStmtType(ttype type, stmt* body)
 enumtype = IntegerConsecutiveFromZero | IntegerUnique | IntegerNotUnique | NonInteger
 require_instantiation = Require(identifier name, identifier* args)
+-- TODO: prefix the enumerators here, improve the names
 array_physical_type = DescriptorArray | PointerToDataArray | UnboundedPointerToDataArray | FixedSizeArray | CharacterArraySinglePointer | NumPyArray | ISODescriptorArray | SIMDArray
 binop = Add | Sub | Mul | Div | Pow | BitAnd | BitOr | BitXor | BitLShift | BitRShift
 logicalbinop = And | Or | Xor | NEqv | Eqv
