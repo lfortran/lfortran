@@ -140,42 +140,38 @@ just an interface.
 ## Short notes on ASR nodes
 
 ### Expr nodes
-
-#### Cast
-Cast changes the value (the bits) of the `arg`.
-
-#### ArrayPhysicalCast
-This ArrayPhysicalCast we only change the physical type, the logical type does not change
+1. **Cast**: It changes the value (the bits) of the `arg`.
+2. **ArrayPhysicalCast**: This ArrayPhysicalCast we only change the physical type,
+the logical type does not change
 > Note: the "new" physical type here will also be part of the "type" member
 
-This allow to represent any combination, but we'll only support a few, at least we need:
-Maybe it's easier to add an enumeration here:
-- Descriptor -> Pointer
-- Pointer -> Descriptor
-- CompileTimeFixedSizeArray -> Pointer
-- CompileTimeFixedSizeArray -> Descriptor
-- Descriptor -> NumPy
-- NumPy -> Descriptor
-- ISODescriptor -> Descriptor
-- Descriptor -> ISODescriptor
+    This allow to represent any combination, but we'll only support a few, at least we need:
+    Maybe it's easier to add an enumeration here:
+    - Descriptor -> Pointer
+    - Pointer -> Descriptor
+    - CompileTimeFixedSizeArray -> Pointer
+    - CompileTimeFixedSizeArray -> Descriptor
+    - Descriptor -> NumPy
+    - NumPy -> Descriptor
+    - ISODescriptor -> Descriptor
+    - Descriptor -> ISODescriptor
+3. **ttype**
+    ```asdl
+    ttype = Integer(int kind) | UnsignedInteger(int kind) | Real(int kind) | ...
+    ```
+    **`len`** in Character:
+    - >=0 ... the length of the string, known at compile time
+    - -1 ... character( * ), i.e., inferred at runtime
+    - -2 ... character(:), allocatable (possibly we might use -1 for that also)
+    - -3 ... character(n+3), i.e., a runtime expression stored in `len_expr`
 
-#### ttype
-```asdl
-ttype = Integer(int kind) | UnsignedInteger(int kind) | Real(int kind) | ...
-```
-**`len`** in Character:
-- >=0 ... the length of the string, known at compile time
-- -1 ... character( * ), i.e., inferred at runtime
-- -2 ... character(:), allocatable (possibly we might use -1 for that also)
-- -3 ... character(n+3), i.e., a runtime expression stored in `len_expr`
-
-**`kind`**: The `kind` member selects the kind of a given type. We currently
-support the following:
-- Integer kinds: 1 (i8), 2 (i16), 4 (i32), 8 (i64)
-- Real kinds: 4 (f32), 8 (f64)
-- Complex kinds: 4 (c32), 8 (c64)
-- Character kinds: 1 (utf8 string)
-- Logical kinds: 1, 2, 4: (boolean represented by 1, 2, 4 bytes; the default
+    **`kind`**: The `kind` member selects the kind of a given type. We currently
+    support the following:
+    - Integer kinds: 1 (i8), 2 (i16), 4 (i32), 8 (i64)
+    - Real kinds: 4 (f32), 8 (f64)
+    - Complex kinds: 4 (c32), 8 (c64)
+    - Character kinds: 1 (utf8 string)
+    - Logical kinds: 1, 2, 4: (boolean represented by 1, 2, 4 bytes; the default
 kind is 4, just like the default integer kind, consistent with Python
 and Fortran: in Python "Booleans in Python are implemented as a subclass
 of integers", in Fortran the "default logical kind has the same storage
@@ -183,18 +179,10 @@ size as the default integer"; we currently use kind=4 as default
 integer, so we also use kind=4 for the default logical.)
 
 ### Stmt nodes
-
-#### ExplicitDeallocate
-ExplicitDeallocate deallocates if allocated otherwise throws a runtime error.
-
-#### ImplicitDeallocate
-ImplicitDeallocate deallocates if allocated otherwise does nothing.
-
-#### GoTo
-GoTo points to a GoToTarget with the corresponding target_id within
+1. **ExplicitDeallocate**: It deallocates if allocated otherwise throws a runtime error.
+2. **ImplicitDeallocate**: It  deallocates if allocated otherwise does nothing.
+3. **GoTo**: It points to a GoToTarget with the corresponding target_id within
 the same procedure. We currently use `int` IDs to link GoTo with
 GoToTarget to avoid issues with serialization.
-
-#### GoToTarget
-An empty statement, a target of zero or more GoTo statements
+4. **GoToTarget**: An empty statement, a target of zero or more GoTo statements
 the `id` is only unique within a procedure.
