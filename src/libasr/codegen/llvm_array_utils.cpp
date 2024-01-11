@@ -7,6 +7,23 @@ namespace LCompilers {
     namespace LLVMArrUtils {
 
         llvm::Value* lfortran_malloc(llvm::LLVMContext &context, llvm::Module &module,
+                llvm::IRBuilder<> &builder, llvm::Value* arg_size, int common_bit_width) {
+            std::string func_name = "_lfortran_malloc_i"+std::to_string(common_bit_width);
+            llvm::Function *fn = module.getFunction(func_name);
+            if (!fn) {
+                llvm::Type* type = llvm::Type::getIntNTy(context, common_bit_width);
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getInt8PtrTy(context), {
+                            type
+                        }, true);
+                fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, func_name, module);
+            }
+            std::vector<llvm::Value*> args = {arg_size};
+            return builder.CreateCall(fn, args);
+        }
+
+        llvm::Value* lfortran_malloc(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::IRBuilder<> &builder, llvm::Value* arg_size) {
             std::string func_name = "_lfortran_malloc";
             llvm::Function *fn = module.getFunction(func_name);
@@ -341,23 +358,95 @@ namespace LCompilers {
                                     offset_val);
             llvm::Value* dim_des_val = LLVM::CreateLoad(*builder, llvm_utils->create_gep(arr, 2));
             llvm::Value* prod = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+            int common_bit_width = 32;
             for( int r = 0; r < n_dims; r++ ) {
                 llvm::Value* dim_val = llvm_utils->create_ptr_gep(dim_des_val, r);
                 llvm::Value* s_val = llvm_utils->create_gep(dim_val, 0);
                 llvm::Value* l_val = llvm_utils->create_gep(dim_val, 1);
                 llvm::Value* dim_size_ptr = llvm_utils->create_gep(dim_val, 2);
                 builder->CreateStore(prod, s_val);
-                builder->CreateStore(llvm_dims[r].first, l_val);
+                llvm::Value* first = llvm_dims[r].first;
                 llvm::Value* dim_size = llvm_dims[r].second;
+                int bit_width_first = first->getType()->getIntegerBitWidth();
+                int bit_width_dim_size = dim_size->getType()->getIntegerBitWidth();
+                if (bit_width_first != bit_width_dim_size) {
+                    if (bit_width_first > bit_width_dim_size) {
+                        dim_size = builder->CreateSExt(dim_size, first->getType());
+
+                        l_val = builder->CreateSExt(LLVM::CreateLoad(*builder, l_val), first->getType());
+                        llvm::Value* tmp = builder->CreateAlloca(l_val->getType());
+                        builder->CreateStore(l_val, tmp);
+                        l_val = tmp;
+
+                        s_val = builder->CreateSExt(LLVM::CreateLoad(*builder, s_val), first->getType());
+                        tmp = builder->CreateAlloca(s_val->getType());
+                        builder->CreateStore(s_val, tmp);
+                        s_val = tmp;
+
+                        dim_size_ptr = builder->CreateSExt(LLVM::CreateLoad(*builder, dim_size_ptr), first->getType());
+                        tmp = builder->CreateAlloca(dim_size_ptr->getType());
+                        builder->CreateStore(dim_size_ptr, tmp);
+                        dim_size_ptr = tmp;
+
+                        common_bit_width = bit_width_first;
+                    } else {
+                        first = builder->CreateSExt(first, dim_size->getType());
+
+                        l_val = builder->CreateSExt(LLVM::CreateLoad(*builder, l_val), dim_size->getType());
+                        llvm::Value* tmp = builder->CreateAlloca(l_val->getType());
+                        builder->CreateStore(l_val, tmp);
+                        l_val = tmp;
+
+
+                        s_val = builder->CreateSExt(LLVM::CreateLoad(*builder, s_val), dim_size->getType());
+                        tmp = builder->CreateAlloca(s_val->getType());
+                        builder->CreateStore(s_val, tmp);
+                        s_val = tmp;
+
+                        dim_size_ptr = builder->CreateSExt(LLVM::CreateLoad(*builder, dim_size_ptr), dim_size->getType());
+                        tmp = builder->CreateAlloca(dim_size_ptr->getType());
+                        builder->CreateStore(dim_size_ptr, tmp);
+                        dim_size_ptr = tmp;
+
+                        common_bit_width = bit_width_dim_size;
+                    }
+                } else if (common_bit_width != bit_width_first) {
+                    if (common_bit_width > bit_width_first) {
+                        first = builder->CreateSExt(first, llvm::Type::getInt32Ty(context));
+                        dim_size = builder->CreateSExt(dim_size, llvm::Type::getInt32Ty(context));
+                        common_bit_width = 32;
+                    } else {
+                        l_val = builder->CreateSExt(LLVM::CreateLoad(*builder, l_val), dim_size->getType());
+                        llvm::Value* tmp = builder->CreateAlloca(l_val->getType());
+                        builder->CreateStore(l_val, tmp);
+                        l_val = tmp;
+
+                        s_val = builder->CreateSExt(LLVM::CreateLoad(*builder, s_val), dim_size->getType());
+                        tmp = builder->CreateAlloca(s_val->getType());
+                        builder->CreateStore(s_val, tmp);
+                        s_val = tmp;
+
+                        dim_size_ptr = builder->CreateSExt(LLVM::CreateLoad(*builder, dim_size_ptr), dim_size->getType());
+                        tmp = builder->CreateAlloca(dim_size_ptr->getType());
+                        builder->CreateStore(dim_size_ptr, tmp);
+                        dim_size_ptr = tmp;
+
+                        common_bit_width = bit_width_dim_size;
+                    }
+                }
+                if (common_bit_width != 32) {
+                    prod = llvm::ConstantInt::get(context, llvm::APInt(common_bit_width, 1));
+                }
+                builder->CreateStore(first, l_val);
                 builder->CreateStore(dim_size, dim_size_ptr);
                 prod = builder->CreateMul(prod, dim_size);
             }
             llvm::Value* ptr2firstptr = get_pointer_to_data(arr);
-            llvm::AllocaInst *arg_size = builder->CreateAlloca(llvm::Type::getInt32Ty(context), nullptr);
+            llvm::AllocaInst *arg_size = builder->CreateAlloca(llvm::Type::getIntNTy(context, common_bit_width), nullptr);
             llvm::DataLayout data_layout(module);
             llvm::Type* ptr_type = llvm_data_type->getPointerTo();
             uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
-            llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
+            llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(common_bit_width, size));
             prod = builder->CreateMul(prod, llvm_size);
             builder->CreateStore(prod, arg_size);
             llvm::Value* ptr_as_char_ptr = nullptr;
@@ -367,7 +456,7 @@ namespace LCompilers {
                     LLVM::CreateLoad(*builder, arg_size));
             } else {
                 ptr_as_char_ptr = lfortran_malloc(context, *module,
-                    *builder, LLVM::CreateLoad(*builder, arg_size));
+                    *builder, LLVM::CreateLoad(*builder, arg_size), common_bit_width);
             }
             llvm::Value* first_ptr = builder->CreateBitCast(ptr_as_char_ptr, ptr_type);
             builder->CreateStore(first_ptr, ptr2firstptr);
@@ -579,6 +668,8 @@ namespace LCompilers {
                 llvm::Value* curr_llvm_idx = m_args[r];
                 llvm::Value* dim_des_ptr = llvm_utils->create_ptr_gep(dim_des_arr_ptr, r);
                 llvm::Value* lval = LLVM::CreateLoad(*builder, llvm_utils->create_gep(dim_des_ptr, 1));
+                // first cast curr_llvm_idx to 32 bit
+                curr_llvm_idx = builder->CreateSExt(curr_llvm_idx, llvm::Type::getInt32Ty(context));
                 curr_llvm_idx = builder->CreateSub(curr_llvm_idx, lval);
                 if( check_for_bounds ) {
                     // check_single_element(curr_llvm_idx, arr); TODO: To be implemented
@@ -598,8 +689,22 @@ namespace LCompilers {
             for( int r = 0, r1 = 0; r < n_args; r++ ) {
                 llvm::Value* curr_llvm_idx = m_args[r];
                 llvm::Value* lval = llvm_diminfo[r1];
-                // first cast curr_llvm_idx to 32 bit
-                curr_llvm_idx = builder->CreateSExtOrTrunc(curr_llvm_idx, llvm::Type::getInt32Ty(context));
+                int bit_width_curr_llvm_idx = curr_llvm_idx->getType()->getIntegerBitWidth();
+                int bit_width_lval = lval->getType()->getIntegerBitWidth();
+                int common_bit_width = 32;
+                if (bit_width_lval != bit_width_curr_llvm_idx) {
+                    if (bit_width_curr_llvm_idx > bit_width_lval) {
+                        lval = builder->CreateSExt(lval, curr_llvm_idx->getType());
+                        common_bit_width = bit_width_curr_llvm_idx;
+                    } else {
+                        curr_llvm_idx = builder->CreateSExt(curr_llvm_idx, lval->getType());
+                        common_bit_width = bit_width_lval;
+                    }
+                }
+                if (common_bit_width != 32) {
+                    prod = llvm::ConstantInt::get(context, llvm::APInt(common_bit_width, 1));
+                    idx = llvm::ConstantInt::get(context, llvm::APInt(common_bit_width, 0));
+                }
                 curr_llvm_idx = builder->CreateSub(curr_llvm_idx, lval);
                 if( check_for_bounds ) {
                     // check_single_element(curr_llvm_idx, arr); TODO: To be implemented
