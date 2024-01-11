@@ -2277,6 +2277,7 @@ public:
                                 is_external = true;
                             } else if(sa->m_attr == AST::simple_attributeType
                                 ::AttrNoPass) {
+                                std::cerr << "TODO: Support nopass here" << std::endl;
                             } else {
                                 throw SemanticError("Attribute type not implemented yet " + std::to_string(sa->m_attr),
                                         x.base.base.loc);
@@ -4857,11 +4858,15 @@ public:
     }
 
     template <class Call>
-    void create_implicit_interface_function(const Call &x, std::string func_name, bool add_return, ASR::ttype_t* old_type) {
+    void create_implicit_interface_function(const Call &x, std::string func_name, bool add_return,
+        ASR::ttype_t* old_type, SymbolTable* scope = nullptr) {
         is_implicit_interface = true;
         implicit_interface_parent_scope = current_scope;
-        SymbolTable *parent_scope = current_scope;
-        current_scope = al.make_new<SymbolTable>(parent_scope);
+        if (scope == nullptr) {
+            scope = current_scope;
+        }
+        SymbolTable *parent_scope = scope;
+        current_scope = al.make_new<SymbolTable>(scope);
 
         Vec<ASR::call_arg_t> c_args;
         visit_expr_list(x.m_args, x.n_args, c_args);
@@ -4941,7 +4946,7 @@ public:
 
         tmp = ASRUtils::make_Function_t_util(
             al, x.base.base.loc,
-            /* a_symtab */ current_scope,
+            /* a_symtab */ scope,
             /* a_name */ s2c(al, sym_name),
             nullptr, 0,
             /* a_args */ args.p,

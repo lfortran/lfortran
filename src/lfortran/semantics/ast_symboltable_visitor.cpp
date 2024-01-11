@@ -1045,7 +1045,11 @@ public:
                 // function previously added as variable due to implicit typing
                 parent_scope->erase_symbol(sym_name);
             } else {
+<<<<<<< HEAD
                 throw SemanticError("Subroutine already defined " + sym_name, tmp->loc);
+=======
+                throw SemanticError("2 Subroutine already defined " + sym_name, tmp->loc);
+>>>>>>> b0628269d (DEV: Duplicate generic procedure in submodule so that binding happens easily)
             }
         }
         if( sym_name == interface_name ) {
@@ -1666,7 +1670,8 @@ public:
             // present inside StructType's scope. So the order
             // is already established and hence no need to store
             // this ExternalSymbol as a dependency.
-            if( ASR::is_a<ASR::ExternalSymbol_t>(*item.second) ) {
+            if( ASR::is_a<ASR::ExternalSymbol_t>(*item.second) ||
+                ASR::is_a<ASR::StructType_t>(*item.second) ) {
                 continue;
             }
             ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(item.second));
@@ -2471,9 +2476,9 @@ public:
                 );
             current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(fn));
         } else if (ASR::is_a<ASR::Variable_t>(*t)) {
-            if (current_scope->get_symbol(local_sym) != nullptr) {
-                throw SemanticError("Variable already defined", loc);
-            }
+            // if (current_scope->get_symbol(local_sym) != nullptr) {
+            //     throw SemanticError("Variable " + local_sym + " already defined", loc);
+            // }
             ASR::Variable_t *mv = ASR::down_cast<ASR::Variable_t>(t);
             // `mv` is the Variable in a module. Now we construct
             // an ExternalSymbol that points to it.
@@ -2491,7 +2496,7 @@ public:
                 m->m_name, nullptr, 0, mv->m_name,
                 dflt_access
                 );
-            current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(v));
+            current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(v));
         } else if( ASR::is_a<ASR::StructType_t>(*t) ) {
             ASR::symbol_t* imported_struct_type = current_scope->get_symbol(local_sym);
             ASR::StructType_t *mv = ASR::down_cast<ASR::StructType_t>(t);

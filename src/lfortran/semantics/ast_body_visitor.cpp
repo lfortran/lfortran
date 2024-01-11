@@ -2757,11 +2757,24 @@ public:
                     // using it as a function. This will (eventually) fail
                     // in verify(). But we should give an error earlier as well.
                     ASR::ttype_t* old_type = ASR::down_cast<ASR::Variable_t>(original_sym)->m_type;
-                    current_scope->erase_symbol(sub_name);
-                    create_implicit_interface_function(x, sub_name, false, old_type);
-                    original_sym = current_scope->resolve_symbol(sub_name);
-                    LCOMPILERS_ASSERT(original_sym!=nullptr);
-
+                    SymbolTable* current_scope_copy = current_scope;
+                    if (x.n_member >= 1) {
+                        std::string obj_name = x.m_member[x.n_member - 1].m_name;
+                        ASR::symbol_t* obj_sym = current_scope->resolve_symbol(obj_name);
+                        ASR::Variable_t* obj_sym_var = ASR::down_cast<ASR::Variable_t>(obj_sym);
+                        ASR::Struct_t* obj_sym_var_type = ASR::down_cast<ASR::Struct_t>(obj_sym_var->m_type);
+                        ASR::StructType_t* struct_t_type = ASR::down_cast<ASR::StructType_t>(obj_sym_var_type->m_derived_type);
+                        struct_t_type->m_symtab->erase_symbol(sub_name);
+                        create_implicit_interface_function(x, sub_name, false, old_type, struct_t_type->m_symtab);
+                        original_sym = struct_t_type->m_symtab->resolve_symbol(sub_name);
+                        LCOMPILERS_ASSERT(original_sym!=nullptr);
+                    } else {
+                        current_scope->erase_symbol(sub_name);
+                        create_implicit_interface_function(x, sub_name, false, old_type);
+                        original_sym = current_scope->resolve_symbol(sub_name);
+                        LCOMPILERS_ASSERT(original_sym!=nullptr);
+                    }
+                    current_scope = current_scope_copy;
                     // One issue to solve is if `sub_name` is an argument of
                     // the current function, such as in:
                     //
@@ -2782,6 +2795,9 @@ public:
                     ASR::Function_t *current_function = ASR::down_cast2
                         <ASR::Function_t>(current_scope->asr_owner);
                     redo_function_argument(*current_function, sub_name);
+                    // TODO: Support a class procedure here
+                    // Currently hard code nopass for a function
+                    nopass = true;
                 }
                 final_sym = original_sym;
                 original_sym = nullptr;
@@ -2821,7 +2837,6 @@ public:
                 return;
             }
         }
-        throw LCompilersException("Argument not found");
     }
 
     void visit_Print(const AST::Print_t &x) {
