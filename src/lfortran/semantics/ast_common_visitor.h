@@ -801,6 +801,8 @@ public:
     std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types;
     std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols;
     std::vector<ASR::stmt_t*> &data_structure;
+    std::vector<std::string> &derived_type_names;
+    std::vector<std::pair<std::string, Location>> &undefined_derived_type_names;
 
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
             diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
@@ -811,13 +813,15 @@ public:
             std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
             std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
             std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-            std::vector<ASR::stmt_t*> &data_structure)
+            std::vector<ASR::stmt_t*> &data_structure,
+            std::vector<std::string> &derived_type_names,
+            std::vector<std::pair<std::string, Location>> &undefined_derived_type_names)
         : diag{diagnostics}, al{al}, compiler_options{compiler_options},
           current_scope{symbol_table}, implicit_mapping{implicit_mapping},
           common_variables_hash{common_variables_hash}, external_procedures_mapping{external_procedures_mapping},
           entry_functions{entry_functions},entry_function_arguments_mapping{entry_function_arguments_mapping},
           current_variable_type_{nullptr}, instantiate_types{instantiate_types},
-          instantiate_symbols{instantiate_symbols}, data_structure{data_structure} {
+          instantiate_symbols{instantiate_symbols}, data_structure{data_structure}, derived_type_names{derived_type_names}, undefined_derived_type_names{undefined_derived_type_names} {
         current_module_dependencies.reserve(al, 4);
         enum_init_val = 0;
     }
@@ -1708,6 +1712,13 @@ public:
             std::remove(external_procedures_mapping[hash].begin(),
             external_procedures_mapping[hash].end(), sym),
             external_procedures_mapping[hash].end());
+    }
+
+    void check_undefined_derived_types() {
+        if (undefined_derived_type_names.size() > 0) {
+            throw SemanticError("Derived type `" + undefined_derived_type_names[0].first + "` is used before it is defined!",
+                undefined_derived_type_names[0].second);
+        }
     }
 
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
@@ -2841,12 +2852,15 @@ public:
                                           "in any requirements", loc);
                     }
                     // Placeholder symbol for Struct type
-                    // Derived type can be used before its actually defined
+                    if (std::find(derived_type_names.begin(), derived_type_names.end(), derived_type_name) == derived_type_names.end()) {
+                        undefined_derived_type_names.push_back({derived_type_name, loc});
+                    }
+                    // Derived type can be used before it's actually defined
                     v = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
                             al, loc, current_scope, s2c(al, derived_type_name),
                             nullptr, nullptr, nullptr, 0, s2c(al, derived_type_name),
                             ASR::accessType::Private));
-                }
+                }  
                 type = ASRUtils::TYPE(ASR::make_Struct_t(al, loc, v));
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument);
@@ -2900,12 +2914,10 @@ public:
             throw SemanticError("Type not implemented yet.",
                     loc);
         }
-
         if( is_allocatable ) {
             type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
                 ASRUtils::type_get_past_allocatable(type)));
         }
-
         return type;
     }
 

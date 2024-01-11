@@ -97,9 +97,11 @@ public:
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::vector<ASR::stmt_t*> &data_structure)
+        std::vector<ASR::stmt_t*> &data_structure,
+        std::vector<std::string> &derived_type_names,
+        std::vector<std::pair<std::string, Location>> &undefined_derived_type_names)
       : CommonVisitor(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                      instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure) {}
+                      instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure, derived_type_names, undefined_derived_type_names) {}
 
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
         if (!current_scope) {
@@ -557,6 +559,7 @@ public:
 
         fix_type_info(ASR::down_cast2<ASR::Program_t>(tmp));
         mark_common_blocks_as_declared();
+        check_undefined_derived_types();
     }
 
     bool subroutine_contains_entry_function(std::string subroutine_name, AST::stmt_t** body, size_t n_body) {
@@ -1605,6 +1608,10 @@ public:
 
     void visit_DerivedType(const AST::DerivedType_t &x) {
         dt_name = to_lower(x.m_name);
+        std::string derived_type_name = std::string(dt_name);
+        derived_type_names.push_back(dt_name);
+        undefined_derived_type_names.erase(std::remove_if(undefined_derived_type_names.begin(), undefined_derived_type_names.end(),
+        [&derived_type_name](const auto& pair) { return pair.first == derived_type_name; }), undefined_derived_type_names.end());
         bool is_abstract = false;
         bool is_deferred = false;
         AST::AttrExtends_t *attr_extend = nullptr;
@@ -3446,10 +3453,12 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::vector<ASR::stmt_t*> &data_structure)
+        std::vector<ASR::stmt_t*> &data_structure,
+        std::vector<std::string> &derived_type_names,
+        std::vector<std::pair<std::string, Location>> &undefined_derived_type_names)
 {
     SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                         instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure);
+                         instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure, derived_type_names, undefined_derived_type_names);
     try {
         v.visit_TranslationUnit(ast);
     } catch (const SemanticError &e) {

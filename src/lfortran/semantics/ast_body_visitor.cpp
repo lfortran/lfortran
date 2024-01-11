@@ -41,9 +41,11 @@ public:
             std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
             std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
             std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-            std::vector<ASR::stmt_t*> &data_structure)
+            std::vector<ASR::stmt_t*> &data_structure,
+            std::vector<std::string> &derived_type_names, 
+            std::vector<std::pair<std::string, Location>> &undefined_derived_type_names)
         : CommonVisitor(al, nullptr, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                        instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure),
+                        instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure, derived_type_names, undefined_derived_type_names),
         asr{unit}, from_block{false} {}
 
     void visit_Declaration(const AST::Declaration_t& x) {
@@ -3365,10 +3367,12 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::vector<ASR::stmt_t*> &data_structure)
+        std::vector<ASR::stmt_t*> &data_structure,
+        std::vector<std::string> &derived_type_names,
+        std::vector<std::pair<std::string, Location>> &undefined_derived_type_names)
 {
     BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-                  instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure);
+                  instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure, derived_type_names, undefined_derived_type_names);
     try {
         b.is_body_visitor = true;
         b.visit_TranslationUnit(ast);
