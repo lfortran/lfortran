@@ -6,6 +6,13 @@
 
 namespace LCompilers {
 
+    ASR::symbol_t* instantiate_symbol0(Allocator &al,
+            SymbolTable *target_scope,
+            std::map<std::string,ASR::ttype_t*> type_subs,
+            std::map<std::string,ASR::symbol_t*> symbol_subs,
+            std::string new_sym_name,
+            ASR::symbol_t *sym);
+
     /**
      * @brief Instantiate a generic function into a function that does not
      *        contain any type parameters and restrictions. No type checking

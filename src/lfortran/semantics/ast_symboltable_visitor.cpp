@@ -3161,8 +3161,9 @@ public:
                     throw SemanticError("Symbol " + generic_name + " was not found", x.base.base.loc);
                 }
                 std::string new_sym_name = to_lower(use_symbol->m_local_rename);
-                instantiate_symbol(al, context_map, type_subs, symbol_subs,
-                    current_scope, temp->m_symtab, new_sym_name, s);
+                //instantiate_symbol(al, context_map, type_subs, symbol_subs,
+                //    current_scope, temp->m_symtab, new_sym_name, s);
+                instantiate_symbol0(al, current_scope, type_subs, symbol_subs, new_sym_name, s);
                 // TODO: can this be removed?
                 context_map[generic_name] = new_sym_name;
             }
