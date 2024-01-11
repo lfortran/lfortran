@@ -1658,6 +1658,22 @@ LFORTRAN_API void* _lfortran_malloc(int32_t size) {
     return malloc(size);
 }
 
+LFORTRAN_API void* _lfortran_malloc_i8(int8_t size) {
+    return malloc(size);
+}
+
+LFORTRAN_API void* _lfortran_malloc_i16(int16_t size) {
+    return malloc(size);
+}
+
+LFORTRAN_API void* _lfortran_malloc_i32(int32_t size) {
+    return malloc(size);
+}
+
+LFORTRAN_API void* _lfortran_malloc_i64(int64_t size) {
+    return malloc(size);
+}
+
 LFORTRAN_API int8_t* _lfortran_realloc(int8_t* ptr, int32_t size) {
     return (int8_t*) realloc(ptr, size);
 }
