@@ -533,7 +533,7 @@ define i32 @main(i32 %0, i8** %1) {
   %44 = mul i32 %41, 1
   store i32 %44, i32* %43, align 4
   %45 = load i32, i32* %43, align 4
-  %46 = call i8* (i32, ...) @_lfortran_malloc(i32 %45)
+  %46 = call i8* (i32, ...) @_lfortran_malloc_i32(i32 %45)
   %47 = bitcast i8* %46 to i1*
   store i1* %47, i1** %42, align 8
   %48 = load i32, i32* @array_op_3.dim1, align 4
@@ -573,7 +573,7 @@ define i32 @main(i32 %0, i8** %1) {
   %72 = mul i32 %69, 1
   store i32 %72, i32* %71, align 4
   %73 = load i32, i32* %71, align 4
-  %74 = call i8* (i32, ...) @_lfortran_malloc(i32 %73)
+  %74 = call i8* (i32, ...) @_lfortran_malloc_i32(i32 %73)
   %75 = bitcast i8* %74 to i1*
   store i1* %75, i1** %70, align 8
   %76 = load i32, i32* @array_op_3.dim1, align 4
@@ -613,7 +613,7 @@ define i32 @main(i32 %0, i8** %1) {
   %100 = mul i32 %97, 1
   store i32 %100, i32* %99, align 4
   %101 = load i32, i32* %99, align 4
-  %102 = call i8* (i32, ...) @_lfortran_malloc(i32 %101)
+  %102 = call i8* (i32, ...) @_lfortran_malloc_i32(i32 %101)
   %103 = bitcast i8* %102 to i1*
   store i1* %103, i1** %98, align 8
   store i32 0, i32* %i, align 4
@@ -2001,6 +2001,6 @@ ifcont64:                                         ; preds = %else63, %then62
 
 declare void @_lpython_set_argv(i32, i8**)
 
-declare i8* @_lfortran_malloc(i32, ...)
+declare i8* @_lfortran_malloc_i32(i32, ...)
 
 declare void @_lfortran_free(i8*, ...)

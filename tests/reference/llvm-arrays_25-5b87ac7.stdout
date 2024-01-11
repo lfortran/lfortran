@@ -108,7 +108,7 @@ define i32 @main(i32 %0, i8** %1) {
   %19 = alloca i32, align 4
   store i32 40, i32* %19, align 4
   %20 = load i32, i32* %19, align 4
-  %21 = call i8* (i32, ...) @_lfortran_malloc(i32 %20)
+  %21 = call i8* (i32, ...) @_lfortran_malloc_i32(i32 %20)
   %22 = bitcast i8* %21 to i32*
   store i32* %22, i32** %18, align 8
   %23 = getelementptr %model_t, %model_t* %m, i32 0, i32 0
@@ -272,6 +272,6 @@ loop.end3:                                        ; preds = %loop.head1
 
 declare void @_lpython_set_argv(i32, i8**)
 
-declare i8* @_lfortran_malloc(i32, ...)
+declare i8* @_lfortran_malloc_i32(i32, ...)
 
 declare void @_lfortran_printf(i8*, ...)
