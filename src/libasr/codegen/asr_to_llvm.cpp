@@ -1450,7 +1450,7 @@ public:
         tmp = builder->CreateCall(fn, {mask, size});
     }
 
-    void visit_IntrinsicFunctionSqrt(const ASR::IntrinsicFunctionSqrt_t &x) {
+    void visit_RealSqrt(const ASR::RealSqrt_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
