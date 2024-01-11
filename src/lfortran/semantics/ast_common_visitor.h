@@ -5819,7 +5819,7 @@ public:
                             "The argument for " + param + " must be a function",
                             args[i]->base.loc);
                     }
-                    report_check_restriction(type_subs, symbol_subs, f, f_arg0, loc, diag);
+                    check_restriction(type_subs, symbol_subs, f, f_arg0, loc, diag);
                 } else {
                     ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym); 
                     if (ASRUtils::is_type_parameter(*param_type)) {
@@ -5895,11 +5895,9 @@ public:
                     ASR::symbol_t* sym = current_scope->resolve_symbol(op_name);
                     ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
                     ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
-                    for (size_t i = 0; i < gen_proc->n_procs; i++) {
+                    for (size_t i = 0; i < gen_proc->n_procs && !found; i++) {
                         ASR::symbol_t* proc = gen_proc->m_procs[i];
-                        if (check_restriction(type_subs, symbol_subs, f, proc)) {
-                            found = true;
-                        }
+                        found = check_restriction(type_subs, symbol_subs, f, proc, loc, diag, false);
                     }
                 }
 

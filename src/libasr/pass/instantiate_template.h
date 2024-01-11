@@ -40,12 +40,8 @@ namespace LCompilers {
 
     bool check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
         std::map<std::string, ASR::symbol_t*> &symbol_subs,
-        ASR::Function_t *f, ASR::symbol_t *sym_arg);
-
-    void report_check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
-        std::map<std::string, ASR::symbol_t*> &symbol_subs,
         ASR::Function_t *f, ASR::symbol_t *sym_arg, const Location &loc,
-        diag::Diagnostics &diagnostics);
+        diag::Diagnostics &diagnostics, bool report=true);
 
 } // namespace LCompilers
 
