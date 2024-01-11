@@ -1690,7 +1690,6 @@ void add_ws_warning(const Location &loc,
                 msg1,
                 {loc},
                 msg2);
-                
         } else if (end_token == yytokentype::KW_COMPLEX) {
             if (a_kind == 16) {
                 diagnostics.parser_style_label(
@@ -1702,7 +1701,7 @@ void add_ws_warning(const Location &loc,
                 "Use complex(8) instead of complex*8",
                 {loc},
                 "help: write this as 'complex(8)'");
-                }
+            }
 
         }
 
