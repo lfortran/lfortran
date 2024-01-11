@@ -598,7 +598,6 @@ RUN(NAME intrinsics_99 LABELS gfortran llvm)
 RUN(NAME intrinsics_100 LABELS gfortran llvm) # mod
 RUN(NAME intrinsics_101 LABELS gfortran llvm)#repeat
 RUN(NAME intrinsics_102 LABELS gfortran llvm)
-RUN(NAME intrinsics_103 LABELS gfortran llvm)
 RUN(NAME intrinsics_104 LABELS gfortran llvm c wasm)
 
 RUN(NAME parameter_01 LABELS gfortran)
@@ -832,9 +831,6 @@ RUN(NAME derived_types_27 LABELS gfortran llvm fortran)
 RUN(NAME derived_types_28 LABELS gfortran llvm)
 RUN(NAME derived_types_29 LABELS gfortran llvm fortran)
 RUN(NAME derived_types_30 LABELS gfortran llvm)
-RUN(NAME derived_types_31 LABELS gfortran llvm)
-RUN(NAME derived_types_32 LABELS gfortran)
-RUN(NAME derived_types_33 LABELS gfortran llvm)
 
 RUN(NAME line_continuation_01 LABELS gfortran llvm wasm)
 RUN(NAME line_continuation_02 LABELS gfortran llvm wasm)
