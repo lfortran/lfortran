@@ -346,9 +346,10 @@ namespace LCompilers {
                 llvm::Value* s_val = llvm_utils->create_gep(dim_val, 0);
                 llvm::Value* l_val = llvm_utils->create_gep(dim_val, 1);
                 llvm::Value* dim_size_ptr = llvm_utils->create_gep(dim_val, 2);
+                llvm::Value* first = builder->CreateSExtOrTrunc(llvm_dims[r].first, llvm::Type::getInt32Ty(context));
+                llvm::Value* dim_size = builder->CreateSExtOrTrunc(llvm_dims[r].second, llvm::Type::getInt32Ty(context));
                 builder->CreateStore(prod, s_val);
-                builder->CreateStore(llvm_dims[r].first, l_val);
-                llvm::Value* dim_size = llvm_dims[r].second;
+                builder->CreateStore(first, l_val);
                 builder->CreateStore(dim_size, dim_size_ptr);
                 prod = builder->CreateMul(prod, dim_size);
             }
@@ -579,6 +580,8 @@ namespace LCompilers {
                 llvm::Value* curr_llvm_idx = m_args[r];
                 llvm::Value* dim_des_ptr = llvm_utils->create_ptr_gep(dim_des_arr_ptr, r);
                 llvm::Value* lval = LLVM::CreateLoad(*builder, llvm_utils->create_gep(dim_des_ptr, 1));
+                // first cast curr_llvm_idx to 32 bit
+                curr_llvm_idx = builder->CreateSExt(curr_llvm_idx, llvm::Type::getInt32Ty(context));
                 curr_llvm_idx = builder->CreateSub(curr_llvm_idx, lval);
                 if( check_for_bounds ) {
                     // check_single_element(curr_llvm_idx, arr); TODO: To be implemented
