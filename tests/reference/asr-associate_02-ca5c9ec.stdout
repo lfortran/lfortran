@@ -235,7 +235,11 @@
                                 (IntegerConstant 2 (Integer 4))
                                 IntegerToComplex
                                 (Complex 4)
-                                ()
+                                (ComplexConstant
+                                    2.000000
+                                    0.000000
+                                    (Complex 4)
+                                )
                             )
                             Mul
                             (Var 2 p3)

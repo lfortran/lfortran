@@ -81,7 +81,11 @@
                                 (IntegerConstant 2 (Integer 4))
                                 IntegerToComplex
                                 (Complex 4)
-                                ()
+                                (ComplexConstant
+                                    2.000000
+                                    0.000000
+                                    (Complex 4)
+                                )
                             )
                             Div
                             (Var 2 x)
@@ -102,7 +106,11 @@
                                 (IntegerConstant 1 (Integer 4))
                                 IntegerToComplex
                                 (Complex 4)
-                                ()
+                                (ComplexConstant
+                                    1.000000
+                                    0.000000
+                                    (Complex 4)
+                                )
                             )
                             Div
                             (ComplexBinOp

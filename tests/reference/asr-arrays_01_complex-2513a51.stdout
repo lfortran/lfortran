@@ -154,7 +154,11 @@
                                 (IntegerConstant 11 (Integer 4))
                                 IntegerToComplex
                                 (Complex 4)
-                                ()
+                                (ComplexConstant
+                                    11.000000
+                                    0.000000
+                                    (Complex 4)
+                                )
                             )
                             (Logical 4)
                             ()
@@ -180,7 +184,11 @@
                                 (IntegerConstant 12 (Integer 4))
                                 IntegerToComplex
                                 (Complex 4)
-                                ()
+                                (ComplexConstant
+                                    12.000000
+                                    0.000000
+                                    (Complex 4)
+                                )
                             )
                             (Logical 4)
                             ()
@@ -206,7 +214,11 @@
                                 (IntegerConstant 13 (Integer 4))
                                 IntegerToComplex
                                 (Complex 4)
-                                ()
+                                (ComplexConstant
+                                    13.000000
+                                    0.000000
+                                    (Complex 4)
+                                )
                             )
                             (Logical 4)
                             ()
@@ -263,7 +275,11 @@
                                 (IntegerConstant 11 (Integer 4))
                                 IntegerToComplex
                                 (Complex 4)
-                                ()
+                                (ComplexConstant
+                                    11.000000
+                                    0.000000
+                                    (Complex 4)
+                                )
                             )
                             (Logical 4)
                             ()
@@ -289,7 +305,11 @@
                                 (IntegerConstant 12 (Integer 4))
                                 IntegerToComplex
                                 (Complex 4)
-                                ()
+                                (ComplexConstant
+                                    12.000000
+                                    0.000000
+                                    (Complex 4)
+                                )
                             )
                             (Logical 4)
                             ()
@@ -315,7 +335,11 @@
                                 (IntegerConstant 13 (Integer 4))
                                 IntegerToComplex
                                 (Complex 4)
-                                ()
+                                (ComplexConstant
+                                    13.000000
+                                    0.000000
+                                    (Complex 4)
+                                )
                             )
                             (Logical 4)
                             ()
@@ -341,7 +365,11 @@
                                 (IntegerConstant 14 (Integer 4))
                                 IntegerToComplex
                                 (Complex 4)
-                                ()
+                                (ComplexConstant
+                                    14.000000
+                                    0.000000
+                                    (Complex 4)
+                                )
                             )
                             (Logical 4)
                             ()
@@ -382,7 +410,11 @@
                                     (IntegerConstant 10 (Integer 4))
                                     IntegerToComplex
                                     (Complex 4)
-                                    ()
+                                    (ComplexConstant
+                                        10.000000
+                                        0.000000
+                                        (Complex 4)
+                                    )
                                 )
                                 (Complex 4)
                                 ()
@@ -406,7 +438,11 @@
                                 (IntegerConstant 1 (Integer 4))
                                 IntegerToComplex
                                 (Complex 4)
-                                ()
+                                (ComplexConstant
+                                    1.000000
+                                    0.000000
+                                    (Complex 4)
+                                )
                             )
                             (Logical 4)
                             ()
@@ -432,7 +468,11 @@
                                 (IntegerConstant 2 (Integer 4))
                                 IntegerToComplex
                                 (Complex 4)
-                                ()
+                                (ComplexConstant
+                                    2.000000
+                                    0.000000
+                                    (Complex 4)
+                                )
                             )
                             (Logical 4)
                             ()
@@ -458,7 +498,11 @@
                                 (IntegerConstant 3 (Integer 4))
                                 IntegerToComplex
                                 (Complex 4)
-                                ()
+                                (ComplexConstant
+                                    3.000000
+                                    0.000000
+                                    (Complex 4)
+                                )
                             )
                             (Logical 4)
                             ()
@@ -547,7 +591,11 @@
                                 (IntegerConstant 17 (Integer 4))
                                 IntegerToComplex
                                 (Complex 4)
-                                ()
+                                (ComplexConstant
+                                    17.000000
+                                    0.000000
+                                    (Complex 4)
+                                )
                             )
                             (Logical 4)
                             ()
@@ -594,7 +642,11 @@
                                 (IntegerConstant 11 (Integer 4))
                                 IntegerToComplex
                                 (Complex 4)
-                                ()
+                                (ComplexConstant
+                                    11.000000
+                                    0.000000
+                                    (Complex 4)
+                                )
                             )
                             (Logical 4)
                             ()
@@ -670,7 +722,11 @@
                                 (IntegerConstant 12 (Integer 4))
                                 IntegerToComplex
                                 (Complex 4)
-                                ()
+                                (ComplexConstant
+                                    12.000000
+                                    0.000000
+                                    (Complex 4)
+                                )
                             )
                             (Logical 4)
                             ()
@@ -699,7 +755,11 @@
                                 (IntegerConstant 13 (Integer 4))
                                 IntegerToComplex
                                 (Complex 4)
-                                ()
+                                (ComplexConstant
+                                    13.000000
+                                    0.000000
+                                    (Complex 4)
+                                )
                             )
                             (Logical 4)
                             ()
@@ -728,7 +788,11 @@
                                 (IntegerConstant 13 (Integer 4))
                                 IntegerToComplex
                                 (Complex 4)
-                                ()
+                                (ComplexConstant
+                                    13.000000
+                                    0.000000
+                                    (Complex 4)
+                                )
                             )
                             (Logical 4)
                             ()
@@ -757,7 +821,11 @@
                                 (IntegerConstant 14 (Integer 4))
                                 IntegerToComplex
                                 (Complex 4)
-                                ()
+                                (ComplexConstant
+                                    14.000000
+                                    0.000000
+                                    (Complex 4)
+                                )
                             )
                             (Logical 4)
                             ()

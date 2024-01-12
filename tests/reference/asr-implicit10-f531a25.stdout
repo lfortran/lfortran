@@ -485,7 +485,11 @@
                             (IntegerConstant 7 (Integer 4))
                             IntegerToComplex
                             (Complex 4)
-                            ()
+                            (ComplexConstant
+                                7.000000
+                                0.000000
+                                (Complex 4)
+                            )
                         )
                         ()
                     )
@@ -495,7 +499,11 @@
                             (IntegerConstant 8 (Integer 4))
                             IntegerToComplex
                             (Complex 4)
-                            ()
+                            (ComplexConstant
+                                8.000000
+                                0.000000
+                                (Complex 4)
+                            )
                         )
                         ()
                     )
