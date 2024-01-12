@@ -216,7 +216,7 @@ class ASRBuilder {
 
     #define make_ConstantWithKind(Constructor, TypeConstructor, value, kind, loc) ASRUtils::EXPR( \
         ASR::Constructor( al, loc, value, \
-            ASRUtils::TYPE(ASR::TypeConstructor(al, loc, 4)))) \
+            ASRUtils::TYPE(ASR::TypeConstructor(al, loc, kind)))) \
 
     #define make_ConstantWithType(Constructor, value, type, loc) ASRUtils::EXPR( \
         ASR::Constructor(al, loc, value, type)) \

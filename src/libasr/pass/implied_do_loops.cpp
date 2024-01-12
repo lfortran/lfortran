@@ -46,14 +46,15 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         ASR::expr_t* end = implied_doloop->m_end;
         ASR::expr_t* d = implied_doloop->m_increment;
         ASR::expr_t* implied_doloop_size = nullptr;
+        int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(end));
         if( d == nullptr ) {
             implied_doloop_size = builder.ElementalAdd(
                 builder.ElementalSub(end, start, loc),
-                make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, 4, loc), loc);
+                make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, kind, loc), loc);
         } else {
             implied_doloop_size = builder.ElementalAdd(builder.ElementalDiv(
                 builder.ElementalSub(end, start, loc), d, loc),
-                make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, 4, loc), loc);
+                make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, kind, loc), loc);
         }
         int const_elements = 0;
         ASR::expr_t* implied_doloop_size_ = nullptr;
@@ -74,11 +75,11 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         if( const_elements > 1 ) {
             if( implied_doloop_size_ == nullptr ) {
                 implied_doloop_size_ = make_ConstantWithKind(make_IntegerConstant_t,
-                    make_Integer_t, const_elements, 4, loc);
+                    make_Integer_t, const_elements, kind, loc);
             } else {
                 implied_doloop_size_ = builder.ElementalAdd(
                     make_ConstantWithKind(make_IntegerConstant_t,
-                        make_Integer_t, const_elements, 4, loc),
+                        make_Integer_t, const_elements, kind, loc),
                     implied_doloop_size_, loc);
             }
         }
