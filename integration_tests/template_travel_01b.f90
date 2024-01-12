@@ -55,15 +55,15 @@ module template_travel_01b_m
 contains
 
     subroutine test_template()
-        !instantiate travel_tmpl(real, real, real, operator(+), operator(+), operator(/), operator(/)), &
-        !    only: avg_real_S_from_T => avg_S_from_T
-        !instantiate travel_tmpl(real, real, real, operator(+), operator(+), operator(/), operator(/)), &
-        !    only: avg_real_S_from_S => avg_S_from_S
-        !real :: s1, s2
-        !s1 = avg_real_S_from_T(1.0, 3.0, 1.5, 4.0)
-        !s2 = avg_real_S_from_S(1.1, 0.5, 2.0, 0.75)
-        !print *, "s1=", s1
-        !print *, "s2=", s2
+        instantiate travel_tmpl(real, real, real, operator(+), operator(+), operator(/), operator(/)), &
+            only: avg_real_S_from_T => avg_S_from_T
+        instantiate travel_tmpl(real, real, real, operator(+), operator(+), operator(/), operator(/)), &
+            only: avg_real_S_from_S => avg_S_from_S
+        real :: s1, s2
+        s1 = avg_real_S_from_T(1.0, 3.0, 1.5, 4.0)
+        s2 = avg_real_S_from_S(1.1, 0.5, 2.0, 0.75)
+        print *, "s1=", s1
+        print *, "s2=", s2
     end subroutine
 
 end module
