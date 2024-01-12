@@ -1,4 +1,4 @@
-program main
+program expr_18
     complex, parameter :: x = 123
 
     print *, x
