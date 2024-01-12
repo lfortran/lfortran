@@ -1703,11 +1703,11 @@ void add_ws_warning(const Location &loc,
                 "help: write this as 'complex(8)'");
             }
         } else if (end_token == yytokentype::KW_LOGICAL) {
-            if (a_kind == 16) {
+            if (a_kind == 4) {
                 diagnostics.parser_style_label(
-                "Use logical(16) instead of logical*16",
+                "Use logical(4) instead of logical*4",
                 {loc},
-                "help: write this as 'logical(16)'");
+                "help: write this as 'logical(4)'");
             } else {
                 diagnostics.parser_style_label(
                 "Use logical(8) instead of logical*8",
