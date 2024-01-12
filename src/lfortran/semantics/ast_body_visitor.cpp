@@ -724,6 +724,8 @@ public:
                 std::string new_s_name = to_lower(use_symbol->m_local_rename);
                 context_map[generic_name] = new_s_name;
 
+                new_instantiate_body(al, type_subs, symbol_subs, current_scope->resolve_symbol(new_s_name), s);
+                /*
                 if (ASR::is_a<ASR::Function_t>(*s)) {
                     ASR::Function_t *new_f = ASR::down_cast<ASR::Function_t>(
                         current_scope->resolve_symbol(new_s_name));
@@ -751,6 +753,7 @@ public:
                 } else {
                     throw LCompilersException("Unsupported symbol to be instantiated");
                 }
+                */
             }
         }
 
