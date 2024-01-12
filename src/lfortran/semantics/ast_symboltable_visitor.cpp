@@ -2897,7 +2897,6 @@ public:
 
         ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(sym);
 
-        // TODO: default template arguments
         // check for number of template arguments
         if (temp->n_args != x.n_args) {
             throw SemanticError("Number of template arguments don't match", x.base.base.loc);
@@ -3148,9 +3147,7 @@ public:
                 ASR::symbol_t *s = sym_pair.second;
                 std::string s_name = ASRUtils::symbol_name(s);
                 if (ASR::is_a<ASR::Function_t>(*s) && !ASRUtils::is_template_arg(sym, s_name)) {
-                    instantiate_symbol(al, context_map, type_subs, symbol_subs,
-                        current_scope, temp->m_symtab, s_name, s);
-                    //instantiate_symbol0(al, current_scope, type_subs, symbol_subs, s_name, s);
+                    instantiate_symbol(al, current_scope, type_subs, symbol_subs, s_name, s);
                 }
             }
         } else {
@@ -3158,23 +3155,17 @@ public:
                 AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
                 std::string generic_name = to_lower(use_symbol->m_remote_sym);
                 ASR::symbol_t *s = temp->m_symtab->get_symbol(generic_name);
-                if (!s) {
-                    throw SemanticError("Symbol " + generic_name + " was not found", x.base.base.loc);
+                if (!s) { 
+                    throw SemanticError("Symbol " + generic_name + " was not found", x.base.base.loc); 
                 }
                 std::string new_sym_name = to_lower(use_symbol->m_local_rename);
-                //instantiate_symbol(al, context_map, type_subs, symbol_subs,
-                //    current_scope, temp->m_symtab, new_sym_name, s);
-                ASR::symbol_t* new_sym = instantiate_symbol0(al, current_scope, type_subs, symbol_subs, new_sym_name, s);
+                ASR::symbol_t* new_sym = instantiate_symbol(al, current_scope, type_subs, symbol_subs, new_sym_name, s);
                 symbol_subs[generic_name] = new_sym; 
-                // TODO: can this be removed?
-                // context_map[generic_name] = new_sym_name;
             }
         }
 
         instantiate_types[x.base.base.loc.first] = type_subs;
         instantiate_symbols[x.base.base.loc.first] = symbol_subs;
-
-        context_map.clear();
     }
 
     // TODO: give proper location to each symbol

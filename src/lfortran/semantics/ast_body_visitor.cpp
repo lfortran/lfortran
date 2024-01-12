@@ -692,13 +692,8 @@ public:
     }
 
     void visit_Instantiate(const AST::Instantiate_t &x) {
-        std::string template_name = x.m_name;
-        ASR::symbol_t *sym = current_scope->resolve_symbol(template_name);
+        ASR::symbol_t *sym = current_scope->resolve_symbol(x.m_name);
         ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(ASRUtils::symbol_get_past_external(sym));
-
-        if (instantiate_types.find(x.base.base.loc.first) == instantiate_types.end()) {
-            LCOMPILERS_ASSERT(false);
-        }
 
         std::map<std::string, ASR::ttype_t*> type_subs = instantiate_types[x.base.base.loc.first];
         std::map<std::string, ASR::symbol_t*> symbol_subs = instantiate_symbols[x.base.base.loc.first];
@@ -707,57 +702,19 @@ public:
             for (auto const &sym_pair: temp->m_symtab->get_scope()) {
                 ASR::symbol_t *s = sym_pair.second;
                 std::string s_name = ASRUtils::symbol_name(s);
-                context_map[s_name] = s_name;
                 if (ASR::is_a<ASR::Function_t>(*s) && !ASRUtils::is_template_arg(sym, s_name)) {
-                    ASR::Function_t *new_f = ASR::down_cast<ASR::Function_t>(
-                        current_scope->resolve_symbol(s_name));
-                    instantiate_function_body(al, context_map, type_subs, symbol_subs,
-                        current_scope, temp->m_symtab, new_f, ASR::down_cast<ASR::Function_t>(s));
+                    instantiate_body(al, type_subs, symbol_subs, current_scope->resolve_symbol(s_name), s);
                 }
             }
         } else {
             for (size_t i = 0; i < x.n_symbols; i++){
                 AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
-                std::string generic_name = to_lower(use_symbol->m_remote_sym);
-                ASR::symbol_t *s = temp->m_symtab->get_symbol(generic_name);
-
+                ASR::symbol_t *s = temp->m_symtab->get_symbol(to_lower(use_symbol->m_remote_sym));
                 std::string new_s_name = to_lower(use_symbol->m_local_rename);
-                context_map[generic_name] = new_s_name;
-
-                new_instantiate_body(al, type_subs, symbol_subs, current_scope->resolve_symbol(new_s_name), s);
-                /*
-                if (ASR::is_a<ASR::Function_t>(*s)) {
-                    ASR::Function_t *new_f = ASR::down_cast<ASR::Function_t>(
-                        current_scope->resolve_symbol(new_s_name));
-                    instantiate_function_body(al, context_map, type_subs, symbol_subs, current_scope,
-                        temp->m_symtab, new_f, ASR::down_cast<ASR::Function_t>(s));
-                } else if (ASR::is_a<ASR::StructType_t>(*s)) {
-                    ASR::StructType_t *new_st = ASR::down_cast<ASR::StructType_t>(
-                        current_scope->resolve_symbol(new_s_name));
-                    for (auto const &sym_pair: new_st->m_symtab->get_scope()) {
-                        ASR::symbol_t *sym = sym_pair.second;
-                        if (ASR::is_a<ASR::ClassProcedure_t>(*sym)) {
-                            ASR::ClassProcedure_t *proc = ASR::down_cast<ASR::ClassProcedure_t>(sym);
-                            ASR::Function_t *temp_f = ASR::down_cast<ASR::Function_t>(
-                                temp->m_symtab->resolve_symbol(proc->m_name));
-                            ASR::Function_t *new_f = ASR::down_cast<ASR::Function_t>(proc->m_proc);
-                            instantiate_function_body(al, context_map, type_subs, symbol_subs, current_scope,
-                                temp_f->m_symtab, new_f, temp_f);
-                        }
-                    }
-                } else if (ASR::is_a<ASR::Template_t>(*s)) {
-                    ASR::Template_t *new_t = ASR::down_cast<ASR::Template_t>(
-                        current_scope->get_symbol(new_s_name));
-                    instantiate_template_body(al, context_map, type_subs, symbol_subs, current_scope,
-                        temp->m_symtab, new_t, ASR::down_cast<ASR::Template_t>(s));
-                } else {
-                    throw LCompilersException("Unsupported symbol to be instantiated");
-                }
-                */
+                instantiate_body(al, type_subs, symbol_subs, current_scope->resolve_symbol(new_s_name), s);
             }
         }
 
-        context_map.clear();
     }
 
     void visit_Inquire(const AST::Inquire_t& x) {

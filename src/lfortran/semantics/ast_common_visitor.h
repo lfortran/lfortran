@@ -6018,20 +6018,9 @@ public:
         if (is_nested) { target_scope = current_scope->parent; }
 
         std::string new_func_name = target_scope->get_unique_name("__instantiated_" + func_name);
-        
-        /*
-        instantiate_symbol(al, context_map, type_subs, symbol_subs,
-            target_scope, temp->m_symtab, new_func_name, s);
-        ASR::symbol_t *new_s = target_scope->get_symbol(new_func_name);
-        ASR::Function_t *new_f = ASR::down_cast<ASR::Function_t>(new_s);
-        instantiate_function_body(al, context_map, type_subs, symbol_subs,
-            target_scope, temp->m_symtab, new_f, ASR::down_cast<ASR::Function_t>(s));
-        */
 
-        ASR::symbol_t* new_s = instantiate_symbol0(al, target_scope, type_subs, symbol_subs, new_func_name, s);
-        new_instantiate_body(al, type_subs, symbol_subs, new_s, s);
-
-        context_map.clear();
+        ASR::symbol_t* new_s = instantiate_symbol(al, target_scope, type_subs, symbol_subs, new_func_name, s);
+        instantiate_body(al, type_subs, symbol_subs, new_s, s);
 
         return new_func_name;
     }
