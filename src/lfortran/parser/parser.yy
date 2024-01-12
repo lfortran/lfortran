@@ -1054,6 +1054,7 @@ temp_decl
     : var_decl
     | interface_decl
     | derived_type_decl
+    | template_decl
     | require_decl
     | instantiate
     ;

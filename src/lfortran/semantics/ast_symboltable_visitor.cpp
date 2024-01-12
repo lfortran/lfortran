@@ -2801,7 +2801,8 @@ public:
                 req_arg = to_lower(attr_name->m_name);
                 if (std::find(current_procedure_args.begin(),
                         current_procedure_args.end(),
-                        req_arg) == current_procedure_args.end()) {
+                        req_arg) == current_procedure_args.end()
+                        && !current_scope->get_symbol(req_arg)) {
                     throw SemanticError("Parameter '" + req_arg + "' was not declared", x.base.base.loc);
                 }
             } else if (AST::is_a<AST::AttrType_t>(*attr)) {
@@ -2910,11 +2911,8 @@ public:
             current_scope, x.m_name, args.p, args.size(), reqs.p, reqs.size());
 
         parent_scope->add_symbol(x.m_name, ASR::down_cast<ASR::symbol_t>(temp));
-
         current_scope = parent_scope;
-        current_procedure_args.clear();
-        context_map.clear();
-
+        
         // needs to rebuild the context prior to visiting template
         class_procedures.clear();
 
@@ -2941,7 +2939,6 @@ public:
 
         ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(sym);
 
-        // TODO: default template arguments
         // check for number of template arguments
         if (temp->n_args != x.n_args) {
             throw SemanticError("Number of template arguments don't match", x.base.base.loc);
@@ -2983,7 +2980,7 @@ public:
                             "The argument for " + param + " must be a function",
                             x.m_args[i]->base.loc);
                     }
-                    report_check_restriction(type_subs, symbol_subs, f, f_arg0, x.base.base.loc, diag);
+                    check_restriction(type_subs, symbol_subs, f, f_arg0, x.m_args[i]->base.loc, diag);
                 } else {
                     ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
                     if (ASRUtils::is_type_parameter(*param_type)) {
@@ -3070,11 +3067,9 @@ public:
                     ASR::symbol_t* sym = current_scope->resolve_symbol(op_name);
                     ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
                     ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
-                    for (size_t i = 0; i < gen_proc->n_procs; i++) {
+                    for (size_t i = 0; i < gen_proc->n_procs && !found; i++) {
                         ASR::symbol_t* proc = gen_proc->m_procs[i];
-                        if (check_restriction(type_subs, symbol_subs, f, proc)) {
-                            found = true;
-                        }
+                        found = check_restriction(type_subs, symbol_subs, f, proc, x.m_args[i]->base.loc, diag, false);
                     }
                 }
 
@@ -3198,8 +3193,7 @@ public:
                 ASR::symbol_t *s = sym_pair.second;
                 std::string s_name = ASRUtils::symbol_name(s);
                 if (ASR::is_a<ASR::Function_t>(*s) && !ASRUtils::is_template_arg(sym, s_name)) {
-                    instantiate_symbol(al, context_map, type_subs, symbol_subs,
-                        current_scope, temp->m_symtab, s_name, s);
+                    instantiate_symbol(al, current_scope, type_subs, symbol_subs, s_name, s);
                 }
             }
         } else {
@@ -3207,21 +3201,17 @@ public:
                 AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
                 std::string generic_name = to_lower(use_symbol->m_remote_sym);
                 ASR::symbol_t *s = temp->m_symtab->get_symbol(generic_name);
-                if (!s) {
-                    throw SemanticError("Symbol " + generic_name + " was not found", x.base.base.loc);
+                if (!s) { 
+                    throw SemanticError("Symbol " + generic_name + " was not found", x.base.base.loc); 
                 }
                 std::string new_sym_name = to_lower(use_symbol->m_local_rename);
-                instantiate_symbol(al, context_map, type_subs, symbol_subs,
-                    current_scope, temp->m_symtab, new_sym_name, s);
-                // TODO: can this be removed?
-                context_map[generic_name] = new_sym_name;
+                ASR::symbol_t* new_sym = instantiate_symbol(al, current_scope, type_subs, symbol_subs, new_sym_name, s);
+                symbol_subs[generic_name] = new_sym; 
             }
         }
 
         instantiate_types[x.base.base.loc.first] = type_subs;
         instantiate_symbols[x.base.base.loc.first] = symbol_subs;
-
-        context_map.clear();
     }
 
     // TODO: give proper location to each symbol
