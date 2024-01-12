@@ -156,7 +156,7 @@
                         })
                     test_ichar
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 i)
                         (Ichar
                             (StringConstant
@@ -168,7 +168,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 j)
                         (Iachar
                             (StringConstant
@@ -180,7 +180,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 li_1)
                         (Ichar
                             (StringConstant
@@ -192,7 +192,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 lj_1)
                         (Iachar
                             (StringConstant
@@ -204,7 +204,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 li_2)
                         (Ichar
                             (StringConstant
@@ -216,7 +216,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 lj_2)
                         (Iachar
                             (StringConstant
@@ -228,7 +228,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 c_1)
                         (StringChr
                             (IntegerConstant 100 (Integer 4))
@@ -338,7 +338,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 c)
                         (Ichar
                             (Var 2 c_1)
@@ -380,12 +380,12 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 c)
                         (IntegerConstant 100 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 c_1)
                         (FunctionCall
                             2 achar
@@ -417,7 +417,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 c_1)
                         (FunctionCall
                             2 achar
@@ -446,7 +446,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 c_1)
                         (StringChr
                             (IntegerConstant 100 (Integer 4))
@@ -474,7 +474,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 c_1)
                         (StringChr
                             (Var 2 c)
@@ -499,7 +499,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 c_1)
                         (StringConstant
                             "e"
@@ -507,7 +507,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 c)
                         (Iachar
                             (StringConstant
@@ -532,7 +532,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 c)
                         (Iachar
                             (Var 2 c_1)
@@ -554,7 +554,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 c)
                         (Ichar
                             (StringConstant
@@ -579,7 +579,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 2 c)
                         (Ichar
                             (Var 2 c_1)

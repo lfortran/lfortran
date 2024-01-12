@@ -71,7 +71,6 @@ module travel
             type(D), intent(in) :: d1, d2
             type(S), intent(in) :: s1, s2
             type(S) :: avg
-            ! TODO: when visiting function, this should be marked as error
             avg = avg_S_from_T(d1, D_divided_by_T(d1, s1), d2, D_divided_by_S(d2, s2))
         end function
     end template

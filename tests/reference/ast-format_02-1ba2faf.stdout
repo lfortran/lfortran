@@ -32,13 +32,13 @@
             ())]
             ()
         )]
-        [(=
+        [(Assignment
             0
             i6
             2
             ()
         )
-        (=
+        (Assignment
             0
             (FuncCallOrArray
                 format

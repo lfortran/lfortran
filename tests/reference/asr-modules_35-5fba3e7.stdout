@@ -42,7 +42,7 @@
                                                             (Character 1 -1 ())
                                                             [(()
                                                             ())]
-                                                            DescriptorArray
+                                                            CharacterArraySinglePointer
                                                         )
                                                     )
                                                     ()
@@ -65,7 +65,7 @@
                                                             (Character 1 -2 ())
                                                             [(()
                                                             ())]
-                                                            DescriptorArray
+                                                            CharacterArraySinglePointer
                                                         )
                                                     )
                                                     ()
@@ -82,7 +82,7 @@
                                                 (Character 1 -1 ())
                                                 [(()
                                                 ())]
-                                                DescriptorArray
+                                                CharacterArraySinglePointer
                                             )
                                         )]
                                         ()
@@ -161,12 +161,12 @@
                                                 (Logical 4)
                                                 ()
                                             )
-                                            [(=
+                                            [(Assignment
                                                 (Var 3 strings)
                                                 (Var 3 strings_a)
                                                 ()
                                             )]
-                                            [(=
+                                            [(Assignment
                                                 (Var 3 strings)
                                                 (ArrayConstant
                                                     []
@@ -191,7 +191,7 @@
                                             (Logical 4)
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 3 strings)
                                             (ArrayConstant
                                                 []
@@ -251,7 +251,7 @@
                                             (Character 1 5 ())
                                             [(()
                                             ())]
-                                            DescriptorArray
+                                            CharacterArraySinglePointer
                                         )
                                     )
                                     ()

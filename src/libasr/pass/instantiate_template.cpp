@@ -239,6 +239,10 @@ public:
                 ASR::ClassProcedure_t* x = ASR::down_cast<ASR::ClassProcedure_t>(sym);
                 return instantiate_ClassProcedure(x);
             }
+            case (ASR::symbolType::CustomOperator) : {
+                ASR::CustomOperator_t* x = ASR::down_cast<ASR::CustomOperator_t>(sym);
+                return instantiate_CustomOperator(x);
+            }
             default: {
                 std::string sym_name = ASRUtils::symbol_name(sym);
                 throw LCompilersException("Instantiation of " + sym_name
@@ -419,9 +423,17 @@ public:
         return new_x;
     }
 
-    /* expr */
+    ASR::symbol_t* instantiate_CustomOperator(ASR::CustomOperator_t* x) {
+        return new_scope->resolve_symbol(x->m_name);
+    }
 
-    ASR::asr_t* duplicate_Var(ASR::Var_t* x) {
+    /*
+    ASR::symbol_t* duplicate_CustomOperator(ASR::CustomOperator_t *x) {
+        return func_scope->resolve_symbol(x->m_name);
+    }
+    */
+
+    ASR::asr_t* duplicate_Var(ASR::Var_t *x) {
         std::string sym_name = ASRUtils::symbol_name(x->m_v);
 
         SymbolInstantiator t(al, new_scope, type_subs, symbol_subs, sym_name, x->m_v);
@@ -554,6 +566,9 @@ public:
                 break;
             }
             case (ASR::symbolType::ExternalSymbol) : {
+                break;
+            }
+            case (ASR::symbolType::CustomOperator) : {
                 break;
             }
             default: {
@@ -789,6 +804,22 @@ public:
         ASR::expr_t *value = duplicate_expr(x->m_value);
         return ASR::make_ArrayPhysicalCast_t(al, x->base.base.loc,
             arg, x->m_old, x->m_new, ttype, value);
+    }
+
+    ASR::asr_t* duplicate_ArraySection(ASR::ArraySection_t *x) {
+        ASR::expr_t *v = duplicate_expr(x->m_v);
+
+        Vec<ASR::array_index_t> args;
+        args.reserve(al, x->n_args);
+        for (size_t i=0; i<x->n_args; i++) {
+            args.push_back(al, duplicate_array_index(x->m_args[i]));
+        }
+
+        ASR::ttype_t *ttype = substitute_type(x->m_type);
+        ASR::expr_t *value = duplicate_expr(x->m_value);
+
+        return ASR::make_ArraySection_t(al, x->base.base.loc,
+            v, args.p, args.size(), ttype, value);
     }
 
     ASR::asr_t* duplicate_StructInstanceMember(ASR::StructInstanceMember_t *x) {

@@ -13,6 +13,7 @@ module template_05_m
 
         template tmp_minus(minus)
             require :: req(T, minus)
+            require :: req(T, plus)
 
             template tmp_mult(mult)
                 require :: req(T, mult)

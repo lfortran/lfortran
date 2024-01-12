@@ -49,7 +49,7 @@
                                     (SymbolTable
                                         7
                                         {
-                                            __asr_intvector_push_back:
+                                            __asr_push_back:
                                                 (Function
                                                     (SymbolTable
                                                         9
@@ -135,7 +135,7 @@
                                                                     .false.
                                                                 )
                                                         })
-                                                    __asr_intvector_push_back
+                                                    __asr_push_back
                                                     (FunctionType
                                                         [(Class
                                                             7 intvector
@@ -156,7 +156,7 @@
                                                     []
                                                     [(Var 9 this)
                                                     (Var 9 item)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 9 new_size)
                                                         (IntegerBinOp
                                                             (StructInstanceMember
@@ -178,7 +178,7 @@
                                                         [((Var 9 new_size))]
                                                         (Var 9 this)
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (ArrayItem
                                                             (StructInstanceMember
                                                                 (Var 9 this)
@@ -203,7 +203,7 @@
                                                         (Var 9 item)
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (StructInstanceMember
                                                             (Var 9 this)
                                                             9 1_intvector_sz
@@ -219,7 +219,7 @@
                                                     .false.
                                                     ()
                                                 ),
-                                            __asr_intvector_resize:
+                                            __asr_resize:
                                                 (Function
                                                     (SymbolTable
                                                         10
@@ -328,7 +328,7 @@
                                                                     .false.
                                                                 )
                                                         })
-                                                    __asr_intvector_resize
+                                                    __asr_resize
                                                     (FunctionType
                                                         [(Class
                                                             7 intvector
@@ -441,7 +441,7 @@
                                                             ()
                                                         )
                                                         ())
-                                                        [(=
+                                                        [(Assignment
                                                             (ArrayItem
                                                                 (Var 10 tmp)
                                                                 [(()
@@ -497,7 +497,7 @@
                                                         ()
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (ArraySection
                                                             (StructInstanceMember
                                                                 (Var 10 this)
@@ -522,9 +522,7 @@
                                                             (IntegerConstant 1 (Integer 4)))]
                                                             (Allocatable
                                                                 (Array
-                                                                    (TypeParameter
-                                                                        t
-                                                                    )
+                                                                    (Integer 4)
                                                                     [(()
                                                                     ())]
                                                                     DescriptorArray
@@ -593,8 +591,8 @@
                                                                     8
                                                                     push_back
                                                                     ()
-                                                                    __asr_intvector_push_back
-                                                                    7 __asr_intvector_push_back
+                                                                    __asr_push_back
+                                                                    7 __asr_push_back
                                                                     Source
                                                                     .false.
                                                                     .false.
@@ -604,8 +602,8 @@
                                                                     8
                                                                     resize
                                                                     ()
-                                                                    __asr_intvector_resize
-                                                                    7 __asr_intvector_resize
+                                                                    __asr_resize
+                                                                    7 __asr_resize
                                                                     Source
                                                                     .false.
                                                                     .false.
@@ -675,7 +673,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 7 v)
                                         (StructTypeConstructor
                                             7 intvector
@@ -810,7 +808,7 @@
                                                     []
                                                     [(Var 5 this)
                                                     (Var 5 item)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 5 new_size)
                                                         (IntegerBinOp
                                                             (StructInstanceMember
@@ -832,7 +830,7 @@
                                                         [((Var 5 new_size))]
                                                         (Var 5 this)
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (ArrayItem
                                                             (StructInstanceMember
                                                                 (Var 5 this)
@@ -861,7 +859,7 @@
                                                         (Var 5 item)
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (StructInstanceMember
                                                             (Var 5 this)
                                                             5 1_vector_sz
@@ -1105,7 +1103,7 @@
                                                             ()
                                                         )
                                                         ())
-                                                        [(=
+                                                        [(Assignment
                                                             (ArrayItem
                                                                 (Var 6 tmp)
                                                                 [(()
@@ -1169,7 +1167,7 @@
                                                         ()
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (ArraySection
                                                             (StructInstanceMember
                                                                 (Var 6 this)

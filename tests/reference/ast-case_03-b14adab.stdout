@@ -56,7 +56,7 @@
             ())]
             ()
         )]
-        [(=
+        [(Assignment
             0
             marks
             94
@@ -143,7 +143,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             marks
             (u- 1)

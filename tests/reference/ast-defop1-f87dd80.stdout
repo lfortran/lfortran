@@ -11,7 +11,7 @@
         []
         []
         []
-        [(=
+        [(Assignment
             0
             e
             (DefBinOp
@@ -21,7 +21,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             E
             (DefBinOp
@@ -31,7 +31,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             e
             (DefBinOp
@@ -42,7 +42,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             E
             (DefBinOp
@@ -53,7 +53,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             e
             (DefBinOp
@@ -63,7 +63,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             e
             (DefBinOp
@@ -73,7 +73,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             E
             (DefBinOp
@@ -83,7 +83,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             e
             (** (DefBinOp

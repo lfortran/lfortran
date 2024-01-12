@@ -2,10 +2,6 @@ module lfortran_intrinsic_string
     use, intrinsic :: iso_fortran_env, only: i64 => int64
 implicit none
 
-interface repeat
-    module procedure repeati32, repeati64
-end interface
-
 contains
 
 integer elemental function len_trim(string) result(r)
@@ -30,18 +26,21 @@ function trim(x) result(r)
     end do
 end function
 
-integer elemental function index(string_, substring_) result(idx)
+integer elemental function index(string_, substring_, back) result(idx)
     character(len=*), intent(in) :: string_
     character(len=*), intent(in) :: substring_
-    integer :: i, j, k, pos
+    logical, optional, intent(in) :: back
+    integer :: i, j, k, pos, len_str, len_sub
     logical :: found
     found = .true.
     idx = 0
     i = 1
-    do while (i < len(string_) .and. found)
+    len_str = len(string_)
+    len_sub = len(substring_)
+    do while (i < len_str .and. found)
         k = 0
         j = 1
-        do while (j < len(substring_) .and. found)
+        do while (j <= len_sub .and. found)
             pos = i + k
             if( string_(pos:pos) /= substring_(j:j) ) then
                 found = .false.
@@ -49,46 +48,18 @@ integer elemental function index(string_, substring_) result(idx)
             k = k + 1
             j = j + 1
         end do
-        if( found ) then
+        if (found) then
             idx = i
-            found = .false.
+            if (back .eqv. .true.) then
+                found = .true.
+            else
+                found = .false.
+            end if
         else
             found = .true.
         end if
         i = i + 1
     end do
-end function
-
-integer elemental function len_repeati32(n) result(r)
-integer, intent(in) :: n
-r = n
-end function
-
-function repeati32(s, n) result(r)
-character(len=1), intent(in) :: s
-integer, intent(in) :: n
-character(len=len_repeati32(n)) :: r
-integer :: i, i1
-i1 = 1
-do i = 1, n
-    r(i:i) = s(i1:i1)
-end do
-end function
-
-integer elemental function len_repeati64(n) result(r)
-integer(i64), intent(in) :: n
-r = n
-end function
-
-function repeati64(s, n) result(r)
-character(len=1), intent(in) :: s
-integer(i64), intent(in) :: n
-character(len=len_repeati64(n)) :: r
-integer :: i, i1
-i1 = 1
-do i = 1, n
-    r(i:i) = s(i1:i1)
-end do
 end function
 
 function new_line(c) result(r)

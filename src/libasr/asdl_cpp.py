@@ -1461,12 +1461,6 @@ class PickleVisitorVisitor(ASDLVisitor):
     def make_visitor(self, name, fields, cons):
         self.emit("void visit_%s(const %s_t &x) {" % (name, name), 1)
         self.emit(      's.append("(");', 2)
-        subs = {
-            "Assignment": "=",
-            "Associate": "=>",
-        }
-        if name in subs:
-            name = subs[name]
 
         # For ASR
         symbol = [
@@ -2593,7 +2587,8 @@ static inline ASR::expr_t* expr_value0(ASR::expr_t *f)
                 LCOMPILERS_ASSERT(!ASR::is_a<ASR::ExternalSymbol_t>(*e->m_external));
                 s = e->m_external;
             }
-            if( ASR::down_cast<ASR::Variable_t>(s)->m_storage !=
+            if( ASR::is_a<ASR::Function_t>(*s) ||
+                ASR::down_cast<ASR::Variable_t>(s)->m_storage !=
                 ASR::storage_typeType::Parameter ) {
                 return nullptr;
             }

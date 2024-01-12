@@ -46,7 +46,7 @@
                         })
                     main
                     [overload_assignment_m]
-                    [(=
+                    [(Assignment
                         (Var 5 tf)
                         (IntegerConstant 0 (Integer 4))
                         (SubroutineCall
@@ -66,7 +66,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 5 tf)
                         (IntegerConstant 1 (Integer 4))
                         (SubroutineCall
@@ -149,7 +149,7 @@
                                     []
                                     [(Var 3 tf)
                                     (Var 3 i)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 tf)
                                         (IntegerCompare
                                             (Var 3 i)
@@ -223,7 +223,7 @@
                                     [logical_gets_integer]
                                     [(Var 4 tf)
                                     (Var 4 i)]
-                                    [(=
+                                    [(Assignment
                                         (Var 4 tf)
                                         (Var 4 i)
                                         (SubroutineCall

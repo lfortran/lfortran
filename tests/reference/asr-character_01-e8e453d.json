@@ -1,0 +1,13 @@
+{
+    "basename": "asr-character_01-e8e453d",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/warnings/character_01.f90",
+    "infile_hash": "36f5ccdb4f66a4e69c2f4ea565c77550b7d499ad3772ea4df5d711c5",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-character_01-e8e453d.stdout",
+    "stdout_hash": "68f8d0aded01e529f25e3457fc3ab095a489b5ac1e061803032f2ac7",
+    "stderr": "asr-character_01-e8e453d.stderr",
+    "stderr_hash": "b3c709a96d1a5ede3fbb6f88ca2f79d2a1c4a4f3d87470075a0fbd62",
+    "returncode": 0
+}

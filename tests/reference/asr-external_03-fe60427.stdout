@@ -116,7 +116,7 @@
                     )
                     []
                     [(Var 4 f)]
-                    [(=
+                    [(Assignment
                         (Var 4 r)
                         (FunctionCall
                             4 f

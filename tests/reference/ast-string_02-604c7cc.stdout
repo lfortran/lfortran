@@ -78,7 +78,7 @@
                 (EndOfLine)]
             )
         )]
-        [(=
+        [(Assignment
             0
             title
             (String
@@ -86,7 +86,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             firstname
             (String
@@ -94,7 +94,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             surname
             (String
@@ -102,7 +102,7 @@
             )
             ()
         )
-        (=
+        (Assignment
             0
             greetings
             (String

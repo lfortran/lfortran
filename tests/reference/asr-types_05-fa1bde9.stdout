@@ -42,7 +42,7 @@
                         })
                     types_05
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 r)
                         (RealBinOp
                             (RealConstant
@@ -67,7 +67,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 r)
                         (RealBinOp
                             (Cast
@@ -92,7 +92,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 r)
                         (RealBinOp
                             (Cast
@@ -134,7 +134,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 r)
                         (RealBinOp
                             (Cast
@@ -176,7 +176,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 r)
                         (Cast
                             (IntegerBinOp
@@ -195,7 +195,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 r)
                         (RealBinOp
                             (RealConstant
@@ -220,7 +220,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 r)
                         (RealBinOp
                             (Cast
@@ -245,7 +245,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 i)
                         (Cast
                             (RealBinOp
@@ -275,7 +275,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 i)
                         (Cast
                             (RealBinOp
@@ -305,7 +305,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 i)
                         (Cast
                             (RealBinOp
@@ -352,7 +352,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 i)
                         (Cast
                             (RealBinOp
@@ -399,7 +399,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 i)
                         (IntegerBinOp
                             (IntegerConstant 1 (Integer 4))
@@ -410,7 +410,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 i)
                         (Cast
                             (RealBinOp
@@ -440,7 +440,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 i)
                         (Cast
                             (RealBinOp

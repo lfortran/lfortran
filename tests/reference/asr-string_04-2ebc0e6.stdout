@@ -21,7 +21,7 @@
                                             (Character 1 1 ())
                                             [(()
                                             ())]
-                                            DescriptorArray
+                                            CharacterArraySinglePointer
                                         )
                                     )
                                     ()
@@ -62,7 +62,7 @@
                                             (Character 1 40 ())
                                             [(()
                                             ())]
-                                            DescriptorArray
+                                            CharacterArraySinglePointer
                                         )
                                     )
                                     ()
@@ -84,7 +84,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 user_data)
                             [(()
@@ -100,7 +100,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 user_data)
                             [(()
@@ -116,7 +116,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 user_data)
                             [(()
@@ -142,7 +142,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 greetings)
                             [(()
@@ -158,7 +158,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 greetings)
                             [(()
@@ -174,7 +174,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 greetings)
                             [(()
@@ -190,7 +190,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 greetings)
                             [(()
@@ -206,7 +206,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 greetings)
                             [(()
@@ -271,7 +271,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 str)
                         (StringConstant
                             "abcd"

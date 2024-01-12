@@ -71,12 +71,12 @@
                                                         ()
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 3 x)
                                                         (IntegerConstant 4 (Integer 4))
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 3 y)
                                                         (RealConstant
                                                             3.500000
@@ -140,12 +140,12 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 3 x)
                                         (IntegerConstant 6 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 y)
                                         (RealConstant
                                             5.500000

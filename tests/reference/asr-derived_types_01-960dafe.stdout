@@ -207,7 +207,7 @@
                     derived_types_01
                     [derived_types_01_m_02
                     derived_types_01_m_01]
-                    [(=
+                    [(Assignment
                         (StructInstanceMember
                             (Var 8 b)
                             8 1_x_i
@@ -217,7 +217,7 @@
                         (IntegerConstant 5 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (StructInstanceMember
                             (Var 8 b)
                             8 1_x_r
@@ -268,7 +268,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (StructInstanceMember
                             (StructInstanceMember
                                 (StructInstanceMember
@@ -295,7 +295,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (StructInstanceMember
                             (StructInstanceMember
                                 (StructInstanceMember
@@ -319,7 +319,7 @@
                         (IntegerConstant 2 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (StructInstanceMember
                             (Var 8 c)
                             8 1_z_k
@@ -533,7 +533,7 @@
                                     )
                                     []
                                     [(Var 5 a)]
-                                    [(=
+                                    [(Assignment
                                         (StructInstanceMember
                                             (Var 5 a)
                                             5 1_x_i
@@ -543,7 +543,7 @@
                                         (IntegerConstant 1 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (StructInstanceMember
                                             (Var 5 a)
                                             5 1_x_r

@@ -82,7 +82,7 @@
                                     )
                                     []
                                     [(Var 3 x)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 e)
                                         (Cast
                                             (Var 3 x)
@@ -102,7 +102,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 e)
                                         (ArrayConstant
                                             [(Cast

@@ -39,13 +39,13 @@
             next
             ()
         )
-        (=
+        (Assignment
             0
             sum
             ZERO
             ()
         )
-        (=
+        (Assignment
             0
             i
             1

@@ -11,6 +11,8 @@ std::string get_runtime_library_dir();
 std::string get_runtime_library_header_dir();
 std::string get_runtime_library_c_header_dir();
 int32_t get_exit_status(int32_t err);
+std::string get_kokkos_includedir();
+std::string get_kokkos_libdir();
 
 } // LCompilers::LFortran
 

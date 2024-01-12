@@ -293,6 +293,63 @@ jobs:
         env:
           SSH_PRIVATE_KEY_WASM_BUILDS: ${{ secrets.SSH_PRIVATE_KEY_WASM_BUILDS }}
 
+  debug_outOfSource:
+    name: Check Out-of-Source Debug build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: src
+
+      - uses: mamba-org/setup-micromamba@v1
+        with:
+          environment-file: src/ci/environment_linux.yml
+          create-args: >-
+            python=3.10
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.os }}
+
+      - name: Build Linux
+        shell: bash -e -l {0}
+        run: |
+            ( cd src && ./build0.sh )
+            export CXXFLAGS="-Werror"
+            cmake -S src -B builddir -GNinja \
+              -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+              -DWITH_LLVM=yes \
+              -DWITH_KOKKOS=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DWITH_RUNTIME_STACKTRACE=yes \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build builddir  -j16 --target install
+
+      - name: Test Linux
+        shell: bash -e -l {0}
+        run: ctest --output-on-failure
+        working-directory: builddir
+
+      - name: Test Moved Installation
+        shell: bash -e -l {0}
+        run: |
+          mv inst inst.moved
+          cp src/examples/expr2.f90 .
+          rm -rf src
+          inst.moved/bin/lfortran expr2.f90 -o expr2
+          ./expr2
+          inst.moved/bin/lfortran --backend=c expr2.f90 -o expr2b
+          ./expr2b
+          inst.moved/bin/lfortran --openmp --backend=cpp expr2.f90 -o expr2c
+          ./expr2c
+
   debug:
     name: Check Debug build
     runs-on: ubuntu-latest
@@ -317,9 +374,11 @@ jobs:
         run: |
             ./build0.sh
             export CXXFLAGS="-Werror"
+            export CFLAGS="-Werror"
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
+              -DCMAKE_VERBOSE_MAKEFILE= yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
               -DWITH_RUNTIME_STACKTRACE=yes \
@@ -364,18 +423,20 @@ jobs:
         run: |
             ./build0.sh
             export CXXFLAGS="-Werror"
+            export CFLAGS="-Werror"
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Release \
               -DWITH_LLVM=yes \
+              -DCMAKE_VERBOSE_MAKEFILE= yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
               -DWITH_RUNTIME_STACKTRACE=yes \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_INSTALL_BINDIR=bin-tastic \
-              -DCMAKE_INSTALL_LIBDIR=oh-my-sweet-lib \
-              -DCMAKE_INSTALL_INCLUDEDIR=incl-O-Matic \
-              -DCMAKE_INSTALL_MANDIR=man-O-man \
+              -DCMAKE_INSTALL_BINDIR=bin/tastic \
+              -DCMAKE_INSTALL_LIBDIR=oh/my/sweet/lib \
+              -DCMAKE_INSTALL_INCLUDEDIR=incl/O/Matic \
+              -DCMAKE_INSTALL_MANDIR=man/O/man \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
@@ -394,11 +455,11 @@ jobs:
       - name: Test Installation
         shell: bash -e -l {0}
         run: |
-            test -x inst/bin-tastic/lfortran
-            test -f inst/oh-my-sweet-lib/liblfortran_runtime_static.a
-            test -f inst/oh-my-sweet-lib/liblfortran_runtime.so
-            test -f inst/incl-O-Matic/lfortran/impure/lfortran_intrinsics.h
-            test -f inst/man-O-man/man1/lfortran.1
+            test -x inst/bin/tastic/lfortran
+            test -f inst/oh/my/sweet/lib/liblfortran_runtime_static.a
+            test -f inst/oh/my/sweet/lib/liblfortran_runtime.so
+            test -f inst/incl/O/Matic/lfortran/impure/lfortran_intrinsics.h
+            test -f inst/man/O/man/man1/lfortran.1
 
   third_party_code_compile:
     name: Check Third Party Code Compilation
@@ -436,6 +497,27 @@ jobs:
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
             cmake --build . -j16 --target install
+
+      - name: Test stdlib (specialfunctions_gamma)
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/Pranavchiku/stdlib-fortran-lang.git
+            cd stdlib-fortran-lang
+            git checkout -t origin/lf-special-function-gamma-2
+            git checkout 6b1c348d02576739df10c755cdcee2520ec18fe6
+            micromamba activate lf
+            micromamba install -c conda-forge fypp
+            FC=$(pwd)/../src/bin/lfortran cmake .
+            make fortran_stdlib
+            cp ./src/*.mod ./example/specialfunctions_gamma
+            make
+            ./example/specialfunctions_gamma/example_gamma
+            ./example/specialfunctions_gamma/example_gamma_p
+            ./example/specialfunctions_gamma/example_gamma_q
+            ./example/specialfunctions_gamma/example_ligamma
+            ./example/specialfunctions_gamma/example_log_factorial
+            ./example/specialfunctions_gamma/example_log_gamma
+            ./example/specialfunctions_gamma/example_uigamma
 
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
@@ -579,6 +661,16 @@ jobs:
             git checkout ab02e3a57bc286c6e75b23098c209db8c27157ea
             export PATH="$(pwd)/../src/bin:$PATH"
             ./build.sh
+
+      - name: Test stdlib
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/czgdp1807/stdlib.git
+            cd stdlib
+            git checkout lf15
+            git checkout 9ba07f7b42edebb33e82e6e94516bf423b9b8784
+            export PATH="$(pwd)/../src/bin:$PATH"
+            lfortran subprojects/test-drive/src/testdrive.F90 --show-llvm
 
   test_llvm:
     name: Test LLVM ${{ matrix.llvm-version }}
@@ -844,6 +936,7 @@ jobs:
         run: |
           ./build0.sh
           lfortran_version=$(<version)
+          pandoc --standalone --to man doc/man/lfortran.md -o doc/man/lfortran.1
           ci/create_source_tarball.sh $lfortran_version
           ci/upload_tarball.sh
         env:

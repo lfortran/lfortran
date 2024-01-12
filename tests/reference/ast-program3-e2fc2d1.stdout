@@ -37,19 +37,19 @@
                 (EndOfLine)]
             )
         )]
-        [(=
+        [(Assignment
             0
             x
             (Real "5.0")
             ()
         )
-        (=
+        (Assignment
             0
             y
             (Real "2.0")
             ()
         )
-        (=
+        (Assignment
             0
             z
             (* x y)
@@ -68,7 +68,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             z
             (FuncCallOrArray
@@ -101,7 +101,7 @@
                 (EndOfLine)]
             )
         )
-        (=
+        (Assignment
             0
             z
             (FuncCallOrArray
@@ -191,13 +191,13 @@
                 ())]
                 ()
             )]
-            [(=
+            [(Assignment
                 0
                 c
                 (+ a b)
                 ()
             )
-            (=
+            (Assignment
                 0
                 c
                 (FuncCallOrArray
@@ -277,7 +277,7 @@
                 ())]
                 ()
             )]
-            [(=
+            [(Assignment
                 0
                 c
                 (* a b)

@@ -343,6 +343,10 @@ public:
                 EnumType_t *m = down_cast<EnumType_t>(m_sym);
                 sym = m->m_symtab->find_scoped_symbol(original_name,
                         x.n_scope_names, x.m_scope_names);
+            } else if( ASR::is_a<ASR::Function_t>(*m_sym) ) {
+                Function_t *m = down_cast<Function_t>(m_sym);
+                sym = m->m_symtab->find_scoped_symbol(original_name,
+                        x.n_scope_names, x.m_scope_names);
             }
             if (sym) {
                 // FIXME: this is a hack, we need to pass in a non-const `x`.

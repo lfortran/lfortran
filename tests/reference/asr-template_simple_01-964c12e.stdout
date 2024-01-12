@@ -137,7 +137,7 @@
                                     )
                                     []
                                     [(Var 7 arg)]
-                                    [(=
+                                    [(Assignment
                                         (Var 7 res)
                                         (IntegerConstant 0 (Integer 4))
                                         ()
@@ -298,7 +298,7 @@
                                     )
                                     []
                                     [(Var 8 arg)]
-                                    [(=
+                                    [(Assignment
                                         (Var 8 res)
                                         (RealConstant
                                             0.000000
@@ -581,7 +581,7 @@
                                                     [cast
                                                     add]
                                                     [(Var 12 arr)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 12 n)
                                                         (ArraySize
                                                             (Var 12 arr)
@@ -591,7 +591,7 @@
                                                         )
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 12 res)
                                                         (FunctionCall
                                                             9 cast
@@ -613,7 +613,7 @@
                                                             (Logical 4)
                                                             ()
                                                         )
-                                                        [(=
+                                                        [(Assignment
                                                             (Var 12 res)
                                                             (ArrayItem
                                                                 (Var 12 arr)
@@ -634,7 +634,7 @@
                                                             (IntegerConstant 2 (Integer 4))
                                                             (Var 12 n)
                                                             ())
-                                                            [(=
+                                                            [(Assignment
                                                                 (Var 12 res)
                                                                 (FunctionCall
                                                                     9 add
@@ -1006,7 +1006,7 @@
                                                     [cast_integer
                                                     ~add_intrinsic]
                                                     [(Var 15 arr)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 15 n)
                                                         (ArraySize
                                                             (Var 15 arr)
@@ -1016,7 +1016,7 @@
                                                         )
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 15 res)
                                                         (FunctionCall
                                                             2 cast_integer
@@ -1036,7 +1036,7 @@
                                                             (Logical 4)
                                                             ()
                                                         )
-                                                        [(=
+                                                        [(Assignment
                                                             (Var 15 res)
                                                             (ArrayItem
                                                                 (Var 15 arr)
@@ -1055,7 +1055,7 @@
                                                             (IntegerConstant 2 (Integer 4))
                                                             (Var 15 n)
                                                             ())
-                                                            [(=
+                                                            [(Assignment
                                                                 (Var 15 res)
                                                                 (FunctionCall
                                                                     13 ~add_intrinsic
@@ -1183,7 +1183,7 @@
                                                     [cast_real
                                                     ~add_intrinsic1]
                                                     [(Var 17 arr)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 17 n)
                                                         (ArraySize
                                                             (Var 17 arr)
@@ -1193,7 +1193,7 @@
                                                         )
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 17 res)
                                                         (FunctionCall
                                                             2 cast_real
@@ -1213,7 +1213,7 @@
                                                             (Logical 4)
                                                             ()
                                                         )
-                                                        [(=
+                                                        [(Assignment
                                                             (Var 17 res)
                                                             (ArrayItem
                                                                 (Var 17 arr)
@@ -1232,7 +1232,7 @@
                                                             (IntegerConstant 2 (Integer 4))
                                                             (Var 17 n)
                                                             ())
-                                                            [(=
+                                                            [(Assignment
                                                                 (Var 17 res)
                                                                 (FunctionCall
                                                                     13 ~add_intrinsic1
@@ -1380,7 +1380,7 @@
                                                         Source
                                                         Implementation
                                                         ()
-                                                        .false.
+                                                        .true.
                                                         .true.
                                                         .false.
                                                         .false.
@@ -1391,7 +1391,7 @@
                                                     []
                                                     [(Var 14 arg0)
                                                     (Var 14 arg1)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 14 ret)
                                                         (IntegerBinOp
                                                             (Var 14 arg0)
@@ -1470,7 +1470,7 @@
                                                         Source
                                                         Implementation
                                                         ()
-                                                        .false.
+                                                        .true.
                                                         .true.
                                                         .false.
                                                         .false.
@@ -1481,7 +1481,7 @@
                                                     []
                                                     [(Var 16 arg0)
                                                     (Var 16 arg1)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 16 ret)
                                                         (RealBinOp
                                                             (Var 16 arg0)
@@ -1527,7 +1527,7 @@
                                             (IntegerConstant 10 (Integer 4))
                                         )
                                         ())
-                                        [(=
+                                        [(Assignment
                                             (ArrayItem
                                                 (Var 13 a_i)
                                                 [(()
@@ -1540,7 +1540,7 @@
                                             (Var 13 i)
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (ArrayItem
                                                 (Var 13 a_r)
                                                 [(()
@@ -1559,7 +1559,7 @@
                                             ()
                                         )]
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 13 s_i)
                                         (FunctionCall
                                             13 generic_sum_integer
@@ -1582,7 +1582,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 13 s_r)
                                         (FunctionCall
                                             13 generic_sum_real

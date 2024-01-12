@@ -598,6 +598,8 @@ namespace LCompilers {
             for( int r = 0, r1 = 0; r < n_args; r++ ) {
                 llvm::Value* curr_llvm_idx = m_args[r];
                 llvm::Value* lval = llvm_diminfo[r1];
+                // first cast curr_llvm_idx to 32 bit
+                curr_llvm_idx = builder->CreateSExtOrTrunc(curr_llvm_idx, llvm::Type::getInt32Ty(context));
                 curr_llvm_idx = builder->CreateSub(curr_llvm_idx, lval);
                 if( check_for_bounds ) {
                     // check_single_element(curr_llvm_idx, arr); TODO: To be implemented
@@ -730,6 +732,10 @@ namespace LCompilers {
                                   LLVM::CreateLoad(*builder, ptr2firstptr), llvm::MaybeAlign(),
                                   num_elements);
 
+            builder->CreateStore(
+                llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
+                this->get_offset(reshaped, false));
+
             if( this->is_array(asr_shape_type) ) {
                 builder->CreateStore(LLVM::CreateLoad(*builder, llvm_utils->create_gep(array, 1)),
                             llvm_utils->create_gep(reshaped, 1));
@@ -739,7 +745,8 @@ namespace LCompilers {
                 llvm::Value* dim_des_first = builder->CreateAlloca(dim_des, n_dims);
                 builder->CreateStore(n_dims, this->get_rank(reshaped, true));
                 builder->CreateStore(dim_des_first, dim_des_val);
-                llvm::Value* prod = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                llvm::Value* prod = builder->CreateAlloca(llvm_utils->getIntType(4));
+                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 1)), prod);
                 dim_des_val = LLVM::CreateLoad(*builder, dim_des_val);
                 llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
                 llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, "loop.body");
@@ -757,10 +764,12 @@ namespace LCompilers {
                 llvm::Value* r_val = LLVM::CreateLoad(*builder, r);
                 llvm::Value* dim_val = llvm_utils->create_ptr_gep(dim_des_val, r_val);
                 llvm::Value* s_val = llvm_utils->create_gep(dim_val, 0);
+                llvm::Value* l_val = llvm_utils->create_gep(dim_val, 1);
                 llvm::Value* dim_size_ptr = llvm_utils->create_gep(dim_val, 2);
-                builder->CreateStore(prod, s_val);
+                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 1)), l_val);
+                builder->CreateStore(LLVM::CreateLoad(*builder, prod), s_val);
                 llvm::Value* dim_size = LLVM::CreateLoad(*builder, llvm_utils->create_ptr_gep(shape_data, r_val));
-                prod = builder->CreateMul(prod, dim_size);
+                builder->CreateStore(builder->CreateMul(LLVM::CreateLoad(*builder, prod), dim_size), prod);
                 builder->CreateStore(dim_size, dim_size_ptr);
                 r_val = builder->CreateAdd(r_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
                 builder->CreateStore(r_val, r);

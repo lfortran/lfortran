@@ -112,7 +112,7 @@
                         })
                     main
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 f)
                         (ComplexConstructor
                             (Cast
@@ -142,7 +142,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 y)
                         (FunctionCall
                             2 aimag@caimag

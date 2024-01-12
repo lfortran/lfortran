@@ -974,7 +974,7 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
         for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {
-            ASR::symbol_t* proc = gen_proc->m_procs[i];
+            ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(gen_proc->m_procs[i]);
             switch( proc->type ) {
                 case ASR::symbolType::Function: {
                     process_overloaded_assignment_function(proc, target, value, target_type,
@@ -993,7 +993,7 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                     break;
                 }
                 default: {
-                    err("Only functions and class procedures can be used for generic assignment statement", loc);
+                    err("Only functions and class procedures can be used for generic assignment statement, found " + std::to_string(proc->type), loc);
                 }
             }
         }
@@ -1035,7 +1035,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     ASR::down_cast<ASR::ClassProcedure_t>(
                     gen_proc->m_procs[i])->m_proc);
             } else {
-                proc = gen_proc->m_procs[i];
+                proc = ASRUtils::symbol_get_past_external(gen_proc->m_procs[i]);
             }
             switch(proc->type) {
                 case ASR::symbolType::Function: {
@@ -1201,30 +1201,6 @@ bool select_func_subrout(const ASR::symbol_t* proc, const Vec<ASR::call_arg_t>& 
     return result;
 }
 
-int select_generic_procedure(const Vec<ASR::call_arg_t>& args,
-        const ASR::GenericProcedure_t &p, Location loc,
-        const std::function<void (const std::string &, const Location &)> err,
-        bool raise_error) {
-    for (size_t i=0; i < p.n_procs; i++) {
-        if( ASR::is_a<ASR::ClassProcedure_t>(*p.m_procs[i]) ) {
-            ASR::ClassProcedure_t *clss_fn
-                = ASR::down_cast<ASR::ClassProcedure_t>(p.m_procs[i]);
-            const ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(clss_fn->m_proc);
-            if( select_func_subrout(proc, args, loc, err) ) {
-                return i;
-            }
-        } else {
-            if( select_func_subrout(p.m_procs[i], args, loc, err) ) {
-                return i;
-            }
-        }
-    }
-    if( raise_error ) {
-        err("Arguments do not match for any generic procedure, " + std::string(p.m_name), loc);
-    }
-    return -1;
-}
-
 ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
             const Location &loc,
             ASR::symbol_t *v, Vec<ASR::call_arg_t>& args,
@@ -1374,7 +1350,9 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
 
 ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
         ASR::symbol_t* original_sym, SymbolTable *current_scope) {
-    if( original_sym && ASR::is_a<ASR::ClassProcedure_t>(*original_sym) ) {
+    if( original_sym && (ASR::is_a<ASR::ClassProcedure_t>(*original_sym) ||
+        (ASR::is_a<ASR::Variable_t>(*original_sym) &&
+         ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(original_sym)))) ) {
         std::string class_proc_name = ASRUtils::symbol_name(original_sym);
         if( original_sym != current_scope->resolve_symbol(class_proc_name) ) {
             std::string imported_proc_name = "1_" + class_proc_name;
@@ -1463,6 +1441,7 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
     Vec<ASR::expr_t*> shape_args;
     shape_args.reserve(al, 1);
     shape_args.push_back(al, expr1);
+    bool is_value_character_array = ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(expr2))));
 
     Vec<ASR::dimension_t> dims;
     dims.reserve(al, 1);
@@ -1475,7 +1454,7 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
     dims.push_back(al, dim);
     ASR::ttype_t* dest_shape_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
         ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), dims.p, dims.size(),
-        ASR::array_physical_typeType::FixedSizeArray));
+        is_value_character_array ? ASR::array_physical_typeType::CharacterArraySinglePointer: ASR::array_physical_typeType::FixedSizeArray));
 
     ASR::expr_t* dest_shape = nullptr;
     ASR::expr_t* value = nullptr;
@@ -1502,7 +1481,7 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
             ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims) <= 256 ) {
             ASR::ttype_t* value_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
                 ASRUtils::type_get_past_array(ASRUtils::expr_type(expr2)), dims.p, dims.size(),
-                ASR::array_physical_typeType::FixedSizeArray));
+                is_value_character_array ? ASR::array_physical_typeType::CharacterArraySinglePointer: ASR::array_physical_typeType::FixedSizeArray));
             Vec<ASR::expr_t*> values;
             values.reserve(al, ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims));
             for( int64_t i = 0; i < ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims); i++ ) {

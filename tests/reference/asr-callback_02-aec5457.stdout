@@ -186,7 +186,7 @@
                                         ()
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 res)
                                         (RealBinOp
                                             (RealBinOp
@@ -308,7 +308,7 @@
                                                     []
                                                     [(Var 6 x)
                                                     (Var 6 res)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 6 res)
                                                         (RealBinOp
                                                             (Cast
@@ -396,7 +396,7 @@
                                         ((Var 5 f))]
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 5 foo)
                                         (Var 5 res)
                                         ()
@@ -468,7 +468,7 @@
                         })
                     main
                     [callback_02]
-                    [(=
+                    [(Assignment
                         (Var 7 res)
                         (FunctionCall
                             7 foo

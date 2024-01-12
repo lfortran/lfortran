@@ -226,7 +226,7 @@
                     )
                     [mvndfn_main__lcompilers]
                     [(Var 2 w)]
-                    [(=
+                    [(Assignment
                         (Var 2 mvndfn)
                         (FunctionCall
                             1 mvndfn_main__lcompilers
@@ -376,7 +376,7 @@
                         1
                         1
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 4 w)
                             [(()
@@ -392,7 +392,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 4 w)
                             [(()
@@ -502,7 +502,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 4 mvndfn_main__lcompilers)
                         (RealConstant
                             1.200000
@@ -514,7 +514,7 @@
                         2
                         2
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 4 w)
                             [(()
@@ -530,7 +530,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 4 w)
                             [(()
@@ -640,7 +640,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 4 mvndfn_main__lcompilers)
                         (RealConstant
                             1.200000
@@ -732,7 +732,7 @@
                     )
                     [mvndfn_main__lcompilers]
                     []
-                    [(=
+                    [(Assignment
                         (Var 3 mvndnt)
                         (FunctionCall
                             1 mvndfn_main__lcompilers

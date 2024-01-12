@@ -300,7 +300,7 @@
                         })
                     hr_code
                     [hr]
-                    [(=
+                    [(Assignment
                         (Var 5 jack)
                         (StructTypeConstructor
                             5 person
@@ -324,7 +324,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 5 jill)
                         (StructTypeConstructor
                             5 employee

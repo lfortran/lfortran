@@ -45,25 +45,25 @@
             ())]
             ()
         )]
-        [(=
+        [(Assignment
             0
             a
             1
             ()
         )
-        (=
+        (Assignment
             0
             b
             2
             ()
         )
-        (=
+        (Assignment
             0
             c
             (/ (* a b) 2)
             ()
         )
-        (=
+        (Assignment
             0
             d
             (* c c)
@@ -99,13 +99,13 @@
             120
             ()
             (< a b)
-            [(=
+            [(Assignment
                 0
                 a
                 (* 2 b)
                 ()
             )]
-            [(=
+            [(Assignment
                 0
                 b
                 (* 33 c)

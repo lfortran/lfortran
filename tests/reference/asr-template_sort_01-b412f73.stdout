@@ -185,7 +185,7 @@
                                     []
                                     [(Var 15 lhs)
                                     (Var 15 rhs)]
-                                    [(=
+                                    [(Assignment
                                         (Var 15 res)
                                         (IntegerCompare
                                             (Var 15 lhs)
@@ -285,7 +285,7 @@
                                     []
                                     [(Var 14 lhs)
                                     (Var 14 rhs)]
-                                    [(=
+                                    [(Assignment
                                         (Var 14 res)
                                         (RealCompare
                                             (Var 14 lhs)
@@ -729,7 +729,7 @@
                                                             (Logical 4)
                                                             ()
                                                         )
-                                                        [(=
+                                                        [(Assignment
                                                             (Var 11 pivot)
                                                             (ArrayItem
                                                                 (Var 11 arr)
@@ -744,7 +744,7 @@
                                                             )
                                                             ()
                                                         )
-                                                        (=
+                                                        (Assignment
                                                             (Var 11 last)
                                                             (IntegerBinOp
                                                                 (Var 11 low)
@@ -787,7 +787,7 @@
                                                                     ()
                                                                     ()
                                                                 )
-                                                                [(=
+                                                                [(Assignment
                                                                     (Var 11 last)
                                                                     (IntegerBinOp
                                                                         (Var 11 last)
@@ -1000,17 +1000,17 @@
                                                     []
                                                     [(Var 10 lhs)
                                                     (Var 10 rhs)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 10 tmp)
                                                         (Var 10 lhs)
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 10 lhs)
                                                         (Var 10 rhs)
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 10 rhs)
                                                         (Var 10 tmp)
                                                         ()
@@ -1192,7 +1192,7 @@
                                             (Logical 4)
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 12 pivot)
                                             (ArrayItem
                                                 (Var 12 arr)
@@ -1205,7 +1205,7 @@
                                             )
                                             ()
                                         )
-                                        (=
+                                        (Assignment
                                             (Var 12 last)
                                             (IntegerBinOp
                                                 (Var 12 low)
@@ -1244,7 +1244,7 @@
                                                     (Logical 4)
                                                     ()
                                                 )
-                                                [(=
+                                                [(Assignment
                                                     (Var 12 last)
                                                     (IntegerBinOp
                                                         (Var 12 last)
@@ -1435,17 +1435,17 @@
                                     []
                                     [(Var 13 lhs)
                                     (Var 13 rhs)]
-                                    [(=
+                                    [(Assignment
                                         (Var 13 tmp)
                                         (Var 13 lhs)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 13 lhs)
                                         (Var 13 rhs)
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 13 rhs)
                                         (Var 13 tmp)
                                         ()
@@ -1534,17 +1534,17 @@
                                                     []
                                                     [(Var 21 lhs)
                                                     (Var 21 rhs)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 21 tmp)
                                                         (Var 21 lhs)
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 21 lhs)
                                                         (Var 21 rhs)
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 21 rhs)
                                                         (Var 21 tmp)
                                                         ()
@@ -1628,17 +1628,17 @@
                                                     []
                                                     [(Var 22 lhs)
                                                     (Var 22 rhs)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 22 tmp)
                                                         (Var 22 lhs)
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 22 lhs)
                                                         (Var 22 rhs)
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 22 rhs)
                                                         (Var 22 tmp)
                                                         ()
@@ -1732,17 +1732,17 @@
                                                     []
                                                     [(Var 23 lhs)
                                                     (Var 23 rhs)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 23 tmp)
                                                         (Var 23 lhs)
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 23 lhs)
                                                         (Var 23 rhs)
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 23 rhs)
                                                         (Var 23 tmp)
                                                         ()
@@ -1912,7 +1912,7 @@
                                                             (Logical 4)
                                                             ()
                                                         )
-                                                        [(=
+                                                        [(Assignment
                                                             (Var 17 pivot)
                                                             (ArrayItem
                                                                 (Var 17 arr)
@@ -1925,7 +1925,7 @@
                                                             )
                                                             ()
                                                         )
-                                                        (=
+                                                        (Assignment
                                                             (Var 17 last)
                                                             (IntegerBinOp
                                                                 (Var 17 low)
@@ -1966,7 +1966,7 @@
                                                                     ()
                                                                     ()
                                                                 )
-                                                                [(=
+                                                                [(Assignment
                                                                     (Var 17 last)
                                                                     (IntegerBinOp
                                                                         (Var 17 last)
@@ -2232,7 +2232,7 @@
                                                             (Logical 4)
                                                             ()
                                                         )
-                                                        [(=
+                                                        [(Assignment
                                                             (Var 19 pivot)
                                                             (ArrayItem
                                                                 (Var 19 arr)
@@ -2247,7 +2247,7 @@
                                                             )
                                                             ()
                                                         )
-                                                        (=
+                                                        (Assignment
                                                             (Var 19 last)
                                                             (IntegerBinOp
                                                                 (Var 19 low)
@@ -2290,7 +2290,7 @@
                                                                     ()
                                                                     ()
                                                                 )
-                                                                [(=
+                                                                [(Assignment
                                                                     (Var 19 last)
                                                                     (IntegerBinOp
                                                                         (Var 19 last)
@@ -2563,7 +2563,7 @@
                                                             (Logical 4)
                                                             ()
                                                         )
-                                                        [(=
+                                                        [(Assignment
                                                             (Var 18 pivot)
                                                             (ArrayItem
                                                                 (Var 18 arr)
@@ -2576,7 +2576,7 @@
                                                             )
                                                             ()
                                                         )
-                                                        (=
+                                                        (Assignment
                                                             (Var 18 last)
                                                             (IntegerBinOp
                                                                 (Var 18 low)
@@ -2617,7 +2617,7 @@
                                                                     ()
                                                                     ()
                                                                 )
-                                                                [(=
+                                                                [(Assignment
                                                                     (Var 18 last)
                                                                     (IntegerBinOp
                                                                         (Var 18 last)
@@ -2818,7 +2818,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 16 xi)
                                         (ArrayConstant
                                             [(IntegerConstant 2 (Integer 4))
@@ -2841,7 +2841,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 16 xr)
                                         (ArrayConstant
                                             [(Cast
@@ -2950,7 +2950,7 @@
                                         (IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 10 (Integer 4))
                                         ())
-                                        [(=
+                                        [(Assignment
                                             (ArrayItem
                                                 (Var 16 xm)
                                                 [(()
@@ -3164,7 +3164,7 @@
                                     []
                                     [(Var 4 lhs)
                                     (Var 4 rhs)]
-                                    [(=
+                                    [(Assignment
                                         (Var 4 res)
                                         (RealCompare
                                             (StructInstanceMember

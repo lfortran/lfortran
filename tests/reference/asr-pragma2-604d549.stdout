@@ -31,7 +31,7 @@
                         })
                     pragma2
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 a)
                         (ArrayPhysicalCast
                             (ArrayBroadcast

@@ -52,7 +52,7 @@
                         })
                     main
                     []
-                    [(=
+                    [(Assignment
                         (ArrayItem
                             (Var 2 a)
                             [(()
@@ -68,7 +68,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 a)
                             [(()
@@ -84,7 +84,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 b)
                             [(()
@@ -100,7 +100,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (ArrayItem
                             (Var 2 b)
                             [(()
@@ -129,7 +129,7 @@
                             )
                             ()
                         )
-                        [(=
+                        [(Assignment
                             (Var 2 a)
                             (ArrayBroadcast
                                 (RealConstant

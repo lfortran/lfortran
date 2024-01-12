@@ -26,7 +26,7 @@
                         })
                     intrinsics_05
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 x)
                         (IntrinsicScalarFunction
                             Sinh
@@ -48,7 +48,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (IntrinsicScalarFunction
                             Cosh
@@ -70,7 +70,7 @@
                         ()
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (IntrinsicScalarFunction
                             Tanh

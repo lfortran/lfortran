@@ -74,7 +74,7 @@
                         })
                     bin_op_real_dp
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 zero)
                         (RealBinOp
                             (RealConstant
@@ -99,7 +99,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 u)
                         (Cast
                             (RealBinOp
@@ -132,7 +132,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 v)
                         (RealBinOp
                             (RealConstant
@@ -157,7 +157,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 x)
                         (RealBinOp
                             (RealConstant

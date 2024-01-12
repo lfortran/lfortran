@@ -128,7 +128,6 @@ struct IntrinsicProcedures {
             {"dabs", {m_math2, &eval_dabs, true}},
             {"dcos", {m_math, &eval_dcos, true}},
             {"dsin", {m_math, &eval_dsin, true}},
-            {"gamma", {m_math, &eval_gamma, true}},
             {"log_gamma", {m_math, &eval_log_gamma, true}},
             {"log10", {m_math, &eval_log10, true}},
             {"dlog10", {m_math, &eval_dlog10, true}},
@@ -560,9 +559,6 @@ TRIG2(atan, datan)
     }
     static ASR::expr_t *eval_erfc(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
         return eval_trig(al, loc, args, &erfc, nullptr);
-    }
-    static ASR::expr_t *eval_gamma(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
-        return eval_trig(al, loc, args, &tgamma, nullptr);
     }
     static ASR::expr_t *eval_log_gamma(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
         return eval_trig(al, loc, args, &lgamma, nullptr);

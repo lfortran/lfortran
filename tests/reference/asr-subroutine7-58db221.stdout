@@ -59,7 +59,7 @@
                     []
                     [(Var 2 a)
                     (Var 2 b)]
-                    [(=
+                    [(Assignment
                         (Var 2 a)
                         (IntegerBinOp
                             (Var 2 b)
@@ -70,7 +70,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 b)
                         (IntegerBinOp
                             (Var 2 a)

@@ -67,7 +67,7 @@
                                     )
                                     [solution]
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 3 reldiff)
                                         (ArrayConstant
                                             [(RealConstant
@@ -88,7 +88,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 absdiff)
                                         (RealConstant
                                             0.500000
@@ -126,7 +126,7 @@
                                             )
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 3 reldiff)
                                             (RealBinOp
                                                 (ArrayBroadcast
@@ -357,7 +357,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 4 x)
                                         (ArrayConstant
                                             [(RealConstant

@@ -157,7 +157,7 @@
                                     )
                                     [~neq_intrinsic1]
                                     [(Var 12 vec)]
-                                    [(=
+                                    [(Assignment
                                         (Var 12 n)
                                         (ArraySize
                                             (Var 12 vec)
@@ -188,7 +188,7 @@
                                         [(Return)]
                                         []
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 12 pos)
                                         (ArrayBroadcast
                                             (IntegerConstant 0 (Integer 4))
@@ -216,7 +216,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArrayItem
                                             (Var 12 pos)
                                             [(()
@@ -229,7 +229,7 @@
                                         (IntegerConstant 1 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 12 j)
                                         (IntegerConstant 1 (Integer 4))
                                         ()
@@ -272,7 +272,7 @@
                                                 ()
                                                 ()
                                             )
-                                            [(=
+                                            [(Assignment
                                                 (Var 12 j)
                                                 (IntegerBinOp
                                                     (Var 12 j)
@@ -283,7 +283,7 @@
                                                 )
                                                 ()
                                             )
-                                            (=
+                                            (Assignment
                                                 (ArrayItem
                                                     (Var 12 pos)
                                                     [(()
@@ -315,7 +315,7 @@
                                         (IntegerConstant 1 (Integer 4))
                                         (Var 12 j)
                                         ())
-                                        [(=
+                                        [(Assignment
                                             (ArrayItem
                                                 (Var 12 mask)
                                                 [(()
@@ -496,7 +496,7 @@
                                     )
                                     [~neq_intrinsic]
                                     [(Var 10 vec)]
-                                    [(=
+                                    [(Assignment
                                         (Var 10 n)
                                         (ArraySize
                                             (Var 10 vec)
@@ -527,7 +527,7 @@
                                         [(Return)]
                                         []
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 10 pos)
                                         (ArrayBroadcast
                                             (IntegerConstant 0 (Integer 4))
@@ -555,7 +555,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (ArrayItem
                                             (Var 10 pos)
                                             [(()
@@ -568,7 +568,7 @@
                                         (IntegerConstant 1 (Integer 4))
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 10 j)
                                         (IntegerConstant 1 (Integer 4))
                                         ()
@@ -611,7 +611,7 @@
                                                 ()
                                                 ()
                                             )
-                                            [(=
+                                            [(Assignment
                                                 (Var 10 j)
                                                 (IntegerBinOp
                                                     (Var 10 j)
@@ -622,7 +622,7 @@
                                                 )
                                                 ()
                                             )
-                                            (=
+                                            (Assignment
                                                 (ArrayItem
                                                     (Var 10 pos)
                                                     [(()
@@ -654,7 +654,7 @@
                                         (IntegerConstant 1 (Integer 4))
                                         (Var 10 j)
                                         ())
-                                        [(=
+                                        [(Assignment
                                             (ArrayItem
                                                 (Var 10 mask)
                                                 [(()
@@ -776,7 +776,7 @@
                                         Implementation
                                         ()
                                         .false.
-                                        .true.
+                                        .false.
                                         .false.
                                         .false.
                                         .false.
@@ -786,7 +786,7 @@
                                     []
                                     [(Var 9 arg0)
                                     (Var 9 arg1)]
-                                    [(=
+                                    [(Assignment
                                         (Var 9 ret)
                                         (IntegerCompare
                                             (Var 9 arg0)
@@ -866,7 +866,7 @@
                                         Implementation
                                         ()
                                         .false.
-                                        .true.
+                                        .false.
                                         .false.
                                         .false.
                                         .false.
@@ -876,7 +876,7 @@
                                     []
                                     [(Var 11 arg0)
                                     (Var 11 arg1)]
-                                    [(=
+                                    [(Assignment
                                         (Var 11 ret)
                                         (StringCompare
                                             (Var 11 arg0)
@@ -1172,7 +1172,7 @@
                                                     )
                                                     [ne]
                                                     [(Var 7 vec)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 7 n)
                                                         (ArraySize
                                                             (Var 7 vec)
@@ -1203,7 +1203,7 @@
                                                         [(Return)]
                                                         []
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 7 pos)
                                                         (ArrayBroadcast
                                                             (IntegerConstant 0 (Integer 4))
@@ -1231,7 +1231,7 @@
                                                         )
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (ArrayItem
                                                             (Var 7 pos)
                                                             [(()
@@ -1244,7 +1244,7 @@
                                                         (IntegerConstant 1 (Integer 4))
                                                         ()
                                                     )
-                                                    (=
+                                                    (Assignment
                                                         (Var 7 j)
                                                         (IntegerConstant 1 (Integer 4))
                                                         ()
@@ -1291,7 +1291,7 @@
                                                                 ()
                                                                 ()
                                                             )
-                                                            [(=
+                                                            [(Assignment
                                                                 (Var 7 j)
                                                                 (IntegerBinOp
                                                                     (Var 7 j)
@@ -1302,7 +1302,7 @@
                                                                 )
                                                                 ()
                                                             )
-                                                            (=
+                                                            (Assignment
                                                                 (ArrayItem
                                                                     (Var 7 pos)
                                                                     [(()
@@ -1334,7 +1334,7 @@
                                                         (IntegerConstant 1 (Integer 4))
                                                         (Var 7 j)
                                                         ())
-                                                        [(=
+                                                        [(Assignment
                                                             (ArrayItem
                                                                 (Var 7 mask)
                                                                 [(()

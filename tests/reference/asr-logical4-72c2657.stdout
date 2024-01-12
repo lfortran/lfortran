@@ -58,7 +58,7 @@
                         })
                     logical4
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 a)
                         (Cast
                             (IntegerConstant 2 (Integer 4))
@@ -68,7 +68,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 b)
                         (Cast
                             (IntegerUnaryMinus
@@ -82,7 +82,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 c)
                         (Cast
                             (IntegerConstant 0 (Integer 4))

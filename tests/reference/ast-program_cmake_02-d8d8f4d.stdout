@@ -24,7 +24,7 @@
                 [(Semicolon)]
             )
         )]
-        [(=
+        [(Assignment
             0
             stop
             1

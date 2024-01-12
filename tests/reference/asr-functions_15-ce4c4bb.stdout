@@ -104,7 +104,7 @@
                                     )
                                     []
                                     [(Var 5 x)]
-                                    [(=
+                                    [(Assignment
                                         (Var 5 f)
                                         (FunctionCall
                                             5 present
@@ -135,12 +135,12 @@
                         })
                     functions_15
                     [functions_15_module_1]
-                    [(=
+                    [(Assignment
                         (Var 4 a)
                         (IntegerConstant 1 (Integer 4))
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 4 b)
                         (Cast
                             (IntegerConstant 2 (Integer 4))
@@ -436,7 +436,7 @@
                                             ()
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 3 a)
                                             (Cast
                                                 (RealBinOp
@@ -475,7 +475,7 @@
                                                 ()
                                                 ()
                                             )
-                                            [(=
+                                            [(Assignment
                                                 (Var 3 b)
                                                 (RealBinOp
                                                     (RealBinOp
@@ -497,7 +497,7 @@
                                                 )
                                                 ()
                                             )]
-                                            [(=
+                                            [(Assignment
                                                 (Var 3 b)
                                                 (RealBinOp
                                                     (Var 3 b)
@@ -509,7 +509,7 @@
                                                 ()
                                             )]
                                         )]
-                                        [(=
+                                        [(Assignment
                                             (Var 3 a)
                                             (Cast
                                                 (RealBinOp
@@ -542,7 +542,7 @@
                                                 ()
                                                 ()
                                             )
-                                            [(=
+                                            [(Assignment
                                                 (Var 3 b)
                                                 (RealBinOp
                                                     (RealBinOp
@@ -564,7 +564,7 @@
                                                 )
                                                 ()
                                             )]
-                                            [(=
+                                            [(Assignment
                                                 (Var 3 b)
                                                 (RealBinOp
                                                     (Var 3 b)

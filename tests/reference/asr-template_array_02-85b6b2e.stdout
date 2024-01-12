@@ -208,7 +208,7 @@
                                                     [zero_t
                                                     plus_t]
                                                     [(Var 14 a)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 14 r)
                                                         (FunctionCall
                                                             11 zero_t
@@ -243,7 +243,7 @@
                                                             ()
                                                         )
                                                         ())
-                                                        [(=
+                                                        [(Assignment
                                                             (Var 14 r)
                                                             (FunctionCall
                                                                 11 plus_t
@@ -782,7 +782,7 @@
                                                     )
                                                     []
                                                     [(Var 16 a)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 16 r)
                                                         (FunctionCall
                                                             7 zero_integer
@@ -813,7 +813,7 @@
                                                             ()
                                                         )
                                                         ())
-                                                        [(=
+                                                        [(Assignment
                                                             (Var 16 r)
                                                             (FunctionCall
                                                                 7 add_integer
@@ -886,7 +886,7 @@
                                             (IntegerConstant 10 (Integer 4))
                                         )
                                         ())
-                                        [(=
+                                        [(Assignment
                                             (ArrayItem
                                                 (Var 15 a)
                                                 [(()
@@ -900,7 +900,7 @@
                                             ()
                                         )]
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 15 s)
                                         (FunctionCall
                                             15 mysum_integer
@@ -1039,7 +1039,7 @@
                                     []
                                     [(Var 3 x)
                                     (Var 3 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 r)
                                         (IntegerBinOp
                                             (Var 3 x)
@@ -1129,7 +1129,7 @@
                                     []
                                     [(Var 5 x)
                                     (Var 5 y)]
-                                    [(=
+                                    [(Assignment
                                         (Var 5 r)
                                         (RealBinOp
                                             (Var 5 x)
@@ -1201,7 +1201,7 @@
                                     )
                                     []
                                     [(Var 4 x)]
-                                    [(=
+                                    [(Assignment
                                         (Var 4 r)
                                         (IntegerConstant 0 (Integer 4))
                                         ()
@@ -1267,7 +1267,7 @@
                                     )
                                     []
                                     [(Var 6 x)]
-                                    [(=
+                                    [(Assignment
                                         (Var 6 r)
                                         (Cast
                                             (IntegerConstant 0 (Integer 4))

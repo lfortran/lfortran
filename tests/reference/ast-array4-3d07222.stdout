@@ -32,7 +32,7 @@
                 (EndOfLine)]
             )
         )]
-        [(=
+        [(Assignment
             0
             i
             a [(some_array

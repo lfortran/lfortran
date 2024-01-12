@@ -76,7 +76,7 @@
                                                             (Logical 4)
                                                             ()
                                                         )
-                                                        [(=>
+                                                        [(Associate
                                                             (Var 7 array)
                                                             (Var 7 ptr)
                                                         )]

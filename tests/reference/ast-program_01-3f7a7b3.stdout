@@ -244,13 +244,13 @@
                         []
                         ()
                     )
-                    (=
+                    (Assignment
                         0
                         u
                         (- (* 2 u) 1)
                         ()
                     )
-                    (=
+                    (Assignment
                         0
                         r2
                         (FuncCallOrArray
@@ -287,7 +287,7 @@
                     ()
                     ()
                 )
-                (=
+                (Assignment
                     0
                     u
                     (* u (FuncCallOrArray
@@ -313,7 +313,7 @@
                     ))
                     ()
                 )
-                (=
+                (Assignment
                     0
                     x
                     (FuncCallOrArray
@@ -329,7 +329,7 @@
                     )
                     ()
                 )]
-                [(=
+                [(Assignment
                     0
                     x
                     (FuncCallOrArray
@@ -349,7 +349,7 @@
                 ()
                 ()
             )
-            (=
+            (Assignment
                 0
                 first
                 (not first)

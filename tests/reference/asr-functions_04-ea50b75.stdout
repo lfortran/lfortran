@@ -80,7 +80,7 @@
                         )]
                         []
                     )
-                    (=
+                    (Assignment
                         (Var 4 int)
                         (IntegerUnaryMinus
                             (IntegerConstant 4 (Integer 4))
@@ -189,7 +189,7 @@
                                             (Logical 4)
                                             ()
                                         )
-                                        [(=
+                                        [(Assignment
                                             (Var 3 neg_int)
                                             (IntegerUnaryMinus
                                                 (Var 3 int)
@@ -198,7 +198,7 @@
                                             )
                                             ()
                                         )]
-                                        [(=
+                                        [(Assignment
                                             (Var 3 neg_int)
                                             (Var 3 int)
                                             ()

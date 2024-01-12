@@ -172,7 +172,7 @@
                                                             ()
                                                         )
                                                         ())
-                                                        [(=
+                                                        [(Assignment
                                                             (ArrayItem
                                                                 (Var 8 y)
                                                                 [(()
@@ -656,7 +656,7 @@
                                                             ()
                                                         )
                                                         ())
-                                                        [(=
+                                                        [(Assignment
                                                             (ArrayItem
                                                                 (Var 12 y)
                                                                 [(()
@@ -869,8 +869,8 @@
                                                         Source
                                                         Implementation
                                                         ()
-                                                        .false.
                                                         .true.
+                                                        .false.
                                                         .false.
                                                         .false.
                                                         .false.
@@ -880,7 +880,7 @@
                                                     []
                                                     [(Var 10 arg0)
                                                     (Var 10 arg1)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 10 ret)
                                                         (RealBinOp
                                                             (Var 10 arg0)
@@ -966,8 +966,8 @@
                                                         Source
                                                         Implementation
                                                         ()
-                                                        .false.
                                                         .true.
+                                                        .false.
                                                         .false.
                                                         .false.
                                                         .false.
@@ -977,7 +977,7 @@
                                                     []
                                                     [(Var 11 arg0)
                                                     (Var 11 arg1)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 11 ret)
                                                         (RealBinOp
                                                             (Var 11 arg0)
@@ -1017,7 +1017,7 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Assignment
                                         (Var 9 a)
                                         (RealConstant
                                             0.500000
@@ -1025,7 +1025,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 9 x)
                                         (ArrayBroadcast
                                             (IntegerConstant 2 (Integer 4))
@@ -1060,7 +1060,7 @@
                                         )
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 9 y)
                                         (ArrayBroadcast
                                             (Cast

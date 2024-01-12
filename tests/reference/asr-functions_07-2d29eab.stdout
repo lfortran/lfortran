@@ -83,7 +83,7 @@
                         })
                     functions_07
                     [functions_07_c]
-                    [(=
+                    [(Assignment
                         (Var 8 q)
                         (FunctionCall
                             8 f_c
@@ -161,7 +161,7 @@
                                     )
                                     []
                                     [(Var 3 u)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 v)
                                         (RealBinOp
                                             (Var 3 u)
@@ -257,7 +257,7 @@
                                     )
                                     []
                                     [(Var 5 x)]
-                                    [(=
+                                    [(Assignment
                                         (Var 5 y)
                                         (RealBinOp
                                             (FunctionCall
@@ -370,7 +370,7 @@
                                     )
                                     []
                                     [(Var 7 w)]
-                                    [(=
+                                    [(Assignment
                                         (Var 7 z)
                                         (RealBinOp
                                             (FunctionCall

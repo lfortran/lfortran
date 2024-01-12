@@ -157,7 +157,7 @@
                                     [(Var 3 f)
                                     (Var 3 a)
                                     (Var 3 b)]
-                                    [(=
+                                    [(Assignment
                                         (Var 3 cb)
                                         (RealBinOp
                                             (RealBinOp
@@ -292,7 +292,7 @@
                                                     )
                                                     []
                                                     [(Var 6 x)]
-                                                    [(=
+                                                    [(Assignment
                                                         (Var 6 f)
                                                         (RealBinOp
                                                             (Cast

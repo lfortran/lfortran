@@ -416,7 +416,7 @@
                                     )
                                     []
                                     [(Var 6 zx)]
-                                    [(=
+                                    [(Assignment
                                         (Var 6 ftol_return_var_name)
                                         (RealBinOp
                                             (RealConstant
@@ -588,7 +588,7 @@
                         1
                         1
                     )
-                    (=
+                    (Assignment
                         (Var 4 r)
                         (ArrayBroadcast
                             (RealUnaryMinus

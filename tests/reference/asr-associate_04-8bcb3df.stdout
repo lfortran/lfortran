@@ -64,7 +64,7 @@
                                                 )
                                         })
                                     associate_block
-                                    [(=
+                                    [(Assignment
                                         (Var 3 z)
                                         (RealBinOp
                                             (RealUnaryMinus
@@ -119,7 +119,7 @@
                                         )
                                         ()
                                     )
-                                    (=>
+                                    (Associate
                                         (Var 3 v)
                                         (Var 2 myreal)
                                     )
@@ -142,7 +142,7 @@
                                         ()
                                         ()
                                     )
-                                    (=
+                                    (Assignment
                                         (Var 3 v)
                                         (RealBinOp
                                             (Var 3 v)
@@ -226,7 +226,7 @@
                         })
                     associate_04
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 x)
                         (RealConstant
                             0.420000
@@ -234,7 +234,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 y)
                         (RealConstant
                             0.350000
@@ -242,7 +242,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 myreal)
                         (RealConstant
                             9.100000
@@ -250,7 +250,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 theta)
                         (RealConstant
                             1.500000
@@ -258,7 +258,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 a)
                         (RealConstant
                             0.400000

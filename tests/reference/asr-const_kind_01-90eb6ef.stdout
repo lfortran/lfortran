@@ -102,7 +102,7 @@
                         })
                     const_kind_01
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 r3)
                         (RealConstant
                             1.000000
@@ -110,7 +110,7 @@
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 r3)
                         (Cast
                             (RealConstant
