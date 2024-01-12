@@ -96,7 +96,11 @@
                             )
                             ComplexToComplex
                             (Complex 8)
-                            ()
+                            (ComplexConstant
+                                1.050000
+                                1.050000
+                                (Complex 8)
+                            )
                         )
                         ()
                     )
@@ -121,7 +125,11 @@
                             )
                             ComplexToComplex
                             (Complex 4)
-                            ()
+                            (ComplexConstant
+                                1.050000
+                                1.050000
+                                (Complex 4)
+                            )
                         )
                         ()
                     )
