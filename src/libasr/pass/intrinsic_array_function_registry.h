@@ -764,15 +764,19 @@ namespace Shape {
         ASR::dimension_t *m_dims;
         size_t n_dims = extract_dimensions_from_ttype(expr_type(args[0]), m_dims);
         Vec<ASR::expr_t *> m_shapes; m_shapes.reserve(al, n_dims);
-        for (size_t i = 0; i < n_dims; i++) {
-            if (m_dims[i].m_length) {
-                ASR::expr_t *e = nullptr;
-                if (extract_kind_from_ttype_t(type) != 4) {
-                    e = i2i(m_dims[i].m_length, extract_type(type));
-                } else {
-                    e = m_dims[i].m_length;
+        if( n_dims == 0 ){
+            m_shapes.push_back(al, i32(0));
+        } else {
+            for (size_t i = 0; i < n_dims; i++) {
+                if (m_dims[i].m_length) {
+                    ASR::expr_t *e = nullptr;
+                    if (extract_kind_from_ttype_t(type) != 4) {
+                        e = i2i(m_dims[i].m_length, extract_type(type));
+                    } else {
+                        e = m_dims[i].m_length;
+                    }
+                    m_shapes.push_back(al, e);
                 }
-                m_shapes.push_back(al, e);
             }
         }
         ASR::expr_t *value = nullptr;
@@ -803,7 +807,7 @@ namespace Shape {
         ASR::ttype_t *return_type = b.Array({n_dims},
             TYPE(ASR::make_Integer_t(al, loc, kind)));
         ASR::expr_t *m_value = eval_Shape(al, loc, return_type, args);
-
+        
         return ASRUtils::make_IntrinsicArrayFunction_t_util(al, loc,
             static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Shape),
             m_args.p, m_args.n, 0, return_type, m_value);
@@ -825,7 +829,6 @@ namespace Shape {
             b.Assignment(i, iAdd(i, i32(1)))
         }));
         body.push_back(al, Return());
-
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
