@@ -182,7 +182,7 @@ conda init bash
 conda activate lf
 sudo apt update
 sudo apt-get install build-essential
-sudo apt-get install zlib1g-dev
+sudo apt-get install zlib1g-dev libzstd-dev
 sudo apt install clang
 ```
 * You can change the directory to a Windows location using `cd /mnt/[drive letter]/[windows location]`.
