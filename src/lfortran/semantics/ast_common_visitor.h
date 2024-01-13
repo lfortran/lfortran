@@ -1944,8 +1944,8 @@ public:
                                     }
                                     ASR::expr_t* init_expr_value = ASRUtils::expr_value(init_expr);
                                     if( init_expr && !ASRUtils::is_value_constant(init_expr_value) ) {
-                                        throw SemanticError("Initialisation of " + std::string(x.m_syms[i].m_name) +
-                                                            " must reduce to a compile time constant.",
+                                        throw SemanticError("Initialization of `" + std::string(x.m_syms[i].m_name) +
+                                                            "` must reduce to a compile time constant.",
                                             x.m_syms[i].loc);
                                     }
                                     sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
@@ -2403,8 +2403,8 @@ public:
                         } else if( ASRUtils::is_value_constant(init_expr) ) {
                             value = nullptr;
                         } else {
-                            throw SemanticError("Initialisation of " + std::string(x.m_syms[i].m_name) +
-                                                " must reduce to a compile time constant.",
+                            throw SemanticError("Initialization of `" + std::string(x.m_syms[i].m_name) +
+                                                "` must reduce to a compile time constant.",
                                 x.base.base.loc);
                         }
                     }
@@ -2455,8 +2455,8 @@ public:
                         */
                         value = ASRUtils::expr_value(init_expr);
                         if (value == nullptr) {
-                            throw SemanticError("Initialisation of " + std::string(x.m_syms[i].m_name) +
-                                                " must reduce to a compile time constant.",
+                            throw SemanticError("Initialization of `" + std::string(x.m_syms[i].m_name) +
+                                                "` must reduce to a compile time constant.",
                                 x.base.base.loc);
                         }
                         if (ASR::is_a<ASR::IntegerConstant_t>(*value)) {
@@ -2470,8 +2470,8 @@ public:
                                 type = ASRUtils::TYPE(ASR::make_Character_t(al, int_const->base.base.loc, 1, len, nullptr));
                             }
                         } else {
-                            throw SemanticError("Initialisation of " + std::string(x.m_syms[i].m_name) +
-                                                " must reduce to a compile time constant.",
+                            throw SemanticError("Initialization of `" + std::string(x.m_syms[i].m_name) +
+                                                "` must reduce to a compile time constant.",
                                 x.base.base.loc);
                         }
                         value = nullptr;
@@ -2521,8 +2521,8 @@ public:
                                     value = nullptr;
                                 }
                             } else {
-                                throw SemanticError("Initialisation of " + std::string(x.m_syms[i].m_name) +
-                                                    " must reduce to a compile time constant.",
+                                throw SemanticError("Initialization of `" + std::string(x.m_syms[i].m_name) +
+                                                    "` must reduce to a compile time constant.",
                                     x.base.base.loc);
                             }
                         }

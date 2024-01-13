@@ -241,6 +241,19 @@ public:
                       ival, 0, dest_type2);
                 }
             }
+        } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::ComplexToComplex) {
+            if (ASRUtils::expr_value(*convert_can)) {
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*dest_type2))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(*convert_can)))
+                value = ASRUtils::expr_value(*convert_can);
+                if( ASR::is_a<ASR::ComplexConstant_t>(*value) ) {
+                    ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(value);
+                    double re = c->m_re;
+                    double im = c->m_im;
+                    value = (ASR::expr_t *)ASR::make_ComplexConstant_t(al, a_loc,
+                      re, im, dest_type2);
+                }
+            }
         }
 
       if( !ASRUtils::is_array(source_type) ) {
