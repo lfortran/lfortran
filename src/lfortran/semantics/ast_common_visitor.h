@@ -2686,6 +2686,10 @@ public:
                 type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                     ASRUtils::type_get_past_allocatable(type)));
             }
+            if( ASRUtils::extract_physical_type(type) ==  ASR::array_physical_typeType::DescriptorArray && !is_allocatable && !is_pointer ) {
+                throw SemanticError("Array cannot be of deferred type",
+                                    loc);
+            }
         } else if (sym_type->m_type == AST::decl_typeType::TypeLogical) {
             type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
             type = ASRUtils::make_Array_t_util(
@@ -2905,7 +2909,7 @@ public:
             type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
                 ASRUtils::type_get_past_allocatable(type)));
         }
-
+        
         return type;
     }
 
