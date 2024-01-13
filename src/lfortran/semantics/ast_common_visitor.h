@@ -4584,7 +4584,7 @@ public:
         string = nullptr, set = nullptr, back = nullptr;
         type = nullptr, kind = nullptr;
         Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"back", "kind"};
+        std::vector<std::string> kwarg_names = {"string", "set", "back", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 2, 4, func_name);
         string = args[0], set = args[1], back = args[2], kind = args[3];
         int64_t kind_value = handle_kind(kind);
