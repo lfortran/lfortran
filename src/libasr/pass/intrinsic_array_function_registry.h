@@ -765,7 +765,8 @@ namespace Shape {
         size_t n_dims = extract_dimensions_from_ttype(expr_type(args[0]), m_dims);
         Vec<ASR::expr_t *> m_shapes; m_shapes.reserve(al, n_dims);
         if( n_dims == 0 ){
-            m_shapes.push_back(al, i32(0));
+            return EXPR(ASR::make_ArrayConstant_t(al, loc, m_shapes.p, 0,
+                type, ASR::arraystorageType::ColMajor));
         } else {
             for (size_t i = 0; i < n_dims; i++) {
                 if (m_dims[i].m_length) {
@@ -807,7 +808,7 @@ namespace Shape {
         ASR::ttype_t *return_type = b.Array({n_dims},
             TYPE(ASR::make_Integer_t(al, loc, kind)));
         ASR::expr_t *m_value = eval_Shape(al, loc, return_type, args);
-        
+
         return ASRUtils::make_IntrinsicArrayFunction_t_util(al, loc,
             static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Shape),
             m_args.p, m_args.n, 0, return_type, m_value);

@@ -5,9 +5,9 @@ PROGRAM intrinsics_105
   result = shape(A)
   print*, shape(A)
   
-  if ( result(1) - 3 /= 0 ) error stop
-  if ( result(2) - 4 /= 0 ) error stop
-  if ( result(3) - 12 /= 0 ) error stop
-  if ( size(shape(42)) - 0 /= 0 ) error stop
+  if ( result(1) /= 3 ) error stop
+  if ( result(2) /= 4 ) error stop
+  if ( result(3) /= 12 ) error stop
+  if ( size(shape(42)) /= 0 ) error stop
 
 END PROGRAM
