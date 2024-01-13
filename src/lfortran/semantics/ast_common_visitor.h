@@ -691,7 +691,7 @@ public:
                  IntrinsicSignature({"array", "mask"}, 1, 2)}},
         {"matmul", {IntrinsicSignature({"matrix_a", "matrix_b"}, 2, 2)}},
         {"maxval", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3),
-                IntrinsicSignature({"array", "mask"}, 1, 2)}},
+                 IntrinsicSignature({"array", "mask"}, 1, 2)}},
         {"maxloc", {IntrinsicSignature({"array", "dim", "mask", "kind", "back"}, 1, 5),
                     IntrinsicSignature({"array", "mask", "kind", "back"}, 1, 4)}},
         {"minval", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3),
