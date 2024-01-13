@@ -4053,15 +4053,12 @@ public:
             }
         }
 
-        int64_t offset = min_args;
-        int64_t max_idx = max_args;
         for( size_t i = 0; i < x.n_keywords; i++ ) {
             std::string curr_kwarg_name = to_lower(x.m_keywords[i].m_arg);
             auto it = std::find(kwarg_names.begin(), kwarg_names.end(),
                                 curr_kwarg_name);
             int64_t kwarg_idx = it - kwarg_names.begin();
-            int64_t idx = kwarg_idx + offset;
-            if( (idx < max_idx) && (args[kwarg_idx + offset] != nullptr) ) {
+            if( args[kwarg_idx] != nullptr ) {
                 if( !raise_error ) {
                     return false;
                 }
