@@ -135,7 +135,7 @@ build1.bat
 If everything compiled, then you can use LFortran as follows:
 ```
 inst\bin\lfortran examples/expr2.f90
-a.out
+expr2.exe
 inst\bin\lfortran
 ```
 And so on.
@@ -205,7 +205,7 @@ make -j8
 * If everything compiles, you can use LFortran as follows
 ```bash
 ./src/bin/lfortran ./examples/expr2.f90
-./a.out
+./expr2.out
 ```
 
 * Run an interactive prompt
