@@ -604,6 +604,7 @@ RUN(NAME intrinsics_101 LABELS gfortran llvm)#repeat
 RUN(NAME intrinsics_102 LABELS gfortran llvm)
 RUN(NAME intrinsics_103 LABELS gfortran llvm)
 RUN(NAME intrinsics_104 LABELS gfortran llvm c wasm)
+RUN(NAME intrinsics_105 LABELS gfortran llvm)#shape
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
