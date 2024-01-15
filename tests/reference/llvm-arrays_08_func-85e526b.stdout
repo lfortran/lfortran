@@ -6,7 +6,9 @@ source_filename = "LFortran"
 @2 = private unnamed_addr constant [6 x i8] c"False\00", align 1
 @3 = private unnamed_addr constant [5 x i8] c"True\00", align 1
 @4 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@5 = private unnamed_addr constant [12 x i8] c"ERROR STOP\0A\00", align 1
+@5 = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
+@6 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@7 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define void @copy_from_to_a_b(i32* %a, i32* %__1a, i32* %__2a, i32* %b, i32* %__1b, i32* %__2b) {
 .entry:
@@ -168,7 +170,7 @@ loop.end:                                         ; preds = %loop.head
   br i1 %22, label %then, label %else
 
 then:                                             ; preds = %loop.end
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @5, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @5, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont
 

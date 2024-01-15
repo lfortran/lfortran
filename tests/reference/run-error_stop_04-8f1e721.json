@@ -1,0 +1,13 @@
+{
+    "basename": "run-error_stop_04-8f1e721",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/../integration_tests/error_stop_04.f90",
+    "infile_hash": "43fa904db7997988ab0d436e206706e0938feb0bf82ce0cbfec1fd67",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-error_stop_04-8f1e721.stderr",
+    "stderr_hash": "03404f69d60aea2f0d4467699ed7e836de4bd9a3b4c7053c1419c68f",
+    "returncode": 1
+}
