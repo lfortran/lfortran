@@ -7829,29 +7829,25 @@ public:
     }
 
     void visit_Stop(const ASR::Stop_t &x) {
-        if (compiler_options.emit_debug_info) debug_emit_loc(x);
-        llvm::Value *exit_code;
-        if (x.m_code && is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_code))) {
-            this->visit_expr(*x.m_code);
-            exit_code = tmp;
-            if (compiler_options.emit_debug_info) {
+        if (compiler_options.emit_debug_info) {
+            debug_emit_loc(x);
+            if (x.m_code && is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_code))) {
                 llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(infile);
                 llvm::Value *fmt_ptr1 = llvm::ConstantInt::get(context, llvm::APInt(
                     1, compiler_options.use_colors));
-                llvm::Value *test = builder->CreateICmpNE(exit_code, builder->getInt32(0));
+                this->visit_expr(*x.m_code);
+                llvm::Value *test = builder->CreateICmpNE(tmp, builder->getInt32(0));
                 llvm_utils->create_if_else(test, [=]() {
                     call_print_stacktrace_addresses(context, *module, *builder,
                         {fmt_ptr, fmt_ptr1});
                 }, [](){});
             }
-        } else {
-            int exit_code_int = 0;
-            exit_code = llvm::ConstantInt::get(context,
-                    llvm::APInt(32, exit_code_int));
         }
-        llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("STOP\n");
-        print_error(context, *module, *builder, {fmt_ptr});
-        exit(context, *module, *builder, exit_code);
+
+        int exit_code_int = 0;
+        llvm::Value *exit_code = llvm::ConstantInt::get(context,
+                llvm::APInt(32, exit_code_int));
+        construct_stop(exit_code, "STOP", x.m_code, x.base.base.loc);
     }
 
     void visit_ErrorStop(const ASR::ErrorStop_t &x) {
@@ -7863,12 +7859,11 @@ public:
             call_print_stacktrace_addresses(context, *module, *builder,
                 {fmt_ptr, fmt_ptr1});
         }
-        llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("ERROR STOP\n");
-        print_error(context, *module, *builder, {fmt_ptr});
+
         int exit_code_int = 1;
         llvm::Value *exit_code = llvm::ConstantInt::get(context,
                 llvm::APInt(32, exit_code_int));
-        exit(context, *module, *builder, exit_code);
+        construct_stop(exit_code, "ERROR STOP", x.m_code, x.base.base.loc);
     }
 
     template <typename T>
