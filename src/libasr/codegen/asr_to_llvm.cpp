@@ -7791,30 +7791,63 @@ public:
         printf(context, *module, *builder, printf_args);
     }
 
-    void visit_Stop(const ASR::Stop_t &x) {
-        if (compiler_options.emit_debug_info) debug_emit_loc(x);
-        llvm::Value *exit_code;
-        if (x.m_code && is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_code))) {
-            this->visit_expr(*x.m_code);
+    void construct_stop(llvm::Value* exit_code, std::string stop_msg, ASR::expr_t* stop_code, Location loc) {
+        std::string fmt_str;
+        std::vector<std::string> fmt;
+        std::vector<llvm::Value*> args;
+        args.push_back(nullptr); // space for fmt_str
+        ASR::ttype_t *str_type_len_msg = ASRUtils::TYPE(ASR::make_Character_t(
+                    al, loc, 1, stop_msg.size(), nullptr));
+        ASR::expr_t* STOP_MSG = ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc,
+            s2c(al, stop_msg), str_type_len_msg));
+        ASR::ttype_t *str_type_len_1 = ASRUtils::TYPE(ASR::make_Character_t(
+                al, loc, 1, 1, nullptr));
+        ASR::expr_t* NEWLINE = ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc,
+            s2c(al, "\n"), str_type_len_1));
+        compute_fmt_specifier_and_arg(fmt, args, STOP_MSG, loc);
+        if (stop_code) {
+            ASR::expr_t* SPACE = ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc,
+                s2c(al, " "), str_type_len_1));
+            compute_fmt_specifier_and_arg(fmt, args, SPACE, loc);
+            compute_fmt_specifier_and_arg(fmt, args, stop_code, loc);
+        }
+        compute_fmt_specifier_and_arg(fmt, args, NEWLINE, loc);
+
+        for (auto ch:fmt) {
+            fmt_str += ch;
+        }
+
+        llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(fmt_str);
+        args[0] = fmt_ptr;
+        print_error(context, *module, *builder, args);
+
+        if (stop_code && is_a<ASR::Integer_t>(*ASRUtils::expr_type(stop_code))) {
+            this->visit_expr(*stop_code);
             exit_code = tmp;
-            if (compiler_options.emit_debug_info) {
+        }
+        exit(context, *module, *builder, exit_code);
+    }
+
+    void visit_Stop(const ASR::Stop_t &x) {
+        if (compiler_options.emit_debug_info) {
+            debug_emit_loc(x);
+            if (x.m_code && is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_code))) {
                 llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(infile);
                 llvm::Value *fmt_ptr1 = llvm::ConstantInt::get(context, llvm::APInt(
                     1, compiler_options.use_colors));
-                llvm::Value *test = builder->CreateICmpNE(exit_code, builder->getInt32(0));
+                this->visit_expr(*x.m_code);
+                llvm::Value *test = builder->CreateICmpNE(tmp, builder->getInt32(0));
                 llvm_utils->create_if_else(test, [=]() {
                     call_print_stacktrace_addresses(context, *module, *builder,
                         {fmt_ptr, fmt_ptr1});
                 }, [](){});
             }
-        } else {
-            int exit_code_int = 0;
-            exit_code = llvm::ConstantInt::get(context,
-                    llvm::APInt(32, exit_code_int));
         }
-        llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("STOP\n");
-        print_error(context, *module, *builder, {fmt_ptr});
-        exit(context, *module, *builder, exit_code);
+
+        int exit_code_int = 0;
+        llvm::Value *exit_code = llvm::ConstantInt::get(context,
+                llvm::APInt(32, exit_code_int));
+        construct_stop(exit_code, "STOP", x.m_code, x.base.base.loc);
     }
 
     void visit_ErrorStop(const ASR::ErrorStop_t &x) {
@@ -7826,12 +7859,11 @@ public:
             call_print_stacktrace_addresses(context, *module, *builder,
                 {fmt_ptr, fmt_ptr1});
         }
-        llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("ERROR STOP\n");
-        print_error(context, *module, *builder, {fmt_ptr});
+
         int exit_code_int = 1;
         llvm::Value *exit_code = llvm::ConstantInt::get(context,
                 llvm::APInt(32, exit_code_int));
-        exit(context, *module, *builder, exit_code);
+        construct_stop(exit_code, "ERROR STOP", x.m_code, x.base.base.loc);
     }
 
     template <typename T>

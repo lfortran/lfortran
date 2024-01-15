@@ -6,4 +6,4 @@
     call f()
   File "tests/errors/runtime_stacktrace_01.f90", line 14
     stop 1
-STOP
+STOP 1

@@ -667,12 +667,12 @@ jobs:
         run: |
             git clone https://github.com/czgdp1807/stdlib.git
             cd stdlib
-            git checkout lf17
-            git checkout 92637658f89cc7e054cdd5b442cc3d7a93d0a297
+            git checkout lf18
+            git checkout abe562f01a9fe2ae2c191420892c6d9e8384343c
             export PATH="$(pwd)/../src/bin:$PATH"
             lfortran subprojects/test-drive/src/testdrive.F90 --show-llvm
 
-            # Run tests (specialfunctions_gamma, ascii, version, optval)
+            # Run tests (specialfunctions_gamma, ascii, version, optval, error)
             micromamba activate lf
             micromamba install -c conda-forge fypp
             ./build.sh
