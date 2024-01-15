@@ -7791,6 +7791,43 @@ public:
         printf(context, *module, *builder, printf_args);
     }
 
+    void construct_stop(llvm::Value* exit_code, std::string stop_msg, ASR::expr_t* stop_code, Location loc) {
+        std::string fmt_str;
+        std::vector<std::string> fmt;
+        std::vector<llvm::Value*> args;
+        args.push_back(nullptr); // space for fmt_str
+        ASR::ttype_t *str_type_len_msg = ASRUtils::TYPE(ASR::make_Character_t(
+                    al, loc, 1, stop_msg.size(), nullptr));
+        ASR::expr_t* STOP_MSG = ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc,
+            s2c(al, stop_msg), str_type_len_msg));
+        ASR::ttype_t *str_type_len_1 = ASRUtils::TYPE(ASR::make_Character_t(
+                al, loc, 1, 1, nullptr));
+        ASR::expr_t* NEWLINE = ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc,
+            s2c(al, "\n"), str_type_len_1));
+        compute_fmt_specifier_and_arg(fmt, args, STOP_MSG, loc);
+        if (stop_code) {
+            ASR::expr_t* SPACE = ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc,
+                s2c(al, " "), str_type_len_1));
+            compute_fmt_specifier_and_arg(fmt, args, SPACE, loc);
+            compute_fmt_specifier_and_arg(fmt, args, stop_code, loc);
+        }
+        compute_fmt_specifier_and_arg(fmt, args, NEWLINE, loc);
+
+        for (auto ch:fmt) {
+            fmt_str += ch;
+        }
+
+        llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(fmt_str);
+        args[0] = fmt_ptr;
+        print_error(context, *module, *builder, args);
+
+        if (stop_code && is_a<ASR::Integer_t>(*ASRUtils::expr_type(stop_code))) {
+            this->visit_expr(*stop_code);
+            exit_code = tmp;
+        }
+        exit(context, *module, *builder, exit_code);
+    }
+
     void visit_Stop(const ASR::Stop_t &x) {
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         llvm::Value *exit_code;
