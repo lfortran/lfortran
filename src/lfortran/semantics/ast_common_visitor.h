@@ -99,7 +99,8 @@ public:
                                    ASR::asr_t *&asr, std::string& intrinsic_op_name,
                                    SymbolTable* curr_scope,
                                    SetChar& current_function_dependencies,
-                                   SetChar& current_module_dependencies) {
+                                   SetChar& current_module_dependencies,
+                                   const CompilerOptions &compiler_options) {
     ASR::cmpopType asr_op;
     switch (x.m_op) {
         case (AST::cmpopType::Eq): {
@@ -200,7 +201,7 @@ public:
         result_dims = left_dims;
     }
     ASR::ttype_t *type = ASRUtils::TYPE(
-        ASR::make_Logical_t(al, x.base.base.loc, 4));
+        ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
     type = ASRUtils::make_Array_t_util(al, x.base.base.loc,
             type, result_shape, result_dims);
 
@@ -2687,7 +2688,7 @@ public:
                     ASRUtils::type_get_past_allocatable(type)));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeLogical) {
-            type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+            type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, compiler_options.po.default_integer_kind));
             type = ASRUtils::make_Array_t_util(
                 al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
             if (is_pointer) {
@@ -4476,7 +4477,7 @@ public:
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "associated");
         ASR::expr_t *ptr_ = args[0], *tgt_ = args[1];
         ASR::ttype_t* associated_type_ = ASRUtils::TYPE(ASR::make_Logical_t(
-                                            al, x.base.base.loc, 4));
+                                            al, x.base.base.loc, compiler_options.po.default_integer_kind));
         return ASR::make_PointerAssociated_t(al, x.base.base.loc, ptr_, tgt_, associated_type_, nullptr);
     }
 
@@ -4644,7 +4645,7 @@ public:
         ASR::expr_t *mask = args[0], *dim = args[1];
         ASR::expr_t* value = nullptr;
         // TODO: Use dim to compute the `value`
-        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
         if (ASR::is_a<ASR::ArrayConstant_t>(*mask)) {
             ASR::ArrayConstant_t *array = ASR::down_cast<ASR::ArrayConstant_t>(mask);
             bool result = true;
@@ -5968,7 +5969,7 @@ public:
                                 loc);
                         }
                     } else {
-                        return_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+                        return_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, compiler_options.po.default_integer_kind));
                         value = ASRUtils::EXPR(ASRUtils::make_Cmpop_util(al, loc, cmpop, left, right, left_type));
                     }
 
@@ -6264,7 +6265,8 @@ public:
         CommonVisitorMethods::visit_Compare(al, x, left, right, tmp,
                                             cmpop2str[x.m_op], current_scope,
                                             current_function_dependencies,
-                                            current_module_dependencies);
+                                            current_module_dependencies,
+                                            compiler_options);
     }
 
     void visit_Parenthesis(const AST::Parenthesis_t &x) {
@@ -6272,7 +6274,7 @@ public:
     }
 
     void visit_Logical(const AST::Logical_t &x) {
-        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
         tmp = ASR::make_LogicalConstant_t(al, x.base.base.loc, x.m_value, type);
     }
 

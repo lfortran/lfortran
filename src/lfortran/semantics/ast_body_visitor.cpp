@@ -558,7 +558,7 @@ public:
                     ASR::expr_t *yes = ASRUtils::EXPR(ASR::make_StringConstant_t(
                         al, loc, s2c(al, "yes"), str_type_len_3));
                     // TODO: Support case insensitive compare
-                    ASR::ttype_t *cmp_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+                    ASR::ttype_t *cmp_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, compiler_options.po.default_integer_kind));
                     ASR::expr_t *test = ASRUtils::EXPR(ASR::make_StringCompare_t(al,
                         loc, adv_val_expr, ASR::cmpopType::Eq, yes, cmp_type, nullptr));
                     Vec<ASR::stmt_t*> body;
@@ -1795,7 +1795,7 @@ public:
         LCOMPILERS_ASSERT(left_sym != nullptr);
         left = ASRUtils::EXPR(ASR::make_Var_t(al, loc, left_sym));
         ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
-        ASR::ttype_t* logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+        ASR::ttype_t* logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, compiler_options.po.default_integer_kind));
         int num_entry_functions = entry_functions[original_function_name].size();
         for(int i = 0; i < num_entry_functions + 1; i++) {
             ASR::stmt_t* if_stmt = nullptr;
@@ -2922,7 +2922,7 @@ public:
             ASR::expr_t *right = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
                 x.base.base.loc, 0, type0));
             ASR::ttype_t *type = ASRUtils::TYPE(
-                ASR::make_Logical_t(al, x.base.base.loc, 4));
+                ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
             ASR::expr_t *value = nullptr;
             test_lt = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, test_int->base.loc,
                 test_int, ASR::cmpopType::Lt, right, type, value));
@@ -2934,7 +2934,7 @@ public:
             ASR::expr_t *right = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
                 x.base.base.loc, 0, type0));
             ASR::ttype_t *type = ASRUtils::TYPE(
-                ASR::make_Logical_t(al, x.base.base.loc, 4));
+                ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
             ASR::expr_t *value = nullptr;
             test_lt = ASRUtils::EXPR(ASR::make_RealCompare_t(al, test_int->base.loc,
                 test_int, ASR::cmpopType::Lt, right, type, value));
@@ -3048,7 +3048,7 @@ public:
             do_loop_variables.pop_back();
         } else {
             ASR::ttype_t* cond_type
-                = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
+                = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
             ASR::expr_t* cond = ASRUtils::EXPR(
                 ASR::make_LogicalConstant_t(al, x.base.base.loc, true, cond_type));
             tmp = ASR::make_WhileLoop_t(al, x.base.base.loc, x.m_stmt_name, cond, body.p, body.size());

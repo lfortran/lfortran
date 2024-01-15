@@ -351,7 +351,7 @@ public:
                         break;
                     }
                     case (AST::decl_typeType::TypeLogical) : {
-                        type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
+                        type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
                         break;
                     }
                     case (AST::decl_typeType::TypeCharacter) : {
@@ -1368,7 +1368,7 @@ public:
                     break;
                 }
                 case (AST::decl_typeType::TypeLogical) : {
-                    type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
+                    type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
                     break;
                 }
                 case (AST::decl_typeType::TypeCharacter) : {
@@ -3134,7 +3134,7 @@ public:
                                 x.base.base.loc);
                         }
                     } else {
-                        return_type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
+                        return_type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
                         value = ASRUtils::EXPR(ASRUtils::make_Cmpop_util(al, x.base.base.loc, cmpop, left, right, left_type));
                     }
 
