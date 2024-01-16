@@ -7748,6 +7748,7 @@ public:
     template <typename T>
     void handle_print(const T &x) {
         std::vector<llvm::Value *> args;
+        args.push_back(nullptr); // reserve space for fmt_str
         std::vector<std::string> fmt;
         llvm::Value *sep = nullptr;
         llvm::Value *sep_no_space = nullptr;
@@ -7785,17 +7786,15 @@ public:
             fmt_str += fmt[i];
         }
         llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(fmt_str);
-        std::vector<llvm::Value *> printf_args;
-        printf_args.push_back(fmt_ptr);
-        printf_args.insert(printf_args.end(), args.begin(), args.end());
-        printf(context, *module, *builder, printf_args);
+        args[0] = fmt_ptr;
+        printf(context, *module, *builder, args);
     }
 
     void construct_stop(llvm::Value* exit_code, std::string stop_msg, ASR::expr_t* stop_code, Location loc) {
         std::string fmt_str;
         std::vector<std::string> fmt;
         std::vector<llvm::Value*> args;
-        args.push_back(nullptr); // space for fmt_str
+        args.push_back(nullptr); // reserve space for fmt_str
         ASR::ttype_t *str_type_len_msg = ASRUtils::TYPE(ASR::make_Character_t(
                     al, loc, 1, stop_msg.size(), nullptr));
         ASR::expr_t* STOP_MSG = ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc,
