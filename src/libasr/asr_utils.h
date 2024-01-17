@@ -2736,12 +2736,13 @@ inline int extract_len(ASR::expr_t* len_expr, const Location& loc) {
             a_len = -3;
             break;
         }
+        case ASR::exprType::ArraySize:
         case ASR::exprType::IntegerBinOp: {
             a_len = -3;
             break;
         }
         default: {
-            throw SemanticError("Only Integers or variables implemented so far for `len` expressions",
+            throw SemanticError("Only Integers or variables implemented so far for `len` expressions, found: " + std::to_string(len_expr->type),
                                 loc);
         }
     }
@@ -3470,6 +3471,12 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
         }
         ASRUtils::insert_module_dependency(new_es, al, current_module_dependencies);
         x->m_name = new_es;
+        if( x->m_original_name ) {
+            ASR::symbol_t* x_original_name = current_scope->resolve_symbol(ASRUtils::symbol_name(x->m_original_name));
+            if( x_original_name ) {
+                x->m_original_name = x_original_name;
+            }
+        }
     }
 
     void replace_Var(ASR::Var_t* x) {
