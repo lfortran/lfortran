@@ -1541,10 +1541,12 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
     }
 }
 
-int64_t compute_trailing_zeros(int64_t number) {
-    int64_t trailing_zeros = 0;
-    if (number == 0) {
+int compute_trailing_zeros(int number, int kind) {
+    int trailing_zeros = 0;
+    if (number == 0 && kind == 4) {
         return 32;
+    } else if (number == 0 && kind == 8) {
+        return 64;
     }
     while (number % 2 == 0) {
         number = number / 2;

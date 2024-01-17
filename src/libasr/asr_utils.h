@@ -4895,7 +4895,7 @@ inline ASR::ttype_t* make_Pointer_t_util(Allocator& al, const Location& loc, ASR
     return ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, type));
 }
 
-int64_t compute_trailing_zeros(int64_t number);
+int compute_trailing_zeros(int number, int kind);
 
 static inline bool is_simd_array(ASR::expr_t *v) {
     return (ASR::is_a<ASR::Array_t>(*expr_type(v)) &&
