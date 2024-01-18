@@ -7,7 +7,7 @@ program intrinsics_109
     B = reshape([1.0, 0.0, 0.0, 1.0], shape(B))
 
     ! Perform matrix multiplication: C = A * B
-    C = matmul(matrix_a = A, matrix_b = B)
+    C = matmul( matrix_a = A, matrix_b = B )
 
     ! Print the matrices
     print *, "Matrix A (2x2 identity matrix):"
