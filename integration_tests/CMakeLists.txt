@@ -610,7 +610,7 @@ RUN(NAME intrinsics_103 LABELS gfortran llvm)
 RUN(NAME intrinsics_104 LABELS gfortran llvm c wasm)
 RUN(NAME intrinsics_105 LABELS gfortran llvm)#shape
 RUN(NAME intrinsics_106 LABELS gfortran llvm)#merge
-RUN(NAME intrinsics_107 LABELS gfortran llvm)
+RUN(NAME intrinsics_107 LABELS gfortran llvm)#trailz
 RUN(NAME intrinsics_108 LABELS gfortran llvm)
 RUN(NAME intrinsics_109 LABELS gfortran llvm)
 RUN(NAME intrinsics_110 LABELS gfortran llvm)
