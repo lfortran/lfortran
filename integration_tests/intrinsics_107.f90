@@ -1,12 +1,12 @@
-program intrinsics_107
+PROGRAM intrinsics_107
     integer(4) :: x = 5
     integer(8) :: y = 5
-    print *, trailz(0_4)
+    WRITE (*,*) trailz(0_4)
     if ( trailz(0_4) /= 32 ) error stop
-    print *, trailz(0_8)
-    if ( trailz(0_8) /= 32 ) error stop
-    print *, trailz(x)
+    WRITE (*,*) trailz(0_8)
+    if ( trailz(0_8) /= 64 ) error stop
+    WRITE (*,*) trailz(x)
     if ( trailz(x) /= 0 ) error stop
-    print *, trailz(y)
+    WRITE (*,*) trailz(y)
     if ( trailz(y) /= 0 ) error stop
-end program
+END PROGRAM
