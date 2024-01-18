@@ -611,7 +611,7 @@ RUN(NAME intrinsics_104 LABELS gfortran llvm c wasm)
 RUN(NAME intrinsics_105 LABELS gfortran llvm)#shape
 RUN(NAME intrinsics_106 LABELS gfortran llvm)#merge
 RUN(NAME intrinsics_107 LABELS gfortran llvm)#trailz
-RUN(NAME intrinsics_108 LABELS gfortran llvm)
+RUN(NAME intrinsics_108 LABELS gfortran llvm)#shiftr
 RUN(NAME intrinsics_109 LABELS gfortran llvm)
 RUN(NAME intrinsics_110 LABELS gfortran llvm)
 RUN(NAME intrinsics_111 LABELS gfortran llvm)
@@ -623,6 +623,7 @@ RUN(NAME intrinsics_116 LABELS gfortran llvm)
 RUN(NAME intrinsics_117 LABELS gfortran llvm)
 RUN(NAME intrinsics_118 LABELS gfortran llvm)
 RUN(NAME intrinsics_119 LABELS gfortran llvm)
+RUN(NAME intrinsics_120 LABELS gfortran llvm)
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)

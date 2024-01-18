@@ -712,6 +712,7 @@ public:
         {"mod", {IntrinsicSignature({"a", "p"}, 2, 2)}},
         {"repeat", {IntrinsicSignature({"string", "ncopies"}, 2, 2)}},
         {"hypot", {IntrinsicSignature({"x", "y"}, 2, 2)}},
+        {"shiftr", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
     };
 
     std::map<std::string, std::string> double_precision_intrinsics = {
