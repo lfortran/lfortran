@@ -5105,7 +5105,7 @@ public:
         }
         if (!v || (v && is_external_procedure)) {
             ASR::symbol_t* external_sym = is_external_procedure ? v : nullptr;
-            if (var_name == "float" || var_name == "dble") {
+            if (var_name == "float" || var_name == "dble" || var_name == "dfloat") {
                 Vec<ASR::call_arg_t> args;
                 visit_expr_list(x.m_args, x.n_args, args);
                 tmp = handle_intrinsic_float(al, args, x.base.base.loc);
@@ -5169,7 +5169,7 @@ public:
                     throw SemanticAbort();
                 }
             } else if (compiler_options.implicit_interface) {
-                if (var_name == "float" || var_name == "dble") {
+                if (var_name == "float" || var_name == "dble" || var_name == "dfloat") {
                     Vec<ASR::call_arg_t> args;
                     visit_expr_list(x.m_args, x.n_args, args);
                     tmp = handle_intrinsic_float(al, args, x.base.base.loc);

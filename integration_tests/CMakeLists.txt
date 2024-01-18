@@ -222,7 +222,11 @@ RUN(NAME program_cmake_02 LABELS gfortran llvm cpp x86 wasm c fortran)
 
 RUN(NAME error_stop_01 FAIL LABELS gfortran llvm cpp x86 wasm llvm2 fortran)
 RUN(NAME error_stop_02 FAIL LABELS llvm wasm llvm2 fortran)
+RUN(NAME error_stop_03 LABELS gfortran llvm)
+RUN(NAME error_stop_04 FAIL LABELS gfortran llvm)
 RUN(NAME stop_01 LABELS llvm wasm llvm2 c fortran)
+RUN(NAME stop_02 FAIL LABELS gfortran llvm)
+RUN(NAME stop_03 LABELS gfortran llvm)
 
 RUN(NAME print_01 LABELS gfortran llvm cpp llvm2 wasm fortran)
 RUN(NAME print_02 LABELS gfortran llvm llvm2 wasm fortran)
@@ -1325,3 +1329,5 @@ RUN(NAME arrayprint_01 LABELS gfortran llvm)
 RUN(NAME print_arr_05 LABELS gfortran llvm)
 
 RUN(NAME binop_01 LABELS gfortran llvm)
+
+RUN(NAME dfloat_01 LABELS gfortran llvm)

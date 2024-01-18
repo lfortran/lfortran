@@ -9,7 +9,9 @@ source_filename = "LFortran"
 @5 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @6 = private unnamed_addr constant [4 x i8] c"sum\00", align 1
 @7 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@8 = private unnamed_addr constant [12 x i8] c"ERROR STOP\0A\00", align 1
+@8 = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
+@9 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@10 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define float @abs(float* %a) {
 .entry:
@@ -110,7 +112,7 @@ define i32 @main(i32 %0, i8** %1) {
   br i1 %10, label %then, label %else
 
 then:                                             ; preds = %.entry
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @8, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @10, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @8, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @9, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont
 

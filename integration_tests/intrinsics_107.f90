@@ -10,4 +10,3 @@ program intrinsics_107
     print *, trailz(y)
     if ( trailz(y) /= 0 ) error stop
 end program
-

@@ -1900,6 +1900,467 @@ void _get_rpath_from_linker_flags(std::vector<std::string>& linker_flags, Compil
     }
 }
 
+int main_app(int argc, char *argv[]) {
+    int dirname_length;
+    LCompilers::LFortran::get_executable_path(LCompilers::binary_executable_path, dirname_length);
+
+    // TODO: This is now in compiler options and can be removed
+    std::string runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+
+    std::string rtlib_header_dir = LCompilers::LFortran::get_runtime_library_header_dir();
+    Backend backend;
+
+    bool arg_S = false;
+    bool arg_c = false;
+    bool arg_v = false;
+    bool arg_E = false;
+    std::vector<std::string> arg_l;
+    std::vector<std::string> arg_L;
+    std::vector<std::string> arg_files;
+    bool arg_version = false;
+    bool show_prescan = false;
+    bool show_tokens = false;
+    bool show_ast = false;
+    bool show_asr = false;
+    bool show_ast_f90 = false;
+    std::string arg_pass;
+    bool arg_no_color = false;
+    bool arg_no_indent = false;
+    bool arg_no_prescan = false;
+    bool show_llvm = false;
+    bool show_cpp = false;
+    bool show_c = false;
+    bool show_asm = false;
+    bool show_wat = false;
+    bool show_julia = false;
+    bool show_fortran = false;
+    bool time_report = false;
+    bool static_link = false;
+    std::string skip_pass;
+    std::string arg_backend = "llvm";
+    std::string arg_kernel_f;
+    bool print_targets = false;
+    bool link_with_gcc = false;
+    bool fixed_form_infer = false;
+
+    std::string arg_fmt_file;
+    int arg_fmt_indent = 4;
+    bool arg_fmt_indent_unit = false;
+    bool arg_fmt_inplace = false;
+    bool arg_fmt_no_color = false;
+
+    std::string arg_mod_file;
+    bool arg_mod_show_asr = false;
+    bool arg_mod_no_color = false;
+
+    std::string arg_pywrap_file;
+    std::string arg_pywrap_array_order="f";
+    std::vector<std::string> linker_flags;
+    std::vector<std::string> f_flags;
+
+    CompilerOptions compiler_options;
+    compiler_options.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    std::string rtlib_c_header_dir = LCompilers::LFortran::get_runtime_library_c_header_dir();
+
+    LCompilers::PassManager lfortran_pass_manager;
+
+    CLI::App app{"LFortran: modern interactive LLVM-based Fortran compiler"};
+    // Standard options compatible with gfortran, gcc or clang
+    // We follow the established conventions
+    app.add_option("files", arg_files, "Source files");
+    app.add_flag("-S", arg_S, "Emit assembly, do not assemble or link");
+    app.add_flag("-c", arg_c, "Compile and assemble, do not link");
+    app.add_option("-o", compiler_options.arg_o, "Specify the file to place the output into");
+    app.add_flag("-v", arg_v, "Be more verbose");
+    app.add_flag("-E", arg_E, "Preprocess only; do not compile, assemble or link");
+    app.add_option("-l", arg_l, "Link library option");
+    app.add_option("-L", arg_L, "Library path option");
+    app.add_option("-I", compiler_options.po.include_dirs, "Include path")->allow_extra_args(false);
+    app.add_option("-J", compiler_options.po.mod_files_dir, "Where to save mod files");
+    app.add_flag("-g", compiler_options.emit_debug_info, "Compile with debugging information");
+    app.add_flag("--debug-with-line-column", compiler_options.emit_debug_line_column,
+        "Convert the linear location info into line + column in the debugging information");
+    app.add_option("-D", compiler_options.c_preprocessor_defines, "Define <macro>=<value> (or 1 if <value> omitted)")->allow_extra_args(false);
+    app.add_flag("--version", arg_version, "Display compiler version information");
+    app.add_option("-W", linker_flags, "Linker flags")->allow_extra_args(false);
+    app.add_option("-f", f_flags, "All `-f*` flags (only -fPIC supported for now)")->allow_extra_args(false);
+
+    // LFortran specific options
+    app.add_flag("--cpp", compiler_options.c_preprocessor, "Enable C preprocessing");
+    app.add_flag("--fixed-form", compiler_options.fixed_form, "Use fixed form Fortran source parsing");
+    app.add_flag("--fixed-form-infer", fixed_form_infer, "Use heuristics to infer if a file is in fixed form");
+    app.add_flag("--no-prescan", arg_no_prescan, "Turn off prescan");
+    app.add_flag("--show-prescan", show_prescan, "Show tokens for the given file and exit");
+    app.add_flag("--show-tokens", show_tokens, "Show tokens for the given file and exit");
+    app.add_flag("--show-ast", show_ast, "Show AST for the given file and exit");
+    app.add_flag("--show-asr", show_asr, "Show ASR for the given file and exit");
+    app.add_flag("--with-intrinsic-mods", compiler_options.po.with_intrinsic_mods, "Show intrinsic modules in ASR");
+    app.add_flag("--show-ast-f90", show_ast_f90, "Show Fortran from AST for the given file and exit");
+    app.add_flag("--no-color", arg_no_color, "Turn off colored AST/ASR");
+    app.add_flag("--no-indent", arg_no_indent, "Turn off Indented print ASR/AST");
+    app.add_flag("--tree", compiler_options.po.tree, "Tree structure print ASR/AST");
+    app.add_flag("--json", compiler_options.po.json, "Print ASR/AST Json format");
+    app.add_flag("--no-loc", compiler_options.po.no_loc, "Skip location information in ASR/AST Json format");
+    app.add_flag("--visualize", compiler_options.po.visualize, "Print ASR/AST Visualization");
+    app.add_option("--pass", arg_pass, "Apply the ASR pass and show ASR (implies --show-asr)");
+    app.add_option("--skip-pass", skip_pass, "Skip an ASR pass in default pipeline");
+    app.add_flag("--show-llvm", show_llvm, "Show LLVM IR for the given file and exit");
+    app.add_flag("--show-cpp", show_cpp, "Show C++ translation source for the given file and exit");
+    app.add_flag("--show-c", show_c, "Show C translation source for the given file and exit");
+    app.add_flag("--show-asm", show_asm, "Show assembly for the given file and exit");
+    app.add_flag("--show-wat", show_wat, "Show WAT (WebAssembly Text Format) and exit");
+    app.add_flag("--show-julia", show_julia, "Show Julia translation source for the given file and exit");
+    app.add_flag("--show-fortran", show_fortran, "Show Fortran translation source for the given file and exit");
+    app.add_flag("--show-stacktrace", compiler_options.show_stacktrace, "Show internal stacktrace on compiler errors");
+    app.add_flag("--symtab-only", compiler_options.symtab_only, "Only create symbol tables in ASR (skip executable stmt)");
+    app.add_flag("--time-report", time_report, "Show compilation time report");
+    app.add_flag("--static", static_link, "Create a static executable");
+    app.add_flag("--no-warnings", compiler_options.no_warnings, "Turn off all warnings");
+    app.add_flag("--no-error-banner", compiler_options.no_error_banner, "Turn off error banner");
+    app.add_option("--error-format", compiler_options.error_format, "Control how errors are produced (human, short)")->capture_default_str();
+    app.add_option("--backend", arg_backend, "Select a backend (llvm, c, cpp, x86, wasm, fortran)")->capture_default_str();
+    app.add_flag("--openmp", compiler_options.openmp, "Enable openmp");
+    app.add_flag("--generate-object-code", compiler_options.generate_object_code, "Generate object code into .o files");
+    app.add_flag("--rtlib", compiler_options.rtlib, "Include the full runtime library in the LLVM output");
+    app.add_flag("--use-loop-variable-after-loop", compiler_options.po.use_loop_variable_after_loop, "Allow using loop variable after the loop");
+    app.add_flag("--fast", compiler_options.po.fast, "Best performance (disable strict standard compliance)");
+    app.add_flag("--link-with-gcc", link_with_gcc, "Calls GCC for linking instead of clang");
+    app.add_option("--target", compiler_options.target, "Generate code for the given target")->capture_default_str();
+    app.add_flag("--print-targets", print_targets, "Print the registered targets");
+    app.add_flag("--implicit-typing", compiler_options.implicit_typing, "Allow implicit typing");
+    app.add_flag("--implicit-interface", compiler_options.implicit_interface, "Allow implicit interface");
+    app.add_flag("--implicit-argument-casting", compiler_options.implicit_argument_casting, "Allow implicit argument casting");
+    app.add_flag("--print-leading-space", compiler_options.print_leading_space, "Print leading white space if format is unspecified");
+    app.add_flag("--interactive-parse", compiler_options.interactive, "Use interactive parse");
+    app.add_flag("--verbose", compiler_options.po.verbose, "Print debugging statements");
+    app.add_flag("--dump-all-passes", compiler_options.po.dump_all_passes, "Apply all the passes and dump the ASR into a file");
+    app.add_flag("--dump-all-passes-fortran", compiler_options.po.dump_fortran, "Apply all passes and dump the ASR after each pass into fortran file");
+    app.add_flag("--cumulative", compiler_options.po.pass_cumulative, "Apply all the passes cumulatively till the given pass");
+    app.add_flag("--realloc-lhs", compiler_options.po.realloc_lhs, "Reallocate left hand side automatically");
+    app.add_flag("--module-mangling", compiler_options.po.module_name_mangling, "Mangles the module name");
+    app.add_flag("--global-mangling", compiler_options.po.global_symbols_mangling, "Mangles all the global symbols");
+    app.add_flag("--intrinsic-mangling", compiler_options.po.intrinsic_symbols_mangling, "Mangles all the intrinsic symbols");
+    app.add_flag("--all-mangling", compiler_options.po.all_symbols_mangling, "Mangles all possible symbols");
+    app.add_flag("--bindc-mangling", compiler_options.po.bindc_mangling, "Mangles functions with abi bind(c)");
+    app.add_flag("--apply-fortran-mangling", compiler_options.po.fortran_mangling, "Mangle symbols with Fortran supported syntax");
+    app.add_flag("--mangle-underscore", compiler_options.po.mangle_underscore, "Mangles with underscore");
+    app.add_flag("--legacy-array-sections", compiler_options.legacy_array_sections, "Enables passing array items as sections if required");
+    app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas");
+    app.add_flag("--stack-arrays", compiler_options.stack_arrays, "Allocate memory for arrays on stack");
+
+    /*
+    * Subcommands:
+    */
+
+    // fmt
+    CLI::App &fmt = *app.add_subcommand("fmt", "Format Fortran source files.");
+    fmt.add_option("file", arg_fmt_file, "Fortran source file to format")->required();
+    fmt.add_flag("-i", arg_fmt_inplace, "Modify <file> in-place (instead of writing to stdout)");
+    fmt.add_option("--spaces", arg_fmt_indent, "Number of spaces to use for indentation")->capture_default_str();
+    fmt.add_flag("--indent-unit", arg_fmt_indent_unit, "Indent contents of sub / fn / prog / mod");
+    fmt.add_flag("--no-color", arg_fmt_no_color, "Turn off color when writing to stdout");
+
+    // kernel
+    CLI::App &kernel = *app.add_subcommand("kernel", "Run in Jupyter kernel mode.");
+    kernel.add_option("-f", arg_kernel_f, "The kernel connection file")->required();
+
+    // mod
+    CLI::App &mod = *app.add_subcommand("mod", "Fortran mod file utilities.");
+    mod.add_option("file", arg_mod_file, "Mod file (*.mod)")->required();
+    mod.add_flag("--show-asr", arg_mod_show_asr, "Show ASR for the module");
+    mod.add_flag("--no-color", arg_mod_no_color, "Turn off colored ASR");
+
+    // pywrap
+    CLI::App &pywrap = *app.add_subcommand("pywrap", "Python wrapper generator");
+    pywrap.add_option("file", arg_pywrap_file, "Fortran source file (*.f90)")->required();
+    pywrap.add_option("--array-order", arg_pywrap_array_order,
+            "Select array order (c, f)")->capture_default_str();
+
+
+    app.get_formatter()->column_width(25);
+    app.require_subcommand(0, 1);
+    CLI11_PARSE(app, argc, argv);
+    lcompilers_unique_ID = compiler_options.generate_object_code ? get_unique_ID() : "";
+    if (!linker_flags.empty()) {
+        std::string linker_flags_args = linker_flags[0];
+        linker_flags.clear();
+        _parse_linker_args(linker_flags_args, linker_flags);
+        _get_rpath_from_linker_flags(linker_flags, compiler_options);
+    }
+
+    if (arg_version) {
+        std::string version = LFORTRAN_VERSION;
+        std::cout << "LFortran version: " << version << std::endl;
+        std::cout << "Platform: " << pf2s(compiler_options.platform) << std::endl;
+#ifdef HAVE_LFORTRAN_LLVM
+        std::cout << "Default target: " << LCompilers::LLVMEvaluator::get_default_target_triple() << std::endl;
+#endif
+        return 0;
+    }
+
+    if (print_targets) {
+#ifdef HAVE_LFORTRAN_LLVM
+        LCompilers::LLVMEvaluator::print_targets();
+        return 0;
+#else
+        std::cerr << "The --print-targets option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
+        return 1;
+#endif
+    }
+
+    compiler_options.use_colors = !arg_no_color;
+    compiler_options.indent = !arg_no_indent;
+    compiler_options.prescan = !arg_no_prescan;
+
+    for (auto &f_flag : f_flags) {
+        if (f_flag == "PIC") {
+            // Position Independent Code
+            // We do this by default, so we ignore for now
+        } else {
+            std::cerr << "The flag `-f" << f_flag << "` is not supported" << std::endl;
+            return 1;
+        }
+    }
+
+    if( compiler_options.po.fast ) {
+        lfortran_pass_manager.use_optimization_passes();
+    }
+
+    if (fmt) {
+        if (CLI::NonexistentPath(arg_fmt_file).empty())
+            throw LCompilers::LCompilersException("File does not exist: " + arg_fmt_file);
+
+        return format(arg_fmt_file, arg_fmt_inplace, !arg_fmt_no_color,
+            arg_fmt_indent, arg_fmt_indent_unit, compiler_options);
+    }
+
+    if (kernel) {
+#ifdef HAVE_LFORTRAN_XEUS
+        return LCompilers::LFortran::run_kernel(arg_kernel_f);
+#else
+        std::cerr << "The kernel subcommand requires LFortran to be compiled with XEUS support. Recompile with `WITH_XEUS=yes`." << std::endl;
+        return 1;
+#endif
+    }
+
+    if (mod) {
+        if (arg_mod_show_asr) {
+            Allocator al(1024*1024);
+            LCompilers::ASR::TranslationUnit_t *asr;
+            asr = LCompilers::LFortran::mod_to_asr(al, arg_mod_file);
+            std::cout << LCompilers::pickle(*asr, !arg_mod_no_color) << std::endl;
+            return 0;
+        }
+        return 0;
+    }
+
+    if (pywrap) {
+        return python_wrapper(arg_pywrap_file, arg_pywrap_array_order,
+            compiler_options);
+    }
+
+    if (arg_backend == "llvm") {
+        backend = Backend::llvm;
+    } else if (arg_backend == "c") {
+        backend = Backend::c;
+    } else if (arg_backend == "cpp") {
+        backend = Backend::cpp;
+    } else if (arg_backend == "x86") {
+        backend = Backend::x86;
+    } else if (arg_backend == "wasm") {
+        backend = Backend::wasm;
+    } else if (arg_backend == "fortran") {
+        backend = Backend::fortran;
+    } else {
+        std::cerr << "The backend must be one of: llvm, cpp, x86, wasm, fortran." << std::endl;
+        return 1;
+    }
+
+    if (arg_files.size() == 0) {
+#ifdef HAVE_LFORTRAN_LLVM
+        return prompt(arg_v, compiler_options);
+#else
+        std::cerr << "Interactive prompt requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
+        return 1;
+#endif
+    }
+
+    // TODO: for now we ignore the other filenames, only handle
+    // the first:
+    std::string arg_file = arg_files[0];
+    if (CLI::NonexistentPath(arg_file).empty())
+        throw LCompilers::LCompilersException("File does not exist: " + arg_file);
+
+    // Decide if a file is fixed format based on the extension
+    // Gfortran does the same thing
+    if (fixed_form_infer && endswith(arg_file, ".f")) {
+        compiler_options.fixed_form = true;
+    }
+
+    std::string outfile;
+    std::filesystem::path basename = std::filesystem::path(arg_file).filename();
+    if (compiler_options.arg_o.size() > 0) {
+        outfile = compiler_options.arg_o;
+    } else if (arg_S) {
+        outfile = basename.replace_extension(".s").string();
+    } else if (arg_c) {
+        outfile = basename.replace_extension(".o").string();
+    } else if (show_prescan) {
+        outfile = basename.replace_extension(".prescan").string();
+    } else if (show_tokens) {
+        outfile = basename.replace_extension(".tokens").string();
+    } else if (show_ast) {
+        outfile = basename.replace_extension(".ast").string();
+    } else if (show_asr) {
+        outfile = basename.replace_extension(".asr").string();
+    } else if (show_llvm) {
+        outfile = basename.replace_extension(".ll").string();
+    } else if (show_wat) {
+        outfile = basename.replace_extension(".wat").string();
+    } else if (show_julia) {
+        outfile = basename.replace_extension(".jl").string();
+    } else {
+        outfile = basename.replace_extension(".out").string();
+    }
+
+    if (compiler_options.po.dump_fortran || compiler_options.po.dump_all_passes) {
+        dump_all_passes(arg_file, compiler_options);
+    }
+
+    if (arg_E) {
+        return emit_c_preprocessor(arg_file, compiler_options);
+    }
+
+    if (show_prescan) {
+        return emit_prescan(arg_file, compiler_options);
+    }
+    if (show_tokens) {
+        return emit_tokens(arg_file, false, compiler_options);
+    }
+    if (show_ast) {
+        return emit_ast(arg_file, compiler_options);
+    }
+    if (show_ast_f90) {
+        return emit_ast_f90(arg_file, compiler_options);
+    }
+    lfortran_pass_manager.parse_pass_arg(arg_pass, skip_pass);
+    if (show_asr) {
+        return emit_asr(arg_file, lfortran_pass_manager,
+                compiler_options);
+    }
+    lfortran_pass_manager.use_default_passes();
+    if (show_llvm) {
+#ifdef HAVE_LFORTRAN_LLVM
+        return emit_llvm(arg_file, lfortran_pass_manager,
+                            compiler_options);
+#else
+        std::cerr << "The --show-llvm option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
+        return 1;
+#endif
+    }
+    if (show_asm) {
+#ifdef HAVE_LFORTRAN_LLVM
+        return emit_asm(arg_file, compiler_options);
+#else
+        std::cerr << "The --show-asm option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
+        return 1;
+#endif
+    }
+    if (show_wat) {
+        return emit_wat(arg_file, compiler_options);
+    }
+    if (show_cpp) {
+        return emit_cpp(arg_file, compiler_options);
+    }
+    if (show_c) {
+        return emit_c(arg_file, lfortran_pass_manager, compiler_options);
+    }
+    if (show_julia) {
+        return emit_julia(arg_file, compiler_options);
+    }
+    if (show_fortran) {
+        return emit_fortran(arg_file, compiler_options);
+    }
+    if (arg_S) {
+        if (backend == Backend::llvm) {
+#ifdef HAVE_LFORTRAN_LLVM
+            return compile_to_assembly_file(arg_file, outfile, compiler_options, lfortran_pass_manager);
+#else
+            std::cerr << "The -S option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
+            return 1;
+#endif
+        } else if (backend == Backend::cpp) {
+            std::cerr << "The C++ backend does not work with the -S option yet." << std::endl;
+            return 1;
+        } else {
+            LCOMPILERS_ASSERT(false);
+        }
+    }
+    if (arg_c) {
+        if (backend == Backend::llvm) {
+#ifdef HAVE_LFORTRAN_LLVM
+            return compile_to_object_file(arg_file, outfile, false,
+                compiler_options, lfortran_pass_manager);
+#else
+            std::cerr << "The -c option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
+            return 1;
+#endif
+        } else if (backend == Backend::c) {
+            return compile_to_object_file_c(arg_file, outfile, arg_v, false,
+                    rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
+        } else if (backend == Backend::cpp) {
+            return compile_to_object_file_cpp(arg_file, outfile, arg_v, false,
+                    true, rtlib_c_header_dir, compiler_options);
+        } else if (backend == Backend::x86) {
+            return compile_to_binary_x86(arg_file, outfile, time_report, compiler_options);
+        } else if (backend == Backend::wasm) {
+            return compile_to_binary_wasm(arg_file, outfile, time_report, compiler_options);
+        } else if (backend == Backend::fortran) {
+            return compile_to_binary_fortran(arg_file, outfile, compiler_options);
+        } else {
+            throw LCompilers::LCompilersException("Unsupported backend.");
+        }
+    }
+
+    if (endswith(arg_file, ".f90") || endswith(arg_file, ".f")) {
+        if (backend == Backend::x86) {
+            return compile_to_binary_x86(arg_file, outfile,
+                    time_report, compiler_options);
+        }
+        std::string tmp_o = outfile + ".tmp.o";
+        int err;
+        if (backend == Backend::llvm) {
+#ifdef HAVE_LFORTRAN_LLVM
+            err = compile_to_object_file(arg_file, tmp_o, false,
+                compiler_options, lfortran_pass_manager);
+#else
+            std::cerr << "Compiling Fortran files to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
+            return 1;
+#endif
+        } else if (backend == Backend::cpp) {
+            err = compile_to_object_file_cpp(arg_file, tmp_o, arg_v, false,
+                    true, rtlib_header_dir, compiler_options);
+        } else if (backend == Backend::c) {
+            err = compile_to_object_file_c(arg_file, tmp_o, arg_v,
+                    false, rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
+        } else if (backend == Backend::fortran) {
+            err = compile_to_binary_fortran(arg_file, tmp_o, compiler_options);
+        } else if (backend == Backend::wasm) {
+            err = compile_to_binary_wasm(arg_file, outfile,
+                    time_report, compiler_options);
+        } else {
+            throw LCompilers::LCompilersException("Backend not supported");
+        }
+        if (err) return err;
+        return link_executable({tmp_o}, outfile, runtime_library_dir,
+                backend, static_link, link_with_gcc, true, arg_v, compiler_options);
+    } else {
+        return link_executable(arg_files, outfile, runtime_library_dir,
+                backend, static_link, link_with_gcc, true, arg_v, compiler_options);
+    }
+    return 0;
+}
+
 int main(int argc, char *argv[])
 {
     LCompilers::initialize();
@@ -1907,463 +2368,7 @@ int main(int argc, char *argv[])
     LCompilers::print_stack_on_segfault();
 #endif
     try {
-        int dirname_length;
-        LCompilers::LFortran::get_executable_path(LCompilers::binary_executable_path, dirname_length);
-
-        // TODO: This is now in compiler options and can be removed
-        std::string runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
-
-        std::string rtlib_header_dir = LCompilers::LFortran::get_runtime_library_header_dir();
-        Backend backend;
-
-        bool arg_S = false;
-        bool arg_c = false;
-        bool arg_v = false;
-        bool arg_E = false;
-        std::vector<std::string> arg_l;
-        std::vector<std::string> arg_L;
-        std::vector<std::string> arg_files;
-        bool arg_version = false;
-        bool show_prescan = false;
-        bool show_tokens = false;
-        bool show_ast = false;
-        bool show_asr = false;
-        bool show_ast_f90 = false;
-        std::string arg_pass;
-        bool arg_no_color = false;
-        bool arg_no_indent = false;
-        bool arg_no_prescan = false;
-        bool show_llvm = false;
-        bool show_cpp = false;
-        bool show_c = false;
-        bool show_asm = false;
-        bool show_wat = false;
-        bool show_julia = false;
-        bool show_fortran = false;
-        bool time_report = false;
-        bool static_link = false;
-        std::string skip_pass;
-        std::string arg_backend = "llvm";
-        std::string arg_kernel_f;
-        bool print_targets = false;
-        bool link_with_gcc = false;
-        bool fixed_form_infer = false;
-
-        std::string arg_fmt_file;
-        int arg_fmt_indent = 4;
-        bool arg_fmt_indent_unit = false;
-        bool arg_fmt_inplace = false;
-        bool arg_fmt_no_color = false;
-
-        std::string arg_mod_file;
-        bool arg_mod_show_asr = false;
-        bool arg_mod_no_color = false;
-
-        std::string arg_pywrap_file;
-        std::string arg_pywrap_array_order="f";
-        std::vector<std::string> linker_flags;
-        std::vector<std::string> f_flags;
-
-        CompilerOptions compiler_options;
-        compiler_options.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
-        std::string rtlib_c_header_dir = LCompilers::LFortran::get_runtime_library_c_header_dir();
-
-        LCompilers::PassManager lfortran_pass_manager;
-
-        CLI::App app{"LFortran: modern interactive LLVM-based Fortran compiler"};
-        // Standard options compatible with gfortran, gcc or clang
-        // We follow the established conventions
-        app.add_option("files", arg_files, "Source files");
-        app.add_flag("-S", arg_S, "Emit assembly, do not assemble or link");
-        app.add_flag("-c", arg_c, "Compile and assemble, do not link");
-        app.add_option("-o", compiler_options.arg_o, "Specify the file to place the output into");
-        app.add_flag("-v", arg_v, "Be more verbose");
-        app.add_flag("-E", arg_E, "Preprocess only; do not compile, assemble or link");
-        app.add_option("-l", arg_l, "Link library option");
-        app.add_option("-L", arg_L, "Library path option");
-        app.add_option("-I", compiler_options.po.include_dirs, "Include path")->allow_extra_args(false);
-        app.add_option("-J", compiler_options.po.mod_files_dir, "Where to save mod files");
-        app.add_flag("-g", compiler_options.emit_debug_info, "Compile with debugging information");
-        app.add_flag("--debug-with-line-column", compiler_options.emit_debug_line_column,
-            "Convert the linear location info into line + column in the debugging information");
-        app.add_option("-D", compiler_options.c_preprocessor_defines, "Define <macro>=<value> (or 1 if <value> omitted)")->allow_extra_args(false);
-        app.add_flag("--version", arg_version, "Display compiler version information");
-        app.add_option("-W", linker_flags, "Linker flags")->allow_extra_args(false);
-        app.add_option("-f", f_flags, "All `-f*` flags (only -fPIC supported for now)")->allow_extra_args(false);
-
-        // LFortran specific options
-        app.add_flag("--cpp", compiler_options.c_preprocessor, "Enable C preprocessing");
-        app.add_flag("--fixed-form", compiler_options.fixed_form, "Use fixed form Fortran source parsing");
-        app.add_flag("--fixed-form-infer", fixed_form_infer, "Use heuristics to infer if a file is in fixed form");
-        app.add_flag("--no-prescan", arg_no_prescan, "Turn off prescan");
-        app.add_flag("--show-prescan", show_prescan, "Show tokens for the given file and exit");
-        app.add_flag("--show-tokens", show_tokens, "Show tokens for the given file and exit");
-        app.add_flag("--show-ast", show_ast, "Show AST for the given file and exit");
-        app.add_flag("--show-asr", show_asr, "Show ASR for the given file and exit");
-        app.add_flag("--with-intrinsic-mods", compiler_options.po.with_intrinsic_mods, "Show intrinsic modules in ASR");
-        app.add_flag("--show-ast-f90", show_ast_f90, "Show Fortran from AST for the given file and exit");
-        app.add_flag("--no-color", arg_no_color, "Turn off colored AST/ASR");
-        app.add_flag("--no-indent", arg_no_indent, "Turn off Indented print ASR/AST");
-        app.add_flag("--tree", compiler_options.po.tree, "Tree structure print ASR/AST");
-        app.add_flag("--json", compiler_options.po.json, "Print ASR/AST Json format");
-        app.add_flag("--no-loc", compiler_options.po.no_loc, "Skip location information in ASR/AST Json format");
-        app.add_flag("--visualize", compiler_options.po.visualize, "Print ASR/AST Visualization");
-        app.add_option("--pass", arg_pass, "Apply the ASR pass and show ASR (implies --show-asr)");
-        app.add_option("--skip-pass", skip_pass, "Skip an ASR pass in default pipeline");
-        app.add_flag("--show-llvm", show_llvm, "Show LLVM IR for the given file and exit");
-        app.add_flag("--show-cpp", show_cpp, "Show C++ translation source for the given file and exit");
-        app.add_flag("--show-c", show_c, "Show C translation source for the given file and exit");
-        app.add_flag("--show-asm", show_asm, "Show assembly for the given file and exit");
-        app.add_flag("--show-wat", show_wat, "Show WAT (WebAssembly Text Format) and exit");
-        app.add_flag("--show-julia", show_julia, "Show Julia translation source for the given file and exit");
-        app.add_flag("--show-fortran", show_fortran, "Show Fortran translation source for the given file and exit");
-        app.add_flag("--show-stacktrace", compiler_options.show_stacktrace, "Show internal stacktrace on compiler errors");
-        app.add_flag("--symtab-only", compiler_options.symtab_only, "Only create symbol tables in ASR (skip executable stmt)");
-        app.add_flag("--time-report", time_report, "Show compilation time report");
-        app.add_flag("--static", static_link, "Create a static executable");
-        app.add_flag("--no-warnings", compiler_options.no_warnings, "Turn off all warnings");
-        app.add_flag("--no-error-banner", compiler_options.no_error_banner, "Turn off error banner");
-        app.add_option("--error-format", compiler_options.error_format, "Control how errors are produced (human, short)")->capture_default_str();
-        app.add_option("--backend", arg_backend, "Select a backend (llvm, c, cpp, x86, wasm, fortran)")->capture_default_str();
-        app.add_flag("--openmp", compiler_options.openmp, "Enable openmp");
-        app.add_flag("--generate-object-code", compiler_options.generate_object_code, "Generate object code into .o files");
-        app.add_flag("--rtlib", compiler_options.rtlib, "Include the full runtime library in the LLVM output");
-        app.add_flag("--use-loop-variable-after-loop", compiler_options.po.use_loop_variable_after_loop, "Allow using loop variable after the loop");
-        app.add_flag("--fast", compiler_options.po.fast, "Best performance (disable strict standard compliance)");
-        app.add_flag("--link-with-gcc", link_with_gcc, "Calls GCC for linking instead of clang");
-        app.add_option("--target", compiler_options.target, "Generate code for the given target")->capture_default_str();
-        app.add_flag("--print-targets", print_targets, "Print the registered targets");
-        app.add_flag("--implicit-typing", compiler_options.implicit_typing, "Allow implicit typing");
-        app.add_flag("--implicit-interface", compiler_options.implicit_interface, "Allow implicit interface");
-        app.add_flag("--implicit-argument-casting", compiler_options.implicit_argument_casting, "Allow implicit argument casting");
-        app.add_flag("--print-leading-space", compiler_options.print_leading_space, "Print leading white space if format is unspecified");
-        app.add_flag("--interactive-parse", compiler_options.interactive, "Use interactive parse");
-        app.add_flag("--verbose", compiler_options.po.verbose, "Print debugging statements");
-        app.add_flag("--dump-all-passes", compiler_options.po.dump_all_passes, "Apply all the passes and dump the ASR into a file");
-        app.add_flag("--dump-all-passes-fortran", compiler_options.po.dump_fortran, "Apply all passes and dump the ASR after each pass into fortran file");
-        app.add_flag("--cumulative", compiler_options.po.pass_cumulative, "Apply all the passes cumulatively till the given pass");
-        app.add_flag("--realloc-lhs", compiler_options.po.realloc_lhs, "Reallocate left hand side automatically");
-        app.add_flag("--module-mangling", compiler_options.po.module_name_mangling, "Mangles the module name");
-        app.add_flag("--global-mangling", compiler_options.po.global_symbols_mangling, "Mangles all the global symbols");
-        app.add_flag("--intrinsic-mangling", compiler_options.po.intrinsic_symbols_mangling, "Mangles all the intrinsic symbols");
-        app.add_flag("--all-mangling", compiler_options.po.all_symbols_mangling, "Mangles all possible symbols");
-        app.add_flag("--bindc-mangling", compiler_options.po.bindc_mangling, "Mangles functions with abi bind(c)");
-        app.add_flag("--apply-fortran-mangling", compiler_options.po.fortran_mangling, "Mangle symbols with Fortran supported syntax");
-        app.add_flag("--mangle-underscore", compiler_options.po.mangle_underscore, "Mangles with underscore");
-        app.add_flag("--legacy-array-sections", compiler_options.legacy_array_sections, "Enables passing array items as sections if required");
-        app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas");
-        app.add_flag("--stack-arrays", compiler_options.stack_arrays, "Allocate memory for arrays on stack");
-
-        /*
-        * Subcommands:
-        */
-
-        // fmt
-        CLI::App &fmt = *app.add_subcommand("fmt", "Format Fortran source files.");
-        fmt.add_option("file", arg_fmt_file, "Fortran source file to format")->required();
-        fmt.add_flag("-i", arg_fmt_inplace, "Modify <file> in-place (instead of writing to stdout)");
-        fmt.add_option("--spaces", arg_fmt_indent, "Number of spaces to use for indentation")->capture_default_str();
-        fmt.add_flag("--indent-unit", arg_fmt_indent_unit, "Indent contents of sub / fn / prog / mod");
-        fmt.add_flag("--no-color", arg_fmt_no_color, "Turn off color when writing to stdout");
-
-        // kernel
-        CLI::App &kernel = *app.add_subcommand("kernel", "Run in Jupyter kernel mode.");
-        kernel.add_option("-f", arg_kernel_f, "The kernel connection file")->required();
-
-        // mod
-        CLI::App &mod = *app.add_subcommand("mod", "Fortran mod file utilities.");
-        mod.add_option("file", arg_mod_file, "Mod file (*.mod)")->required();
-        mod.add_flag("--show-asr", arg_mod_show_asr, "Show ASR for the module");
-        mod.add_flag("--no-color", arg_mod_no_color, "Turn off colored ASR");
-
-        // pywrap
-        CLI::App &pywrap = *app.add_subcommand("pywrap", "Python wrapper generator");
-        pywrap.add_option("file", arg_pywrap_file, "Fortran source file (*.f90)")->required();
-        pywrap.add_option("--array-order", arg_pywrap_array_order,
-                "Select array order (c, f)")->capture_default_str();
-
-
-        app.get_formatter()->column_width(25);
-        app.require_subcommand(0, 1);
-        CLI11_PARSE(app, argc, argv);
-        lcompilers_unique_ID = compiler_options.generate_object_code ? get_unique_ID() : "";
-        if (!linker_flags.empty()) {
-            std::string linker_flags_args = linker_flags[0];
-            linker_flags.clear();
-            _parse_linker_args(linker_flags_args, linker_flags);
-            _get_rpath_from_linker_flags(linker_flags, compiler_options);
-        }
-
-        if (arg_version) {
-            std::string version = LFORTRAN_VERSION;
-            std::cout << "LFortran version: " << version << std::endl;
-            std::cout << "Platform: " << pf2s(compiler_options.platform) << std::endl;
-#ifdef HAVE_LFORTRAN_LLVM
-            std::cout << "Default target: " << LCompilers::LLVMEvaluator::get_default_target_triple() << std::endl;
-#endif
-            return 0;
-        }
-
-        if (print_targets) {
-#ifdef HAVE_LFORTRAN_LLVM
-            LCompilers::LLVMEvaluator::print_targets();
-            return 0;
-#else
-            std::cerr << "The --print-targets option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
-            return 1;
-#endif
-        }
-
-        compiler_options.use_colors = !arg_no_color;
-        compiler_options.indent = !arg_no_indent;
-        compiler_options.prescan = !arg_no_prescan;
-
-        for (auto &f_flag : f_flags) {
-            if (f_flag == "PIC") {
-                // Position Independent Code
-                // We do this by default, so we ignore for now
-            } else {
-                std::cerr << "The flag `-f" << f_flag << "` is not supported" << std::endl;
-                return 1;
-            }
-        }
-
-        if( compiler_options.po.fast ) {
-            lfortran_pass_manager.use_optimization_passes();
-        }
-
-        if (fmt) {
-            if (CLI::NonexistentPath(arg_fmt_file).empty())
-                throw LCompilers::LCompilersException("File does not exist: " + arg_fmt_file);
-
-            return format(arg_fmt_file, arg_fmt_inplace, !arg_fmt_no_color,
-                arg_fmt_indent, arg_fmt_indent_unit, compiler_options);
-        }
-
-        if (kernel) {
-#ifdef HAVE_LFORTRAN_XEUS
-            return LCompilers::LFortran::run_kernel(arg_kernel_f);
-#else
-            std::cerr << "The kernel subcommand requires LFortran to be compiled with XEUS support. Recompile with `WITH_XEUS=yes`." << std::endl;
-            return 1;
-#endif
-        }
-
-        if (mod) {
-            if (arg_mod_show_asr) {
-                Allocator al(1024*1024);
-                LCompilers::ASR::TranslationUnit_t *asr;
-                asr = LCompilers::LFortran::mod_to_asr(al, arg_mod_file);
-                std::cout << LCompilers::pickle(*asr, !arg_mod_no_color) << std::endl;
-                return 0;
-            }
-            return 0;
-        }
-
-        if (pywrap) {
-            return python_wrapper(arg_pywrap_file, arg_pywrap_array_order,
-                compiler_options);
-        }
-
-        if (arg_backend == "llvm") {
-            backend = Backend::llvm;
-        } else if (arg_backend == "c") {
-            backend = Backend::c;
-        } else if (arg_backend == "cpp") {
-            backend = Backend::cpp;
-        } else if (arg_backend == "x86") {
-            backend = Backend::x86;
-        } else if (arg_backend == "wasm") {
-            backend = Backend::wasm;
-        } else if (arg_backend == "fortran") {
-            backend = Backend::fortran;
-        } else {
-            std::cerr << "The backend must be one of: llvm, cpp, x86, wasm, fortran." << std::endl;
-            return 1;
-        }
-
-        if (arg_files.size() == 0) {
-#ifdef HAVE_LFORTRAN_LLVM
-            return prompt(arg_v, compiler_options);
-#else
-            std::cerr << "Interactive prompt requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
-            return 1;
-#endif
-        }
-
-        // TODO: for now we ignore the other filenames, only handle
-        // the first:
-        std::string arg_file = arg_files[0];
-        if (CLI::NonexistentPath(arg_file).empty())
-            throw LCompilers::LCompilersException("File does not exist: " + arg_file);
-
-        // Decide if a file is fixed format based on the extension
-        // Gfortran does the same thing
-        if (fixed_form_infer && endswith(arg_file, ".f")) {
-            compiler_options.fixed_form = true;
-        }
-
-        std::string outfile;
-        std::filesystem::path basename = std::filesystem::path(arg_file).filename();
-        if (compiler_options.arg_o.size() > 0) {
-            outfile = compiler_options.arg_o;
-        } else if (arg_S) {
-            outfile = basename.replace_extension(".s").string();
-        } else if (arg_c) {
-            outfile = basename.replace_extension(".o").string();
-        } else if (show_prescan) {
-            outfile = basename.replace_extension(".prescan").string();
-        } else if (show_tokens) {
-            outfile = basename.replace_extension(".tokens").string();
-        } else if (show_ast) {
-            outfile = basename.replace_extension(".ast").string();
-        } else if (show_asr) {
-            outfile = basename.replace_extension(".asr").string();
-        } else if (show_llvm) {
-            outfile = basename.replace_extension(".ll").string();
-        } else if (show_wat) {
-            outfile = basename.replace_extension(".wat").string();
-        } else if (show_julia) {
-            outfile = basename.replace_extension(".jl").string();
-        } else {
-            outfile = basename.replace_extension(".out").string();
-        }
-
-        if (compiler_options.po.dump_fortran || compiler_options.po.dump_all_passes) {
-            dump_all_passes(arg_file, compiler_options);
-        }
-
-        if (arg_E) {
-            return emit_c_preprocessor(arg_file, compiler_options);
-        }
-
-        if (show_prescan) {
-            return emit_prescan(arg_file, compiler_options);
-        }
-        if (show_tokens) {
-            return emit_tokens(arg_file, false, compiler_options);
-        }
-        if (show_ast) {
-            return emit_ast(arg_file, compiler_options);
-        }
-        if (show_ast_f90) {
-            return emit_ast_f90(arg_file, compiler_options);
-        }
-        lfortran_pass_manager.parse_pass_arg(arg_pass, skip_pass);
-        if (show_asr) {
-            return emit_asr(arg_file, lfortran_pass_manager,
-                    compiler_options);
-        }
-        lfortran_pass_manager.use_default_passes();
-        if (show_llvm) {
-#ifdef HAVE_LFORTRAN_LLVM
-            return emit_llvm(arg_file, lfortran_pass_manager,
-                             compiler_options);
-#else
-            std::cerr << "The --show-llvm option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
-            return 1;
-#endif
-        }
-        if (show_asm) {
-#ifdef HAVE_LFORTRAN_LLVM
-            return emit_asm(arg_file, compiler_options);
-#else
-            std::cerr << "The --show-asm option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
-            return 1;
-#endif
-        }
-        if (show_wat) {
-            return emit_wat(arg_file, compiler_options);
-        }
-        if (show_cpp) {
-            return emit_cpp(arg_file, compiler_options);
-        }
-        if (show_c) {
-            return emit_c(arg_file, lfortran_pass_manager, compiler_options);
-        }
-        if (show_julia) {
-            return emit_julia(arg_file, compiler_options);
-        }
-        if (show_fortran) {
-            return emit_fortran(arg_file, compiler_options);
-        }
-        if (arg_S) {
-            if (backend == Backend::llvm) {
-#ifdef HAVE_LFORTRAN_LLVM
-                return compile_to_assembly_file(arg_file, outfile, compiler_options, lfortran_pass_manager);
-#else
-                std::cerr << "The -S option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
-                return 1;
-#endif
-            } else if (backend == Backend::cpp) {
-                std::cerr << "The C++ backend does not work with the -S option yet." << std::endl;
-                return 1;
-            } else {
-                LCOMPILERS_ASSERT(false);
-            }
-        }
-        if (arg_c) {
-            if (backend == Backend::llvm) {
-#ifdef HAVE_LFORTRAN_LLVM
-                return compile_to_object_file(arg_file, outfile, false,
-                    compiler_options, lfortran_pass_manager);
-#else
-                std::cerr << "The -c option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
-                return 1;
-#endif
-            } else if (backend == Backend::c) {
-                return compile_to_object_file_c(arg_file, outfile, arg_v, false,
-                        rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
-            } else if (backend == Backend::cpp) {
-                return compile_to_object_file_cpp(arg_file, outfile, arg_v, false,
-                        true, rtlib_c_header_dir, compiler_options);
-            } else if (backend == Backend::x86) {
-                return compile_to_binary_x86(arg_file, outfile, time_report, compiler_options);
-            } else if (backend == Backend::wasm) {
-                return compile_to_binary_wasm(arg_file, outfile, time_report, compiler_options);
-            } else if (backend == Backend::fortran) {
-                return compile_to_binary_fortran(arg_file, outfile, compiler_options);
-            } else {
-                throw LCompilers::LCompilersException("Unsupported backend.");
-            }
-        }
-
-        if (endswith(arg_file, ".f90") || endswith(arg_file, ".f")) {
-            if (backend == Backend::x86) {
-                return compile_to_binary_x86(arg_file, outfile,
-                        time_report, compiler_options);
-            }
-            std::string tmp_o = outfile + ".tmp.o";
-            int err;
-            if (backend == Backend::llvm) {
-#ifdef HAVE_LFORTRAN_LLVM
-                err = compile_to_object_file(arg_file, tmp_o, false,
-                    compiler_options, lfortran_pass_manager);
-#else
-                std::cerr << "Compiling Fortran files to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
-                return 1;
-#endif
-            } else if (backend == Backend::cpp) {
-                err = compile_to_object_file_cpp(arg_file, tmp_o, arg_v, false,
-                        true, rtlib_header_dir, compiler_options);
-            } else if (backend == Backend::c) {
-                err = compile_to_object_file_c(arg_file, tmp_o, arg_v,
-                        false, rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
-            } else if (backend == Backend::fortran) {
-                err = compile_to_binary_fortran(arg_file, tmp_o, compiler_options);
-            } else if (backend == Backend::wasm) {
-                err = compile_to_binary_wasm(arg_file, outfile,
-                        time_report, compiler_options);
-            } else {
-                throw LCompilers::LCompilersException("Backend not supported");
-            }
-            if (err) return err;
-            return link_executable({tmp_o}, outfile, runtime_library_dir,
-                    backend, static_link, link_with_gcc, true, arg_v, compiler_options);
-        } else {
-            return link_executable(arg_files, outfile, runtime_library_dir,
-                    backend, static_link, link_with_gcc, true, arg_v, compiler_options);
-        }
+        return main_app(argc, argv);
     } catch(const LCompilers::LCompilersException &e) {
         std::cerr << "Internal Compiler Error: Unhandled exception" << std::endl;
         std::vector<LCompilers::StacktraceItem> d = e.stacktrace_addresses();

@@ -2526,18 +2526,19 @@ namespace Trailz {
 
      static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args == 1,
-            "ASR Verify: Call to Trailz must have exactly 1 argument",
+            "Call to `trailz` must have exactly 1 argument",
             x.base.base.loc, diagnostics);
         ASR::ttype_t *type1 = ASRUtils::expr_type(x.m_args[0]);
         ASRUtils::require_impl(is_integer(*type1),
-            "ASR Verify: Arguments to Trailz must be of integer type",
+            "Arguments to `trailz` must be of integer type",
             x.base.base.loc, diagnostics);
     }
 
     static ASR::expr_t *eval_Trailz(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
         int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t trailing_zeros = ASRUtils::compute_trailing_zeros(a);
+        int64_t kind = ASRUtils::extract_kind_from_ttype_t(t1);
+        int64_t trailing_zeros = ASRUtils::compute_trailing_zeros(a, kind);
         return make_ConstantWithType(make_IntegerConstant_t, trailing_zeros, t1, loc);
     }
 
@@ -2545,11 +2546,11 @@ namespace Trailz {
             Vec<ASR::expr_t*>& args,
             const std::function<void (const std::string &, const Location &)> err) {
         if (args.size() != 1) {
-            err("Intrinsic Trailz function accepts exactly 1 arguments", loc);
+            err("Intrinsic `trailz` function accepts exactly 1 arguments", loc);
         }
         ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
         if (!(ASRUtils::is_integer(*type1))) {
-            err("Argument of the Trailz function must be Integer",
+            err("Argument of the `trailz` function must be Integer",
                 args[0]->base.loc);
         }
         ASR::expr_t *m_value = nullptr;
@@ -2574,9 +2575,15 @@ namespace Trailz {
         function trailz(n) result(result)
             integer :: n
             integer :: result
+            integer :: k
+            k = kind(n)
             result = 0
             if (n == 0) then
-                result = 32
+                if (k == 4) then
+                    result = 32
+                else
+                    result = 64
+                end if
             else
                 do while (mod(n,2) == 0)
                     n = n/2
@@ -2601,6 +2608,7 @@ namespace Trailz {
         ASR::expr_t* func_call_mod = Mod::instantiate_Mod(al, loc, scope, arg_types_mod, return_type, new_args_mod, 0);
         ASR::expr_t *cond = iEq(func_call_mod, i(0, arg_types[0]));
 
+        int base = 32;
         std::vector<ASR::stmt_t*> while_loop_body;
         if (arg_0_kind == 4) {
             while_loop_body.push_back(b.Assignment(args[0], iDiv(args[0], two)));
@@ -2608,10 +2616,11 @@ namespace Trailz {
         } else {
             while_loop_body.push_back(b.Assignment(args[0], i64Div(args[0], two)));
             while_loop_body.push_back(b.Assignment(result, i64Add(result, i(1, arg_types[0]))));
+            base = 64;
         }
 
         ASR::expr_t* check_zero = iEq(args[0], i(0, arg_types[0]));
-        std::vector<ASR::stmt_t*> if_body; if_body.push_back(b.Assignment(result, i(32, arg_types[0])));
+        std::vector<ASR::stmt_t*> if_body; if_body.push_back(b.Assignment(result, i(base, arg_types[0])));
         std::vector<ASR::stmt_t*> else_body; else_body.push_back(b.While(cond, while_loop_body));
         body.push_back(al, b.If(check_zero, if_body, else_body));
 
