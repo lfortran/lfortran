@@ -1541,8 +1541,8 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
     }
 }
 
-int compute_trailing_zeros(int number, int kind) {
-    int trailing_zeros = 0;
+int64_t compute_trailing_zeros(int64_t number, int64_t kind) {
+    int64_t trailing_zeros = 0;
     if (number == 0 && kind == 4) {
         return 32;
     } else if (number == 0 && kind == 8) {

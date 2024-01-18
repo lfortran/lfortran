@@ -2536,9 +2536,9 @@ namespace Trailz {
 
     static ASR::expr_t *eval_Trailz(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
-        int a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int kind = ASRUtils::extract_kind_from_ttype_t(t1);
-        int trailing_zeros = ASRUtils::compute_trailing_zeros(a, kind);
+        int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        int64_t kind = ASRUtils::extract_kind_from_ttype_t(t1);
+        int64_t trailing_zeros = ASRUtils::compute_trailing_zeros(a, kind);
         return make_ConstantWithType(make_IntegerConstant_t, trailing_zeros, t1, loc);
     }
 
