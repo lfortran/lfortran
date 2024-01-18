@@ -2736,12 +2736,13 @@ inline int extract_len(ASR::expr_t* len_expr, const Location& loc) {
             a_len = -3;
             break;
         }
+        case ASR::exprType::ArraySize:
         case ASR::exprType::IntegerBinOp: {
             a_len = -3;
             break;
         }
         default: {
-            throw SemanticError("Only Integers or variables implemented so far for `len` expressions",
+            throw SemanticError("Only Integers or variables implemented so far for `len` expressions, found: " + std::to_string(len_expr->type),
                                 loc);
         }
     }
@@ -3451,25 +3452,18 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
             replace_expr(x->m_args[i].m_value);
             current_expr = current_expr_copy_;
         }
-        switch( x->m_type->type ) {
-            case ASR::ttypeType::Character: {
-                ASR::Character_t* char_type = ASR::down_cast<ASR::Character_t>(x->m_type);
-                if( char_type->m_len_expr ) {
-                    ASR::expr_t** current_expr_copy_ = current_expr;
-                    current_expr = &(char_type->m_len_expr);
-                    replace_expr(char_type->m_len_expr);
-                    current_expr = current_expr_copy_;
-                }
-                break;
-            }
-            default:
-                break;
-        }
+        replace_ttype(x->m_type);
         if (ASRUtils::symbol_parent_symtab(new_es)->get_counter() != current_scope->get_counter()) {
             ADD_ASR_DEPENDENCIES(current_scope, new_es, current_function_dependencies);
         }
         ASRUtils::insert_module_dependency(new_es, al, current_module_dependencies);
         x->m_name = new_es;
+        if( x->m_original_name ) {
+            ASR::symbol_t* x_original_name = current_scope->resolve_symbol(ASRUtils::symbol_name(x->m_original_name));
+            if( x_original_name ) {
+                x->m_original_name = x_original_name;
+            }
+        }
     }
 
     void replace_Var(ASR::Var_t* x) {
@@ -3521,6 +3515,49 @@ class ExprStmtDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtDuplicator>
     ExprStmtDuplicator(Allocator &al): BaseExprStmtDuplicator(al) {}
 
 };
+
+class FixScopedTypeVisitor: public ASR::BaseExprReplacer<FixScopedTypeVisitor> {
+
+    private:
+
+    Allocator& al;
+    SymbolTable* current_scope;
+
+    public:
+
+    FixScopedTypeVisitor(Allocator& al_, SymbolTable* current_scope_) :
+        al(al_), current_scope(current_scope_) {}
+
+    void replace_Struct(ASR::Struct_t* x) {
+        ASR::symbol_t* m_derived_type = current_scope->resolve_symbol(
+            ASRUtils::symbol_name(x->m_derived_type));
+        if (m_derived_type == nullptr) {
+            std::string imported_name = current_scope->get_unique_name(
+                ASRUtils::symbol_name(x->m_derived_type));
+            m_derived_type = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                al, x->base.base.loc, current_scope, s2c(al, imported_name),
+                x->m_derived_type, ASRUtils::get_sym_module(
+                    ASRUtils::symbol_get_past_external(x->m_derived_type))->m_name,
+                    nullptr, 0, ASRUtils::symbol_name(
+                        ASRUtils::symbol_get_past_external(x->m_derived_type)),
+                ASR::accessType::Public));
+            current_scope->add_symbol(imported_name, m_derived_type);
+        }
+        x->m_derived_type = m_derived_type;
+    }
+
+};
+
+static inline ASR::ttype_t* fix_scoped_type(Allocator& al,
+    ASR::ttype_t* type, SymbolTable* scope) {
+    ASRUtils::ExprStmtDuplicator expr_duplicator(al);
+    expr_duplicator.allow_procedure_calls = true;
+    ASR::ttype_t* type_ = expr_duplicator.duplicate_ttype(type);
+    ASRUtils::FixScopedTypeVisitor fixer(al, scope);
+    fixer.replace_ttype(type_);
+    return type_;
+
+}
 
 class ReplaceWithFunctionParamVisitor: public ASR::BaseExprReplacer<ReplaceWithFunctionParamVisitor> {
 

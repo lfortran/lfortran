@@ -672,6 +672,10 @@ jobs:
             export PATH="$(pwd)/../src/bin:$PATH"
             lfortran subprojects/test-drive/src/testdrive.F90 --show-llvm
 
+            git checkout lf19
+            git checkout c53dea9fa01dba9fcb06feeba0ac6fa74d8b8594
+            ./build_test_array.sh
+
             # Run tests (specialfunctions_gamma, ascii, version, optval, error)
             micromamba activate lf
             micromamba install -c conda-forge fypp
