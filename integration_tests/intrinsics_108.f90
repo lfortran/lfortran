@@ -1,4 +1,4 @@
-program intrinsics_108    
+program intrinsics_108
     integer(4) :: x, y
     integer(8) :: i, j
     x = 16
