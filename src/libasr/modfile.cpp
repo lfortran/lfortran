@@ -7,6 +7,7 @@
 #include <libasr/serialization.h>
 #include <libasr/bwriter.h>
 
+#include <libasr/pickle.h>
 
 namespace LCompilers {
 
@@ -92,7 +93,6 @@ ASR::TranslationUnit_t* load_modfile(Allocator &al, const std::string &s,
     std::string asr_binary;
     load_serialised_asr(s, asr_binary);
     ASR::asr_t *asr = deserialize_asr(al, asr_binary, load_symtab_id, symtab);
-
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(asr);
     return tu;
 }
