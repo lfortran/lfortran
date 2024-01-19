@@ -60,8 +60,7 @@ module template_04_semigroup
 end module
 
 module template_04_monoid
-    ! TODO : allow importing requirements and templates
-    use template_04_semigroup
+    use template_04_semigroup, only: semigroup, extended_semigroup, derive_extended_semigroup
     implicit none
     private
     public :: monoid, extended_monoid, derive_extended_monoid
@@ -106,7 +105,7 @@ module template_04_monoid
 end module
 
 module template_04_semiring
-    use template_04_monoid
+    use template_04_monoid, only: monoid
 
     implicit none
     private
@@ -178,7 +177,7 @@ end module
 
 module template_04_field
     !! field is a unit_ring that also has a division or inverse operation
-    use template_04_unitring
+    use template_04_unitring, only: unit_ring
     implicit none
     private
     public :: &
@@ -236,10 +235,10 @@ end module
 
 module template_04_matrix
 
-    use template_04_monoid
-    use template_04_semiring
-    use template_04_unitring
-    use template_04_field
+    use template_04_monoid, only: derive_extended_monoid
+    use template_04_semiring, only: semiring
+    use template_04_unitring, only: unit_ring_only_minus, derive_unit_ring_from_minus
+    use template_04_field, only: field_only_division
 
     implicit none
     private
@@ -250,19 +249,38 @@ module template_04_matrix
         integer :: n
 
         private
+        public :: &
+                matrix, &
+                plus_matrix, &
+                times_matrix, &
+                zero, &
+                one, &
+                matrix_subtraction_tmpl
 
         type :: matrix
             type(T) :: elements(n, n)
         end type
 
+        interface operator(+)
+            procedure :: plus_matrix
+        end interface
+
+        interface operator(*)
+            procedure times_matrix
+        end interface        
+
         template matrix_subtraction_t(minus_t)
-            instantiate derive_extended_monoid(T, plus_t, zero_t), only: sum => mconcat
             require :: unit_ring_only_minus(T, plus_t, zero_t, times_t, one_t, minus_t)
 
             private
+            public :: minus_matrix, gaussian_solver_tmpl
+
+            interface operator(-)
+                procedure minus_matrix
+            end interface
 
             template gaussian_solver_tmpl(div_t)
-                instantiate derive_unit_ring_from_minus(T, plus_t, zero_t, times_t, one_t, minus_t), only: negate => negate
+                instantiate derive_unit_ring_from_minus(T, plus_t, zero_t, times_t, one_t, minus_t), only: negate
                 require :: field_only_division(T, plus_t, zero_t, times_t, one_t, minus_t, negate, div_t)      
             contains
                 pure function row_eschelon(x) result(reduced)
@@ -297,9 +315,9 @@ module template_04_matrix
                     do i = n, 1, -1
                         tmp = zero_t()
                         do j = i+1, n
-                    !        tmp = plus_t(tmp, times_t(x%elements(i,j), solved%elements(:,j)))
+                            tmp = plus_t(tmp, times_t(x%elements(i,j), solved%elements(:,j)))
                         end do
-                    !    solved%elements(:,i) = div_t(minus_t(solved%elements(:,i), tmp), x%elements(i,i))
+                        solved%elements(:,i) = div_t(minus_t(solved%elements(:,i), tmp), x%elements(i,i))
                     end do
                 end function
 
@@ -346,7 +364,7 @@ module template_04_matrix
             type(T) :: dot
             do i = 1, n
                 do j = 1, n
-                    ! TODO: something wrong with the assignment
+                    ! TODO: something wrong with elemental function operations
                     ! combined%elements(i, j) = sum(times_t(x%elements(i,:), y%elements(:,j)))
                     dot = zero_t()
                     do k = 1, n
@@ -408,8 +426,12 @@ instantiate matrix_tmpl(integer, operator(+), zero_integer, operator(*), one_int
     only: integer_matrix => matrix, &
           integer_plus_matrix => plus_matrix, &
           integer_times_matrix => times_matrix, &
-          matrix_subtraction_t => matrix_subtraction_t
-instantiate matrix_subtraction_t(operator(-)), only: integer_minus_matrix => minus_matrix
+          integer_matrix_subtraction_t => matrix_subtraction_t
+instantiate integer_matrix_subtraction_t(operator(-)), &
+    only: integer_minus_matrix => minus_matrix, &
+          integer_gaussian_solver_tmpl => gaussian_solver_tmpl
+instantiate integer_gaussian_solver_tmpl(operator(/)), &
+    only: integer_div_matrix => div_matrix
 
 type(integer_matrix) :: m1, m2, m3, m4
 m1%elements(1,1) = 1
@@ -433,7 +455,13 @@ print *, m4%elements(2,1), m4%elements(2,2), achar(10)
 instantiate matrix_tmpl(real, operator(+), zero_real, operator(*), one_real, n), &
     only: real_matrix => matrix, &
           real_plus_matrix => plus_matrix, &
-          real_times_matrix => times_matrix
+          real_times_matrix => times_matrix, &
+          real_matrix_subtraction_t => matrix_subtraction_t
+!instantiate real_matrix_subtraction_t(operator(-)), &
+!    only: real_minus_matrix => minus_matrix, &
+!          real_gaussian_solver_tmpl => gaussian_solver_tmpl
+!instantiate real_gaussian_solver_tmpl(operator(/)), &
+!    only: real_div_matrix => div_matrix
 
 type(real_matrix) :: r1, r2, r3, r4
 r1%elements(1,1) = 1.2

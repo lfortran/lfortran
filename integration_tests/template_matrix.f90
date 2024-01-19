@@ -1,85 +1,152 @@
-module template_matrix_01_m
+module matrix_m
+    use monoid_m, only: derive_extended_monoid
+    use semiring_m, only: semiring
+    use unit_ring_m, only: unit_ring_only_minus, derive_unit_ring_from_minus
+    use field_m, only: field_only_division
 
     implicit none
     private
-    public :: matrix_t
+    public :: matrix_tmpl
 
-    requirement elemental_op(t, op)
-        type, deferred :: t
-        pure elemental function op(l, r) result(rs)
-            type(t), intent(in) :: l, r
-            type(t) :: rs
-        end function
-    end requirement
+    template matrix_tmpl(T, plus_t, zero_t, times_t, one_t, n)
+        require :: semiring(T, plus_t, zero_t, times_t, one_t)
 
-    template matrix_t(t, plus, times, n)
-        require :: elemental_op(t, plus), elemental_op(t, times)
         integer :: n
-        
+
         private
-        public :: add_matrix
+        public :: &
+                matrix, &
+                plus_matrix, &
+                times_matrix, &
+                zero, &
+                one, &
+                matrix_subtraction_tmpl
 
         type :: matrix
-            type(t) :: elements(n, n)
+            type(T) :: elements(n, n)
         end type
+
+        interface operator(+)
+            procedure :: plus_matrix
+        end interface
+
+        interface operator(*)
+            procedure times_matrix
+        end interface
+
+        template matrix_subtraction_tmpl(minus_t)
+            require :: unit_ring_only_minus(T, plus_t, zero_t, times_t, one_t, minus_t)
+
+            private
+            public :: operator(-), gaussian_solver_tmpl
+
+            interface operator(-)
+                procedure minus_matrix
+            end interface
+
+            template gaussian_solver_tmpl(div_t)
+                instantiate derive_unit_ring_from_minus(T, plus_t, zero_t, times_t, one_t, minus_t), only: negate
+                require :: field_only_division(T, plus_t, zero_t, times_t, one_t, minus_t, negate, div_t)
+
+                private
+            contains
+                elemental function div_matrix(x, y) result(quotient)
+                    type(matrix), intent(in) :: x, y
+                    type(matrix) :: quotient
+
+                    quotient = back_substitute(row_eschelon(x), y)
+                end function
+
+                pure function row_eschelon(x) result(reduced)
+                    type(matrix), intent(in) :: x
+                    type(matrix) :: reduced
+
+                    integer :: i, ii, j
+                    type(T) :: r
+
+                    reduced = x
+
+                    do i = 1, n
+                        ! Assume pivot m(i,i) is not zero
+                        do ii = i+1, n
+                            r = div_t(reduced%elements(i,i), reduced%elements(ii,i))
+                            reduced%elements(ii, i) = zero_t()
+                            do j = i+1, n
+                                reduced%elements(ii, j) = minus_t(reduced%elements(ii, j), times_t(reduced%elements(i, j), r))
+                            end do
+                        end do
+                    end do
+                end function
+
+                pure function back_substitute(x, y) result(solved)
+                    type(matrix), intent(in) :: x, y
+                    type(matrix) :: solved
+
+                    integer :: i, j
+                    type(T) :: tmp(n)
+
+                    solved = y
+                    do i = n, 1, -1
+                        tmp = zero_t()
+                        do j = i+1, n
+                            tmp = plus_t(tmp, times_t(x%elements(i,j), solved%elements(:,j)))
+                        end do
+                        solved%elements(:,i) = div_t(minus_t(solved%elements(:, i), tmp), x%elements(i,i))
+                    end do
+                end function
+            end template
+        contains
+            elemental function minus_matrix(x, y) result(difference)
+                type(matrix), intent(in) :: x, y
+                type(matrix) :: difference
+
+                difference%elements = minus_t(x%elements, y%elements)
+            end function
+        end template
     contains
-        pure function add_matrix(a, b) result(r)
-            type(matrix), intent(in) :: a, b
-            type(matrix) :: r
-            r%elements = plus(a%elements, b%elements)
+        elemental function plus_matrix(x, y) result(combined)
+            type(matrix), intent(in) :: x, y
+            type(matrix) :: combined
+
+            combined%elements = plus_t(x%elements, y%elements)
         end function
 
-        pure function mul_matrix(a, b) result(r)
-            type(matrix), intent(in) :: a, b
-            type(matrix) :: r
+        pure function zero()
+            type(matrix) :: zero
 
-            type(t) :: dot(n)
-            type(t) :: temp
+            zero%elements = zero_t()
+        end function
+
+        elemental function times_matrix(x, y) result(combined)
+            type(matrix), intent(in) :: x, y
+            type(matrix) :: combined
+
+            !instantiate derive_extended_monoid(T, plus_t, zero_t), only: sum => mconcat
             integer :: i, j, k
+
+            type(T) :: dot
 
             do i = 1, n
                 do j = 1, n
-                    dot = times(a%elements(i,:), b%elements(:,j))
-                    temp = dot(1)
-                    do k = 2, n
-                        temp = plus(temp, dot(i))
+                    dot = zero_t()
+                    do k = 1, n
+                        dot = plus_t(dot, times_t(x%elements(i,k), y%elements(k,j)))
                     end do
-                    r%elements(i,j) = temp
+                    combined%elements(i, j) = dot
+                    !combined%elements(i, j) = sum(times_t(x%elements(i,:), y%elements(:,j)))
                 end do
             end do
         end function
+
+        pure function one()
+            type(matrix) :: one
+
+            integer :: i
+
+            one%elements = zero_t()
+            do concurrent (i = 1:n)
+                one%elements(i, i) = one_t()
+            end do
+        end function
     end template
-
 end module
-
-program template_matrix_01
-use template_matrix_01_m
-
-integer, parameter :: n = 2
-integer :: i, j
-
-instantiate matrix_t(integer, operator(+), operator(*), n), &
-    only: int_matrix => matrix, &
-          int_add_matrix => add_matrix, &
-          int_mul_matrix => mul_matrix
-
-type(int_matrix) :: am, bm, cm, dm
-
-do i = 1, n
-    do j = 1, n
-        am%elements(i,j) = i
-        bm%elements(i,j) = i
-    end do
-end do
-
-cm = int_add_matrix(am, bm)
-dm = int_mul_matrix(am, bm)
-
-print *, cm%elements(1,1), cm%elements(1,2)
-print *, cm%elements(2,1), cm%elements(2,2), achar(10)
-
-print *, dm%elements(1,1), dm%elements(1,2)
-print *, dm%elements(2,1), dm%elements(2,2)
-
-
-end program

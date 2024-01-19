@@ -1,0 +1,13 @@
+{
+    "basename": "asr-template_semiring-fc9fd57",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/template_semiring.f90",
+    "infile_hash": "00fc4582d30ed224fc5db74b10fa9dc05e55b8badb2c8cbabd4bf5ab",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-template_semiring-fc9fd57.stdout",
+    "stdout_hash": "1ef0ff5e717ff5bc649befba64e89557d6c9ea88f36d1c0d97f37cca",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

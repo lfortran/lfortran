@@ -1,0 +1,13 @@
+{
+    "basename": "asr-template_semigroup-cd92445",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/template_semigroup.f90",
+    "infile_hash": "1ea854deb992b9645b840122b9af28d8573d8045ae25b87ce83ad177",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-template_semigroup-cd92445.stdout",
+    "stdout_hash": "05fa17bc1ab1de0da7500c26ce06e891827b79b41ed5d195317a7f92",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
