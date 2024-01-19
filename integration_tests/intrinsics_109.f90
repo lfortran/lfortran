@@ -1,6 +1,6 @@
 program intrinsics_109
     integer, parameter :: N = 2
-    real :: A(N, N), B(N, N), C(N, N)
+    real :: A(N, N), B(N, N), C(N, N), D(N,N), E(N,N)
 
     ! Initialize matrices A and B as 2x2 identity matrices
     A = reshape([1.0, 0.0, 0.0, 1.0], shape(A))
@@ -8,6 +8,8 @@ program intrinsics_109
 
     ! Perform matrix multiplication: C = A * B
     C = matmul( matrix_a = A, matrix_b = B )
+    D = matmul( A, matrix_b = B )
+    E = matmul( A, B )
 
     ! Print the matrices
     print *, "Matrix A (2x2 identity matrix):"
