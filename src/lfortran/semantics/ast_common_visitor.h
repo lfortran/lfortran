@@ -1085,7 +1085,8 @@ public:
             }
 
             ASR::asr_t* new_target = ASR::make_StructInstanceMember_t(al, target->base.loc, ASRUtils::EXPR(struct_var_),
-                member_sym, ASRUtils::symbol_type(struct_type->m_symtab->resolve_symbol(target_var_name)), nullptr);
+                member_sym, ASRUtils::fix_scoped_type(al, ASRUtils::symbol_type(struct_type->m_symtab->resolve_symbol(target_var_name)),
+                    current_scope), nullptr);
 
             return new_target;
         } else {
@@ -2967,7 +2968,7 @@ public:
             ASR::symbol_t* v_ext = ASRUtils::import_struct_instance_member(al, v, current_scope, struct_t_mem_type);
             v_Var = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
                         al, v_expr->base.loc, v_expr, v_ext,
-                        struct_t_mem_type, nullptr));
+                        ASRUtils::fix_scoped_type(al, struct_t_mem_type, current_scope), nullptr));
         } else {
             v_Var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
         }
@@ -4070,7 +4071,7 @@ public:
                                     "argument to " + intrinsic_name + ".",
                                     x.base.base.loc);
             }
-            this->visit_expr(*x.m_keywords[i].m_value);   
+            this->visit_expr(*x.m_keywords[i].m_value);
             args.p[kwarg_idx] = ASRUtils::EXPR(tmp);
         }
         return true;
@@ -6714,7 +6715,7 @@ public:
                     tmp2_mem_type = ASRUtils::duplicate_type(al, tmp2_mem_type, &m_dims_vec);
                 }
                 tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp),
-                                                       tmp2_m_m_ext, tmp2_mem_type, nullptr);
+                    tmp2_m_m_ext, ASRUtils::fix_scoped_type(al, tmp2_mem_type, current_scope), nullptr);
                 make_ArrayItem_from_struct_m_args(x_m_member[i].m_args, x_m_member[i].n_args,
                     ASRUtils::EXPR(tmp), tmp, loc);
                 if( ASR::is_a<ASR::ArraySection_t>(*ASRUtils::EXPR(tmp)) ) {
@@ -6744,7 +6745,7 @@ public:
                 tmp2_mem_type = ASRUtils::duplicate_type(al, tmp2_mem_type, &m_dims_vec);
             }
             tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp), tmp2_m_m_ext,
-                                                   tmp2_mem_type, nullptr);
+                ASRUtils::fix_scoped_type(al, tmp2_mem_type, current_scope), nullptr);
         }
     }
 
