@@ -624,6 +624,8 @@ RUN(NAME intrinsics_117 LABELS gfortran llvm)
 RUN(NAME intrinsics_118 LABELS gfortran llvm)
 RUN(NAME intrinsics_119 LABELS gfortran llvm)
 RUN(NAME intrinsics_120 LABELS gfortran llvm)
+RUN(NAME intrinsics_121 LABELS gfortran llvm)#leadz
+RUN(NAME intrinsics_122 LABELS gfortran llvm)#rank
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)

@@ -1555,6 +1555,24 @@ int64_t compute_trailing_zeros(int64_t number, int64_t kind) {
     return trailing_zeros;
 }
 
+int64_t compute_leading_zeros(int64_t number, int64_t kind) {
+    int64_t leading_zeros = 0;
+    int64_t total_bits = 32;
+    if (kind == 8) total_bits = 64;
+    if (number < 0) return 0;
+    while (total_bits > 0) {
+        if (number%2 == 0) {
+            leading_zeros++;
+        } else {
+            leading_zeros = 0; 
+        }
+        number = number/2;
+        total_bits--;
+    }
+    return leading_zeros;
+}
+
+
 //Initialize pointer to zero so that it can be initialized in first call to get_instance
 ASRUtils::LabelGenerator* ASRUtils::LabelGenerator::label_generator = nullptr;
 
