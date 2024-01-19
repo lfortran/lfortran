@@ -169,30 +169,37 @@ asr = true
 [[test]]
 filename = "../integration_tests/template_monoid.f90"
 asr = true
+extrafiles = "../integration_tests/template_semigroup.f90"
 
 [[test]]
 filename = "../integration_tests/template_semiring.f90"
 asr = true
+extrafiles = "../integration_tests/template_monoid.f90"
 
 [[test]]
 filename = "../integration_tests/template_unitring.f90"
 asr = true
+extrafiles = "../integration_tests/template_semiring.f90"
 
 [[test]]
 filename = "../integration_tests/template_field.f90"
 asr = true
+extrafiles = "../integration_tests/template_unitring.f90"
 
 [[test]]
 filename = "../integration_tests/template_matrix.f90"
 asr = true
+extrafiles = "../integration_tests/template_monoid.f90, ../integration_tests/template_semiring.f90, ../integration_tests/template_unitring.f90, ../integration_tests/template_field.f90"
 
 [[test]]
 filename = "../integration_tests/template_matrix_real.f90"
 asr = true
+extrafiles = "../integration_tests/template_matrix.f90"
 
 [[test]]
 filename = "../integration_tests/template_matrix_integer.f90"
 asr = true
+extrafiles = "../integration_tests/template_matrix.f90"
 
 [[test]]
 filename = "../integration_tests/test_backspace_01.f90"
