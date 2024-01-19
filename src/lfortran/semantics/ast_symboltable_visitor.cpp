@@ -2527,7 +2527,7 @@ public:
                 dflt_access);
             current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(req));
         } else if (ASR::is_a<ASR::Template_t>(*t)) {
-            ASR::Requirement_t *mtemp = ASR::down_cast<ASR::Requirement_t>(t);
+            ASR::Template_t *mtemp = ASR::down_cast<ASR::Template_t>(t);
             ASR::asr_t *temp = ASR::make_ExternalSymbol_t(
                 al, mtemp->base.base.loc,
                 current_scope,
