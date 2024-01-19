@@ -4,5 +4,7 @@ program intrinsics_114
     x4 = 1.234E0_4
     x8 = 4.321_8
     print *, aint( a = x4, kind = 8 )
-    print *, aint( a = x8, kind = 4 )
+    if ( .not. aint( a = x8, kind = 4 ) == 4 ) error stop
+    if ( .not. aint( x8, kind = 4 ) == 4 ) error stop
+    if ( .not. aint( x8, 4 ) == 4 ) error stop
 end program intrinsics_114
