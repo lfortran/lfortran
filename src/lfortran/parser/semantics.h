@@ -1690,16 +1690,42 @@ void add_ws_warning(const Location &loc,
                 msg1,
                 {loc},
                 msg2);
-                
+        } else if (end_token == yytokentype::KW_COMPLEX) {
+            if (a_kind == 16) {
+                diagnostics.parser_style_label(
+                "Use complex(16) instead of complex*16",
+                {loc},
+                "help: write this as 'complex(16)'");
+            } else {
+                diagnostics.parser_style_label(
+                "Use complex(8) instead of complex*8",
+                {loc},
+                "help: write this as 'complex(8)'");
+            }
+        } else if (end_token == yytokentype::KW_LOGICAL) {
+            if (a_kind == 4) {
+                diagnostics.parser_style_label(
+                "Use logical(4) instead of logical*4",
+                {loc},
+                "help: write this as 'logical(4)'");
+            } else {
+                diagnostics.parser_style_label(
+                "Use logical(8) instead of logical*8",
+                {loc},
+                "help: write this as 'logical(8)'");
+            }
         }
+
     }
 }
 
 #define WARN_ENDDO(l) add_ws_warning(l, p.diag, p.fixed_form, KW_ENDDO)
 #define WARN_ENDIF(l) add_ws_warning(l, p.diag, p.fixed_form, KW_ENDIF)
 #define WARN_REALSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_REAL, x.int_n.n)
+#define WARN_COMPLEXSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_COMPLEX, x.int_n.n)
 #define WARN_INTEGERSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_INTEGER, x.int_n.n)
 #define WARN_CHARACTERSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_CHARACTER, x.int_n.n)
+#define WARN_LOGICALSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_LOGICAL, x.int_n.n)
 
 #define DO1(trivia, body, l) make_DoLoop_t(p.m_a, l, 0, nullptr, 0, \
         nullptr, nullptr, nullptr, nullptr, \

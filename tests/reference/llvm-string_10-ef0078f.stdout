@@ -34,7 +34,9 @@ source_filename = "LFortran"
 @29 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @30 = private unnamed_addr constant [4 x i8] c"sbs\00", align 1
 @31 = private unnamed_addr constant [4 x i8] c"sbs\00", align 1
-@32 = private unnamed_addr constant [12 x i8] c"ERROR STOP\0A\00", align 1
+@32 = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
+@33 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@34 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
@@ -169,7 +171,7 @@ define i32 @main(i32 %0, i8** %1) {
   br i1 %86, label %then, label %else
 
 then:                                             ; preds = %.entry
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @32, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @34, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @32, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @33, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont
 

@@ -893,6 +893,8 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
     }
     if (ASR::is_a<ASR::IntegerConstant_t>(*a_value)) {
         // OK
+    } else if (ASR::is_a<ASR::IntegerBOZ_t>(*a_value)) {
+        // OK
     } else if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*a_value)) {
         ASR::expr_t *val = ASR::down_cast<ASR::IntegerUnaryMinus_t>(
             a_value)->m_value;
@@ -934,7 +936,14 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
         if( !ASRUtils::is_intrinsic_symbol(ASRUtils::symbol_get_past_external(func_call_t->m_name)) ) {
             return false;
         }
+
+        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
+            ASRUtils::symbol_get_past_external(func_call_t->m_name));
         for( size_t i = 0; i < func_call_t->n_args; i++ ) {
+            if (func_call_t->m_args[i].m_value == nullptr &&
+                ASRUtils::EXPR2VAR(func->m_args[i])->m_presence == ASR::presenceType::Optional) {
+                continue;
+            }
             if( !ASRUtils::is_value_constant(func_call_t->m_args[i].m_value) ) {
                 return false;
             }
@@ -980,6 +989,9 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
             }
         }
         return is_constant;
+    } else if( ASR::is_a<ASR::IntegerBinOp_t>(*a_value) ) {
+        ASR::IntegerBinOp_t* int_binop = ASR::down_cast<ASR::IntegerBinOp_t>(a_value);
+        return is_value_constant(int_binop->m_value);
     } else {
         return false;
     }
@@ -1158,6 +1170,39 @@ static inline bool extract_value(ASR::expr_t* value_expr,
     return true;
 }
 
+static inline bool extract_string_value(ASR::expr_t* value_expr,
+    std::string& value) {
+    if( !is_value_constant(value_expr) ) {
+        return false;
+    }
+    switch (value_expr->type)
+    {
+        case ASR::exprType::StringConstant: {
+            ASR::StringConstant_t* const_string = ASR::down_cast<ASR::StringConstant_t>(value_expr);
+            value = std::string(const_string->m_s);
+            break;
+        }
+        case ASR::exprType::Var: {
+            ASR::Variable_t* var = EXPR2VAR(value_expr);
+            if (var->m_storage == ASR::storage_typeType::Parameter
+                    && !extract_string_value(var->m_value, value)) {
+                return false;
+            }
+            break;
+        }
+        case ASR::exprType::FunctionCall: {
+            ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(value_expr);
+            if (!extract_string_value(func_call->m_value, value)) {
+                return false;
+            }
+            break;
+        }
+        default:
+            return false;
+    }
+    return true;
+}
+
 template <typename T,
     typename = typename std::enable_if<
         std::is_same<T, std::complex<double>>::value == false &&
@@ -1171,6 +1216,11 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
         case ASR::exprType::IntegerConstant: {
             ASR::IntegerConstant_t* const_int = ASR::down_cast<ASR::IntegerConstant_t>(value_expr);
             value = (T) const_int->m_n;
+            break;
+        }
+        case ASR::exprType::IntegerBOZ: {
+            ASR::IntegerBOZ_t* int_boz = ASR::down_cast<ASR::IntegerBOZ_t>(value_expr);
+            value = (T) int_boz->m_v;
             break;
         }
         case ASR::exprType::IntegerUnaryMinus: {
@@ -1215,6 +1265,13 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
         case ASR::exprType::FunctionCall: {
             ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(value_expr);
             if (!extract_value(func_call->m_value, value)) {
+                return false;
+            }
+            break;
+        }
+        case ASR::exprType::IntegerBinOp: {
+            ASR::IntegerBinOp_t* int_binop = ASR::down_cast<ASR::IntegerBinOp_t>(value_expr);
+            if (!extract_value(int_binop->m_value, value)) {
                 return false;
             }
             break;
@@ -2679,12 +2736,13 @@ inline int extract_len(ASR::expr_t* len_expr, const Location& loc) {
             a_len = -3;
             break;
         }
+        case ASR::exprType::ArraySize:
         case ASR::exprType::IntegerBinOp: {
             a_len = -3;
             break;
         }
         default: {
-            throw SemanticError("Only Integers or variables implemented so far for `len` expressions",
+            throw SemanticError("Only Integers or variables implemented so far for `len` expressions, found: " + std::to_string(len_expr->type),
                                 loc);
         }
     }
@@ -3394,25 +3452,18 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
             replace_expr(x->m_args[i].m_value);
             current_expr = current_expr_copy_;
         }
-        switch( x->m_type->type ) {
-            case ASR::ttypeType::Character: {
-                ASR::Character_t* char_type = ASR::down_cast<ASR::Character_t>(x->m_type);
-                if( char_type->m_len_expr ) {
-                    ASR::expr_t** current_expr_copy_ = current_expr;
-                    current_expr = &(char_type->m_len_expr);
-                    replace_expr(char_type->m_len_expr);
-                    current_expr = current_expr_copy_;
-                }
-                break;
-            }
-            default:
-                break;
-        }
+        replace_ttype(x->m_type);
         if (ASRUtils::symbol_parent_symtab(new_es)->get_counter() != current_scope->get_counter()) {
             ADD_ASR_DEPENDENCIES(current_scope, new_es, current_function_dependencies);
         }
         ASRUtils::insert_module_dependency(new_es, al, current_module_dependencies);
         x->m_name = new_es;
+        if( x->m_original_name ) {
+            ASR::symbol_t* x_original_name = current_scope->resolve_symbol(ASRUtils::symbol_name(x->m_original_name));
+            if( x_original_name ) {
+                x->m_original_name = x_original_name;
+            }
+        }
     }
 
     void replace_Var(ASR::Var_t* x) {
@@ -3464,6 +3515,49 @@ class ExprStmtDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtDuplicator>
     ExprStmtDuplicator(Allocator &al): BaseExprStmtDuplicator(al) {}
 
 };
+
+class FixScopedTypeVisitor: public ASR::BaseExprReplacer<FixScopedTypeVisitor> {
+
+    private:
+
+    Allocator& al;
+    SymbolTable* current_scope;
+
+    public:
+
+    FixScopedTypeVisitor(Allocator& al_, SymbolTable* current_scope_) :
+        al(al_), current_scope(current_scope_) {}
+
+    void replace_Struct(ASR::Struct_t* x) {
+        ASR::symbol_t* m_derived_type = current_scope->resolve_symbol(
+            ASRUtils::symbol_name(x->m_derived_type));
+        if (m_derived_type == nullptr) {
+            std::string imported_name = current_scope->get_unique_name(
+                ASRUtils::symbol_name(x->m_derived_type));
+            m_derived_type = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                al, x->base.base.loc, current_scope, s2c(al, imported_name),
+                x->m_derived_type, ASRUtils::get_sym_module(
+                    ASRUtils::symbol_get_past_external(x->m_derived_type))->m_name,
+                    nullptr, 0, ASRUtils::symbol_name(
+                        ASRUtils::symbol_get_past_external(x->m_derived_type)),
+                ASR::accessType::Public));
+            current_scope->add_symbol(imported_name, m_derived_type);
+        }
+        x->m_derived_type = m_derived_type;
+    }
+
+};
+
+static inline ASR::ttype_t* fix_scoped_type(Allocator& al,
+    ASR::ttype_t* type, SymbolTable* scope) {
+    ASRUtils::ExprStmtDuplicator expr_duplicator(al);
+    expr_duplicator.allow_procedure_calls = true;
+    ASR::ttype_t* type_ = expr_duplicator.duplicate_ttype(type);
+    ASRUtils::FixScopedTypeVisitor fixer(al, scope);
+    fixer.replace_ttype(type_);
+    return type_;
+
+}
 
 class ReplaceWithFunctionParamVisitor: public ASR::BaseExprReplacer<ReplaceWithFunctionParamVisitor> {
 
@@ -4710,8 +4804,14 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
 
     Call_t_body(al, a_name, a_args, n_args, a_dt, cast_stmt, implicit_argument_casting, nopass);
 
-    return ASR::make_SubroutineCall_t(al, a_loc, a_name, a_original_name,
-            a_args, n_args, a_dt);
+    if( a_dt && ASR::is_a<ASR::Variable_t>(
+        *ASRUtils::symbol_get_past_external(a_name)) &&
+        ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(a_name)) ) {
+        a_dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, a_loc,
+            a_dt, a_name, ASRUtils::symbol_type(a_name), nullptr));
+    }
+
+    return ASR::make_SubroutineCall_t(al, a_loc, a_name, a_original_name, a_args, n_args, a_dt);
 }
 
 static inline ASR::expr_t* cast_to_descriptor(Allocator& al, ASR::expr_t* arg) {
@@ -4832,7 +4932,8 @@ inline ASR::ttype_t* make_Pointer_t_util(Allocator& al, const Location& loc, ASR
     return ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, type));
 }
 
-int64_t compute_trailing_zeros(int64_t number);
+int64_t compute_trailing_zeros(int64_t number, int64_t kind);
+int64_t compute_leading_zeros(int64_t number, int64_t kind);
 
 static inline bool is_simd_array(ASR::expr_t *v) {
     return (ASR::is_a<ASR::Array_t>(*expr_type(v)) &&

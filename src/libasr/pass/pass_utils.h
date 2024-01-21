@@ -587,8 +587,9 @@ namespace LCompilers {
                                                     array_ref, idoloop->m_values[i], nullptr));
                     doloop_body.push_back(al, doloop_stmt);
                     if( arr_idx != nullptr ) {
+                        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr_var->base.loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, arr_var->base.loc, 4))));
                         ASR::expr_t* increment = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, arr_var->base.loc,
-                                                    arr_idx, ASR::binopType::Add, const_1, ASRUtils::expr_type(arr_idx), nullptr));
+                                                    arr_idx, ASR::binopType::Add, one, ASRUtils::expr_type(arr_idx), nullptr));
                         ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, arr_var->base.loc,
                                                     arr_idx, increment, nullptr));
                         doloop_body.push_back(al, assign_stmt);

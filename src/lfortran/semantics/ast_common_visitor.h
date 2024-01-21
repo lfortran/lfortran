@@ -684,32 +684,35 @@ public:
 
 
     std::map<std::string, std::vector<IntrinsicSignature>> name2signature = {
-        {"any", {IntrinsicSignature({"dim"}, 1, 2)}},
-        {"sum", {IntrinsicSignature({"dim", "mask"}, 1, 3),
-                 IntrinsicSignature({"mask"}, 1, 2)}},
-        {"product", {IntrinsicSignature({"dim", "mask"}, 1, 3),
-                 IntrinsicSignature({"mask"}, 1, 2)}},
-        {"matmul", {IntrinsicSignature({}, 2, 2)}},
-        {"maxval", {IntrinsicSignature({"dim", "mask"}, 1, 3),
-                IntrinsicSignature({"mask"}, 1, 2)}},
-        {"maxloc", {IntrinsicSignature({"dim", "mask", "kind", "back"}, 1, 5)}},
-        {"minval", {IntrinsicSignature({"dim", "mask"}, 1, 3),
-                IntrinsicSignature({"mask"}, 1, 2)}},
-        {"minloc", {IntrinsicSignature({"dim", "mask", "kind", "back"}, 1, 5)}},
+        {"any", {IntrinsicSignature({"mask", "dim"}, 1, 2)}},
+        {"sum", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3),
+                IntrinsicSignature({"array", "mask"}, 1, 2)}},
+        {"product", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3),
+                IntrinsicSignature({"array", "mask"}, 1, 2)}},
+        {"matmul", {IntrinsicSignature({"matrix_a", "matrix_b"}, 2, 2)}},
+        {"maxval", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3),
+                IntrinsicSignature({"array", "mask"}, 1, 2)}},
+        {"maxloc", {IntrinsicSignature({"array", "dim", "mask", "kind", "back"}, 1, 5),
+                    IntrinsicSignature({"array", "mask", "kind", "back"}, 1, 4)}},
+        {"minval", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3),
+                IntrinsicSignature({"array", "mask"}, 1, 2)}},
+        {"minloc", {IntrinsicSignature({"array", "dim", "mask", "kind", "back"}, 1, 5),
+                    IntrinsicSignature({"array", "mask", "kind", "back"}, 1, 4)}},
         // max0 can accept any arbitrary number of arguments 2<=x<=100
-        {"max0", {IntrinsicSignature({}, 2, 100)}},
+        {"max0", {IntrinsicSignature({"a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9", "a10", "a11", "a12", "a13", "a14", "a15", "a16", "a17", "a18", "a19", "a20", "a21", "a22", "a23", "a24", "a25", "a26", "a27", "a28", "a29", "a30", "a31", "a32", "a33", "a34", "a35", "a36", "a37", "a38", "a39", "a40", "a41", "a42", "a43", "a44", "a45", "a46", "a47", "a48", "a49", "a50", "a51", "a52", "a53", "a54", "a55", "a56", "a57", "a58", "a59", "a60", "a61", "a62", "a63", "a64", "a65", "a66", "a67", "a68", "a69", "a70", "a71", "a72", "a73", "a74", "a75", "a76", "a77", "a78", "a79", "a80", "a81", "a82", "a83", "a84", "a85", "a86", "a87", "a88", "a89", "a90", "a91", "a92", "a93", "a94", "a95", "a96", "a97", "a98", "a99", "a100"}, 2, 100)}},
         // min0 can accept any arbitrary number of arguments 2<=x<=100
-        {"min0", {IntrinsicSignature({}, 2, 100)}},
-        {"min", {IntrinsicSignature({}, 2, 100)}},
-        {"merge", {IntrinsicSignature({}, 3, 3)}},
-        {"sign", {IntrinsicSignature({}, 2, 2)}},
-        {"aint", {IntrinsicSignature({}, 1, 2)}},
-        {"anint", {IntrinsicSignature({}, 1, 2)}},
-        {"atan2", {IntrinsicSignature({}, 2, 2)}},
-        {"shape", {IntrinsicSignature({"kind"}, 1, 2)}},
-        {"mod", {IntrinsicSignature({"mod"}, 1, 2)}},
-        {"repeat", {IntrinsicSignature({"repeat"}, 2, 2)}},
-        {"hypot", {IntrinsicSignature({"hypot"}, 2, 2)}},
+        {"min0", {IntrinsicSignature({"a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9", "a10", "a11", "a12", "a13", "a14", "a15", "a16", "a17", "a18", "a19", "a20", "a21", "a22", "a23", "a24", "a25", "a26", "a27", "a28", "a29", "a30", "a31", "a32", "a33", "a34", "a35", "a36", "a37", "a38", "a39", "a40", "a41", "a42", "a43", "a44", "a45", "a46", "a47", "a48", "a49", "a50", "a51", "a52", "a53", "a54", "a55", "a56", "a57", "a58", "a59", "a60", "a61", "a62", "a63", "a64", "a65", "a66", "a67", "a68", "a69", "a70", "a71", "a72", "a73", "a74", "a75", "a76", "a77", "a78", "a79", "a80", "a81", "a82", "a83", "a84", "a85", "a86", "a87", "a88", "a89", "a90", "a91", "a92", "a93", "a94", "a95", "a96", "a97", "a98", "a99", "a100"}, 2, 100)}},
+        {"min", {IntrinsicSignature({"a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9", "a10", "a11", "a12", "a13", "a14", "a15", "a16", "a17", "a18", "a19", "a20", "a21", "a22", "a23", "a24", "a25", "a26", "a27", "a28", "a29", "a30", "a31", "a32", "a33", "a34", "a35", "a36", "a37", "a38", "a39", "a40", "a41", "a42", "a43", "a44", "a45", "a46", "a47", "a48", "a49", "a50", "a51", "a52", "a53", "a54", "a55", "a56", "a57", "a58", "a59", "a60", "a61", "a62", "a63", "a64", "a65", "a66", "a67", "a68", "a69", "a70", "a71", "a72", "a73", "a74", "a75", "a76", "a77", "a78", "a79", "a80", "a81", "a82", "a83", "a84", "a85", "a86", "a87", "a88", "a89", "a90", "a91", "a92", "a93", "a94", "a95", "a96", "a97", "a98", "a99", "a100"}, 2, 100)}},
+        {"merge", {IntrinsicSignature({"tsource", "fsource", "mask"}, 3, 3)}},
+        {"sign", {IntrinsicSignature({"a", "b"}, 2, 2)}},
+        {"aint", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
+        {"anint", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
+        {"atan2", {IntrinsicSignature({"y", "x"}, 2, 2)}},
+        {"shape", {IntrinsicSignature({"source", "kind"}, 1, 2)}},
+        {"mod", {IntrinsicSignature({"a", "p"}, 2, 2)}},
+        {"repeat", {IntrinsicSignature({"string", "ncopies"}, 2, 2)}},
+        {"hypot", {IntrinsicSignature({"x", "y"}, 2, 2)}},
+        {"shiftr", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
     };
 
     std::map<std::string, std::string> double_precision_intrinsics = {
@@ -1082,7 +1085,8 @@ public:
             }
 
             ASR::asr_t* new_target = ASR::make_StructInstanceMember_t(al, target->base.loc, ASRUtils::EXPR(struct_var_),
-                member_sym, ASRUtils::symbol_type(struct_type->m_symtab->resolve_symbol(target_var_name)), nullptr);
+                member_sym, ASRUtils::fix_scoped_type(al, ASRUtils::symbol_type(struct_type->m_symtab->resolve_symbol(target_var_name)),
+                    current_scope), nullptr);
 
             return new_target;
         } else {
@@ -1944,8 +1948,8 @@ public:
                                     }
                                     ASR::expr_t* init_expr_value = ASRUtils::expr_value(init_expr);
                                     if( init_expr && !ASRUtils::is_value_constant(init_expr_value) ) {
-                                        throw SemanticError("Initialisation of " + std::string(x.m_syms[i].m_name) +
-                                                            " must reduce to a compile time constant.",
+                                        throw SemanticError("Initialization of `" + std::string(x.m_syms[i].m_name) +
+                                                            "` must reduce to a compile time constant.",
                                             x.m_syms[i].loc);
                                     }
                                     sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
@@ -2403,8 +2407,8 @@ public:
                         } else if( ASRUtils::is_value_constant(init_expr) ) {
                             value = nullptr;
                         } else {
-                            throw SemanticError("Initialisation of " + std::string(x.m_syms[i].m_name) +
-                                                " must reduce to a compile time constant.",
+                            throw SemanticError("Initialization of `" + std::string(x.m_syms[i].m_name) +
+                                                "` must reduce to a compile time constant.",
                                 x.base.base.loc);
                         }
                     }
@@ -2455,8 +2459,8 @@ public:
                         */
                         value = ASRUtils::expr_value(init_expr);
                         if (value == nullptr) {
-                            throw SemanticError("Initialisation of " + std::string(x.m_syms[i].m_name) +
-                                                " must reduce to a compile time constant.",
+                            throw SemanticError("Initialization of `" + std::string(x.m_syms[i].m_name) +
+                                                "` must reduce to a compile time constant.",
                                 x.base.base.loc);
                         }
                         if (ASR::is_a<ASR::IntegerConstant_t>(*value)) {
@@ -2470,8 +2474,8 @@ public:
                                 type = ASRUtils::TYPE(ASR::make_Character_t(al, int_const->base.base.loc, 1, len, nullptr));
                             }
                         } else {
-                            throw SemanticError("Initialisation of " + std::string(x.m_syms[i].m_name) +
-                                                " must reduce to a compile time constant.",
+                            throw SemanticError("Initialization of `" + std::string(x.m_syms[i].m_name) +
+                                                "` must reduce to a compile time constant.",
                                 x.base.base.loc);
                         }
                         value = nullptr;
@@ -2521,8 +2525,8 @@ public:
                                     value = nullptr;
                                 }
                             } else {
-                                throw SemanticError("Initialisation of " + std::string(x.m_syms[i].m_name) +
-                                                    " must reduce to a compile time constant.",
+                                throw SemanticError("Initialization of `" + std::string(x.m_syms[i].m_name) +
+                                                    "` must reduce to a compile time constant.",
                                     x.base.base.loc);
                             }
                         }
@@ -2964,7 +2968,7 @@ public:
             ASR::symbol_t* v_ext = ASRUtils::import_struct_instance_member(al, v, current_scope, struct_t_mem_type);
             v_Var = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
                         al, v_expr->base.loc, v_expr, v_ext,
-                        struct_t_mem_type, nullptr));
+                        ASRUtils::fix_scoped_type(al, struct_t_mem_type, current_scope), nullptr));
         } else {
             v_Var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
         }
@@ -3229,22 +3233,6 @@ public:
         Vec<ASR::expr_t*> body;
         body.reserve(al, x.n_args);
         ASR::ttype_t *type = nullptr;
-        for (size_t i=0; i<x.n_args; i++) {
-            this->visit_expr(*x.m_args[i]);
-            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
-            if (type == nullptr) {
-                type = ASRUtils::expr_type(expr);
-            } else {
-                if (!ASRUtils::check_equal_type(ASRUtils::expr_type(expr), type)) {
-                    throw SemanticError(std::string("Type mismatch in array initializer ") +
-                        ASRUtils::get_type_code(ASRUtils::expr_type(expr))
-                        + " and " +
-                        ASRUtils::get_type_code(type) + ".",
-                        x.base.base.loc);
-                }
-            }
-            body.push_back(al, expr);
-        }
         Vec<ASR::dimension_t> dims;
         dims.reserve(al, 1);
         if (x.m_vartype != nullptr) {
@@ -3256,6 +3244,18 @@ public:
             if (x.n_args == 0) {
                 throw SemanticError("Empty array constructor is not allowed", x.base.base.loc);
             }
+        }
+        for (size_t i=0; i<x.n_args; i++) {
+            this->visit_expr(*x.m_args[i]);
+            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
+            if (type == nullptr) {
+                type = ASRUtils::expr_type(expr);
+            } else {
+                if (!ASRUtils::check_equal_type(ASRUtils::expr_type(expr), type)) {
+                    ImplicitCastRules::set_converted_value(al, expr->base.loc, &expr, ASRUtils::expr_type(expr), type);
+                }
+            }
+            body.push_back(al, expr);
         }
         ASR::dimension_t dim;
         dim.loc = x.base.base.loc;
@@ -4034,13 +4034,11 @@ public:
                                 " and at most " + std::to_string(max_args) + " arguments.",
                                 x.base.base.loc);
         }
-
         args.reserve(al, max_args);
 
         for( size_t i = 0; i < max_args; i++ ) {
             args.push_back(al, nullptr);
         }
-
         for( size_t i = 0; i < x.n_args; i++ ) {
             this->visit_expr(*x.m_args[i].m_end);
             args.p[i] = ASRUtils::EXPR(tmp);
@@ -4059,13 +4057,12 @@ public:
             }
         }
 
-        int64_t offset = min_args;
         for( size_t i = 0; i < x.n_keywords; i++ ) {
             std::string curr_kwarg_name = to_lower(x.m_keywords[i].m_arg);
             auto it = std::find(kwarg_names.begin(), kwarg_names.end(),
                                 curr_kwarg_name);
             int64_t kwarg_idx = it - kwarg_names.begin();
-            if( args[kwarg_idx + offset] != nullptr ) {
+            if( args[kwarg_idx] != nullptr ) {
                 if( !raise_error ) {
                     return false;
                 }
@@ -4075,7 +4072,7 @@ public:
                                     x.base.base.loc);
             }
             this->visit_expr(*x.m_keywords[i].m_value);
-            args.p[kwarg_idx + offset] = ASRUtils::EXPR(tmp);
+            args.p[kwarg_idx] = ASRUtils::EXPR(tmp);
         }
         return true;
     }
@@ -4098,7 +4095,7 @@ public:
     ASR::asr_t* create_Floor(const AST::FuncCallOrArray_t &x,
             ASR::ExternalSymbol_t* gp_ext, ASR::symbol_t* v) {
         Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"kind"};
+        std::vector<std::string> kwarg_names = {"A", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "floor");
         ASR::expr_t* kind = args[1];
         int64_t kind_value = handle_kind(kind);
@@ -4126,7 +4123,7 @@ public:
 
     ASR::asr_t* create_ArrayBound(const AST::FuncCallOrArray_t& x, std::string& bound_name) {
         Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"dim", "kind"};
+        std::vector<std::string> kwarg_names = {"array", "dim", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 3, bound_name);
         ASR::expr_t *v_Var = args[0], *dim = args[1], *kind = args[2];
         ASR::arrayboundType bound = ASR::arrayboundType::LBound;
@@ -4200,7 +4197,7 @@ public:
 
     ASR::asr_t* create_ArraySize(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"dim", "kind"};
+        std::vector<std::string> kwarg_names = {"array", "dim", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 3, std::string("size"));
         ASR::expr_t *v_Var = args[0], *dim = args[1], *kind = args[2];
         int64_t kind_const = handle_kind(kind);
@@ -4256,7 +4253,7 @@ public:
 
     ASR::asr_t* create_StringLen(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"kind"};
+        std::vector<std::string> kwarg_names = {"string", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, std::string("len"));
         ASR::expr_t *v_Var = args[0], *kind = args[1];
         int64_t kind_const = handle_kind(kind);
@@ -4281,7 +4278,7 @@ public:
         }
         ASR::expr_t* len_compiletime = nullptr;
         std::string input_string;
-        if( ASRUtils::is_value_constant(v_Var, input_string) ) {
+        if( ASRUtils::extract_string_value(v_Var, input_string) ) {
             len_compiletime = make_ConstantWithType(
                 make_IntegerConstant_t, input_string.size(), type, x.base.base.loc);
         }
@@ -4313,7 +4310,7 @@ public:
 
     ASR::asr_t* create_ArrayPack(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"vector"};
+        std::vector<std::string> kwarg_names = {"array", "mask", "vector"};
         handle_intrinsic_node_args(x, args, kwarg_names, 2, 3, "pack");
         ASR::expr_t *array = args[0], *mask = args[1], *vector = args[2];
         Vec<ASR::dimension_t> new_dims;
@@ -4371,7 +4368,7 @@ public:
 
     ASR::asr_t* create_BitCast(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"size"};
+        std::vector<std::string> kwarg_names = {"source", "mold", "size"};
         handle_intrinsic_node_args(x, args, kwarg_names, 2, 3, "transfer");
         ASR::expr_t *source = args[0], *mold = args[1], *size = args[2];
         if( size && !ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(size)) ) {
@@ -4417,7 +4414,7 @@ public:
 
     ASR::asr_t* create_Cmplx(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"y", "kind"};
+        std::vector<std::string> kwarg_names = {"x", "y", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 3, "cmplx");
         ASR::expr_t *x_ = args[0], *y_ = args[1], *kind = args[2];
         if( ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(x_)) ) {
@@ -4472,7 +4469,7 @@ public:
 
     ASR::asr_t* create_Associated(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"tgt"};
+        std::vector<std::string> kwarg_names = {"pointer", "target"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "associated");
         ASR::expr_t *ptr_ = args[0], *tgt_ = args[1];
         ASR::ttype_t* associated_type_ = ASRUtils::TYPE(ASR::make_Logical_t(
@@ -4482,7 +4479,7 @@ public:
 
     ASR::asr_t* create_DCmplx(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"y"};
+        std::vector<std::string> kwarg_names = {"x", "y"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "dcmplx");
         ASR::expr_t *x_ = args[0], *y_ = args[1];
         if( ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(x_)) ) {
@@ -4516,7 +4513,7 @@ public:
 
     ASR::asr_t* create_Ichar(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"kind"};
+        std::vector<std::string> kwarg_names = {"C", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "ichar");
         ASR::expr_t *arg = args[0], *kind = args[1];
         int64_t kind_value = handle_kind(kind);
@@ -4537,7 +4534,7 @@ public:
 
     ASR::asr_t* create_Iachar(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"kind"};
+        std::vector<std::string> kwarg_names = {"C", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "iachar");
         ASR::expr_t *arg = args[0], *kind = args[1];
         int64_t kind_value = handle_kind(kind);
@@ -4558,7 +4555,7 @@ public:
 
     ASR::asr_t* create_StringChr(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"kind"};
+        std::vector<std::string> kwarg_names = {"I", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "char");
         ASR::expr_t *arg = args[0];
         if (!is_integer(*ASRUtils::expr_type(arg))) {
@@ -4591,7 +4588,7 @@ public:
         string = nullptr, set = nullptr, back = nullptr;
         type = nullptr, kind = nullptr;
         Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"back", "kind"};
+        std::vector<std::string> kwarg_names = {"string", "set", "back", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 2, 4, func_name);
         string = args[0], set = args[1], back = args[2], kind = args[3];
         int64_t kind_value = handle_kind(kind);
@@ -4639,7 +4636,7 @@ public:
 
     ASR::asr_t* create_ArrayAll(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"dim"};
+        std::vector<std::string> kwarg_names = {"mask", "dim"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "all");
         ASR::expr_t *mask = args[0], *dim = args[1];
         ASR::expr_t* value = nullptr;
@@ -4792,7 +4789,7 @@ public:
 
     ASR::asr_t* create_PointerToCptr(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {};
+        std::vector<std::string> kwarg_names = {"X"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("c_loc"));
         ASR::expr_t *v_Var = args[0];
         if( !ASR::is_a<ASR::GetPointer_t>(*v_Var) &&
@@ -5110,7 +5107,7 @@ public:
         }
         if (!v || (v && is_external_procedure)) {
             ASR::symbol_t* external_sym = is_external_procedure ? v : nullptr;
-            if (var_name == "float" || var_name == "dble") {
+            if (var_name == "float" || var_name == "dble" || var_name == "dfloat") {
                 Vec<ASR::call_arg_t> args;
                 visit_expr_list(x.m_args, x.n_args, args);
                 tmp = handle_intrinsic_float(al, args, x.base.base.loc);
@@ -5174,7 +5171,7 @@ public:
                     throw SemanticAbort();
                 }
             } else if (compiler_options.implicit_interface) {
-                if (var_name == "float" || var_name == "dble") {
+                if (var_name == "float" || var_name == "dble" || var_name == "dfloat") {
                     Vec<ASR::call_arg_t> args;
                     visit_expr_list(x.m_args, x.n_args, args);
                     tmp = handle_intrinsic_float(al, args, x.base.base.loc);
@@ -5829,7 +5826,7 @@ public:
                             "The argument for " + param + " must be a function",
                             args[i]->base.loc);
                     }
-                    report_check_restriction(type_subs, symbol_subs, f, f_arg0, loc, diag);
+                    check_restriction(type_subs, symbol_subs, f, f_arg0, loc, diag);
                 } else {
                     ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
                     if (ASRUtils::is_type_parameter(*param_type)) {
@@ -5905,11 +5902,9 @@ public:
                     ASR::symbol_t* sym = current_scope->resolve_symbol(op_name);
                     ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
                     ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
-                    for (size_t i = 0; i < gen_proc->n_procs; i++) {
+                    for (size_t i = 0; i < gen_proc->n_procs && !found; i++) {
                         ASR::symbol_t* proc = gen_proc->m_procs[i];
-                        if (check_restriction(type_subs, symbol_subs, f, proc)) {
-                            found = true;
-                        }
+                        found = check_restriction(type_subs, symbol_subs, f, proc, loc, diag, false);
                     }
                 }
 
@@ -6032,15 +6027,8 @@ public:
 
         std::string new_func_name = target_scope->get_unique_name("__instantiated_" + func_name);
 
-        instantiate_symbol(al, context_map, type_subs, symbol_subs,
-            target_scope, temp->m_symtab, new_func_name, s);
-
-        ASR::symbol_t *new_s = target_scope->get_symbol(new_func_name);
-        ASR::Function_t *new_f = ASR::down_cast<ASR::Function_t>(new_s);
-        instantiate_function_body(al, context_map, type_subs, symbol_subs,
-            target_scope, temp->m_symtab, new_f, ASR::down_cast<ASR::Function_t>(s));
-
-        context_map.clear();
+        ASR::symbol_t* new_s = instantiate_symbol(al, target_scope, type_subs, symbol_subs, new_func_name, s);
+        instantiate_body(al, type_subs, symbol_subs, new_s, s);
 
         return new_func_name;
     }
@@ -6727,7 +6715,7 @@ public:
                     tmp2_mem_type = ASRUtils::duplicate_type(al, tmp2_mem_type, &m_dims_vec);
                 }
                 tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp),
-                                                       tmp2_m_m_ext, tmp2_mem_type, nullptr);
+                    tmp2_m_m_ext, ASRUtils::fix_scoped_type(al, tmp2_mem_type, current_scope), nullptr);
                 make_ArrayItem_from_struct_m_args(x_m_member[i].m_args, x_m_member[i].n_args,
                     ASRUtils::EXPR(tmp), tmp, loc);
                 if( ASR::is_a<ASR::ArraySection_t>(*ASRUtils::EXPR(tmp)) ) {
@@ -6757,7 +6745,7 @@ public:
                 tmp2_mem_type = ASRUtils::duplicate_type(al, tmp2_mem_type, &m_dims_vec);
             }
             tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp), tmp2_m_m_ext,
-                                                   tmp2_mem_type, nullptr);
+                ASRUtils::fix_scoped_type(al, tmp2_mem_type, current_scope), nullptr);
         }
     }
 

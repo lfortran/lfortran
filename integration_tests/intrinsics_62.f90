@@ -35,5 +35,5 @@ program intrinsics_62
     ! if (res_01(1) /= 4) error stop
 
     ! TODO: Support size(x), where x is rank 0
-    ! if (size(shape(z)) /= 0) error stop
+    if (size(shape(z)) /= 0) error stop
 end program intrinsics_62

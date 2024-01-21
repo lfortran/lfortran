@@ -38,10 +38,6 @@ interface shiftl
     module procedure shiftli8, shiftli32, shiftli64
 end interface
 
-interface shiftr
-    module procedure shiftri8, shiftri32, shiftri64
-end interface
-
 interface mvbits
     module procedure mvbits32, mvbits64
 end interface
@@ -322,21 +318,6 @@ if (shift < 64) then
 else
     error stop "shift must be less than 64"
 end if
-end function
-
-integer(int8) function shiftri8(i, shift) result(r)
-integer(int8), intent(in) :: i
-integer :: shift
-end function
-
-integer(int32) function shiftri32(i, shift) result(r)
-integer(int32) :: i
-integer :: shift
-end function
-
-integer(int64) function shiftri64(i, shift) result(r)
-integer(int64) :: i
-integer :: shift
 end function
 
 integer(int8) function shiftli8(i, shift) result(r)
