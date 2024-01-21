@@ -564,6 +564,51 @@ static inline std::string type_to_str(const ASR::ttype_t *t)
     }
 }
 
+static inline std::string type_to_str_with_substitution(const ASR::ttype_t *t,
+    std::map<std::string, ASR::ttype_t*> subs)
+{
+    if (ASR::is_a<ASR::TypeParameter_t>(*t)) {
+        ASR::TypeParameter_t* t_tp = ASR::down_cast<ASR::TypeParameter_t>(t);
+        t = subs[t_tp->m_param];
+    }
+    switch (t->type) {
+        case ASR::ttypeType::Pointer: {
+            return type_to_str_with_substitution(ASRUtils::type_get_past_pointer(
+                        const_cast<ASR::ttype_t*>(t)), subs) + " pointer";
+        }
+        case ASR::ttypeType::Allocatable: {
+            return type_to_str_with_substitution(ASRUtils::type_get_past_allocatable(
+                        const_cast<ASR::ttype_t*>(t)), subs) + " allocatable";
+        }
+        case ASR::ttypeType::Array: {
+            ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(t);
+            std::string res = type_to_str_with_substitution(array_t->m_type, subs);
+            encode_dimensions(array_t->n_dims, res, false);
+            return res;
+        }
+        case ASR::ttypeType::Const: {
+            return type_to_str_with_substitution(ASRUtils::get_contained_type(
+                        const_cast<ASR::ttype_t*>(t)), subs) + " const";
+        }
+        case ASR::ttypeType::FunctionType: {
+            ASR::FunctionType_t* ftp = ASR::down_cast<ASR::FunctionType_t>(t);
+            std::string result = "(";
+            for( size_t i = 0; i < ftp->n_arg_types; i++ ) {
+                result += type_to_str_with_substitution(ftp->m_arg_types[i], subs) + ", ";
+            }
+            result += "return_type: ";
+            if( ftp->m_return_var_type ) {
+                result += type_to_str_with_substitution(ftp->m_return_var_type, subs);
+            } else {
+                result += "void";
+            }
+            result += ")";
+            return result;
+        }
+        default : return type_to_str(t);
+    }
+}
+
 static inline std::string binop_to_str(const ASR::binopType t) {
     switch (t) {
         case (ASR::binopType::Add): { return " + "; }

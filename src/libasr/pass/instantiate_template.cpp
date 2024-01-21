@@ -871,6 +871,7 @@ public:
 
     /* utility */
 
+    // TODO: join this with the other substitute_type
     ASR::ttype_t* substitute_type(ASR::ttype_t *ttype) {
         switch (ttype->type) {
             case (ASR::ttypeType::TypeParameter) : {
@@ -983,7 +984,7 @@ bool check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
         ASR::ttype_t *arg_param = ASRUtils::expr_type(arg->m_args[i]);
         if (!ASRUtils::types_equal_with_substitution(f_param, arg_param, type_subs)) {
             if (report) {
-                std::string rtype = ASRUtils::type_to_str(f_param);
+                std::string rtype = ASRUtils::type_to_str_with_substitution(f_param, type_subs);
                 std::string rvar = ASRUtils::symbol_name(
                                     ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v);
                 std::string atype = ASRUtils::type_to_str(arg_param);
@@ -1017,7 +1018,7 @@ bool check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
         ASR::ttype_t *arg_ret = ASRUtils::expr_type(arg->m_return_var);
         if (!ASRUtils::types_equal_with_substitution(f_ret, arg_ret, type_subs)) {
             if (report) {
-                std::string rtype = ASRUtils::type_to_str(f_ret);
+                std::string rtype = ASRUtils::type_to_str_with_substitution(f_ret, type_subs);
                 std::string atype = ASRUtils::type_to_str(arg_ret);
                 diagnostics.add(diag::Diagnostic(
                     "Restriction type mismatch with provided function argument",
