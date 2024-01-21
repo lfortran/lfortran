@@ -457,11 +457,11 @@ instantiate matrix_tmpl(real, operator(+), zero_real, operator(*), one_real, n),
           real_plus_matrix => plus_matrix, &
           real_times_matrix => times_matrix, &
           real_matrix_subtraction_t => matrix_subtraction_t
-!instantiate real_matrix_subtraction_t(operator(-)), &
-!    only: real_minus_matrix => minus_matrix, &
-!          real_gaussian_solver_tmpl => gaussian_solver_tmpl
-!instantiate real_gaussian_solver_tmpl(operator(/)), &
-!    only: real_div_matrix => div_matrix
+instantiate real_matrix_subtraction_t(operator(-)), &
+    only: real_minus_matrix => minus_matrix, &
+          real_gaussian_solver_tmpl => gaussian_solver_tmpl
+instantiate real_gaussian_solver_tmpl(operator(/)), &
+    only: real_div_matrix => div_matrix
 
 type(real_matrix) :: r1, r2, r3, r4
 r1%elements(1,1) = 1.2

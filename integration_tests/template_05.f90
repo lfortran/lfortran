@@ -49,8 +49,13 @@ program template_05
 use template_05_m
 
 instantiate tmp(integer, operator(+)), &
-    only: integer_plus => g_plus, tmp_minus => tmp_minus
-instantiate tmp_minus(operator(-)), &
-    only: integer_minus => g_minus, tmp_mult => tmp_mult
+    only: integer_plus => g_plus, integer_tmp_minus => tmp_minus
+instantiate integer_tmp_minus(operator(-)), &
+    only: integer_minus => g_minus, integer_tmp_mult => tmp_mult
+
+instantiate tmp(real, operator(+)), &
+    only: real_plus => g_plus, real_tmp_minus => tmp_minus
+instantiate real_tmp_minus(operator(-)), &
+    only: real_minus => g_minus, real_tmp_mult => tmp_mult
 
 end program
