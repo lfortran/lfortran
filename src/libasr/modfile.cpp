@@ -7,8 +7,6 @@
 #include <libasr/serialization.h>
 #include <libasr/bwriter.h>
 
-#include <libasr/pickle.h>
-
 namespace LCompilers {
 
 const std::string lfortran_modfile_type_string = "LCompilers Modfile";
