@@ -288,6 +288,28 @@
                     get_int_snd
                 )]
             )
+            (Instantiate
+                struct_t
+                [(AttrType
+                    TypeReal
+                    []
+                    ()
+                    ()
+                    None
+                )]
+                [(UseSymbol
+                    tuple
+                    real_tuple
+                )
+                (UseSymbol
+                    get_fst
+                    get_real_fst
+                )
+                (UseSymbol
+                    get_snd
+                    get_real_snd
+                )]
+            )
             (Declaration
                 (AttrType
                     TypeType
@@ -297,7 +319,24 @@
                     None
                 )
                 []
-                [(t
+                [(ti
+                []
+                []
+                ()
+                None
+                ())]
+                ()
+            )
+            (Declaration
+                (AttrType
+                    TypeType
+                    []
+                    ()
+                    real_tuple
+                    None
+                )
+                []
+                [(tr
                 []
                 []
                 ()
@@ -307,7 +346,7 @@
             )]
             [(Assignment
                 0
-                fst [(t
+                fst [(ti
                 [])]
                 1
                 ()
@@ -322,7 +361,7 @@
                     get_int_fst
                     []
                     [(()
-                    t
+                    ti
                     ()
                     0)]
                     []
@@ -333,7 +372,7 @@
             )
             (Assignment
                 0
-                snd [(t
+                snd [(ti
                 [])]
                 2
                 ()
@@ -348,7 +387,59 @@
                     get_int_snd
                     []
                     [(()
-                    t
+                    ti
+                    ()
+                    0)]
+                    []
+                    []
+                    []
+                )]
+                ()
+            )
+            (Assignment
+                0
+                fst [(tr
+                [])]
+                (Real "1.")
+                ()
+            )
+            (Print
+                0
+                ()
+                [(String
+                    "First element: "
+                )
+                (FuncCallOrArray
+                    get_real_fst
+                    []
+                    [(()
+                    tr
+                    ()
+                    0)]
+                    []
+                    []
+                    []
+                )]
+                ()
+            )
+            (Assignment
+                0
+                snd [(tr
+                [])]
+                (Real "2.")
+                ()
+            )
+            (Print
+                0
+                ()
+                [(String
+                    "Second element: "
+                )
+                (FuncCallOrArray
+                    get_real_snd
+                    []
+                    [(()
+                    tr
                     ()
                     0)]
                     []

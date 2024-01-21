@@ -5,11 +5,11 @@
             template_struct_01:
                 (Program
                     (SymbolTable
-                        12
+                        15
                         {
                             r:
                                 (ExternalSymbol
-                                    12
+                                    15
                                     r
                                     2 r
                                     template_struct_01_m
@@ -19,7 +19,7 @@
                                 ),
                             struct_t:
                                 (ExternalSymbol
-                                    12
+                                    15
                                     struct_t
                                     2 struct_t
                                     template_struct_01_m
@@ -29,7 +29,7 @@
                                 ),
                             test_template:
                                 (ExternalSymbol
-                                    12
+                                    15
                                     test_template
                                     2 test_template
                                     template_struct_01_m
@@ -41,7 +41,7 @@
                     template_struct_01
                     [template_struct_01_m]
                     [(SubroutineCall
-                        12 test_template
+                        15 test_template
                         ()
                         []
                         ()
@@ -372,6 +372,26 @@
                                                     snd
                                                     Public
                                                 ),
+                                            1_real_tuple_fst:
+                                                (ExternalSymbol
+                                                    8
+                                                    1_real_tuple_fst
+                                                    12 fst
+                                                    real_tuple
+                                                    []
+                                                    fst
+                                                    Public
+                                                ),
+                                            1_real_tuple_snd:
+                                                (ExternalSymbol
+                                                    8
+                                                    1_real_tuple_snd
+                                                    12 snd
+                                                    real_tuple
+                                                    []
+                                                    snd
+                                                    Public
+                                                ),
                                             get_int_fst:
                                                 (Function
                                                     (SymbolTable
@@ -542,6 +562,176 @@
                                                     .false.
                                                     ()
                                                 ),
+                                            get_real_fst:
+                                                (Function
+                                                    (SymbolTable
+                                                        13
+                                                        {
+                                                            1_real_tuple_fst:
+                                                                (ExternalSymbol
+                                                                    13
+                                                                    1_real_tuple_fst
+                                                                    12 fst
+                                                                    real_tuple
+                                                                    []
+                                                                    fst
+                                                                    Public
+                                                                ),
+                                                            p:
+                                                                (Variable
+                                                                    13
+                                                                    p
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Struct
+                                                                        8 real_tuple
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            r:
+                                                                (Variable
+                                                                    13
+                                                                    r
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    get_real_fst
+                                                    (FunctionType
+                                                        [(Struct
+                                                            8 real_tuple
+                                                        )]
+                                                        (Real 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    []
+                                                    [(Var 13 p)]
+                                                    [(Assignment
+                                                        (Var 13 r)
+                                                        (StructInstanceMember
+                                                            (Var 13 p)
+                                                            13 1_real_tuple_fst
+                                                            (Real 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )]
+                                                    (Var 13 r)
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            get_real_snd:
+                                                (Function
+                                                    (SymbolTable
+                                                        14
+                                                        {
+                                                            1_real_tuple_snd:
+                                                                (ExternalSymbol
+                                                                    14
+                                                                    1_real_tuple_snd
+                                                                    12 snd
+                                                                    real_tuple
+                                                                    []
+                                                                    snd
+                                                                    Public
+                                                                ),
+                                                            p:
+                                                                (Variable
+                                                                    14
+                                                                    p
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Struct
+                                                                        8 real_tuple
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            r:
+                                                                (Variable
+                                                                    14
+                                                                    r
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    get_real_snd
+                                                    (FunctionType
+                                                        [(Struct
+                                                            8 real_tuple
+                                                        )]
+                                                        (Real 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    []
+                                                    [(Var 14 p)]
+                                                    [(Assignment
+                                                        (Var 14 r)
+                                                        (StructInstanceMember
+                                                            (Var 14 p)
+                                                            14 1_real_tuple_snd
+                                                            (Real 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )]
+                                                    (Var 14 r)
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
                                             int_tuple:
                                                 (StructType
                                                     (SymbolTable
@@ -592,10 +782,60 @@
                                                     ()
                                                     ()
                                                 ),
-                                            t:
+                                            real_tuple:
+                                                (StructType
+                                                    (SymbolTable
+                                                        12
+                                                        {
+                                                            fst:
+                                                                (Variable
+                                                                    12
+                                                                    fst
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            snd:
+                                                                (Variable
+                                                                    12
+                                                                    snd
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    real_tuple
+                                                    []
+                                                    [fst
+                                                    snd]
+                                                    Source
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    []
+                                                    ()
+                                                    ()
+                                                ),
+                                            ti:
                                                 (Variable
                                                     8
-                                                    t
+                                                    ti
                                                     []
                                                     Local
                                                     ()
@@ -603,6 +843,24 @@
                                                     Default
                                                     (Struct
                                                         8 int_tuple
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            tr:
+                                                (Variable
+                                                    8
+                                                    tr
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        8 real_tuple
                                                     )
                                                     ()
                                                     Source
@@ -630,7 +888,7 @@
                                     []
                                     [(Assignment
                                         (StructInstanceMember
-                                            (Var 8 t)
+                                            (Var 8 ti)
                                             8 1_int_tuple_fst
                                             (Integer 4)
                                             ()
@@ -646,7 +904,7 @@
                                         (FunctionCall
                                             8 get_int_fst
                                             ()
-                                            [((Var 8 t))]
+                                            [((Var 8 ti))]
                                             (Integer 4)
                                             ()
                                             ()
@@ -656,7 +914,7 @@
                                     )
                                     (Assignment
                                         (StructInstanceMember
-                                            (Var 8 t)
+                                            (Var 8 ti)
                                             8 1_int_tuple_snd
                                             (Integer 4)
                                             ()
@@ -672,8 +930,66 @@
                                         (FunctionCall
                                             8 get_int_snd
                                             ()
-                                            [((Var 8 t))]
+                                            [((Var 8 ti))]
                                             (Integer 4)
+                                            ()
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )
+                                    (Assignment
+                                        (StructInstanceMember
+                                            (Var 8 tr)
+                                            8 1_real_tuple_fst
+                                            (Real 4)
+                                            ()
+                                        )
+                                        (RealConstant
+                                            1.000000
+                                            (Real 4)
+                                        )
+                                        ()
+                                    )
+                                    (Print
+                                        [(StringConstant
+                                            "First element: "
+                                            (Character 1 15 ())
+                                        )
+                                        (FunctionCall
+                                            8 get_real_fst
+                                            ()
+                                            [((Var 8 tr))]
+                                            (Real 4)
+                                            ()
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )
+                                    (Assignment
+                                        (StructInstanceMember
+                                            (Var 8 tr)
+                                            8 1_real_tuple_snd
+                                            (Real 4)
+                                            ()
+                                        )
+                                        (RealConstant
+                                            2.000000
+                                            (Real 4)
+                                        )
+                                        ()
+                                    )
+                                    (Print
+                                        [(StringConstant
+                                            "Second element: "
+                                            (Character 1 16 ())
+                                        )
+                                        (FunctionCall
+                                            8 get_real_snd
+                                            ()
+                                            [((Var 8 tr))]
+                                            (Real 4)
                                             ()
                                             ()
                                         )]
