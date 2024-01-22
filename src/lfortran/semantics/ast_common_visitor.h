@@ -607,7 +607,8 @@ static ASR::asr_t* comptime_intrinsic_real(ASR::expr_t *A,
 
 static ASR::asr_t* comptime_intrinsic_int(ASR::expr_t *A,
         ASR::expr_t * kind,
-        Allocator &al, const Location &loc, const CompilerOptions &compiler_options) {
+        Allocator &al, const Location &loc,
+        const CompilerOptions &compiler_options) {
     int kind_int = compiler_options.po.default_integer_kind;
     if (kind) {
         ASR::expr_t* kind_value = ASRUtils::expr_value(kind);
@@ -2067,7 +2068,7 @@ public:
                                 ASR::expr_t* len = dim_1.m_length;
                                 ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(len);
                                 ASR::expr_t* size = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_eq1->base.loc, ic->m_n, int_type));
-                                ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Integer_t(al, asr_eq2->base.loc, 4));
+                                ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Integer_t(al, asr_eq2->base.loc, compiler_options.po.default_integer_kind));
                                 type = ASRUtils::make_Array_t_util(al, asr_eq2->base.loc, type, dim2.p, dim2.size(), ASR::abiType::Source, false, ASR::array_physical_typeType::DescriptorArray, false, false);
                                 ASR::ttype_t* ptr = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq2->base.loc, type));
                                 var__->m_type = ptr;

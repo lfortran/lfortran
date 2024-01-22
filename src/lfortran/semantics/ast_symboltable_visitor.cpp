@@ -318,6 +318,7 @@ public:
                 AST::decl_typeType ast_type=attr_type->m_type;
                 ASR::ttype_t *type = nullptr;
                 //convert the ast_type to asr_type
+                int i_kind = compiler_options.po.default_integer_kind;
                 int a_kind = 4;
                 int a_len = -10;
                 if (attr_type->m_kind != nullptr) {
@@ -328,6 +329,7 @@ public:
                             a_len = ASRUtils::extract_len<SemanticError>(kind_expr, x.base.base.loc);
                         } else {
                             a_kind = ASRUtils::extract_kind<SemanticError>(kind_expr, x.base.base.loc);
+                            i_kind = a_kind;
                         }
                     } else {
                         throw SemanticError("Only one kind item supported for now", x.base.base.loc);
@@ -335,7 +337,7 @@ public:
                 }
                 switch (ast_type) {
                     case (AST::decl_typeType::TypeInteger) : {
-                        type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
+                        type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, i_kind));
                         break;
                     }
                     case (AST::decl_typeType::TypeReal) : {
@@ -1331,6 +1333,7 @@ public:
                         x.base.base.loc);
             }
             ASR::ttype_t *type;
+            int i_kind = compiler_options.po.default_integer_kind;
             int a_kind = 4;
             int a_len = -10;
             if (return_type->m_kind != nullptr) {
@@ -1341,6 +1344,7 @@ public:
                         a_len = ASRUtils::extract_len<SemanticError>(kind_expr, x.base.base.loc);
                     } else {
                         a_kind = ASRUtils::extract_kind<SemanticError>(kind_expr, x.base.base.loc);
+                        i_kind = a_kind;
                     }
                 } else {
                     throw SemanticError("Only one kind item supported for now", x.base.base.loc);
@@ -1348,7 +1352,7 @@ public:
             }
             switch (return_type->m_type) {
                 case (AST::decl_typeType::TypeInteger) : {
-                    type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
+                    type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, i_kind));
                     break;
                 }
                 case (AST::decl_typeType::TypeReal) : {
