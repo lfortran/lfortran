@@ -305,7 +305,11 @@
                                             (IntegerConstant 0 (Integer 4))
                                             IntegerToComplex
                                             (Complex 4)
-                                            ()
+                                            (ComplexConstant
+                                                0.000000
+                                                0.000000
+                                                (Complex 4)
+                                            )
                                         )
                                         ()
                                     )

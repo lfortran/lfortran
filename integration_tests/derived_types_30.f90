@@ -1,4 +1,4 @@
-module testdrive
+module testdrive_derived_types_30
     implicit none
 
     public :: unittest_type
@@ -24,19 +24,30 @@ contains
         call test_var%test(error)
     end subroutine run_unittest
 
-end module testdrive
+    subroutine test_impl1(error)
+        integer, intent(out) :: error
+        error = 2
+    end subroutine test_impl1
+
+
+end module testdrive_derived_types_30
 
 program derived_types_30
-use testdrive
+use testdrive_derived_types_30
 implicit none
 
     type(unittest_type) :: var
     integer :: error
+
     var % test => test_impl
-
     call run_unittest(var, error)
-
     print *, error
+    if( error /= 1 ) error stop
+
+    var % test => test_impl1
+    call run_unittest(var, error)
+    print *, error
+    if( error /= 2 ) error stop
 
 contains
 

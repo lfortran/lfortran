@@ -483,7 +483,7 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
         ASR::ttype_t* member_type = ASRUtils::TYPE(ASR::make_Struct_t(al,
             member_variable->base.base.loc, mem_es));
         return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),
-                mem_es, member_type, nullptr);
+            mem_es, ASRUtils::fix_scoped_type(al, member_type, current_scope), nullptr);
     } else {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*member));
         ASR::Variable_t* member_variable = ASR::down_cast<ASR::Variable_t>(member);
@@ -573,7 +573,7 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
             }
         }
         return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),
-            member_ext, member_type, value);
+            member_ext, ASRUtils::fix_scoped_type(al, member_type, current_scope), value);
     }
 }
 
@@ -1541,10 +1541,12 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
     }
 }
 
-int64_t compute_trailing_zeros(int64_t number) {
+int64_t compute_trailing_zeros(int64_t number, int64_t kind) {
     int64_t trailing_zeros = 0;
-    if (number == 0) {
+    if (number == 0 && kind == 4) {
         return 32;
+    } else if (number == 0 && kind == 8) {
+        return 64;
     }
     while (number % 2 == 0) {
         number = number / 2;
@@ -1552,6 +1554,24 @@ int64_t compute_trailing_zeros(int64_t number) {
     }
     return trailing_zeros;
 }
+
+int64_t compute_leading_zeros(int64_t number, int64_t kind) {
+    int64_t leading_zeros = 0;
+    int64_t total_bits = 32;
+    if (kind == 8) total_bits = 64;
+    if (number < 0) return 0;
+    while (total_bits > 0) {
+        if (number%2 == 0) {
+            leading_zeros++;
+        } else {
+            leading_zeros = 0; 
+        }
+        number = number/2;
+        total_bits--;
+    }
+    return leading_zeros;
+}
+
 
 //Initialize pointer to zero so that it can be initialized in first call to get_instance
 ASRUtils::LabelGenerator* ASRUtils::LabelGenerator::label_generator = nullptr;

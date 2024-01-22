@@ -3057,7 +3057,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = out;
     }
 
-    void visit_IntrinsicFunctionSqrt(const ASR::IntrinsicFunctionSqrt_t &x) {
+    void visit_RealSqrt(const ASR::RealSqrt_t &x) {
         std::string out = "sqrt";
         headers.insert("math.h");
         this->visit_expr(*x.m_arg);

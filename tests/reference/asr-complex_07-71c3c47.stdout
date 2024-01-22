@@ -237,7 +237,11 @@
                             )
                             ComplexToComplex
                             (Complex 8)
-                            ()
+                            (ComplexConstant
+                                12.000000
+                                24.000000
+                                (Complex 8)
+                            )
                         )
                         ()
                     )
@@ -425,7 +429,11 @@
                                         )
                                         ComplexToComplex
                                         (Complex 8)
-                                        ()
+                                        (ComplexConstant
+                                            42.000000
+                                            0.000000
+                                            (Complex 8)
+                                        )
                                     )
                                     (Complex 8)
                                     ()
@@ -475,7 +483,11 @@
                                         )
                                         ComplexToComplex
                                         (Complex 8)
-                                        ()
+                                        (ComplexConstant
+                                            3.140000
+                                            0.000000
+                                            (Complex 8)
+                                        )
                                     )
                                     (Complex 8)
                                     ()
@@ -525,7 +537,11 @@
                                         )
                                         ComplexToComplex
                                         (Complex 8)
-                                        ()
+                                        (ComplexConstant
+                                            42.000000
+                                            3.140000
+                                            (Complex 8)
+                                        )
                                     )
                                     (Complex 8)
                                     ()

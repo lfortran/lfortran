@@ -400,7 +400,11 @@
                             (IntegerConstant 8 (Integer 4))
                             IntegerToComplex
                             (Complex 4)
-                            ()
+                            (ComplexConstant
+                                8.000000
+                                0.000000
+                                (Complex 4)
+                            )
                         )
                         ()
                     )
@@ -410,7 +414,11 @@
                             (IntegerConstant 9 (Integer 4))
                             IntegerToComplex
                             (Complex 4)
-                            ()
+                            (ComplexConstant
+                                9.000000
+                                0.000000
+                                (Complex 4)
+                            )
                         )
                         ()
                     )
@@ -420,7 +428,11 @@
                             (IntegerConstant 10 (Integer 4))
                             IntegerToComplex
                             (Complex 8)
-                            ()
+                            (ComplexConstant
+                                10.000000
+                                0.000000
+                                (Complex 8)
+                            )
                         )
                         ()
                     )

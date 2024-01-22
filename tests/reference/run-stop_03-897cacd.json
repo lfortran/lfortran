@@ -1,0 +1,13 @@
+{
+    "basename": "run-stop_03-897cacd",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/../integration_tests/stop_03.f90",
+    "infile_hash": "87d669b34b513b6802c7b254562f8ea915c2a166d298150441398562",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-stop_03-897cacd.stderr",
+    "stderr_hash": "3e23cf1cb50e4b97d71757a6cc871271723a4247df92d3c07b24a0b0",
+    "returncode": 0
+}
