@@ -338,97 +338,99 @@ public:
     }
 
     void visit_Module(const ASR::Module_t &x) {
-        std::string r;
-        r = "module";
-        r += " ";
-        r.append(x.m_name);
-        r += "\n";
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (is_a<ASR::ExternalSymbol_t>(*item.second)) {
-                visit_symbol(*item.second);
-                r += s;
-            }
-        }
-        r += indent + "implicit none";
-        r += "\n";
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (is_a<ASR::GenericProcedure_t>(*item.second)) {
-                visit_symbol(*item.second);
-                r += s;
-
-            }
-        }
-        std::map<std::string, std::vector<std::string>> struct_dep_graph;
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::StructType_t>(*item.second) ||
-                    ASR::is_a<ASR::EnumType_t>(*item.second) ||
-                    ASR::is_a<ASR::UnionType_t>(*item.second)) {
-                std::vector<std::string> struct_deps_vec;
-                std::pair<char**, size_t> struct_deps_ptr = ASRUtils::symbol_dependencies(item.second);
-                for( size_t i = 0; i < struct_deps_ptr.second; i++ ) {
-                    struct_deps_vec.push_back(std::string(struct_deps_ptr.first[i]));
+        if (!x.m_intrinsic) {
+            std::string r;
+            r = "module";
+            r += " ";
+            r.append(x.m_name);
+            r += "\n";
+            for (auto &item : x.m_symtab->get_scope()) {
+                if (is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                    visit_symbol(*item.second);
+                    r += s;
                 }
-                struct_dep_graph[item.first] = struct_deps_vec;
             }
-        }
+            r += indent + "implicit none";
+            r += "\n";
+            for (auto &item : x.m_symtab->get_scope()) {
+                if (is_a<ASR::GenericProcedure_t>(*item.second)) {
+                    visit_symbol(*item.second);
+                    r += s;
 
-        std::vector<std::string> struct_deps = ASRUtils::order_deps(struct_dep_graph);
-        for (auto &item : struct_deps) {
-            ASR::symbol_t* struct_sym = x.m_symtab->get_symbol(item);
-            visit_symbol(*struct_sym);
-            r += s;
-        }
-        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
-        for (auto &item : var_order) {
-            ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
-            if (is_a<ASR::Variable_t>(*var_sym)) {
-                visit_symbol(*var_sym);
+                }
+            }
+            std::map<std::string, std::vector<std::string>> struct_dep_graph;
+            for (auto &item : x.m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::StructType_t>(*item.second) ||
+                        ASR::is_a<ASR::EnumType_t>(*item.second) ||
+                        ASR::is_a<ASR::UnionType_t>(*item.second)) {
+                    std::vector<std::string> struct_deps_vec;
+                    std::pair<char**, size_t> struct_deps_ptr = ASRUtils::symbol_dependencies(item.second);
+                    for( size_t i = 0; i < struct_deps_ptr.second; i++ ) {
+                        struct_deps_vec.push_back(std::string(struct_deps_ptr.first[i]));
+                    }
+                    struct_dep_graph[item.first] = struct_deps_vec;
+                }
+            }
+
+            std::vector<std::string> struct_deps = ASRUtils::order_deps(struct_dep_graph);
+            for (auto &item : struct_deps) {
+                ASR::symbol_t* struct_sym = x.m_symtab->get_symbol(item);
+                visit_symbol(*struct_sym);
                 r += s;
             }
-        }
-        std::vector<std::string> func_name;
-        std::vector<std::string> interface_func_name;
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (is_a<ASR::Function_t>(*item.second)) {
-                ASR::Function_t *f = down_cast<ASR::Function_t>(item.second);
-                if (ASRUtils::get_FunctionType(f)->m_deftype == ASR::deftypeType::Interface) {
-                    interface_func_name.push_back(item.first);
+            std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
+            for (auto &item : var_order) {
+                ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
+                if (is_a<ASR::Variable_t>(*var_sym)) {
+                    visit_symbol(*var_sym);
+                    r += s;
+                }
+            }
+            std::vector<std::string> func_name;
+            std::vector<std::string> interface_func_name;
+            for (auto &item : x.m_symtab->get_scope()) {
+                if (is_a<ASR::Function_t>(*item.second)) {
+                    ASR::Function_t *f = down_cast<ASR::Function_t>(item.second);
+                    if (ASRUtils::get_FunctionType(f)->m_deftype == ASR::deftypeType::Interface) {
+                        interface_func_name.push_back(item.first);
+                    } else {
+                        func_name.push_back(item.first);
+                    }
+                }
+            }
+            for (size_t i = 0; i < interface_func_name.size(); i++) {
+                if (i == 0) {
+                    r += "interface\n";
+                    is_interface = true;
+                    inc_indent();
+                }
+                visit_symbol(*x.m_symtab->get_symbol(interface_func_name[i]));
+                r += s;
+                if (i < interface_func_name.size() - 1) {
+                    r += "\n";
                 } else {
-                    func_name.push_back(item.first);
+                    dec_indent();
+                    is_interface = false;
+                    r += "end interface\n";
                 }
             }
-        }
-        for (size_t i = 0; i < interface_func_name.size(); i++) {
-            if (i == 0) {
-                r += "interface\n";
-                is_interface = true;
-                inc_indent();
+            for (size_t i = 0; i < func_name.size(); i++) {
+                if (i == 0) {
+                    r += "\n";
+                    r += "contains";
+                    r += "\n\n";
+                }
+                visit_symbol(*x.m_symtab->get_symbol(func_name[i]));
+                r += s;
+                if (i < func_name.size()) r += "\n";
             }
-            visit_symbol(*x.m_symtab->get_symbol(interface_func_name[i]));
-            r += s;
-            if (i < interface_func_name.size() - 1) {
-                r += "\n";
-            } else {
-                dec_indent();
-                is_interface = false;
-                r += "end interface\n";
-            }
+            r += "end module";
+            r += " ";
+            r.append(x.m_name);
+            r += "\n";
+            s = r;
         }
-        for (size_t i = 0; i < func_name.size(); i++) {
-            if (i == 0) {
-                r += "\n";
-                r += "contains";
-                r += "\n\n";
-            }
-            visit_symbol(*x.m_symtab->get_symbol(func_name[i]));
-            r += s;
-            if (i < func_name.size()) r += "\n";
-        }
-        r += "end module";
-        r += " ";
-        r.append(x.m_name);
-        r += "\n";
-        s = r;
     }
 
     void visit_Function(const ASR::Function_t &x) {
@@ -572,8 +574,18 @@ public:
             ASRUtils::symbol_parent_symtab(x.m_external)->asr_owner);
         if (!is_a<ASR::StructType_t>(*sym)) {
             s = indent;
-            s += "use ";
-            s.append(x.m_module_name);
+            s += "use";
+
+            const std::string &module_name = x.m_module_name;
+
+            if (module_name.compare(0, 18, "lfortran_intrinsic") == 0) {
+                s += ", intrinsic :: ";
+                // don't include prefix 'lfortran_intrinsic_' as module name
+                s += module_name.substr(19);
+            } else {
+                s += " ";
+                s += module_name;
+            }
             s += ", only: ";
             s.append(x.m_original_name);
             s += "\n";

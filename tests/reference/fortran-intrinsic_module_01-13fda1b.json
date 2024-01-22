@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-intrinsic_module_01-13fda1b",
+    "cmd": "lfortran --show-fortran --no-color {infile} -o {outfile}",
+    "infile": "tests/intrinsic_module_01.f90",
+    "infile_hash": "1cfeb799278c13de2188e80f7405ec931b7ea3c85ec1bc15d0eb8f20",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-intrinsic_module_01-13fda1b.stdout",
+    "stdout_hash": "6ca6194196b6525d6dbde2e616469f7d0eddf9d8d7d7d105ef97cee9",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -3635,3 +3635,7 @@ asr = true
 [[test]]
 filename = "errors/parameter_01.f90"
 asr = true
+
+[[test]]
+filename = "intrinsic_module_01.f90"
+fortran = true
