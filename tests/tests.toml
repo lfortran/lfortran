@@ -3635,3 +3635,11 @@ asr = true
 [[test]]
 filename = "errors/parameter_01.f90"
 asr = true
+
+[[test]]
+filename = "errors/float1.f90"
+asr = true
+
+[[test]]
+filename = "errors/dfloat1.f90"
+asr = true

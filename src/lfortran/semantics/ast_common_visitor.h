@@ -4804,7 +4804,36 @@ public:
         return ASR::make_PointerToCPtr_t(al, x.base.base.loc, v_Var, type, nullptr);
     }
 
-    ASR::asr_t* handle_intrinsic_float(Allocator &al, Vec<ASR::call_arg_t> args,
+    ASR::asr_t* handle_intrinsic_float_dfloat(Allocator &al, Vec<ASR::call_arg_t> args,
+                                        const Location &loc, int kind) {
+        ASR::expr_t *arg = nullptr, *value = nullptr;
+        ASR::ttype_t *type = nullptr;
+        if (args.size() > 0) {
+            arg = args[0].m_value;
+            type = ASRUtils::expr_type(arg);
+        }
+        ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind));
+        if (!arg) {
+            return ASR::make_RealConstant_t(al, loc, 0.0, to_type);
+        }
+        if (ASRUtils::is_integer(*type)) {
+            if (ASRUtils::expr_value(arg) != nullptr) {
+                double dval = ASR::down_cast<ASR::IntegerConstant_t>(
+                                        ASRUtils::expr_value(arg))->m_n;
+                value =  ASR::down_cast<ASR::expr_t>(make_RealConstant_t(al,
+                                loc, dval, to_type));
+            }
+            return (ASR::asr_t *)ASR::down_cast<ASR::expr_t>(ASR::make_Cast_t(
+                al, loc, arg, ASR::cast_kindType::IntegerToReal,
+                to_type, value));
+        } else {
+            throw SemanticError("Argument of intrinsic must be an integer", loc);
+        }
+        // TODO: Make this work if the argument is, let's say, a class.
+        return nullptr;
+    }
+
+    ASR::asr_t* handle_intrinsic_dble(Allocator &al, Vec<ASR::call_arg_t> args,
                                         const Location &loc) {
         ASR::expr_t *arg = nullptr, *value = nullptr;
         ASR::ttype_t *type = nullptr;
@@ -5108,10 +5137,20 @@ public:
         }
         if (!v || (v && is_external_procedure)) {
             ASR::symbol_t* external_sym = is_external_procedure ? v : nullptr;
-            if (var_name == "float" || var_name == "dble" || var_name == "dfloat") {
+            if (var_name == "dble") {
                 Vec<ASR::call_arg_t> args;
                 visit_expr_list(x.m_args, x.n_args, args);
-                tmp = handle_intrinsic_float(al, args, x.base.base.loc);
+                tmp = handle_intrinsic_dble(al, args, x.base.base.loc);
+                return;
+            } else if (var_name == "float" ) {
+                Vec<ASR::call_arg_t> args;
+                visit_expr_list(x.m_args, x.n_args, args);
+                tmp = handle_intrinsic_float_dfloat(al, args, x.base.base.loc, 4);
+                return;
+            } else if (var_name == "dfloat" ) {
+                Vec<ASR::call_arg_t> args;
+                visit_expr_list(x.m_args, x.n_args, args);
+                tmp = handle_intrinsic_float_dfloat(al, args, x.base.base.loc, 8);
                 return;
             } else if (var_name == "shifta") {
                 Vec<ASR::call_arg_t> args;
@@ -5172,10 +5211,20 @@ public:
                     throw SemanticAbort();
                 }
             } else if (compiler_options.implicit_interface) {
-                if (var_name == "float" || var_name == "dble" || var_name == "dfloat") {
+                if (var_name == "dble") {
                     Vec<ASR::call_arg_t> args;
                     visit_expr_list(x.m_args, x.n_args, args);
-                    tmp = handle_intrinsic_float(al, args, x.base.base.loc);
+                    tmp = handle_intrinsic_dble(al, args, x.base.base.loc);
+                    return;
+                } else if (var_name == "float" ) {
+                    Vec<ASR::call_arg_t> args;
+                    visit_expr_list(x.m_args, x.n_args, args);
+                    tmp = handle_intrinsic_float_dfloat(al, args, x.base.base.loc, 4);
+                    return;
+                } else if (var_name == "dfloat" ) {
+                    Vec<ASR::call_arg_t> args;
+                    visit_expr_list(x.m_args, x.n_args, args);
+                    tmp = handle_intrinsic_float_dfloat(al, args, x.base.base.loc, 8);
                     return;
                 }
                 // If implicit interface is allowed, we have to handle the
