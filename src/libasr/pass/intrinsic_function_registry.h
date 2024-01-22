@@ -1774,7 +1774,7 @@ namespace Lshift {
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        int64_t val = val1 >> val2;
+        int64_t val = val1 << val2;
         return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
     }
 
@@ -1815,7 +1815,7 @@ namespace Lshift {
         * r = x * 2**y
         */
         ASR::expr_t *two = i(2, arg_types[0]);
-        body.push_back(al, b.Assignment(result, i_tDiv(args[0], iPow(two, args[1], arg_types[0]), arg_types[0])));
+        body.push_back(al, b.Assignment(result, i_tMul(args[0], iPow(two, args[1], arg_types[0]), arg_types[0])));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);

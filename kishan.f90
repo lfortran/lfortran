@@ -6,7 +6,7 @@ program intrinsics_108
     i = 8
     j = 4
 
-    ! print*, lshift(10_4, 0)
+    print*, lshift(10_4, 0)
     if (.not. shiftr(10_4, 0) == 10) error stop
 
     print*, shiftr(-10_8, 1)
