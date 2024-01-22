@@ -13,10 +13,10 @@ program intrinsics_123
     if ( shiftl(-10_8, 1) /= -20 ) error stop
 
     print*, shiftl(not(10_4), 2)
-    if ( shiftl(not(10_4), 2) /= -44 ) error stop ! Does not work yet
+    if ( shiftl(not(10_4), 2) /= -44 ) error stop 
 
     print*, shiftl(not(10_8), 3)
-    if ( shiftl(not(10_8), 3) /= -88 ) error stop ! Does not work yet
+    if ( shiftl(not(10_8), 3) /= -88 ) error stop 
    
 
     print*, shiftl(-x, y)
