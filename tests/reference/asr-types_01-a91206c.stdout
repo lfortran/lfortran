@@ -53,16 +53,8 @@
                     (Assignment
                         (Var 2 r)
                         (Cast
-                            (Cast
-                                (IntegerConstant 2 (Integer 4))
-                                IntegerToReal
-                                (Real 8)
-                                (RealConstant
-                                    2.000000
-                                    (Real 8)
-                                )
-                            )
-                            RealToReal
+                            (IntegerConstant 2 (Integer 4))
+                            IntegerToReal
                             (Real 4)
                             (RealConstant
                                 2.000000
