@@ -79,7 +79,7 @@ enum class IntrinsicScalarFunctions : int64_t {
     Anint,
     Sqrt,
     Sngl,
-    Ifit,
+    Ifix,
     SymbolicSymbol,
     SymbolicAdd,
     SymbolicSub,
@@ -162,7 +162,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Anint)
         INTRINSIC_NAME_CASE(Sqrt)
         INTRINSIC_NAME_CASE(Sngl)
-        INTRINSIC_NAME_CASE(Ifit)
+        INTRINSIC_NAME_CASE(Ifix)
         INTRINSIC_NAME_CASE(SymbolicSymbol)
         INTRINSIC_NAME_CASE(SymbolicAdd)
         INTRINSIC_NAME_CASE(SymbolicSub)
@@ -2102,49 +2102,49 @@ namespace Sngl {
 
 }  // namespace Sngl
 
-namespace Ifit {
+namespace Ifix {
 
     static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x,
             diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args == 1,
-            "ASR Verify: Call `ifit` must have exactly one argument",
+            "ASR Verify: Call `ifix` must have exactly one argument",
             x.base.base.loc, diagnostics);
         ASR::ttype_t *type = ASRUtils::expr_type(x.m_args[0]);
         ASRUtils::require_impl(ASRUtils::is_real(*type),
-            "ASR Verify: Arguments to `ifit` must be of real type",
+            "ASR Verify: Arguments to `ifix` must be of real type",
             x.base.base.loc, diagnostics);
     }
 
-    static ASR::expr_t *eval_Ifit(Allocator &al, const Location &loc,
+    static ASR::expr_t *eval_Ifix(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args) {
         double val = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
         return f(val, arg_type);
     }
 
-    static inline ASR::asr_t* create_Ifit(
+    static inline ASR::asr_t* create_Ifix(
             Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
             const std::function<void (const std::string &, const Location &)> err) {
         ASR::ttype_t* return_type = int32;
         if ( args.n != 1 ) {
-            err("Intrinsic `ifit` accepts exactly one argument", loc);
+            err("Intrinsic `ifix` accepts exactly one argument", loc);
         } else if ( !is_real(*expr_type(args[0])) ) {
-            err("Argument of the `ifit` must be Real", loc);
+            err("Argument of the `ifix` must be Real", loc);
         }
         Vec<ASR::expr_t *> m_args; m_args.reserve(al, 1);
         m_args.push_back(al, args[0]);
         ASR::expr_t *m_value = nullptr;
         if (all_args_evaluated(m_args)) {
-            m_value = eval_Ifit(al, loc, return_type, m_args);
+            m_value = eval_Ifix(al, loc, return_type, m_args);
         }
         return ASR::make_IntrinsicScalarFunction_t(al, loc,
-            static_cast<int64_t>(IntrinsicScalarFunctions::Ifit),
+            static_cast<int64_t>(IntrinsicScalarFunctions::Ifix),
             m_args.p, m_args.n, 0, return_type, m_value);
     }
 
-    static inline ASR::expr_t* instantiate_Ifit(Allocator &al, const Location &loc,
+    static inline ASR::expr_t* instantiate_Ifix(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        std::string func_name = "_lcompilers_ifit_" + type_to_str_python(arg_types[0]);
+        std::string func_name = "_lcompilers_ifix_" + type_to_str_python(arg_types[0]);
         std::string fn_name = scope->get_unique_name(func_name);
         SymbolTable *fn_symtab = al.make_new<SymbolTable>(scope);
         Vec<ASR::expr_t*> args;
@@ -2167,7 +2167,7 @@ namespace Ifit {
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
-}  // namespace Ifit
+}  // namespace Ifix
 
 namespace FMA {
 
@@ -4510,8 +4510,8 @@ namespace IntrinsicScalarFunctionRegistry {
             {&Sqrt::instantiate_Sqrt, &Sqrt::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Sngl),
             {&Sngl::instantiate_Sngl, &Sngl::verify_args}},
-        {static_cast<int64_t>(IntrinsicScalarFunctions::Ifit),
-            {&Ifit::instantiate_Ifit, &Ifit::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Ifix),
+            {&Ifix::instantiate_Ifix, &Ifix::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SignFromValue),
             {&SignFromValue::instantiate_SignFromValue, &SignFromValue::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SymbolicSymbol),
@@ -4661,8 +4661,8 @@ namespace IntrinsicScalarFunctionRegistry {
             "sqrt"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Sngl),
             "sngl"},
-        {static_cast<int64_t>(IntrinsicScalarFunctions::Ifit),
-            "ifit"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Ifix),
+            "ifix"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SignFromValue),
             "signfromvalue"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SymbolicSymbol),
@@ -4767,7 +4767,7 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"anint", {&Anint::create_Anint, &Anint::eval_Anint}},
                 {"sqrt", {&Sqrt::create_Sqrt, &Sqrt::eval_Sqrt}},
                 {"sngl", {&Sngl::create_Sngl, &Sngl::eval_Sngl}},
-                {"ifit", {&Ifit::create_Ifit, &Ifit::eval_Ifit}},
+                {"ifix", {&Ifix::create_Ifix, &Ifix::eval_Ifix}},
                 {"Symbol", {&SymbolicSymbol::create_SymbolicSymbol, &SymbolicSymbol::eval_SymbolicSymbol}},
                 {"SymbolicAdd", {&SymbolicAdd::create_SymbolicAdd, &SymbolicAdd::eval_SymbolicAdd}},
                 {"SymbolicSub", {&SymbolicSub::create_SymbolicSub, &SymbolicSub::eval_SymbolicSub}},
