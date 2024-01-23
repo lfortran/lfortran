@@ -627,6 +627,7 @@ RUN(NAME intrinsics_120 LABELS gfortran llvm)
 RUN(NAME intrinsics_121 LABELS gfortran llvm)#leadz
 RUN(NAME intrinsics_122 LABELS gfortran llvm)#rank
 RUN(NAME intrinsics_123 LABELS gfortran llvm)#shiftl
+RUN(NAME intrinsics_124 LABELS gfortran llvm)#lshift
 
 
 RUN(NAME parameter_01 LABELS gfortran)

@@ -4668,6 +4668,7 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"trailz", {&Trailz::create_Trailz, &Trailz::eval_Trailz}},
                 {"shiftr", {&Shiftr::create_Shiftr, &Shiftr::eval_Shiftr}},
                 {"shiftl", {&Shiftl::create_Shiftl, &Shiftl::eval_Shiftl}},
+                {"lshift", {&Shiftl::create_Shiftl, &Shiftl::eval_Shiftl}},
                 {"leadz", {&Leadz::create_Leadz, &Leadz::eval_Leadz}},
                 {"hypot", {&Hypot::create_Hypot, &Hypot::eval_Hypot}},
                 {"kind", {&Kind::create_Kind, &Kind::eval_Kind}},
