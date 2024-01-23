@@ -1,0 +1,56 @@
+Internal Compiler Error: Unhandled exception
+Traceback (most recent call last):
+[2m  Binary file "[0m[1m[35m$DIR/src/bin/lfortran[39m[0m[2m", in _start()[0m
+[2m  File "[0m[1m[35m./csu/../csu/libc-start.c[39m[0m[2m", line 392, in __libc_start_main_impl()[0m
+[2m  File "[0m[1m[35m./csu/../sysdeps/nptl/libc_start_call_main.h[39m[0m[2m", line 58, in __libc_start_call_main()[0m
+[2m  File "[0m[1m[35m$DIR/src/bin/lfortran.cpp[39m[0m[2m", line 2371, in ??[0m
+    return main_app(argc, argv);
+[2m  File "[0m[1m[35m$DIR/src/bin/lfortran.cpp[39m[0m[2m", line 2254, in main_app(int, char**)[0m
+    return emit_llvm(arg_file, lfortran_pass_manager,
+[2m  File "[0m[1m[35m$DIR/src/bin/lfortran.cpp[39m[0m[2m", line 847, in ??[0m
+    = fe.get_llvm(input, lm, pass_manager, diagnostics);
+[2m  File "[0m[1m[35m$DIR/src/lfortran/fortran_evaluator.cpp[39m[0m[2m", line 292, in LCompilers::FortranEvaluator::get_llvm(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, LCompilers::LocationManager&, LCompilers::PassManager&, LCompilers::diag::Diagnostics&)[0m
+    Result<std::unique_ptr<LLVMModule>> res = get_llvm2(code, lm, pass_manager, diagnostics);
+[2m  File "[0m[1m[35m$DIR/src/lfortran/fortran_evaluator.cpp[39m[0m[2m", line 314, in LCompilers::FortranEvaluator::get_llvm2(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, LCompilers::LocationManager&, LCompilers::PassManager&, LCompilers::diag::Diagnostics&)[0m
+    diagnostics, lm.files.back().in_filename);
+[2m  File "[0m[1m[35m$DIR/src/lfortran/fortran_evaluator.cpp[39m[0m[2m", line 360, in LCompilers::FortranEvaluator::get_llvm3(LCompilers::ASR::TranslationUnit_t&, LCompilers::PassManager&, LCompilers::diag::Diagnostics&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)[0m
+    compiler_options, run_fn, infile);
+[2m  File "[0m[1m[35m$DIR/src/libasr/codegen/asr_to_llvm.cpp[39m[0m[2m", line 9543, in LCompilers::asr_to_llvm(LCompilers::ASR::TranslationUnit_t&, LCompilers::diag::Diagnostics&, llvm::LLVMContext&, Allocator&, LCompilers::PassManager&, LCompilers::CompilerOptions&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)[0m
+    pass_manager.apply_passes(al, &asr, co.po, diagnostics);
+[2m  File "[0m[1m[35m$DIR/src/libasr/pass/pass_manager.h[39m[0m[2m", line 302, in LCompilers::PassManager::apply_passes(Allocator&, LCompilers::ASR::TranslationUnit_t*, LCompilers::PassOptions&, LCompilers::diag::Diagnostics&)[0m
+    apply_passes(al, asr, _passes, pass_options, diagnostics);
+[2m  File "[0m[1m[35m$DIR/src/libasr/pass/pass_manager.h[39m[0m[2m", line 162, in LCompilers::PassManager::apply_passes(Allocator&, LCompilers::ASR::TranslationUnit_t*, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > >&, LCompilers::PassOptions&, LCompilers::diag::Diagnostics&)[0m
+    _passes_db[passes[i]](al, *asr, pass_options);
+[2m  File "[0m[1m[35m$DIR/src/libasr/pass/intrinsic_function.cpp[39m[0m[2m", line 379, in LCompilers::pass_replace_intrinsic_function(Allocator&, LCompilers::ASR::TranslationUnit_t&, LCompilers::PassOptions const&)[0m
+    v.visit_TranslationUnit(unit);
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr.h[39m[0m[2m", line 46141, in LCompilers::ASR::CallReplacerOnExpressionsVisitor<LCompilers::ReplaceIntrinsicFunctionsVisitor>::visit_TranslationUnit(LCompilers::ASR::TranslationUnit_t const&)[0m
+    this->visit_symbol(*a.second);
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr.h[39m[0m[2m", line 5088, in LCompilers::ASR::BaseVisitor<LCompilers::ReplaceIntrinsicFunctionsVisitor>::visit_symbol(LCompilers::ASR::symbol_t const&)[0m
+    void visit_symbol(const symbol_t &b) { visit_symbol_t(b, self()); }
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr.h[39m[0m[2m", line 4802, in ??[0m
+    case symbolType::Module: { v.visit_Module((const Module_t &)x); return; }
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr.h[39m[0m[2m", line 46159, in LCompilers::ASR::CallReplacerOnExpressionsVisitor<LCompilers::ReplaceIntrinsicFunctionsVisitor>::visit_Module(LCompilers::ASR::Module_t const&)[0m
+    this->visit_symbol(*a.second);
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr.h[39m[0m[2m", line 5088, in LCompilers::ASR::BaseVisitor<LCompilers::ReplaceIntrinsicFunctionsVisitor>::visit_symbol(LCompilers::ASR::symbol_t const&)[0m
+    void visit_symbol(const symbol_t &b) { visit_symbol_t(b, self()); }
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr.h[39m[0m[2m", line 4803, in ??[0m
+    case symbolType::Function: { v.visit_Function((const Function_t &)x); return; }
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr.h[39m[0m[2m", line 46179, in LCompilers::ASR::CallReplacerOnExpressionsVisitor<LCompilers::ReplaceIntrinsicFunctionsVisitor>::visit_Function(LCompilers::ASR::Function_t const&)[0m
+    self().transform_stmts(xx.m_body, xx.n_body);
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr.h[39m[0m[2m", line 46134, in LCompilers::ASR::CallReplacerOnExpressionsVisitor<LCompilers::ReplaceIntrinsicFunctionsVisitor>::transform_stmts(LCompilers::ASR::stmt_t**&, unsigned long&)[0m
+    self().visit_stmt(*m_body[i]);
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr.h[39m[0m[2m", line 5105, in LCompilers::ASR::BaseVisitor<LCompilers::ReplaceIntrinsicFunctionsVisitor>::visit_stmt(LCompilers::ASR::stmt_t const&)[0m
+    void visit_stmt(const stmt_t &b) { visit_stmt_t(b, self()); }
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr.h[39m[0m[2m", line 4827, in ??[0m
+    case stmtType::Assignment: { v.visit_Assignment((const Assignment_t &)x); return; }
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr.h[39m[0m[2m", line 46373, in LCompilers::ASR::CallReplacerOnExpressionsVisitor<LCompilers::ReplaceIntrinsicFunctionsVisitor>::visit_Assignment(LCompilers::ASR::Assignment_t const&)[0m
+    self().call_replacer();
+[2m  File "[0m[1m[35m$DIR/src/libasr/pass/intrinsic_function.cpp[39m[0m[2m", line 147, in LCompilers::ReplaceIntrinsicFunctionsVisitor::call_replacer()[0m
+    replacer.replace_expr(*current_expr);
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr.h[39m[0m[2m", line 45119, in LCompilers::ASR::BaseExprReplacer<LCompilers::ReplaceIntrinsicFunctions>::replace_expr(LCompilers::ASR::expr_t*)[0m
+    self().replace_IntrinsicScalarFunction(down_cast<ASR::IntrinsicScalarFunction_t>(x));
+[2m  File "[0m[1m[35m$DIR/src/libasr/pass/intrinsic_function.cpp[39m[0m[2m", line 76, in LCompilers::ReplaceIntrinsicFunctions::replace_IntrinsicScalarFunction(LCompilers::ASR::IntrinsicScalarFunction_t*)[0m
+    ASR::expr_t* current_expr_ = instantiate_function(al, x->base.base.loc,
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/pass/intrinsic_function_registry.h[39m[0m[2m", line 2021, in ??[0m
+    body.push_back(al, b.Assignment(result, r2r32(args[0])));
+AssertFailed: check_equal_type(expr_type(lhs), expr_type(rhs))
