@@ -629,6 +629,7 @@ RUN(NAME intrinsics_122 LABELS gfortran llvm)#rank
 RUN(NAME intrinsics_123 LABELS gfortran llvm)#shiftl
 RUN(NAME intrinsics_124 LABELS gfortran llvm)#lshift
 RUN(NAME intrinsics_125 LABELS gfortran llvm) # random_number
+RUN(NAME intrinsics_126 LABELS gfortran llvm) # random_number
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
