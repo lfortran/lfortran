@@ -56,3 +56,8 @@ module semigroup_m
         end function
     end template
 end module
+
+program template_semigroup
+implicit none
+
+end program

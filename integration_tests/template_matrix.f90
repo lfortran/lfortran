@@ -150,3 +150,8 @@ module matrix_m
         end function
     end template
 end module
+
+program template_matrix
+implicit none
+    
+end program

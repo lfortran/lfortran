@@ -61,3 +61,8 @@ module unit_ring_m
         end function
     end template
 end module
+
+program template_unitring
+implicit none
+    
+end program

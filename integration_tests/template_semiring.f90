@@ -10,3 +10,8 @@ module semiring_m
         require :: monoid(T, mult, one)
     end requirement
 end module
+
+program template_semiring
+implicit none
+    
+end program

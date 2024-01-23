@@ -47,3 +47,8 @@ module monoid_m
         end function
     end template
 end module
+
+program template_monoid
+implicit none
+    
+end program
