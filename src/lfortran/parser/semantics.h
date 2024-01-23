@@ -1677,11 +1677,14 @@ void add_ws_warning(const Location &loc,
                         "Use integer(4) instead of integer*4",
                         {loc},
                         "help: write this as 'integer(4)'");
-                } else{
+                } else if(a_kind == 8){ 
                         diagnostics.parser_style_label(
                         "Use integer(8) instead of integer*8",
                         {loc},
                         "help: write this as 'integer(8)'");
+                } else {
+                        throw LCompilers::LFortran::parser_local::ParserError(
+                        "kind " + std::to_string(a_kind) + " is not supported yet.", {loc});
                 }
         } else if (end_token == yytokentype::KW_CHARACTER) {
                 std::string msg1 = "Use character("+std::to_string(a_kind)+") instead of character*"+std::to_string(a_kind);
