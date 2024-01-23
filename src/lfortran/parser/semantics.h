@@ -1660,24 +1660,27 @@ void add_ws_warning(const Location &loc,
                 {loc},
                 "help: write this as 'end if'");
         } else if (end_token == yytokentype::KW_REAL) {
-                if(a_kind == 4){
+                if (a_kind == 4){
                         diagnostics.parser_style_label(
                         "Use real(4) instead of real*4",
                         {loc},
                         "help: write this as 'real(4)'");
-                } else{
+                } else if(a_kind == 8){
                         diagnostics.parser_style_label(
                         "Use real(8) instead of real*8",
                         {loc},
                         "help: write this as 'real(8)'");
+                } else {
+                        throw LCompilers::LFortran::parser_local::ParserError(
+                        "kind " + std::to_string(a_kind) + " is not supported yet.", {loc});
                 }
         } else if (end_token == yytokentype::KW_INTEGER) {
-                if(a_kind == 4){
+                if (a_kind == 4){
                         diagnostics.parser_style_label(
                         "Use integer(4) instead of integer*4",
                         {loc},
                         "help: write this as 'integer(4)'");
-                } else if(a_kind == 8){ 
+                } else if (a_kind == 8){ 
                         diagnostics.parser_style_label(
                         "Use integer(8) instead of integer*8",
                         {loc},
