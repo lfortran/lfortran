@@ -1812,7 +1812,7 @@ namespace Shiftl {
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
-        * r = shiftr(x, y)
+        * r = shiftl(x, y)
         * r = x * 2**y
         */
         ASR::expr_t *two = i(2, arg_types[0]);
