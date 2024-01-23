@@ -1,7 +1,7 @@
 program intrinsics_123
 
     print*, lshift(10_4, 0)
-    if (.not. shiftr(10_4, 0) == 10) error stop
+    if (.not. lshift(10_4, 0) == 10) error stop
 
     print*, lshift(-10_8, 1)
     if (.not. lshift(-10_8, 1) == -20 ) error stop

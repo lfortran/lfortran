@@ -1806,7 +1806,7 @@ namespace Lshift {
     static inline ASR::expr_t* instantiate_Lshift(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_sign_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_lshift_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
