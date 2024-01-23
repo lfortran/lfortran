@@ -2120,7 +2120,7 @@ namespace Ifix {
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args) {
         float v = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
         // cast it down correctly to integer
-        // int val = (int) v; 
+        int val = (int) v; 
         return f(val, arg_type);
     }
 
