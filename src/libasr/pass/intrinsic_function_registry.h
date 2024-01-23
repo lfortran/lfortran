@@ -2110,14 +2110,17 @@ namespace Ifix {
             "ASR Verify: Call `ifix` must have exactly one argument",
             x.base.base.loc, diagnostics);
         ASR::ttype_t *type = ASRUtils::expr_type(x.m_args[0]);
-        ASRUtils::require_impl(ASRUtils::is_real(*type),
+        int kind = ASRUtils::extract_kind_from_ttype_t(type);
+        ASRUtils::require_impl(ASRUtils::is_real(*type) && kind == 4,
             "ASR Verify: Arguments to `ifix` must be of real type",
             x.base.base.loc, diagnostics);
     }
 
     static ASR::expr_t *eval_Ifix(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args) {
-        double val = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
+        float v = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
+        // cast it down correctly to integer
+        // int val = (int) v; 
         return f(val, arg_type);
     }
 
