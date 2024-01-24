@@ -1270,8 +1270,29 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         result_var = result_var_copy;
         bool result_var_created = false;
         if( result_var == nullptr ) {
-            result_var = PassUtils::create_var(result_counter, res_prefix,
-                            loc, *current_expr, al, current_scope);
+            std::cout<<"hk1"<<'\n';
+            // ASR::Function_t *func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x->m_type));
+            ASR::Function_t *func = ASR::down_cast<ASR::Function_t>(x->m_type);
+
+            std::cout<<"hk2"<<'\n';
+            if(func->m_return_var != nullptr) {
+                std::cout<<"yaha1"<<'\n';
+            }
+            
+            if (func->m_return_var != nullptr && !ASRUtils::is_array(ASRUtils::expr_type(func->m_return_var))) {
+                std::cout<<"hk3"<<'\n';
+                ASR::ttype_t* sibling_type = ASRUtils::expr_type(*current_expr);
+                ASR::dimension_t* m_dims; int ndims;
+                PassUtils::get_dim_rank(sibling_type, m_dims, ndims);
+                ASR::ttype_t* arr_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, ASRUtils::expr_type(func->m_return_var),
+                                        m_dims, ndims, ASR::array_physical_typeType::FixedSizeArray));
+                result_var = PassUtils::create_var(result_counter, res_prefix,
+                                loc, arr_type, al, current_scope);
+            } else {
+                std::cout<<"hk4"<<'\n';
+                result_var = PassUtils::create_var(result_counter, res_prefix,
+                                loc, *current_expr, al, current_scope);
+            }
             result_counter += 1;
             operand = first_array_operand;
             ASR::dimension_t* m_dims;
@@ -1409,7 +1430,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 result_var = result_var_copy;
                 bool result_var_created = false;
                 if( result_var == nullptr ) {
-                    ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x->m_name));
+                     ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x->m_name));
                     if (func->m_return_var != nullptr && !ASRUtils::is_array(ASRUtils::expr_type(func->m_return_var))) {
                         ASR::ttype_t* sibling_type = ASRUtils::expr_type(operand);
                         ASR::dimension_t* m_dims; int ndims;

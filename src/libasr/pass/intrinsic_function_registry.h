@@ -1110,6 +1110,7 @@ static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x,
 
     ASR::ttype_t* input_type = ASRUtils::expr_type(x.m_args[0]);
     ASR::ttype_t* output_type = x.m_type;
+    std::cout<<"here3"<<'\n';
     ASRUtils::require_impl(ASRUtils::check_equal_type(input_type, output_type, true),
         "The input and output type of elemental intrinsics must exactly match, input type: " +
         ASRUtils::get_type_code(input_type) + " output type: " + ASRUtils::get_type_code(output_type),
@@ -1217,6 +1218,7 @@ static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x,
         "The types of both the arguments of binary intrinsics must exactly match, argument 1 type: " +
         ASRUtils::get_type_code(input_type) + " argument 2 type: " + ASRUtils::get_type_code(input_type_2),
         loc, diagnostics);
+        std::cout<<"here2"<<'\n';
     ASRUtils::require_impl(ASRUtils::check_equal_type(input_type, output_type, true),
         "The input and output type of elemental intrinsics must exactly match, input type: " +
         ASRUtils::get_type_code(input_type) + " output type: " + ASRUtils::get_type_code(output_type),
@@ -1401,6 +1403,7 @@ namespace Atan2 {
 namespace Abs {
 
     static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
+        std::cout<<"verify_abs"<<'\n';
         const Location& loc = x.base.base.loc;
         ASRUtils::require_impl(x.n_args == 1,
             "Elemental intrinsics must have only 1 input argument",
@@ -1408,9 +1411,13 @@ namespace Abs {
 
         ASR::ttype_t* input_type = ASRUtils::expr_type(x.m_args[0]);
         ASR::ttype_t* output_type = x.m_type;
+       
         std::string input_type_str = ASRUtils::get_type_code(input_type);
         std::string output_type_str = ASRUtils::get_type_code(output_type);
-        if( ASR::is_a<ASR::Complex_t>(*ASRUtils::type_get_past_pointer(input_type)) ) {
+        std::cout<<"input_type_str: "<<input_type_str<<'\n';
+        std::cout<<"output_type_str: "<<output_type_str<<'\n';
+        if (ASR::is_a<ASR::Complex_t>(*ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(input_type))))) {
+            std::cout<<"yes"<<'\n';
             ASRUtils::require_impl(ASR::is_a<ASR::Real_t>(*output_type),
                 "Abs intrinsic must return output of real for complex input, found: " + output_type_str,
                 loc, diagnostics);
@@ -1420,13 +1427,15 @@ namespace Abs {
                 "The input and output type of Abs intrinsic must be of same kind, input kind: " +
                 std::to_string(input_kind) + " output kind: " + std::to_string(output_kind),
                 loc, diagnostics);
-            ASR::dimension_t *input_dims, *output_dims;
-            size_t input_n_dims = ASRUtils::extract_dimensions_from_ttype(input_type, input_dims);
-            size_t output_n_dims = ASRUtils::extract_dimensions_from_ttype(output_type, output_dims);
-            ASRUtils::require_impl(ASRUtils::dimensions_equal(input_dims, input_n_dims, output_dims, output_n_dims),
-                "The dimensions of input and output arguments of Abs intrinsic must be same, input: " +
-                input_type_str + " output: " + output_type_str, loc, diagnostics);
+            
+            // ASR::dimension_t *input_dims, *output_dims;
+            // size_t input_n_dims = ASRUtils::extract_dimensions_from_ttype(input_type, input_dims);
+            // size_t output_n_dims = ASRUtils::extract_dimensions_from_ttype(output_type, output_dims);
+            // ASRUtils::require_impl(ASRUtils::dimensions_equal(input_dims, input_n_dims, output_dims, output_n_dims),
+            //     "The dimensions of input and output arguments of Abs intrinsic must be same, input: " +
+            //     input_type_str + " output: " + output_type_str, loc, diagnostics);
         } else {
+            std::cout<<"here1"<<'\n';
             ASRUtils::require_impl(ASRUtils::check_equal_type(input_type, output_type, true),
                 "The input and output type of elemental intrinsics must exactly match, input type: " +
                 input_type_str + " output type: " + output_type_str, loc, diagnostics);
@@ -1435,6 +1444,7 @@ namespace Abs {
 
     static ASR::expr_t *eval_Abs(Allocator &al, const Location &loc,
             ASR::ttype_t *t, Vec<ASR::expr_t*> &args) {
+                std::cout<<"eval_abs"<<'\n';
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
         ASR::expr_t* arg = args[0];
         if (ASRUtils::is_real(*expr_type(arg))) {
@@ -1446,12 +1456,40 @@ namespace Abs {
             int64_t val = std::abs(rv);
             return make_ConstantWithType(make_IntegerConstant_t, val, t, loc);
         } else if (ASRUtils::is_complex(*expr_type(arg))) {
+            ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(arg);
+            std::cout<<"arr->n_args: "<<arr->n_args<<'\n';
+            std::cout<<"arr->m_args[0]: "<<arr->m_args[0]<<'\n';
+            std::cout<<"arr->m_args[1]: "<<arr->m_args[1]<<'\n';
+            
+            // double re;
+            // double im;
+            // double result;
+            // ASR::expr_t *value_expr;
+            // ASR::ArrayConstant_t * res;
+            // // for (size_t i = 0; i < arr->n_args; i++) {
+            //     value_expr = ASR::down_cast<ASR::ComplexConstructor_t>(arr->m_args)->m_value;
+            //     std::cout<<"this1"<<'\n';
+            //     re = ASR::down_cast<ASR::ComplexConstant_t>(value_expr)->m_re;
+            //     std::cout<<"re: "<<re<<'\n';
+            //     im = ASR::down_cast<ASR::ComplexConstant_t>(value_expr)->m_im;
+            //     std::cout<<"im: "<<im<<'\n';
+            //     std::complex<double> x(re, im);
+            //     result = std::abs(x);
+            //     res->m_args[i] = make_ConstantWithType(make_RealConstant_t, result, t, loc);
+            // }
+            // return res->m_args[0];
+                                  
+           
             double re = ASR::down_cast<ASR::ComplexConstant_t>(arg)->m_re;
+            std::cout<<"re: "<<re<<'\n';
             double im = ASR::down_cast<ASR::ComplexConstant_t>(arg)->m_im;
+            std::cout<<"im: "<<im<<'\n';
             std::complex<double> x(re, im);
             double result = std::abs(x);
+            std::cout<<"result: "<<result<<'\n';
             return make_ConstantWithType(make_RealConstant_t, result, t, loc);
         } else {
+            std::cout<<"nullptr"<<'\n';
             return nullptr;
         }
     }
@@ -1459,6 +1497,7 @@ namespace Abs {
     static inline ASR::asr_t* create_Abs(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
             const std::function<void (const std::string &, const Location &)> err) {
+                std::cout<<"create_abs"<<'\n';
         if (args.size() != 1) {
             err("Intrinsic abs function accepts exactly 1 argument", loc);
         }
@@ -1469,8 +1508,10 @@ namespace Abs {
                 args[0]->base.loc);
         }
         if (is_complex(*type)) {
+            std::cout<<"is it?"<<'\n';
             type = TYPE(ASR::make_Real_t(al, type->base.loc,
                 ASRUtils::extract_kind_from_ttype_t(type)));
+            std::cout<<"kya ye real hai "<<is_real(*type)<<'\n';
         }
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_Abs,
             static_cast<int64_t>(IntrinsicScalarFunctions::Abs), 0, ASRUtils::type_get_past_allocatable(type));
@@ -1479,6 +1520,7 @@ namespace Abs {
     static inline ASR::expr_t* instantiate_Abs(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        std::cout<<"instantiate_abs"<<'\n';
         std::string func_name = "_lcompilers_abs_" + type_to_str_python(arg_types[0]);
         declare_basic_variables(func_name);
         if (scope->get_symbol(func_name)) {

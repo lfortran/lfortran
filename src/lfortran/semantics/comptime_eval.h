@@ -673,6 +673,7 @@ TRIG2(atan, datan)
     static ASR::expr_t *eval_dabs(Allocator &al, const Location &loc,
             Vec<ASR::expr_t*> &args
             ) {
+                std::cout<<"eval_dabs"<<'\n';
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
         if (args.size() != 1) {
             throw SemanticError("Intrinsic abs function accepts exactly 1 argument", loc);
