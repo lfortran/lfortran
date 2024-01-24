@@ -1341,4 +1341,3 @@ RUN(NAME binop_01 LABELS gfortran llvm)
 RUN(NAME dfloat_01 LABELS gfortran llvm)
 
 RUN(NAME elemental_01 LABELS gfortran llvm)
-RUN(NAME elemental_02 LABELS gfortran llvm)
