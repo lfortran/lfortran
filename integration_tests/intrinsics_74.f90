@@ -3,6 +3,7 @@ program intrinsics_74
 
     real :: x(1, 2)
     x = 0
+    call srand(0)
     call random_number(x(1, 2))
     print *, x
 

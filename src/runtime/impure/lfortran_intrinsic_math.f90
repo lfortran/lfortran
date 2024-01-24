@@ -113,6 +113,10 @@ interface system_clock
     module procedure i32sys_clock, i64sys_clock
 end interface
 
+interface srand
+    module procedure f_srand
+end interface
+
 interface random_number
     module procedure sp_rand_num, dp_rand_num
 end interface
@@ -1100,7 +1104,21 @@ end interface
 call c_i64sys_clock(count, count_rate, count_max)
 end subroutine
 
+! srand ----------------------------------------------------------------
+
+pure subroutine f_srand(seed)
+integer(4), intent(in) :: seed
+interface
+    pure subroutine c_srand(seed) &
+        bind(c, name="_lfortran_init_random_seed")
+        integer(4), intent(in) :: seed
+    end subroutine
+end interface
+call c_srand(seed)
+end subroutine
+
 ! random_number ----------------------------------------------------------------
+
 pure subroutine sp_rand_num(harvest)
 real(sp), intent(out) :: harvest
 interface
