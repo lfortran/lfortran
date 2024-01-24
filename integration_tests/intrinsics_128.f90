@@ -1,18 +1,7 @@
-program intrinsic_126
-    implicit none
+program intrinsics_128
+    double precision :: x
+    x = 4.23
 
-    integer :: arg = 0
-    real :: num1, num2
-
-    call system_clock(arg)
-
-    call srand(arg)
-
-    call random_number(num1)
-    call random_number(num2)
-
-    print *, arg, num1, num2
-
-    if (abs(num1 - num2) <= 1e-3) error stop
-
-end program
+    print *, idint(x)
+    if( .not. idint(x) == 4 ) error stop
+end
