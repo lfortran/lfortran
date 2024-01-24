@@ -3643,3 +3643,7 @@ asr = true
 [[test]]
 filename = "errors/dfloat1.f90"
 asr = true
+
+[[test]]
+filename = "errors/integer16.f90"
+ast = true

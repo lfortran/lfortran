@@ -1,0 +1,13 @@
+{
+    "basename": "ast-integer16-eab0df9",
+    "cmd": "lfortran --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/integer16.f90",
+    "infile_hash": "baf6d6f3f106302b5334bdba9d405160f52d531ac537d6268cc984fb",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "ast-integer16-eab0df9.stderr",
+    "stderr_hash": "dc07b98205e0d06bb0c8691f4c1f3888b088c8c43f984be4fe7ea2f0",
+    "returncode": 2
+}
