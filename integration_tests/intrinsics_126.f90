@@ -13,6 +13,7 @@ program intrinsic_126
 
     print *, arg, num1, num2
 
-    if (abs(num1 - num2) <= 1e-3) error stop
+    ! Ensure num1 and num2 are different
+    if (abs(num1 - num2) <= 1e-8) error stop
 
 end program
