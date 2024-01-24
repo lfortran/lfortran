@@ -1,0 +1,9 @@
+syntax error: End submodule name does not match submodule name
+  --> tests/errors/end_submodule_name.f90:17:1 - 24:17
+   |
+17 |    submodule (mother) daughter
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+24 |    end submodule son
+   | ...^^^^^^^^^^^^^^^^^

@@ -369,6 +369,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_ast> id_list_opt
 %type <ast> script_unit
 %type <ast> module
+%type <ast> end_module
+%type <ast> end_submodule
 %type <ast> submodule
 %type <ast> block_data
 %type <ast> temp_decl
@@ -619,17 +621,17 @@ script_unit
 module
     : KW_MODULE id sep use_statement_star implicit_statement_star
         decl_star contains_block_opt end_module sep {
-            $$ = MODULE($2, TRIVIA($3, $9, @$), $4, $5, $6, $7, @$); }
+            LLOC(@$, @8); $$ = MODULE($2, TRIVIA($3, $9, @$), $4, $5, $6, $7, $8, @$); }
     ;
 
 submodule
     : KW_SUBMODULE "(" id ")" id sep use_statement_star implicit_statement_star
         decl_star contains_block_opt end_submodule sep {
-            $$ = SUBMODULE($3, $5, TRIVIA($6, $12, @$), $7, $8, $9, $10, @$); }
+            LLOC(@$, @11); $$ = SUBMODULE($3, $5, TRIVIA($6, $12, @$), $7, $8, $9, $10, $11, @$); }
     | KW_SUBMODULE "(" id ":" id ")" id sep use_statement_star
         implicit_statement_star decl_star
         contains_block_opt end_submodule sep {
-            $$ = SUBMODULE1($3, $5, $7, TRIVIA($8, $14, @$), $9, $10, $11, $12, @$); }
+            LLOC(@$, @13); $$ = SUBMODULE1($3, $5, $7, TRIVIA($8, $14, @$), $9, $10, $11, $12, $13, @$); }
     ;
 
 block_data
@@ -876,15 +878,15 @@ end_program
     ;
 
 end_module
-    : KW_END_MODULE id_opt
-    | KW_ENDMODULE id_opt
-    | KW_END
+    : KW_END_MODULE id_opt { $$ = $2; }
+    | KW_ENDMODULE id_opt { $$ = $2; }
+    | KW_END { $$ = nullptr; }
     ;
 
 end_submodule
-    : KW_END_SUBMODULE id_opt
-    | KW_ENDSUBMODULE id_opt
-    | KW_END
+    : KW_END_SUBMODULE id_opt { $$ = $2; }
+    | KW_ENDSUBMODULE id_opt { $$ = $2; }
+    | KW_END { $$ = nullptr; }
     ;
 
 end_blockdata

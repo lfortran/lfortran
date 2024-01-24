@@ -11,4 +11,4 @@ contains
       print *, "publ = ", publ 
    end subroutine print_vars
    
-end module access_var
+end module access_vars
