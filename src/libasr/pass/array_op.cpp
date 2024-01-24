@@ -1379,6 +1379,10 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 int common_rank = 0;
                 bool are_all_rank_same = true;
                 for( size_t iarg = 0; iarg < x->n_args; iarg++ ) {
+                    if (x->m_args[iarg].m_value == nullptr) {
+                        operands.push_back(nullptr);
+                        continue;
+                    }
                     ASR::expr_t** current_expr_copy_9 = current_expr;
                     current_expr = &(x->m_args[iarg].m_value);
                     self().replace_expr(x->m_args[iarg].m_value);
@@ -1451,7 +1455,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                             ref = PassUtils::create_array_ref(operands[iarg], idx_vars_value, al, current_scope);
                         }
                         ASR::call_arg_t ref_arg;
-                        ref_arg.loc = ref->base.loc;
+                        ref_arg.loc = x->m_args[iarg].loc;
                         ref_arg.m_value = ref;
                         ref_args.push_back(al, ref_arg);
                     }
