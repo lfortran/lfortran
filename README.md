@@ -1,4 +1,4 @@
-# LFortran
+XX # LFortran
 
 [![project chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg)](https://lfortran.zulipchat.com/)
 
