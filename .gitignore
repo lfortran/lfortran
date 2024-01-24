@@ -177,6 +177,7 @@ MANIFEST
 ## Editor Files
 .vscode/
 .vs/
+*~
 
 ## Build Files
 */bin/lfortran
