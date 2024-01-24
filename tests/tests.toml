@@ -3645,5 +3645,13 @@ filename = "errors/dfloat1.f90"
 asr = true
 
 [[test]]
+filename = "errors/end_module_name.f90"
+ast = true
+
+[[test]]
+filename = "errors/end_submodule_name.f90"
+ast = true
+
+[[test]]
 filename = "errors/integer16.f90"
 ast = true
