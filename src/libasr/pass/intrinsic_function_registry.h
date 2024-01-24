@@ -2117,7 +2117,7 @@ namespace Idint {
     }
 
     static ASR::expr_t *eval_Idint(Allocator &al, const Location &loc,
-            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args) {
         int val = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
         return make_ConstantWithType(make_IntegerConstant_t, val, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), loc);
     }
