@@ -278,7 +278,7 @@ public:
 
     void populate_implicit_dictionary(Location &a_loc, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         for (char ch='i'; ch<='n'; ch++) {
-            implicit_dictionary[std::string(1, ch)] = ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4));
+            implicit_dictionary[std::string(1, ch)] = ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, compiler_options.po.default_integer_kind));
         }
 
         for (char ch='o'; ch<='z'; ch++) {
@@ -318,6 +318,7 @@ public:
                 AST::decl_typeType ast_type=attr_type->m_type;
                 ASR::ttype_t *type = nullptr;
                 //convert the ast_type to asr_type
+                int i_kind = compiler_options.po.default_integer_kind;
                 int a_kind = 4;
                 int a_len = -10;
                 if (attr_type->m_kind != nullptr) {
@@ -328,6 +329,7 @@ public:
                             a_len = ASRUtils::extract_len<SemanticError>(kind_expr, x.base.base.loc);
                         } else {
                             a_kind = ASRUtils::extract_kind<SemanticError>(kind_expr, x.base.base.loc);
+                            i_kind = a_kind;
                         }
                     } else {
                         throw SemanticError("Only one kind item supported for now", x.base.base.loc);
@@ -335,7 +337,7 @@ public:
                 }
                 switch (ast_type) {
                     case (AST::decl_typeType::TypeInteger) : {
-                        type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, a_kind));
+                        type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, i_kind));
                         break;
                     }
                     case (AST::decl_typeType::TypeReal) : {
@@ -351,7 +353,7 @@ public:
                         break;
                     }
                     case (AST::decl_typeType::TypeLogical) : {
-                        type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
+                        type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
                         break;
                     }
                     case (AST::decl_typeType::TypeCharacter) : {
@@ -685,7 +687,7 @@ public:
 
         if (is_master) {
             // Create integer variable "entry__lcompilers"
-            ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
             ASR::symbol_t* entry_lcompilers_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al,
                                                 loc, current_scope, s2c(al, "entry__lcompilers"), nullptr, 0,
                                                 ASR::intentType::In, nullptr, nullptr, ASR::storage_typeType::Default,
@@ -1331,6 +1333,7 @@ public:
                         x.base.base.loc);
             }
             ASR::ttype_t *type;
+            int i_kind = compiler_options.po.default_integer_kind;
             int a_kind = 4;
             int a_len = -10;
             if (return_type->m_kind != nullptr) {
@@ -1341,6 +1344,7 @@ public:
                         a_len = ASRUtils::extract_len<SemanticError>(kind_expr, x.base.base.loc);
                     } else {
                         a_kind = ASRUtils::extract_kind<SemanticError>(kind_expr, x.base.base.loc);
+                        i_kind = a_kind;
                     }
                 } else {
                     throw SemanticError("Only one kind item supported for now", x.base.base.loc);
@@ -1348,7 +1352,7 @@ public:
             }
             switch (return_type->m_type) {
                 case (AST::decl_typeType::TypeInteger) : {
-                    type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, a_kind));
+                    type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, i_kind));
                     break;
                 }
                 case (AST::decl_typeType::TypeReal) : {
@@ -1368,7 +1372,7 @@ public:
                     break;
                 }
                 case (AST::decl_typeType::TypeLogical) : {
-                    type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
+                    type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
                     break;
                 }
                 case (AST::decl_typeType::TypeCharacter) : {
@@ -3129,7 +3133,7 @@ public:
                                 x.base.base.loc);
                         }
                     } else {
-                        return_type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
+                        return_type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
                         value = ASRUtils::EXPR(ASRUtils::make_Cmpop_util(al, x.base.base.loc, cmpop, left, right, left_type));
                     }
 
@@ -3228,7 +3232,7 @@ public:
                     context_map[tp->m_param] = name;
                     if (name.compare("integer") == 0) {
                         t = ASRUtils::TYPE(ASR::make_Integer_t(al,
-                            tp->base.base.loc, 4));
+                            tp->base.base.loc, compiler_options.po.default_integer_kind));
                     } else {
                         t = ASRUtils::TYPE(ASR::make_TypeParameter_t(al,
                             tp->base.base.loc, s2c(al, name)));
@@ -3265,7 +3269,7 @@ public:
                             std::string pt = context_map[tp->m_param];
                             if (pt.compare("integer") == 0) {
                                 param_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
-                                    tp->base.base.loc, 4));
+                                    tp->base.base.loc, compiler_options.po.default_integer_kind));
                             } else {
                                 param_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(
                                     al, tp->base.base.loc, s2c(al, context_map[tp->m_param])));
@@ -3318,7 +3322,7 @@ public:
                             std::string pt = context_map[tp->m_param];
                             if (pt.compare("integer") == 0) {
                                 return_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
-                                    tp->base.base.loc, 4));
+                                    tp->base.base.loc, compiler_options.po.default_integer_kind));
                             } else {
                                 return_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(
                                     al, tp->base.base.loc, s2c(al, context_map[tp->m_param])));
@@ -3377,7 +3381,7 @@ public:
         Vec<char *> m_members;
         m_members.reserve(al, 4);
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al,
-            x.base.base.loc, 4));
+            x.base.base.loc, compiler_options.po.default_integer_kind));
 
         ASR::abiType abi_type = ASR::abiType::BindC;
         if ( x.n_attr == 1 ) {

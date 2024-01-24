@@ -1,0 +1,5 @@
+syntax error: kind 16 is not supported yet.
+ --> tests/errors/integer16.f90:2:2
+  |
+2 |  integer*16 x
+  |  ^^^^^^^^^^ 

@@ -2116,6 +2116,8 @@ int main_app(int argc, char *argv[]) {
         if (f_flag == "PIC") {
             // Position Independent Code
             // We do this by default, so we ignore for now
+        } else if (f_flag == "default-integer-8") {
+            compiler_options.po.default_integer_kind = 8;
         } else {
             std::cerr << "The flag `-f" << f_flag << "` is not supported" << std::endl;
             return 1;

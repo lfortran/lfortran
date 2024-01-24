@@ -558,7 +558,7 @@ public:
                     ASR::expr_t *yes = ASRUtils::EXPR(ASR::make_StringConstant_t(
                         al, loc, s2c(al, "yes"), str_type_len_3));
                     // TODO: Support case insensitive compare
-                    ASR::ttype_t *cmp_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+                    ASR::ttype_t *cmp_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, compiler_options.po.default_integer_kind));
                     ASR::expr_t *test = ASRUtils::EXPR(ASR::make_StringCompare_t(al,
                         loc, adv_val_expr, ASR::cmpopType::Eq, yes, cmp_type, nullptr));
                     Vec<ASR::stmt_t*> body;
@@ -864,8 +864,8 @@ public:
     void visit_Allocate(const AST::Allocate_t& x) {
         Vec<ASR::alloc_arg_t> alloc_args_vec;
         alloc_args_vec.reserve(al, x.n_args);
-        ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-        ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
+        ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
+        ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int_type));
         for( size_t i = 0; i < x.n_args; i++ ) {
             ASR::alloc_arg_t new_arg;
             new_arg.m_len_expr = nullptr;
@@ -1565,8 +1565,8 @@ public:
         for (size_t i = 0; i < master_function->n_args; i++) {
             ASR::expr_t* arg = nullptr;
             if (i == 0) {
-                ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-                arg = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, label, int32_type));
+                ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
+                arg = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, label, int_type));
             } else if (std::find(indices.begin(), indices.end(), i) != indices.end()) {
                 ASR::expr_t* master_function_arg = master_function->m_args[i];
                 ASR::symbol_t* sym = nullptr;
@@ -1759,12 +1759,12 @@ public:
         ASR::symbol_t* left_sym = master_function->m_symtab->resolve_symbol("entry__lcompilers");
         LCOMPILERS_ASSERT(left_sym != nullptr);
         left = ASRUtils::EXPR(ASR::make_Var_t(al, loc, left_sym));
-        ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-        ASR::ttype_t* logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+        ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
+        ASR::ttype_t* logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, compiler_options.po.default_integer_kind));
         int num_entry_functions = entry_functions[original_function_name].size();
         for(int i = 0; i < num_entry_functions + 1; i++) {
             ASR::stmt_t* if_stmt = nullptr;
-            ASR::expr_t* right = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, i+1, int32_type));
+            ASR::expr_t* right = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, i+1, int_type));
             ASR::expr_t* cmp = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc, left, ASR::cmpopType::Eq, right,
                                 logical_type, nullptr));
 
@@ -1985,18 +1985,18 @@ public:
     void visit_Assign(const AST::Assign_t &x) {
         std::string var_name = to_lower(std::string{x.m_variable});
         ASR::symbol_t *sym = current_scope->resolve_symbol(var_name);
-        ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+        ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
         if (!sym) {
             labels.insert(var_name);
             Str a_var_name_f;
             a_var_name_f.from_str(al, var_name);
             SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
-            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, int32_type);
+            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, int_type);
             ASR::asr_t* a_variable = ASR::make_Variable_t(al, x.base.base.loc, current_scope, a_var_name_f.c_str(al),
                                                             variable_dependencies_vec.p, variable_dependencies_vec.size(),
                                                             ASR::intentType::Local, nullptr, nullptr,
-                                                            ASR::storage_typeType::Default, int32_type, nullptr,
+                                                            ASR::storage_typeType::Default, int_type, nullptr,
                                                             ASR::abiType::Source, ASR::Public, ASR::presenceType::Optional, false);
             current_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(a_variable));
             sym = ASR::down_cast<ASR::symbol_t>(a_variable);
@@ -2017,7 +2017,7 @@ public:
 
         // ASSIGN XXX TO k -- XXX can only be integer for now.
         ASR::expr_t* target_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym));
-        ASR::expr_t* tmp_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, x.m_assign_label, int32_type));
+        ASR::expr_t* tmp_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, x.m_assign_label, int_type));
         ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, target_var, tmp_expr);
         tmp = (ASR::asr_t*)ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, target_var, tmp_expr, nullptr));
     }
@@ -2407,7 +2407,7 @@ public:
                     }
                     lbs.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                         al, x.base.base.loc, 1, ASRUtils::TYPE(
-                            ASR::make_Integer_t(al, x.base.base.loc, 4)))));
+                            ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind)))));
                 }
                 if( success ) {
                     Vec<ASR::dimension_t> dims;
@@ -2415,9 +2415,9 @@ public:
                     ASR::dimension_t dim;
                     dim.loc = x.base.base.loc;
                     dim.m_length = make_ConstantWithKind(make_IntegerConstant_t,
-                        make_Integer_t, target_n_dims, 4, dim.loc);
+                        make_Integer_t, target_n_dims, compiler_options.po.default_integer_kind, dim.loc);
                     dim.m_start = make_ConstantWithKind(make_IntegerConstant_t,
-                        make_Integer_t, 0, 4, dim.loc);
+                        make_Integer_t, 0, compiler_options.po.default_integer_kind, dim.loc);
                     dims.push_back(al, dim);
                     ASR::ttype_t* type = ASRUtils::make_Array_t_util(al, dim.loc,
                         ASRUtils::expr_type(lbs[0]), dims.p, dims.size(), ASR::abiType::Source,
@@ -2887,7 +2887,7 @@ public:
             ASR::expr_t *right = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
                 x.base.base.loc, 0, type0));
             ASR::ttype_t *type = ASRUtils::TYPE(
-                ASR::make_Logical_t(al, x.base.base.loc, 4));
+                ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
             ASR::expr_t *value = nullptr;
             test_lt = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, test_int->base.loc,
                 test_int, ASR::cmpopType::Lt, right, type, value));
@@ -2899,7 +2899,7 @@ public:
             ASR::expr_t *right = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
                 x.base.base.loc, 0, type0));
             ASR::ttype_t *type = ASRUtils::TYPE(
-                ASR::make_Logical_t(al, x.base.base.loc, 4));
+                ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
             ASR::expr_t *value = nullptr;
             test_lt = ASRUtils::EXPR(ASR::make_RealCompare_t(al, test_int->base.loc,
                 test_int, ASR::cmpopType::Lt, right, type, value));
@@ -3013,7 +3013,7 @@ public:
             do_loop_variables.pop_back();
         } else {
             ASR::ttype_t* cond_type
-                = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
+                = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
             ASR::expr_t* cond = ASRUtils::EXPR(
                 ASR::make_LogicalConstant_t(al, x.base.base.loc, true, cond_type));
             tmp = ASR::make_WhileLoop_t(al, x.base.base.loc, x.m_stmt_name, cond, body.p, body.size());
@@ -3152,8 +3152,8 @@ public:
                         body.push_back(al, ASRUtils::STMT(ASR::make_GoTo_t(al, x.base.base.loc, l->m_n, s2c(al, std::to_string(l->m_n)))));
                         Vec<ASR::expr_t*> comparator_one;
                         comparator_one.reserve(al, 1);
-                        ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-                        comparator_one.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, i+1, int32_type)));
+                        ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
+                        comparator_one.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, i+1, int_type)));
                         a_body_vec.push_back(al, ASR::down_cast<ASR::case_stmt_t>(ASR::make_CaseStmt_t(al, x.base.base.loc, comparator_one.p, 1, body.p, 1)));
                     }
                 }
@@ -3204,8 +3204,8 @@ public:
                     body.push_back(al, ASRUtils::STMT(ASR::make_GoTo_t(al, x.base.base.loc, num, s2c(al, std::to_string(num)))));
                     Vec<ASR::expr_t*> comparator_one;
                     comparator_one.reserve(al, 1);
-                    ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-                    comparator_one.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, num, int32_type)));
+                    ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
+                    comparator_one.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, num, int_type)));
                     a_body_vec.push_back(al, ASR::down_cast<ASR::case_stmt_t>(ASR::make_CaseStmt_t(al, x.base.base.loc, comparator_one.p, 1, body.p, 1)));
                 }
             } else {
@@ -3220,8 +3220,8 @@ public:
                         body.push_back(al, ASRUtils::STMT(ASR::make_GoTo_t(al, x.base.base.loc, l->m_n, s2c(al, std::to_string(l->m_n)))));
                         Vec<ASR::expr_t*> comparator_one;
                         comparator_one.reserve(al, 1);
-                        ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-                        comparator_one.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, l->m_n, int32_type)));
+                        ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
+                        comparator_one.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, l->m_n, int_type)));
                         a_body_vec.push_back(al, ASR::down_cast<ASR::case_stmt_t>(ASR::make_CaseStmt_t(al, x.base.base.loc, comparator_one.p, 1, body.p, 1)));
                     }
                 }
