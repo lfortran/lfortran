@@ -2112,16 +2112,14 @@ namespace Idint {
         ASR::ttype_t *type = ASRUtils::expr_type(x.m_args[0]);
         int kind = ASRUtils::extract_kind_from_ttype_t(type);
         ASRUtils::require_impl(ASRUtils::is_real(*type) && kind == 8,
-            "ASR Verify: Arguments to `idint` must be of real type",
+            "ASR Verify: Arguments to `idint` must be of double precision type",
             x.base.base.loc, diagnostics);
     }
 
     static ASR::expr_t *eval_Idint(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args) {
-        double v = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
-        // cast it down correctly to integer
-        int val = int(v);
-        return f(val, arg_type);
+        int val = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
+        return make_ConstantWithType(make_IntegerConstant_t, val, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), loc);
     }
 
     static inline ASR::asr_t* create_Idint(
@@ -2131,7 +2129,7 @@ namespace Idint {
         if ( args.n != 1 ) {
             err("Intrinsic `idint` accepts exactly one argument", loc);
         } else if ( !is_real(*expr_type(args[0])) ) {
-            err("Argument of the `idint` must be Real", loc);
+            err("Argument of the `idint` must be Double Precision", loc);
         }
         Vec<ASR::expr_t *> m_args; m_args.reserve(al, 1);
         m_args.push_back(al, args[0]);
