@@ -2117,11 +2117,9 @@ namespace Ifix {
     }
 
     static ASR::expr_t *eval_Ifix(Allocator &al, const Location &loc,
-            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args) {
-        float v = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
-        // cast it down correctly to integer
-        int val = int(v);
-        return f(val, arg_type);
+            ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args) {
+        int val = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
+        return make_ConstantWithType(make_IntegerConstant_t, val, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), loc);
     }
 
     static inline ASR::asr_t* create_Ifix(
