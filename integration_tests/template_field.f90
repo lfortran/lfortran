@@ -62,8 +62,3 @@ module field_m
         end function
     end template
 end module
-
-program template_field
-implicit none
-    
-end program
