@@ -1660,28 +1660,34 @@ void add_ws_warning(const Location &loc,
                 {loc},
                 "help: write this as 'end if'");
         } else if (end_token == yytokentype::KW_REAL) {
-                if(a_kind == 4){
+                if (a_kind == 4){
                         diagnostics.parser_style_label(
                         "Use real(4) instead of real*4",
                         {loc},
                         "help: write this as 'real(4)'");
-                } else{
+                } else if(a_kind == 8){
                         diagnostics.parser_style_label(
                         "Use real(8) instead of real*8",
                         {loc},
                         "help: write this as 'real(8)'");
+                } else {
+                        throw LCompilers::LFortran::parser_local::ParserError(
+                        "kind " + std::to_string(a_kind) + " is not supported yet.", {loc});
                 }
         } else if (end_token == yytokentype::KW_INTEGER) {
-                if(a_kind == 4){
+                if (a_kind == 4){
                         diagnostics.parser_style_label(
                         "Use integer(4) instead of integer*4",
                         {loc},
                         "help: write this as 'integer(4)'");
-                } else{
+                } else if (a_kind == 8){ 
                         diagnostics.parser_style_label(
                         "Use integer(8) instead of integer*8",
                         {loc},
                         "help: write this as 'integer(8)'");
+                } else {
+                        throw LCompilers::LFortran::parser_local::ParserError(
+                        "kind " + std::to_string(a_kind) + " is not supported yet.", {loc});
                 }
         } else if (end_token == yytokentype::KW_CHARACTER) {
                 std::string msg1 = "Use character("+std::to_string(a_kind)+") instead of character*"+std::to_string(a_kind);
@@ -2130,18 +2136,18 @@ ast_t* COARRAY(Allocator &al, const ast_t *id,
 #define USE_READ(x, l) make_UseRead_t(p.m_a, l, name2char(x))
 
 
-#define MODULE(name, trivia, use, implicit, decl, contains, l) make_Module_t(p.m_a, l, \
-        name2char(name), \
+#define MODULE(name, trivia, use, implicit, decl, contains, name_opt, l) make_Module_t(p.m_a, l, \
+        name2char_with_check(name, name_opt, l, "module"), \
         trivia_cast(trivia), \
         /*unit_decl1_t** a_use*/ USES(use), /*size_t n_use*/ use.size(), \
         /*m_implicit*/ VEC_CAST(implicit, implicit_statement), \
         /*n_implicit*/ implicit.size(), \
         /*unit_decl2_t** a_decl*/ DECLS(decl), /*size_t n_decl*/ decl.size(), \
         /*program_unit_t** a_contains*/ CONTAINS(contains), /*size_t n_contains*/ contains.size())
-#define SUBMODULE(id ,name, trivia, use, implicit, decl, contains, l) make_Submodule_t(p.m_a, l, \
+#define SUBMODULE(id ,name, trivia, use, implicit, decl, contains, name_opt, l) make_Submodule_t(p.m_a, l, \
         name2char(id), \
         nullptr, \
-        name2char(name), \
+        name2char_with_check(name, name_opt, l, "submodule"), \
         trivia_cast(trivia), \
         /*unit_decl1_t** a_use*/ USES(use), /*size_t n_use*/ use.size(), \
         /*m_implicit*/ VEC_CAST(implicit, implicit_statement), \
@@ -2149,11 +2155,11 @@ ast_t* COARRAY(Allocator &al, const ast_t *id,
         /*unit_decl2_t** a_decl*/ DECLS(decl), /*size_t n_decl*/ decl.size(), \
         /*program_unit_t** a_contains*/ CONTAINS(contains), /*size_t n_contains*/ contains.size())
 
-#define SUBMODULE1(id, parent_name, name, trivia, use, implicit, decl, contains, l) \
+#define SUBMODULE1(id, parent_name, name, trivia, use, implicit, decl, contains, name_opt, l) \
         make_Submodule_t(p.m_a, l, \
         name2char(id), \
         name2char(parent_name), \
-        name2char(name), \
+        name2char_with_check(name, name_opt, l, "submodule"), \
         trivia_cast(trivia), \
         /*unit_decl1_t** a_use*/ USES(use), /*size_t n_use*/ use.size(), \
         /*m_implicit*/ VEC_CAST(implicit, implicit_statement), \

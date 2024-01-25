@@ -99,7 +99,8 @@ public:
                                    ASR::asr_t *&asr, std::string& intrinsic_op_name,
                                    SymbolTable* curr_scope,
                                    SetChar& current_function_dependencies,
-                                   SetChar& current_module_dependencies) {
+                                   SetChar& current_module_dependencies,
+                                   const CompilerOptions &compiler_options) {
     ASR::cmpopType asr_op;
     switch (x.m_op) {
         case (AST::cmpopType::Eq): {
@@ -200,7 +201,7 @@ public:
         result_dims = left_dims;
     }
     ASR::ttype_t *type = ASRUtils::TYPE(
-        ASR::make_Logical_t(al, x.base.base.loc, 4));
+        ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
     type = ASRUtils::make_Array_t_util(al, x.base.base.loc,
             type, result_shape, result_dims);
 
@@ -606,8 +607,9 @@ static ASR::asr_t* comptime_intrinsic_real(ASR::expr_t *A,
 
 static ASR::asr_t* comptime_intrinsic_int(ASR::expr_t *A,
         ASR::expr_t * kind,
-        Allocator &al, const Location &loc) {
-    int kind_int = 4;
+        Allocator &al, const Location &loc,
+        const CompilerOptions &compiler_options) {
+    int kind_int = compiler_options.po.default_integer_kind;
     if (kind) {
         ASR::expr_t* kind_value = ASRUtils::expr_value(kind);
         if (kind_value) {
@@ -713,6 +715,8 @@ public:
         {"repeat", {IntrinsicSignature({"string", "ncopies"}, 2, 2)}},
         {"hypot", {IntrinsicSignature({"x", "y"}, 2, 2)}},
         {"shiftr", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
+        {"shiftl", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
+        {"lshift", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
     };
 
     std::map<std::string, std::string> double_precision_intrinsics = {
@@ -842,7 +846,7 @@ public:
         // implicit real (a-h,o-z)
         if (first_letter >= 'i' && first_letter <= 'n') {
             // it is an integer
-            type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
         } else {
             // it is a real
             type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4));
@@ -960,7 +964,7 @@ public:
                 }
             } else if (_processing_dimensions && !v) {
                 // Declare an implicit variable with integer type
-                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
                 SetChar variable_dependencies_vec;
                 variable_dependencies_vec.reserve(al, 1);
                 ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
@@ -1200,10 +1204,10 @@ public:
             dims.reserve(al, 1);
             ASR::dimension_t dim;
             dim.loc = x.base.base.loc;
-            ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-            ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
+            ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
+            ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int_type));
             ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
-                                a->n_value, int32_type));
+                                a->n_value, int_type));
             dim.m_start = one;
             dim.m_length = x_n_args;
             dims.push_back(al, dim);
@@ -1236,10 +1240,10 @@ public:
         ASR::expr_t* idl_end = idl->m_end;
         ASR::expr_t* idl_increment = idl->m_increment;
 
-        ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+        ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
 
         if (!idl_increment) {
-            idl_increment = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
+            idl_increment = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int_type));
         }
 
         ASR::IntegerConstant_t* idl_start_int = ASR::down_cast<ASR::IntegerConstant_t>(idl_start);
@@ -1260,7 +1264,7 @@ public:
                 ASR::array_index_t arg = array_item->m_args[j];
                 ASR::expr_t* arg_right = arg.m_right;
                 if (ASR::is_a<ASR::Var_t>(*arg_right)) {
-                    array_item->m_args[j].m_right = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, idl->base.base.loc, i, int32_type));
+                    array_item->m_args[j].m_right = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, idl->base.base.loc, i, int_type));
                 }
             }
             ASR::expr_t* target = ASRUtils::EXPR((ASR::asr_t*) array_item);
@@ -1512,8 +1516,8 @@ public:
                     ASR::array_index_t arg = array_item->m_args[0];
                     ASR::expr_t* arg_right = arg.m_right;
                     ASR::ttype_t* type = array_item->m_type;
-                    ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-                    ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int32_type));
+                    ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
+                    ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));
 
                     Vec<ASR::dimension_t> dims;
                     dims.reserve(al, 1);
@@ -1927,7 +1931,7 @@ public:
                                 } else if (sa->m_attr == AST::simple_attributeType::AttrEnumerator) {
                                     ASR::symbol_t *sym;
                                     ASR::ttype_t *init_type = ASRUtils::TYPE(
-                                        ASR::make_Integer_t(al, x.m_syms[i].loc, 4));
+                                        ASR::make_Integer_t(al, x.m_syms[i].loc, compiler_options.po.default_integer_kind));
                                     ASR::expr_t *init_expr = ASRUtils::EXPR(
                                         ASR::make_IntegerConstant_t(al, x.m_syms[i].loc,
                                         enum_init_val, init_type));
@@ -2040,8 +2044,8 @@ public:
                                 ASR::ttype_t *cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, asr_eq1->base.loc));
                                 ASR::asr_t* pointer_to_cptr = ASR::make_PointerToCPtr_t(al, asr_eq1->base.loc, ASRUtils::EXPR(get_pointer), cptr, nullptr);
 
-                                ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, asr_eq1->base.loc, 4));
-                                ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_eq1->base.loc, 1, int32_type));
+                                ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, asr_eq1->base.loc, compiler_options.po.default_integer_kind));
+                                ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_eq1->base.loc, 1, int_type));
 
                                 Vec<ASR::dimension_t> dim;
                                 dim.reserve(al, 1);
@@ -2069,8 +2073,8 @@ public:
                                 ASR::dimension_t dim_1 = m_dim[0];
                                 ASR::expr_t* len = dim_1.m_length;
                                 ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(len);
-                                ASR::expr_t* size = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_eq1->base.loc, ic->m_n, int32_type));
-                                ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Integer_t(al, asr_eq2->base.loc, 4));
+                                ASR::expr_t* size = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_eq1->base.loc, ic->m_n, int_type));
+                                ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Integer_t(al, asr_eq2->base.loc, compiler_options.po.default_integer_kind));
                                 type = ASRUtils::make_Array_t_util(al, asr_eq2->base.loc, type, dim2.p, dim2.size(), ASR::abiType::Source, false, ASR::array_physical_typeType::DescriptorArray, false, false);
                                 ASR::ttype_t* ptr = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq2->base.loc, type));
                                 var__->m_type = ptr;
@@ -2079,7 +2083,7 @@ public:
                                 args.reserve(al, 1);
                                 args.push_back(al, size);
 
-                                ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, asr_eq1->base.loc, int32_type, dim.p, dim.size(), ASR::array_physical_typeType::PointerToDataArray));
+                                ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, asr_eq1->base.loc, int_type, dim.p, dim.size(), ASR::array_physical_typeType::PointerToDataArray));
                                 ASR::asr_t* array_constant = ASRUtils::make_ArrayConstant_t_util(al, asr_eq1->base.loc, args.p, args.size(), array_type, ASR::arraystorageType::ColMajor);
                                 ASR::asr_t* c_f_pointer = ASR::make_CPtrToPointer_t(al, asr_eq1->base.loc, ASRUtils::EXPR(pointer_to_cptr), ASR::down_cast<ASR::ArrayItem_t>(asr_eq2)->m_v, ASRUtils::EXPR(array_constant), nullptr);
 
@@ -2131,7 +2135,7 @@ public:
 
                         ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(asr_eq02);
                         ASR::Variable_t *var__ = ASR::down_cast<ASR::Variable_t>(var->m_v);
-                        ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Integer_t(al, asr_eq02->base.loc, 4));
+                        ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Integer_t(al, asr_eq02->base.loc, compiler_options.po.default_integer_kind));
                         ASR::ttype_t* ptr = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq02->base.loc, type));
                         var__->m_type = ptr;
 
@@ -2422,9 +2426,9 @@ public:
                         temp_dims.reserve(al, 1);
                         ASR::dimension_t temp_dim;
                         temp_dim.loc = (temp_array->base).base.loc;
-                        ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, (temp_array->base).base.loc, 4));
-                        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, (temp_array->base).base.loc, 1, int32_type));
-                        ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, (temp_array->base).base.loc, temp_array->n_args, int32_type));
+                        ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, (temp_array->base).base.loc, compiler_options.po.default_integer_kind));
+                        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, (temp_array->base).base.loc, 1, int_type));
+                        ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, (temp_array->base).base.loc, temp_array->n_args, int_type));
                         temp_dim.m_start = one;
                         temp_dim.m_length = x_n_args;
                         temp_dims.push_back(al, temp_dim);
@@ -2646,7 +2650,7 @@ public:
         ASR::ttype_t *type;
         type_declaration = nullptr;
 
-        int a_kind = 4;
+        int a_kind = compiler_options.po.default_integer_kind;
         if (sym_type->m_type != AST::decl_typeType::TypeCharacter &&
             sym_type->m_kind != nullptr &&
             sym_type->m_kind->m_value != nullptr) {
@@ -2691,7 +2695,7 @@ public:
                     ASRUtils::type_get_past_allocatable(type)));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeLogical) {
-            type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+            type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, compiler_options.po.default_integer_kind));
             type = ASRUtils::make_Array_t_util(
                 al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
             if (is_pointer) {
@@ -3014,11 +3018,11 @@ public:
                         } else {
                             m_end = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                                         al, char_type->base.base.loc, char_type->m_len,
-                                        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+                                        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind))));
                         }
                     } else {
                         m_end = ASRUtils::EXPR(ASR::make_StringLen_t(al, loc,
-                                    v_Var, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
+                                    v_Var, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind)),
                                     nullptr));
                     }
                 } else {
@@ -3152,7 +3156,7 @@ public:
                     ASR::arraystorageType::ColMajor, arr_ref_val)));
                 LCOMPILERS_ASSERT(n_subargs == 1);
                 ASR::ttype_t *char_type = ASRUtils::type_get_past_allocatable(type);
-                ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+                ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
                 ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
                                             1, int_type));
                 ASR::expr_t *l = nullptr, *r = nullptr;
@@ -3192,7 +3196,7 @@ public:
                         char_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc,
                                         1, -1, nullptr));
                     }
-                    ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+                    ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
                     ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
                                                 1, int_type));
                     ASR::expr_t *l = nullptr, *r = nullptr;
@@ -3259,9 +3263,9 @@ public:
         }
         ASR::dimension_t dim;
         dim.loc = x.base.base.loc;
-        ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
-        ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, x.n_args, int32_type));
+        ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
+        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int_type));
+        ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, x.n_args, int_type));
         dim.m_start = one;
         dim.m_length = x_n_args;
         dims.push_back(al, dim);
@@ -3417,7 +3421,7 @@ public:
                 // just convert them here instead.
                 return nullptr;
             }
-            return LFortran::CommonVisitorMethods::comptime_intrinsic_int(args[0].m_value, arg1, al, loc);
+            return LFortran::CommonVisitorMethods::comptime_intrinsic_int(args[0].m_value, arg1, al, loc, compiler_options);
         } else {
             return nullptr;
         }
@@ -3477,7 +3481,7 @@ public:
                 if (result) {
                     return result;
                 } else if (args.size() <= 2) {
-                    value = intrinsic_procedures.comptime_eval(gp->m_name, al, loc, args);
+                    value = intrinsic_procedures.comptime_eval(gp->m_name, al, loc, args, compiler_options);
                 }
             }
         }
@@ -3702,8 +3706,8 @@ public:
                             array_indices.push_back(al, array_item->m_args[i]);
                         }
 
-                        ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-                        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int32_type));
+                        ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
+                        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));
 
                         ASR::expr_t* array_bound = ASRUtils::get_bound<SemanticError>(array_expr, array_item->n_args, "ubound", al);
 
@@ -3767,7 +3771,7 @@ public:
                 if (result) {
                     return result;
                 } else {
-                    value = intrinsic_procedures.comptime_eval(f->m_name, al, loc, args);
+                    value = intrinsic_procedures.comptime_eval(f->m_name, al, loc, args, compiler_options);
                     char *mod = ASR::down_cast<ASR::ExternalSymbol_t>(
                         current_scope->resolve_symbol(f->m_name))->m_module_name;
                     current_module_dependencies.push_back(al, mod);
@@ -4079,7 +4083,7 @@ public:
 
     int64_t handle_kind(ASR::expr_t* kind) {
         if( kind == nullptr ) {
-            return 4;
+            return compiler_options.po.default_integer_kind;
         }
 
         ASR::expr_t* kind_value = ASRUtils::expr_value(kind);
@@ -4139,9 +4143,9 @@ public:
             int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(v_Var));
             Vec<ASR::expr_t*> arr_args;
             arr_args.reserve(al, 0);
-            ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+            ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
             for (int i = 1; i <= n_dims; i++) {
-                ASR::expr_t* dim_ = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, i, int32_type));
+                ASR::expr_t* dim_ = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, i, int_type));
                 arr_args.push_back(al, ASRUtils::EXPR(ASR::make_ArrayBound_t(al, x.base.base.loc, v_Var, dim_, type,
                                       bound, bound_value)));
             }
@@ -4316,12 +4320,12 @@ public:
         Vec<ASR::dimension_t> new_dims;
         new_dims.reserve(al, 1);
         ASR::dimension_t new_dim;
-        ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
         new_dim.loc = x.base.base.loc;
-        new_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
+        new_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int_type));
         new_dim.m_length = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(al, x.base.base.loc,
                             vector ? vector : mask, nullptr,
-                            int32_type, nullptr));
+                            int_type, nullptr));
         new_dims.push_back(al, new_dim);
         ASR::ttype_t *type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(array), &new_dims);
         return ASR::make_ArrayPack_t(al, x.base.base.loc, array, mask,
@@ -4392,14 +4396,14 @@ public:
                 ASRUtils::is_array(ASRUtils::expr_type(mold)) ) {
                 // TODO: Make resulting array size more efficient by
                 // considering bit length of source.
-                ASR::ttype_t *int32_type = ASRUtils::TYPE(
-                    ASR::make_Integer_t(al, x.base.base.loc, 4));
+                ASR::ttype_t *int_type = ASRUtils::TYPE(
+                    ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
                 ASR::expr_t* one = ASRUtils::EXPR(
                     ASR::make_IntegerConstant_t(al, x.base.base.loc, 1,
-                                                int32_type));
+                                                int_type));
                 ASR::expr_t* b64 = ASRUtils::EXPR(
                     ASR::make_IntegerConstant_t(al, x.base.base.loc, 64,
-                                                int32_type));
+                                                int_type));
                 ASR::dimension_t size_dim;
                 size_dim.loc = x.base.base.loc;
                 size_dim.m_start = one;
@@ -4473,7 +4477,7 @@ public:
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "associated");
         ASR::expr_t *ptr_ = args[0], *tgt_ = args[1];
         ASR::ttype_t* associated_type_ = ASRUtils::TYPE(ASR::make_Logical_t(
-                                            al, x.base.base.loc, 4));
+                                            al, x.base.base.loc, compiler_options.po.default_integer_kind));
         return ASR::make_PointerAssociated_t(al, x.base.base.loc, ptr_, tgt_, associated_type_, nullptr);
     }
 
@@ -4576,9 +4580,9 @@ public:
              char_value = ASRUtils::EXPR(ASR::make_StringConstant_t(al,
                 x.base.base.loc, s2c(al, cvalue), type));
         }
-        ASR::ttype_t* i32_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
-            x.base.base.loc, 4));
-        ImplicitCastRules::set_converted_value(al, x.base.base.loc, &arg, ASRUtils::expr_type(arg), i32_type);
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
+            x.base.base.loc, compiler_options.po.default_integer_kind));
+        ImplicitCastRules::set_converted_value(al, x.base.base.loc, &arg, ASRUtils::expr_type(arg), int_type);
         return ASR::make_StringChr_t(al, x.base.base.loc, arg, type, char_value);
     }
 
@@ -4641,7 +4645,7 @@ public:
         ASR::expr_t *mask = args[0], *dim = args[1];
         ASR::expr_t* value = nullptr;
         // TODO: Use dim to compute the `value`
-        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
         if (ASR::is_a<ASR::ArrayConstant_t>(*mask)) {
             ASR::ArrayConstant_t *array = ASR::down_cast<ASR::ArrayConstant_t>(mask);
             bool result = true;
@@ -4803,7 +4807,36 @@ public:
         return ASR::make_PointerToCPtr_t(al, x.base.base.loc, v_Var, type, nullptr);
     }
 
-    ASR::asr_t* handle_intrinsic_float(Allocator &al, Vec<ASR::call_arg_t> args,
+    ASR::asr_t* handle_intrinsic_float_dfloat(Allocator &al, Vec<ASR::call_arg_t> args,
+                                        const Location &loc, int kind) {
+        ASR::expr_t *arg = nullptr, *value = nullptr;
+        ASR::ttype_t *type = nullptr;
+        if (args.size() > 0) {
+            arg = args[0].m_value;
+            type = ASRUtils::expr_type(arg);
+        }
+        ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind));
+        if (!arg) {
+            return ASR::make_RealConstant_t(al, loc, 0.0, to_type);
+        }
+        if (ASRUtils::is_integer(*type)) {
+            if (ASRUtils::expr_value(arg) != nullptr) {
+                double dval = ASR::down_cast<ASR::IntegerConstant_t>(
+                                        ASRUtils::expr_value(arg))->m_n;
+                value =  ASR::down_cast<ASR::expr_t>(make_RealConstant_t(al,
+                                loc, dval, to_type));
+            }
+            return (ASR::asr_t *)ASR::down_cast<ASR::expr_t>(ASR::make_Cast_t(
+                al, loc, arg, ASR::cast_kindType::IntegerToReal,
+                to_type, value));
+        } else {
+            throw SemanticError("Argument of intrinsic must be an integer", loc);
+        }
+        // TODO: Make this work if the argument is, let's say, a class.
+        return nullptr;
+    }
+
+    ASR::asr_t* handle_intrinsic_dble(Allocator &al, Vec<ASR::call_arg_t> args,
                                         const Location &loc) {
         ASR::expr_t *arg = nullptr, *value = nullptr;
         ASR::ttype_t *type = nullptr;
@@ -5107,10 +5140,20 @@ public:
         }
         if (!v || (v && is_external_procedure)) {
             ASR::symbol_t* external_sym = is_external_procedure ? v : nullptr;
-            if (var_name == "float" || var_name == "dble" || var_name == "dfloat") {
+            if (var_name == "dble") {
                 Vec<ASR::call_arg_t> args;
                 visit_expr_list(x.m_args, x.n_args, args);
-                tmp = handle_intrinsic_float(al, args, x.base.base.loc);
+                tmp = handle_intrinsic_dble(al, args, x.base.base.loc);
+                return;
+            } else if (var_name == "float" ) {
+                Vec<ASR::call_arg_t> args;
+                visit_expr_list(x.m_args, x.n_args, args);
+                tmp = handle_intrinsic_float_dfloat(al, args, x.base.base.loc, 4);
+                return;
+            } else if (var_name == "dfloat" ) {
+                Vec<ASR::call_arg_t> args;
+                visit_expr_list(x.m_args, x.n_args, args);
+                tmp = handle_intrinsic_float_dfloat(al, args, x.base.base.loc, 8);
                 return;
             } else if (var_name == "shifta") {
                 Vec<ASR::call_arg_t> args;
@@ -5171,10 +5214,20 @@ public:
                     throw SemanticAbort();
                 }
             } else if (compiler_options.implicit_interface) {
-                if (var_name == "float" || var_name == "dble" || var_name == "dfloat") {
+                if (var_name == "dble") {
                     Vec<ASR::call_arg_t> args;
                     visit_expr_list(x.m_args, x.n_args, args);
-                    tmp = handle_intrinsic_float(al, args, x.base.base.loc);
+                    tmp = handle_intrinsic_dble(al, args, x.base.base.loc);
+                    return;
+                } else if (var_name == "float" ) {
+                    Vec<ASR::call_arg_t> args;
+                    visit_expr_list(x.m_args, x.n_args, args);
+                    tmp = handle_intrinsic_float_dfloat(al, args, x.base.base.loc, 4);
+                    return;
+                } else if (var_name == "dfloat" ) {
+                    Vec<ASR::call_arg_t> args;
+                    visit_expr_list(x.m_args, x.n_args, args);
+                    tmp = handle_intrinsic_float_dfloat(al, args, x.base.base.loc, 8);
                     return;
                 }
                 // If implicit interface is allowed, we have to handle the
@@ -5963,7 +6016,7 @@ public:
                                 loc);
                         }
                     } else {
-                        return_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+                        return_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, compiler_options.po.default_integer_kind));
                         value = ASRUtils::EXPR(ASRUtils::make_Cmpop_util(al, loc, cmpop, left, right, left_type));
                     }
 
@@ -6252,7 +6305,8 @@ public:
         CommonVisitorMethods::visit_Compare(al, x, left, right, tmp,
                                             cmpop2str[x.m_op], current_scope,
                                             current_function_dependencies,
-                                            current_module_dependencies);
+                                            current_module_dependencies,
+                                            compiler_options);
     }
 
     void visit_Parenthesis(const AST::Parenthesis_t &x) {
@@ -6260,7 +6314,7 @@ public:
     }
 
     void visit_Logical(const AST::Logical_t &x) {
-        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
         tmp = ASR::make_LogicalConstant_t(al, x.base.base.loc, x.m_value, type);
     }
 
@@ -6297,7 +6351,7 @@ public:
     }
 
     void visit_Num(const AST::Num_t &x) {
-        int ikind = 4;
+        int ikind = compiler_options.po.default_integer_kind;
         if (x.m_kind) {
             ikind = std::atoi(x.m_kind);
             if (ikind == 0) {

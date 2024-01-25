@@ -1379,6 +1379,10 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 int common_rank = 0;
                 bool are_all_rank_same = true;
                 for( size_t iarg = 0; iarg < x->n_args; iarg++ ) {
+                    if (x->m_args[iarg].m_value == nullptr) {
+                        operands.push_back(nullptr);
+                        continue;
+                    }
                     ASR::expr_t** current_expr_copy_9 = current_expr;
                     current_expr = &(x->m_args[iarg].m_value);
                     self().replace_expr(x->m_args[iarg].m_value);
@@ -1409,8 +1413,19 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 result_var = result_var_copy;
                 bool result_var_created = false;
                 if( result_var == nullptr ) {
-                    result_var = PassUtils::create_var(result_counter, res_prefix,
-                                    loc, operand, al, current_scope);
+                    ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x->m_name));
+                    if (func->m_return_var != nullptr && !ASRUtils::is_array(ASRUtils::expr_type(func->m_return_var))) {
+                        ASR::ttype_t* sibling_type = ASRUtils::expr_type(operand);
+                        ASR::dimension_t* m_dims; int ndims;
+                        PassUtils::get_dim_rank(sibling_type, m_dims, ndims);
+                        ASR::ttype_t* arr_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, ASRUtils::expr_type(func->m_return_var),
+                                                m_dims, ndims, ASR::array_physical_typeType::FixedSizeArray));
+                        result_var = PassUtils::create_var(result_counter, res_prefix,
+                                        loc, arr_type, al, current_scope);
+                    } else {
+                        result_var = PassUtils::create_var(result_counter, res_prefix,
+                                        loc, operand, al, current_scope);
+                    }
                     result_counter += 1;
                     result_var_created = true;
                 }
@@ -1440,7 +1455,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                             ref = PassUtils::create_array_ref(operands[iarg], idx_vars_value, al, current_scope);
                         }
                         ASR::call_arg_t ref_arg;
-                        ref_arg.loc = ref->base.loc;
+                        ref_arg.loc = x->m_args[iarg].loc;
                         ref_arg.m_value = ref;
                         ref_args.push_back(al, ref_arg);
                     }

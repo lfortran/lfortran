@@ -135,7 +135,10 @@ set(WITH_TARGET_AARCH64 no CACHE BOOL "Enable target AARCH64")
 set(WITH_TARGET_X86 no CACHE BOOL "Enable target X86")
 set(WITH_TARGET_WASM no CACHE BOOL "Enable target WebAssembly")
 if (WITH_LLVM)
-    find_package(StaticZSTD REQUIRED)
+    set(WITH_ZSTD yes CACHE BOOL "Detect (and require) static libzstd for llvm")
+    if(WITH_ZSTD)
+        find_package(StaticZSTD REQUIRED)
+    endif()
 
     set(LFORTRAN_LLVM_COMPONENTS core support mcjit orcjit native asmparser asmprinter)
     find_package(LLVM REQUIRED)
@@ -377,7 +380,7 @@ if (WITH_RUNTIME_LIBRARY)
   add_custom_target(configure_runtime
     ALL
     COMMAND "${CMAKE_COMMAND}"
-    "-G ${CMAKE_GENERATOR}"
+    "-G" "${CMAKE_GENERATOR}"
     "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}"
     "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
     "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"

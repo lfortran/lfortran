@@ -1,0 +1,13 @@
+{
+    "basename": "asr-dfloat1-6063adb",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/dfloat1.f90",
+    "infile_hash": "b50b81a63b232ce8b4801c6c435c827b7df71baf4217dd90f15762e4",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-dfloat1-6063adb.stderr",
+    "stderr_hash": "de5d5c88ec7bf943a3b4746575d13c97cc97b9cd9b8f4c9866791a8b",
+    "returncode": 2
+}
