@@ -1425,9 +1425,10 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 if( result_var == nullptr ) {
                     ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x->m_name));
                     if (func->m_return_var != nullptr && !ASRUtils::is_array(ASRUtils::expr_type(func->m_return_var))) {
-                        ASR::ttype_t* sibling_type = ASRUtils::expr_type(operand);
-                        ASR::dimension_t* m_dims; int ndims;
+                        ASR::ttype_t* sibling_type = ASRUtils::expr_type(first_array_operand);
+                        ASR::dimension_t* m_dims = nullptr; int ndims = 0;
                         PassUtils::get_dim_rank(sibling_type, m_dims, ndims);
+                        LCOMPILERS_ASSERT(m_dims != nullptr);
                         ASR::ttype_t* arr_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, ASRUtils::expr_type(func->m_return_var),
                                                 m_dims, ndims, ASR::array_physical_typeType::FixedSizeArray));
                         result_var = PassUtils::create_var(result_counter, res_prefix,
