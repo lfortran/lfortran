@@ -141,13 +141,13 @@
                     },
                     "loc": {
                         "first": 148,
-                        "last": 345,
+                        "last": 344,
                         "first_filename": "tests/modules_10.f90",
                         "first_line": 9,
                         "first_column": 1,
                         "last_filename": "tests/modules_10.f90",
                         "last_line": 17,
-                        "last_column": 11
+                        "last_column": 10
                     }
                 },
                 "my_other_module": {
@@ -361,13 +361,13 @@
                     },
                     "loc": {
                         "first": 0,
-                        "last": 147,
+                        "last": 145,
                         "first_filename": "tests/modules_10.f90",
                         "first_line": 1,
                         "first_column": 1,
                         "last_filename": "tests/modules_10.f90",
-                        "last_line": 8,
-                        "last_column": 1
+                        "last_line": 7,
+                        "last_column": 10
                     }
                 }
             }
@@ -376,12 +376,12 @@
     },
     "loc": {
         "first": 0,
-        "last": 345,
+        "last": 344,
         "first_filename": "tests/modules_10.f90",
         "first_line": 1,
         "first_column": 1,
         "last_filename": "tests/modules_10.f90",
         "last_line": 17,
-        "last_column": 11
+        "last_column": 10
     }
 }
