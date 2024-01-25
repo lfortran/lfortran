@@ -16,7 +16,7 @@ contains
 
 end module
 
-program matrix_real_m
+program template_matrix_real
 
     use matrix_m, only: matrix_tmpl
     use real_func_m

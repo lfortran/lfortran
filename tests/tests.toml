@@ -101,6 +101,10 @@ ast = true
 asr = true
 
 [[test]]
+filename = "../integration_tests/template_04.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/template_05.f90"
 asr = true
 

@@ -16,7 +16,7 @@ contains
 
 end module
 
-program matrix_integer_m
+program template_matrix_integer
 
     use matrix_m, only: matrix_tmpl
     use integer_func_m
