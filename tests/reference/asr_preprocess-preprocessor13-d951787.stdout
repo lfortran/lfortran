@@ -1,0 +1,25 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            __xx_main:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            
+                        })
+                    __xx_main
+                    []
+                    [(Print
+                        [(StringConstant
+                            "Other"
+                            (Character 1 5 ())
+                        )]
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)
