@@ -75,43 +75,6 @@ module template_sort_01_m
     end template
 
 contains
-    
-    ! non-generic reference
-    pure recursive subroutine quicksort(arr, low, high)
-        integer, intent(inout) :: arr(:)
-        integer, intent(in) :: low, high
-        
-        integer :: i, last
-        integer :: pivot
-        
-        if (low < high) then
-            pivot = arr(high)
-            last = low - 1
-
-            do i = low, high - 1
-                if (arr(i) < pivot) then
-                    last = last + 1
-                    call swap(arr(last), arr(i))
-                end if
-            end do
-            call swap(arr(last + 1), arr(high))
-
-            call quicksort(arr, low, last)
-            call quicksort(arr, last + 2, high)
-        end if
-    end subroutine
-
-    pure subroutine swap(lhs, rhs)
-        integer, intent(inout) :: lhs
-        integer, intent(inout) :: rhs
-
-        integer :: tmp
-
-        tmp = lhs
-        lhs = rhs
-        rhs = tmp
-
-    end subroutine
 
     pure elemental function lt_real(lhs, rhs) result(res)
         real, intent(in) :: lhs

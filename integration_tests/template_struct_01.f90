@@ -39,11 +39,19 @@ contains
       instantiate struct_t(integer), &
           only: int_tuple => tuple, get_int_fst => get_fst, &
                 get_int_snd => get_snd
-      type(int_tuple) :: t
-      t%fst = 1
-      print *, "First element: ", get_int_fst(t)
-      t%snd = 2
-      print *, "Second element: ", get_int_snd(t)
+      instantiate struct_t(real), &
+          only: real_tuple => tuple, get_real_fst => get_fst, &
+                get_real_snd => get_snd
+      type(int_tuple) :: ti
+      ti%fst = 1
+      print *, "First element: ", get_int_fst(ti)
+      ti%snd = 2
+      print *, "Second element: ", get_int_snd(ti)
+      type(real_tuple) :: tr
+      tr%fst = 1.
+      print *, "First element: ", get_real_fst(tr)
+      tr%snd = 2.
+      print *, "Second element: ", get_real_snd(tr)
   end subroutine
 
 end module

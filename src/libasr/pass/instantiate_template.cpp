@@ -427,12 +427,6 @@ public:
         return new_scope->resolve_symbol(x->m_name);
     }
 
-    /*
-    ASR::symbol_t* duplicate_CustomOperator(ASR::CustomOperator_t *x) {
-        return func_scope->resolve_symbol(x->m_name);
-    }
-    */
-
     ASR::asr_t* duplicate_Var(ASR::Var_t *x) {
         std::string sym_name = ASRUtils::symbol_name(x->m_v);
 
@@ -877,6 +871,7 @@ public:
 
     /* utility */
 
+    // TODO: join this with the other substitute_type
     ASR::ttype_t* substitute_type(ASR::ttype_t *ttype) {
         switch (ttype->type) {
             case (ASR::ttypeType::TypeParameter) : {
@@ -987,30 +982,27 @@ bool check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
     for (size_t i = 0; i < f->n_args; i++) {
         ASR::ttype_t *f_param = ASRUtils::expr_type(f->m_args[i]);
         ASR::ttype_t *arg_param = ASRUtils::expr_type(arg->m_args[i]);
-        if (ASR::is_a<ASR::TypeParameter_t>(*f_param)) {
-            ASR::TypeParameter_t *f_tp = ASR::down_cast<ASR::TypeParameter_t>(f_param);
-            if (!ASRUtils::check_equal_type(type_subs[f_tp->m_param], arg_param)) {
-                if (report) {
-                    std::string rtype = ASRUtils::type_to_str(type_subs[f_tp->m_param]);
-                    std::string rvar = ASRUtils::symbol_name(
-                                        ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v);
-                    std::string atype = ASRUtils::type_to_str(arg_param);
-                    std::string avar = ASRUtils::symbol_name(
-                                        ASR::down_cast<ASR::Var_t>(arg->m_args[i])->m_v);
-                    diagnostics.add(diag::Diagnostic(
-                        "Restriction type mismatch with provided function argument",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {loc}),
-                            diag::Label("Restriction's parameter " + rvar + " of type " + rtype,
-                                    {f->m_args[i]->base.loc}),
-                            diag::Label("Function's parameter " + avar + " of type " + atype,
-                                    {arg->m_args[i]->base.loc})
-                        }
-                    ));
-                    throw SemanticAbort();
-                }
-                return false;
+        if (!ASRUtils::types_equal_with_substitution(f_param, arg_param, type_subs)) {
+            if (report) {
+                std::string rtype = ASRUtils::type_to_str_with_substitution(f_param, type_subs);
+                std::string rvar = ASRUtils::symbol_name(
+                                    ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v);
+                std::string atype = ASRUtils::type_to_str(arg_param);
+                std::string avar = ASRUtils::symbol_name(
+                                    ASR::down_cast<ASR::Var_t>(arg->m_args[i])->m_v);
+                diagnostics.add(diag::Diagnostic(
+                    "Restriction type mismatch with provided function argument",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {loc}),
+                        diag::Label("Restriction's parameter " + rvar + " of type " + rtype,
+                                {f->m_args[i]->base.loc}),
+                        diag::Label("Function's parameter " + avar + " of type " + atype,
+                                {arg->m_args[i]->base.loc})
+                    }
+                ));
+                throw SemanticAbort();
             }
+            return false;
         }
     }
     if (f->m_return_var) {
@@ -1024,27 +1016,23 @@ bool check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
         }
         ASR::ttype_t *f_ret = ASRUtils::expr_type(f->m_return_var);
         ASR::ttype_t *arg_ret = ASRUtils::expr_type(arg->m_return_var);
-        if (ASR::is_a<ASR::TypeParameter_t>(*f_ret)) {
-            ASR::TypeParameter_t *return_tp
-                = ASR::down_cast<ASR::TypeParameter_t>(f_ret);
-            if (!ASRUtils::check_equal_type(type_subs[return_tp->m_param], arg_ret)) {
-                if (report) {
-                    std::string rtype = ASRUtils::type_to_str(type_subs[return_tp->m_param]);
-                    std::string atype = ASRUtils::type_to_str(arg_ret);
-                    diagnostics.add(diag::Diagnostic(
-                        "Restriction type mismatch with provided function argument",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {loc}),
-                            diag::Label("Requirement's return type " + rtype,
-                                {f->m_return_var->base.loc}),
-                            diag::Label("Function's return type " + atype,
-                                {arg->m_return_var->base.loc})
-                        }
-                    ));
-                    throw SemanticAbort();
-                }
-                return false;
+        if (!ASRUtils::types_equal_with_substitution(f_ret, arg_ret, type_subs)) {
+            if (report) {
+                std::string rtype = ASRUtils::type_to_str_with_substitution(f_ret, type_subs);
+                std::string atype = ASRUtils::type_to_str(arg_ret);
+                diagnostics.add(diag::Diagnostic(
+                    "Restriction type mismatch with provided function argument",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {loc}),
+                        diag::Label("Requirement's return type " + rtype,
+                            {f->m_return_var->base.loc}),
+                        diag::Label("Function's return type " + atype,
+                            {arg->m_return_var->base.loc})
+                    }
+                ));
+                throw SemanticAbort();
             }
+            return false;
         }
     } else {
         if (arg->m_return_var) {

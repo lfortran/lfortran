@@ -2531,7 +2531,7 @@ public:
                 dflt_access);
             current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(req));
         } else if (ASR::is_a<ASR::Template_t>(*t)) {
-            ASR::Requirement_t *mtemp = ASR::down_cast<ASR::Requirement_t>(t);
+            ASR::Template_t *mtemp = ASR::down_cast<ASR::Template_t>(t);
             ASR::asr_t *temp = ASR::make_ExternalSymbol_t(
                 al, mtemp->base.base.loc,
                 current_scope,
@@ -3205,10 +3205,13 @@ public:
                 AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
                 std::string generic_name = to_lower(use_symbol->m_remote_sym);
                 ASR::symbol_t *s = temp->m_symtab->get_symbol(generic_name);
-                if (!s) { 
+                if (s == nullptr) { 
                     throw SemanticError("Symbol " + generic_name + " was not found", x.base.base.loc); 
                 }
-                std::string new_sym_name = to_lower(use_symbol->m_local_rename);
+                std::string new_sym_name = generic_name;
+                if (use_symbol->m_local_rename) {
+                    new_sym_name = to_lower(use_symbol->m_local_rename);
+                }
                 ASR::symbol_t* new_sym = instantiate_symbol(al, current_scope, type_subs, symbol_subs, new_sym_name, s);
                 symbol_subs[generic_name] = new_sym; 
             }

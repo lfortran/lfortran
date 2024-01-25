@@ -67,18 +67,33 @@ module template_array_02_m
                 r = plus_t(r, a(i))
             end do
         end function
+
+        function mysum_t_n(n, a) result(r)
+            integer, intent(in) :: n
+            type(t), intent(in) :: a(n)
+            type(t) :: r
+            integer :: i
+            r = zero_t(a(1))
+            do i = 1, size(a)
+                r = plus_t(r, a(i))
+            end do
+        end function
     end template
 
 contains
 
     subroutine test_template()
-        instantiate array_tmpl(integer, add_integer, zero_integer), only: mysum_integer => mysum_t
-        integer :: a(10), i, s
+        instantiate array_tmpl(integer, add_integer, zero_integer), only: &
+            mysum_integer => mysum_t, mysum_integer_n => mysum_t_n
+        integer :: a(10), b(10), i, sa, sb
         do i = 1, size(a)
             a(i) = i
+            b(i) = i
         end do
-        s = mysum_integer(a)
-        print *, s
+        sa = mysum_integer(a)
+        sb = mysum_integer_n(size(b), b)
+        print *, sa
+        print *, sb
     end subroutine
 
 end module

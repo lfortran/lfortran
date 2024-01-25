@@ -1071,7 +1071,6 @@ RUN(NAME assign_to3 LABELS gfortran llvm fortran)
 
 RUN(NAME conv_complex2real LABELS gfortran llvm wasm)
 
-RUN(NAME template_01 LABELS llvm wasm)
 RUN(NAME template_02 LABELS llvm)
 RUN(NAME template_03 LABELS llvm wasm)
 RUN(NAME template_04 LABELS llvm)
@@ -1088,19 +1087,32 @@ RUN(NAME template_travel_01b LABELS llvm wasm)
 RUN(NAME template_travel_02 LABELS llvm wasm)
 RUN(NAME template_triple LABELS llvm wasm)
 RUN(NAME template_array_01 LABELS llvm llvmStackArray wasm)
-RUN(NAME template_array_01b LABELS llvm llvmStackArray wasm)
 RUN(NAME template_array_02 LABELS llvm llvmStackArray wasm)
-RUN(NAME template_array_02b LABELS llvm llvmStackArray wasm)
 RUN(NAME template_array_03 LABELS llvm llvmStackArray wasm)
 RUN(NAME template_array_04 LABELS llvm llvmStackArray wasm)
 RUN(NAME template_array_04b LABELS llvm llvmStackArray wasm)
-RUN(NAME template_matrix LABELS llvm)
+RUN(NAME template_matrix_01 LABELS llvm)
+RUN(NAME template_matrix_real LABELS llvm EXTRAFILES
+    template_semigroup.f90
+    template_semiring.f90
+    template_monoid.f90
+    template_unitring.f90
+    template_field.f90
+    template_matrix.f90
+    )
+RUN(NAME template_matrix_integer LABELS llvm EXTRAFILES
+    template_semigroup.f90
+    template_semiring.f90
+    template_monoid.f90
+    template_unitring.f90
+    template_field.f90
+    template_matrix.f90
+    )
 RUN(NAME template_struct_01 LABELS llvm)
 RUN(NAME template_vector LABELS llvm)
 RUN(NAME template_simple_01 LABELS llvm wasm)
 RUN(NAME template_simple_02 LABELS llvm wasm)
 RUN(NAME template_simple_03 LABELS llvm wasm)
-RUN(NAME template_simple_04 LABELS llvm wasm)
 RUN(NAME template_sort_01 LABELS llvm)
 RUN(NAME template_sort_02 LABELS llvm)
 RUN(NAME template_lapack_01 LABELS llvm wasm)

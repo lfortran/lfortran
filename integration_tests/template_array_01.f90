@@ -19,17 +19,30 @@ module template_array_01_m
             lst(1) = i
             r = lst(1)
         end function
+
+        function insert_t_n(n, lst, i) result(r)
+            integer, intent(in) :: n
+            type(t), intent(in) :: lst(n), i
+            type(t) :: r
+            lst(1) = i
+            r = lst(1) 
+        end function
     end template
 
 contains
 
     subroutine test_template()
-        instantiate array_tmpl(integer), only: insert_int => insert_t
+        instantiate array_tmpl(integer), only: insert_int => insert_t, insert_int_n => insert_t_n
         integer :: a(1), i, r
         a(1) = 0
         i = 1
         print *, a(1)
         r = insert_int(a, i)
+        print *, a(1)
+
+        a(1) = 0
+        print *, a(1)
+        r = insert_int_n(size(a), a, i)
         print *, a(1)
     end subroutine
 

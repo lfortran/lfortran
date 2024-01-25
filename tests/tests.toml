@@ -67,15 +67,7 @@ filename = "../integration_tests/template_array_01.f90"
 asr = true
 
 [[test]]
-filename = "../integration_tests/template_array_01b.f90"
-asr = true
-
-[[test]]
 filename = "../integration_tests/template_array_02.f90"
-asr = true
-
-[[test]]
-filename = "../integration_tests/template_array_02b.f90"
 asr = true
 
 [[test]]
@@ -93,11 +85,6 @@ asr = true
 [[test]]
 filename = "../integration_tests/template_array_05.f90"
 asr = true
-
-[[test]]
-filename = "../integration_tests/template_01.f90"
-asr = true
-ast = true
 
 [[test]]
 filename = "../integration_tests/template_02.f90"
@@ -118,12 +105,16 @@ filename = "../integration_tests/template_04.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/template_05.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/template_struct_01.f90"
 asr = true
 ast = true
 
 [[test]]
-filename = "../integration_tests/template_matrix.f90"
+filename = "../integration_tests/template_matrix_01.f90"
 asr = true
 
 [[test]]
@@ -140,10 +131,6 @@ asr = true
 
 [[test]]
 filename = "../integration_tests/template_simple_03.f90"
-asr = true
-
-[[test]]
-filename = "../integration_tests/template_simple_04.f90"
 asr = true
 
 [[test]]
