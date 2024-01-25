@@ -1414,7 +1414,7 @@ namespace Abs {
         ASR::ttype_t* output_type = x.m_type;
         std::string input_type_str = ASRUtils::get_type_code(input_type);
         std::string output_type_str = ASRUtils::get_type_code(output_type);
-        if( ASR::is_a<ASR::Complex_t>(*ASRUtils::type_get_past_pointer(input_type)) ) {
+        if( ASR::is_a<ASR::Complex_t>(*ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_array(input_type))) ) {
             ASRUtils::require_impl(ASR::is_a<ASR::Real_t>(*output_type),
                 "Abs intrinsic must return output of real for complex input, found: " + output_type_str,
                 loc, diagnostics);
@@ -1424,12 +1424,6 @@ namespace Abs {
                 "The input and output type of Abs intrinsic must be of same kind, input kind: " +
                 std::to_string(input_kind) + " output kind: " + std::to_string(output_kind),
                 loc, diagnostics);
-            ASR::dimension_t *input_dims, *output_dims;
-            size_t input_n_dims = ASRUtils::extract_dimensions_from_ttype(input_type, input_dims);
-            size_t output_n_dims = ASRUtils::extract_dimensions_from_ttype(output_type, output_dims);
-            ASRUtils::require_impl(ASRUtils::dimensions_equal(input_dims, input_n_dims, output_dims, output_n_dims),
-                "The dimensions of input and output arguments of Abs intrinsic must be same, input: " +
-                input_type_str + " output: " + output_type_str, loc, diagnostics);
         } else {
             ASRUtils::require_impl(ASRUtils::check_equal_type(input_type, output_type, true),
                 "The input and output type of elemental intrinsics must exactly match, input type: " +
