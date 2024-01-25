@@ -1,0 +1,13 @@
+{
+    "basename": "asr-string_slice-e254cc2",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/string_slice.f90",
+    "infile_hash": "aaca6852e69f3ef20f618e36d1c1e75e52528c5ff757dd6d30538c13",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-string_slice-e254cc2.stderr",
+    "stderr_hash": "eb2f724d3e0930b420e4c4636c9056fcd134db92d78b8abe91fbbd5e",
+    "returncode": 2
+}

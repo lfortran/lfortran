@@ -631,6 +631,8 @@ RUN(NAME intrinsics_124 LABELS gfortran llvm)#lshift
 RUN(NAME intrinsics_125 LABELS gfortran llvm) # random_number
 RUN(NAME intrinsics_126 LABELS gfortran llvm) # random_number
 RUN(NAME intrinsics_127 LABELS gfortran llvm)#ifix
+RUN(NAME intrinsics_128 LABELS gfortran llvm) # idint
+RUN(NAME intrinsics_129 LABELS gfortran llvm)#abs
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
@@ -952,6 +954,7 @@ RUN(NAME string_27 LABELS gfortran llvm)
 RUN(NAME string_28 LABELS gfortran llvm)
 RUN(NAME string_29 LABELS gfortran llvm)
 COMPILE(NAME string_30 COMPILERS gfortran lfortran)
+RUN(NAME string_31 LABELS gfortran llvm)
 
 RUN(NAME nested_01 LABELS gfortran llvm)
 RUN(NAME nested_02 LABELS gfortran llvm)
@@ -1354,3 +1357,4 @@ RUN(NAME dfloat_01 LABELS gfortran llvm)
 
 RUN(NAME elemental_01 LABELS gfortran llvm)
 RUN(NAME elemental_02 LABELS gfortran llvm)
+RUN(NAME elemental_03 LABELS gfortran llvm)

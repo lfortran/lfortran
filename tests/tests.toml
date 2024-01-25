@@ -3642,3 +3642,7 @@ ast = true
 [[test]]
 filename = "errors/integer16.f90"
 ast = true
+
+[[test]]
+filename = "errors/string_slice.f90"
+asr = true

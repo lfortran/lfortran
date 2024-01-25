@@ -341,13 +341,13 @@ jobs:
         shell: bash -e -l {0}
         run: |
           mv inst inst.moved
-          cp src/examples/expr2.f90 .
+          cp src/examples/expr2.f90 expr2.F90
           rm -rf src
-          inst.moved/bin/lfortran expr2.f90 -o expr2
+          inst.moved/bin/lfortran expr2.F90 -o expr2
           ./expr2
-          inst.moved/bin/lfortran --backend=c expr2.f90 -o expr2b
+          inst.moved/bin/lfortran --backend=c expr2.F90 -o expr2b
           ./expr2b
-          inst.moved/bin/lfortran --openmp --backend=cpp expr2.f90 -o expr2c
+          inst.moved/bin/lfortran --openmp --backend=cpp expr2.F90 -o expr2c
           ./expr2c
 
   debug:

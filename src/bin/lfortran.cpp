@@ -2324,7 +2324,7 @@ int main_app(int argc, char *argv[]) {
         }
     }
 
-    if (endswith(arg_file, ".f90") || endswith(arg_file, ".f")) {
+    if (endswith(arg_file, ".f90") || endswith(arg_file, ".f") || endswith(arg_file, ".F90") || endswith(arg_file, ".F")) {
         if (backend == Backend::x86) {
             return compile_to_binary_x86(arg_file, outfile,
                     time_report, compiler_options);
