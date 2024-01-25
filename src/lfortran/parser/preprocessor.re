@@ -331,6 +331,33 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
+            "#" whitespace? "elif" whitespace @t1 [^\n\x00]* @t2 newline  {
+                if (ifdef_stack.size() == 0) {
+                    throw LCompilersException("C preprocessor: #elif encountered outside of #ifdef or #ifndef");
+                }
+                IfDef ifdef = ifdef_stack[ifdef_stack.size()-1];
+                if (ifdef.active) {
+                    ifdef.branch_enabled = !ifdef.branch_enabled;
+                    branch_enabled = ifdef.branch_enabled;
+
+                    if (branch_enabled) {
+                        bool test_true = parse_bexpr(t1, macro_definitions) > 0;
+                        cur = t1;
+                        if (test_true) {
+                            ifdef.branch_enabled = true;
+                        } else {
+                            ifdef.branch_enabled = false;
+                        }
+                    }
+                    branch_enabled = ifdef.branch_enabled;
+                    ifdef_stack[ifdef_stack.size()-1] = ifdef;
+                } else {
+                    continue;
+                }
+
+                interval_end_type_0(lm, output.size(), cur-string_start);
+                continue;
+            }
             "#" whitespace? "endif" whitespace? single_line_comment? newline  {
                 if (ifdef_stack.size() == 0) {
                     throw LCompilersException("C preprocessor: #endif encountered outside of #ifdef or #ifndef");
