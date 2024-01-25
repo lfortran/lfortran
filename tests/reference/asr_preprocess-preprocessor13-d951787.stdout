@@ -13,8 +13,8 @@
                     []
                     [(Print
                         [(StringConstant
-                            "Other"
-                            (Character 1 5 ())
+                            "LFortran"
+                            (Character 1 8 ())
                         )]
                         ()
                         ()
