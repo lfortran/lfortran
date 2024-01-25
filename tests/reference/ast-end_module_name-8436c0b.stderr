@@ -6,4 +6,4 @@ syntax error: End module name does not match module name
 ...
   |
 3 |    end module name2
-  | ...^^^^^^^^^^^^^^^^
+  | ...^^^^^^^^^^^^^^^^ 
