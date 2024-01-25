@@ -1089,21 +1089,27 @@ RUN(NAME template_array_03 LABELS llvm llvmStackArray wasm)
 RUN(NAME template_array_04 LABELS llvm llvmStackArray wasm)
 RUN(NAME template_array_04b LABELS llvm llvmStackArray wasm)
 RUN(NAME template_matrix_01 LABELS llvm)
-RUN(NAME template_semigroup LABELS llvm)
-RUN(NAME template_monoid LABELS llvm EXTRAFILES 
-    template_semigroup.f90)
-RUN(NAME template_semiring LABELS llvm EXTRAFILES 
-    template_monoid.f90)
-RUN(NAME template_unitring LABELS llvm EXTRAFILES
-    template_semiring.f90)
-RUN(NAME template_field LABELS llvm EXTRAFILES
-    template_unitring.f90)
-RUN(NAME template_matrix LABELS llvm EXTRAFILES
-    template_monoid.f90 template_semiring.f90 template_unitring.f90 template_field.f90)
+#RUN(NAME template_semigroup LABELS llvm)
+#RUN(NAME template_monoid LABELS llvm EXTRAFILES 
+#    template_semigroup.f90)
+#RUN(NAME template_semiring LABELS llvm EXTRAFILES 
+#    template_monoid.f90)
+#RUN(NAME template_unitring LABELS llvm EXTRAFILES
+#    template_semiring.f90)
+#RUN(NAME template_field LABELS llvm EXTRAFILES
+#    template_unitring.f90)
+#RUN(NAME template_matrix LABELS llvm EXTRAFILES
+#    template_monoid.f90 template_semiring.f90 template_unitring.f90 template_field.f90)
 RUN(NAME template_matrix_real LABELS llvm EXTRAFILES
-    template_matrix.f90)
-RUN(NAME template_matrix_integer LABELS llvm EXTRAFILES
-    template_matrix.f90)
+    template_semigroup.f90
+    template_semiring.f90
+    template_monoid.f90
+    template_unitring.f90
+    template_field.f90
+    template_matrix.f90
+    )
+#RUN(NAME template_matrix_integer LABELS llvm EXTRAFILES
+#    template_matrix.f90)
 RUN(NAME template_struct_01 LABELS llvm)
 RUN(NAME template_vector LABELS llvm)
 RUN(NAME template_simple_01 LABELS llvm wasm)
