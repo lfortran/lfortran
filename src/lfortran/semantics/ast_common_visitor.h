@@ -715,6 +715,7 @@ public:
         {"repeat", {IntrinsicSignature({"string", "ncopies"}, 2, 2)}},
         {"hypot", {IntrinsicSignature({"x", "y"}, 2, 2)}},
         {"shiftr", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
+        {"rshift", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
         {"shiftl", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
         {"lshift", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
     };
