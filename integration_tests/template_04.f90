@@ -246,7 +246,6 @@ module template_04_matrix
 
     template matrix_tmpl(T, plus_t, zero_t, times_t, one_t, n)
         require :: semiring(T, plus_t, zero_t, times_t, one_t)
-        instantiate derive_extended_monoid(T, plus_t, zero_t), only: sum => mconcat
         integer :: n
 
         private
@@ -342,7 +341,13 @@ module template_04_matrix
             type(matrix), intent(in) :: x, y
             type(matrix) :: combined
             integer :: i, j
-            combined%elements = plus_t(x%elements, y%elements)
+            ! TODO: something wrong with elemental function operations
+            ! combined%elements = plus_t(x%elements, y%elements)
+            do i = 1, n
+                do j = 1, n
+                    combined%elements(i,j) = plus_t(x%elements(i,j), y%elements(i,j))
+                end do
+            end do
         end function
 
         pure function zero()
@@ -359,7 +364,13 @@ module template_04_matrix
             type(T) :: dot
             do i = 1, n
                 do j = 1, n
-                    combined%elements(i, j) = sum(times_t(x%elements(i,:), y%elements(:,j)))
+                    ! TODO: something wrong with elemental function operations
+                    ! combined%elements(i, j) = sum(times_t(x%elements(i,:), y%elements(:,j)))
+                    dot = zero_t()
+                    do k = 1, n
+                        dot = plus_t(dot, times_t(x%elements(i,k), y%elements(k,j)))
+                    end do
+                    combined%elements(i, j) = dot
                 end do
             end do
         end function
