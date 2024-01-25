@@ -579,10 +579,8 @@ namespace LCompilers {
             if (is_data_only_array) {
                 const Location& loc = arr_expr->base.loc;
                 ASR::expr_t* zero = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, int32_type));
-                ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int32_type));
                 if( bound == "ubound" ) {
-                    return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
-                        al, arr_expr->base.loc, m_dims[dim - 1].m_length, ASR::binopType::Sub, one, int32_type, nullptr));
+                    return m_dims[dim - 1].m_length;
                 }
                 if ( m_dims[dim - 1].m_start != nullptr ) {
                     return m_dims[dim - 1].m_start;
