@@ -3061,18 +3061,18 @@ public:
         bool all_args_eval = ASRUtils::all_args_evaluated(args);
         for( auto& a : args ) {
             // Assume that indices are constant integers
-            int64_t start = -1, end = -1, step = -1;
+            int64_t start = 1, end = -1, step = 1;
+            bool flag = false;
             if( a.m_left ) {
                 if( all_args_eval ) {
                     ASR::expr_t* m_left_expr = ASRUtils::expr_value(a.m_left);
                     ASR::IntegerConstant_t *m_left = ASR::down_cast<ASR::IntegerConstant_t>(m_left_expr);
                     start = m_left->m_n;
                 }
-            } else {
-                start = 1;
             }
             if( a.m_right ) {
                 if( all_args_eval ) {
+                    flag = true;
                     ASR::expr_t* m_right_expr = ASRUtils::expr_value(a.m_right);
                     if( ASR::is_a<ASR::IntegerConstant_t>(*m_right_expr) ) {
                         ASR::IntegerConstant_t *m_right = ASR::down_cast<ASR::IntegerConstant_t>(m_right_expr);
@@ -3086,8 +3086,6 @@ public:
                     ASR::IntegerConstant_t *m_step = ASR::down_cast<ASR::IntegerConstant_t>(m_step_expr);
                     step = m_step->m_n;
                 }
-            } else {
-                step = 1;
             }
             if( v->type == ASR::symbolType::Variable ) {
                 ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(v);
@@ -3095,15 +3093,17 @@ public:
                 if( m_value && m_value->type == ASR::exprType::StringConstant ) {
                     ASR::StringConstant_t *m_str = ASR::down_cast<ASR::StringConstant_t>(m_value);
                     std::string sliced_str;
-                    if( start != -1 && step != -1 && end == -1 ) {
+                    if( start <= 0 ) {
+                        throw SemanticError("Substring `start` is less than one",
+                                    loc);
+                    }
+                    if( end == -1 && !flag ) {
                         end = 0;
                         while( m_str->m_s[end] != '\0' ) {
                             end += 1;
                         }
-                        end -= 1;
-                    }
-                    if( start != -1 && end != -1 && step != -1 ) {
-                        for( int i = start - 1; i <= end - 1; i += step ) {
+                    } else {
+                        for( int i = start - 1; i < end; i += step ) {
                             sliced_str.push_back(m_str->m_s[i]);
                         }
                         Str l_str;
