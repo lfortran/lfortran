@@ -50,6 +50,70 @@
                         )]
                         ()
                         ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "X is 1"
+                            (Character 1 6 ())
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "1 Y is 1"
+                            (Character 1 8 ())
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "X is 2"
+                            (Character 1 6 ())
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "2 Y is 3"
+                            (Character 1 8 ())
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "X is 4"
+                            (Character 1 6 ())
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "4 Y is 4"
+                            (Character 1 8 ())
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "X is not 1-4"
+                            (Character 1 12 ())
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "5 Y is not 1-4"
+                            (Character 1 14 ())
+                        )]
+                        ()
+                        ()
                     )]
                 )
         })
