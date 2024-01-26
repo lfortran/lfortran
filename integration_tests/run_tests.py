@@ -51,7 +51,7 @@ def test_backend(backend):
 def check_module_names():
     from glob import glob
     import re
-    mod = re.compile("(module|MODULE) (\w+)")
+    mod = re.compile(r"(module|MODULE)[ ]+(.*)", re.IGNORECASE)
     files = glob("*.f90")
     module_names = []
     file_names = []
@@ -59,7 +59,7 @@ def check_module_names():
         f = open(file).read()
         s = mod.search(f)
         if s:
-            module_names.append(s.group(2))
+            module_names.append(s.group(2).lower())
             file_names.append(file)
     for i in range(len(module_names)):
         name = module_names[i]
