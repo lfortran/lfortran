@@ -13,14 +13,6 @@
                     []
                     [(Print
                         [(StringConstant
-                            "X == 0"
-                            (Character 1 6 ())
-                        )]
-                        ()
-                        ()
-                    )
-                    (Print
-                        [(StringConstant
                             "X == 1"
                             (Character 1 6 ())
                         )]
@@ -37,7 +29,15 @@
                     )
                     (Print
                         [(StringConstant
-                            "X == 0"
+                            "X == 1"
+                            (Character 1 6 ())
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "X == 1"
                             (Character 1 6 ())
                         )]
                         ()
