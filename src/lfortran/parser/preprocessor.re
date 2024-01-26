@@ -156,8 +156,14 @@ void interval_end_type_0(LocationManager &lm, size_t output_len,
 }
 
 struct IfDef {
+    // The ifdef is active, meaning one of its branches might get executed
+    // Inactive ifdef is in a dead branch of another ifdef
     bool active=true;
+    // The current branch of ifdef is active
     bool branch_enabled=true;
+    // Ifdef's enabled branch has been executed, now we just need to process
+    // and skip all `elif` and `else`.
+    bool enabled_branch_executed=false;
 };
 
 namespace {
@@ -262,6 +268,7 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
                     std::string macro_name = token(t1, t2);
                     if (macro_definitions.find(macro_name) != macro_definitions.end()) {
                         ifdef.branch_enabled = true;
+                        ifdef.enabled_branch_executed = true;
                     } else {
                         ifdef.branch_enabled = false;
                     }
@@ -284,6 +291,7 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
                         ifdef.branch_enabled = false;
                     } else {
                         ifdef.branch_enabled = true;
+                        ifdef.enabled_branch_executed = true;
                     }
                     branch_enabled = ifdef.branch_enabled;
                 } else {
@@ -303,6 +311,7 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
                     cur = t1;
                     if (test_true) {
                         ifdef.branch_enabled = true;
+                        ifdef.enabled_branch_executed = true;
                     } else {
                         ifdef.branch_enabled = false;
                     }
@@ -322,7 +331,13 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
                 }
                 IfDef ifdef = ifdef_stack[ifdef_stack.size()-1];
                 if (ifdef.active) {
-                    ifdef.branch_enabled = !ifdef.branch_enabled;
+                    if (!ifdef.branch_enabled && !ifdef.enabled_branch_executed) {
+                        ifdef.branch_enabled = true;
+                        ifdef.enabled_branch_executed = true;
+                    } else {
+                        ifdef.branch_enabled = false;
+                    }
+                    ifdef_stack[ifdef_stack.size()-1] = ifdef;
                     branch_enabled = ifdef.branch_enabled;
                 } else {
                     continue;
@@ -337,17 +352,17 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
                 }
                 IfDef ifdef = ifdef_stack[ifdef_stack.size()-1];
                 if (ifdef.active) {
-                    ifdef.branch_enabled = !ifdef.branch_enabled;
-                    branch_enabled = ifdef.branch_enabled;
-
-                    if (branch_enabled) {
+                    if (!ifdef.branch_enabled && !ifdef.enabled_branch_executed) {
                         bool test_true = parse_bexpr(t1, macro_definitions) > 0;
                         cur = t1;
                         if (test_true) {
                             ifdef.branch_enabled = true;
+                            ifdef.enabled_branch_executed = true;
                         } else {
                             ifdef.branch_enabled = false;
                         }
+                    } else {
+                        ifdef.branch_enabled = false;
                     }
                     branch_enabled = ifdef.branch_enabled;
                     ifdef_stack[ifdef_stack.size()-1] = ifdef;
