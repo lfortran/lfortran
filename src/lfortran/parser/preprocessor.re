@@ -798,14 +798,12 @@ int parse_factor(unsigned char *&cur, const cpp_symtab &macro_definitions) {
                     throw LCompilersException("C preprocessor: expected )");
                 }
                 cur++;
-                // TODO:
-                /*
+                std::vector<std::string> margs = macro_definitions.at(str).args;
+                std::string mexpansion = macro_definitions.at(str).expansion;
                 v = function_like_macro_expansion(
-                    macro_definitions.at(str).args,
-                    macro_definitions.at(str).expansion,
+                    margs,
+                    mexpansion,
                     args);
-                */
-               v = args[0];
             } else {
                 v = macro_definitions.at(str).expansion;
             }
