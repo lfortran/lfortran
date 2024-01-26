@@ -2,11 +2,11 @@
     "basename": "asr_preprocess-preprocessor13-d951787",
     "cmd": "lfortran --cpp --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/preprocessor13.f90",
-    "infile_hash": "d5ad9f746091467b2c148e0c6f2273111533530d73c702f6ab6d1f57",
+    "infile_hash": "c8241b14f46962638910a85d0f70edaade6be8694c31635bac790865",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr_preprocess-preprocessor13-d951787.stdout",
-    "stdout_hash": "5a27e1dbd700b953a5c766a5648a13892aff5a93eea23d00059002d3",
+    "stdout_hash": "045ddb9f56544058018c26239bbeddc5b5d7db94cfe03bade39a807b",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
