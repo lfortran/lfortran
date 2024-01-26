@@ -9487,7 +9487,7 @@ public:
             args.push_back(tmp);
 
             for (size_t i=0; i<x.n_args; i++) {
-                std::vector<std::string>fmt;
+                std::vector<std::string> fmt;
                 //  Use the function to compute the args, but ignore the format
                 compute_fmt_specifier_and_arg(fmt, args, x.m_args[i], x.base.base.loc);
             }

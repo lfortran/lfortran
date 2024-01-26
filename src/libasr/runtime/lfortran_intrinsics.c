@@ -207,8 +207,7 @@ void handle_integer(char* format, int val, char** result) {
             for (int i = 0; i < (min_width - len - sign_width); i++) {
                 *result = append_to_string(*result, "0");
             }
-        }
-        else {
+        } else {
             for (int i = 0; i < (width - len - sign_width); i++) {
                 *result = append_to_string(*result, " ");
             }
