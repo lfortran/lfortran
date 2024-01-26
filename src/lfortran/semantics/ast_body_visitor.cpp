@@ -463,6 +463,7 @@ public:
                 *args[i] = ASRUtils::EXPR(tmp);
             }
         }
+        std::vector<ASR::asr_t*> newline_for_advance;
         for( std::uint32_t i = 0; i < n_kwargs; i++ ) {
             AST::kw_argstar_t kwarg = m_kwargs[i];
             std::string m_arg_str(kwarg.m_arg);
@@ -569,7 +570,7 @@ public:
                         nullptr, 0, nullptr, newline)));
                     // TODO: Compare with "no" (case-insensitive) in else part
                     // Throw runtime error if advance expression does not match "no"
-                    tmp_vec.push_back(ASR::make_If_t(al, loc, test, body.p,
+                    newline_for_advance.push_back(ASR::make_If_t(al, loc, test, body.p,
                             body.size(), nullptr, 0));
                     a_end = empty;
                 }
@@ -642,7 +643,8 @@ public:
             }
         }
 
-        tmp_vec.insert(tmp_vec.begin(), tmp);
+        tmp_vec.push_back(tmp);
+        tmp_vec.insert(tmp_vec.end(), newline_for_advance.begin(), newline_for_advance.end());
         tmp = nullptr;
     }
 
