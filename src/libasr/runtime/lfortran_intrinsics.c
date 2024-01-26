@@ -579,7 +579,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
     modified_input_string[len] = '\0';
     if (format[0] == '(' && format[len-1] == ')') {
         memmove(modified_input_string, modified_input_string + 1, strlen(modified_input_string));
-        modified_input_string[len-1] = '\0';
+        modified_input_string[len-2] = '\0';
     }
     int format_values_count = 0,item_start_idx=0;
     char** format_values = parse_fortran_format(modified_input_string,&format_values_count,&item_start_idx);
