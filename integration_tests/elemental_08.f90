@@ -1,20 +1,20 @@
-program elemental_07
+program elemental_08
 
 integer, parameter :: n = 10
 integer :: i
 
 type :: vector
-    integer :: elements(-5:4)
+    integer :: elements(5:15)
 end type
 
 type(vector) :: a, b, c
-do i = -5, 4
+do i = 5, 15
     a%elements(i) = i
     b%elements(i) = i
 end do
 c%elements = add_vector(a%elements, b%elements)
 print *, c%elements
-do i = -5, 4
+do i = 5, 15
     if (c%elements(i) /= 2*i) error stop
 end do
 

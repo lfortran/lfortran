@@ -14,6 +14,9 @@ do i = 0, n-1
 end do
 c%elements = add_vector(a%elements, b%elements)
 print *, c%elements
+do i = 0, n-1
+    if (c%elements(i) /= 2*i) error stop
+end do
 
 contains
 
