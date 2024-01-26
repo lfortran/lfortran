@@ -16,8 +16,8 @@ python src/libasr/wasm_instructions_visitor.py
 python src/libasr/intrinsic_func_registry_util_gen.py
 
 # Generate the tokenizer and parser
-(cd src/lfortran/parser && re2c -W -b tokenizer.re -o tokenizer.cpp)
-(cd src/lfortran/parser && re2c -W -b preprocessor.re -o preprocessor.cpp)
+(cd src/lfortran && re2c -W -b parser/tokenizer.re -o parser/tokenizer.cpp)
+(cd src/lfortran && re2c -W -b parser/preprocessor.re -o parser/preprocessor.cpp)
 (cd src/lfortran/parser && bison -Wall -d -r all parser.yy)
 
 grep -n "'" src/lfortran/parser/parser.yy && echo "Single quote not allowed" && exit 1
