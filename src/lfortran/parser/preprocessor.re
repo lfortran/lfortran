@@ -611,7 +611,8 @@ std::string function_like_macro_expansion(
 enum CPPTokenType {
     TK_EOF, TK_NAME, TK_INTEGER, TK_STRING, TK_AND, TK_OR, TK_NEG,
     TK_LPAREN, TK_RPAREN, TK_LT, TK_GT, TK_LTE, TK_GTE, TK_NE, TK_EQ,
-    TK_PLUS, TK_MINUS, TK_MUL, TK_DIV, TK_PERCENT
+    TK_PLUS, TK_MINUS, TK_MUL, TK_DIV, TK_PERCENT, TK_LSHIFT, TK_RSHIFT,
+    TK_BITAND, TK_BITOR
 };
 
 
@@ -639,6 +640,10 @@ void get_next_token(unsigned char *&cur, CPPTokenType &type, std::string &str) {
             "*" { type = CPPTokenType::TK_MUL; return; }
             "/" { type = CPPTokenType::TK_DIV; return; }
             "%" { type = CPPTokenType::TK_PERCENT; return; }
+            "<<" { type = CPPTokenType::TK_LSHIFT; return; }
+            ">>" { type = CPPTokenType::TK_RSHIFT; return; }
+            "&" { type = CPPTokenType::TK_BITAND; return; }
+            "|" { type = CPPTokenType::TK_BITOR; return; }
             "&&" { type = CPPTokenType::TK_AND; return; }
             "||" { type = CPPTokenType::TK_OR; return; }
             "!" { type = CPPTokenType::TK_NEG; return; }
@@ -748,7 +753,7 @@ int parse_expr(unsigned char *&cur, const cpp_symtab &macro_definitions) {
 
 /*
 term
-    = factor ((*,/,%) factor)*
+    = factor ((*,/,%,<<,>>,&,|) factor)*
 */
 int parse_term(unsigned char *&cur, const cpp_symtab &macro_definitions) {
     int tmp;
@@ -758,14 +763,30 @@ int parse_term(unsigned char *&cur, const cpp_symtab &macro_definitions) {
     std::string str;
     unsigned char *old_cur = cur;
     get_next_token(cur, type, str);
-    while (type == CPPTokenType::TK_MUL || type == CPPTokenType::TK_DIV || type == CPPTokenType::TK_PERCENT) {
+    while (type == CPPTokenType::TK_MUL ||
+           type == CPPTokenType::TK_DIV ||
+           type == CPPTokenType::TK_PERCENT ||
+           type == CPPTokenType::TK_LSHIFT ||
+           type == CPPTokenType::TK_RSHIFT ||
+           type == CPPTokenType::TK_BITAND ||
+           type == CPPTokenType::TK_BITOR) {
         int term = parse_factor(cur, macro_definitions);
         if (type == CPPTokenType::TK_MUL) {
             tmp = tmp * term;
         } else if (type == CPPTokenType::TK_DIV) {
             tmp = tmp / term;
-        } else {
+        } else if (type == CPPTokenType::TK_PERCENT) {
             tmp = tmp % term;
+        } else if (type == CPPTokenType::TK_LSHIFT) {
+            tmp = tmp << term;
+        } else if (type == CPPTokenType::TK_RSHIFT) {
+            tmp = tmp >> term;
+        } else if (type == CPPTokenType::TK_BITAND) {
+            tmp = tmp & term;
+        } else if (type == CPPTokenType::TK_BITOR) {
+            tmp = tmp | term;
+        } else {
+            throw LCompilersException("Unknown operator type");
         }
         old_cur = cur;
         get_next_token(cur, type, str);

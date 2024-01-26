@@ -1,0 +1,113 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            preprocessor15:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            
+                        })
+                    preprocessor15
+                    []
+                    [(Print
+                        [(StringConstant
+                            "X == 4"
+                            (Character 1 6 ())
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "X == 4"
+                            (Character 1 6 ())
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "X == 4"
+                            (Character 1 6 ())
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "X == 2"
+                            (Character 1 6 ())
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "X == 2"
+                            (Character 1 6 ())
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "X == 2"
+                            (Character 1 6 ())
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "X == 1"
+                            (Character 1 6 ())
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "X == 1"
+                            (Character 1 6 ())
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "X == 1"
+                            (Character 1 6 ())
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "X == 2"
+                            (Character 1 6 ())
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "X == 2"
+                            (Character 1 6 ())
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "X == 2"
+                            (Character 1 6 ())
+                        )]
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)

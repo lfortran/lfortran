@@ -1,0 +1,13 @@
+{
+    "basename": "asr_preprocess-preprocessor15-4cf95f9",
+    "cmd": "lfortran --cpp --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/preprocessor15.f90",
+    "infile_hash": "b47691d49753905026191cfe1a1aa17ab0a7652f8b0aea9e1b1639e5",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr_preprocess-preprocessor15-4cf95f9.stdout",
+    "stdout_hash": "73aee5cd0e667069b38747f5d4e5c181cf3daf62e180571ef93d40c6",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
