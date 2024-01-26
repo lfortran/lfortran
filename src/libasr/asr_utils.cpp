@@ -1441,7 +1441,7 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
     Vec<ASR::expr_t*> shape_args;
     shape_args.reserve(al, 1);
     shape_args.push_back(al, expr1);
-    bool is_value_character_array = ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(expr2))));
+    bool is_value_character_array = ASRUtils::is_character(*ASRUtils::expr_type(expr2));
 
     Vec<ASR::dimension_t> dims;
     dims.reserve(al, 1);
@@ -1564,7 +1564,7 @@ int64_t compute_leading_zeros(int64_t number, int64_t kind) {
         if (number%2 == 0) {
             leading_zeros++;
         } else {
-            leading_zeros = 0; 
+            leading_zeros = 0;
         }
         number = number/2;
         total_bits--;

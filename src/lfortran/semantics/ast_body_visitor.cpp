@@ -463,6 +463,7 @@ public:
                 *args[i] = ASRUtils::EXPR(tmp);
             }
         }
+        std::vector<ASR::asr_t*> newline_for_advance;
         for( std::uint32_t i = 0; i < n_kwargs; i++ ) {
             AST::kw_argstar_t kwarg = m_kwargs[i];
             std::string m_arg_str(kwarg.m_arg);
@@ -569,7 +570,7 @@ public:
                         nullptr, 0, nullptr, newline)));
                     // TODO: Compare with "no" (case-insensitive) in else part
                     // Throw runtime error if advance expression does not match "no"
-                    tmp_vec.push_back(ASR::make_If_t(al, loc, test, body.p,
+                    newline_for_advance.push_back(ASR::make_If_t(al, loc, test, body.p,
                             body.size(), nullptr, 0));
                     a_end = empty;
                 }
@@ -579,15 +580,18 @@ public:
             throw SemanticError(R"""(List directed format(*) is not allowed with a ADVANCE= specifier)""",
                                 loc);
         }
-        if (_type == AST::stmtType::Write) {
-            a_fmt_constant = a_fmt;
-        } else if (_type == AST::stmtType::Write && a_fmt == nullptr
+        if (_type == AST::stmtType::Write && a_fmt == nullptr
                 && compiler_options.print_leading_space) {
-            ASR::ttype_t *str_type_len_0 = ASRUtils::TYPE(ASR::make_Character_t(
-                al, loc, 1, 0, nullptr));
-            ASR::expr_t *empty_string = ASRUtils::EXPR(ASR::make_StringConstant_t(
-            al, loc, s2c(al, ""), str_type_len_0));
-            a_values_vec.push_back(al, empty_string);
+            ASR::asr_t* file_write_asr_t = construct_leading_space(false, loc);
+            ASR::FileWrite_t* file_write = ASR::down_cast<ASR::FileWrite_t>(ASRUtils::STMT(file_write_asr_t));
+            file_write->m_id = a_id;
+            file_write->m_iomsg = a_iomsg;
+            file_write->m_iostat = a_iostat;
+            file_write->m_unit = a_unit;
+            file_write->m_label = m_label;
+            tmp_vec.push_back(file_write_asr_t);
+        } else if (_type == AST::stmtType::Write) {
+            a_fmt_constant = a_fmt;
         }
         for( std::uint32_t i = 0; i < n_values; i++ ) {
             this->visit_expr(*m_values[i]);
@@ -642,7 +646,8 @@ public:
             }
         }
 
-        tmp_vec.insert(tmp_vec.begin(), tmp);
+        tmp_vec.push_back(tmp);
+        tmp_vec.insert(tmp_vec.end(), newline_for_advance.begin(), newline_for_advance.end());
         tmp = nullptr;
     }
 
@@ -2792,6 +2797,28 @@ public:
         throw LCompilersException("Argument not found");
     }
 
+    ASR::asr_t* construct_leading_space(bool print, const Location &loc) {
+        ASR::ttype_t *str_type_len_0 = ASRUtils::TYPE(ASR::make_Character_t(
+            al, loc, 1, 0, nullptr));
+        ASR::expr_t *empty_string = ASRUtils::EXPR(ASR::make_StringConstant_t(
+            al, loc, s2c(al, ""), str_type_len_0));
+        ASR::ttype_t *str_type_len_1 = ASRUtils::TYPE(ASR::make_Character_t(
+            al, loc, 1, 1, nullptr));
+        ASR::expr_t *space = ASRUtils::EXPR(ASR::make_StringConstant_t(
+            al, loc, s2c(al, " "), str_type_len_1));
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, 1);
+        args.push_back(al, space);
+
+        if (print) {
+            return ASR::make_Print_t(al, loc,
+                args.p, args.size(), nullptr, empty_string);
+        } else {
+            return ASR::make_FileWrite_t(al, loc, 0, nullptr, nullptr,
+                nullptr, nullptr, args.p, args.size(), nullptr, empty_string);
+        }
+    }
+
     void visit_Print(const AST::Print_t &x) {
         Vec<ASR::expr_t*> body;
         body.reserve(al, x.n_values);
@@ -2802,11 +2829,7 @@ public:
             fmt = ASRUtils::EXPR(tmp);
         } else {
             if (compiler_options.print_leading_space) {
-                ASR::ttype_t *str_type_len_0 = ASRUtils::TYPE(ASR::make_Character_t(
-                    al, x.base.base.loc, 1, 0, nullptr));
-                ASR::expr_t *empty_string = ASRUtils::EXPR(ASR::make_StringConstant_t(
-                    al, x.base.base.loc, s2c(al, ""), str_type_len_0));
-                body.push_back(al, empty_string);
+                current_body->push_back(al, ASRUtils::STMT(construct_leading_space(true, x.base.base.loc)));
             }
         }
 

@@ -2539,6 +2539,7 @@ ast_f90 = true
 filename = "print3.f90"
 print_leading_space = true
 asr = true
+run = true
 
 [[test]]
 filename = "uppercase1.f90"
