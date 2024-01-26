@@ -80,17 +80,11 @@ intrinsic_funcs_args = {
     "Aint": [
         {
             "args": [("real",)]
-        },
-        {
-            "args": [("real", "int")]
         }
     ],
     "Anint": [
         {
             "args": [("real",)]
-        },
-        {
-            "args": [("real", "int")]
         }
     ],
     "Sqrt": [
