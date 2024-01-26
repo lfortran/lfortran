@@ -551,10 +551,19 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
     return output;
 }
 
-std::string CPreprocessor::function_like_macro_expansion(
+namespace {
+
+std::string token(unsigned char *tok, unsigned char* cur)
+{
+    return std::string((char *)tok, cur - tok);
+}
+
+}
+
+std::string function_like_macro_expansion(
             std::vector<std::string> &def_args,
             std::string &expansion,
-            std::vector<std::string> &call_args) const {
+            std::vector<std::string> &call_args) {
     LCOMPILERS_ASSERT(expansion[expansion.size()] == '\0');
     unsigned char *string_start=(unsigned char*)(&expansion[0]);
     unsigned char *cur = string_start;
@@ -605,14 +614,6 @@ enum CPPTokenType {
     TK_PLUS, TK_MINUS, TK_MUL, TK_DIV, TK_PERCENT
 };
 
-namespace {
-
-std::string token(unsigned char *tok, unsigned char* cur)
-{
-    return std::string((char *)tok, cur - tok);
-}
-
-}
 
 void get_next_token(unsigned char *&cur, CPPTokenType &type, std::string &str) {
     std::string output;
@@ -786,7 +787,26 @@ int parse_factor(unsigned char *&cur, const cpp_symtab &macro_definitions) {
     get_next_token(cur, type, str);
     if (type == CPPTokenType::TK_NAME) {
         if (macro_definitions.find(str) != macro_definitions.end()) {
-            std::string v = macro_definitions.at(str).expansion;
+            std::string v;
+            if (macro_definitions.at(str).function_like) {
+                if (*cur != '(') {
+                    throw LCompilersException("C preprocessor: function-like macro invocation must have argument list");
+                }
+                std::vector<std::string> args;
+                args = parse_arguments(cur, false);
+                if (*cur != ')') {
+                    throw LCompilersException("C preprocessor: expected )");
+                }
+                cur++;
+                std::vector<std::string> margs = macro_definitions.at(str).args;
+                std::string mexpansion = macro_definitions.at(str).expansion;
+                v = function_like_macro_expansion(
+                    margs,
+                    mexpansion,
+                    args);
+            } else {
+                v = macro_definitions.at(str).expansion;
+            }
             unsigned char *cur2 = (unsigned char*)(&v[0]);
             int i = parse_expr(cur2, macro_definitions);
             return i;
