@@ -24,6 +24,26 @@ CPreprocessor::CPreprocessor(CompilerOptions &compiler_options)
     if (compiler_options.platform == Platform::Windows) {
         md.expansion = "1";
         macro_definitions["_WIN32"] = md;
+    } else if (compiler_options.platform == Platform::macOS_ARM
+        || compiler_options.platform == Platform::macOS_Intel) {
+        md.expansion = "1";
+        macro_definitions["__APPLE__"] = md;
+        if (compiler_options.platform == Platform::macOS_ARM) {
+            md.expansion = "1";
+            macro_definitions["__aarch64__"] = md;
+        } else {
+            md.expansion = "1";
+            macro_definitions["__x86_64__"] = md;
+        }
+    } else if (compiler_options.platform == Platform::FreeBSD) {
+        md.expansion = "1";
+        macro_definitions["__FreeBSD__"] = md;
+    } else if (compiler_options.platform == Platform::OpenBSD) {
+        md.expansion = "1";
+        macro_definitions["__OpenBSD__"] = md;
+    } else {
+        md.expansion = "1";
+        macro_definitions["__linux__"] = md;
     }
     for (auto &d : compiler_options.c_preprocessor_defines) {
         std::size_t idx = d.find("=");
