@@ -546,6 +546,9 @@ char** parse_fortran_format(char* format, int *count, int *item_start) {
                         }
                         index--;
                     }
+                } else if (format[index] != ' ') {
+                    fprintf(stderr, "Unsupported or unrecognized `%c` in format string\n", format[index]);
+                    exit(1);
                 }
         }
         index++;
