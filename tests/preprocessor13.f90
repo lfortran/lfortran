@@ -92,4 +92,286 @@ print *, "4 Other"
 
 #endif
 
+
+#define X 1
+#define Y 1
+
+#if X == 1
+print *, "X is 1"
+#   if Y == 1
+    print *, "1 Y is 1"
+#   elif Y == 2
+    print *, "1 Y is 2"
+#   elif Y == 3
+    print *, "1 Y is 3"
+#   elif Y == 4
+    print *, "1 Y is 4"
+#   else
+    print *, "1 Y is not 1-4"
+#   endif
+#elif X == 2
+print *, "X is 2"
+#   if Y == 1
+    print *, "2 Y is 1"
+#   elif Y == 2
+    print *, "2 Y is 2"
+#   elif Y == 3
+    print *, "2 Y is 3"
+#   elif Y == 4
+    print *, "2 Y is 4"
+#   else
+    print *, "2 Y is not 1-4"
+#   endif
+#elif X == 3
+print *, "X is 3"
+#   if Y == 1
+    print *, "3 Y is 1"
+#   elif Y == 2
+    print *, "3 Y is 2"
+#   elif Y == 3
+    print *, "3 Y is 3"
+#   elif Y == 4
+    print *, "3 Y is 4"
+#   else
+    print *, "3 Y is not 1-4"
+#   endif
+#elif X == 4
+print *, "X is 4"
+#   if Y == 1
+    print *, "4 Y is 1"
+#   elif Y == 2
+    print *, "4 Y is 2"
+#   elif Y == 3
+    print *, "4 Y is 3"
+#   elif Y == 4
+    print *, "4 Y is 4"
+#   else
+    print *, "4 Y is not 1-4"
+#   endif
+#else
+print *, "X is not 1-4"
+#   if Y == 1
+    print *, "5 Y is 1"
+#   elif Y == 2
+    print *, "5 Y is 2"
+#   elif Y == 3
+    print *, "5 Y is 3"
+#   elif Y == 4
+    print *, "5 Y is 4"
+#   else
+    print *, "5 Y is not 1-4"
+#   endif
+#endif
+
+#define X 2
+#define Y 3
+
+#if X == 1
+print *, "X is 1"
+#   if Y == 1
+    print *, "1 Y is 1"
+#   elif Y == 2
+    print *, "1 Y is 2"
+#   elif Y == 3
+    print *, "1 Y is 3"
+#   elif Y == 4
+    print *, "1 Y is 4"
+#   else
+    print *, "1 Y is not 1-4"
+#   endif
+#elif X == 2
+print *, "X is 2"
+#   if Y == 1
+    print *, "2 Y is 1"
+#   elif Y == 2
+    print *, "2 Y is 2"
+#   elif Y == 3
+    print *, "2 Y is 3"
+#   elif Y == 4
+    print *, "2 Y is 4"
+#   else
+    print *, "2 Y is not 1-4"
+#   endif
+#elif X == 3
+print *, "X is 3"
+#   if Y == 1
+    print *, "3 Y is 1"
+#   elif Y == 2
+    print *, "3 Y is 2"
+#   elif Y == 3
+    print *, "3 Y is 3"
+#   elif Y == 4
+    print *, "3 Y is 4"
+#   else
+    print *, "3 Y is not 1-4"
+#   endif
+#elif X == 4
+print *, "X is 4"
+#   if Y == 1
+    print *, "4 Y is 1"
+#   elif Y == 2
+    print *, "4 Y is 2"
+#   elif Y == 3
+    print *, "4 Y is 3"
+#   elif Y == 4
+    print *, "4 Y is 4"
+#   else
+    print *, "4 Y is not 1-4"
+#   endif
+#else
+print *, "X is not 1-4"
+#   if Y == 1
+    print *, "5 Y is 1"
+#   elif Y == 2
+    print *, "5 Y is 2"
+#   elif Y == 3
+    print *, "5 Y is 3"
+#   elif Y == 4
+    print *, "5 Y is 4"
+#   else
+    print *, "5 Y is not 1-4"
+#   endif
+#endif
+
+
+#define X 4
+#define Y 4
+
+#if X == 1
+print *, "X is 1"
+#   if Y == 1
+    print *, "1 Y is 1"
+#   elif Y == 2
+    print *, "1 Y is 2"
+#   elif Y == 3
+    print *, "1 Y is 3"
+#   elif Y == 4
+    print *, "1 Y is 4"
+#   else
+    print *, "1 Y is not 1-4"
+#   endif
+#elif X == 2
+print *, "X is 2"
+#   if Y == 1
+    print *, "2 Y is 1"
+#   elif Y == 2
+    print *, "2 Y is 2"
+#   elif Y == 3
+    print *, "2 Y is 3"
+#   elif Y == 4
+    print *, "2 Y is 4"
+#   else
+    print *, "2 Y is not 1-4"
+#   endif
+#elif X == 3
+print *, "X is 3"
+#   if Y == 1
+    print *, "3 Y is 1"
+#   elif Y == 2
+    print *, "3 Y is 2"
+#   elif Y == 3
+    print *, "3 Y is 3"
+#   elif Y == 4
+    print *, "3 Y is 4"
+#   else
+    print *, "3 Y is not 1-4"
+#   endif
+#elif X == 4
+print *, "X is 4"
+#   if Y == 1
+    print *, "4 Y is 1"
+#   elif Y == 2
+    print *, "4 Y is 2"
+#   elif Y == 3
+    print *, "4 Y is 3"
+#   elif Y == 4
+    print *, "4 Y is 4"
+#   else
+    print *, "4 Y is not 1-4"
+#   endif
+#else
+print *, "X is not 1-4"
+#   if Y == 1
+    print *, "5 Y is 1"
+#   elif Y == 2
+    print *, "5 Y is 2"
+#   elif Y == 3
+    print *, "5 Y is 3"
+#   elif Y == 4
+    print *, "5 Y is 4"
+#   else
+    print *, "5 Y is not 1-4"
+#   endif
+#endif
+
+#define X 5
+#define Y 5
+
+#if X == 1
+print *, "X is 1"
+#   if Y == 1
+    print *, "1 Y is 1"
+#   elif Y == 2
+    print *, "1 Y is 2"
+#   elif Y == 3
+    print *, "1 Y is 3"
+#   elif Y == 4
+    print *, "1 Y is 4"
+#   else
+    print *, "1 Y is not 1-4"
+#   endif
+#elif X == 2
+print *, "X is 2"
+#   if Y == 1
+    print *, "2 Y is 1"
+#   elif Y == 2
+    print *, "2 Y is 2"
+#   elif Y == 3
+    print *, "2 Y is 3"
+#   elif Y == 4
+    print *, "2 Y is 4"
+#   else
+    print *, "2 Y is not 1-4"
+#   endif
+#elif X == 3
+print *, "X is 3"
+#   if Y == 1
+    print *, "3 Y is 1"
+#   elif Y == 2
+    print *, "3 Y is 2"
+#   elif Y == 3
+    print *, "3 Y is 3"
+#   elif Y == 4
+    print *, "3 Y is 4"
+#   else
+    print *, "3 Y is not 1-4"
+#   endif
+#elif X == 4
+print *, "X is 4"
+#   if Y == 1
+    print *, "4 Y is 1"
+#   elif Y == 2
+    print *, "4 Y is 2"
+#   elif Y == 3
+    print *, "4 Y is 3"
+#   elif Y == 4
+    print *, "4 Y is 4"
+#   else
+    print *, "4 Y is not 1-4"
+#   endif
+#else
+print *, "X is not 1-4"
+#   if Y == 1
+    print *, "5 Y is 1"
+#   elif Y == 2
+    print *, "5 Y is 2"
+#   elif Y == 3
+    print *, "5 Y is 3"
+#   elif Y == 4
+    print *, "5 Y is 4"
+#   else
+    print *, "5 Y is not 1-4"
+#   endif
+#endif
+
 end
