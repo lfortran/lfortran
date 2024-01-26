@@ -130,12 +130,17 @@ indent = "    "
 def add_arg_type_src(func_name):
     global src
     arg_infos = intrinsic_funcs_args[func_name]
+    no_of_args_msg = ""
     for i, arg_info in enumerate(arg_infos):
         condition = ""
         cond_in_msg = ""
         args_lists = arg_info["args"]
         no_of_args = len(args_lists[0])
-        src += 2 * indent + f"if (x.n_args == {no_of_args}) " + " {\n"
+        else_if = "else if" if i > 0 else "if"
+        src += 2 * indent + f"{else_if} (x.n_args == {no_of_args}) " + " {\n"
+        if i > 0:
+            no_of_args_msg += " or "
+        no_of_args_msg += f"{no_of_args}"
         for _i in range(no_of_args):
             src += 3 * indent + f"ASR::ttype_t *arg_type{_i} = ASRUtils::type_get_past_const(ASRUtils::expr_type(x.m_args[{_i}]));\n"
         for j, arg_list in enumerate(args_lists):
@@ -154,7 +159,10 @@ def add_arg_type_src(func_name):
                 condition += " || "
                 cond_in_msg += " or "
         src += 3 * indent + f'ASRUtils::require_impl({condition}, "Unexpected args, {func_name} expects {cond_in_msg} as arguments", x.base.base.loc, diagnostics);\n'
-        src += 2 * indent + "}\n"
+        src += 2 * indent + "}"
+    src += " else {\n"
+    src += 3 * indent + f'ASRUtils::require_impl(false, "Unexpected number of args, {func_name} takes {no_of_args_msg} arguments, found " + std::to_string(x.n_args), x.base.base.loc, diagnostics);\n'
+    src += 2 * indent + "}\n"
 
 def add_return_type_src(func_name):
     if func_name not in intrinsic_funcs_ret_type.keys():
