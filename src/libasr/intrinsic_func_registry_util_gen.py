@@ -141,6 +141,7 @@ def add_arg_type_src(func_name):
         if i > 0:
             no_of_args_msg += " or "
         no_of_args_msg += f"{no_of_args}"
+        src += 3 * indent + f'ASRUtils::require_impl(x.m_overload_id == {i}, "Overload Id for {func_name} expected to be {i}, found " + std::to_string(x.m_overload_id), x.base.base.loc, diagnostics);\n'
         for _i in range(no_of_args):
             src += 3 * indent + f"ASR::ttype_t *arg_type{_i} = ASRUtils::type_get_past_const(ASRUtils::expr_type(x.m_args[{_i}]));\n"
         for j, arg_list in enumerate(args_lists):
