@@ -177,7 +177,7 @@ def add_return_type_src(func_name):
         if i < len(intrinsic_funcs_ret_type[func_name]) - 1:
             ret_type_cond += " || "
             ret_type_cond_in_msg += " or "
-    src += 2 * indent + f'ASRUtils::require_impl({ret_type_cond}, "Unexpected return type, {func_name} expects {ret_type_cond_in_msg} as return types", x.base.base.loc, diagnostics);\n'
+    src += 2 * indent + f'ASRUtils::require_impl({ret_type_cond}, "Unexpected return type, {func_name} expects `{ret_type_cond_in_msg}` as return type", x.base.base.loc, diagnostics);\n'
 
 def get_registry_funcs_src():
     global src
