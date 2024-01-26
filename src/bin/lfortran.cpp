@@ -2199,6 +2199,10 @@ int main_app(int argc, char *argv[]) {
         compiler_options.fixed_form = true;
     }
 
+    if (endswith(arg_file, ".F90") || endswith(arg_file, ".F")) {
+        compiler_options.c_preprocessor = true;
+    }
+
     std::string outfile;
     std::filesystem::path basename = std::filesystem::path(arg_file).filename();
     if (compiler_options.arg_o.size() > 0) {
