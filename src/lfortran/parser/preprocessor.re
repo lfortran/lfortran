@@ -788,7 +788,23 @@ int parse_factor(unsigned char *&cur, const cpp_symtab &macro_definitions) {
         if (macro_definitions.find(str) != macro_definitions.end()) {
             std::string v;
             if (macro_definitions.at(str).function_like) {
-                throw LCompilersException("parse_factor(): function-like macro expansion not implemented yet");
+                if (*cur != '(') {
+                    throw LCompilersException("C preprocessor: function-like macro invocation must have argument list");
+                }
+                std::vector<std::string> args;
+                args = parse_arguments(cur, false);
+                if (*cur != ')') {
+                    throw LCompilersException("C preprocessor: expected )");
+                }
+                cur++;
+                // TODO:
+                /*
+                v = function_like_macro_expansion(
+                    macro_definitions.at(str).args,
+                    macro_definitions.at(str).expansion,
+                    args);
+                */
+               v = args[0];
             } else {
                 v = macro_definitions.at(str).expansion;
             }
