@@ -580,9 +580,7 @@ public:
             throw SemanticError(R"""(List directed format(*) is not allowed with a ADVANCE= specifier)""",
                                 loc);
         }
-        if (_type == AST::stmtType::Write) {
-            a_fmt_constant = a_fmt;
-        } else if (_type == AST::stmtType::Write && a_fmt == nullptr
+        if (_type == AST::stmtType::Write && a_fmt == nullptr
                 && compiler_options.print_leading_space) {
             ASR::asr_t* file_write_asr_t = construct_leading_space(false, loc);
             ASR::FileWrite_t* file_write = ASR::down_cast<ASR::FileWrite_t>(ASRUtils::STMT(file_write_asr_t));
@@ -592,6 +590,8 @@ public:
             file_write->m_unit = a_unit;
             file_write->m_label = m_label;
             tmp_vec.push_back(file_write_asr_t);
+        } else if (_type == AST::stmtType::Write) {
+            a_fmt_constant = a_fmt;
         }
         for( std::uint32_t i = 0; i < n_values; i++ ) {
             this->visit_expr(*m_values[i]);
