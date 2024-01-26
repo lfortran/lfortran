@@ -786,7 +786,12 @@ int parse_factor(unsigned char *&cur, const cpp_symtab &macro_definitions) {
     get_next_token(cur, type, str);
     if (type == CPPTokenType::TK_NAME) {
         if (macro_definitions.find(str) != macro_definitions.end()) {
-            std::string v = macro_definitions.at(str).expansion;
+            std::string v;
+            if (macro_definitions.at(str).function_like) {
+                throw LCompilersException("parse_factor(): function-like macro expansion not implemented yet");
+            } else {
+                v = macro_definitions.at(str).expansion;
+            }
             unsigned char *cur2 = (unsigned char*)(&v[0]);
             int i = parse_expr(cur2, macro_definitions);
             return i;
