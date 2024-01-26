@@ -10,8 +10,7 @@ source_filename = "LFortran"
 @6 = private unnamed_addr constant [2 x i8] c" \00", align 1
 @7 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @8 = private unnamed_addr constant [25 x i8] c"test is found at index: \00", align 1
-@9 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@10 = private unnamed_addr constant [9 x i8] c"%s%s%d%s\00", align 1
+@9 = private unnamed_addr constant [9 x i8] c"%s%s%d%s\00", align 1
 
 define i32 @__module_lfortran_intrinsic_string_index(i8** %string_, i8** %substring_, i1* %back, i1* %is_back_present_) {
 .entry:
@@ -170,7 +169,7 @@ then:                                             ; preds = %.entry
 else:                                             ; preds = %.entry
   store i1 false, i1* %call_arg_value1, align 1
   %8 = call i32 @__module_lfortran_intrinsic_string_index(i8** %mystring, i8** %teststring, i1* %__libasr_created_variable_1, i1* %call_arg_value1)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @10, i32 0, i32 0), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @8, i32 0, i32 0), i8* getelementptr inbounds ([1 x i8], [1 x i8]* @9, i32 0, i32 0), i32 %8, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0))
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @9, i32 0, i32 0), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @8, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i32 %8, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0))
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then

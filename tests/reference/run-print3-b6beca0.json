@@ -1,12 +1,12 @@
 {
-    "basename": "asr-print3-5f4fc26",
-    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "basename": "run-print3-b6beca0",
+    "cmd": "lfortran --no-color {infile}",
     "infile": "tests/print3.f90",
     "infile_hash": "891fa35fc5d09524ef73c8c3b92bcd5a4bede01e35fdf0f116df99b2",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": "asr-print3-5f4fc26.stdout",
-    "stdout_hash": "ca47f6102543449b6d2a0ae1ee52a4beca2b8b475dedb33c24a7b465",
+    "stdout": "run-print3-b6beca0.stdout",
+    "stdout_hash": "1a953a6a1b3f11312c5c83b066b0cf9c95b91d66863c6bfbd838251b",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

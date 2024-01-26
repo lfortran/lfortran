@@ -33,16 +33,39 @@
                     )
                     (Print
                         [(StringConstant
+                            " "
+                            (Character 1 1 ())
+                        )]
+                        ()
+                        (StringConstant
                             ""
                             (Character 1 0 ())
                         )
-                        (StringConstant
+                    )
+                    (Print
+                        [(StringConstant
                             "x is "
                             (Character 1 5 ())
                         )
                         (Var 2 x)]
                         ()
                         ()
+                    )
+                    (FileWrite
+                        0
+                        ()
+                        ()
+                        ()
+                        ()
+                        [(StringConstant
+                            " "
+                            (Character 1 1 ())
+                        )]
+                        ()
+                        (StringConstant
+                            ""
+                            (Character 1 0 ())
+                        )
                     )
                     (FileWrite
                         0
@@ -60,15 +83,38 @@
                     )
                     (Print
                         [(StringConstant
+                            " "
+                            (Character 1 1 ())
+                        )]
+                        ()
+                        (StringConstant
                             ""
                             (Character 1 0 ())
                         )
-                        (StringConstant
+                    )
+                    (Print
+                        [(StringConstant
                             "ok"
                             (Character 1 2 ())
                         )]
                         ()
                         ()
+                    )
+                    (FileWrite
+                        0
+                        ()
+                        ()
+                        ()
+                        ()
+                        [(StringConstant
+                            " "
+                            (Character 1 1 ())
+                        )]
+                        ()
+                        (StringConstant
+                            ""
+                            (Character 1 0 ())
+                        )
                     )
                     (FileWrite
                         0
