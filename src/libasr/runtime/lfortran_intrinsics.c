@@ -207,8 +207,7 @@ void handle_integer(char* format, int val, char** result) {
             for (int i = 0; i < (min_width - len - sign_width); i++) {
                 *result = append_to_string(*result, "0");
             }
-        }
-        else {
+        } else {
             for (int i = 0; i < (width - len - sign_width); i++) {
                 *result = append_to_string(*result, " ");
             }
@@ -223,6 +222,18 @@ void handle_integer(char* format, int val, char** result) {
         for (int i = 0; i < width; i++) {
             *result = append_to_string(*result, "*");
         }
+    }
+}
+
+void handle_logical(char* format, bool val, char** result) {
+    int width = atoi(format + 1);
+    for (int i = 0; i < width - 1; i++) {
+        *result = append_to_string(*result, " ");
+    }
+    if (val) {
+        *result = append_to_string(*result, "T");
+    } else {
+        *result = append_to_string(*result, "F");
     }
 }
 
@@ -491,6 +502,7 @@ char** parse_fortran_format(char* format, int *count, int *item_start) {
             case 'd' :
             case 'e' :
             case 'f' :
+            case 'l' :
                 start = index++;
                 bool dot = false;
                 if(tolower(format[index]) == 's') index++;
@@ -514,12 +526,11 @@ char** parse_fortran_format(char* format, int *count, int *item_start) {
                 *item_start = format_values_count;
                 break;
             default :
-                if (isdigit(format[index]) && tolower(format[index+1]) == 'p') {
+                if (
+                    (format[index] == '-' && isdigit(format[index + 1]) && tolower(format[index + 2]) == 'p')
+                    || ((isdigit(format[index])) && tolower(format[index + 1]) == 'p')) {
                     start = index;
-                    if (index > 0 && format[index-1] == '-') {
-                        start = index - 1;
-                    }
-                    index = index + 1;
+                    index = index + 1 + (format[index] == '-');
                     format_values_2[format_values_count++] = substring(format, start, index + 1);
                 } else if (isdigit(format[index])) {
                     start = index;
@@ -547,6 +558,9 @@ char** parse_fortran_format(char* format, int *count, int *item_start) {
                         }
                         index--;
                     }
+                } else if (format[index] != ' ') {
+                    fprintf(stderr, "Unsupported or unrecognized `%c` in format string\n", format[index]);
+                    exit(1);
                 }
         }
         index++;
@@ -565,7 +579,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
     modified_input_string[len] = '\0';
     if (format[0] == '(' && format[len-1] == ')') {
         memmove(modified_input_string, modified_input_string + 1, strlen(modified_input_string));
-        modified_input_string[len-1] = '\0';
+        modified_input_string[len-2] = '\0';
     }
     int format_values_count = 0,item_start_idx=0;
     char** format_values = parse_fortran_format(modified_input_string,&format_values_count,&item_start_idx);
@@ -667,6 +681,12 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 count--;
                 double val = va_arg(args, double);
                 handle_float(value, val, &result);
+            } else if (tolower(value[0]) == 'l') {
+                if ( count == 0 ) break;
+                count--;
+                char* val_str = va_arg(args, char*);
+                bool val = (strcmp(val_str, "True") == 0);
+                handle_logical(value, val, &result);
             } else if (strlen(value) != 0) {
                 if ( count == 0 ) break;
                 count--;

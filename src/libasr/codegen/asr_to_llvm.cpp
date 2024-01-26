@@ -9480,17 +9480,17 @@ public:
         // if (fmt_value) ...
         if (x.m_kind == ASR::string_format_kindType::FormatFortran) {
             std::vector<llvm::Value *> args;
-            int size = x.n_args;
-            llvm::Value *count = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), size);
-            args.push_back(count);
             visit_expr(*x.m_fmt);
             args.push_back(tmp);
 
             for (size_t i=0; i<x.n_args; i++) {
-                std::vector<std::string>fmt;
+                std::vector<std::string> fmt;
                 //  Use the function to compute the args, but ignore the format
                 compute_fmt_specifier_and_arg(fmt, args, x.m_args[i], x.base.base.loc);
             }
+            llvm::Value *args_cnt = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
+                args.size() - 1);
+            args.insert(args.begin(), args_cnt);
             tmp = string_format_fortran(context, *module, *builder, args);
         } else {
             throw CodeGenError("Only FormatFortran string formatting implemented so far.");
