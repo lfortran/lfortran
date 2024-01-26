@@ -1940,6 +1940,7 @@ int main_app(int argc, char *argv[]) {
     bool print_targets = false;
     bool link_with_gcc = false;
     bool fixed_form_infer = false;
+    bool cpp_infer = false;
 
     std::string arg_fmt_file;
     int arg_fmt_indent = 4;
@@ -1987,6 +1988,7 @@ int main_app(int argc, char *argv[]) {
 
     // LFortran specific options
     app.add_flag("--cpp", compiler_options.c_preprocessor, "Enable C preprocessing");
+    app.add_flag("--cpp-infer", cpp_infer, "Use heuristics to infer if a file needs preprocessing");
     app.add_flag("--fixed-form", compiler_options.fixed_form, "Use fixed form Fortran source parsing");
     app.add_flag("--fixed-form-infer", fixed_form_infer, "Use heuristics to infer if a file is in fixed form");
     app.add_flag("--no-prescan", arg_no_prescan, "Turn off prescan");
@@ -2197,6 +2199,12 @@ int main_app(int argc, char *argv[]) {
     // Gfortran does the same thing
     if (fixed_form_infer && endswith(arg_file, ".f")) {
         compiler_options.fixed_form = true;
+    }
+
+    // Decide if a file gets preprocessing based on the extension
+    // Gfortran does the same thing
+    if (cpp_infer && (endswith(arg_file, ".F90") || endswith(arg_file, ".F"))) {
+        compiler_options.c_preprocessor = true;
     }
 
     std::string outfile;
