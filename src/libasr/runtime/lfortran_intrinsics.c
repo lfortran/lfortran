@@ -526,12 +526,11 @@ char** parse_fortran_format(char* format, int *count, int *item_start) {
                 *item_start = format_values_count;
                 break;
             default :
-                if (isdigit(format[index]) && tolower(format[index+1]) == 'p') {
+                if (
+                    (format[index] == '-' && isdigit(format[index + 1]) && tolower(format[index + 2]) == 'p')
+                    || ((isdigit(format[index])) && tolower(format[index + 1]) == 'p')) {
                     start = index;
-                    if (index > 0 && format[index-1] == '-') {
-                        start = index - 1;
-                    }
-                    index = index + 1;
+                    index = index + 1 + (format[index] == '-');
                     format_values_2[format_values_count++] = substring(format, start, index + 1);
                 } else if (isdigit(format[index])) {
                     start = index;
