@@ -225,6 +225,18 @@ void handle_integer(char* format, int val, char** result) {
     }
 }
 
+void handle_logical(char* format, bool val, char** result) {
+    int width = atoi(format + 1);
+    for (int i = 0; i < width - 1; i++) {
+        *result = append_to_string(*result, " ");
+    }
+    if (val) {
+        *result = append_to_string(*result, "T");
+    } else {
+        *result = append_to_string(*result, "F");
+    }
+}
+
 void handle_float(char* format, double val, char** result) {
     int width = 0, decimal_digits = 0;
     long integer_part = (long)fabs(val);
@@ -490,6 +502,7 @@ char** parse_fortran_format(char* format, int *count, int *item_start) {
             case 'd' :
             case 'e' :
             case 'f' :
+            case 'l' :
                 start = index++;
                 bool dot = false;
                 if(tolower(format[index]) == 's') index++;
@@ -669,6 +682,12 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 count--;
                 double val = va_arg(args, double);
                 handle_float(value, val, &result);
+            } else if (tolower(value[0]) == 'l') {
+                if ( count == 0 ) break;
+                count--;
+                char* val_str = va_arg(args, char*);
+                bool val = (strcmp(val_str, "True") == 0);
+                handle_logical(value, val, &result);
             } else if (strlen(value) != 0) {
                 if ( count == 0 ) break;
                 count--;
