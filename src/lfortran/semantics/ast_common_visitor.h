@@ -3094,15 +3094,20 @@ public:
                 if( m_value && m_value->type == ASR::exprType::StringConstant ) {
                     ASR::StringConstant_t *m_str = ASR::down_cast<ASR::StringConstant_t>(m_value);
                     std::string sliced_str;
+                    int str_length = 0;
+                    while( m_str->m_s[str_length] != '\0' ) {
+                            str_length += 1;
+                        }
                     if( start <= 0 ) {
                         throw SemanticError("Substring `start` is less than one",
                                     loc);
                     }
+                    if(end > str_length) {
+                        throw SemanticError("Error: Substring end index at (1) exceeds the string length",
+                                    loc);
+                    } 
                     if( end == -1 && !flag ) {
-                        end = 0;
-                        while( m_str->m_s[end] != '\0' ) {
-                            end += 1;
-                        }
+                        end = str_length;
                     } else {
                         for( int i = start - 1; i < end; i += step ) {
                             sliced_str.push_back(m_str->m_s[i]);
