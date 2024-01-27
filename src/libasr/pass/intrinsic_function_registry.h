@@ -1881,7 +1881,7 @@ namespace Ishft {
     static inline ASR::expr_t* instantiate_Ishft(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_sign_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_ishft_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -1889,7 +1889,7 @@ namespace Ishft {
         * r = ishft(x, y)
         */
         ASR::expr_t *two = i(2, arg_types[0]);
-        if(args[1]<=0){
+        if( iLtE(args[1], 0) ){
             body.push_back(al, b.Assignment(result, i_tDiv(args[0], iPow(two, args[1], arg_types[0]), arg_types[0])));
         } else {
             body.push_back(al, b.Assignment(result, i_tMul(args[0], iPow(two, args[1], arg_types[0]), arg_types[0])));
