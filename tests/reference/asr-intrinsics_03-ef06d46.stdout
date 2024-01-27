@@ -23,16 +23,6 @@
                                     Required
                                     .false.
                                 ),
-                            dabs:
-                                (ExternalSymbol
-                                    2
-                                    dabs
-                                    6 dabs
-                                    lfortran_intrinsic_math2
-                                    []
-                                    dabs
-                                    Private
-                                ),
                             dp:
                                 (ExternalSymbol
                                     2
@@ -328,18 +318,17 @@
                     )
                     (If
                         (RealCompare
-                            (FunctionCall
-                                2 dabs
-                                ()
-                                [((RealBinOp
+                            (IntrinsicScalarFunction
+                                Abs
+                                [(RealBinOp
                                     (Var 2 r1)
                                     Sub
                                     (Var 2 r2)
                                     (Real 8)
                                     ()
-                                ))]
+                                )]
+                                0
                                 (Real 8)
-                                ()
                                 ()
                             )
                             Gt
@@ -357,13 +346,7 @@
                     )]
                 ),
             iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math2:
-                (IntrinsicModule lfortran_intrinsic_math2),
-            lfortran_intrinsic_math3:
-                (IntrinsicModule lfortran_intrinsic_math3)
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env)
         })
     []
 )
