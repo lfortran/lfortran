@@ -1580,9 +1580,9 @@ int link_executable(const std::vector<std::string> &infiles,
             compile_cmd += " -l" + runtime_lib + " -lm";
             run_cmd = "./" + outfile;
         }
-	if (verbose) {
+        if (verbose) {
             std::cout << compile_cmd << std::endl;
-	}
+        }
         int err = system(compile_cmd.c_str());
         if (err) {
             std::cout << "The command '" + compile_cmd + "' failed." << std::endl;
