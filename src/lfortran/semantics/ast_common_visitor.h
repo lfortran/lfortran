@@ -722,6 +722,8 @@ public:
     };
 
     std::map<std::string, std::string> double_precision_intrinsics = {
+        {"dabs", "abs"},
+
         {"dsinh", "sinh"},
         {"dcosh", "cosh"},
         {"dtanh", "tanh"},
