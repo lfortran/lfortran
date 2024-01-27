@@ -81,6 +81,7 @@ enum class IntrinsicScalarFunctions : int64_t {
     Sngl,
     Ifix,
     Idint,
+    Ishftc,
     SymbolicSymbol,
     SymbolicAdd,
     SymbolicSub,
@@ -165,6 +166,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Sngl)
         INTRINSIC_NAME_CASE(Ifix)
         INTRINSIC_NAME_CASE(Idint)
+        INTRINSIC_NAME_CASE(Ishftc)
         INTRINSIC_NAME_CASE(SymbolicSymbol)
         INTRINSIC_NAME_CASE(SymbolicAdd)
         INTRINSIC_NAME_CASE(SymbolicSub)
@@ -2232,7 +2234,90 @@ namespace Idint {
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
-} 
+} // namespace Idint
+
+#include <iostream>
+
+namespace Ishftc {
+
+    static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x,
+            diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 2,
+            "ASR Verify: Call `ishftc` must have exactly two arguments",
+            x.base.base.loc, diagnostics);
+        ASR::ttype_t *type_i = ASRUtils::expr_type(x.m_args[0]);
+        ASR::ttype_t *type_shift = ASRUtils::expr_type(x.m_args[1]);
+        int kind_i = ASRUtils::extract_kind_from_ttype_t(type_i);
+        int kind_shift = ASRUtils::extract_kind_from_ttype_t(type_shift);
+
+        ASRUtils::require_impl(ASRUtils::is_integer(*type_i) && kind_i == 4,
+            "ASR Verify: First argument to `ishftc` must be of integer type (kind 4)",
+            x.base.base.loc, diagnostics);
+
+        ASRUtils::require_impl(ASRUtils::is_integer(*type_shift) && kind_shift == 4,
+            "ASR Verify: Second argument to `ishftc` must be of integer type (kind 4)",
+            x.base.base.loc, diagnostics);
+    }
+
+    static ASR::expr_t *eval_Ishftc(Allocator &al, const Location &loc,
+            ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args) {
+        int val = ASR::down_cast<ASR::IntegerConstant_t>(expr_value(args[0]))->m_n;
+        int shift = ASR::down_cast<ASR::IntegerConstant_t>(expr_value(args[1]))->m_n;
+        int result = (val << shift) | (val >> (32 - shift)); // Assuming 32-bit integers
+        return make_ConstantWithType(make_IntegerConstant_t, result, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), loc);
+    }
+
+    static inline ASR::asr_t* create_Ishftc(
+            Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
+            const std::function<void (const std::string &, const Location &)> err) {
+        ASR::ttype_t* return_type = int32;
+        if ( args.n != 2 ) {
+            err("Intrinsic `ishftc` accepts exactly two arguments", loc);
+        } else if ( !ASRUtils::is_integer(*expr_type(args[0])) ) {
+            err("First argument of the `ishftc` must be of integer type", loc);
+        } else if ( !ASRUtils::is_integer(*expr_type(args[1])) ) {
+            err("Second argument of the `ishftc` must be of integer type", loc);
+        }
+        Vec<ASR::expr_t *> m_args; m_args.reserve(al, 2);
+        m_args.push_back(al, args[0]);
+        m_args.push_back(al, args[1]);
+        ASR::expr_t *m_value = nullptr;
+        if (all_args_evaluated(m_args)) {
+            m_value = eval_Ishftc(al, loc, return_type, m_args);
+        }
+        return ASR::make_IntrinsicScalarFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicScalarFunctions::Ishftc),
+            m_args.p, m_args.n, 0, return_type, m_value);
+    }
+
+    static inline ASR::expr_t* instantiate_Ishftc(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        std::string func_name = "_lcompilers_ishftc_" + type_to_str_python(arg_types[0]);
+        std::string fn_name = scope->get_unique_name(func_name);
+        SymbolTable *fn_symtab = al.make_new<SymbolTable>(scope);
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, new_args.size());
+        ASRBuilder b(al, loc);
+        Vec<ASR::stmt_t*> body; body.reserve(al, 1);
+        SetChar dep; dep.reserve(al, 1);
+        if (scope->get_symbol(fn_name)) {
+            ASR::symbol_t *s = scope->get_symbol(fn_name);
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
+            return b.Call(s, new_args, expr_type(f->m_return_var), nullptr);
+        }
+        fill_func_arg("a", arg_types[0]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        body.push_back(al, b.Assignment(result, r2i32(args[0])));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace Ishftc
+
 
 namespace FMA {
 
@@ -4579,6 +4664,8 @@ namespace IntrinsicScalarFunctionRegistry {
             {&Ifix::instantiate_Ifix, &Ifix::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Idint),
             {&Idint::instantiate_Idint, &Idint::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Ishftc),
+            {&Ishftc::instantiate_Ishftc, &Ishftc::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SignFromValue),
             {&SignFromValue::instantiate_SignFromValue, &SignFromValue::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SymbolicSymbol),
@@ -4732,6 +4819,8 @@ namespace IntrinsicScalarFunctionRegistry {
             "idint"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Ifix),
             "ifix"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Ishftc),
+            "ishftc"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SignFromValue),
             "signfromvalue"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SymbolicSymbol),
@@ -4838,6 +4927,7 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"sngl", {&Sngl::create_Sngl, &Sngl::eval_Sngl}},
                 {"ifix", {&Ifix::create_Ifix, &Ifix::eval_Ifix}},
                 {"idint", {&Idint::create_Idint, &Idint::eval_Idint}},
+                {"ishftc", {&Ishftc::create_Ishftc, &Ishftc::eval_Ishftc}},
                 {"Symbol", {&SymbolicSymbol::create_SymbolicSymbol, &SymbolicSymbol::eval_SymbolicSymbol}},
                 {"SymbolicAdd", {&SymbolicAdd::create_SymbolicAdd, &SymbolicAdd::eval_SymbolicAdd}},
                 {"SymbolicSub", {&SymbolicSub::create_SymbolicSub, &SymbolicSub::eval_SymbolicSub}},

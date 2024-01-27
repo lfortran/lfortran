@@ -635,6 +635,7 @@ RUN(NAME intrinsics_126 LABELS gfortran llvm) # random_number
 RUN(NAME intrinsics_127 LABELS gfortran llvm)#ifix
 RUN(NAME intrinsics_128 LABELS gfortran llvm) # idint
 RUN(NAME intrinsics_129 LABELS gfortran llvm)#abs
+RUN(NAME intrinsics_130 LABELS gfortran llvm)#ishftc
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
