@@ -118,9 +118,7 @@ struct IntrinsicProcedures {
             {"zlog", {m_math, &eval_zlog, true}},
             {"erf", {m_math, &eval_erf, true}},
             {"erfc", {m_math, &eval_erfc, true}},
-            {"iabs", {m_math, &not_implemented, true}},
             {"datan", {m_math, &eval_datan, true}},
-            {"dabs", {m_math2, &eval_dabs, true}},
             {"dcos", {m_math, &eval_dcos, true}},
             {"dsin", {m_math, &eval_dsin, true}},
             {"log10", {m_math, &eval_log10, true}},
@@ -565,24 +563,6 @@ TRIG2(atan, datan)
         return eval_2args_ri(al, loc, args, compiler_options,
             &IntrinsicProcedures::lfortran_max,
             &IntrinsicProcedures::lfortran_max_i);
-    }
-
-    static ASR::expr_t *eval_dabs(Allocator &al, const Location &loc,
-            Vec<ASR::expr_t*> &args, const CompilerOptions &
-            ) {
-        LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
-        if (args.size() != 1) {
-            throw SemanticError("Intrinsic abs function accepts exactly 1 argument", loc);
-        }
-        ASR::expr_t* trig_arg = args[0];
-        ASR::ttype_t* t = ASRUtils::expr_type(args[0]);
-        if (ASR::is_a<ASR::Real_t>(*t)) {
-            double rv = ASR::down_cast<ASR::RealConstant_t>(trig_arg)->m_r;
-            double val = std::abs(rv);
-            return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, val, t));
-        } else {
-            throw SemanticError("Argument of the dabs function must be Real", loc);
-        }
     }
 
     static ASR::expr_t *eval_range(Allocator &al, const Location &loc,
