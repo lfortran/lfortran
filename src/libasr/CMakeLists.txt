@@ -112,3 +112,10 @@ endif()
 if (WITH_LLVM)
     target_link_libraries(asr p::llvm)
 endif()
+
+# Install the dwarf_convert.py and dat_convert.py
+install(
+    FILES dwarf_convert.py dat_convert.py
+    PERMISSIONS OWNER_EXECUTE OWNER_READ
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/share/lfortran
+)
