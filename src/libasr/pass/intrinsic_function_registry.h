@@ -2236,88 +2236,80 @@ namespace Idint {
 
 } // namespace Idint
 
-#include <iostream>
-
 namespace Ishftc {
 
-    static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x,
-            diag::Diagnostics& diagnostics) {
+    static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args == 2,
-            "ASR Verify: Call `ishftc` must have exactly two arguments",
+            "Call to `Ishftc` must have exactly two arguments",
             x.base.base.loc, diagnostics);
-        ASR::ttype_t *type_i = ASRUtils::expr_type(x.m_args[0]);
-        ASR::ttype_t *type_shift = ASRUtils::expr_type(x.m_args[1]);
-        int kind_i = ASRUtils::extract_kind_from_ttype_t(type_i);
-        int kind_shift = ASRUtils::extract_kind_from_ttype_t(type_shift);
-
-        ASRUtils::require_impl(ASRUtils::is_integer(*type_i) && kind_i == 4,
-            "ASR Verify: First argument to `ishftc` must be of integer type (kind 4)",
-            x.base.base.loc, diagnostics);
-
-        ASRUtils::require_impl(ASRUtils::is_integer(*type_shift) && kind_shift == 4,
-            "ASR Verify: Second argument to `ishftc` must be of integer type (kind 4)",
+        ASR::ttype_t *type1 = ASRUtils::expr_type(x.m_args[0]);
+        ASR::ttype_t *type2 = ASRUtils::expr_type(x.m_args[1]);
+        ASRUtils::require_impl((is_integer(*type1) && is_integer(*type2)),
+            "Arguments to `Ishftc` must be of integer type",
             x.base.base.loc, diagnostics);
     }
 
     static ASR::expr_t *eval_Ishftc(Allocator &al, const Location &loc,
-            ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args) {
-        int val = ASR::down_cast<ASR::IntegerConstant_t>(expr_value(args[0]))->m_n;
-        int shift = ASR::down_cast<ASR::IntegerConstant_t>(expr_value(args[1]))->m_n;
-        int result = (val << shift) | (val >> (32 - shift)); // Assuming 32-bit integers
-        return make_ConstantWithType(make_IntegerConstant_t, result, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), loc);
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
+        int64_t val = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        int64_t shift = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        // Handle negative shift (circular shift to the right)
+        int result;
+        if (shift < 0) {
+            shift = -shift;  // Make shift positive
+            int num_bits = sizeof(int) * 8;
+            shift = shift % num_bits;  // Ensure shift is within the range of bits
+            result = (val >> shift) | (val << (num_bits - shift));
+        } else {
+            // Perform circular shift to the left for positive shift values
+            result = (val << shift) | (val >> (32 - shift)); // Assuming 32-bit integers
+        }
+        return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
     }
 
-    static inline ASR::asr_t* create_Ishftc(
-            Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
+    static inline ASR::asr_t* create_Ishftc(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args,
             const std::function<void (const std::string &, const Location &)> err) {
-        ASR::ttype_t* return_type = int32;
-        if ( args.n != 2 ) {
-            err("Intrinsic `ishftc` accepts exactly two arguments", loc);
-        } else if ( !ASRUtils::is_integer(*expr_type(args[0])) ) {
-            err("First argument of the `ishftc` must be of integer type", loc);
-        } else if ( !ASRUtils::is_integer(*expr_type(args[1])) ) {
-            err("Second argument of the `ishftc` must be of integer type", loc);
+        if (args.size() != 2) {
+            err("Intrinsic `Ishftc` function accepts exactly 2 arguments", loc);
         }
-        Vec<ASR::expr_t *> m_args; m_args.reserve(al, 2);
-        m_args.push_back(al, args[0]);
-        m_args.push_back(al, args[1]);
+        ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
+        ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
+        if (!ASRUtils::is_integer(*type1) || !ASRUtils::is_integer(*type2)) {
+            err("Arguments of the `Ishftc` function must be Integer",
+                args[0]->base.loc);
+        }
+
         ASR::expr_t *m_value = nullptr;
-        if (all_args_evaluated(m_args)) {
-            m_value = eval_Ishftc(al, loc, return_type, m_args);
+        if (all_args_evaluated(args)) {
+            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 2);
+            arg_values.push_back(al, expr_value(args[0]));
+            arg_values.push_back(al, expr_value(args[1]));
+            m_value = eval_Ishftc(al, loc, expr_type(args[0]), arg_values);
         }
         return ASR::make_IntrinsicScalarFunction_t(al, loc,
             static_cast<int64_t>(IntrinsicScalarFunctions::Ishftc),
-            m_args.p, m_args.n, 0, return_type, m_value);
+            args.p, args.n, 0, ASRUtils::expr_type(args[0]), m_value);
     }
 
     static inline ASR::expr_t* instantiate_Ishftc(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        std::string func_name = "_lcompilers_ishftc_" + type_to_str_python(arg_types[0]);
-        std::string fn_name = scope->get_unique_name(func_name);
-        SymbolTable *fn_symtab = al.make_new<SymbolTable>(scope);
-        Vec<ASR::expr_t*> args;
-        args.reserve(al, new_args.size());
-        ASRBuilder b(al, loc);
-        Vec<ASR::stmt_t*> body; body.reserve(al, 1);
-        SetChar dep; dep.reserve(al, 1);
-        if (scope->get_symbol(fn_name)) {
-            ASR::symbol_t *s = scope->get_symbol(fn_name);
-            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
-            return b.Call(s, new_args, expr_type(f->m_return_var), nullptr);
-        }
-        fill_func_arg("a", arg_types[0]);
+        declare_basic_variables("_lcompilers_Ishftc_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
-        body.push_back(al, b.Assignment(result, r2i32(args[0])));
+        ASR::expr_t *two = i(2, arg_types[0]);
+        body.push_back(al, b.Assignment(result, i_tMul(args[0], iPow(two, args[1], arg_types[0]), arg_types[0])));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
+
     }
 
 } // namespace Ishftc
-
 
 namespace FMA {
 
