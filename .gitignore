@@ -4,6 +4,7 @@ src/bin/lfortran
 src/bin/cpptranslate
 src/bin/parse
 src/bin/parse2
+src/bin/parse3
 src/lfortran/parser/parser.output
 tests/output
 src/lfortran/tests/test_asm
