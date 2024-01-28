@@ -1846,6 +1846,7 @@ namespace Ishft {
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         int64_t val;
         if(val2<=0){
+            val2 = val2 * -1;
             val = val1 >> val2;
         } else {
             val = val1 << val2;
@@ -1887,6 +1888,7 @@ namespace Ishft {
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
         * r = ishft(x, y)
+        * r = ( y > 0 ) ? ( x * 2**y ) : ( x / 2**y )
         */
         ASR::expr_t *two = i(2, arg_types[0]);
         if( iLtE(args[1], 0) ){
