@@ -244,10 +244,13 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
             single_line_comment = "//" [^\n\x00]*;
             whitespace = [ \t\v\r]+;
             digit = [0-9];
+            digits = digit+;
+            int_oct = "0"[oO]([0-7] | "_" [0-7])+;
+            int_bin = "0"[bB]([01] | "_" [01])+;
+            int_hex = "0"[xX]([0-9a-fA-F] | "_" [0-9a-fA-F])+;
+            int = digits | int_oct | int_bin | int_hex;
             char =  [a-zA-Z_];
             name = char (char | digit)*;
-
-            int = digit+;
 
             * {
                 if (!branch_enabled) continue;
