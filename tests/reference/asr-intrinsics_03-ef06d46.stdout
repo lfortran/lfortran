@@ -33,6 +33,26 @@
                                     real64
                                     Public
                                 ),
+                            i:
+                                (Variable
+                                    2
+                                    i
+                                    []
+                                    Local
+                                    (IntegerUnaryMinus
+                                        (IntegerConstant 12 (Integer 4))
+                                        (Integer 4)
+                                        (IntegerConstant -12 (Integer 4))
+                                    )
+                                    (IntegerConstant -12 (Integer 4))
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
                             r1:
                                 (Variable
                                     2
@@ -336,6 +356,36 @@
                                 0.000000
                                 (Real 8)
                             )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        [(IntrinsicScalarFunction
+                            Abs
+                            [(Var 2 i)]
+                            0
+                            (Integer 4)
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (IntrinsicScalarFunction
+                                Abs
+                                [(Var 2 i)]
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 12 (Integer 4))
                             (Logical 4)
                             ()
                         )
