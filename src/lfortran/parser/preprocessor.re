@@ -45,6 +45,28 @@ CPreprocessor::CPreprocessor(CompilerOptions &compiler_options)
         md.expansion = "1";
         macro_definitions["__linux__"] = md;
     }
+#ifdef __ELF__
+    md.expansion = std::to_string(__ELF__);
+    macro_definitions["__ELF__"] = md;
+#endif
+#ifdef __SIZEOF_POINTER__
+    md.expansion = std::to_string(__SIZEOF_POINTER__);
+    macro_definitions["__SIZEOF_POINTER__"] = md;
+#endif
+#ifdef __SIZEOF_SIZE_T__
+    md.expansion = std::to_string(__SIZEOF_SIZE_T__);
+    macro_definitions["__SIZEOF_SIZE_T__"] = md;
+#endif
+#ifdef __linux__
+#ifdef __x86_64__
+    md.expansion = std::to_string(__x86_64__);
+    macro_definitions["__x86_64__"] = md;
+#endif
+#ifdef __i386__
+    md.expansion = std::to_string(__i386__);
+    macro_definitions["__i386__"] = md;
+#endif
+#endif
     for (auto &d : compiler_options.c_preprocessor_defines) {
         std::size_t idx = d.find("=");
         if (idx != std::string::npos) {
