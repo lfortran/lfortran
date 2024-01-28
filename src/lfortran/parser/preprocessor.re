@@ -704,6 +704,20 @@ void get_next_token(unsigned char *&cur, CPPTokenType &type, std::string &str) {
             int {
                 str = token(tok, cur);
                 type = CPPTokenType::TK_INTEGER;
+                if (str.size() > 2 && isalpha(str[1])) {
+                    char ch = str[1];
+                    str = str.substr(2);
+                    if (ch == 'x' || ch == 'X') {
+                        int64_t hex_int = std::stoll(str, nullptr, 16);
+                        str = std::to_string(hex_int);
+                    } else if (ch == 'o' || ch == 'O') {
+                        int64_t oct_int = std::stoll(str, nullptr, 8);
+                        str = std::to_string(oct_int);
+                    } else {
+                        int64_t bin_int = std::stoll(str, nullptr, 2);
+                        str = std::to_string(bin_int);
+                    }
+                }
                 return;
             }
             name {
