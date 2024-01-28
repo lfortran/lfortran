@@ -3094,10 +3094,7 @@ public:
                 if( m_value && m_value->type == ASR::exprType::StringConstant ) {
                     ASR::StringConstant_t *m_str = ASR::down_cast<ASR::StringConstant_t>(m_value);
                     std::string sliced_str;
-                    int str_length = 0;
-                    while( m_str->m_s[str_length] != '\0' ) {
-                        str_length += 1;
-                    }
+                    int str_length = strlen(m_str->m_s);
                     if( start <= 0 ) {
                         throw SemanticError("Substring `start` is less than one",
                                     loc);
