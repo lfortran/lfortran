@@ -1892,7 +1892,8 @@ namespace Ishft {
         */
         ASR::expr_t *two = i(2, arg_types[0]);
         if( iLtE(args[1], 0) ){
-            body.push_back(al, b.Assignment(result, i_tDiv(args[0], iPow(two, args[1], arg_types[0]), arg_types[0])));
+            ASR::expr_t *m_one = i(-1, arg_types[0]);
+            body.push_back(al, b.Assignment(result, i_tDiv(args[0], iPow(two, iMul(m_one, args[1]), arg_types[0]), arg_types[0])));
         } else {
             body.push_back(al, b.Assignment(result, i_tMul(args[0], iPow(two, args[1], arg_types[0]), arg_types[0])));
         }
