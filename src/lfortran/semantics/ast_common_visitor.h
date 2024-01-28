@@ -3096,8 +3096,8 @@ public:
                     std::string sliced_str;
                     int str_length = 0;
                     while( m_str->m_s[str_length] != '\0' ) {
-                            str_length += 1;
-                        }
+                        str_length += 1;
+                    }
                     if( start <= 0 ) {
                         throw SemanticError("Substring `start` is less than one",
                                     loc);
