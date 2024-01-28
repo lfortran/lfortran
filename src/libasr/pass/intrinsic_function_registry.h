@@ -1891,12 +1891,12 @@ namespace Ishft {
         * r = ( y > 0 ) ? ( x * 2**y ) : ( x / 2**y )
         */
         ASR::expr_t *two = i(2, arg_types[0]);
-        if( iLtE(args[1], 0) ){
-            ASR::expr_t *m_one = i(-1, arg_types[0]);
-            body.push_back(al, b.Assignment(result, i_tDiv(args[0], iPow(two, iMul(m_one, args[1]), arg_types[0]), arg_types[0])));
-        } else {
-            body.push_back(al, b.Assignment(result, i_tMul(args[0], iPow(two, args[1], arg_types[0]), arg_types[0])));
-        }
+        ASR::expr_t *m_one = i(-1, arg_types[0]);
+        body.push_back(al, b.If(iLtE(args[1], i(0, arg_types[0])), {
+            b.Assignment(result, i_tDiv(args[0], iPow(two, iMul(m_one, args[1]), arg_types[0]), arg_types[0]))
+        }, {
+            b.Assignment(result, i_tMul(args[0], iPow(two, args[1], arg_types[0]), arg_types[0]))
+        }));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
