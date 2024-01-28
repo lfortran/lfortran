@@ -3103,7 +3103,7 @@ public:
                                     loc);
                     }
                     if(end > str_length) {
-                        throw SemanticError("Error: Substring end index at (1) exceeds the string length",
+                        throw SemanticError("Error: Substring end index exceeds the string length",
                                     loc);
                     } 
                     if( end == -1 && !flag ) {
