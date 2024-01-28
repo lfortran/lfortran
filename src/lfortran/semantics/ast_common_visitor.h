@@ -721,7 +721,7 @@ public:
         {"ishft", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
     };
 
-    std::map<std::string, std::string> double_precision_intrinsics = {
+    std::map<std::string, std::string> intrinsic_mapping = {
         {"dabs", "abs"},
 
         {"dsinh", "sinh"},
@@ -4686,7 +4686,7 @@ public:
     }
 
     bool is_intrinsic_registry_function(std::string var_name) {
-        bool is_double_precision_intrinsic = double_precision_intrinsics.count(var_name);
+        bool is_double_precision_intrinsic = intrinsic_mapping.count(var_name);
         if (intrinsic_procedures_as_asr_nodes.is_intrinsic_present_in_ASR(var_name) ||
             intrinsic_procedures_as_asr_nodes.is_kind_based_selection_required(var_name) ||
             ASRUtils::IntrinsicScalarFunctionRegistry::is_intrinsic_function(var_name) ||
@@ -4701,11 +4701,11 @@ public:
     ASR::symbol_t* intrinsic_as_node(const AST::FuncCallOrArray_t &x,
                                      bool& is_function) {
         std::string var_name = to_lower(x.m_func);
-        bool is_double_precision_intrinsic = double_precision_intrinsics.count(var_name);
+        bool is_double_precision_intrinsic = intrinsic_mapping.count(var_name);
         if( is_intrinsic_registry_function(var_name)) {
             is_function = false;
             if (is_double_precision_intrinsic) {
-                var_name = double_precision_intrinsics[var_name];
+                var_name = intrinsic_mapping[var_name];
             }
             if( ASRUtils::IntrinsicScalarFunctionRegistry::is_intrinsic_function(var_name) ||
                     ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ) {
