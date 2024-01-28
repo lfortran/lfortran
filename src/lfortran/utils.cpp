@@ -107,6 +107,31 @@ std::string get_runtime_library_c_header_dir()
     return path;
 }
 
+std::string get_dwarf_scripts_dir()
+{
+    char *env_p = std::getenv("LFORTRAN_DWARF_SCRIPTS_DIR");
+    if (env_p) return std::string(env_p);
+
+    std::string path;
+    int dirname_length;
+    get_executable_path(path, dirname_length);
+    std::string dirname = path.substr(0,dirname_length);
+    if (   endswith(dirname, "src/bin")
+        || endswith(dirname, "src\\bin")
+        || endswith(dirname, "SRC\\BIN")) {
+        // Development version
+        return dirname + "/../libasr";
+    } else if (endswith(dirname, "src/lpython/tests") ||
+               endswith(to_lower(dirname), "src\\lpython\\tests")) {
+        // CTest Tests
+        return dirname + "/../../libasr";
+    } else {
+        // Installed version
+        return dirname + "/../share/lfortran";
+    }
+    return path;
+}
+
 // Decodes the exit status code of the process (in Unix)
 // See `WEXITSTATUS` for more information.
 // https://stackoverflow.com/a/27117435/15913193

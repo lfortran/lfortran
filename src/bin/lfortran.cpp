@@ -1599,10 +1599,10 @@ int link_executable(const std::vector<std::string> &infiles,
 #else
             cmd += "llvm-dwarfdump --debug-line " + file_name + ".out > ";
 #endif
-            std::string libasr_path = LCompilers::LFortran::get_runtime_library_c_header_dir() + "/../";
-            cmd += file_name + "_ldd.txt && (" + libasr_path + "dwarf_convert.py "
+            std::string dwarf_scripts_path = LCompilers::LFortran::get_dwarf_scripts_dir();
+            cmd += file_name + "_ldd.txt && (" + dwarf_scripts_path + "/dwarf_convert.py "
                 + file_name + "_ldd.txt " + file_name + "_lines.txt "
-                + file_name + "_lines.dat && " + libasr_path + "dat_convert.py "
+                + file_name + "_lines.dat && " + dwarf_scripts_path + "/dat_convert.py "
                 + file_name + "_lines.dat)";
             int status = system(cmd.c_str());
             if ( status != 0 ) {
