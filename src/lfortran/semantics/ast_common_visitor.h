@@ -722,6 +722,7 @@ public:
     };
 
     std::map<std::string, std::string> intrinsic_mapping = {
+        {"iabs", "abs"},
         {"dabs", "abs"},
 
         {"dsinh", "sinh"},
