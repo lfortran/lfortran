@@ -10,8 +10,8 @@ program intrinsics_130
     print*, ishft(10_4, 0)
     print*, ishft(10_4, -2)
 
-    ! print*, ishft(x, y1) ! Floating point exception (core dumped)
-    ! if (ishft(x, y1) /= 40) error stop
+    print*, ishft(x, y1)
+    if (ishft(x, y1) /= 40) error stop
     print*, ishft(x, y2)
     if (ishft(x, y2) /= 10) error stop
     print*, ishft(x, y3)
