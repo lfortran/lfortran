@@ -1756,8 +1756,6 @@ namespace Shiftr {
 
 } // namespace Shiftr
 
-
-
 namespace Shiftl {
 
     static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
@@ -1829,17 +1827,6 @@ namespace Shiftl {
 
 namespace Ishft {
 
-    static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
-        ASRUtils::require_impl(x.n_args == 2,
-            "Call to `ishft` must have exactly two arguments",
-            x.base.base.loc, diagnostics);
-        ASR::ttype_t *type1 = ASRUtils::expr_type(x.m_args[0]);
-        ASR::ttype_t *type2 = ASRUtils::expr_type(x.m_args[1]);
-        ASRUtils::require_impl((is_integer(*type1) && is_integer(*type2)),
-            "Arguments to `ishft` must be of integer type",
-            x.base.base.loc, diagnostics);
-    }
-
     static ASR::expr_t *eval_Ishft(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
@@ -1888,7 +1875,11 @@ namespace Ishft {
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
         * r = ishft(x, y)
-        * r = ( y > 0 ) ? ( x * 2**y ) : ( x / 2**y )
+        * if ( y <= 0) {
+        *   r = x / 2 ** ( -1 * y )
+        * } else {
+        *   r = x * 2 ** y
+        * }
         */
         ASR::expr_t *two = i(2, arg_types[0]);
         ASR::expr_t *m_one = i(-1, arg_types[0]);
@@ -1902,7 +1893,6 @@ namespace Ishft {
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
-
     }
 
 } // namespace Ishft
