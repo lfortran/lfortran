@@ -703,6 +703,13 @@ void get_next_token(unsigned char *&cur, CPPTokenType &type, std::string &str) {
                 type = CPPTokenType::TK_INTEGER;
                 return;
             }
+            "0x" int {
+                str = token(tok, cur+2);
+                int64_t hex_int = std::stoll(str, nullptr, 16);
+                str = std::to_string(hex_int);
+                type = CPPTokenType::TK_INTEGER;
+                return;
+            }
             name {
                 str = token(tok, cur);
                 type = CPPTokenType::TK_NAME;
