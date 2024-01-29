@@ -73,7 +73,6 @@ struct IntrinsicProcedures {
     IntrinsicProcedures() {
         comptime_eval_map = {
             // Arguments can be evaluated or not
-            {"kind", {m_kind, &eval_kind, false}},
             // real and int get transformed into ExplicitCast
             // in intrinsic_function_transformation()
             // So we shouldn't even encounter them here
@@ -271,41 +270,6 @@ struct IntrinsicProcedures {
                 + "' compile time evaluation is not implemented yet",
                 loc);
         }
-    }
-
-    static ASR::expr_t *eval_kind(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        // TODO: Refactor to allow early return
-        // kind_num --> value {4, 8, etc.}
-        int64_t kind_num = 4; // Default
-        ASR::expr_t* kind_expr = args[0];
-        // TODO: Check that the expression reduces to a valid constant expression (10.1.12)
-        switch( kind_expr->type ) {
-            case ASR::exprType::IntegerConstant: {
-                kind_num = ASR::down_cast<ASR::Integer_t>(ASR::down_cast<ASR::IntegerConstant_t>(kind_expr)->m_type)->m_kind;
-                break;
-            }
-            case ASR::exprType::RealConstant:{
-                kind_num = ASR::down_cast<ASR::Real_t>(ASR::down_cast<ASR::RealConstant_t>(kind_expr)->m_type)->m_kind;
-                break;
-            }
-            case ASR::exprType::LogicalConstant:{
-                kind_num = ASR::down_cast<ASR::Logical_t>(ASR::down_cast<ASR::LogicalConstant_t>(kind_expr)->m_type)->m_kind;
-                break;
-            }
-            case ASR::exprType::Var : {
-                kind_num = ASRUtils::extract_kind<SemanticError>(kind_expr, loc);
-                break;
-            }
-            default: {
-                std::string msg = R"""(Only Integer literals or expressions which reduce to constant Integer are accepted as kind parameters.)""";
-                throw SemanticError(msg, loc);
-                break;
-            }
-        }
-        ASR::ttype_t *type = ASRUtils::TYPE(
-                ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
-        return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc,
-                kind_num, type));
     }
 
     static ASR::expr_t *eval_bit_size(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
