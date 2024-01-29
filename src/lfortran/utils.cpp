@@ -69,22 +69,16 @@ std::string get_runtime_library_dir()
     char *env_p = std::getenv("LFORTRAN_RUNTIME_LIBRARY_DIR");
     if (env_p) return env_p;
 
-    std::string path;
-    int dirname_length;
-    get_executable_path(path, dirname_length);
-    std::string dirname = path.substr(0,dirname_length);
-    if (   endswith(dirname, "src/bin")
-        || endswith(dirname, "src\\bin")
-        || endswith(dirname, "SRC\\BIN")) {
-        // Development version
-        return dirname + "/../runtime";
-    } else if (endswith(dirname, "src/lfortran/tests") ||
-               endswith(to_lower(dirname), "src\\lfortran\\tests")) {
-        // CTest Tests
-        return dirname + "/../../runtime";
-    } else {
-        // Installed version
-        return dirname + "/" + CMAKE_INSTALL_LIBDIR_RELATIVE;
+    switch (execution_mode)
+    {
+        case ExecutionMode::LFortranDevelopment:
+            return lfortran_exec_path_dir + "/../runtime";
+        case ExecutionMode::LFortranCtest:
+            return lfortran_exec_path_dir + "/../../runtime";
+        case ExecutionMode::LFortranInstalled:
+            return lfortran_exec_path_dir + "/" + CMAKE_INSTALL_LIBDIR_RELATIVE;
+        default:
+            return "";
     }
 }
 
@@ -93,11 +87,7 @@ std::string get_runtime_library_header_dir()
     char *env_p = std::getenv("LFORTRAN_RUNTIME_LIBRARY_HEADER_DIR");
     if (env_p) return env_p;
 
-    std::string path;
-    int dirname_length;
-    get_executable_path(path, dirname_length);
-    std::string dirname = path.substr(0,dirname_length);
-    return dirname + "/" + CMAKE_INSTALL_INCLUDEDIR_RELATIVE + "/lfortran/impure";
+    return lfortran_exec_path_dir + "/" + CMAKE_INSTALL_INCLUDEDIR_RELATIVE + "/lfortran/impure";
 }
 
 std::string get_runtime_library_c_header_dir()
@@ -105,27 +95,17 @@ std::string get_runtime_library_c_header_dir()
     char *env_p = std::getenv("LFORTRAN_RUNTIME_LIBRARY_HEADER_DIR");
     if (env_p) return env_p;
 
-    // The header file is in src/libasr/runtime for development, but in impure
-    // in installed version
-    std::string path;
-    int dirname_length;
-    get_executable_path(path, dirname_length);
-    std::string dirname = path.substr(0,dirname_length);
-    if (   endswith(dirname, "src/bin")
-        || endswith(dirname, "src\\bin")
-        || endswith(dirname, "SRC\\BIN")) {
-        // Development version
-        return dirname + "/../libasr/runtime";
-    } else if (endswith(dirname, "src/lpython/tests") ||
-               endswith(to_lower(dirname), "src\\lpython\\tests")) {
-        // CTest Tests
-        return dirname + "/../../libasr/runtime";
-    } else {
-        // Installed version
-        return dirname + "/" + CMAKE_INSTALL_INCLUDEDIR_RELATIVE + "/lfortran/impure";
+    switch (execution_mode)
+    {
+        case ExecutionMode::LFortranDevelopment:
+            return lfortran_exec_path_dir + "/../libasr/runtime";
+        case ExecutionMode::LFortranCtest:
+            return lfortran_exec_path_dir + "/../../libasr/runtime";
+        case ExecutionMode::LFortranInstalled:
+            return lfortran_exec_path_dir + "/" + CMAKE_INSTALL_INCLUDEDIR_RELATIVE + "/lfortran/impure";
+        default:
+            return "";
     }
-
-    return path;
 }
 
 std::string get_dwarf_scripts_dir()
@@ -133,24 +113,17 @@ std::string get_dwarf_scripts_dir()
     char *env_p = std::getenv("LFORTRAN_DWARF_SCRIPTS_DIR");
     if (env_p) return std::string(env_p);
 
-    std::string path;
-    int dirname_length;
-    get_executable_path(path, dirname_length);
-    std::string dirname = path.substr(0,dirname_length);
-    if (   endswith(dirname, "src/bin")
-        || endswith(dirname, "src\\bin")
-        || endswith(dirname, "SRC\\BIN")) {
-        // Development version
-        return dirname + "/../libasr";
-    } else if (endswith(dirname, "src/lpython/tests") ||
-               endswith(to_lower(dirname), "src\\lpython\\tests")) {
-        // CTest Tests
-        return dirname + "/../../libasr";
-    } else {
-        // Installed version
-        return dirname + "/../share/lfortran";
+    switch (execution_mode)
+    {
+        case ExecutionMode::LFortranDevelopment:
+            return lfortran_exec_path_dir + "/../libasr";
+        case ExecutionMode::LFortranCtest:
+            return lfortran_exec_path_dir + "/../../libasr";
+        case ExecutionMode::LFortranInstalled:
+            return lfortran_exec_path_dir + "/../share/lfortran";
+        default:
+            return "";
     }
-    return path;
 }
 
 // Decodes the exit status code of the process (in Unix)
