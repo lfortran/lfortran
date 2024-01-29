@@ -2329,7 +2329,7 @@ namespace Ishftc {
         int result;
         if (shift < 0) {
             shift = -shift;  
-            result = (val >>shift) | (val << (kind - shift));
+            result = (val >> shift) | (val << (kind - shift));
         } else {
             result = (val << shift) | (val >> (kind - shift)); 
         }
@@ -2357,7 +2357,7 @@ namespace Ishftc {
             int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(arg_values[0])->m_type);
             int bits = 8*kind;
             if (bits < shift) {
-                err("The absolute value of SHIFT at (1) must be less than or equal to BIT_SIZE('I')",
+                err("The absolute value of SHIFT argument must be less than or equal to BIT_SIZE('I')",
                 args[0]->base.loc);
             }
             m_value = eval_Ishftc(al, loc, expr_type(args[0]), arg_values);
@@ -2377,27 +2377,9 @@ namespace Ishftc {
         int kind = 8*ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
         ASR::expr_t *two = i(2, arg_types[0]);
         ASR::expr_t *kind_expr = i(kind, arg_types[0]);
-        body.push_back(al, b.Assignment(result,
-            b.Or(
-                i_tMul(
-                    args[0],
-                    iPow(two, args[1], arg_types[0]), arg_types[0]
-                ),
-                i_tDiv(
-                    args[0],
-                    iPow(
-                        two,
-                        i_tSub(kind_expr, args[1], arg_types[0]),
-                        arg_types[0]
-                    ),
-                    arg_types[0]
-                ),
-                loc
-            )
-        ));
-
+        body.push_back(al, b.Assignment(result,b.Or(i_tMul(args[0],iPow(two, args[1], arg_types[0]), arg_types[0]),i_tDiv(args[0],iPow(two,i_tSub(kind_expr, args[1], arg_types[0]),arg_types[0]),arg_types[0]),loc)));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
 
