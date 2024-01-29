@@ -95,9 +95,7 @@ struct IntrinsicProcedures {
             {"ceiling", {m_math2, &eval_ceiling, true}},
             {"nint", {m_math2, &eval_nint, true}},
             {"modulo", {m_math2, &eval_modulo, true}},
-            {"min", {m_math2, &eval_min, true}},
             {"max", {m_math2, &eval_max, true}},
-            {"min0", {m_math2, &eval_min0, true}},
             {"dmin1", {m_math2, &eval_dmin1, true}},
             {"max0", {m_math2, &eval_max0, true}},
             {"dmax1", {m_math2, &eval_dmax1, true}},
@@ -589,19 +587,7 @@ TRIG2(atan, datan)
         return std::fmin(x, y);
     }
 
-    static ASR::expr_t *eval_min(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        return eval_2args_ri(al, loc, args, compiler_options,
-            &IntrinsicProcedures::lfortran_min,
-            &IntrinsicProcedures::lfortran_min_i);
-    }
-
     static ASR::expr_t *eval_dmin1(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        return eval_2args_ri(al, loc, args, compiler_options,
-            &IntrinsicProcedures::lfortran_min,
-            &IntrinsicProcedures::lfortran_min_i);
-    }
-
-    static ASR::expr_t *eval_min0(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
         return eval_2args_ri(al, loc, args, compiler_options,
             &IntrinsicProcedures::lfortran_min,
             &IntrinsicProcedures::lfortran_min_i);
