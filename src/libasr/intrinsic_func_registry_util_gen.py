@@ -106,6 +106,11 @@ intrinsic_funcs_args = {
         {
             "args": [("int", "int")]
         },
+    ],
+    "Ishftc": [
+        {
+            "args": [("int", "int")]
+        },
     ]
 }
 
