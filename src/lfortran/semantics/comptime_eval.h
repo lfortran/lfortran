@@ -126,16 +126,9 @@ struct IntrinsicProcedures {
             {"log10", {m_math, &eval_log10, true}},
             {"dlog10", {m_math, &eval_dlog10, true}},
 
-            {"asin", {m_math, &eval_asin, true}},
-            {"acos", {m_math, &eval_acos, true}},
-            {"atan", {m_math, &eval_atan, true}},
-
             {"asinh", {m_math, &eval_asinh, true}},
             {"acosh", {m_math, &eval_acosh, true}},
             {"atanh", {m_math, &eval_atanh, true}},
-
-            {"atan2", {m_math, &eval_atan2, true}},
-            {"sign", {m_math, &not_implemented, false}},
 
             {"dot_product", {m_math, &not_implemented, false}},
             {"conjg", {m_math, &not_implemented, false}},
@@ -176,7 +169,6 @@ struct IntrinsicProcedures {
             {"ibits", {m_bit, &not_implemented, true}},
             {"count", {m_bit, &not_implemented, false}},
             {"achar", {m_builtin, &eval_achar, true}},
-            {"len", {m_builtin, &eval_len, false}},
             {"move_alloc", {m_builtin, &not_implemented, false}},
             {"shape", {m_builtin, &not_implemented, false}},
             {"reshape", {m_builtin, &not_implemented, false}},
@@ -467,7 +459,6 @@ struct IntrinsicProcedures {
 
 TRIG(asin)
 TRIG(acos)
-TRIG(atan)
 TRIG(asinh)
 TRIG(acosh)
 TRIG(atanh)
@@ -500,22 +491,6 @@ TRIG2(atan, datan)
     }
     static ASR::expr_t *eval_log10(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
         return eval_trig(al, loc, args, compiler_options, &log10, nullptr);
-    }
-    static ASR::expr_t *eval_atan2(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        return eval_2args(al, loc, args, compiler_options, &atan2);
-    }
-
-    static ASR::expr_t *eval_len(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        if( !ASRUtils::all_args_evaluated(args) ) {
-            return nullptr;
-        }
-        LCOMPILERS_ASSERT(args.size() == 1 || args.size() == 2);
-        ASR::expr_t *arg_value = ASRUtils::expr_value(args[0]);
-        LCOMPILERS_ASSERT(arg_value->type == ASR::exprType::StringConstant);
-        ASR::StringConstant_t *value_str = ASR::down_cast<ASR::StringConstant_t>(arg_value);
-        int64_t len_str = to_lower(value_str->m_s).length();
-        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
-        return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, len_str, type));
     }
 
     static double lfortran_modulo(double x, double y) {
