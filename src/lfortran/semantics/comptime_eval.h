@@ -73,7 +73,6 @@ struct IntrinsicProcedures {
     IntrinsicProcedures() {
         comptime_eval_map = {
             // Arguments can be evaluated or not
-            {"kind", {m_kind, &eval_kind, false}},
             // real and int get transformed into ExplicitCast
             // in intrinsic_function_transformation()
             // So we shouldn't even encounter them here
@@ -96,9 +95,7 @@ struct IntrinsicProcedures {
             {"ceiling", {m_math2, &eval_ceiling, true}},
             {"nint", {m_math2, &eval_nint, true}},
             {"modulo", {m_math2, &eval_modulo, true}},
-            {"min", {m_math2, &eval_min, true}},
             {"max", {m_math2, &eval_max, true}},
-            {"min0", {m_math2, &eval_min0, true}},
             {"dmin1", {m_math2, &eval_dmin1, true}},
             {"max0", {m_math2, &eval_max0, true}},
             {"dmax1", {m_math2, &eval_dmax1, true}},
@@ -121,35 +118,17 @@ struct IntrinsicProcedures {
             {"zlog", {m_math, &eval_zlog, true}},
             {"erf", {m_math, &eval_erf, true}},
             {"erfc", {m_math, &eval_erfc, true}},
-            {"abs", {m_math, &not_implemented, true}},  // Implemented using
-            {"iabs", {m_math, &not_implemented, true}}, // IntrinsicFunction
+            {"iabs", {m_math, &not_implemented, true}},
             {"datan", {m_math, &eval_datan, true}},
             {"dabs", {m_math2, &eval_dabs, true}},
             {"dcos", {m_math, &eval_dcos, true}},
             {"dsin", {m_math, &eval_dsin, true}},
-            {"log_gamma", {m_math, &eval_log_gamma, true}},
             {"log10", {m_math, &eval_log10, true}},
             {"dlog10", {m_math, &eval_dlog10, true}},
-
-            //{"sin", {m_trig, &eval_sin, true}},
-            {"sin", {m_math, &eval_sin, true}},
-            {"cos", {m_math, &eval_cos, true}},
-            {"tan", {m_math, &eval_tan, true}},
-
-            {"asin", {m_math, &eval_asin, true}},
-            {"acos", {m_math, &eval_acos, true}},
-            {"atan", {m_math, &eval_atan, true}},
-
-            {"sinh", {m_math, &eval_sinh, true}},
-            {"cosh", {m_math, &eval_cosh, true}},
-            {"tanh", {m_math, &eval_tanh, true}},
 
             {"asinh", {m_math, &eval_asinh, true}},
             {"acosh", {m_math, &eval_acosh, true}},
             {"atanh", {m_math, &eval_atanh, true}},
-
-            {"atan2", {m_math, &eval_atan2, true}},
-            {"sign", {m_math, &not_implemented, false}},
 
             {"dot_product", {m_math, &not_implemented, false}},
             {"conjg", {m_math, &not_implemented, false}},
@@ -160,10 +139,6 @@ struct IntrinsicProcedures {
             {"ibclr", {m_bit, &eval_ibclr, true}},
             {"ibset", {m_bit, &eval_ibset, true}},
             {"btest", {m_bit, &not_implemented, false}},
-            // Elemental function
-            {"ishft", {m_bit, &eval_ishft, true}},
-            {"shiftr", {m_bit, &not_implemented, true}},
-            {"shiftl", {m_bit, &not_implemented, true}},
 
             // These will fail if used in symbol table visitor, but will be
             // left unevaluated in body visitor
@@ -176,7 +151,6 @@ struct IntrinsicProcedures {
             {"lge", {m_string, &not_implemented, false}},
             {"lle", {m_string, &not_implemented, false}},
             {"len_adjustl", {m_string, &not_implemented, false}},
-            {"repeat", {m_string, &not_implemented, false}},
             {"new_line", {m_string, &eval_new_line, false}},
             {"scan_kind4", {m_string, &not_implemented, false}},
             {"scan_kind8", {m_string, &not_implemented, false}},
@@ -195,13 +169,10 @@ struct IntrinsicProcedures {
             {"ibits", {m_bit, &not_implemented, true}},
             {"count", {m_bit, &not_implemented, false}},
             {"achar", {m_builtin, &eval_achar, true}},
-            {"len", {m_builtin, &eval_len, false}},
             {"move_alloc", {m_builtin, &not_implemented, false}},
             {"shape", {m_builtin, &not_implemented, false}},
             {"reshape", {m_builtin, &not_implemented, false}},
             {"present", {m_builtin, &not_implemented, false}},
-            {"lbound", {m_builtin, &not_implemented, false}},
-            {"ubound", {m_builtin, &not_implemented, false}},
             {"allocated", {m_builtin, &not_implemented, false}},
             {"minval", {m_builtin, &not_implemented, false}},
             {"maxval", {m_builtin, &not_implemented, false}},
@@ -215,7 +186,7 @@ struct IntrinsicProcedures {
             {"huge", {m_math2, &eval_huge, false}},
 
             // Transformational function
-            {"all",          {m_builtin, &not_implemented, false}},
+            {"all", {m_builtin, &not_implemented, false}},
 
             // IEEE Arithmetic
             {"ieee_value", {m_ieee_arithmetic, &not_implemented, false}},
@@ -271,41 +242,6 @@ struct IntrinsicProcedures {
                 + "' compile time evaluation is not implemented yet",
                 loc);
         }
-    }
-
-    static ASR::expr_t *eval_kind(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        // TODO: Refactor to allow early return
-        // kind_num --> value {4, 8, etc.}
-        int64_t kind_num = 4; // Default
-        ASR::expr_t* kind_expr = args[0];
-        // TODO: Check that the expression reduces to a valid constant expression (10.1.12)
-        switch( kind_expr->type ) {
-            case ASR::exprType::IntegerConstant: {
-                kind_num = ASR::down_cast<ASR::Integer_t>(ASR::down_cast<ASR::IntegerConstant_t>(kind_expr)->m_type)->m_kind;
-                break;
-            }
-            case ASR::exprType::RealConstant:{
-                kind_num = ASR::down_cast<ASR::Real_t>(ASR::down_cast<ASR::RealConstant_t>(kind_expr)->m_type)->m_kind;
-                break;
-            }
-            case ASR::exprType::LogicalConstant:{
-                kind_num = ASR::down_cast<ASR::Logical_t>(ASR::down_cast<ASR::LogicalConstant_t>(kind_expr)->m_type)->m_kind;
-                break;
-            }
-            case ASR::exprType::Var : {
-                kind_num = ASRUtils::extract_kind<SemanticError>(kind_expr, loc);
-                break;
-            }
-            default: {
-                std::string msg = R"""(Only Integer literals or expressions which reduce to constant Integer are accepted as kind parameters.)""";
-                throw SemanticError(msg, loc);
-                break;
-            }
-        }
-        ASR::ttype_t *type = ASRUtils::TYPE(
-                ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
-        return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc,
-                kind_num, type));
     }
 
     static ASR::expr_t *eval_bit_size(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
@@ -521,15 +457,8 @@ struct IntrinsicProcedures {
 #define TRIG2(X, Y) TRIG2_CB(X, Y) \
     TRIG2_CB2(X, Y)
 
-TRIG(sin)
-TRIG(cos)
-TRIG(tan)
 TRIG(asin)
 TRIG(acos)
-TRIG(atan)
-TRIG(sinh)
-TRIG(cosh)
-TRIG(tanh)
 TRIG(asinh)
 TRIG(acosh)
 TRIG(atanh)
@@ -560,27 +489,8 @@ TRIG2(atan, datan)
     static ASR::expr_t *eval_erfc(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
         return eval_trig(al, loc, args, compiler_options, &erfc, nullptr);
     }
-    static ASR::expr_t *eval_log_gamma(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        return eval_trig(al, loc, args, compiler_options, &lgamma, nullptr);
-    }
     static ASR::expr_t *eval_log10(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
         return eval_trig(al, loc, args, compiler_options, &log10, nullptr);
-    }
-    static ASR::expr_t *eval_atan2(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        return eval_2args(al, loc, args, compiler_options, &atan2);
-    }
-
-    static ASR::expr_t *eval_len(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        if( !ASRUtils::all_args_evaluated(args) ) {
-            return nullptr;
-        }
-        LCOMPILERS_ASSERT(args.size() == 1 || args.size() == 2);
-        ASR::expr_t *arg_value = ASRUtils::expr_value(args[0]);
-        LCOMPILERS_ASSERT(arg_value->type == ASR::exprType::StringConstant);
-        ASR::StringConstant_t *value_str = ASR::down_cast<ASR::StringConstant_t>(arg_value);
-        int64_t len_str = to_lower(value_str->m_s).length();
-        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
-        return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, len_str, type));
     }
 
     static double lfortran_modulo(double x, double y) {
@@ -625,19 +535,7 @@ TRIG2(atan, datan)
         return std::fmin(x, y);
     }
 
-    static ASR::expr_t *eval_min(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        return eval_2args_ri(al, loc, args, compiler_options,
-            &IntrinsicProcedures::lfortran_min,
-            &IntrinsicProcedures::lfortran_min_i);
-    }
-
     static ASR::expr_t *eval_dmin1(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        return eval_2args_ri(al, loc, args, compiler_options,
-            &IntrinsicProcedures::lfortran_min,
-            &IntrinsicProcedures::lfortran_min_i);
-    }
-
-    static ASR::expr_t *eval_min0(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
         return eval_2args_ri(al, loc, args, compiler_options,
             &IntrinsicProcedures::lfortran_min,
             &IntrinsicProcedures::lfortran_min_i);
@@ -1096,92 +994,6 @@ TRIG2(atan, datan)
             }
         } else {
             throw SemanticError("Argument for huge() must be Real or Integer", loc);
-        }
-    }
-
-    static ASR::expr_t *eval_ishft(Allocator &al,
-            const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &) {
-        LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
-        if (args.size() != 2) {
-            throw SemanticError(
-                "The ishft intrinsic function accepts exactly 2 arguments", loc
-            );
-        }
-        ASR::expr_t* i = args[0];
-        ASR::expr_t* shift = args[1];
-        ASR::ttype_t* t1 = ASRUtils::expr_type(i);
-        ASR::ttype_t* t2 = ASRUtils::expr_type(shift);
-        if (ASR::is_a<ASR::Integer_t>(*t1) &&
-                ASR::is_a<ASR::Integer_t>(*t2)) {
-            int t1_kind = ASRUtils::extract_kind_from_ttype_t(t1);
-            int t2_kind = ASRUtils::extract_kind_from_ttype_t(t2);
-            if (t1_kind == 4 && t2_kind == 4) {
-                int32_t x = ASR::down_cast<ASR::IntegerConstant_t>(i)->m_n;
-                int32_t y = 0;
-                if (shift->type == ASR::exprType::IntegerConstant) {
-                    y = ASR::down_cast<ASR::IntegerConstant_t>(shift)->m_n;
-                } else if(shift->type == ASR::exprType::IntegerUnaryMinus) {
-                    ASR::IntegerUnaryMinus_t *u = ASR::down_cast<ASR::IntegerUnaryMinus_t>(shift);
-                    y = - ASR::down_cast<ASR::IntegerConstant_t>(u->m_arg)->m_n;
-                }
-                if(abs(y) <= 31) {
-                    int32_t val;
-                    if(y > 0) {
-                        val = x << y;
-                    } else if(y < 0) {
-                        val = x >> abs(y);
-                    } else {
-                        val = x;
-                    }
-                    ASR::ttype_t *type = ASRUtils::TYPE(
-                        ASR::make_Integer_t(al, loc, t1_kind)
-                    );
-                    return ASR::down_cast<ASR::expr_t>(
-                        ASR::make_IntegerConstant_t(al, loc, val, type)
-                    );
-                } else {
-                    throw SemanticError(
-                        "shift must be less than 32", loc
-                    );
-                }
-            } else if (t1_kind == 8 && t2_kind == 8) {
-                int64_t x = ASR::down_cast<ASR::IntegerConstant_t>(i)->m_n;
-                int64_t y = 0;
-                if (shift->type == ASR::exprType::IntegerConstant) {
-                    y = ASR::down_cast<ASR::IntegerConstant_t>(shift)->m_n;
-                } else if(shift->type == ASR::exprType::IntegerUnaryMinus) {
-                    ASR::IntegerUnaryMinus_t *u = ASR::down_cast<ASR::IntegerUnaryMinus_t>(shift);
-                    y = - ASR::down_cast<ASR::IntegerConstant_t>(u->m_arg)->m_n;
-                }
-                if(abs(y) <= 63) {
-                    int64_t val;
-                    if(y > 0) {
-                        val = x << y;
-                    } else if(y < 0) {
-                        val = x >> abs(y);
-                    } else {
-                        val = x;
-                    }
-                    ASR::ttype_t *type = ASRUtils::TYPE(
-                        ASR::make_Integer_t(al, loc, t1_kind)
-                    );
-                    return ASR::down_cast<ASR::expr_t>(
-                        ASR::make_IntegerConstant_t(al, loc, val, type)
-                    );
-                } else {
-                    throw SemanticError(
-                        "shift must be less than 64", loc
-                    );
-                }
-            } else {
-                throw SemanticError(
-                    "ishft(x, y): x and y should have the same kind type", loc
-                );
-            }
-        } else {
-            throw SemanticError(
-                "Arguments for this intrinsic function must be an Integer", loc
-            );
         }
     }
 
