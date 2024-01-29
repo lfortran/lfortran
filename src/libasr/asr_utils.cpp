@@ -1169,7 +1169,7 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
             // Otherwise this should not be nullptr
             ASR::ttype_t *arg1 = ASRUtils::expr_type(args[i].m_value);
             ASR::ttype_t *arg2 = v->m_type;
-            if (!types_equal(arg1, arg2)) {
+            if (!types_equal(arg1, arg2, true)) {
                 return false;
             }
         }
