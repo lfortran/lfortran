@@ -118,28 +118,17 @@ struct IntrinsicProcedures {
             {"zlog", {m_math, &eval_zlog, true}},
             {"erf", {m_math, &eval_erf, true}},
             {"erfc", {m_math, &eval_erfc, true}},
-            {"abs", {m_math, &not_implemented, true}},  // Implemented using
-            {"iabs", {m_math, &not_implemented, true}}, // IntrinsicFunction
+            {"iabs", {m_math, &not_implemented, true}},
             {"datan", {m_math, &eval_datan, true}},
             {"dabs", {m_math2, &eval_dabs, true}},
             {"dcos", {m_math, &eval_dcos, true}},
             {"dsin", {m_math, &eval_dsin, true}},
-            {"log_gamma", {m_math, &eval_log_gamma, true}},
             {"log10", {m_math, &eval_log10, true}},
             {"dlog10", {m_math, &eval_dlog10, true}},
-
-            //{"sin", {m_trig, &eval_sin, true}},
-            {"sin", {m_math, &eval_sin, true}},
-            {"cos", {m_math, &eval_cos, true}},
-            {"tan", {m_math, &eval_tan, true}},
 
             {"asin", {m_math, &eval_asin, true}},
             {"acos", {m_math, &eval_acos, true}},
             {"atan", {m_math, &eval_atan, true}},
-
-            {"sinh", {m_math, &eval_sinh, true}},
-            {"cosh", {m_math, &eval_cosh, true}},
-            {"tanh", {m_math, &eval_tanh, true}},
 
             {"asinh", {m_math, &eval_asinh, true}},
             {"acosh", {m_math, &eval_acosh, true}},
@@ -483,15 +472,9 @@ struct IntrinsicProcedures {
 #define TRIG2(X, Y) TRIG2_CB(X, Y) \
     TRIG2_CB2(X, Y)
 
-TRIG(sin)
-TRIG(cos)
-TRIG(tan)
 TRIG(asin)
 TRIG(acos)
 TRIG(atan)
-TRIG(sinh)
-TRIG(cosh)
-TRIG(tanh)
 TRIG(asinh)
 TRIG(acosh)
 TRIG(atanh)
@@ -521,9 +504,6 @@ TRIG2(atan, datan)
     }
     static ASR::expr_t *eval_erfc(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
         return eval_trig(al, loc, args, compiler_options, &erfc, nullptr);
-    }
-    static ASR::expr_t *eval_log_gamma(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        return eval_trig(al, loc, args, compiler_options, &lgamma, nullptr);
     }
     static ASR::expr_t *eval_log10(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
         return eval_trig(al, loc, args, compiler_options, &log10, nullptr);
