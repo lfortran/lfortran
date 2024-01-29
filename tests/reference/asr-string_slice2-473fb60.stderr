@@ -1,0 +1,5 @@
+semantic error: Substring end index exceeds the string length
+ --> tests/errors/string_slice2.f90:6:12
+  |
+6 |    print*, s(1: 9)
+  |            ^^^^^^^ 
