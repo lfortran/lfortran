@@ -18,4 +18,7 @@ program intrinsics_131
     print *, ishftc(10_8, 2_8)
     if (ishftc(10_8, 2_8) /= 40_8) error stop
 
+    print *, ishftc(10, -1)
+    if (ishftc(10, -1) /= 5) error stop
+
 end program
