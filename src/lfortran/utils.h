@@ -6,7 +6,14 @@
 
 namespace LCompilers::LFortran {
 
+enum class ExecutionMode {
+    LFortranDevelopment,
+    LFortranInstalled,
+    LFortranCtest,
+};
+
 void get_executable_path(std::string &executable_path, int &dirname_length);
+void set_exec_path_and_mode(std::string &executable_path, int &dirname_length);
 std::string get_runtime_library_dir();
 std::string get_runtime_library_header_dir();
 std::string get_runtime_library_c_header_dir();

@@ -18,6 +18,9 @@
 
 namespace LCompilers::LFortran {
 
+ExecutionMode execution_mode;
+std::string lfortran_exec_path_dir;
+
 void get_executable_path(std::string &executable_path, int &dirname_length)
 {
 #ifdef HAVE_WHEREAMI
@@ -38,6 +41,24 @@ void get_executable_path(std::string &executable_path, int &dirname_length)
     executable_path = "src/bin/lfortran.js";
     dirname_length = 7;
 #endif
+}
+
+void set_exec_path_and_mode(std::string &executable_path, int &dirname_length) {
+    lfortran_exec_path_dir = executable_path.substr(0, dirname_length);
+
+    if (   endswith(lfortran_exec_path_dir, "src/bin")
+        || endswith(lfortran_exec_path_dir, "src\\bin")
+        || endswith(lfortran_exec_path_dir, "SRC\\BIN")) {
+        // Development version
+        execution_mode = ExecutionMode::LFortranDevelopment;
+    } else if (endswith(lfortran_exec_path_dir, "src/lfortran/tests") ||
+               endswith(to_lower(lfortran_exec_path_dir), "src\\lfortran\\tests")) {
+        // CTest Tests
+        execution_mode = ExecutionMode::LFortranCtest;
+    } else {
+        // Installed version
+        execution_mode = ExecutionMode::LFortranInstalled;
+    }
 }
 
 std::string get_runtime_library_dir()
