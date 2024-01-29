@@ -1903,6 +1903,7 @@ void _get_rpath_from_linker_flags(std::vector<std::string>& linker_flags, Compil
 int main_app(int argc, char *argv[]) {
     int dirname_length;
     LCompilers::LFortran::get_executable_path(LCompilers::binary_executable_path, dirname_length);
+    LCompilers::LFortran::set_exec_path_and_mode(LCompilers::binary_executable_path, dirname_length);
 
     // TODO: This is now in compiler options and can be removed
     std::string runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
