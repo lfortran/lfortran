@@ -1,11 +1,20 @@
 program intrinsics_130
-    integer :: a, b
-    a = 10
-    b = 2
-    print *, ishftc(a, b)
-    if (ishftc(a, b) /= 40) error stop
-
-    print*, ishftc(10, 2)
-    if (ishftc(10, 2) /= 40) error stop
-
-end program
+        integer(4) :: x, y1, y2, y3
+        x = 10
+        y1 = 2
+        y2 = 0
+        y3 = -2
+    
+        print*, ishft(10_4, 2)
+        print*, ishft(10_4, 0)
+        print*, ishft(10_4, -2)
+    
+        print*, ishft(x, y1)
+        if (ishft(x, y1) /= 40) error stop
+        print*, ishft(x, y2)
+        if (ishft(x, y2) /= 10) error stop
+        print*, ishft(x, y3)
+        if (ishft(x, y3) /= 2) error stop
+       
+end
+    

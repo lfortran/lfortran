@@ -717,6 +717,7 @@ public:
         {"shiftr", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
         {"shiftl", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
         {"lshift", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
+        {"ishft", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
         {"ishftc", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
     };
 

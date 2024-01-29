@@ -2253,16 +2253,13 @@ namespace Ishftc {
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
         int64_t val = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t shift = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        // Handle negative shift (circular shift to the right)
+        int kind = 8*ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
         int result;
         if (shift < 0) {
-            shift = -shift;  // Make shift positive
-            int num_bits = sizeof(int) * 8;
-            shift = shift % num_bits;  // Ensure shift is within the range of bits
-            result = (val >> shift) | (val << (num_bits - shift));
+            shift = -shift;  
+            result = (val >>shift) | (val << (kind - shift));
         } else {
-            // Perform circular shift to the left for positive shift values
-            result = (val << shift) | (val >> (32 - shift)); // Assuming 32-bit integers
+            result = (val << shift) | (val >> (kind - shift)); 
         }
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
     }
@@ -2279,12 +2276,18 @@ namespace Ishftc {
             err("Arguments of the `Ishftc` function must be Integer",
                 args[0]->base.loc);
         }
-
         ASR::expr_t *m_value = nullptr;
         if (all_args_evaluated(args)) {
             Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 2);
             arg_values.push_back(al, expr_value(args[0]));
             arg_values.push_back(al, expr_value(args[1]));
+            int64_t shift = ASR::down_cast<ASR::IntegerConstant_t>(arg_values[1])->m_n;
+            int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(arg_values[0])->m_type);
+            int bits = 8*kind;
+            if (bits < shift) {
+                err("The absolute value of SHIFT at (1) must be less than or equal to BIT_SIZE('I')",
+                args[0]->base.loc);
+            }
             m_value = eval_Ishftc(al, loc, expr_type(args[0]), arg_values);
         }
         return ASR::make_IntrinsicScalarFunction_t(al, loc,
@@ -2299,8 +2302,27 @@ namespace Ishftc {
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
+        int kind = 8*ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
         ASR::expr_t *two = i(2, arg_types[0]);
-        body.push_back(al, b.Assignment(result, i_tMul(args[0], iPow(two, args[1], arg_types[0]), arg_types[0])));
+        ASR::expr_t *kind_expr = i(kind, arg_types[0]);
+        body.push_back(al, b.Assignment(result,
+            b.Or(
+                i_tMul(
+                    args[0],
+                    iPow(two, args[1], arg_types[0]), arg_types[0]
+                ),
+                i_tDiv(
+                    args[0],
+                    iPow(
+                        two,
+                        i_tSub(kind_expr, args[1], arg_types[0]),
+                        arg_types[0]
+                    ),
+                    arg_types[0]
+                ),
+                loc
+            )
+        ));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
