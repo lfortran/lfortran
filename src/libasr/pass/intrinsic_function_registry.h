@@ -3848,18 +3848,18 @@ static inline ASR::asr_t* create_SetRemove(Allocator& al, const Location& loc,
 namespace Max {
 
     static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
-        ASRUtils::require_impl(x.n_args > 1, "ASR Verify: Call to max0 must have at least two arguments",
+        ASRUtils::require_impl(x.n_args > 1, "Call to max0 must have at least two arguments",
             x.base.base.loc, diagnostics);
         ASRUtils::require_impl(ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(x.m_args[0])) ||
             ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[0])),
-             "ASR Verify: Arguments to max0 must be of real or integer type",
+             "Arguments to max0 must be of real or integer type",
             x.base.base.loc, diagnostics);
         for(size_t i=0;i<x.n_args;i++){
             ASRUtils::require_impl((ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(x.m_args[i])) &&
                                             ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(x.m_args[0]))) ||
                                         (ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[i])) &&
                                          ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[0]))),
-            "ASR Verify: All arguments must be of the same type",
+            "All arguments must be of the same type",
             x.base.base.loc, diagnostics);
         }
     }
@@ -3895,6 +3895,12 @@ namespace Max {
         }
         if (args.size() < 2) {
             err("Intrinsic max0 must have 2 arguments", loc);
+        }
+        ASR::ttype_t *arg_type = ASRUtils::expr_type(args[0]);
+        for(size_t i=0;i<args.size();i++){
+            if (!ASRUtils::check_equal_type(arg_type, ASRUtils::expr_type(args[i]))) {
+                err("All arguments to max0 must be of the same type and kind", loc);
+            }
         }
         Vec<ASR::expr_t*> arg_values;
         arg_values.reserve(al, args.size());
@@ -3942,12 +3948,24 @@ namespace Max {
 
         ASR::expr_t* test;
         body.push_back(al, b.Assignment(result, args[0]));
-        for (size_t i = 1; i < args.size(); i++) {
-            test = make_Compare(make_IntegerCompare_t, args[i], Gt, result);
-            Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
-            if_body.push_back(al, b.Assignment(result, args[i]));
-            body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
-                if_body.p, if_body.n, nullptr, 0)));
+        if (return_type->type == ASR::ttypeType::Integer) {
+            for (size_t i = 1; i < args.size(); i++) {
+                test = make_Compare(make_IntegerCompare_t, args[i], Gt, result);
+                Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
+                if_body.push_back(al, b.Assignment(result, args[i]));
+                body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
+                    if_body.p, if_body.n, nullptr, 0)));
+            }
+        } else if (return_type->type == ASR::ttypeType::Real) {
+            for (size_t i = 1; i < args.size(); i++) {
+                test = make_Compare(make_RealCompare_t, args[i], Gt, result);
+                Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
+                if_body.push_back(al, b.Assignment(result, args[i]));
+                body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
+                    if_body.p, if_body.n, nullptr, 0)));
+            }
+        } else {
+            throw LCompilersException("Arguments to max0 must be of real or integer type");
         }
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -4017,6 +4035,12 @@ namespace Min {
         }
         if (args.size() < 2) {
             err("Intrinsic min0 must have 2 arguments", loc);
+        }
+        ASR::ttype_t *arg_type = ASRUtils::expr_type(args[0]);
+        for(size_t i=0;i<args.size();i++){
+            if (!ASRUtils::check_equal_type(arg_type, ASRUtils::expr_type(args[i]))) {
+                err("All arguments to min0 must be of the same type and kind", loc);
+            }
         }
         Vec<ASR::expr_t*> arg_values;
         arg_values.reserve(al, args.size());
@@ -4906,6 +4930,7 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"set.remove", {&SetRemove::create_SetRemove, &SetRemove::eval_set_remove}},
                 {"max0", {&Max::create_Max, &Max::eval_Max}},
                 {"min0", {&Min::create_Min, &Min::eval_Min}},
+                {"max", {&Max::create_Max, &Max::eval_Max}},
                 {"min", {&Min::create_Min, &Min::eval_Min}},
                 {"radix", {&Radix::create_Radix, nullptr}},
                 {"sign", {&Sign::create_Sign, &Sign::eval_Sign}},

@@ -2774,7 +2774,7 @@ inline int extract_len(ASR::expr_t* len_expr, const Location& loc) {
                     throw SemanticError(msg, loc);
                 }
             } else {
-                // An expression is beind used for `len` that cannot be evaluated
+                // An expression is being used for `len` that cannot be evaluated
                 a_len = -3;
             }
             break;
@@ -2786,6 +2786,10 @@ inline int extract_len(ASR::expr_t* len_expr, const Location& loc) {
         }
         case ASR::exprType::ArraySize:
         case ASR::exprType::IntegerBinOp: {
+            a_len = -3;
+            break;
+        }
+        case ASR::exprType::IntrinsicScalarFunction: {
             a_len = -3;
             break;
         }
