@@ -2363,7 +2363,7 @@ namespace Ishftc {
         auto result = declare(fn_name, return_type, ReturnVar);
         /* 
          * r = ishftc(x, y) 
-         * r = (x*(2**y)) | (x/(2**(kind(x)-y)))
+         * r =  r = (x*(2**y)) | (x/(2**(bitsize(x)-y)))
          */ 
         int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
         int bits_size = 8*kind;
