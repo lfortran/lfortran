@@ -129,6 +129,8 @@ intrinsic_funcs_args = {
     ],
 }
 
+skip_create_func = ["Aint", "Anint"]
+
 type_to_asr_type_check = {
     "int": "is_integer",
     "uint": "is_unsigned_integer",
@@ -207,6 +209,62 @@ def add_return_type_src(func_name):
             ret_type_cond_in_msg += " or "
     src += 2 * indent + f'ASRUtils::require_impl({ret_type_cond}, "Unexpected return type, {func_name} expects `{ret_type_cond_in_msg}` as return type", x.base.base.loc, diagnostics);\n'
 
+def add_create_func_arg_type_src(func_name):
+    global src
+    arg_infos = intrinsic_funcs_args[func_name]
+    no_of_args_msg = ""
+    for i, arg_info in enumerate(arg_infos):
+        condition = ""
+        cond_in_msg = ""
+        args_lists = arg_info["args"]
+        no_of_args = len(args_lists[0])
+        else_if = "else if" if i > 0 else "if"
+        src += 2 * indent + f"{else_if} (args.size() == {no_of_args}) " + " {\n"
+        if i > 0:
+            no_of_args_msg += " or "
+        no_of_args_msg += f"{no_of_args}"
+        for _i in range(no_of_args):
+            src += 3 * indent + f"ASR::ttype_t *arg_type{_i} = ASRUtils::type_get_past_const(ASRUtils::expr_type(args[{_i}]));\n"
+        for j, arg_list in enumerate(args_lists):
+            subcond = ""
+            subcond_in_msg = ""
+            for _j in range(no_of_args):
+                arg = arg_list[_j]
+                subcond += f"{type_to_asr_type_check[arg]}(*arg_type{_j})"
+                subcond_in_msg += arg
+                if _j < no_of_args - 1:
+                    subcond += " && "
+                    subcond_in_msg += ", "
+            condition += f"({subcond})"
+            cond_in_msg += f"({subcond_in_msg})"
+            if j < len(args_lists) - 1:
+                condition += " || "
+                cond_in_msg += " or "
+        src += 3 * indent + f'if(!({condition}))' + ' {\n'
+        src += 4 * indent + f'err("Unexpected args, {func_name} expects {cond_in_msg} as arguments", loc);\n'
+        src += 3 * indent + '}\n'
+        src += 2 * indent + "}"
+    src += " else {\n"
+    src += 3 * indent + f'err("Unexpected number of args, {func_name} takes {no_of_args_msg} arguments, found " + std::to_string(args.size()), loc);\n'
+    src += 2 * indent + "}\n"
+
+
+def add_create_func_return_src(func_name):
+    global src, indent
+    arg_infos = intrinsic_funcs_args[func_name]
+    args_lists = arg_infos[0]["args"]
+    no_of_args = len(args_lists[0])
+
+    ret_type = f"expr_type(args[0])"
+    src += indent * 2 + "ASR::expr_t *m_value = nullptr;\n"
+    src += indent * 2 + "if (all_args_evaluated(args)) {\n"
+    src += indent * 3 + f"Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, {no_of_args});\n"
+    for _i in range(no_of_args):
+        src += indent * 3 + f"arg_values.push_back(al, expr_value(args[{_i}]));\n"
+    src += indent * 3 + f"m_value = eval_{func_name}(al, loc, {ret_type}, arg_values);\n"
+    src += indent * 2 + "}\n"
+    src += indent * 2 + f"ASR::make_IntrinsicScalarFunction_t(al, loc, static_cast<int64_t>(IntrinsicScalarFunctions::{func_name}), args.p, args.n, 0, {ret_type}, m_value);\n"
+
 def get_registry_funcs_src():
     global src
     for func_name in intrinsic_funcs_args.keys():
@@ -215,6 +273,12 @@ def get_registry_funcs_src():
         add_arg_type_src(func_name)
         add_return_type_src(func_name)
         src += indent + "}\n\n"
+
+        if func_name not in skip_create_func:
+            src += indent + Rf"static inline void create_{func_name}(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, const std::function<void (const std::string &, const Location &)> err) " + "{\n"
+            add_create_func_arg_type_src(func_name)
+            add_create_func_return_src(func_name)
+            src += indent + "}\n\n"
         src += "}\n\n"
     return src
 
