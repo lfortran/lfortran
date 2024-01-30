@@ -272,9 +272,10 @@ def add_create_func_return_src(func_name):
     global src, indent
     arg_infos = intrinsic_funcs_args[func_name]
     args_lists = arg_infos[0]["args"]
+    ret_type_arg_idx = arg_infos[0]["ret_type_arg_idx"]
     no_of_args = len(args_lists[0])
 
-    ret_type = f"expr_type(args[0])"
+    ret_type = f"expr_type(args[{ret_type_arg_idx}])"
     src += indent * 2 + "ASR::expr_t *m_value = nullptr;\n"
     src += indent * 2 + "if (all_args_evaluated(args)) {\n"
     src += indent * 3 + f"Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, {no_of_args});\n"
