@@ -1,0 +1,13 @@
+{
+    "basename": "asr-max_01-b3ef694",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/max_01.f90",
+    "infile_hash": "96c2be2ccab6e4a1ed29b0d707ac35303f33d40c3f1fd2aace27dc62",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-max_01-b3ef694.stderr",
+    "stderr_hash": "a2c44ad95fc5eac18ac029853a1346888a2951867da680abc7f25ebf",
+    "returncode": 2
+}

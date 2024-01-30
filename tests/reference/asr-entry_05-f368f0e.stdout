@@ -362,26 +362,6 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            max:
-                                                (ExternalSymbol
-                                                    6
-                                                    max
-                                                    8 max
-                                                    lfortran_intrinsic_math2
-                                                    []
-                                                    max
-                                                    Private
-                                                ),
-                                            max@dmax:
-                                                (ExternalSymbol
-                                                    6
-                                                    max@dmax
-                                                    8 dmax
-                                                    lfortran_intrinsic_math2
-                                                    []
-                                                    dmax
-                                                    Private
-                                                ),
                                             zx:
                                                 (Variable
                                                     6
@@ -424,11 +404,10 @@
                                                 (Real 8)
                                             )
                                             Mul
-                                            (FunctionCall
-                                                6 max@dmax
-                                                6 max
-                                                [((Var 4 abstol))
-                                                ((RealBinOp
+                                            (IntrinsicScalarFunction
+                                                Max
+                                                [(Var 4 abstol)
+                                                (RealBinOp
                                                     (Var 4 reltol)
                                                     Mul
                                                     (IntrinsicScalarFunction
@@ -440,9 +419,9 @@
                                                     )
                                                     (Real 8)
                                                     ()
-                                                ))]
+                                                )]
+                                                0
                                                 (Real 8)
-                                                ()
                                                 ()
                                             )
                                             (Real 8)
@@ -757,15 +736,7 @@
                         ()
                         ()
                     )]
-                ),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math2:
-                (IntrinsicModule lfortran_intrinsic_math2),
-            lfortran_intrinsic_math3:
-                (IntrinsicModule lfortran_intrinsic_math3)
+                )
         })
     []
 )

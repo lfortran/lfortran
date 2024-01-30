@@ -2,14 +2,6 @@
     (SymbolTable
         1
         {
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math2:
-                (IntrinsicModule lfortran_intrinsic_math2),
-            lfortran_intrinsic_math3:
-                (IntrinsicModule lfortran_intrinsic_math3),
             math_integer_m:
                 (Module
                     (SymbolTable
@@ -110,26 +102,6 @@
                                     (SymbolTable
                                         5
                                         {
-                                            max:
-                                                (ExternalSymbol
-                                                    5
-                                                    max
-                                                    36 max
-                                                    lfortran_intrinsic_math2
-                                                    []
-                                                    max
-                                                    Private
-                                                ),
-                                            max@imax:
-                                                (ExternalSymbol
-                                                    5
-                                                    max@imax
-                                                    36 imax
-                                                    lfortran_intrinsic_math2
-                                                    []
-                                                    imax
-                                                    Private
-                                                ),
                                             result:
                                                 (Variable
                                                     5
@@ -200,13 +172,12 @@
                                     (Var 5 y)]
                                     [(Assignment
                                         (Var 5 result)
-                                        (FunctionCall
-                                            5 max@imax
-                                            5 max
-                                            [((Var 5 x))
-                                            ((Var 5 y))]
+                                        (IntrinsicScalarFunction
+                                            Max
+                                            [(Var 5 x)
+                                            (Var 5 y)]
+                                            0
                                             (Integer 4)
-                                            ()
                                             ()
                                         )
                                         ()
@@ -500,7 +471,7 @@
                                 )
                         })
                     math_integer_m
-                    [lfortran_intrinsic_math2]
+                    []
                     .false.
                     .false.
                 ),
@@ -604,26 +575,6 @@
                                     (SymbolTable
                                         13
                                         {
-                                            max:
-                                                (ExternalSymbol
-                                                    13
-                                                    max
-                                                    36 max
-                                                    lfortran_intrinsic_math2
-                                                    []
-                                                    max
-                                                    Private
-                                                ),
-                                            max@smax:
-                                                (ExternalSymbol
-                                                    13
-                                                    max@smax
-                                                    36 smax
-                                                    lfortran_intrinsic_math2
-                                                    []
-                                                    smax
-                                                    Private
-                                                ),
                                             result:
                                                 (Variable
                                                     13
@@ -694,13 +645,12 @@
                                     (Var 13 y)]
                                     [(Assignment
                                         (Var 13 result)
-                                        (FunctionCall
-                                            13 max@smax
-                                            13 max
-                                            [((Var 13 x))
-                                            ((Var 13 y))]
+                                        (IntrinsicScalarFunction
+                                            Max
+                                            [(Var 13 x)
+                                            (Var 13 y)]
+                                            0
                                             (Real 4)
-                                            ()
                                             ()
                                         )
                                         ()
@@ -1090,7 +1040,7 @@
                                 )
                         })
                     math_real_m
-                    [lfortran_intrinsic_math2]
+                    []
                     .false.
                     .false.
                 ),

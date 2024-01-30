@@ -16,7 +16,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     len_trim
-                                                    89 len_trim
+                                                    6 len_trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     len_trim
@@ -54,26 +54,6 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            max:
-                                                (ExternalSymbol
-                                                    3
-                                                    max
-                                                    6 max
-                                                    lfortran_intrinsic_math2
-                                                    []
-                                                    max
-                                                    Private
-                                                ),
-                                            max@imax:
-                                                (ExternalSymbol
-                                                    3
-                                                    max@imax
-                                                    6 imax
-                                                    lfortran_intrinsic_math2
-                                                    []
-                                                    imax
-                                                    Private
-                                                ),
                                             pattern:
                                                 (Variable
                                                     3
@@ -94,7 +74,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     present
-                                                    64 present
+                                                    26 present
                                                     lfortran_intrinsic_builtin
                                                     []
                                                     present
@@ -110,11 +90,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -3 (FunctionCall
-                                                        3 max@imax
-                                                        3 max
-                                                        [((Var 3 length))
-                                                        ((StringLen
+                                                    (Character 1 -3 (IntrinsicScalarFunction
+                                                        Max
+                                                        [(Var 3 length)
+                                                        (StringLen
                                                             (FunctionCall
                                                                 3 trim
                                                                 ()
@@ -132,9 +111,9 @@
                                                             )
                                                             (Integer 4)
                                                             ()
-                                                        ))]
+                                                        )]
+                                                        0
                                                         (Integer 4)
-                                                        ()
                                                         ()
                                                     ))
                                                     ()
@@ -147,7 +126,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     trim
-                                                    89 trim
+                                                    6 trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     trim
@@ -159,45 +138,7 @@
                                         [(Character 1 -1 ())
                                         (Integer 4)
                                         (Character 1 -1 ())]
-                                        (Character 1 -3 (FunctionCall
-                                            3 max@imax
-                                            3 max
-                                            [((FunctionParam
-                                                1
-                                                (Integer 4)
-                                                ()
-                                            ))
-                                            ((StringLen
-                                                (FunctionCall
-                                                    3 trim
-                                                    ()
-                                                    [((FunctionParam
-                                                        0
-                                                        (Character 1 -1 ())
-                                                        ()
-                                                    ))]
-                                                    (Character 1 -3 (FunctionCall
-                                                        3 len_trim
-                                                        ()
-                                                        [((FunctionParam
-                                                            0
-                                                            (Character 1 -1 ())
-                                                            ()
-                                                        ))]
-                                                        (Integer 4)
-                                                        ()
-                                                        ()
-                                                    ))
-                                                    ()
-                                                    ()
-                                                )
-                                                (Integer 4)
-                                                ()
-                                            ))]
-                                            (Integer 4)
-                                            ()
-                                            ()
-                                        ))
+                                        (Character 1 1 ())
                                         Source
                                         Implementation
                                         ()
@@ -308,16 +249,6 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            imax:
-                                                (ExternalSymbol
-                                                    4
-                                                    imax
-                                                    6 imax
-                                                    lfortran_intrinsic_math2
-                                                    []
-                                                    imax
-                                                    Private
-                                                ),
                                             keywords:
                                                 (Variable
                                                     4
@@ -345,30 +276,10 @@
                                                 (ExternalSymbol
                                                     4
                                                     len_trim
-                                                    89 len_trim
+                                                    6 len_trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     len_trim
-                                                    Private
-                                                ),
-                                            max:
-                                                (ExternalSymbol
-                                                    4
-                                                    max
-                                                    6 max
-                                                    lfortran_intrinsic_math2
-                                                    []
-                                                    max
-                                                    Private
-                                                ),
-                                            max@imax:
-                                                (ExternalSymbol
-                                                    4
-                                                    max@imax
-                                                    6 imax
-                                                    lfortran_intrinsic_math2
-                                                    []
-                                                    imax
                                                     Private
                                                 ),
                                             present_in:
@@ -437,7 +348,7 @@
                                                 (ExternalSymbol
                                                     4
                                                     trim
-                                                    89 trim
+                                                    6 trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     trim
@@ -504,10 +415,9 @@
                                                     "KEYWORD"
                                                     (Character 1 7 ())
                                                 ))
-                                                ((FunctionCall
-                                                    4 max@imax
-                                                    4 max
-                                                    [((StringLen
+                                                ((IntrinsicScalarFunction
+                                                    Max
+                                                    [(StringLen
                                                         (ArrayItem
                                                             (Var 4 keywords)
                                                             [(()
@@ -525,20 +435,18 @@
                                                         )
                                                         (Integer 4)
                                                         ()
-                                                    ))
-                                                    ((IntegerConstant 8 (Integer 4)))]
+                                                    )
+                                                    (IntegerConstant 8 (Integer 4))]
+                                                    0
                                                     (Integer 4)
-                                                    ()
                                                     ()
                                                 ))
                                                 (())]
-                                                (Character 1 -3 (FunctionCall
-                                                    4 imax
-                                                    4 max
-                                                    [((FunctionCall
-                                                        4 max@imax
-                                                        4 max
-                                                        [((StringLen
+                                                (Character 1 -3 (IntrinsicScalarFunction
+                                                    Max
+                                                    [(IntrinsicScalarFunction
+                                                        Max
+                                                        [(StringLen
                                                             (ArrayItem
                                                                 (Var 4 keywords)
                                                                 [(()
@@ -556,13 +464,13 @@
                                                             )
                                                             (Integer 4)
                                                             ()
-                                                        ))
-                                                        ((IntegerConstant 8 (Integer 4)))]
+                                                        )
+                                                        (IntegerConstant 8 (Integer 4))]
+                                                        0
                                                         (Integer 4)
                                                         ()
-                                                        ()
-                                                    ))
-                                                    ((StringLen
+                                                    )
+                                                    (StringLen
                                                         (FunctionCall
                                                             4 trim
                                                             ()
@@ -586,9 +494,9 @@
                                                         )
                                                         (Integer 4)
                                                         ()
-                                                    ))]
+                                                    )]
+                                                    0
                                                     (Integer 4)
-                                                    ()
                                                     ()
                                                 ))
                                                 ()
@@ -637,10 +545,9 @@
                                                         ColMajor
                                                         ()
                                                     ))
-                                                    ((FunctionCall
-                                                        4 max@imax
-                                                        4 max
-                                                        [((StringLen
+                                                    ((IntrinsicScalarFunction
+                                                        Max
+                                                        [(StringLen
                                                             (ArrayItem
                                                                 (Var 4 keywords)
                                                                 [(()
@@ -658,20 +565,18 @@
                                                             )
                                                             (Integer 4)
                                                             ()
-                                                        ))
-                                                        ((IntegerConstant 8 (Integer 4)))]
+                                                        )
+                                                        (IntegerConstant 8 (Integer 4))]
+                                                        0
                                                         (Integer 4)
-                                                        ()
                                                         ()
                                                     ))
                                                     (())]
-                                                    (Character 1 -3 (FunctionCall
-                                                        4 imax
-                                                        4 max
-                                                        [((FunctionCall
-                                                            4 max@imax
-                                                            4 max
-                                                            [((StringLen
+                                                    (Character 1 -3 (IntrinsicScalarFunction
+                                                        Max
+                                                        [(IntrinsicScalarFunction
+                                                            Max
+                                                            [(StringLen
                                                                 (ArrayItem
                                                                     (Var 4 keywords)
                                                                     [(()
@@ -689,13 +594,13 @@
                                                                 )
                                                                 (Integer 4)
                                                                 ()
-                                                            ))
-                                                            ((IntegerConstant 8 (Integer 4)))]
+                                                            )
+                                                            (IntegerConstant 8 (Integer 4))]
+                                                            0
                                                             (Integer 4)
                                                             ()
-                                                            ()
-                                                        ))
-                                                        ((StringLen
+                                                        )
+                                                        (StringLen
                                                             (FunctionCall
                                                                 4 trim
                                                                 ()
@@ -729,9 +634,9 @@
                                                             )
                                                             (Integer 4)
                                                             ()
-                                                        ))]
+                                                        )]
+                                                        0
                                                         (Integer 4)
-                                                        ()
                                                         ()
                                                     ))
                                                     ()
@@ -781,13 +686,11 @@
                                                 )
                                                 ()
                                                 (Tuple
-                                                    [(Character 1 -3 (FunctionCall
-                                                        4 imax
-                                                        4 max
-                                                        [((FunctionCall
-                                                            4 max@imax
-                                                            4 max
-                                                            [((StringLen
+                                                    [(Character 1 -3 (IntrinsicScalarFunction
+                                                        Max
+                                                        [(IntrinsicScalarFunction
+                                                            Max
+                                                            [(StringLen
                                                                 (ArrayItem
                                                                     (Var 4 keywords)
                                                                     [(()
@@ -805,13 +708,13 @@
                                                                 )
                                                                 (Integer 4)
                                                                 ()
-                                                            ))
-                                                            ((IntegerConstant 8 (Integer 4)))]
+                                                            )
+                                                            (IntegerConstant 8 (Integer 4))]
+                                                            0
                                                             (Integer 4)
                                                             ()
-                                                            ()
-                                                        ))
-                                                        ((StringLen
+                                                        )
+                                                        (StringLen
                                                             (FunctionCall
                                                                 4 trim
                                                                 ()
@@ -845,9 +748,9 @@
                                                             )
                                                             (Integer 4)
                                                             ()
-                                                        ))]
+                                                        )]
+                                                        0
                                                         (Integer 4)
-                                                        ()
                                                         ()
                                                     ))
                                                     (Character 1 -2 ())
@@ -877,8 +780,7 @@
                                 )
                         })
                     fn5
-                    [lfortran_intrinsic_math2
-                    lfortran_intrinsic_string
+                    [lfortran_intrinsic_string
                     lfortran_intrinsic_builtin
                     fn5]
                     .false.
@@ -888,10 +790,6 @@
                 (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
             lfortran_intrinsic_builtin:
                 (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math2:
-                (IntrinsicModule lfortran_intrinsic_math2),
-            lfortran_intrinsic_math3:
-                (IntrinsicModule lfortran_intrinsic_math3),
             lfortran_intrinsic_string:
                 (IntrinsicModule lfortran_intrinsic_string)
         })

@@ -1,0 +1,5 @@
+semantic error: All arguments to min0 must be of the same type and kind
+ --> tests/errors/min_01.f90:6:14
+  |
+6 |     print *, min(y, z)
+  |              ^^^^^^^^^ 
