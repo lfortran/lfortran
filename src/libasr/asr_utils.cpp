@@ -1154,6 +1154,41 @@ bool is_op_overloaded(ASR::cmpopType op, std::string& intrinsic_op_name,
 }
 
 template <typename T>
+bool argument_types_and_dimensions_match(const Vec<ASR::call_arg_t>& args,
+        const T &sub) {
+    if (args.size() <= sub.n_args) {
+        size_t i;
+        for (i = 0; i < args.size(); i++) {
+            ASR::Variable_t *v = ASRUtils::EXPR2VAR(sub.m_args[i]);
+            if (args[i].m_value == nullptr &&
+                v->m_presence == ASR::presenceType::Optional) {
+                // If it's optional and argument is empty
+                // continue to next argument.
+                continue;
+            }
+            // Otherwise this should not be nullptr
+            ASR::ttype_t *arg1 = ASRUtils::expr_type(args[i].m_value);
+            ASR::ttype_t *arg2 = v->m_type;
+            ASR::dimension_t *dim1, *dim2;
+            size_t ndim1 = ASRUtils::extract_dimensions_from_ttype(arg1, dim1);
+            size_t ndim2 = ASRUtils::extract_dimensions_from_ttype(arg2, dim2);
+            if (!( types_equal(arg1, arg2) && ASRUtils::dimensions_equal(dim1, ndim1, dim2, ndim2))) {
+                return false;
+            }
+        }
+        for( ; i < sub.n_args; i++ ) {
+            ASR::Variable_t *v = ASRUtils::EXPR2VAR(sub.m_args[i]);
+            if( v->m_presence != ASR::presenceType::Optional ) {
+                return false;
+            }
+        }
+        return true;
+    } else {
+        return false;
+    }
+}
+
+template <typename T>
 bool argument_types_match(const Vec<ASR::call_arg_t>& args,
         const T &sub) {
     if (args.size() <= sub.n_args) {
@@ -1189,6 +1224,7 @@ bool select_func_subrout(const ASR::symbol_t* proc, const Vec<ASR::call_arg_t>& 
                          Location& loc, const std::function<void (const std::string &, const Location &)> err) {
     bool result = false;
     proc = ASRUtils::symbol_get_past_external(proc);
+
     if (ASR::is_a<ASR::Function_t>(*proc)) {
         ASR::Function_t *fn
             = ASR::down_cast<ASR::Function_t>(proc);
