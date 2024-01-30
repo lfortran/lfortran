@@ -417,9 +417,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                  filename, update_reference, extra_args)
 
     if run_with_dbg:
-        if no_llvm:
-            log.info(f"{filename} * obj    SKIPPED as requested")
-        elif skip_run_with_dbg:
+        if skip_run_with_dbg:
             log.info(f"{filename} * run_with_dbg   SKIPPED as requested")
         else:
             run_test(
