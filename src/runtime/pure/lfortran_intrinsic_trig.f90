@@ -12,18 +12,6 @@ end interface
 
 contains
 
-
-! sin --------------------
-
-real(dp) function abs(x) result(r)
-real(dp), intent(in) :: x
-if (x >= 0) then
-    r = x
-else
-    r = -x
-end if
-end function
-
 elemental integer function floor(x) result(r)
 real(dp), intent(in) :: x
 if (x >= 0) then
