@@ -110,46 +110,6 @@
                                     Public
                                     Required
                                     .false.
-                                ),
-                            max:
-                                (ExternalSymbol
-                                    2
-                                    max
-                                    4 max
-                                    lfortran_intrinsic_math2
-                                    []
-                                    max
-                                    Private
-                                ),
-                            max@imax:
-                                (ExternalSymbol
-                                    2
-                                    max@imax
-                                    4 imax
-                                    lfortran_intrinsic_math2
-                                    []
-                                    imax
-                                    Private
-                                ),
-                            max@imax_3_args:
-                                (ExternalSymbol
-                                    2
-                                    max@imax_3_args
-                                    4 imax_3_args
-                                    lfortran_intrinsic_math2
-                                    []
-                                    imax_3_args
-                                    Private
-                                ),
-                            max@imax_6args:
-                                (ExternalSymbol
-                                    2
-                                    max@imax_6args
-                                    4 imax_6args
-                                    lfortran_intrinsic_math2
-                                    []
-                                    imax_6args
-                                    Private
                                 )
                         })
                     debug
@@ -187,23 +147,25 @@
                     )
                     (If
                         (IntegerCompare
-                            (FunctionCall
-                                2 max@imax_6args
-                                2 max
-                                [((Var 2 a))
-                                ((Var 2 b))
-                                ((Var 2 c))
-                                ((Var 2 d))
-                                ((Var 2 e))
-                                ((Var 2 f))]
+                            (IntrinsicScalarFunction
+                                Max
+                                [(Var 2 a)
+                                (Var 2 b)
+                                (Var 2 c)
+                                (Var 2 d)
+                                (Var 2 e)
+                                (Var 2 f)]
+                                0
                                 (Integer 4)
-                                ()
-                                ()
+                                (IntegerConstant 50 (Integer 4))
                             )
                             NotEq
                             (IntegerConstant 50 (Integer 4))
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -212,14 +174,13 @@
                     )
                     (If
                         (IntegerCompare
-                            (FunctionCall
-                                2 max@imax
-                                2 max
-                                [((Var 2 a))
-                                ((Var 2 b))]
+                            (IntrinsicScalarFunction
+                                Max
+                                [(Var 2 a)
+                                (Var 2 b)]
+                                0
                                 (Integer 4)
                                 (IntegerConstant 10 (Integer 4))
-                                ()
                             )
                             NotEq
                             (IntegerConstant 10 (Integer 4))
@@ -263,35 +224,29 @@
                     )
                     (If
                         (IntegerCompare
-                            (FunctionCall
-                                2 max@imax_3_args
-                                2 max
-                                [((Var 2 a))
-                                ((Var 2 b))
-                                ((Var 2 c))]
+                            (IntrinsicScalarFunction
+                                Max
+                                [(Var 2 a)
+                                (Var 2 b)
+                                (Var 2 c)]
+                                0
                                 (Integer 4)
-                                ()
-                                ()
+                                (IntegerConstant 30 (Integer 4))
                             )
                             NotEq
                             (IntegerConstant 30 (Integer 4))
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
                         )]
                         []
                     )]
-                ),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math2:
-                (IntrinsicModule lfortran_intrinsic_math2),
-            lfortran_intrinsic_math3:
-                (IntrinsicModule lfortran_intrinsic_math3)
+                )
         })
     []
 )

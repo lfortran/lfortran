@@ -7,26 +7,6 @@
                     (SymbolTable
                         2
                         {
-                            max:
-                                (ExternalSymbol
-                                    2
-                                    max
-                                    4 max
-                                    lfortran_intrinsic_math2
-                                    []
-                                    max
-                                    Private
-                                ),
-                            max@dmax_3args:
-                                (ExternalSymbol
-                                    2
-                                    max@dmax_3args
-                                    4 dmax_3args
-                                    lfortran_intrinsic_math2
-                                    []
-                                    dmax_3args
-                                    Private
-                                ),
                             p66:
                                 (Variable
                                     2
@@ -151,10 +131,9 @@
                     []
                     [(Assignment
                         (Var 2 s)
-                        (FunctionCall
-                            2 max@dmax_3args
-                            2 max
-                            [((IntrinsicScalarFunction
+                        (IntrinsicScalarFunction
+                            Max
+                            [(IntrinsicScalarFunction
                                 Abs
                                 [(Var 2 three)]
                                 0
@@ -163,8 +142,8 @@
                                     3.000000
                                     (Real 8)
                                 )
-                            ))
-                            ((IntrinsicScalarFunction
+                            )
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(Var 2 two)]
                                 0
@@ -173,8 +152,8 @@
                                     2.000000
                                     (Real 8)
                                 )
-                            ))
-                            ((IntrinsicScalarFunction
+                            )
+                            (IntrinsicScalarFunction
                                 Abs
                                 [(Var 2 p66)]
                                 0
@@ -183,10 +162,13 @@
                                     0.660000
                                     (Real 8)
                                 )
-                            ))]
+                            )]
+                            0
                             (Real 8)
-                            ()
-                            ()
+                            (RealConstant
+                                3.000000
+                                (Real 8)
+                            )
                         )
                         ()
                     )]
@@ -195,15 +177,7 @@
                     .false.
                     .false.
                     ()
-                ),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math2:
-                (IntrinsicModule lfortran_intrinsic_math2),
-            lfortran_intrinsic_math3:
-                (IntrinsicModule lfortran_intrinsic_math3)
+                )
         })
     []
 )

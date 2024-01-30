@@ -1,0 +1,5 @@
+semantic error: All arguments to max0 must be of the same type and kind
+ --> tests/errors/max_02.f90:4:14
+  |
+4 |     print *, max(y, z)
+  |              ^^^^^^^^^ 
