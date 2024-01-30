@@ -154,7 +154,7 @@ intrinsic_funcs_ret_type = {
 src = ""
 indent = "    "
 
-def add_arg_type_src(func_name):
+def add_verify_arg_type_src(func_name):
     global src
     arg_infos = intrinsic_funcs_args[func_name]
     no_of_args_msg = ""
@@ -192,7 +192,7 @@ def add_arg_type_src(func_name):
     src += 3 * indent + f'ASRUtils::require_impl(false, "Unexpected number of args, {func_name} takes {no_of_args_msg} arguments, found " + std::to_string(x.n_args), x.base.base.loc, diagnostics);\n'
     src += 2 * indent + "}\n"
 
-def add_return_type_src(func_name):
+def add_verify_return_type_src(func_name):
     if func_name not in intrinsic_funcs_ret_type.keys():
         return ""
     global src
@@ -270,15 +270,15 @@ def get_registry_funcs_src():
     for func_name in intrinsic_funcs_args.keys():
         src += f"namespace {func_name}" + " {\n\n"
         src += indent + R"static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {" + "\n"
-        add_arg_type_src(func_name)
-        add_return_type_src(func_name)
+        add_verify_arg_type_src(func_name)
+        add_verify_return_type_src(func_name)
         src += indent + "}\n\n"
 
         if func_name not in skip_create_func:
             src += indent + Rf"static inline void create_{func_name}(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, const std::function<void (const std::string &, const Location &)> err) " + "{\n"
             add_create_func_arg_type_src(func_name)
             add_create_func_return_src(func_name)
-            src += indent + "}\n\n"
+            src += indent + "}\n"
         src += "}\n\n"
     return src
 
