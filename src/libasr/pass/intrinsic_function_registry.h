@@ -2320,7 +2320,7 @@ namespace Ishftc {
             throw SemanticError("The absolute value of SHIFT argument must be less than or equal to BIT_SIZE('I')",
             args[0]->base.loc); 
         }
-        int result;
+        int64_t result;
         if (shift < 0) {
             shift = -shift;  
             result = (val >> shift) | (val << (bits_size - shift));
@@ -2363,7 +2363,7 @@ namespace Ishftc {
         auto result = declare(fn_name, return_type, ReturnVar);
         /* 
          * r = ishftc(x, y) 
-         * r = (x << y) | (x >> (bits_size - y))
+         * r = (x*(2**y)) | (x/(2**(kind(x)-y)))
          */ 
         int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
         int bits_size = 8*kind;
