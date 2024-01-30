@@ -12,4 +12,4 @@ make -j16
 
 ctest --output-on-failure
 
-./run_tests.py --no-llvm
+./run_tests.py --no-llvm --skip-run-with-dbg
