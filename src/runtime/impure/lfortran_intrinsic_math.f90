@@ -1119,7 +1119,7 @@ end subroutine
 
 ! random_number ----------------------------------------------------------------
 
-pure subroutine sp_rand_num(harvest)
+elemental pure subroutine sp_rand_num(harvest)
 real(sp), intent(out) :: harvest
 interface
     pure subroutine c_sp_rand_num(harvest) &
@@ -1131,7 +1131,7 @@ end interface
 call c_sp_rand_num(harvest)
 end subroutine
 
-pure subroutine dp_rand_num(harvest)
+elemental pure subroutine dp_rand_num(harvest)
 real(dp), intent(out) :: harvest
 interface
     pure subroutine c_dp_rand_num(harvest) &
