@@ -9,7 +9,7 @@ intrinsic_funcs_args = {
     ],
     "FlipSign": [
         {
-            "args": [("int", "real")]
+            "args": [("int", "real")],
         }
     ],
     "FloorDiv": [
@@ -19,37 +19,37 @@ intrinsic_funcs_args = {
     ],
     "Mod": [
         {
-            "args": [("int", "int"), ("real", "real")]
+            "args": [("int", "int"), ("real", "real")],
         },
     ],
     "Trailz": [
         {
-            "args": [("int",)]
+            "args": [("int",)],
         },
     ],
     "Hypot": [
         {
-            "args": [("real", "real")]
+            "args": [("real", "real")],
         }
     ],
     "Digits": [
         {
-            "args": [("int",), ("real",)]
+            "args": [("int",), ("real",)],
         },
     ],
     "Repeat": [
         {
-            "args": [("char", "int")]
+            "args": [("char", "int")],
         }
     ],
     "MinExponent": [
         {
-            "args": [("real",)]
+            "args": [("real",)],
         }
     ],
     "MaxExponent": [
         {
-            "args": [("real",)]
+            "args": [("real",)],
         }
     ],
     "Partition": [
@@ -69,7 +69,7 @@ intrinsic_funcs_args = {
     ],
     "Sign": [
         {
-            "args": [("int", "int"), ("real", "real")]
+            "args": [("int", "int"), ("real", "real")],
         },
     ],
     "Radix": [
@@ -79,7 +79,7 @@ intrinsic_funcs_args = {
     ],
     "Aint": [
         {
-            "args": [("real",)]
+            "args": [("real",)],
         }
     ],
     "nint": [
@@ -89,7 +89,7 @@ intrinsic_funcs_args = {
     ],
     "Anint": [
         {
-            "args": [("real",)]
+            "args": [("real",)],
         }
     ],
     "Floor": [
@@ -104,22 +104,22 @@ intrinsic_funcs_args = {
     ],
     "Sqrt": [
         {
-            "args": [("real",), ("complex",)]
+            "args": [("real",), ("complex",)],
         },
     ],
     "Sngl": [
         {
-            "args": [("real",)]
+            "args": [("real",)],
         }
     ],
     "SignFromValue": [
         {
-            "args": [("int", "int"), ("real", "real")]
+            "args": [("int", "int"), ("real", "real")],
         },
     ],
     "Ishft": [
         {
-            "args": [("int", "int")]
+            "args": [("int", "int")],
         },
     ],
     "Aimag": [
