@@ -5,76 +5,91 @@ intrinsic_funcs_args = {
     "Kind": [
         {
             "args": [("int",), ("real",), ("bool",), ("char",)],
+            "ret_type_arg_idx": 0
         },
     ],
     "FlipSign": [
         {
             "args": [("int", "real")],
+            "ret_type_arg_idx": 1
         }
     ],
     "FloorDiv": [
         {
             "args": [("int", "int"), ("uint", "uint"), ("real", "real"), ("bool", "bool")],
+            "ret_type_arg_idx": 0
         },
     ],
     "Mod": [
         {
             "args": [("int", "int"), ("real", "real")],
+            "ret_type_arg_idx": 0
         },
     ],
     "Trailz": [
         {
             "args": [("int",)],
+            "ret_type_arg_idx": 0
         },
     ],
     "Hypot": [
         {
             "args": [("real", "real")],
+            "ret_type_arg_idx": 0
         }
     ],
     "Digits": [
         {
             "args": [("int",), ("real",)],
+            "ret_type_arg_idx": 0
         },
     ],
     "Repeat": [
         {
             "args": [("char", "int")],
+            "ret_type_arg_idx": 0
         }
     ],
     "MinExponent": [
         {
             "args": [("real",)],
+            "ret_type_arg_idx": 0
         }
     ],
     "MaxExponent": [
         {
             "args": [("real",)],
+            "ret_type_arg_idx": 0
         }
     ],
     "Partition": [
         {
             "args": [("char", "char")],
+            "ret_type_arg_idx": 0
         }
     ],
     "ListReverse": [
         {
             "args": [("list",)],
+            "ret_type_arg_idx": 0
         }
     ],
     "Reserve": [
         {
             "args": [("list", "int")],
+            "ret_type_arg_idx": 0
         }
     ],
     "Sign": [
         {
             "args": [("int", "int"), ("real", "real")],
+            "ret_type_arg_idx": 0
         },
     ],
     "Radix": [
         {
             "args": [("int",), ("real",)],
+            "ret_type_arg_idx": 0
         },
     ],
     "Aint": [
@@ -105,21 +120,25 @@ intrinsic_funcs_args = {
     "Sqrt": [
         {
             "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
         },
     ],
     "Sngl": [
         {
             "args": [("real",)],
+            "ret_type_arg_idx": 0
         }
     ],
     "SignFromValue": [
         {
             "args": [("int", "int"), ("real", "real")],
+            "ret_type_arg_idx": 0
         },
     ],
     "Ishft": [
         {
             "args": [("int", "int")],
+            "ret_type_arg_idx": 0
         },
     ],
     "Aimag": [
