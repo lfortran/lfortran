@@ -528,7 +528,7 @@ jobs:
             git checkout 409ba02a107f47ee835f3976952bbc64dd46de8a
             mkdir lf
             cd lf
-            FC=$(pwd)/../../src/bin/lfortran cmake ..
+            FC="$(pwd)/../../src/bin/lfortran --intrinsic-mangling" cmake ..
             make
             examples/example_hybrd
             examples/example_hybrd1

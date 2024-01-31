@@ -3,10 +3,6 @@ use, intrinsic :: iso_fortran_env, only: i8 => int8, i16 => int16, i32 => int32,
 use, intrinsic :: iso_c_binding, only: c_float, c_double
 implicit none
 
-interface abs
-    module procedure i8abs, i16abs, iabs, i64abs, sabs, dabs, cabs, zabs
-end interface
-
 interface aimag
     module procedure caimag, zaimag
 end interface
@@ -134,72 +130,6 @@ interface dot_product
 end interface
 
 contains
-
-! abs --------------------------------------------------------------------------
-
-elemental integer(i16) function i16abs(x) result(r)
-integer(i16), intent(in) :: x
-if (x >= 0) then
-    r = x
-else
-    r = -x
-end if
-end function
-
-elemental integer(i8) function i8abs(x) result(r)
-integer(i8), intent(in) :: x
-if (x >= 0) then
-    r = x
-else
-    r = -x
-end if
-end function
-
-elemental integer function iabs(x) result(r)
-integer, intent(in) :: x
-if (x >= 0) then
-    r = x
-else
-    r = -x
-end if
-end function
-
-elemental integer(i64) function i64abs(x) result(r)
-integer(i64), intent(in) :: x
-if (x >= 0) then
-    r = x
-else
-    r = -x
-end if
-end function
-
-elemental real(sp) function sabs(x) result(r)
-real(sp), intent(in) :: x
-if (x > 0) then
-    r = x
-else
-    r = 0-x
-end if
-end function
-
-elemental real(dp) function dabs(x) result(r)
-real(dp), intent(in) :: x
-if (x > 0) then
-    r = x
-else
-    r = 0-x
-end if
-end function
-
-elemental real(sp) function cabs(x) result(r)
-complex(sp), intent(in) :: x
-r = sqrt(real(x,sp)**2 + aimag(x)**2)
-end function
-
-elemental real(dp) function zabs(x) result(r)
-complex(dp), intent(in) :: x
-r = sqrt(real(x,dp)**2 + aimag(x)**2)
-end function
 
 ! aimag ------------------------------------------------------------------------
 
