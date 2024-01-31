@@ -279,7 +279,7 @@ public:
             real_cmp = ASR::down_cast<ASR::RealCompare_t>(test);
             left = real_cmp->m_left;
         } else {
-            throw LCompilersException("Unsupported type");
+            throw LCompilersException("Unsupported type, " + std::to_string(test->type));
         }
 
         // Construct a do loop

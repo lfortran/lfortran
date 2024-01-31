@@ -2304,7 +2304,7 @@ namespace Idint {
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
-} 
+}
 
 namespace FMA {
 
@@ -3263,9 +3263,11 @@ namespace Repeat {
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_optimization_repeat_" + type_to_str_python(arg_types[0]));
-        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("x", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -10, nullptr)));
         fill_func_arg("y", arg_types[1]);
-        auto result = declare(fn_name, arg_types[0], ReturnVar);
+        auto result = declare(fn_name, ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -3,
+            ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, args[0], ASRUtils::TYPE(
+                ASR::make_Integer_t(al, loc, 4)), nullptr)))), ReturnVar);
         auto itr = declare("r", arg_types[1], Local);
         /*
             function repeat_(s, n) result(r)
@@ -3281,7 +3283,8 @@ namespace Repeat {
             end function
         */
 
-        ASR::expr_t* empty_str =  StringConstant("", arg_types[0]);
+        ASR::expr_t* empty_str =  StringConstant("", ASRUtils::TYPE(
+            ASR::make_Character_t(al, loc, 1, 0, nullptr)));
         body.push_back(al, b.Assignment(result, empty_str));
         body.push_back(al, b.Assignment(itr, args[1]));
         int arg_1_kind = ASRUtils::extract_kind_from_ttype_t(arg_types[1]);

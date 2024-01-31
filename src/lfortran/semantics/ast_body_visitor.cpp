@@ -928,7 +928,8 @@ public:
                 Vec<ASR::dimension_t> dims_vec;
                 dims_vec.reserve(al, array_ref->n_args);
                 for( size_t j = 0; j < array_ref->n_args; j++ ) {
-                    ASR::dimension_t new_dim;
+                    ASR::dimension_t new_dim; new_dim.m_length = nullptr;
+                    new_dim.m_start = nullptr;
                     new_dim.loc = array_ref->m_args[j].loc;
                     ASR::expr_t* m_left = array_ref->m_args[j].m_left;
                     if( m_left != nullptr ) {
@@ -949,7 +950,8 @@ public:
                 Vec<ASR::dimension_t> dims_vec;
                 dims_vec.reserve(al, array_ref->n_args);
                 for( size_t j = 0; j < array_ref->n_args; j++ ) {
-                    ASR::dimension_t new_dim;
+                    ASR::dimension_t new_dim; new_dim.m_length = nullptr;
+                    new_dim.m_start = nullptr;
                     new_dim.loc = array_ref->m_args[j].loc;
                     new_dim.m_start = const_1;
                     new_dim.m_length = ASRUtils::compute_length_from_start_end(al, new_dim.m_start,
@@ -2420,7 +2422,7 @@ public:
                 if( success ) {
                     Vec<ASR::dimension_t> dims;
                     dims.reserve(al, 1);
-                    ASR::dimension_t dim;
+                    ASR::dimension_t dim;  dim.m_length = nullptr; dim.m_start = nullptr;
                     dim.loc = x.base.base.loc;
                     dim.m_length = make_ConstantWithKind(make_IntegerConstant_t,
                         make_Integer_t, target_n_dims, compiler_options.po.default_integer_kind, dim.loc);
