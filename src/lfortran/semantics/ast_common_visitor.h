@@ -996,7 +996,7 @@ public:
         _processing_dimensions = true;
         dims.reserve(al, n_dim);
         for (size_t i=0; i<n_dim; i++) {
-            ASR::dimension_t dim;
+            ASR::dimension_t dim; dim.m_length = nullptr; dim.m_start = nullptr;
             dim.loc = m_dim[i].loc;
             if (m_dim[i].m_start) {
                 this->visit_expr(*m_dim[i].m_start);
@@ -1204,7 +1204,7 @@ public:
             }
             Vec<ASR::dimension_t> dims;
             dims.reserve(al, 1);
-            ASR::dimension_t dim;
+            ASR::dimension_t dim; dim.m_length = nullptr; dim.m_start = nullptr;
             dim.loc = x.base.base.loc;
             ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
             ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int_type));
@@ -1523,7 +1523,7 @@ public:
 
                     Vec<ASR::dimension_t> dims;
                     dims.reserve(al, 1);
-                    ASR::dimension_t dim;
+                    ASR::dimension_t dim; dim.m_length = nullptr; dim.m_start = nullptr;
                     dim.loc = loc;
                     dim.m_start = one;
                     dim.m_length = arg_right;
@@ -2052,6 +2052,7 @@ public:
                                 Vec<ASR::dimension_t> dim;
                                 dim.reserve(al, 1);
                                 ASR::dimension_t dim_;
+                                dim_.m_length = nullptr; dim_.m_start = nullptr;
                                 dim_.m_start = one;
                                 dim_.m_length = one;
                                 dim_.loc = asr_eq1->base.loc;
@@ -2059,9 +2060,7 @@ public:
 
                                 Vec<ASR::dimension_t> dim2;
                                 dim2.reserve(al, 1);
-                                ASR::dimension_t dim2_;
-                                dim2_.m_start = nullptr;
-                                dim2_.m_length = nullptr;
+                                ASR::dimension_t dim2_; dim2_.m_start = nullptr; dim2_.m_length = nullptr;
                                 dim2_.loc = asr_eq1->base.loc;
                                 dim2.push_back(al, dim2_);
 
@@ -2426,7 +2425,7 @@ public:
                         // For case  `integer, parameter :: x(*) = [1,2,3], get the compile time length of RHS array.
                         Vec<ASR::dimension_t> temp_dims;
                         temp_dims.reserve(al, 1);
-                        ASR::dimension_t temp_dim;
+                        ASR::dimension_t temp_dim; temp_dim.m_length = nullptr; temp_dim.m_start = nullptr;
                         temp_dim.loc = (temp_array->base).base.loc;
                         ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, (temp_array->base).base.loc, compiler_options.po.default_integer_kind));
                         ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, (temp_array->base).base.loc, 1, int_type));
@@ -3103,7 +3102,7 @@ public:
                     if(end > str_length) {
                         throw SemanticError("Substring end index exceeds the string length",
                                     loc);
-                    } 
+                    }
                     if( end == -1 && !flag ) {
                         end = str_length;
                     } else {
