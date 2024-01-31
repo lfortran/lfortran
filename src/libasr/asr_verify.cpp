@@ -426,6 +426,7 @@ public:
             LCOMPILERS_ASSERT(a.second);
             this->visit_symbol(*a.second);
         }
+        visit_ttype(*x.m_function_signature);
         for (size_t i=0; i<x.n_args; i++) {
             LCOMPILERS_ASSERT(x.m_args[i]);
             visit_expr(*x.m_args[i]);
