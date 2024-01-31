@@ -1,0 +1,5 @@
+semantic error: Argument: `action` not implemented yet
+ --> tests/errors/open_notimplemented_kwarg1.f90:5:5
+  |
+5 |     open(10, file='file_01_data.txt', status='old', action='read')
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

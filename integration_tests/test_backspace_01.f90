@@ -3,7 +3,7 @@ program test_backspace_01
     implicit none
     character(80) :: line
     integer :: u = 10
-    open(10, file='file_01_data.txt', status='old', action='read')
+    open(10, file='file_01_data.txt', status='old')
 
     read(u, '(A)') line
     write(*, '(A)') line

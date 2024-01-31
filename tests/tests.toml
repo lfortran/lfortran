@@ -3699,3 +3699,15 @@ asr = true
 [[test]]
 filename = "errors/close_invalid_kwarg1.f90"
 asr = true
+
+[[test]]
+filename = "errors/rewind_invalid_kwarg1.f90"
+asr = true
+
+[[test]]
+filename = "errors/flush_invalid_kwarg1.f90"
+asr = true
+
+[[test]]
+filename = "errors/open_notimplemented_kwarg1.f90"
+asr = true

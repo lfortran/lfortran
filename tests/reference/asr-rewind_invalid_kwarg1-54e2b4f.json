@@ -1,0 +1,13 @@
+{
+    "basename": "asr-rewind_invalid_kwarg1-54e2b4f",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/rewind_invalid_kwarg1.f90",
+    "infile_hash": "93c2b15698f6b674eae69a475430facc3c8f5f86e0aa858715b1ee79",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-rewind_invalid_kwarg1-54e2b4f.stderr",
+    "stderr_hash": "ccb81d956314ab44590909b61665adab4361a9da925b730ec76588ae",
+    "returncode": 2
+}

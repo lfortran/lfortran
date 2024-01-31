@@ -278,6 +278,8 @@ public:
                                                                             "recl", "fileopt", "action", "position"};
                 if (unsupported_args.find(m_arg_str) == unsupported_args.end()) {
                     throw SemanticError("invalid argument: `" + m_arg_str + "` supplied", x.base.base.loc);
+                } else {
+                    throw SemanticError("Argument: `" + m_arg_str + "` not implemented yet", x.base.base.loc);
                 }
             }
         }
@@ -692,10 +694,10 @@ public:
         for( size_t i = 0; i < x.n_kwargs; i++ ) {
             if( x.m_kwargs[i].m_value ) {
                 std::string m_arg_str = to_lower(std::string(x.m_kwargs[i].m_arg));
-                if( args[argname2idx[m_arg_str]] ) {
-                    throw SemanticError(m_arg_str + " has already been specified.", x.base.base.loc);
-                } else if (argname2idx.find(m_arg_str) == argname2idx.end()) {
+                if (argname2idx.find(m_arg_str) == argname2idx.end()) {
                     throw SemanticError("invalid argument: `" + m_arg_str + "` supplied", x.base.base.loc);
+                } else if (args[argname2idx[m_arg_str]]) {
+                    throw SemanticError(m_arg_str + " has already been specified.", x.base.base.loc);
                 }
                 visit_expr(*x.m_kwargs[i].m_value);
                 args[argname2idx[m_arg_str]] = ASRUtils::EXPR(tmp);
