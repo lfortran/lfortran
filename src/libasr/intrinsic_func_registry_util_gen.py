@@ -87,6 +87,11 @@ intrinsic_funcs_args = {
             "args": [("real",)]
         }
     ],
+    "Floor": [
+        {
+            "args": [("real",)]
+        }
+    ],
     "Sqrt": [
         {
             "args": [("real",), ("complex",)]
@@ -169,6 +174,8 @@ def add_arg_type_src(func_name):
     src += " else {\n"
     src += 3 * indent + f'ASRUtils::require_impl(false, "Unexpected number of args, {func_name} takes {no_of_args_msg} arguments, found " + std::to_string(x.n_args), x.base.base.loc, diagnostics);\n'
     src += 2 * indent + "}\n"
+
+    print(src)
 
 def add_return_type_src(func_name):
     if func_name not in intrinsic_funcs_ret_type.keys():
