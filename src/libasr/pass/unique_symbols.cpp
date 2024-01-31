@@ -149,6 +149,10 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
                 }
             }
         }
+        if (intrinsic_symbols_mangling && startswith(x.m_name, "_lcompilers_")) {
+            ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x);
+            sym_to_renamed[sym] = update_name(x.m_name);
+        }
         for (auto &a : x.m_symtab->get_scope()) {
             bool nested_function = is_nested_function(a.second);
             if (nested_function) {
