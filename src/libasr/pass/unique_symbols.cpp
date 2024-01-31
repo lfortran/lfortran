@@ -102,7 +102,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         if (all_symbols_mangling || module_name_mangling || should_mangle) {
             sym_to_renamed[sym] = update_name(x.m_name);
         }
-        if ((x.m_intrinsic && intrinsic_symbols_mangling) ||
+        if (
                 (global_symbols_mangling && startswith(x.m_name, "_global_symbols"))) {
             should_mangle = true;
         }
