@@ -3691,3 +3691,11 @@ asr = true
 [[test]]
 filename = "errors/min_02.f90"
 asr = true
+
+[[test]]
+filename = "errors/open_invalid_kwarg1.f90"
+asr = true
+
+[[test]]
+filename = "errors/close_invalid_kwarg1.f90"
+asr = true
