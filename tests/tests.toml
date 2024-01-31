@@ -3730,4 +3730,7 @@ asr = true
 
 [[test]]
 filename = "errors/substring_stride.f90"
+
+[[test]]
+filename = "shiftl1.f90"
 asr = true
