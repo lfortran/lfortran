@@ -3,18 +3,6 @@ use, intrinsic :: iso_fortran_env, only: i8 => int8, i16 => int16, i32 => int32,
 use, intrinsic :: iso_c_binding, only: c_float, c_double
 implicit none
 
-interface aimag
-    module procedure caimag, zaimag
-end interface
-
-interface imag
-    module procedure caimag
-end interface
-
-interface dimag
-    module procedure zaimag
-end interface
-
 interface exp
     module procedure sexp, dexp, cexp, zexp
 end interface
@@ -131,29 +119,6 @@ end interface
 
 contains
 
-! aimag ------------------------------------------------------------------------
-
-elemental real(sp) function caimag(x) result(r)
-complex(sp), intent(in) :: x
-interface
-    pure real(c_float) function c_caimag(x) bind(c, name="_lfortran_caimag")
-    import :: c_float
-    complex(c_float), intent(in), value :: x
-    end function
-end interface
-r = c_caimag(x)
-end function
-
-elemental real(dp) function zaimag(x) result(r)
-complex(dp), intent(in) :: x
-interface
-    pure real(c_double) function c_zaimag(x) bind(c, name="_lfortran_zaimag")
-    import :: c_double
-    complex(c_double), intent(in), value :: x
-    end function
-end interface
-r = c_zaimag(x)
-end function
 
 ! exp --------------------------------------------------------------------------
 
