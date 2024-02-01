@@ -87,6 +87,11 @@ intrinsic_funcs_args = {
             "args": [("real",)]
         }
     ],
+    "Floor": [
+        {
+            "args": [("real",)]
+        }
+    ],
     "Sqrt": [
         {
             "args": [("real",), ("complex",)]

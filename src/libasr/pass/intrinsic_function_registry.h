@@ -82,6 +82,7 @@ enum class IntrinsicScalarFunctions : int64_t {
     Sngl,
     Ifix,
     Idint,
+    Floor,
     SymbolicSymbol,
     SymbolicAdd,
     SymbolicSub,
@@ -167,6 +168,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Sngl)
         INTRINSIC_NAME_CASE(Ifix)
         INTRINSIC_NAME_CASE(Idint)
+        INTRINSIC_NAME_CASE(Floor)
         INTRINSIC_NAME_CASE(SymbolicSymbol)
         INTRINSIC_NAME_CASE(SymbolicAdd)
         INTRINSIC_NAME_CASE(SymbolicSub)
@@ -2061,6 +2063,81 @@ namespace Anint {
     }
 
 }  // namespace Anint
+
+namespace Floor {
+
+    static ASR::expr_t *eval_Floor(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
+        float val = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        int result;
+        if (val < 0.0) {
+            result = int(val)-1;
+        } else {
+            result = int(val);
+        }
+        return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
+    }
+
+    static inline ASR::asr_t* create_Floor(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args,
+            const std::function<void (const std::string &, const Location &)> err) {
+        ASR::ttype_t* return_type = TYPE(ASR::make_Integer_t(al, loc, 4));
+        if (!(args.size() == 1 || args.size() == 2)) {
+            err("Intrinsic `Floor` function accepts exactly 1 or 2 arguments", loc);
+        } else if (!ASRUtils::is_real(*ASRUtils::expr_type(args[0]))) {
+            err("Argument of the `Floor` function must be Real", args[0]->base.loc);
+        }
+        Vec<ASR::expr_t *> m_args; m_args.reserve(al, 1);
+        m_args.push_back(al, args[0]);
+        if ( args[1] != nullptr ) {
+            int kind = -1;
+            if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1])) ||
+                    !extract_value(args[1], kind)) {
+                err("`kind` argument of the `Floor` function must be a "
+                    "scalar Integer constant", args[1]->base.loc);
+            }
+            return_type = TYPE(ASR::make_Integer_t(al, return_type->base.loc, kind));
+        }
+        ASR::expr_t *m_value = nullptr;
+
+        if (all_args_evaluated(m_args)) {
+            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 1);
+            arg_values.push_back(al, expr_value(args[0]));
+            m_value = eval_Floor(al, loc, return_type, arg_values);
+
+        }
+        return ASR::make_IntrinsicScalarFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicScalarFunctions::Floor),
+            m_args.p, m_args.n, 0, return_type, m_value);
+    }
+
+    static inline ASR::expr_t* instantiate_Floor(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_floor_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        /*
+        * r = floor(x)
+        * if(x < 0.00){
+        *   r = int(x) - 1
+        * } else {
+        *   r = int(x)
+        * }
+        */
+        ASR::expr_t *one = i(1, return_type);
+        ASR::expr_t *cast = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::RealToInteger, return_type, nullptr));
+        body.push_back(al, b.If(fLt(args[0], f(0, arg_types[0])), {
+            b.Assignment(result,i_tSub(cast,one,return_type))}, {b.Assignment(result,cast)
+        }));
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+
+    }
+
+} // namespace Floor
 
 namespace Sqrt {
 
@@ -4692,6 +4769,8 @@ namespace IntrinsicScalarFunctionRegistry {
             {&Aint::instantiate_Aint, &Aint::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Anint),
             {&Anint::instantiate_Anint, &Anint::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Floor),
+            {&Floor::instantiate_Floor, &Floor::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Sqrt),
             {&Sqrt::instantiate_Sqrt, &Sqrt::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Sngl),
@@ -4847,6 +4926,8 @@ namespace IntrinsicScalarFunctionRegistry {
             "aint"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Anint),
             "anint"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Floor),
+            "floor"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Sqrt),
             "sqrt"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Sngl),
@@ -4959,6 +5040,7 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"sign", {&Sign::create_Sign, &Sign::eval_Sign}},
                 {"aint", {&Aint::create_Aint, &Aint::eval_Aint}},
                 {"anint", {&Anint::create_Anint, &Anint::eval_Anint}},
+                {"floor", {&Floor::create_Floor, &Floor::eval_Floor}},
                 {"sqrt", {&Sqrt::create_Sqrt, &Sqrt::eval_Sqrt}},
                 {"sngl", {&Sngl::create_Sngl, &Sngl::eval_Sngl}},
                 {"ifix", {&Ifix::create_Ifix, &Ifix::eval_Ifix}},
