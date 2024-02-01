@@ -736,6 +736,9 @@ public:
         {"dtan", "tan"},
         {"datan2", "atan2"},
 
+        {"dimag", "aimag"},
+        {"imag" , "aimag"},
+
         {"dsign", "sign"},
         {"dsqrt", "sqrt"}
     };
