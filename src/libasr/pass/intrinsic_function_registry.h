@@ -2128,19 +2128,7 @@ namespace Floor {
         ASR::expr_t *one = i(1, return_type);
         ASR::expr_t *cast = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::RealToInteger, return_type, nullptr));
         body.push_back(al, b.If(fLt(args[0], f(0, arg_types[0])), {
-            b.Assignment(
-                result,
-                i_tSub(
-                    cast,
-                    one,
-                    return_type
-                )
-            )
-        }, {
-            b.Assignment(
-                result,
-                cast
-            )
+            b.Assignment(result,i_tSub(cast,one,return_type))}, {b.Assignment(result,cast)
         }));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
