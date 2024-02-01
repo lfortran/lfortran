@@ -983,7 +983,7 @@ public:
         if (is_interface){
             deftype = ASR::deftypeType::Interface;
         }
-        bool is_pure = false, is_module = false;
+        bool is_pure = false, is_module = false, is_elemental = false;
         for( size_t i = 0; i < x.n_attributes; i++ ) {
             switch( x.m_attributes[i]->type ) {
                 case AST::decl_attributeType::SimpleAttribute: {
@@ -992,6 +992,8 @@ public:
                         is_pure = true;
                     } else if( simple_attr->m_attr == AST::simple_attributeType::AttrModule ) {
                         is_module = true;
+                    } else if( simple_attr->m_attr == AST::simple_attributeType::AttrElemental ) {
+                        is_elemental = true;
                     }
                     break;
                 }
@@ -1071,7 +1073,7 @@ public:
             nullptr,
             current_procedure_abi_type,
             s_access, deftype, bindc_name,
-            false, is_pure, is_module, false, false,
+            is_elemental, is_pure, is_module, false, false,
             nullptr, 0,
             is_requirement, false, false);
         handle_save();
@@ -2916,7 +2918,7 @@ public:
 
         parent_scope->add_symbol(x.m_name, ASR::down_cast<ASR::symbol_t>(temp));
         current_scope = parent_scope;
-        
+
         // needs to rebuild the context prior to visiting template
         class_procedures.clear();
 
@@ -3205,15 +3207,15 @@ public:
                 AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
                 std::string generic_name = to_lower(use_symbol->m_remote_sym);
                 ASR::symbol_t *s = temp->m_symtab->get_symbol(generic_name);
-                if (s == nullptr) { 
-                    throw SemanticError("Symbol " + generic_name + " was not found", x.base.base.loc); 
+                if (s == nullptr) {
+                    throw SemanticError("Symbol " + generic_name + " was not found", x.base.base.loc);
                 }
                 std::string new_sym_name = generic_name;
                 if (use_symbol->m_local_rename) {
                     new_sym_name = to_lower(use_symbol->m_local_rename);
                 }
                 ASR::symbol_t* new_sym = instantiate_symbol(al, current_scope, type_subs, symbol_subs, new_sym_name, s);
-                symbol_subs[generic_name] = new_sym; 
+                symbol_subs[generic_name] = new_sym;
             }
         }
 

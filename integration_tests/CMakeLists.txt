@@ -437,6 +437,7 @@ RUN(NAME arrays_34 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_35 LABELS gfortran llvm)
 RUN(NAME arrays_36 LABELS gfortran llvm)
 RUN(NAME arrays_37 LABELS gfortran llvm)
+RUN(NAME arrays_38 LABELS gfortran llvm)
 
 
 # GFortran
@@ -636,6 +637,7 @@ RUN(NAME intrinsics_127 LABELS gfortran llvm)#ifix
 RUN(NAME intrinsics_128 LABELS gfortran llvm) # idint
 RUN(NAME intrinsics_129 LABELS gfortran llvm)#abs
 RUN(NAME intrinsics_130 LABELS gfortran llvm)#ishft
+RUN(NAME intrinsics_131 LABELS gfortran llvm)#max for strings
 RUN(NAME intrinsics_132 LABELS gfortran llvm)#Floor
 
 RUN(NAME parameter_01 LABELS gfortran)

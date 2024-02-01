@@ -19,7 +19,7 @@ end subroutine toml_parse_unit
 
 subroutine toml_parse_string(table, conf, error)
     type(toml_table), allocatable, intent(out) :: table
-    character(len=*), intent(in), target :: conf
+    character(len=*), intent(in), target :: conf(:)
     type(toml_error), allocatable, intent(out), optional :: error
 end subroutine toml_parse_string
 

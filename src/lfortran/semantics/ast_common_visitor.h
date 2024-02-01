@@ -722,7 +722,10 @@ public:
         {"floor", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
     };
 
-    std::map<std::string, std::string> double_precision_intrinsics = {
+    std::map<std::string, std::string> intrinsic_mapping = {
+        {"iabs", "abs"},
+        {"dabs", "abs"},
+
         {"dsinh", "sinh"},
         {"dcosh", "cosh"},
         {"dtanh", "tanh"},
@@ -997,7 +1000,7 @@ public:
         _processing_dimensions = true;
         dims.reserve(al, n_dim);
         for (size_t i=0; i<n_dim; i++) {
-            ASR::dimension_t dim;
+            ASR::dimension_t dim; dim.m_length = nullptr; dim.m_start = nullptr;
             dim.loc = m_dim[i].loc;
             if (m_dim[i].m_start) {
                 this->visit_expr(*m_dim[i].m_start);
@@ -1205,7 +1208,7 @@ public:
             }
             Vec<ASR::dimension_t> dims;
             dims.reserve(al, 1);
-            ASR::dimension_t dim;
+            ASR::dimension_t dim; dim.m_length = nullptr; dim.m_start = nullptr;
             dim.loc = x.base.base.loc;
             ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
             ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int_type));
@@ -1524,7 +1527,7 @@ public:
 
                     Vec<ASR::dimension_t> dims;
                     dims.reserve(al, 1);
-                    ASR::dimension_t dim;
+                    ASR::dimension_t dim; dim.m_length = nullptr; dim.m_start = nullptr;
                     dim.loc = loc;
                     dim.m_start = one;
                     dim.m_length = arg_right;
@@ -2053,6 +2056,7 @@ public:
                                 Vec<ASR::dimension_t> dim;
                                 dim.reserve(al, 1);
                                 ASR::dimension_t dim_;
+                                dim_.m_length = nullptr; dim_.m_start = nullptr;
                                 dim_.m_start = one;
                                 dim_.m_length = one;
                                 dim_.loc = asr_eq1->base.loc;
@@ -2060,9 +2064,7 @@ public:
 
                                 Vec<ASR::dimension_t> dim2;
                                 dim2.reserve(al, 1);
-                                ASR::dimension_t dim2_;
-                                dim2_.m_start = nullptr;
-                                dim2_.m_length = nullptr;
+                                ASR::dimension_t dim2_; dim2_.m_start = nullptr; dim2_.m_length = nullptr;
                                 dim2_.loc = asr_eq1->base.loc;
                                 dim2.push_back(al, dim2_);
 
@@ -2427,7 +2429,7 @@ public:
                         // For case  `integer, parameter :: x(*) = [1,2,3], get the compile time length of RHS array.
                         Vec<ASR::dimension_t> temp_dims;
                         temp_dims.reserve(al, 1);
-                        ASR::dimension_t temp_dim;
+                        ASR::dimension_t temp_dim; temp_dim.m_length = nullptr; temp_dim.m_start = nullptr;
                         temp_dim.loc = (temp_array->base).base.loc;
                         ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, (temp_array->base).base.loc, compiler_options.po.default_integer_kind));
                         ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, (temp_array->base).base.loc, 1, int_type));
@@ -3104,7 +3106,7 @@ public:
                     if(end > str_length) {
                         throw SemanticError("Substring end index exceeds the string length",
                                     loc);
-                    } 
+                    }
                     if( end == -1 && !flag ) {
                         end = str_length;
                     } else {
@@ -4685,7 +4687,7 @@ public:
     }
 
     bool is_intrinsic_registry_function(std::string var_name) {
-        bool is_double_precision_intrinsic = double_precision_intrinsics.count(var_name);
+        bool is_double_precision_intrinsic = intrinsic_mapping.count(var_name);
         if (intrinsic_procedures_as_asr_nodes.is_intrinsic_present_in_ASR(var_name) ||
             intrinsic_procedures_as_asr_nodes.is_kind_based_selection_required(var_name) ||
             ASRUtils::IntrinsicScalarFunctionRegistry::is_intrinsic_function(var_name) ||
@@ -4700,11 +4702,11 @@ public:
     ASR::symbol_t* intrinsic_as_node(const AST::FuncCallOrArray_t &x,
                                      bool& is_function) {
         std::string var_name = to_lower(x.m_func);
-        bool is_double_precision_intrinsic = double_precision_intrinsics.count(var_name);
+        bool is_double_precision_intrinsic = intrinsic_mapping.count(var_name);
         if( is_intrinsic_registry_function(var_name)) {
             is_function = false;
             if (is_double_precision_intrinsic) {
-                var_name = double_precision_intrinsics[var_name];
+                var_name = intrinsic_mapping[var_name];
             }
             if( ASRUtils::IntrinsicScalarFunctionRegistry::is_intrinsic_function(var_name) ||
                     ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ) {

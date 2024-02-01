@@ -221,7 +221,12 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (Array
+                                                        (Character 1 -1 ())
+                                                        [(()
+                                                        ())]
+                                                        CharacterArraySinglePointer
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -276,7 +281,12 @@
                                                 5 toml_table
                                             )
                                         )
-                                        (Character 1 -1 ())
+                                        (Array
+                                            (Character 1 -1 ())
+                                            [(()
+                                            ())]
+                                            CharacterArraySinglePointer
+                                        )
                                         (Allocatable
                                             (Struct
                                                 5 toml_error

@@ -2381,7 +2381,7 @@ namespace Idint {
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
-} 
+}
 
 namespace FMA {
 
@@ -3340,9 +3340,11 @@ namespace Repeat {
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_optimization_repeat_" + type_to_str_python(arg_types[0]));
-        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("x", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -10, nullptr)));
         fill_func_arg("y", arg_types[1]);
-        auto result = declare(fn_name, arg_types[0], ReturnVar);
+        auto result = declare(fn_name, ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -3,
+            ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, args[0], ASRUtils::TYPE(
+                ASR::make_Integer_t(al, loc, 4)), nullptr)))), ReturnVar);
         auto itr = declare("r", arg_types[1], Local);
         /*
             function repeat_(s, n) result(r)
@@ -3358,7 +3360,8 @@ namespace Repeat {
             end function
         */
 
-        ASR::expr_t* empty_str =  StringConstant("", arg_types[0]);
+        ASR::expr_t* empty_str =  StringConstant("", ASRUtils::TYPE(
+            ASR::make_Character_t(al, loc, 1, 0, nullptr)));
         body.push_back(al, b.Assignment(result, empty_str));
         body.push_back(al, b.Assignment(itr, args[1]));
         int arg_1_kind = ASRUtils::extract_kind_from_ttype_t(arg_types[1]);
@@ -3928,14 +3931,17 @@ namespace Max {
         ASRUtils::require_impl(x.n_args > 1, "Call to max0 must have at least two arguments",
             x.base.base.loc, diagnostics);
         ASRUtils::require_impl(ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(x.m_args[0])) ||
-            ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[0])),
-             "Arguments to max0 must be of real or integer type",
+            ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[0])) ||
+            ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_args[0])),
+             "Arguments to max0 must be of real, integer or character type",
             x.base.base.loc, diagnostics);
         for(size_t i=0;i<x.n_args;i++){
             ASRUtils::require_impl((ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(x.m_args[i])) &&
                                             ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(x.m_args[0]))) ||
                                         (ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[i])) &&
-                                         ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[0]))),
+                                         ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[0]))) ||
+                                         (ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_args[i])) &&
+                                         ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_args[0]))),
             "All arguments must be of the same type",
             x.base.base.loc, diagnostics);
         }
@@ -3958,6 +3964,15 @@ namespace Max {
                 max_val = std::fmax(max_val, val);
             }
             return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, max_val, arg_type));
+        } else if (ASR::is_a<ASR::Character_t>(*arg_type)) {
+            char* max_val = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
+            for (size_t i = 1; i < args.size(); i++) {
+                char* val = ASR::down_cast<ASR::StringConstant_t>(args[i])->m_s;
+                if (strcmp(val, max_val) > 0) {
+                    max_val = val;
+                }
+            }
+            return ASR::down_cast<ASR::expr_t>(ASR::make_StringConstant_t(al, loc, max_val, arg_type));
         } else {
             return nullptr;
         }
@@ -4025,7 +4040,7 @@ namespace Max {
 
         ASR::expr_t* test;
         body.push_back(al, b.Assignment(result, args[0]));
-        if (return_type->type == ASR::ttypeType::Integer) {
+        if (ASR::is_a<ASR::Integer_t>(*return_type)) {
             for (size_t i = 1; i < args.size(); i++) {
                 test = make_Compare(make_IntegerCompare_t, args[i], Gt, result);
                 Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
@@ -4033,7 +4048,7 @@ namespace Max {
                 body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
                     if_body.p, if_body.n, nullptr, 0)));
             }
-        } else if (return_type->type == ASR::ttypeType::Real) {
+        } else if (ASR::is_a<ASR::Real_t>(*return_type)) {
             for (size_t i = 1; i < args.size(); i++) {
                 test = make_Compare(make_RealCompare_t, args[i], Gt, result);
                 Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
@@ -4041,8 +4056,16 @@ namespace Max {
                 body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
                     if_body.p, if_body.n, nullptr, 0)));
             }
+        } else if (ASR::is_a<ASR::Character_t>(*return_type)) {
+            for (size_t i = 1; i < args.size(); i++) {
+                test = make_Compare(make_StringCompare_t, args[i], Gt, result);
+                Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
+                if_body.push_back(al, b.Assignment(result, args[i]));
+                body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
+                    if_body.p, if_body.n, nullptr, 0)));
+            }
         } else {
-            throw LCompilersException("Arguments to max0 must be of real or integer type");
+            throw LCompilersException("Arguments to max0 must be of real, integer or character type");
         }
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -4165,7 +4188,7 @@ namespace Min {
 
         ASR::expr_t* test;
         body.push_back(al, b.Assignment(result, args[0]));
-        if (return_type->type == ASR::ttypeType::Integer) {
+        if (ASR::is_a<ASR::Integer_t>(*return_type)) {
             for (size_t i = 1; i < args.size(); i++) {
                 test = make_Compare(make_IntegerCompare_t, args[i], Lt, result);
                 Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
@@ -4173,7 +4196,7 @@ namespace Min {
                 body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
                     if_body.p, if_body.n, nullptr, 0)));
             }
-        } else if (return_type->type == ASR::ttypeType::Real) {
+        } else if (ASR::is_a<ASR::Real_t>(*return_type)) {
             for (size_t i = 1; i < args.size(); i++) {
                 test = make_Compare(make_RealCompare_t, args[i], Lt, result);
                 Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
@@ -4181,7 +4204,7 @@ namespace Min {
                 body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
                     if_body.p, if_body.n, nullptr, 0)));
             }
-        } else if (return_type->type == ASR::ttypeType::Character) {
+        } else if (ASR::is_a<ASR::Character_t>(*return_type)) {
             for (size_t i = 1; i < args.size(); i++) {
                 test = make_Compare(make_StringCompare_t, args[i], Lt, result);
                 Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);

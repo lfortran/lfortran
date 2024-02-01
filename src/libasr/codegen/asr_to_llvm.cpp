@@ -3617,7 +3617,7 @@ public:
                                 llvm::Value *init_value = llvm::Constant::getNullValue(type);
                                 builder->CreateStore(init_value, target_var);
                             } else {
-                                throw CodeGenError("Unsupported len value in ASR");
+                                throw CodeGenError("Unsupported len value in ASR " + std::to_string(strlen));
                             }
                         } else if (is_list) {
                             ASR::List_t* asr_list = ASR::down_cast<ASR::List_t>(v->m_type);
@@ -8083,6 +8083,11 @@ public:
                 }
             } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_args[i].m_value)) {
                 this->visit_expr_wrapper(x.m_args[i].m_value);
+            } else if( ASR::is_a<ASR::FunctionType_t>(
+                *ASRUtils::type_get_past_pointer(
+                    ASRUtils::type_get_past_allocatable(
+                        ASRUtils::expr_type(x.m_args[i].m_value)))) ) {
+                this->visit_expr_wrapper(x.m_args[i].m_value, true);
             } else {
                 ASR::ttype_t* arg_type = expr_type(x.m_args[i].m_value);
                 int64_t ptr_loads_copy = ptr_loads;
@@ -8181,6 +8186,10 @@ public:
                     case (ASR::ttypeType::Tuple) : {
                         target_type = llvm_utils->get_type_from_ttype_t_util(arg_type_, module.get());
                         break ;
+                    }
+                    case (ASR::ttypeType::FunctionType): {
+                        target_type = llvm_utils->get_type_from_ttype_t_util(arg_type_, module.get());
+                        break;
                     }
                     default :
                         throw CodeGenError("Type " + ASRUtils::type_to_str(arg_type) + " not implemented yet.");
