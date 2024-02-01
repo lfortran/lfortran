@@ -314,17 +314,17 @@ class ASRBuilder {
     }
 
     // Expressions -------------------------------------------------------------
-    #define i(x, t)   EXPR(ASR::make_IntegerConstant_t(al, loc, x, t))
-    #define i32(x)   EXPR(ASR::make_IntegerConstant_t(al, loc, x, int32))
-    #define i32_n(x) EXPR(ASR::make_IntegerUnaryMinus_t(al, loc, i32(abs(x)),   \
+    #define i(x, t)   ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, x, t))
+    #define i32(x)   ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, x, int32))
+    #define i32_n(x) ASRUtils::EXPR(ASR::make_IntegerUnaryMinus_t(al, loc, i32(abs(x)),   \
         int32, i32(x)))
-    #define i32_neg(x, t) EXPR(ASR::make_IntegerUnaryMinus_t(al, loc, x, t, nullptr))
+    #define i32_neg(x, t) ASRUtils::EXPR(ASR::make_IntegerUnaryMinus_t(al, loc, x, t, nullptr))
 
-    #define f(x, t)   EXPR(ASR::make_RealConstant_t(al, loc, x, t))
-    #define f32(x) EXPR(ASR::make_RealConstant_t(al, loc, x, real32))
-    #define f32_neg(x, t) EXPR(ASR::make_RealUnaryMinus_t(al, loc, x, t, nullptr))
+    #define f(x, t)   ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, x, t))
+    #define f32(x) ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, x, real32))
+    #define f32_neg(x, t) ASRUtils::EXPR(ASR::make_RealUnaryMinus_t(al, loc, x, t, nullptr))
 
-    #define bool32(x)  EXPR(ASR::make_LogicalConstant_t(al, loc, x, logical))
+    #define bool32(x)  ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, x, logical))
 
     #define ListItem(x, pos, type) EXPR(ASR::make_ListItem_t(al, loc, x, pos,   \
         type, nullptr))
@@ -381,8 +381,10 @@ class ASRBuilder {
             ASR::binopType::Add, right, t, nullptr))
 
     #define iSub(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
-            ASR::binopType::Sub, right, int32, nullptr))
-    #define i8Sub(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,     \
+            ASR::binopType::Sub, right, ASRUtils::int32, nullptr))
+    #define i_vSub(left, right, value) ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
+            ASR::binopType::Sub, right, ASRUtils::int32, value))
+    #define i8Sub(left, right) ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, left,     \
         ASR::binopType::Sub, right, int8, nullptr))
     #define i16Sub(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,    \
         ASR::binopType::Sub, right, int16, nullptr))

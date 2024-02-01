@@ -1,0 +1,5 @@
+semantic error: Substring stride must be of type integer
+ --> tests/errors/substring_stride.f90:4:19
+  |
+4 |     print*, s(1:5:2.2)
+  |                   ^^^
