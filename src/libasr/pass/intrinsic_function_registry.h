@@ -2081,17 +2081,16 @@ namespace Floor {
     static inline ASR::asr_t* create_Floor(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
             const std::function<void (const std::string &, const Location &)> err) {
-        ASR::ttype_t* return_type = expr_type(args[0]);
+        ASR::ttype_t* return_type = TYPE(ASR::make_Integer_t(al, loc, 4));
         if (!(args.size() == 1 || args.size() == 2)) {
             err("Intrinsic `Floor` function accepts exactly 1 or 2 arguments", loc);
-        } else if (!ASRUtils::is_real(*return_type)) {
+        } else if (!ASRUtils::is_real(*ASRUtils::expr_type(args[0]))) {
             err("Argument of the `Floor` function must be Real", args[0]->base.loc);
         }
         Vec<ASR::expr_t *> m_args; m_args.reserve(al, 1);
         m_args.push_back(al, args[0]);
         if ( args[1] != nullptr ) {
             int kind = -1;
-            std::cout<<"in bere"<<std::endl;
             if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1])) ||
                     !extract_value(args[1], kind)) {
                 err("`kind` argument of the `Floor` function must be a "
@@ -2101,14 +2100,15 @@ namespace Floor {
         }
         ASR::expr_t *m_value = nullptr;
 
-        if (all_args_evaluated(args)) {
+        if (all_args_evaluated(m_args)) {
             Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 1);
             arg_values.push_back(al, expr_value(args[0]));
-            m_value = eval_Floor(al, loc, expr_type(args[0]), arg_values);
+            m_value = eval_Floor(al, loc, return_type, arg_values);
+
         }
         return ASR::make_IntrinsicScalarFunction_t(al, loc,
             static_cast<int64_t>(IntrinsicScalarFunctions::Floor),
-            m_args.p, m_args.n, 0, ASRUtils::expr_type(args[0]), m_value);
+            m_args.p, m_args.n, 0, return_type, m_value);
     }
 
     static inline ASR::expr_t* instantiate_Floor(Allocator &al, const Location &loc,
@@ -2125,33 +2125,26 @@ namespace Floor {
         *   r = int(x)
         * }
         */
-       std::cout<<"1"<<"\n";
-        ASR::expr_t *one = i(1, arg_types[0]);
-       std::cout<<"2"<<"\n";
-
-        body.push_back(al, b.If(fLt(args[0], i(0, arg_types[0])), {
+        ASR::expr_t *one = i(1, return_type);
+        ASR::expr_t *cast = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::RealToInteger, return_type, nullptr));
+        body.push_back(al, b.If(fLt(args[0], f(0, arg_types[0])), {
             b.Assignment(
                 result,
                 i_tSub(
-                    ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::RealToInteger, return_type, nullptr)),
+                    cast,
                     one,
-                    arg_types[0]
+                    return_type
                 )
             )
         }, {
             b.Assignment(
                 result,
-                ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::RealToInteger, return_type, nullptr))
+                cast
             )
         }));
-       std::cout<<"3"<<"\n";
-
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
-       std::cout<<"4"<<"\n";
         scope->add_symbol(fn_name, f_sym);
-       std::cout<<"5"<<"\n";
-
         return b.Call(f_sym, new_args, return_type, nullptr);
 
     }
