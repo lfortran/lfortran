@@ -45,6 +45,7 @@ enum class IntrinsicScalarFunctions : int64_t {
     Trunc,
     Fix,
     Abs,
+    Aimag,
     Exp,
     Exp2,
     Expm1,
@@ -134,6 +135,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Trunc)
         INTRINSIC_NAME_CASE(Fix)
         INTRINSIC_NAME_CASE(Abs)
+        INTRINSIC_NAME_CASE(Aimag)
         INTRINSIC_NAME_CASE(Exp)
         INTRINSIC_NAME_CASE(Exp2)
         INTRINSIC_NAME_CASE(Expm1)
@@ -1373,6 +1375,52 @@ create_trig(Atan, atan, atan)
 create_trig(Sinh, sinh, sinh)
 create_trig(Cosh, cosh, cosh)
 create_trig(Tanh, tanh, tanh)
+
+namespace Aimag {
+
+    static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x,
+            diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 1,
+            "Call to `Aimag` must have exactly one argument",
+            x.base.base.loc, diagnostics);
+        ASRUtils::require_impl(is_complex(*expr_type(x.m_args[0])),
+            "Argument to `Aimag` must be of complex type",
+            x.base.base.loc, diagnostics);
+    }
+
+    static inline ASR::expr_t *eval_Aimag(Allocator &al, const Location &loc,
+            ASR::ttype_t *t, Vec<ASR::expr_t*>& args) {
+        std::complex<double> crv;
+        if( ASRUtils::extract_value(args[0], crv) ) {
+            return f(crv.imag(), t);
+        } else {
+            return nullptr;
+        }
+    }
+
+    static inline ASR::asr_t* create_Aimag(Allocator& al, const Location& loc,
+        Vec<ASR::expr_t*>& args,
+        const std::function<void (const std::string &, const Location &)> err) {
+        ASR::ttype_t *type = ASRUtils::expr_type(args[0]);
+        if (args.n != 1) {
+            err("Intrinsic `aimag` accepts exactly one argument", loc);
+        } else if (!ASRUtils::is_complex(*type)) {
+            err("`x` argument of `aimag` must be complex", args[0]->base.loc);
+        }
+        type = TYPE(ASR::make_Real_t(al, type->base.loc, extract_kind_from_ttype_t(type)));
+        return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_Aimag,
+            static_cast<int64_t>(IntrinsicScalarFunctions::Aimag), 0, type);
+    }
+
+    static inline ASR::expr_t* instantiate_Aimag (Allocator &al,
+            const Location &loc, SymbolTable *scope,
+            Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args,int64_t overload_id)  {
+        return UnaryIntrinsicFunction::instantiate_functions(al, loc, scope,
+            "aimag", arg_types[0], return_type, new_args, overload_id);
+    }
+
+} // namespace Aimag
 
 namespace Atan2 {
     static inline ASR::expr_t *eval_Atan2(Allocator &al, const Location &loc,
@@ -4818,6 +4866,8 @@ namespace IntrinsicScalarFunctionRegistry {
             {&MaxExponent::instantiate_MaxExponent, &MaxExponent::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Abs),
             {&Abs::instantiate_Abs, &Abs::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Aimag),
+            {&Aimag::instantiate_Aimag, &Aimag::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Partition),
             {&Partition::instantiate_Partition, &Partition::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::ListIndex),
@@ -4941,6 +4991,8 @@ namespace IntrinsicScalarFunctionRegistry {
             "atan2"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Abs),
             "abs"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Aimag),
+            "aimag"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Exp),
             "exp"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Exp2),
@@ -5088,6 +5140,7 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"tanh", {&Tanh::create_Tanh, &Tanh::eval_Tanh}},
                 {"atan2", {&Atan2::create_Atan2, &Atan2::eval_Atan2}},
                 {"abs", {&Abs::create_Abs, &Abs::eval_Abs}},
+                {"aimag", {&Aimag::create_Aimag, &Aimag::eval_Aimag}},
                 {"exp", {&Exp::create_Exp, &Exp::eval_Exp}},
                 {"exp2", {&Exp2::create_Exp2, &Exp2::eval_Exp2}},
                 {"expm1", {&Expm1::create_Expm1, &Expm1::eval_Expm1}},
