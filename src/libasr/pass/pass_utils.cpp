@@ -71,6 +71,9 @@ namespace LCompilers {
                 ASR::ttype_t* x_type = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x)->m_type;
                 ASR::dimension_t* m_dims;
                 get_dim_rank(x_type, m_dims, n_dims);
+            } else if (ASR::is_a<ASR::ComplexConstructor_t>(*x)) {
+                ASR::ComplexConstructor_t* cc = ASR::down_cast<ASR::ComplexConstructor_t>(x);
+                return get_rank(cc->m_re);
             }
             return n_dims;
         }

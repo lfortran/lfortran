@@ -132,8 +132,13 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                     head.m_end = result_ubound[j];
                     head.m_increment = result_inc[j];
                 } else {
-                    head.m_start = PassUtils::get_bound(result_var, i + 1, "lbound", al);
-                    head.m_end = PassUtils::get_bound(result_var, i + 1, "ubound", al);
+                    ASR::expr_t* var = result_var;
+                    if (ASR::is_a<ASR::ComplexConstructor_t>(*result_var)) {
+                        ASR::ComplexConstructor_t* cc = ASR::down_cast<ASR::ComplexConstructor_t>(result_var);
+                        var = cc->m_re;
+                    }
+                    head.m_start = PassUtils::get_bound(var, i + 1, "lbound", al);
+                    head.m_end = PassUtils::get_bound(var, i + 1, "ubound", al);
                     head.m_increment = nullptr;
                 }
                 head.loc = head.m_v->base.loc;
@@ -174,7 +179,12 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head, doloop_body.p, doloop_body.size()));
             }
             if( var_rank > 0 ) {
-                ASR::expr_t* idx_lb = PassUtils::get_bound(op_expr1, 1, "lbound", al);
+                ASR::expr_t* expr = op_expr1;
+                if (ASR::is_a<ASR::ComplexConstructor_t>(*op_expr1)) {
+                    ASR::ComplexConstructor_t* cc = ASR::down_cast<ASR::ComplexConstructor_t>(op_expr1);
+                    expr = cc->m_re;
+                }
+                ASR::expr_t* idx_lb = PassUtils::get_bound(expr, 1, "lbound", al);
                 ASR::stmt_t* set_to_one = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, idx_vars_value1[0], idx_lb, nullptr));
                 pass_result.push_back(al, set_to_one);
 
@@ -268,7 +278,15 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         [=, &idx_vars_value, &idx_vars, &doloop_body]() {
             ASR::expr_t* ref = nullptr;
             if( var_rank > 0 ) {
-                ref = PassUtils::create_array_ref(*current_expr, idx_vars_value, al, current_scope);
+                if (ASR::is_a<ASR::ComplexConstructor_t>(**current_expr)) {
+                    ASR::ComplexConstructor_t* cc = ASR::down_cast<ASR::ComplexConstructor_t>(*current_expr);
+                    ASR::expr_t* re = PassUtils::create_array_ref(cc->m_re, idx_vars_value, al, current_scope);
+                    ASR::expr_t* im = PassUtils::create_array_ref(cc->m_im, idx_vars_value, al, current_scope);
+                    ref = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(al, loc, re, im, cc->m_type, cc->m_value));
+                    *current_expr = ref;
+                } else {
+                    ref = PassUtils::create_array_ref(*current_expr, idx_vars_value, al, current_scope);
+                }
             } else {
                 ref = *current_expr;
             }
