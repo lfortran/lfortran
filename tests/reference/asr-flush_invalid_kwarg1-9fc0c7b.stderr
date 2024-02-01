@@ -1,4 +1,4 @@
-semantic error: invalid argument: `start` supplied
+semantic error: Invalid argument `start` supplied
  --> tests/errors/flush_invalid_kwarg1.f90:3:5
   |
 3 |     FLUSH(unit=10, start=100)

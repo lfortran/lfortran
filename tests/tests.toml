@@ -3709,5 +3709,5 @@ filename = "errors/flush_invalid_kwarg1.f90"
 asr = true
 
 [[test]]
-filename = "errors/open_notimplemented_kwarg1.f90"
+filename = "warnings/open_notimplemented_kwarg1.f90"
 asr = true

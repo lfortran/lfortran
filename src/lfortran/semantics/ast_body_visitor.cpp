@@ -277,9 +277,13 @@ public:
                 const std::unordered_set<std::string> unsupported_args {"iostat", "iomsg", "err", "blank", "access", \
                                                                             "recl", "fileopt", "action", "position"};
                 if (unsupported_args.find(m_arg_str) == unsupported_args.end()) {
-                    throw SemanticError("invalid argument: `" + m_arg_str + "` supplied", x.base.base.loc);
+                    throw SemanticError("Invalid argument `" + m_arg_str + "` supplied", x.base.base.loc);
                 } else {
-                    throw SemanticError("Argument: `" + m_arg_str + "` not implemented yet", x.base.base.loc);
+                    diag.semantic_warning_label(
+                        "Argument `" + m_arg_str + "` isn't supported yet",
+                        {x.base.base.loc},
+                        "ignored for now"
+                    );
                 }
             }
         }
@@ -365,7 +369,7 @@ public:
                 this->visit_expr(*kwarg.m_value);
                 a_err = ASRUtils::EXPR(tmp);
             } else {
-                throw SemanticError("invalid argument: `" + m_arg_str + "` supplied", x.base.base.loc);
+                throw SemanticError("Invalid argument `" + m_arg_str + "` supplied", x.base.base.loc);
             }
         }
         if( a_unit == nullptr ) {
@@ -429,7 +433,7 @@ public:
                 this->visit_expr(*kwarg.m_value);
                 a_err = ASRUtils::EXPR(tmp);
             } else {
-                throw SemanticError("invalid argument: `" + m_arg_str + "` supplied", x.base.base.loc);
+                throw SemanticError("Invalid argument `" + m_arg_str + "` supplied", x.base.base.loc);
             }
         }
         if( a_unit == nullptr ) {
@@ -695,7 +699,7 @@ public:
             if( x.m_kwargs[i].m_value ) {
                 std::string m_arg_str = to_lower(std::string(x.m_kwargs[i].m_arg));
                 if (argname2idx.find(m_arg_str) == argname2idx.end()) {
-                    throw SemanticError("invalid argument: `" + m_arg_str + "` supplied", x.base.base.loc);
+                    throw SemanticError("Invalid argument `" + m_arg_str + "` supplied", x.base.base.loc);
                 } else if (args[argname2idx[m_arg_str]]) {
                     throw SemanticError(m_arg_str + " has already been specified.", x.base.base.loc);
                 }
