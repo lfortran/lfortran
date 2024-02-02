@@ -4146,7 +4146,8 @@ namespace Max {
     static inline ASR::expr_t* instantiate_Max(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        std::string func_name = "_lcompilers_max0_" + type_to_str_python(arg_types[0]);
+        std::string func_name = "_lcompilers_max0_" + type_to_str_python(arg_types[0])
+            + "_" + std::to_string(new_args.n);
         std::string fn_name = scope->get_unique_name(func_name);
         SymbolTable *fn_symtab = al.make_new<SymbolTable>(scope);
         Vec<ASR::expr_t*> args;
@@ -4154,8 +4155,8 @@ namespace Max {
         ASRBuilder b(al, loc);
         Vec<ASR::stmt_t*> body; body.reserve(al, args.size());
         SetChar dep; dep.reserve(al, 1);
-        if (scope->get_symbol(fn_name)) {
-            ASR::symbol_t *s = scope->get_symbol(fn_name);
+        if (scope->get_symbol(func_name)) {
+            ASR::symbol_t *s = scope->get_symbol(func_name);
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
             return b.Call(s, new_args, expr_type(f->m_return_var), nullptr);
         }
