@@ -639,6 +639,7 @@ RUN(NAME intrinsics_129 LABELS gfortran llvm)#abs
 RUN(NAME intrinsics_130 LABELS gfortran llvm)#ishft
 RUN(NAME intrinsics_131 LABELS gfortran llvm)#max for strings
 RUN(NAME intrinsics_132 LABELS gfortran llvm)#Floor
+RUN(NAME intrinsics_133 LABELS gfortran llvm)#Ceiling
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
