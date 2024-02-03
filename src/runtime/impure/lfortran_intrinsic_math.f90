@@ -3,10 +3,6 @@ use, intrinsic :: iso_fortran_env, only: i8 => int8, i16 => int16, i32 => int32,
 use, intrinsic :: iso_c_binding, only: c_float, c_double
 implicit none
 
-interface exp
-    module procedure sexp, dexp, cexp, zexp
-end interface
-
 interface erf
     module procedure serf, derf
 end interface
@@ -54,53 +50,6 @@ interface dot_product
 end interface
 
 contains
-
-
-! exp --------------------------------------------------------------------------
-
-elemental real(sp) function sexp(x) result(r)
-real(sp), intent(in) :: x
-interface
-    pure real(c_float) function c_sexp(x) bind(c, name="_lfortran_sexp")
-    import :: c_float
-    real(c_float), intent(in), value :: x
-    end function
-end interface
-r = c_sexp(x)
-end function
-
-elemental real(dp) function dexp(x) result(r)
-real(dp), intent(in) :: x
-interface
-    pure real(c_double) function c_dexp(x) bind(c, name="_lfortran_dexp")
-    import :: c_double
-    real(c_double), intent(in), value :: x
-    end function
-end interface
-r = c_dexp(x)
-end function
-
-elemental complex(sp) function cexp(x) result(r)
-complex(sp), intent(in) :: x
-interface
-    pure complex(c_float) function c_cexp(x) bind(c, name="_lfortran_cexp")
-    import :: c_float
-    complex(c_float), intent(in), value :: x
-    end function
-end interface
-r = c_cexp(x)
-end function
-
-elemental complex(dp) function zexp(x) result(r)
-complex(dp), intent(in) :: x
-interface
-    pure complex(c_double) function c_zexp(x) bind(c, name="_lfortran_zexp")
-    import :: c_double
-    complex(c_double), intent(in), value :: x
-    end function
-end interface
-r = c_zexp(x)
-end function
 
 ! erf --------------------------------------------------------------------------
 
