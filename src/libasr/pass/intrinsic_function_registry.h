@@ -40,6 +40,9 @@ enum class IntrinsicScalarFunctions : int64_t {
     Cosh,
     Tanh,
     Atan2,
+    Asinh,
+    Acosh,
+    Atanh,
     Gamma,
     LogGamma,
     Trunc,
@@ -130,6 +133,9 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Cosh)
         INTRINSIC_NAME_CASE(Tanh)
         INTRINSIC_NAME_CASE(Atan2)
+        INTRINSIC_NAME_CASE(Asinh)
+        INTRINSIC_NAME_CASE(Acosh)
+        INTRINSIC_NAME_CASE(Atanh)
         INTRINSIC_NAME_CASE(Gamma)
         INTRINSIC_NAME_CASE(LogGamma)
         INTRINSIC_NAME_CASE(Trunc)
@@ -1375,6 +1381,9 @@ create_trig(Atan, atan, atan)
 create_trig(Sinh, sinh, sinh)
 create_trig(Cosh, cosh, cosh)
 create_trig(Tanh, tanh, tanh)
+create_trig(Asinh, asinh, asinh)
+create_trig(Acosh, acosh, acosh)
+create_trig(Atanh, atanh, atanh)
 
 namespace Aimag {
 
@@ -4817,6 +4826,12 @@ namespace IntrinsicScalarFunctionRegistry {
             {&Tanh::instantiate_Tanh, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Atan2),
             {&Atan2::instantiate_Atan2, &BinaryIntrinsicFunction::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Asinh),
+            {&Asinh::instantiate_Asinh, &UnaryIntrinsicFunction::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Acosh),
+            {&Acosh::instantiate_Acosh, &UnaryIntrinsicFunction::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Atanh),
+            {&Atanh::instantiate_Atanh, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Exp),
             {nullptr, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Exp2),
@@ -4980,6 +4995,12 @@ namespace IntrinsicScalarFunctionRegistry {
             "tanh"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Atan2),
             "atan2"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Asinh),
+            "asinh"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Acosh),
+            "acosh"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Atanh),
+            "atanh"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Abs),
             "abs"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Aimag),
@@ -5130,6 +5151,9 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"cosh", {&Cosh::create_Cosh, &Cosh::eval_Cosh}},
                 {"tanh", {&Tanh::create_Tanh, &Tanh::eval_Tanh}},
                 {"atan2", {&Atan2::create_Atan2, &Atan2::eval_Atan2}},
+                {"asinh", {&Asinh::create_Asinh, &Asinh::eval_Asinh}},
+                {"acosh", {&Acosh::create_Acosh, &Acosh::eval_Acosh}},
+                {"atanh", {&Atanh::create_Atanh, &Atanh::eval_Atanh}},
                 {"abs", {&Abs::create_Abs, &Abs::eval_Abs}},
                 {"aimag", {&Aimag::create_Aimag, &Aimag::eval_Aimag}},
                 {"exp", {&Exp::create_Exp, &Exp::eval_Exp}},
@@ -5223,6 +5247,9 @@ namespace IntrinsicScalarFunctionRegistry {
                  id_ == IntrinsicScalarFunctions::Sqrt ||
                  id_ == IntrinsicScalarFunctions::SymbolicSymbol ||
                  id_ == IntrinsicScalarFunctions::Tan ||
+                 id_ == IntrinsicScalarFunctions::Acosh ||
+                 id_ == IntrinsicScalarFunctions::Asinh ||
+                 id_ == IntrinsicScalarFunctions::Atanh ||
                  id_ == IntrinsicScalarFunctions::Cosh ||
                  id_ == IntrinsicScalarFunctions::Sinh ||
                  id_ == IntrinsicScalarFunctions::Tanh);
