@@ -3,14 +3,6 @@ use, intrinsic :: iso_fortran_env, only: i8 => int8, i16 => int16, i32 => int32,
 use, intrinsic :: iso_c_binding, only: c_float, c_double
 implicit none
 
-interface erf
-    module procedure serf, derf
-end interface
-
-interface erfc
-    module procedure serfc, derfc
-end interface
-
 interface range
     module procedure srange, drange
     module procedure crange, zrange
@@ -50,54 +42,6 @@ interface dot_product
 end interface
 
 contains
-
-! erf --------------------------------------------------------------------------
-
-elemental real(sp) function serf(x) result(r)
-real(sp), intent(in) :: x
-interface
-    pure real(c_float) function c_serf(x) bind(c, name="_lfortran_serf")
-    import :: c_float
-    real(c_float), intent(in), value :: x
-    end function
-end interface
-r = c_serf(x)
-end function
-
-elemental real(dp) function derf(x) result(r)
-real(dp), intent(in) :: x
-interface
-    pure real(c_double) function c_derf(x) bind(c, name="_lfortran_derf")
-    import :: c_double
-    real(c_double), intent(in), value :: x
-    end function
-end interface
-r = c_derf(x)
-end function
-
-! erfc -------------------------------------------------------------------------
-
-elemental real(sp) function serfc(x) result(r)
-real(sp), intent(in) :: x
-interface
-    pure real(c_float) function c_serfc(x) bind(c, name="_lfortran_serfc")
-    import :: c_float
-    real(c_float), intent(in), value :: x
-    end function
-end interface
-r = c_serfc(x)
-end function
-
-elemental real(dp) function derfc(x) result(r)
-real(dp), intent(in) :: x
-interface
-    pure real(c_double) function c_derfc(x) bind(c, name="_lfortran_derfc")
-    import :: c_double
-    real(c_double), intent(in), value :: x
-    end function
-end interface
-r = c_derfc(x)
-end function
 
 ! epsilon ---------------------------------------------------------------------
 

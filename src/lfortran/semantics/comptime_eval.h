@@ -102,8 +102,6 @@ struct IntrinsicProcedures {
             {"range", {m_math, &eval_range, false}},
             {"epsilon", {m_math, &eval_epsilon, false}},
             {"tiny", {m_math, &eval_tiny, false}},
-            {"erf", {m_math, &eval_erf, true}},
-            {"erfc", {m_math, &eval_erfc, true}},
 
             {"dot_product", {m_math, &not_implemented, false}},
             {"conjg", {m_math, &not_implemented, false}},
@@ -417,13 +415,6 @@ struct IntrinsicProcedures {
         } else {
             throw SemanticError("Arguments for this intrinsic function must be Real or Integer", loc);
         }
-    }
-
-    static ASR::expr_t *eval_erf(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        return eval_trig(al, loc, args, compiler_options, &erf, nullptr);
-    }
-    static ASR::expr_t *eval_erfc(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        return eval_trig(al, loc, args, compiler_options, &erfc, nullptr);
     }
 
     static double lfortran_modulo(double x, double y) {
