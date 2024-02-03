@@ -44,6 +44,7 @@ enum class IntrinsicScalarFunctions : int64_t {
     Acosh,
     Atanh,
     Gamma,
+    Log,
     LogGamma,
     Trunc,
     Fix,
@@ -137,6 +138,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Acosh)
         INTRINSIC_NAME_CASE(Atanh)
         INTRINSIC_NAME_CASE(Gamma)
+        INTRINSIC_NAME_CASE(Log)
         INTRINSIC_NAME_CASE(LogGamma)
         INTRINSIC_NAME_CASE(Trunc)
         INTRINSIC_NAME_CASE(Fix)
@@ -1384,6 +1386,7 @@ create_trig(Tanh, tanh, tanh)
 create_trig(Asinh, asinh, asinh)
 create_trig(Acosh, acosh, acosh)
 create_trig(Atanh, atanh, atanh)
+create_trig(Log, log, log)
 
 namespace Aimag {
 
@@ -4800,6 +4803,8 @@ namespace IntrinsicScalarFunctionRegistry {
                    verify_function>>& intrinsic_function_by_id_db = {
         {static_cast<int64_t>(IntrinsicScalarFunctions::Gamma),
             {&Gamma::instantiate_Gamma, &UnaryIntrinsicFunction::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Log),
+            {&Log::instantiate_Log, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::LogGamma),
             {&LogGamma::instantiate_LogGamma, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Trunc),
@@ -4969,6 +4974,8 @@ namespace IntrinsicScalarFunctionRegistry {
     static const std::map<int64_t, std::string>& intrinsic_function_id_to_name = {
         {static_cast<int64_t>(IntrinsicScalarFunctions::Gamma),
             "gamma"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Log),
+            "log"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::LogGamma),
             "log_gamma"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Trunc),
@@ -5138,6 +5145,7 @@ namespace IntrinsicScalarFunctionRegistry {
         std::tuple<create_intrinsic_function,
                     eval_intrinsic_function>>& intrinsic_function_by_name_db = {
                 {"gamma", {&Gamma::create_Gamma, &Gamma::eval_Gamma}},
+                {"log", {&Log::create_Log, &Log::eval_Log}},
                 {"log_gamma", {&LogGamma::create_LogGamma, &LogGamma::eval_LogGamma}},
                 {"trunc", {&Trunc::create_Trunc, &Trunc::eval_Trunc}},
                 {"fix", {&Fix::create_Fix, &Fix::eval_Fix}},
@@ -5235,6 +5243,7 @@ namespace IntrinsicScalarFunctionRegistry {
         return ( id_ == IntrinsicScalarFunctions::Abs ||
                  id_ == IntrinsicScalarFunctions::Cos ||
                  id_ == IntrinsicScalarFunctions::Gamma ||
+                 id_ == IntrinsicScalarFunctions::Log ||
                  id_ == IntrinsicScalarFunctions::LogGamma ||
                  id_ == IntrinsicScalarFunctions::Trunc ||
                  id_ == IntrinsicScalarFunctions::Fix ||
