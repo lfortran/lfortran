@@ -116,8 +116,6 @@ struct IntrinsicProcedures {
             {"erf", {m_math, &eval_erf, true}},
             {"erfc", {m_math, &eval_erfc, true}},
             {"datan", {m_math, &eval_datan, true}},
-            {"dcos", {m_math, &eval_dcos, true}},
-            {"dsin", {m_math, &eval_dsin, true}},
             {"log10", {m_math, &eval_log10, true}},
             {"dlog10", {m_math, &eval_dlog10, true}},
 
@@ -473,8 +471,6 @@ TRIG2(log, slog)
 TRIG2(log, clog)
 TRIG2(log, zlog)
 
-TRIG2(sin, dsin)
-TRIG2(cos, dcos)
 TRIG2(atan, datan)
 
 
