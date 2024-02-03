@@ -107,12 +107,6 @@ struct IntrinsicProcedures {
             {"range", {m_math, &eval_range, false}},
             {"epsilon", {m_math, &eval_epsilon, false}},
             {"tiny", {m_math, &eval_tiny, false}},
-            {"log", {m_math, &eval_log, true}},
-            {"alog", {m_math, &eval_alog, true}},
-            {"slog", {m_math, &eval_slog, true}},
-            {"dlog", {m_math, &eval_dlog, true}},
-            {"clog", {m_math, &eval_clog, true}},
-            {"zlog", {m_math, &eval_zlog, true}},
             {"erf", {m_math, &eval_erf, true}},
             {"erfc", {m_math, &eval_erfc, true}},
             {"log10", {m_math, &eval_log10, true}},
@@ -446,19 +440,13 @@ struct IntrinsicProcedures {
     TRIG2_CB2(X, Y)
 
 TRIG(exp)
-TRIG(log)
 
 TRIG2(exp, dexp)
 TRIG2(exp, sexp)
 TRIG2(exp, cexp)
 TRIG2(exp, zexp)
 
-TRIG2(log, alog)
-TRIG2(log, dlog)
 TRIG2(log10, dlog10)
-TRIG2(log, slog)
-TRIG2(log, clog)
-TRIG2(log, zlog)
 
 
     static ASR::expr_t *eval_erf(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
