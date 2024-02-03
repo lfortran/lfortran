@@ -906,6 +906,8 @@ RUN(NAME block_03 LABELS gfortran llvm)
 RUN(NAME block_04 LABELS gfortran llvm)
 RUN(NAME block_05 LABELS gfortran llvm)
 RUN(NAME block_06 LABELS gfortran llvm wasm)
+RUN(NAME block_07 LABELS gfortran llvm)
+RUN(NAME block_08 LABELS gfortran llvm)
 RUN(NAME associate_01 LABELS gfortran llvm)
 RUN(NAME associate_02 LABELS gfortran llvm)
 RUN(NAME associate_03 LABELS gfortran llvm)
@@ -1187,8 +1189,6 @@ RUN(NAME do_loop_02 LABELS gfortran llvm)
 RUN(NAME do_loop_03 LABELS gfortran llvm
     EXTRA_ARGS --use-loop-variable-after-loop)
 RUN(NAME do_loop_04 LABELS llvm) # This test is not supported by gfortran, as it uses a loop variable after the loop ( bad code practice )
-
-RUN(NAME block_07 LABELS gfortran llvm)
 
 RUN(NAME complex_11 LABELS gfortran llvmImplicit wasm)
 RUN(NAME complex_12 LABELS gfortran llvm wasm)
