@@ -3664,9 +3664,61 @@ namespace X {                                                                   
     }                                                                                     \
 } // namespace X
 
-create_exp_macro(Exp, exp)
 create_exp_macro(Exp2, exp2)
 create_exp_macro(Expm1, expm1)
+
+namespace Exp {
+
+    static inline ASR::expr_t* eval_Exp(Allocator &al, const Location &loc,
+            ASR::ttype_t *t, Vec<ASR::expr_t*> &args) {
+        LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
+        double rv = -1;
+        if( ASRUtils::extract_value(args[0], rv) ) {
+            double val = std::exp(rv);
+            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, val, t));
+        } else {
+            std::complex<double> crv;
+            if( ASRUtils::extract_value(args[0], crv) ) {
+                std::complex<double> val = std::exp(crv);
+                return ASRUtils::EXPR(ASR::make_ComplexConstant_t(
+                    al, loc, val.real(), val.imag(), t));
+            }
+        }
+        return nullptr;
+    }
+
+    static inline ASR::asr_t* create_Exp(Allocator& al, const Location& loc,
+        Vec<ASR::expr_t*>& args,
+        const std::function<void (const std::string &, const Location &)> err) {
+        if (args.size() != 1) {
+            err("Intrinsic function `exp` accepts exactly 1 argument", loc);
+        }
+        ASR::ttype_t *type = ASRUtils::expr_type(args[0]);
+        if (!ASRUtils::is_real(*type) && !is_complex(*type)) {
+            err("Argument of the `exp` function must be either Real or Complex",
+                args[0]->base.loc);
+        }
+        return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args,
+            eval_Exp, static_cast<int64_t>(IntrinsicScalarFunctions::Exp),
+            0, type);
+    }
+
+    static inline ASR::expr_t* instantiate_Exp(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t overload_id) {
+        if (is_real(*arg_types[0])) {
+            Vec<ASR::expr_t *> args; args.reserve(al, 1);
+            args.push_back(al, new_args[0].m_value);
+            return EXPR(ASR::make_IntrinsicScalarFunction_t(al, loc,
+                static_cast<int64_t>(IntrinsicScalarFunctions::Exp),
+                args.p, 1, overload_id, return_type, nullptr));
+        } else {
+            return UnaryIntrinsicFunction::instantiate_functions(al, loc, scope,
+                "exp", arg_types[0], return_type, new_args, overload_id);
+        }
+    }
+
+} // namespace Exp
 
 namespace ListIndex {
 
@@ -4843,7 +4895,7 @@ namespace IntrinsicScalarFunctionRegistry {
         {static_cast<int64_t>(IntrinsicScalarFunctions::Atanh),
             {&Atanh::instantiate_Atanh, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Exp),
-            {nullptr, &UnaryIntrinsicFunction::verify_args}},
+            {&Exp::instantiate_Exp, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Exp2),
             {nullptr, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Expm1),
@@ -5293,15 +5345,6 @@ namespace IntrinsicScalarFunctionRegistry {
                                       " has no name registered for it");
         }
         return intrinsic_function_id_to_name.at(id);
-    }
-
-    static inline bool is_input_type_supported(const std::string& name, Vec<ASR::expr_t*>& args) {
-        if( name == "exp" ) {
-            if( !ASRUtils::is_real(*ASRUtils::expr_type(args[0])) ) {
-                return false;
-            }
-        }
-        return true;
     }
 
 } // namespace IntrinsicScalarFunctionRegistry
