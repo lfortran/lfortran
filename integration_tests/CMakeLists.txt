@@ -1378,3 +1378,5 @@ RUN(NAME elemental_05 LABELS gfortran llvm)
 RUN(NAME elemental_06 LABELS gfortran llvm)
 RUN(NAME elemental_07 LABELS gfortran llvm)
 RUN(NAME elemental_08 LABELS gfortran llvm)
+
+RUN(NAME types_21 LABELS gfortran llvm)
