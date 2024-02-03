@@ -3711,3 +3711,15 @@ asr = true
 [[test]]
 filename = "warnings/open_notimplemented_kwarg1.f90"
 asr = true
+
+[[test]]
+filename = "errors/substring_startidx.f90"
+asr = true
+
+[[test]]
+filename = "errors/substring_endidx.f90"
+asr = true
+
+[[test]]
+filename = "errors/substring_stride.f90"
+asr = true

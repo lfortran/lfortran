@@ -5,11 +5,11 @@
             _lcompilers_optimization_flipsign_f32:
                 (Function
                     (SymbolTable
-                        86
+                        78
                         {
                             _lcompilers_optimization_flipsign_f32:
                                 (Variable
-                                    86
+                                    78
                                     _lcompilers_optimization_flipsign_f32
                                     []
                                     ReturnVar
@@ -25,7 +25,7 @@
                                 ),
                             signal:
                                 (Variable
-                                    86
+                                    78
                                     signal
                                     []
                                     In
@@ -41,7 +41,7 @@
                                 ),
                             variable:
                                 (Variable
-                                    86
+                                    78
                                     variable
                                     []
                                     In
@@ -73,12 +73,12 @@
                         .false.
                     )
                     []
-                    [(Var 86 signal)
-                    (Var 86 variable)]
+                    [(Var 78 signal)
+                    (Var 78 variable)]
                     [(If
                         (IntegerCompare
                             (IntegerBinOp
-                                (Var 86 signal)
+                                (Var 78 signal)
                                 Sub
                                 (IntegerBinOp
                                     (IntegerConstant 2 (Integer 4))
@@ -86,7 +86,7 @@
                                     (Cast
                                         (RealBinOp
                                             (Cast
-                                                (Var 86 signal)
+                                                (Var 78 signal)
                                                 IntegerToReal
                                                 (Real 4)
                                                 ()
@@ -117,21 +117,21 @@
                             ()
                         )
                         [(Assignment
-                            (Var 86 _lcompilers_optimization_flipsign_f32)
+                            (Var 78 _lcompilers_optimization_flipsign_f32)
                             (RealUnaryMinus
-                                (Var 86 variable)
+                                (Var 78 variable)
                                 (Real 4)
                                 ()
                             )
                             ()
                         )]
                         [(Assignment
-                            (Var 86 _lcompilers_optimization_flipsign_f32)
-                            (Var 86 variable)
+                            (Var 78 _lcompilers_optimization_flipsign_f32)
+                            (Var 78 variable)
                             ()
                         )]
                     )]
-                    (Var 86 _lcompilers_optimization_flipsign_f32)
+                    (Var 78 _lcompilers_optimization_flipsign_f32)
                     Public
                     .false.
                     .false.
@@ -140,11 +140,11 @@
             _lcompilers_optimization_flipsign_f321:
                 (Function
                     (SymbolTable
-                        87
+                        79
                         {
                             _lcompilers_optimization_flipsign_f321:
                                 (Variable
-                                    87
+                                    79
                                     _lcompilers_optimization_flipsign_f321
                                     []
                                     ReturnVar
@@ -160,7 +160,7 @@
                                 ),
                             signal:
                                 (Variable
-                                    87
+                                    79
                                     signal
                                     []
                                     In
@@ -176,7 +176,7 @@
                                 ),
                             variable:
                                 (Variable
-                                    87
+                                    79
                                     variable
                                     []
                                     In
@@ -208,12 +208,12 @@
                         .false.
                     )
                     []
-                    [(Var 87 signal)
-                    (Var 87 variable)]
+                    [(Var 79 signal)
+                    (Var 79 variable)]
                     [(If
                         (IntegerCompare
                             (IntegerBinOp
-                                (Var 87 signal)
+                                (Var 79 signal)
                                 Sub
                                 (IntegerBinOp
                                     (IntegerConstant 2 (Integer 4))
@@ -221,7 +221,7 @@
                                     (Cast
                                         (RealBinOp
                                             (Cast
-                                                (Var 87 signal)
+                                                (Var 79 signal)
                                                 IntegerToReal
                                                 (Real 4)
                                                 ()
@@ -252,21 +252,21 @@
                             ()
                         )
                         [(Assignment
-                            (Var 87 _lcompilers_optimization_flipsign_f321)
+                            (Var 79 _lcompilers_optimization_flipsign_f321)
                             (RealUnaryMinus
-                                (Var 87 variable)
+                                (Var 79 variable)
                                 (Real 4)
                                 ()
                             )
                             ()
                         )]
                         [(Assignment
-                            (Var 87 _lcompilers_optimization_flipsign_f321)
-                            (Var 87 variable)
+                            (Var 79 _lcompilers_optimization_flipsign_f321)
+                            (Var 79 variable)
                             ()
                         )]
                     )]
-                    (Var 87 _lcompilers_optimization_flipsign_f321)
+                    (Var 79 _lcompilers_optimization_flipsign_f321)
                     Public
                     .false.
                     .false.

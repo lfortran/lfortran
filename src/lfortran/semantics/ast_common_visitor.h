@@ -719,9 +719,14 @@ public:
         {"shiftl", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
         {"lshift", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
         {"ishft", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
+        {"floor", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
+        {"ceiling", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
     };
 
-    std::map<std::string, std::string> double_precision_intrinsics = {
+    std::map<std::string, std::string> intrinsic_mapping = {
+        {"iabs", "abs"},
+        {"dabs", "abs"},
+
         {"dsinh", "sinh"},
         {"dcosh", "cosh"},
         {"dtanh", "tanh"},
@@ -996,7 +1001,7 @@ public:
         _processing_dimensions = true;
         dims.reserve(al, n_dim);
         for (size_t i=0; i<n_dim; i++) {
-            ASR::dimension_t dim;
+            ASR::dimension_t dim; dim.m_length = nullptr; dim.m_start = nullptr;
             dim.loc = m_dim[i].loc;
             if (m_dim[i].m_start) {
                 this->visit_expr(*m_dim[i].m_start);
@@ -1204,7 +1209,7 @@ public:
             }
             Vec<ASR::dimension_t> dims;
             dims.reserve(al, 1);
-            ASR::dimension_t dim;
+            ASR::dimension_t dim; dim.m_length = nullptr; dim.m_start = nullptr;
             dim.loc = x.base.base.loc;
             ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
             ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int_type));
@@ -1523,7 +1528,7 @@ public:
 
                     Vec<ASR::dimension_t> dims;
                     dims.reserve(al, 1);
-                    ASR::dimension_t dim;
+                    ASR::dimension_t dim; dim.m_length = nullptr; dim.m_start = nullptr;
                     dim.loc = loc;
                     dim.m_start = one;
                     dim.m_length = arg_right;
@@ -2052,6 +2057,7 @@ public:
                                 Vec<ASR::dimension_t> dim;
                                 dim.reserve(al, 1);
                                 ASR::dimension_t dim_;
+                                dim_.m_length = nullptr; dim_.m_start = nullptr;
                                 dim_.m_start = one;
                                 dim_.m_length = one;
                                 dim_.loc = asr_eq1->base.loc;
@@ -2059,9 +2065,7 @@ public:
 
                                 Vec<ASR::dimension_t> dim2;
                                 dim2.reserve(al, 1);
-                                ASR::dimension_t dim2_;
-                                dim2_.m_start = nullptr;
-                                dim2_.m_length = nullptr;
+                                ASR::dimension_t dim2_; dim2_.m_start = nullptr; dim2_.m_length = nullptr;
                                 dim2_.loc = asr_eq1->base.loc;
                                 dim2.push_back(al, dim2_);
 
@@ -2426,7 +2430,7 @@ public:
                         // For case  `integer, parameter :: x(*) = [1,2,3], get the compile time length of RHS array.
                         Vec<ASR::dimension_t> temp_dims;
                         temp_dims.reserve(al, 1);
-                        ASR::dimension_t temp_dim;
+                        ASR::dimension_t temp_dim; temp_dim.m_length = nullptr; temp_dim.m_start = nullptr;
                         temp_dim.loc = (temp_array->base).base.loc;
                         ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, (temp_array->base).base.loc, compiler_options.po.default_integer_kind));
                         ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, (temp_array->base).base.loc, 1, int_type));
@@ -3068,6 +3072,9 @@ public:
             if( a.m_left ) {
                 if( all_args_eval ) {
                     ASR::expr_t* m_left_expr = ASRUtils::expr_value(a.m_left);
+                    if (!ASR::is_a<ASR::IntegerConstant_t>(*m_left_expr)) {
+                        throw SemanticError("Substring start index at must be of type integer", m_left_expr->base.loc);
+                    }
                     ASR::IntegerConstant_t *m_left = ASR::down_cast<ASR::IntegerConstant_t>(m_left_expr);
                     start = m_left->m_n;
                 }
@@ -3076,15 +3083,19 @@ public:
                 if( all_args_eval ) {
                     flag = true;
                     ASR::expr_t* m_right_expr = ASRUtils::expr_value(a.m_right);
-                    if( ASR::is_a<ASR::IntegerConstant_t>(*m_right_expr) ) {
-                        ASR::IntegerConstant_t *m_right = ASR::down_cast<ASR::IntegerConstant_t>(m_right_expr);
-                        end = m_right->m_n;
+                    if(!ASR::is_a<ASR::IntegerConstant_t>(*m_right_expr)) {
+                        throw SemanticError("Substring end index at must be of type integer", m_right_expr->base.loc);
                     }
+                    ASR::IntegerConstant_t *m_right = ASR::down_cast<ASR::IntegerConstant_t>(m_right_expr);
+                    end = m_right->m_n;
                 }
             }
             if( a.m_step ) {
                 if( all_args_eval ) {
                     ASR::expr_t* m_step_expr = ASRUtils::expr_value(a.m_step);
+                    if(!ASR::is_a<ASR::IntegerConstant_t>(*m_step_expr)) {
+                        throw SemanticError("Substring stride must be of type integer", m_step_expr->base.loc);
+                    }
                     ASR::IntegerConstant_t *m_step = ASR::down_cast<ASR::IntegerConstant_t>(m_step_expr);
                     step = m_step->m_n;
                 }
@@ -3103,7 +3114,7 @@ public:
                     if(end > str_length) {
                         throw SemanticError("Substring end index exceeds the string length",
                                     loc);
-                    } 
+                    }
                     if( end == -1 && !flag ) {
                         end = str_length;
                     } else {
@@ -3201,12 +3212,20 @@ public:
                                         1, -1, nullptr));
                     }
                     ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
-                    ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
-                                                1, int_type));
                     ASR::expr_t *l = nullptr, *r = nullptr;
+
                     if (m_args[0].m_start) {
-                        l = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-                            args[0].m_left, ASR::binopType::Sub, const_1, int_type, nullptr));
+                        // use 0 based indexing for string slice, so subtract 1 from left index
+                        int32_t offset = 1;
+                        ASR::expr_t* const_1 = i(offset, int_type);
+                        ASR::expr_t* a_value = nullptr;
+                        if (ASR::is_a<ASR::IntegerConstant_t>(*args[0].m_left)) {
+                            int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(
+                                            ASRUtils::expr_value(args[0].m_left))->m_n - offset;
+                            a_value = ASRUtils::EXPR((ASR::make_IntegerConstant_t(al, loc,
+                                                    a, int_type)));
+                        }
+                        l = i_vSub(args[0].m_left, const_1, a_value);
                     }
                     if (m_args[0].m_end) {
                         r = args[0].m_right;
@@ -4684,7 +4703,7 @@ public:
     }
 
     bool is_intrinsic_registry_function(std::string var_name) {
-        bool is_double_precision_intrinsic = double_precision_intrinsics.count(var_name);
+        bool is_double_precision_intrinsic = intrinsic_mapping.count(var_name);
         if (intrinsic_procedures_as_asr_nodes.is_intrinsic_present_in_ASR(var_name) ||
             intrinsic_procedures_as_asr_nodes.is_kind_based_selection_required(var_name) ||
             ASRUtils::IntrinsicScalarFunctionRegistry::is_intrinsic_function(var_name) ||
@@ -4699,11 +4718,11 @@ public:
     ASR::symbol_t* intrinsic_as_node(const AST::FuncCallOrArray_t &x,
                                      bool& is_function) {
         std::string var_name = to_lower(x.m_func);
-        bool is_double_precision_intrinsic = double_precision_intrinsics.count(var_name);
+        bool is_double_precision_intrinsic = intrinsic_mapping.count(var_name);
         if( is_intrinsic_registry_function(var_name)) {
             is_function = false;
             if (is_double_precision_intrinsic) {
-                var_name = double_precision_intrinsics[var_name];
+                var_name = intrinsic_mapping[var_name];
             }
             if( ASRUtils::IntrinsicScalarFunctionRegistry::is_intrinsic_function(var_name) ||
                     ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ) {

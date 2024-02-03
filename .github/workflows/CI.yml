@@ -528,7 +528,7 @@ jobs:
             git checkout 409ba02a107f47ee835f3976952bbc64dd46de8a
             mkdir lf
             cd lf
-            FC=$(pwd)/../../src/bin/lfortran cmake ..
+            FC="$(pwd)/../../src/bin/lfortran --intrinsic-mangling" cmake ..
             make
             examples/example_hybrd
             examples/example_hybrd1
@@ -673,7 +673,7 @@ jobs:
             lfortran subprojects/test-drive/src/testdrive.F90 --show-llvm
 
             git checkout lf19
-            git checkout c53dea9fa01dba9fcb06feeba0ac6fa74d8b8594
+            git checkout e5b48c20eb074522945d0398620e4f27aab967b5
             ./build_test_array.sh
 
             # Run tests (specialfunctions_gamma, ascii, version, optval, error)

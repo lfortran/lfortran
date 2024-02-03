@@ -1365,6 +1365,10 @@ namespace Merge {
             ASR::Character_t* fsource_char = ASR::down_cast<ASR::Character_t>(fsource_type);
             tsource_char->m_len_expr = nullptr; fsource_char->m_len_expr = nullptr;
             tsource_char->m_len = -2; fsource_char->m_len = -2;
+            ASR::Character_t* return_char = ASR::down_cast<ASR::Character_t>(
+                ASRUtils::type_get_past_allocatable(return_type));
+            return_char->m_len = -2; return_char->m_len_expr = nullptr;
+
         }
         std::string new_name = "_lcompilers_merge_" + get_type_code(tsource_type);
 

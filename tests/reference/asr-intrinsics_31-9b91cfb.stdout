@@ -7,36 +7,6 @@
                     (SymbolTable
                         2
                         {
-                            ceiling:
-                                (ExternalSymbol
-                                    2
-                                    ceiling
-                                    4 ceiling
-                                    lfortran_intrinsic_math2
-                                    []
-                                    ceiling
-                                    Private
-                                ),
-                            ceiling@dceiling:
-                                (ExternalSymbol
-                                    2
-                                    ceiling@dceiling
-                                    4 dceiling
-                                    lfortran_intrinsic_math2
-                                    []
-                                    dceiling
-                                    Private
-                                ),
-                            ceiling@sceiling:
-                                (ExternalSymbol
-                                    2
-                                    ceiling@sceiling
-                                    4 sceiling
-                                    lfortran_intrinsic_math2
-                                    []
-                                    sceiling
-                                    Private
-                                ),
                             dp:
                                 (Variable
                                     2
@@ -234,12 +204,11 @@
                     [(Assignment
                         (Var 2 x_ceil)
                         (Cast
-                            (FunctionCall
-                                2 ceiling@sceiling
-                                2 ceiling
-                                [((Var 2 x))]
+                            (IntrinsicScalarFunction
+                                Ceiling
+                                [(Var 2 x)]
+                                0
                                 (Integer 4)
-                                ()
                                 ()
                             )
                             IntegerToReal
@@ -251,12 +220,11 @@
                     (Assignment
                         (Var 2 y_ceil)
                         (Cast
-                            (FunctionCall
-                                2 ceiling@sceiling
-                                2 ceiling
-                                [((Var 2 y))]
+                            (IntrinsicScalarFunction
+                                Ceiling
+                                [(Var 2 y)]
+                                0
                                 (Integer 4)
-                                ()
                                 ()
                             )
                             IntegerToReal
@@ -267,24 +235,22 @@
                     )
                     (Assignment
                         (Var 2 z_ceil)
-                        (FunctionCall
-                            2 ceiling@dceiling
-                            2 ceiling
-                            [((Var 2 z))]
+                        (IntrinsicScalarFunction
+                            Ceiling
+                            [(Var 2 z)]
+                            0
                             (Integer 4)
-                            ()
                             ()
                         )
                         ()
                     )
                     (Assignment
                         (Var 2 w_ceil)
-                        (FunctionCall
-                            2 ceiling@dceiling
-                            2 ceiling
-                            [((Var 2 w))]
+                        (IntrinsicScalarFunction
+                            Ceiling
+                            [(Var 2 w)]
+                            0
                             (Integer 4)
-                            ()
                             ()
                         )
                         ()
@@ -397,12 +363,11 @@
                     )
                     (Print
                         [(Var 2 x_ceil)
-                        (FunctionCall
-                            2 ceiling@sceiling
-                            2 ceiling
-                            [((Var 2 x_ceil))]
+                        (IntrinsicScalarFunction
+                            Ceiling
+                            [(Var 2 x_ceil)]
+                            0
                             (Integer 4)
-                            ()
                             ()
                         )]
                         ()
@@ -410,12 +375,11 @@
                     )
                     (Print
                         [(Var 2 y_ceil)
-                        (FunctionCall
-                            2 ceiling@sceiling
-                            2 ceiling
-                            [((Var 2 y_ceil))]
+                        (IntrinsicScalarFunction
+                            Ceiling
+                            [(Var 2 y_ceil)]
+                            0
                             (Integer 4)
-                            ()
                             ()
                         )]
                         ()
@@ -431,15 +395,7 @@
                         ()
                         ()
                     )]
-                ),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math2:
-                (IntrinsicModule lfortran_intrinsic_math2),
-            lfortran_intrinsic_math3:
-                (IntrinsicModule lfortran_intrinsic_math3)
+                )
         })
     []
 )
