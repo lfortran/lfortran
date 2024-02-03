@@ -4751,14 +4751,9 @@ public:
                 if( ASRUtils::IntrinsicScalarFunctionRegistry::is_intrinsic_function(var_name) ){
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicScalarFunctionRegistry::get_create_function(var_name);
-                    if( !ASRUtils::IntrinsicScalarFunctionRegistry::is_input_type_supported(var_name, args) ) {
-                        is_function = true;
-                        return resolve_intrinsic_function(x.base.base.loc, var_name);
-                    } else {
-                        tmp = create_func(al, x.base.base.loc, args,
-                            [&](const std::string &msg, const Location &loc) {
-                                throw SemanticError(msg, loc); });
-                    }
+                    tmp = create_func(al, x.base.base.loc, args,
+                        [&](const std::string &msg, const Location &loc) {
+                            throw SemanticError(msg, loc); });
                 } else if ( ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ) {
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicArrayFunctionRegistry::get_create_function(var_name);
