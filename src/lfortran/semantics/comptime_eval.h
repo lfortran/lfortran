@@ -109,8 +109,6 @@ struct IntrinsicProcedures {
             {"tiny", {m_math, &eval_tiny, false}},
             {"erf", {m_math, &eval_erf, true}},
             {"erfc", {m_math, &eval_erfc, true}},
-            {"log10", {m_math, &eval_log10, true}},
-            {"dlog10", {m_math, &eval_dlog10, true}},
 
             {"dot_product", {m_math, &not_implemented, false}},
             {"conjg", {m_math, &not_implemented, false}},
@@ -446,17 +444,11 @@ TRIG2(exp, sexp)
 TRIG2(exp, cexp)
 TRIG2(exp, zexp)
 
-TRIG2(log10, dlog10)
-
-
     static ASR::expr_t *eval_erf(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
         return eval_trig(al, loc, args, compiler_options, &erf, nullptr);
     }
     static ASR::expr_t *eval_erfc(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
         return eval_trig(al, loc, args, compiler_options, &erfc, nullptr);
-    }
-    static ASR::expr_t *eval_log10(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        return eval_trig(al, loc, args, compiler_options, &log10, nullptr);
     }
 
     static double lfortran_modulo(double x, double y) {
