@@ -273,6 +273,18 @@ public:
                 if (!ASRUtils::is_character(*a_form_type)) {
                         throw SemanticError("`form` must be of type, Character or CharacterPointer", x.base.base.loc);
                 }
+            } else {
+                const std::unordered_set<std::string> unsupported_args {"iostat", "iomsg", "err", "blank", "access", \
+                                                                            "recl", "fileopt", "action", "position"};
+                if (unsupported_args.find(m_arg_str) == unsupported_args.end()) {
+                    throw SemanticError("Invalid argument `" + m_arg_str + "` supplied", x.base.base.loc);
+                } else {
+                    diag.semantic_warning_label(
+                        "Argument `" + m_arg_str + "` isn't supported yet",
+                        {x.base.base.loc},
+                        "ignored for now"
+                    );
+                }
             }
         }
         if( a_newunit == nullptr ) {
@@ -299,7 +311,8 @@ public:
         for( std::uint32_t i = 0; i < x.n_kwargs; i++ ) {
             AST::keyword_t kwarg = x.m_kwargs[i];
             std::string m_arg_str(kwarg.m_arg);
-            if( to_lower(m_arg_str) == std::string("unit") ) {
+            m_arg_str = to_lower(m_arg_str);
+            if( m_arg_str == std::string("unit") ) {
                 if( a_unit != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `unit` found, `unit` has already been specified via argument or keyword arguments)""",
                                         x.base.base.loc);
@@ -310,7 +323,7 @@ public:
                 if (!ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_newunit_type))) {
                         throw SemanticError("`unit` must be of type, Integer or IntegerPointer", x.base.base.loc);
                 }
-            } else if( to_lower(m_arg_str) == std::string("iostat") ) {
+            } else if( m_arg_str == std::string("iostat") ) {
                 if( a_iostat != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `iostat` found, unit has already been specified via arguments or keyword arguments)""",
                                         x.base.base.loc);
@@ -322,7 +335,7 @@ public:
                     (!ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_iostat_type))) ) {
                         throw SemanticError("`iostat` must be a variable of type, Integer or IntegerPointer", x.base.base.loc);
                 }
-            } else if( to_lower(m_arg_str) == std::string("iomsg") ) {
+            } else if( m_arg_str == std::string("iomsg") ) {
                 if( a_iomsg != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `iomsg` found, unit has already been specified via arguments or keyword arguments)""",
                                         x.base.base.loc);
@@ -334,7 +347,7 @@ public:
                     (!ASRUtils::is_character(*a_iomsg_type)) ) {
                         throw SemanticError("`iomsg` must be of type, Character or CharacterPointer", x.base.base.loc);
                     }
-            } else if( to_lower(m_arg_str) == std::string("status") ) {
+            } else if( m_arg_str == std::string("status") ) {
                 if( a_status != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `status` found, unit has already been specified via arguments or keyword arguments)""",
                                         x.base.base.loc);
@@ -345,7 +358,7 @@ public:
                 if (!ASRUtils::is_character(*a_status_type)) {
                         throw SemanticError("`status` must be of type, Character or CharacterPointer", x.base.base.loc);
                 }
-            } else if( to_lower(m_arg_str) == std::string("err") ) {
+            } else if( m_arg_str == std::string("err") ) {
                 if( a_err != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `err` found, `err` has already been specified via arguments or keyword arguments)""",
                                         x.base.base.loc);
@@ -355,6 +368,8 @@ public:
                 }
                 this->visit_expr(*kwarg.m_value);
                 a_err = ASRUtils::EXPR(tmp);
+            } else {
+                throw SemanticError("Invalid argument `" + m_arg_str + "` supplied", x.base.base.loc);
             }
         }
         if( a_unit == nullptr ) {
@@ -378,6 +393,7 @@ public:
         for( std::uint32_t i = 0; i < x.n_kwargs; i++ ) {
             AST::keyword_t kwarg = x.m_kwargs[i];
             std::string m_arg_str(kwarg.m_arg);
+            m_arg_str = to_lower(m_arg_str);
             if( m_arg_str == std::string("unit") ) {
                 if( a_unit != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `unit` found, `unit` "
@@ -416,6 +432,8 @@ public:
                 }
                 this->visit_expr(*kwarg.m_value);
                 a_err = ASRUtils::EXPR(tmp);
+            } else {
+                throw SemanticError("Invalid argument `" + m_arg_str + "` supplied", x.base.base.loc);
             }
         }
         if( a_unit == nullptr ) {
@@ -679,12 +697,14 @@ public:
 
         for( size_t i = 0; i < x.n_kwargs; i++ ) {
             if( x.m_kwargs[i].m_value ) {
-                std::string m_arg_string = to_lower(std::string(x.m_kwargs[i].m_arg));
-                if( args[argname2idx[m_arg_string]] ) {
-                    throw SemanticError(m_arg_string + " has already been specified.", x.base.base.loc);
+                std::string m_arg_str = to_lower(std::string(x.m_kwargs[i].m_arg));
+                if (argname2idx.find(m_arg_str) == argname2idx.end()) {
+                    throw SemanticError("Invalid argument `" + m_arg_str + "` supplied", x.base.base.loc);
+                } else if (args[argname2idx[m_arg_str]]) {
+                    throw SemanticError(m_arg_str + " has already been specified.", x.base.base.loc);
                 }
                 visit_expr(*x.m_kwargs[i].m_value);
-                args[argname2idx[m_arg_string]] = ASRUtils::EXPR(tmp);
+                args[argname2idx[m_arg_str]] = ASRUtils::EXPR(tmp);
             }
         }
     }
