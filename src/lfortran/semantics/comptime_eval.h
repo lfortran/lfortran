@@ -118,10 +118,6 @@ struct IntrinsicProcedures {
             {"log10", {m_math, &eval_log10, true}},
             {"dlog10", {m_math, &eval_dlog10, true}},
 
-            {"asinh", {m_math, &eval_asinh, true}},
-            {"acosh", {m_math, &eval_acosh, true}},
-            {"atanh", {m_math, &eval_atanh, true}},
-
             {"dot_product", {m_math, &not_implemented, false}},
             {"conjg", {m_math, &not_implemented, false}},
 
@@ -448,10 +444,6 @@ struct IntrinsicProcedures {
     TRIG_CB2(X)
 #define TRIG2(X, Y) TRIG2_CB(X, Y) \
     TRIG2_CB2(X, Y)
-
-TRIG(asinh)
-TRIG(acosh)
-TRIG(atanh)
 
 TRIG(exp)
 TRIG(log)
