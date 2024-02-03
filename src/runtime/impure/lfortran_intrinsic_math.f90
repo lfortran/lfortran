@@ -15,10 +15,6 @@ interface erfc
     module procedure serfc, derfc
 end interface
 
-interface log10
-    module procedure slog10, dlog10
-end interface
-
 interface range
     module procedure srange, drange
     module procedure crange, zrange
@@ -152,30 +148,6 @@ interface
     end function
 end interface
 r = c_derfc(x)
-end function
-
-! log10 ------------------------------------------------------------------------
-
-elemental real(sp) function slog10(x) result(r)
-real(sp), intent(in) :: x
-interface
-    pure real(c_float) function c_slog10(x) bind(c, name="_lfortran_slog10")
-    import :: c_float
-    real(c_float), intent(in), value :: x
-    end function
-end interface
-r = c_slog10(x)
-end function
-
-elemental real(dp) function dlog10(x) result(r)
-real(dp), intent(in) :: x
-interface
-    pure real(c_double) function c_dlog10(x) bind(c, name="_lfortran_dlog10")
-    import :: c_double
-    real(c_double), intent(in), value :: x
-    end function
-end interface
-r = c_dlog10(x)
 end function
 
 ! epsilon ---------------------------------------------------------------------
