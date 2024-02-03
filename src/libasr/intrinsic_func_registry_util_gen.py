@@ -187,11 +187,18 @@ intrinsic_funcs_args = {
             "args": [("any",)],
             "return": "int32"
         }
-    ]
+    ],
+    "Range": [
+        {
+            "args": [("int",), ("real",), ("complex",)],
+            "return": "int32"
+        },
+    ],
+
 }
 
 skip_create_func = ["Aint", "Anint", "Nint", "Partition", "Floor", "Ceiling", "Aimag"]
-skip_fn_instantiation = ["Radix"]
+skip_fn_instantiation = ["Radix", "Range"]
 
 type_to_asr_type_check = {
     "any": "!ASR::is_a<ASR::TypeParameter_t>",

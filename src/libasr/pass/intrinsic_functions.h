@@ -73,6 +73,7 @@ enum class IntrinsicScalarFunctions : int64_t {
     Max,
     Min,
     Radix,
+    Range,
     Sign,
     SignFromValue,
     Nint,
@@ -835,6 +836,43 @@ namespace Radix {
     }
 
 }  // namespace Radix
+
+namespace Range {
+
+    static ASR::expr_t *eval_Range(Allocator &al, const Location &loc,
+            ASR::ttype_t */*return_type*/, Vec<ASR::expr_t*> &args) {
+        int64_t range_val = -1;
+        ASR::ttype_t *arg_type = expr_type(args[0]);
+        int32_t kind = extract_kind_from_ttype_t(arg_type);
+        if ( is_integer(*arg_type) ) {
+            switch ( kind ) {
+                case 1: {
+                    range_val = 2; break;
+                } case 2: {
+                    range_val = 4; break;
+                } case 4: {
+                    range_val = 9; break;
+                } case 8: {
+                    range_val = 18; break;
+                } default: {
+                    break;
+                }
+            }
+        } else if ( is_real(*arg_type) || is_complex(*arg_type) ) {
+            switch ( kind ) {
+                case 4: {
+                    range_val = 37; break;
+                } case 8: {
+                    range_val = 307; break;
+                } default: {
+                    break;
+                }
+            }
+        }
+        return i32(range_val);
+    }
+
+}  // namespace Range
 
 namespace Sign {
 
