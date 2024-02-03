@@ -42,6 +42,11 @@ intrinsic_funcs_args = {
             "args": [("char", "int")]
         }
     ],
+    "Adjustl": [
+        {
+            "args": [("char",)]
+        }
+    ],
     "MinExponent": [
         {
             "args": [("real",)]
