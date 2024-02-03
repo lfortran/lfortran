@@ -4104,35 +4104,6 @@ public:
         return ASR::down_cast<ASR::IntegerConstant_t>(kind_value)->m_n;
     }
 
-    ASR::asr_t* create_Floor(const AST::FuncCallOrArray_t &x,
-            ASR::ExternalSymbol_t* gp_ext, ASR::symbol_t* v) {
-        Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"A", "kind"};
-        handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "floor");
-        ASR::expr_t* kind = args[1];
-        int64_t kind_value = handle_kind(kind);
-        ASR::ttype_t *kind_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
-                x.base.base.loc, kind_value));
-        ASR::expr_t* kind_arg = ASR::down_cast<ASR::expr_t>(
-                ASR::make_IntegerConstant_t(al, x.base.base.loc, 0, kind_type));
-        Vec<ASR::call_arg_t> args2;
-        args2.reserve(al, 2);
-        ASR::call_arg_t arg1;
-        arg1.loc = args[0]->base.loc;
-        arg1.m_value = args[0];
-        args2.push_back(al, arg1);
-        ASR::call_arg_t kind_arg2;
-        kind_arg2.loc = x.base.base.loc;
-        kind_arg2.m_value = kind_arg;
-        args2.push_back(al, kind_arg2);
-        ASR::GenericProcedure_t* gp = ASR::down_cast<ASR::GenericProcedure_t>(
-                gp_ext->m_external);
-        int idx = ASRUtils::select_generic_procedure(args2, *gp, x.base.base.loc,
-                        [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); },
-                        true);
-        return symbol_resolve_external_generic_procedure_util(gp->base.base.loc, idx, v, args2, gp, gp_ext);
-    }
-
     ASR::asr_t* create_ArrayBound(const AST::FuncCallOrArray_t& x, std::string& bound_name) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"array", "dim", "kind"};
@@ -5327,25 +5298,11 @@ public:
             if (ASRUtils::is_intrinsic_symbol(f2)) {
                 // Here we handle all intrinsic functions that are implemented
                 // in Fortran, but have different interface (API), e.g.,
-                // the `kind` argument is handled differently, such as `floor`.
+                // the `kind` argument is handled differently, such as `not`.
                 // In these cases we have to handle them here, since we need
                 // to process the arguments ourselves, not via comparison
-                // with the `floor` implementation.
-                if (var_name == "floor") {
-                    if (ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
-                        // The above check is needed to ensure we are in an
-                        // intrinsic module and calling an external, that is, we
-                        // skip a locally defined `floor` function in an
-                        // intrinsic module
-                        ASR::ExternalSymbol_t *p = ASR::down_cast<ASR::ExternalSymbol_t>(v);
-                        ASR::symbol_t *f2 = ASR::down_cast<ASR::ExternalSymbol_t>(v)->m_external;
-                        if (ASR::is_a<ASR::GenericProcedure_t>(*f2)) {
-                            LCOMPILERS_ASSERT(std::string(ASR::down_cast<ASR::GenericProcedure_t>(f2)->m_name) == "floor")
-                            tmp = create_Floor(x, p, v);
-                            return;
-                        }
-                    }
-                } else if (var_name == "not") {
+                // with the `not` implementation.
+                if (var_name == "not") {
                     Vec<ASR::call_arg_t> args;
                     visit_expr_list(x.m_args, x.n_args, args);
                     LCOMPILERS_ASSERT(args.size() == 1);
