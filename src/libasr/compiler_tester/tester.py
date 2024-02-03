@@ -271,11 +271,11 @@ def do_verify_reference_hash(jr, dr, s):
                 full_err_str += "Reference Json File: " + jr + "\n"
                 full_err_str += "Reference File Hash Expected: " + f_r_hash + "\n"
                 full_err_str += "Reference File Hash Found: " + dr[f + "_hash"] + "\n"
-                raise RunException("Verifying reference hashes failed." +
+                raise RunException("Verifying reference hash failed." +
                     full_err_str)
 
 def run_test(testname, basename, cmd, infile, update_reference=False,
-             extra_args=None):
+            verify_hash=False, extra_args=None):
     """
     Runs the test `cmd` and compare against reference results.
 
@@ -438,6 +438,7 @@ def tester_main(compiler, single_test):
         if 'extrafiles' in test:
             single_test(test,
                 update_reference=update_reference,
+                verify_hash=verify_hash,
                 specific_backends=specific_backends,
                 excluded_backends=excluded_backends,
                 verbose=verbose,
@@ -451,6 +452,7 @@ def tester_main(compiler, single_test):
         for test in filtered_tests:
             single_test(test,
                         update_reference=update_reference,
+                        verify_hash=verify_hash,
                         specific_backends=specific_backends,
                         excluded_backends=excluded_backends,
                         verbose=verbose,
@@ -463,6 +465,7 @@ def tester_main(compiler, single_test):
         single_tester_partial_args = partial(
             single_test,
             update_reference=update_reference,
+            verify_hash=verify_hash,
             specific_backends=specific_backends,
             excluded_backends=excluded_backends,
             verbose=verbose,
