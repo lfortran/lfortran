@@ -1378,16 +1378,6 @@ create_trig(Tanh, tanh, tanh)
 
 namespace Aimag {
 
-    static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x,
-            diag::Diagnostics& diagnostics) {
-        ASRUtils::require_impl(x.n_args == 1,
-            "Call to `Aimag` must have exactly one argument",
-            x.base.base.loc, diagnostics);
-        ASRUtils::require_impl(is_complex(*expr_type(x.m_args[0])),
-            "Argument to `Aimag` must be of complex type",
-            x.base.base.loc, diagnostics);
-    }
-
     static inline ASR::expr_t *eval_Aimag(Allocator &al, const Location &loc,
             ASR::ttype_t *t, Vec<ASR::expr_t*>& args) {
         std::complex<double> crv;
