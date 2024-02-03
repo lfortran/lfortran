@@ -745,6 +745,7 @@ public:
         {"dsqrt", "sqrt"},
 
         {"dlog", "log"},
+        {"dlog10", "log10"},
     };
 
     ASR::asr_t *tmp;
