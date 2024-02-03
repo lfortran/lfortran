@@ -19,10 +19,6 @@ interface erfc
     module procedure serfc, derfc
 end interface
 
-interface log_gamma
-    module procedure slog_gamma, dlog_gamma
-end interface
-
 interface log10
     module procedure slog10, dlog10
 end interface
@@ -269,30 +265,6 @@ interface
     end function
 end interface
 r = c_derfc(x)
-end function
-
-! log_gamma --------------------------------------------------------------------
-
-elemental real(sp) function slog_gamma(x) result(r)
-real(sp), intent(in) :: x
-interface
-    pure real(c_float) function c_slog_gamma(x) bind(c, name="_lfortran_slog_gamma")
-    import :: c_float
-    real(c_float), intent(in), value :: x
-    end function
-end interface
-r = c_slog_gamma(x)
-end function
-
-elemental real(dp) function dlog_gamma(x) result(r)
-real(dp), intent(in) :: x
-interface
-    pure real(c_double) function c_dlog_gamma(x) bind(c, name="_lfortran_dlog_gamma")
-    import :: c_double
-    real(c_double), intent(in), value :: x
-    end function
-end interface
-r = c_dlog_gamma(x)
 end function
 
 ! log10 ------------------------------------------------------------------------
