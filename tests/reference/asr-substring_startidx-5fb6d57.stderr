@@ -1,0 +1,5 @@
+semantic error: Substring start index at must be of type integer
+ --> tests/errors/substring_startidx.f90:4:15
+  |
+4 |     print*, s(1.1:5)
+  |               ^^^

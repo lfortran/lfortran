@@ -3691,3 +3691,15 @@ asr = true
 [[test]]
 filename = "errors/min_02.f90"
 asr = true
+
+[[test]]
+filename = "errors/substring_startidx.f90"
+asr = true
+
+[[test]]
+filename = "errors/substring_endidx.f90"
+asr = true
+
+[[test]]
+filename = "errors/substring_stride.f90"
+asr = true
