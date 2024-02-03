@@ -45,6 +45,7 @@ enum class IntrinsicScalarFunctions : int64_t {
     Trunc,
     Fix,
     Abs,
+    Aimag,
     Exp,
     Exp2,
     Expm1,
@@ -134,6 +135,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Trunc)
         INTRINSIC_NAME_CASE(Fix)
         INTRINSIC_NAME_CASE(Abs)
+        INTRINSIC_NAME_CASE(Aimag)
         INTRINSIC_NAME_CASE(Exp)
         INTRINSIC_NAME_CASE(Exp2)
         INTRINSIC_NAME_CASE(Expm1)
@@ -996,7 +998,7 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
         }
 
         ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
-            arg_type, ASRUtils::intent_return_var, ASR::abiType::BindC, false);
+            return_type, ASRUtils::intent_return_var, ASR::abiType::BindC, false);
 
         SetChar dep_1; dep_1.reserve(al, 1);
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
@@ -1004,7 +1006,7 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
             body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
         fn_symtab->add_symbol(c_func_name, s);
         dep.push_back(al, s2c(al, c_func_name));
-        body.push_back(al, b.Assignment(result, b.Call(s, args, arg_type)));
+        body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
     }
 
     ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -1373,6 +1375,42 @@ create_trig(Atan, atan, atan)
 create_trig(Sinh, sinh, sinh)
 create_trig(Cosh, cosh, cosh)
 create_trig(Tanh, tanh, tanh)
+
+namespace Aimag {
+
+    static inline ASR::expr_t *eval_Aimag(Allocator &al, const Location &loc,
+            ASR::ttype_t *t, Vec<ASR::expr_t*>& args) {
+        std::complex<double> crv;
+        if( ASRUtils::extract_value(args[0], crv) ) {
+            return f(crv.imag(), t);
+        } else {
+            return nullptr;
+        }
+    }
+
+    static inline ASR::asr_t* create_Aimag(Allocator& al, const Location& loc,
+        Vec<ASR::expr_t*>& args,
+        const std::function<void (const std::string &, const Location &)> err) {
+        ASR::ttype_t *type = ASRUtils::expr_type(args[0]);
+        if (args.n != 1) {
+            err("Intrinsic `aimag` accepts exactly one argument", loc);
+        } else if (!ASRUtils::is_complex(*type)) {
+            err("`x` argument of `aimag` must be complex", args[0]->base.loc);
+        }
+        type = TYPE(ASR::make_Real_t(al, type->base.loc, extract_kind_from_ttype_t(type)));
+        return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_Aimag,
+            static_cast<int64_t>(IntrinsicScalarFunctions::Aimag), 0, type);
+    }
+
+    static inline ASR::expr_t* instantiate_Aimag (Allocator &al,
+            const Location &loc, SymbolTable *scope,
+            Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args,int64_t overload_id)  {
+        return UnaryIntrinsicFunction::instantiate_functions(al, loc, scope,
+            "aimag", arg_types[0], return_type, new_args, overload_id);
+    }
+
+} // namespace Aimag
 
 namespace Atan2 {
     static inline ASR::expr_t *eval_Atan2(Allocator &al, const Location &loc,
@@ -4098,7 +4136,8 @@ namespace Max {
     static inline ASR::expr_t* instantiate_Max(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        std::string func_name = "_lcompilers_max0_" + type_to_str_python(arg_types[0]);
+        std::string func_name = "_lcompilers_max0_" + type_to_str_python(arg_types[0])
+            + "_" + std::to_string(new_args.n);
         std::string fn_name = scope->get_unique_name(func_name);
         SymbolTable *fn_symtab = al.make_new<SymbolTable>(scope);
         Vec<ASR::expr_t*> args;
@@ -4106,8 +4145,8 @@ namespace Max {
         ASRBuilder b(al, loc);
         Vec<ASR::stmt_t*> body; body.reserve(al, args.size());
         SetChar dep; dep.reserve(al, 1);
-        if (scope->get_symbol(fn_name)) {
-            ASR::symbol_t *s = scope->get_symbol(fn_name);
+        if (scope->get_symbol(func_name)) {
+            ASR::symbol_t *s = scope->get_symbol(func_name);
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
             return b.Call(s, new_args, expr_type(f->m_return_var), nullptr);
         }
@@ -4818,6 +4857,8 @@ namespace IntrinsicScalarFunctionRegistry {
             {&MaxExponent::instantiate_MaxExponent, &MaxExponent::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Abs),
             {&Abs::instantiate_Abs, &Abs::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Aimag),
+            {&Aimag::instantiate_Aimag, &Aimag::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Partition),
             {&Partition::instantiate_Partition, &Partition::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::ListIndex),
@@ -4941,6 +4982,8 @@ namespace IntrinsicScalarFunctionRegistry {
             "atan2"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Abs),
             "abs"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Aimag),
+            "aimag"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Exp),
             "exp"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Exp2),
@@ -5088,6 +5131,7 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"tanh", {&Tanh::create_Tanh, &Tanh::eval_Tanh}},
                 {"atan2", {&Atan2::create_Atan2, &Atan2::eval_Atan2}},
                 {"abs", {&Abs::create_Abs, &Abs::eval_Abs}},
+                {"aimag", {&Aimag::create_Aimag, &Aimag::eval_Aimag}},
                 {"exp", {&Exp::create_Exp, &Exp::eval_Exp}},
                 {"exp2", {&Exp2::create_Exp2, &Exp2::eval_Exp2}},
                 {"expm1", {&Expm1::create_Expm1, &Expm1::eval_Expm1}},

@@ -2262,24 +2262,27 @@ public:
                 ASR::expr_t* y = value;
                 const Location& loc = x.base.base.loc;
                 ASR::expr_t *val = target;
-                ASR::symbol_t *fn_aimag = resolve_intrinsic_function(loc, "aimag");
-                Vec<ASR::call_arg_t> args; args.reserve(al, 1);
-                ASR::call_arg_t val_arg; val_arg.loc = val->base.loc; val_arg.m_value = val;
-                args.push_back(al, val_arg);
-                ASR::expr_t *im = ASRUtils::EXPR(create_FunctionCall(loc, fn_aimag, args));
+
+                ASRUtils::create_intrinsic_function create_func =
+                    ASRUtils::IntrinsicScalarFunctionRegistry::get_create_function("aimag");
+                Vec<ASR::expr_t*> args; args.reserve(al, 1);
+                args.push_back(al, val);
+                ASR::expr_t *im = ASRUtils::EXPR(create_func(al, loc, args,
+                    [&](const std::string &msg, const Location &loc) {
+                        throw SemanticError(msg, loc); }));
+
                 ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(al, loc, y, im, ASRUtils::expr_type(target), nullptr));
                 value = cmplx;
             }
-        } else if (ASR::is_a<ASR::FunctionCall_t>(*target)) {
-            ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(target);
-            ASR::symbol_t* original_sym = fc->m_original_name;
-            if (std::string(ASRUtils::symbol_name(original_sym)) == "aimag") {
+        } else if (ASR::is_a<ASR::IntrinsicScalarFunction_t>(*target)) {
+            ASR::IntrinsicScalarFunction_t* i = ASR::down_cast<ASR::IntrinsicScalarFunction_t>(target);
+            if (ASRUtils::IntrinsicScalarFunctionRegistry::get_intrinsic_function_name(i->m_intrinsic_id) == "aimag") {
                 /*
                     Case: x % im = y
                     we do: x = cmplx(x%re, y)
                     i.e. target = x, value = cmplx(x%re, y)
                 */
-                target = fc->m_args[0].m_value;
+                target = i->m_args[0];
                 ASR::expr_t* y = value;
                 const Location& loc = x.base.base.loc;
                 ASR::expr_t* re = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, target, ASR::cast_kindType::ComplexToReal, ASRUtils::expr_type(y), nullptr));

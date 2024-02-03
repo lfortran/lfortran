@@ -736,6 +736,9 @@ public:
         {"dtan", "tan"},
         {"datan2", "atan2"},
 
+        {"dimag", "aimag"},
+        {"imag" , "aimag"},
+
         {"dsign", "sign"},
         {"dsqrt", "sqrt"}
     };
@@ -3992,16 +3995,13 @@ public:
                     al, loc, &val, v_variable_m_type, dest_type);
                 return (ASR::asr_t*)val;
             } else if (var_name == "im") {
-                ASR::expr_t *val = ASR::down_cast<ASR::expr_t>(ASR::make_Var_t(al, loc, v));
-                ASR::symbol_t *fn_aimag = resolve_intrinsic_function(loc, "aimag");
-                Vec<ASR::call_arg_t> args;
-                args.reserve(al, 1);
-                ASR::call_arg_t val_arg;
-                val_arg.loc = val->base.loc;
-                val_arg.m_value = val;
-                args.push_back(al, val_arg);
-                ASR::asr_t *result = create_FunctionCall(loc, fn_aimag, args);
-                return result;
+                ASRUtils::create_intrinsic_function create_func =
+                    ASRUtils::IntrinsicScalarFunctionRegistry::get_create_function("aimag");
+                Vec<ASR::expr_t *> args; args.reserve(al, 1);
+                args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, v)));
+                return create_func(al, loc, args,
+                    [&](const std::string &msg, const Location &loc) {
+                        throw SemanticError(msg, loc); });
             } else {
                 throw SemanticError("Complex variable '" + dt_name + "' only has %re and %im members, not '" + var_name + "'", loc);
             }
