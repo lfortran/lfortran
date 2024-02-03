@@ -45,6 +45,7 @@ enum class IntrinsicScalarFunctions : int64_t {
     Atanh,
     Gamma,
     Log,
+    Log10,
     LogGamma,
     Trunc,
     Fix,
@@ -139,6 +140,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Atanh)
         INTRINSIC_NAME_CASE(Gamma)
         INTRINSIC_NAME_CASE(Log)
+        INTRINSIC_NAME_CASE(Log10)
         INTRINSIC_NAME_CASE(LogGamma)
         INTRINSIC_NAME_CASE(Trunc)
         INTRINSIC_NAME_CASE(Fix)
@@ -1284,6 +1286,7 @@ namespace X {                                                                   
 create_unary_function(Trunc, trunc, trunc)
 create_unary_function(Gamma, tgamma, gamma)
 create_unary_function(LogGamma, lgamma, log_gamma)
+create_unary_function(Log10, log10, log10)
 
 namespace Fix {
     static inline ASR::expr_t *eval_Fix(Allocator &al, const Location &loc,
@@ -4803,6 +4806,8 @@ namespace IntrinsicScalarFunctionRegistry {
                    verify_function>>& intrinsic_function_by_id_db = {
         {static_cast<int64_t>(IntrinsicScalarFunctions::Gamma),
             {&Gamma::instantiate_Gamma, &UnaryIntrinsicFunction::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Log10),
+            {&Log10::instantiate_Log10, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Log),
             {&Log::instantiate_Log, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::LogGamma),
@@ -4976,6 +4981,8 @@ namespace IntrinsicScalarFunctionRegistry {
             "gamma"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Log),
             "log"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Log10),
+            "log10"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::LogGamma),
             "log_gamma"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Trunc),
@@ -5146,6 +5153,7 @@ namespace IntrinsicScalarFunctionRegistry {
                     eval_intrinsic_function>>& intrinsic_function_by_name_db = {
                 {"gamma", {&Gamma::create_Gamma, &Gamma::eval_Gamma}},
                 {"log", {&Log::create_Log, &Log::eval_Log}},
+                {"log10", {&Log10::create_Log10, &Log10::eval_Log10}},
                 {"log_gamma", {&LogGamma::create_LogGamma, &LogGamma::eval_LogGamma}},
                 {"trunc", {&Trunc::create_Trunc, &Trunc::eval_Trunc}},
                 {"fix", {&Fix::create_Fix, &Fix::eval_Fix}},
