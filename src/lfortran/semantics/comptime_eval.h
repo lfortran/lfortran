@@ -99,11 +99,6 @@ struct IntrinsicProcedures {
             {"selected_int_kind", {m_kind, &eval_selected_int_kind, true}},
             {"selected_real_kind", {m_kind, &eval_selected_real_kind, true}},
             {"selected_char_kind", {m_kind, &eval_selected_char_kind, true}},
-            {"exp", {m_math, &eval_exp, true}},
-            {"dexp", {m_math, &eval_dexp, true}},
-            {"sexp", {m_math, &eval_sexp, true}},
-            {"cexp", {m_math, &eval_cexp, true}},
-            {"zexp", {m_math, &eval_zexp, true}},
             {"range", {m_math, &eval_range, false}},
             {"epsilon", {m_math, &eval_epsilon, false}},
             {"tiny", {m_math, &eval_tiny, false}},
@@ -423,26 +418,6 @@ struct IntrinsicProcedures {
             throw SemanticError("Arguments for this intrinsic function must be Real or Integer", loc);
         }
     }
-
-#define TRIG_CB(X) static std::complex<double> lfortran_z##X(std::complex<double> x) { return std::X(x); }
-#define TRIG_CB2(X) static ASR::expr_t *eval_##X(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) { \
-        return eval_trig(al, loc, args, compiler_options, &X, &lfortran_z##X); \
-    }
-#define TRIG2_CB(X, Y) static std::complex<double> lfortran_z##Y(std::complex<double> x) { return std::X(x); }
-#define TRIG2_CB2(X, Y) static ASR::expr_t *eval_##Y(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) { \
-        return eval_trig(al, loc, args, compiler_options, &X, &lfortran_z##Y); \
-    }
-#define TRIG(X) TRIG_CB(X) \
-    TRIG_CB2(X)
-#define TRIG2(X, Y) TRIG2_CB(X, Y) \
-    TRIG2_CB2(X, Y)
-
-TRIG(exp)
-
-TRIG2(exp, dexp)
-TRIG2(exp, sexp)
-TRIG2(exp, cexp)
-TRIG2(exp, zexp)
 
     static ASR::expr_t *eval_erf(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
         return eval_trig(al, loc, args, compiler_options, &erf, nullptr);
