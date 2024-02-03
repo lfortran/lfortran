@@ -18,7 +18,7 @@ def run_cmd(cmd, cwd=None):
         exit(1)
 
 def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: bool,
-                skip_cpptranslate: bool, update_reference: bool,
+                skip_cpptranslate: bool, update_reference: bool, verify_hash: bool,
                 no_color: bool, specific_backends=None,
                 excluded_backends=None) -> None:
     def is_included(backend):
@@ -97,6 +97,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             "lfortran --no-color --show-tokens {infile} -o {outfile}",
             filename,
             update_reference,
+            verify_hash,
             extra_args)
     if ast:
         if filename.endswith(".f"):
@@ -107,6 +108,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 "lfortran --fixed-form --show-ast --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
+                verify_hash,
                 extra_args)
         else:
             # Use free form
@@ -116,6 +118,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 "lfortran --show-ast --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
+                verify_hash,
                 extra_args)
     if ast_indent:
         run_test(
@@ -124,6 +127,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             "lfortran --show-ast --no-color {infile} -o {outfile}",
             filename,
             update_reference,
+            verify_hash,
             extra_args)
     if ast_json:
         run_test(
@@ -132,6 +136,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             "lfortran --show-ast --no-indent --json {infile} -o {outfile}",
             filename,
             update_reference,
+            verify_hash,
             extra_args)
 
     if ast_no_prescan:
@@ -142,6 +147,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             "lfortran --no-prescan --show-ast --no-color {infile} -o {outfile}",
             filename,
             update_reference,
+            verify_hash,
             extra_args)
 
     if ast_f90:
@@ -153,6 +159,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 "lfortran --fixed-form --show-ast-f90 --no-indent --no-color {infile}",
                 filename,
                 update_reference,
+                verify_hash,
                 extra_args)
         else:
             # Use free form
@@ -162,6 +169,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 "lfortran --show-ast-f90 --no-indent --no-color {infile}",
                 filename,
                 update_reference,
+                verify_hash,
                 extra_args)
 
     if ast_openmp:
@@ -184,6 +192,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 "lfortran --fixed-form --show-asr --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
+                verify_hash,
                 extra_args)
         else:
             skip_test = False
@@ -208,6 +217,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                     "lfortran --show-asr --no-color {infile} -o {outfile}",
                     filename,
                     update_reference,
+                    verify_hash,
                     extra_args)
 
                 if pass_ is not None:
@@ -215,7 +225,10 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                         " --show-asr --no-color {infile} -o {outfile}"
                     pass_ = pass_.replace(",", "_")
                     run_test(filename, "pass_{}".format(pass_), cmd,
-                            filename, update_reference, extra_args)
+                            filename,
+                            update_reference,
+                            verify_hash,
+                            extra_args)
 
             pass_ = None
 
@@ -228,6 +241,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 "lfortran --fixed-form --show-asr --implicit-typing --implicit-interface --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
+                verify_hash,
                 extra_args)
         else:
             run_test(
@@ -236,6 +250,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 "lfortran --show-asr --implicit-typing --implicit-interface --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
+                verify_hash,
                 extra_args)
     if asr_use_loop_variable_after_loop:
         run_test(
@@ -244,6 +259,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             "lfortran --show-asr --use-loop-variable-after-loop --no-color {infile} -o {outfile}",
             filename,
             update_reference,
+            verify_hash,
             extra_args)
 
     if asr_implicit_argument_casting:
@@ -253,6 +269,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             "lfortran --show-asr --implicit-argument-casting --no-color {infile} -o {outfile}",
             filename,
             update_reference,
+            verify_hash,
             extra_args)
 
     if asr_implicit_interface_and_typing_with_llvm:
@@ -265,6 +282,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 "lfortran --show-llvm --implicit-typing --implicit-interface {infile} -o {outfile}",
                 filename,
                 update_reference,
+                verify_hash,
                 extra_args)
 
     if asr_implicit_typing:
@@ -274,6 +292,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             "lfortran --show-asr --implicit-typing --no-color {infile} -o {outfile}",
             filename,
             update_reference,
+            verify_hash,
             extra_args)
 
     if asr_implicit_interface:
@@ -284,6 +303,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 "lfortran --fixed-form --implicit-interface --show-asr --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
+                verify_hash,
                 extra_args)
         else:
             run_test(
@@ -292,6 +312,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 "lfortran --show-asr --implicit-interface --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
+                verify_hash,
                 extra_args)
 
     if asr_preprocess:
@@ -301,6 +322,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             "lfortran --cpp --show-asr --no-color {infile} -o {outfile}",
             filename,
             update_reference,
+            verify_hash,
             extra_args)
 
     if asr_indent:
@@ -310,6 +332,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             "lfortran --show-asr --no-color {infile} -o {outfile}",
             filename,
             update_reference,
+            verify_hash,
             extra_args)
 
     if asr_json:
@@ -319,6 +342,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             "lfortran --show-asr --no-indent --json {infile} -o {outfile}",
             filename,
             update_reference,
+            verify_hash,
             extra_args)
 
     if mod_to_asr:
@@ -327,7 +351,8 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             "mod_to_asr",
             "lfortran mod --show-asr --no-indent --no-color {infile}",
             filename,
-            update_reference)
+            update_reference,
+            verify_hash)
 
     if asr_ignore_pragma:
         run_test(
@@ -336,6 +361,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             "lfortran --ignore-pragma --show-asr --no-color {infile} -o {outfile}",
             filename,
             update_reference,
+            verify_hash,
             extra_args)
 
     if pass_ is not None:
@@ -346,7 +372,10 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             " --show-asr --no-color {infile} -o {outfile}"
         pass_ = pass_.replace(",", "_")
         run_test(filename, "pass_{}".format(pass_), cmd,
-                 filename, update_reference, extra_args)
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args)
     if llvm:
         if no_llvm:
             log.info(f"{filename} * llvm   SKIPPED as requested")
@@ -357,11 +386,15 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 "lfortran --no-color --show-llvm {infile} -o {outfile}",
                 filename,
                 update_reference,
+                verify_hash,
                 extra_args)
 
     if cpp:
         run_test(filename, "cpp", "lfortran --no-color --show-cpp {infile}",
-                 filename, update_reference, extra_args)
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args)
 
     if obj:
         if no_llvm:
@@ -373,19 +406,29 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 "lfortran --no-color -c {infile} -o output.o",
                 filename,
                 update_reference,
+                verify_hash,
                 extra_args)
 
     if c:
         run_test(filename, "c", "lfortran --no-color --show-c {infile}",
-                 filename, update_reference, extra_args)
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args)
 
     if julia:
         run_test(filename, "julia", "lfortran --no-color --show-julia {infile}",
-                 filename, update_reference, extra_args)
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args)
 
     if wat:
         run_test(filename, "wat", "lfortran --no-color --show-wat {infile}",
-                 filename, update_reference, extra_args)
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args)
 
     if x86:
         run_test(
@@ -394,6 +437,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             "lfortran --no-color --backend=x86 {infile} -o output",
             filename,
             update_reference,
+            verify_hash,
             extra_args)
 
     if fortran:
@@ -403,18 +447,25 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             "lfortran --show-fortran --no-color {infile} -o {outfile}",
             filename,
             update_reference,
+            verify_hash,
             extra_args)
 
     if bin_:
         run_test(filename, "bin", "lfortran --no-color {infile} -o {outfile}",
-                 filename, update_reference, extra_args)
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args)
 
     if run:
         if no_llvm:
             log.info(f"{filename} * obj    SKIPPED as requested")
         else:
             run_test(filename, "run", "lfortran --no-color {infile}",
-                 filename, update_reference, extra_args)
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args)
 
     if run_with_dbg:
         if skip_run_with_dbg:
@@ -423,7 +474,10 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             run_test(
                 filename, "run_dbg",
                 "lfortran {infile} -g --debug-with-line-column --no-color",
-                filename, update_reference, extra_args)
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
 
 if __name__ == "__main__":
     tester_main("LFortran", single_test)
