@@ -7,10 +7,6 @@ interface exp
     module procedure sexp, dexp, cexp, zexp
 end interface
 
-interface log
-    module procedure slog, dlog, clog, zlog
-end interface
-
 interface erf
     module procedure serf, derf
 end interface
@@ -108,63 +104,6 @@ interface
     end function
 end interface
 r = c_zexp(x)
-end function
-
-! log --------------------------------------------------------------------------
-
-elemental real(sp) function slog(x) result(r)
-real(sp), intent(in) :: x
-interface
-    pure real(c_float) function c_slog(x) bind(c, name="_lfortran_slog")
-    import :: c_float
-    real(c_float), intent(in), value :: x
-    end function
-end interface
-r = c_slog(x)
-end function
-
-elemental real(dp) function dlog(x) result(r)
-real(dp), intent(in) :: x
-interface
-    pure real(c_double) function c_dlog(x) bind(c, name="_lfortran_dlog")
-    import :: c_double
-    real(c_double), intent(in), value :: x
-    end function
-end interface
-r = c_dlog(x)
-end function
-
-elemental real(dp) function alog(x) result(r)
-real(dp), intent(in) :: x
-interface
-    pure real(c_double) function c_dlog(x) bind(c, name="_lfortran_dlog")
-    import :: c_double
-    real(c_double), intent(in), value :: x
-    end function
-end interface
-r = c_dlog(x)
-end function
-
-elemental complex(sp) function clog(x) result(r)
-complex(sp), intent(in) :: x
-interface
-    pure complex(c_float) function c_clog(x) bind(c, name="_lfortran_clog")
-    import :: c_float
-    complex(c_float), intent(in), value :: x
-    end function
-end interface
-r = c_clog(x)
-end function
-
-elemental complex(dp) function zlog(x) result(r)
-complex(dp), intent(in) :: x
-interface
-    pure complex(c_double) function c_zlog(x) bind(c, name="_lfortran_zlog")
-    import :: c_double
-    complex(c_double), intent(in), value :: x
-    end function
-end interface
-r = c_zlog(x)
 end function
 
 ! erf --------------------------------------------------------------------------
