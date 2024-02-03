@@ -43,6 +43,8 @@ enum class IntrinsicScalarFunctions : int64_t {
     Asinh,
     Acosh,
     Atanh,
+    Erf,
+    Erfc,
     Gamma,
     Log,
     Log10,
@@ -138,6 +140,8 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Asinh)
         INTRINSIC_NAME_CASE(Acosh)
         INTRINSIC_NAME_CASE(Atanh)
+        INTRINSIC_NAME_CASE(Erf)
+        INTRINSIC_NAME_CASE(Erfc)
         INTRINSIC_NAME_CASE(Gamma)
         INTRINSIC_NAME_CASE(Log)
         INTRINSIC_NAME_CASE(Log10)
@@ -1287,6 +1291,8 @@ create_unary_function(Trunc, trunc, trunc)
 create_unary_function(Gamma, tgamma, gamma)
 create_unary_function(LogGamma, lgamma, log_gamma)
 create_unary_function(Log10, log10, log10)
+create_unary_function(Erf, erf, erf)
+create_unary_function(Erfc, erfc, erfc)
 
 namespace Fix {
     static inline ASR::expr_t *eval_Fix(Allocator &al, const Location &loc,
@@ -4864,6 +4870,10 @@ namespace IntrinsicScalarFunctionRegistry {
             {&Log::instantiate_Log, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::LogGamma),
             {&LogGamma::instantiate_LogGamma, &UnaryIntrinsicFunction::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Erf),
+            {&Erf::instantiate_Erf, &UnaryIntrinsicFunction::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Erfc),
+            {&Erfc::instantiate_Erfc, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Trunc),
             {&Trunc::instantiate_Trunc, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Fix),
@@ -5037,6 +5047,10 @@ namespace IntrinsicScalarFunctionRegistry {
             "log10"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::LogGamma),
             "log_gamma"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Erf),
+            "erf"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Erfc),
+            "erfc"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Trunc),
             "trunc"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Fix),
@@ -5207,6 +5221,8 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"log", {&Log::create_Log, &Log::eval_Log}},
                 {"log10", {&Log10::create_Log10, &Log10::eval_Log10}},
                 {"log_gamma", {&LogGamma::create_LogGamma, &LogGamma::eval_LogGamma}},
+                {"erf", {&Erf::create_Erf, &Erf::eval_Erf}},
+                {"erfc", {&Erfc::create_Erfc, &Erfc::eval_Erfc}},
                 {"trunc", {&Trunc::create_Trunc, &Trunc::eval_Trunc}},
                 {"fix", {&Fix::create_Fix, &Fix::eval_Fix}},
                 {"sin", {&Sin::create_Sin, &Sin::eval_Sin}},
@@ -5305,6 +5321,8 @@ namespace IntrinsicScalarFunctionRegistry {
                  id_ == IntrinsicScalarFunctions::Gamma ||
                  id_ == IntrinsicScalarFunctions::Log ||
                  id_ == IntrinsicScalarFunctions::LogGamma ||
+                 id_ == IntrinsicScalarFunctions::Erf ||
+                 id_ == IntrinsicScalarFunctions::Erfc ||
                  id_ == IntrinsicScalarFunctions::Trunc ||
                  id_ == IntrinsicScalarFunctions::Fix ||
                  id_ == IntrinsicScalarFunctions::Sin ||
