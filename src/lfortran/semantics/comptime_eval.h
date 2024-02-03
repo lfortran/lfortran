@@ -88,9 +88,6 @@ struct IntrinsicProcedures {
             {"newunit", {m_custom, &not_implemented, false}},
 
             // Require evaluated arguments
-            {"aimag", {m_math, &eval_aimag, true}},
-            {"imag", {m_math, &eval_aimag, true}},
-            {"dimag", {m_math, &eval_aimag, true}},
             {"floor", {m_math3, &eval_floor, true}},
             {"ceiling", {m_math2, &eval_ceiling, true}},
             {"nint", {m_math2, &eval_nint, true}},
@@ -609,26 +606,6 @@ TRIG2(atan, datan)
         }
         ASR::ttype_t* tmp_int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
         return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, range_val, tmp_int_type));;
-    }
-
-    static ASR::expr_t *eval_aimag(Allocator &al, const Location &loc,
-            Vec<ASR::expr_t*> &args, const CompilerOptions &
-            ) {
-        LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
-        if (args.size() != 1) {
-            throw SemanticError("Intrinsic trig function accepts exactly 1 argument", loc);
-        }
-        ASR::expr_t* trig_arg = args[0];
-        ASR::ttype_t* t = ASRUtils::expr_type(args[0]);
-        if (ASR::is_a<ASR::Complex_t>(*t)) {
-            double im = ASR::down_cast<ASR::ComplexConstant_t>(trig_arg)->m_im;
-            double result = im;
-            int kind = ASRUtils::extract_kind_from_ttype_t(t);
-            t = ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind));
-            return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, result, t));
-        } else {
-            throw SemanticError("Argument of the aimag() function must be Complex", loc);
-        }
     }
 
     static ASR::expr_t *eval_int(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
