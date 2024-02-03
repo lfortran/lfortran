@@ -115,7 +115,6 @@ struct IntrinsicProcedures {
             {"zlog", {m_math, &eval_zlog, true}},
             {"erf", {m_math, &eval_erf, true}},
             {"erfc", {m_math, &eval_erfc, true}},
-            {"datan", {m_math, &eval_datan, true}},
             {"log10", {m_math, &eval_log10, true}},
             {"dlog10", {m_math, &eval_dlog10, true}},
 
@@ -450,8 +449,6 @@ struct IntrinsicProcedures {
 #define TRIG2(X, Y) TRIG2_CB(X, Y) \
     TRIG2_CB2(X, Y)
 
-TRIG(asin)
-TRIG(acos)
 TRIG(asinh)
 TRIG(acosh)
 TRIG(atanh)
@@ -470,8 +467,6 @@ TRIG2(log10, dlog10)
 TRIG2(log, slog)
 TRIG2(log, clog)
 TRIG2(log, zlog)
-
-TRIG2(atan, datan)
 
 
     static ASR::expr_t *eval_erf(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {

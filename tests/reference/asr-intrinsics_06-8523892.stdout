@@ -67,16 +67,6 @@
                                     satanh
                                     Private
                                 ),
-                            datan:
-                                (ExternalSymbol
-                                    2
-                                    datan
-                                    4 datan
-                                    lfortran_intrinsic_math
-                                    []
-                                    datan
-                                    Private
-                                ),
                             dp:
                                 (Variable
                                     2
@@ -190,19 +180,18 @@
                     (Assignment
                         (Var 2 x)
                         (Cast
-                            (FunctionCall
-                                2 datan
-                                ()
-                                [((RealConstant
+                            (IntrinsicScalarFunction
+                                Atan
+                                [(RealConstant
                                     1.557408
                                     (Real 8)
-                                ))]
+                                )]
+                                0
                                 (Real 8)
                                 (RealConstant
                                     1.000000
                                     (Real 8)
                                 )
-                                ()
                             )
                             RealToReal
                             (Real 4)
