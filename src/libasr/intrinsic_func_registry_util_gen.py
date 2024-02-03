@@ -92,6 +92,11 @@ intrinsic_funcs_args = {
             "args": [("real",)]
         }
     ],
+    "Ceiling": [
+        {
+            "args": [("real",)]
+        }
+    ],
     "Sqrt": [
         {
             "args": [("real",), ("complex",)]
