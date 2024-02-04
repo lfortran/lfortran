@@ -83,6 +83,8 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Idint)
         INTRINSIC_NAME_CASE(Floor)
         INTRINSIC_NAME_CASE(Ceiling)
+        INTRINSIC_NAME_CASE(Epsilon)
+        INTRINSIC_NAME_CASE(Tiny)
         INTRINSIC_NAME_CASE(SymbolicSymbol)
         INTRINSIC_NAME_CASE(SymbolicAdd)
         INTRINSIC_NAME_CASE(SymbolicSub)
@@ -249,6 +251,10 @@ namespace IntrinsicScalarFunctionRegistry {
             {&Idint::instantiate_Idint, &Idint::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SignFromValue),
             {&SignFromValue::instantiate_SignFromValue, &SignFromValue::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Epsilon),
+            {nullptr, &UnaryIntrinsicFunction::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Tiny),
+            {nullptr, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SymbolicSymbol),
             {nullptr, &SymbolicSymbol::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SymbolicAdd),
@@ -428,6 +434,10 @@ namespace IntrinsicScalarFunctionRegistry {
             "ifix"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SignFromValue),
             "signfromvalue"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Epsilon),
+            "epsilon"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Tiny),
+            "tiny"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SymbolicSymbol),
             "Symbol"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SymbolicAdd),
@@ -546,6 +556,8 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"sngl", {&Sngl::create_Sngl, &Sngl::eval_Sngl}},
                 {"ifix", {&Ifix::create_Ifix, &Ifix::eval_Ifix}},
                 {"idint", {&Idint::create_Idint, &Idint::eval_Idint}},
+                {"epsilon", {&Epsilon::create_Epsilon, &Epsilon::eval_Epsilon}},
+                {"tiny", {&Tiny::create_Tiny, &Tiny::eval_Tiny}},
                 {"Symbol", {&SymbolicSymbol::create_SymbolicSymbol, &SymbolicSymbol::eval_SymbolicSymbol}},
                 {"SymbolicAdd", {&SymbolicAdd::create_SymbolicAdd, &SymbolicAdd::eval_SymbolicAdd}},
                 {"SymbolicSub", {&SymbolicSub::create_SymbolicSub, &SymbolicSub::eval_SymbolicSub}},

@@ -205,11 +205,22 @@ intrinsic_funcs_args = {
             "return": "int32"
         },
     ],
-
+    "Epsilon": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Tiny": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
 }
 
 skip_create_func = ["Partition"]
-skip_fn_instantiation = ["Radix", "Range"]
+skip_fn_instantiation = ["Radix", "Range", "Epsilon", "Tiny"]
 
 type_to_asr_type_check = {
     "any": "!ASR::is_a<ASR::TypeParameter_t>",
