@@ -956,7 +956,8 @@ ASR::symbol_t* rename_symbol(Allocator &al,
 bool check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
         std::map<std::string, ASR::symbol_t*> &symbol_subs,
         ASR::Function_t *f, ASR::symbol_t *sym_arg, const Location &loc,
-        diag::Diagnostics &diagnostics, bool report=true) {
+        diag::Diagnostics &diagnostics,
+        const std::function<void ()> semantic_abort, bool report=true) {
     std::string f_name = f->m_name;
     ASR::Function_t *arg = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(sym_arg));
     std::string arg_name = arg->m_name;
@@ -974,7 +975,7 @@ bool check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
                                 {f->base.base.loc})
                     }
             ));
-            throw SemanticAbort();
+            semantic_abort();
         }
         return false;
     }
@@ -999,7 +1000,7 @@ bool check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
                                 {arg->m_args[i]->base.loc})
                     }
                 ));
-                throw SemanticAbort();
+                semantic_abort();
             }
             return false;
         }
@@ -1009,7 +1010,9 @@ bool check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
             if (report) {
                 std::string msg = "The restriction argument " + arg_name
                     + " should have a return value";
-                throw SemanticError(msg, loc);
+                diagnostics.add(diag::Diagnostic(msg,
+                    diag::Level::Error, diag::Stage::Semantic, {diag::Label("", {loc})}));
+                semantic_abort();
             }
             return false;
         }
@@ -1029,7 +1032,7 @@ bool check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
                             {arg->m_return_var->base.loc})
                     }
                 ));
-                throw SemanticAbort();
+                semantic_abort();
             }
             return false;
         }
@@ -1038,7 +1041,9 @@ bool check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
             if (report) {
                 std::string msg = "The restriction argument " + arg_name
                     + " should not have a return value";
-                throw SemanticError(msg, loc);
+                diagnostics.add(diag::Diagnostic(msg,
+                    diag::Level::Error, diag::Stage::Semantic, {diag::Label("", {loc})}));
+                semantic_abort();
             }
             return false;
         }
