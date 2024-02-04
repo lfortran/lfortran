@@ -206,7 +206,7 @@
                                                         (Var 3 absdiff)
                                                         (IntrinsicArrayFunction
                                                             Shape
-                                                            [(IntrinsicScalarFunction
+                                                            [(IntrinsicElementalFunction
                                                                 Abs
                                                                 [(FunctionCall
                                                                     2 solution
@@ -250,7 +250,7 @@
                                                         ()
                                                     )
                                                     Div
-                                                    (IntrinsicScalarFunction
+                                                    (IntrinsicElementalFunction
                                                         Abs
                                                         [(ArrayItem
                                                             (Var 3 __libasr__created__var__1_x)
@@ -280,7 +280,7 @@
                                     )
                                     (If
                                         (RealCompare
-                                            (IntrinsicScalarFunction
+                                            (IntrinsicElementalFunction
                                                 Abs
                                                 [(RealBinOp
                                                     (ArrayItem
@@ -319,7 +319,7 @@
                                     )
                                     (If
                                         (RealCompare
-                                            (IntrinsicScalarFunction
+                                            (IntrinsicElementalFunction
                                                 Abs
                                                 [(RealBinOp
                                                     (ArrayItem

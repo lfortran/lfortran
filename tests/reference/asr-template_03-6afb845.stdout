@@ -714,7 +714,7 @@
                                                     dp
                                                     []
                                                     Local
-                                                    (IntrinsicScalarFunction
+                                                    (IntrinsicElementalFunction
                                                         Kind
                                                         [(RealConstant
                                                             1.000000
@@ -739,7 +739,7 @@
                                                     sp
                                                     []
                                                     Local
-                                                    (IntrinsicScalarFunction
+                                                    (IntrinsicElementalFunction
                                                         Kind
                                                         [(RealConstant
                                                             1.000000

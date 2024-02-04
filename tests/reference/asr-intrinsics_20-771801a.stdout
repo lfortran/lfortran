@@ -13,7 +13,7 @@
                                     dp
                                     []
                                     Local
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Kind
                                         [(RealConstant
                                             0.000000
@@ -38,7 +38,7 @@
                                     pi
                                     []
                                     Local
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Acos
                                         [(RealUnaryMinus
                                             (RealConstant
@@ -76,7 +76,7 @@
                                     pi_dp
                                     []
                                     Local
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Acos
                                         [(RealUnaryMinus
                                             (RealConstant
@@ -114,7 +114,7 @@
                                     x
                                     []
                                     Local
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Cos
                                         [(RealBinOp
                                             (Cast
@@ -218,7 +218,7 @@
                         ()
                     )
                     (Print
-                        [(IntrinsicScalarFunction
+                        [(IntrinsicElementalFunction
                             Cos
                             [(RealBinOp
                                 (Cast
@@ -258,7 +258,7 @@
                         ()
                     )
                     (Print
-                        [(IntrinsicScalarFunction
+                        [(IntrinsicElementalFunction
                             Cos
                             [(RealBinOp
                                 (Cast
@@ -289,7 +289,7 @@
                         ()
                     )
                     (Print
-                        [(IntrinsicScalarFunction
+                        [(IntrinsicElementalFunction
                             Cos
                             [(RealBinOp
                                 (Cast
@@ -331,7 +331,7 @@
                     (Print
                         [(RealBinOp
                             (RealBinOp
-                                (IntrinsicScalarFunction
+                                (IntrinsicElementalFunction
                                     Cos
                                     [(RealBinOp
                                         (Var 2 x)
@@ -376,7 +376,7 @@
                             )
                             Add
                             (RealBinOp
-                                (IntrinsicScalarFunction
+                                (IntrinsicElementalFunction
                                     Sin
                                     [(RealBinOp
                                         (Var 2 x)

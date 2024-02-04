@@ -13,7 +13,7 @@
                                     l_knd
                                     []
                                     Local
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Kind
                                         [(LogicalConstant
                                             .true.

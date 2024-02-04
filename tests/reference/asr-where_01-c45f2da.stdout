@@ -563,7 +563,7 @@
                     (If
                         (RealCompare
                             (Cast
-                                (IntrinsicScalarFunction
+                                (IntrinsicElementalFunction
                                     Abs
                                     [(IntegerBinOp
                                         (ArrayItem
@@ -604,7 +604,7 @@
                     (If
                         (RealCompare
                             (Cast
-                                (IntrinsicScalarFunction
+                                (IntrinsicElementalFunction
                                     Abs
                                     [(IntegerBinOp
                                         (ArrayItem
@@ -651,7 +651,7 @@
                         [(If
                             (RealCompare
                                 (Cast
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Abs
                                         [(IntegerBinOp
                                             (ArrayItem
@@ -699,7 +699,7 @@
                         [(If
                             (RealCompare
                                 (Cast
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Abs
                                         [(IntegerBinOp
                                             (ArrayItem

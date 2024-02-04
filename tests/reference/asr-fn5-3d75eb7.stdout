@@ -90,7 +90,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -3 (IntrinsicScalarFunction
+                                                    (Character 1 -3 (IntrinsicElementalFunction
                                                         Max
                                                         [(Var 3 length)
                                                         (StringLen
@@ -167,7 +167,7 @@
                                             (Var 3 strout)
                                             (StringConcat
                                                 (Var 3 line)
-                                                (IntrinsicScalarFunction
+                                                (IntrinsicElementalFunction
                                                     Repeat
                                                     [(Var 3 pattern)
                                                     (IntegerBinOp
@@ -415,7 +415,7 @@
                                                     "KEYWORD"
                                                     (Character 1 7 ())
                                                 ))
-                                                ((IntrinsicScalarFunction
+                                                ((IntrinsicElementalFunction
                                                     Max
                                                     [(StringLen
                                                         (ArrayItem
@@ -442,9 +442,9 @@
                                                     ()
                                                 ))
                                                 (())]
-                                                (Character 1 -3 (IntrinsicScalarFunction
+                                                (Character 1 -3 (IntrinsicElementalFunction
                                                     Max
-                                                    [(IntrinsicScalarFunction
+                                                    [(IntrinsicElementalFunction
                                                         Max
                                                         [(StringLen
                                                             (ArrayItem
@@ -545,7 +545,7 @@
                                                         ColMajor
                                                         ()
                                                     ))
-                                                    ((IntrinsicScalarFunction
+                                                    ((IntrinsicElementalFunction
                                                         Max
                                                         [(StringLen
                                                             (ArrayItem
@@ -572,9 +572,9 @@
                                                         ()
                                                     ))
                                                     (())]
-                                                    (Character 1 -3 (IntrinsicScalarFunction
+                                                    (Character 1 -3 (IntrinsicElementalFunction
                                                         Max
-                                                        [(IntrinsicScalarFunction
+                                                        [(IntrinsicElementalFunction
                                                             Max
                                                             [(StringLen
                                                                 (ArrayItem
@@ -686,9 +686,9 @@
                                                 )
                                                 ()
                                                 (Tuple
-                                                    [(Character 1 -3 (IntrinsicScalarFunction
+                                                    [(Character 1 -3 (IntrinsicElementalFunction
                                                         Max
-                                                        [(IntrinsicScalarFunction
+                                                        [(IntrinsicElementalFunction
                                                             Max
                                                             [(StringLen
                                                                 (ArrayItem

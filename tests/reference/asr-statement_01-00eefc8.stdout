@@ -96,7 +96,7 @@
                                     [(Var 4 z)]
                                     [(Assignment
                                         (Var 4 zexp_return_var_name)
-                                        (IntrinsicScalarFunction
+                                        (IntrinsicElementalFunction
                                             Exp
                                             [(Var 4 z)]
                                             0

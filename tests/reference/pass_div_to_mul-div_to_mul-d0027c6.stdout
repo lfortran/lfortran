@@ -94,7 +94,7 @@
                     []
                     [(If
                         (RealCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
                                     (RealBinOp
@@ -131,7 +131,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
                                     (RealBinOp
@@ -168,7 +168,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
                                     (RealBinOp
@@ -223,7 +223,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
                                     (RealBinOp
@@ -261,7 +261,7 @@
                     (If
                         (RealCompare
                             (Cast
-                                (IntrinsicScalarFunction
+                                (IntrinsicElementalFunction
                                     Abs
                                     [(IntegerBinOp
                                         (IntegerBinOp
