@@ -7,9 +7,9 @@ project(lfortran_unif_runtime C Fortran)
 set(LFORTRAN_NESTED_BUILD no
     CACHE BOOL "Whether we are being called from the LFortran build system")
 
-# if(NOT LFORTRAN_NESTED_BUILD)lfortran_compile_runtime(lfortran_intrinsic_math3 pure)
-#   add_subdirectory(legacy)
-# endif()
+if(NOT LFORTRAN_NESTED_BUILD)
+    add_subdirectory(legacy)
+endif()
 
 # See the TODO in the installation step below
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR})
@@ -38,7 +38,6 @@ add_dependencies(lfortran_intrinsic_optimization lfortran_intrinsic_iso_fortran_
 
 lfortran_compile_runtime(lfortran_intrinsic_math2 pure)
 add_dependencies(lfortran_intrinsic_math2 lfortran_intrinsic_iso_fortran_env)
-# add_dependencies(lfortran_intrinsic_math2)
 add_dependencies(lfortran_intrinsic_math2 lfortran_intrinsic_builtin)
 
 lfortran_compile_runtime(lfortran_intrinsic_ieee_arithmetic pure)
