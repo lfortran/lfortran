@@ -2284,7 +2284,7 @@ public:
                 ASR::expr_t *val = target;
 
                 ASRUtils::create_intrinsic_function create_func =
-                    ASRUtils::IntrinsicScalarFunctionRegistry::get_create_function("aimag");
+                    ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function("aimag");
                 Vec<ASR::expr_t*> args; args.reserve(al, 1);
                 args.push_back(al, val);
                 ASR::asr_t* create_fn = create_func(al, loc, args, diag);
@@ -2295,9 +2295,9 @@ public:
                 ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(al, loc, y, im, ASRUtils::expr_type(target), nullptr));
                 value = cmplx;
             }
-        } else if (ASR::is_a<ASR::IntrinsicScalarFunction_t>(*target)) {
-            ASR::IntrinsicScalarFunction_t* i = ASR::down_cast<ASR::IntrinsicScalarFunction_t>(target);
-            if (ASRUtils::IntrinsicScalarFunctionRegistry::get_intrinsic_function_name(i->m_intrinsic_id) == "aimag") {
+        } else if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*target)) {
+            ASR::IntrinsicElementalFunction_t* i = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(target);
+            if (ASRUtils::IntrinsicElementalFunctionRegistry::get_intrinsic_function_name(i->m_intrinsic_id) == "aimag") {
                 /*
                     Case: x % im = y
                     we do: x = cmplx(x%re, y)

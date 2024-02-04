@@ -365,11 +365,11 @@ def add_create_func_return_src(func_name):
             src += indent * 3 + f"args_values.push_back(al, expr_value(m_args[{_i}]));\n"
         src += indent * 3 +     f"m_value = eval_{func_name}(al, loc, return_type, args_values);\n"
         src += indent * 2 + "}\n"
-    src += indent * 2 + f"return ASR::make_IntrinsicScalarFunction_t(al, loc, static_cast<int64_t>(IntrinsicScalarFunctions::{func_name}), m_args.p, m_args.n, 0, return_type, m_value);\n"
+    src += indent * 2 + f"return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::{func_name}), m_args.p, m_args.n, 0, return_type, m_value);\n"
 
 def gen_verify_args(func_name):
     global src
-    src += indent + R"static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {" + "\n"
+    src += indent + R"static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {" + "\n"
     add_verify_arg_type_src(func_name)
     if func_name in compile_time_only_fn:
         src += indent * 2 + 'ASRUtils::require_impl(x.m_value, '\

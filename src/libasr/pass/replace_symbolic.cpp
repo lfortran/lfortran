@@ -421,8 +421,8 @@ public:
     ASR::expr_t* handle_argument(Allocator &al, const Location &loc, ASR::expr_t* arg) {
         if (ASR::is_a<ASR::Var_t>(*arg)) {
             return arg;
-        } else if (ASR::is_a<ASR::IntrinsicScalarFunction_t>(*arg)) {
-            this->visit_IntrinsicFunction(*ASR::down_cast<ASR::IntrinsicScalarFunction_t>(arg));
+        } else if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*arg)) {
+            this->visit_IntrinsicFunction(*ASR::down_cast<ASR::IntrinsicElementalFunction_t>(arg));
         } else if (ASR::is_a<ASR::Cast_t>(*arg)) {
             this->visit_Cast(*ASR::down_cast<ASR::Cast_t>(arg));
         } else {
@@ -432,29 +432,29 @@ public:
         return ASRUtils::EXPR(ASR::make_Var_t(al, loc, var_sym));
     }
 
-    void process_binary_operator(Allocator &al,  const Location &loc, ASR::IntrinsicScalarFunction_t* x, SymbolTable* module_scope,
+    void process_binary_operator(Allocator &al,  const Location &loc, ASR::IntrinsicElementalFunction_t* x, SymbolTable* module_scope,
         const std::string& new_name, ASR::expr_t* target) {
             ASR::expr_t* value1 = handle_argument(al, loc, x->m_args[0]);
             ASR::expr_t* value2 = handle_argument(al, loc, x->m_args[1]);
             perform_symbolic_binary_operation(al, loc, module_scope, new_name, target, value1, value2);
     }
 
-    void process_unary_operator(Allocator &al,  const Location &loc, ASR::IntrinsicScalarFunction_t* x, SymbolTable* module_scope,
+    void process_unary_operator(Allocator &al,  const Location &loc, ASR::IntrinsicElementalFunction_t* x, SymbolTable* module_scope,
         const std::string& new_name, ASR::expr_t* target) {
             ASR::expr_t* value1 = handle_argument(al, loc, x->m_args[0]);
             perform_symbolic_unary_operation(al, loc, module_scope, new_name, target, value1);
     }
 
-    void process_constants(Allocator &al,  const Location &loc, ASR::IntrinsicScalarFunction_t* /*x*/, SymbolTable* module_scope,
+    void process_constants(Allocator &al,  const Location &loc, ASR::IntrinsicElementalFunction_t* /*x*/, SymbolTable* module_scope,
         const std::string& new_name, ASR::expr_t* target) {
             perform_symbolic_constant_operation(al, loc, module_scope, new_name, target);
     }
 
-    void process_intrinsic_function(Allocator &al,  const Location &loc, ASR::IntrinsicScalarFunction_t* x, SymbolTable* module_scope,
+    void process_intrinsic_function(Allocator &al,  const Location &loc, ASR::IntrinsicElementalFunction_t* x, SymbolTable* module_scope,
         ASR::expr_t* target){
         int64_t intrinsic_id = x->m_intrinsic_id;
-        switch (static_cast<LCompilers::ASRUtils::IntrinsicScalarFunctions>(intrinsic_id)) {
-            case LCompilers::ASRUtils::IntrinsicScalarFunctions::SymbolicSymbol: {
+        switch (static_cast<LCompilers::ASRUtils::IntrinsicElementalFunctions>(intrinsic_id)) {
+            case LCompilers::ASRUtils::IntrinsicElementalFunctions::SymbolicSymbol: {
                 std::string new_name = "symbol_set";
                 symbolic_dependencies.push_back(new_name);
                 if (!module_scope->get_symbol(new_name)) {
@@ -507,63 +507,63 @@ public:
                 pass_result.push_back(al, stmt);
                 break;
             }
-            case LCompilers::ASRUtils::IntrinsicScalarFunctions::SymbolicPi: {
+            case LCompilers::ASRUtils::IntrinsicElementalFunctions::SymbolicPi: {
                 process_constants(al, loc, x, module_scope, "basic_const_pi", target);
                 break;
             }
-            case LCompilers::ASRUtils::IntrinsicScalarFunctions::SymbolicE: {
+            case LCompilers::ASRUtils::IntrinsicElementalFunctions::SymbolicE: {
                 process_constants(al, loc, x, module_scope, "basic_const_E", target);
                 break;
             }
-            case LCompilers::ASRUtils::IntrinsicScalarFunctions::SymbolicAdd: {
+            case LCompilers::ASRUtils::IntrinsicElementalFunctions::SymbolicAdd: {
                 process_binary_operator(al, loc, x, module_scope, "basic_add", target);
                 break;
             }
-            case LCompilers::ASRUtils::IntrinsicScalarFunctions::SymbolicSub: {
+            case LCompilers::ASRUtils::IntrinsicElementalFunctions::SymbolicSub: {
                 process_binary_operator(al, loc, x, module_scope, "basic_sub", target);
                 break;
             }
-            case LCompilers::ASRUtils::IntrinsicScalarFunctions::SymbolicMul: {
+            case LCompilers::ASRUtils::IntrinsicElementalFunctions::SymbolicMul: {
                 process_binary_operator(al, loc, x, module_scope, "basic_mul", target);
                 break;
             }
-            case LCompilers::ASRUtils::IntrinsicScalarFunctions::SymbolicDiv: {
+            case LCompilers::ASRUtils::IntrinsicElementalFunctions::SymbolicDiv: {
                 process_binary_operator(al, loc, x, module_scope, "basic_div", target);
                 break;
             }
-            case LCompilers::ASRUtils::IntrinsicScalarFunctions::SymbolicPow: {
+            case LCompilers::ASRUtils::IntrinsicElementalFunctions::SymbolicPow: {
                 process_binary_operator(al, loc, x, module_scope, "basic_pow", target);
                 break;
             }
-            case LCompilers::ASRUtils::IntrinsicScalarFunctions::SymbolicDiff: {
+            case LCompilers::ASRUtils::IntrinsicElementalFunctions::SymbolicDiff: {
                 process_binary_operator(al, loc, x, module_scope, "basic_diff", target);
                 break;
             }
-            case LCompilers::ASRUtils::IntrinsicScalarFunctions::SymbolicSin: {
+            case LCompilers::ASRUtils::IntrinsicElementalFunctions::SymbolicSin: {
                 process_unary_operator(al, loc, x, module_scope, "basic_sin", target);
                 break;
             }
-            case LCompilers::ASRUtils::IntrinsicScalarFunctions::SymbolicCos: {
+            case LCompilers::ASRUtils::IntrinsicElementalFunctions::SymbolicCos: {
                 process_unary_operator(al, loc, x, module_scope, "basic_cos", target);
                 break;
             }
-            case LCompilers::ASRUtils::IntrinsicScalarFunctions::SymbolicLog: {
+            case LCompilers::ASRUtils::IntrinsicElementalFunctions::SymbolicLog: {
                 process_unary_operator(al, loc, x, module_scope, "basic_log", target);
                 break;
             }
-            case LCompilers::ASRUtils::IntrinsicScalarFunctions::SymbolicExp: {
+            case LCompilers::ASRUtils::IntrinsicElementalFunctions::SymbolicExp: {
                 process_unary_operator(al, loc, x, module_scope, "basic_exp", target);
                 break;
             }
-            case LCompilers::ASRUtils::IntrinsicScalarFunctions::SymbolicAbs: {
+            case LCompilers::ASRUtils::IntrinsicElementalFunctions::SymbolicAbs: {
                 process_unary_operator(al, loc, x, module_scope, "basic_abs", target);
                 break;
             }
-            case LCompilers::ASRUtils::IntrinsicScalarFunctions::SymbolicExpand: {
+            case LCompilers::ASRUtils::IntrinsicElementalFunctions::SymbolicExpand: {
                 process_unary_operator(al, loc, x, module_scope, "basic_expand", target);
                 break;
             }
-            case LCompilers::ASRUtils::IntrinsicScalarFunctions::SymbolicGetArgument: {
+            case LCompilers::ASRUtils::IntrinsicElementalFunctions::SymbolicGetArgument: {
                 // Define necessary function symbols
                 ASR::expr_t* value1 = handle_argument(al, loc, x->m_args[0]);
                 ASR::symbol_t* basic_get_args_sym = declare_basic_get_args_function(al, loc, module_scope);
@@ -1053,11 +1053,11 @@ public:
 
     ASR::expr_t* process_attributes(Allocator &al, const Location &loc, ASR::expr_t* expr,
         SymbolTable* module_scope) {
-        if (ASR::is_a<ASR::IntrinsicScalarFunction_t>(*expr)) {
-            ASR::IntrinsicScalarFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicScalarFunction_t>(expr);
+        if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*expr)) {
+            ASR::IntrinsicElementalFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(expr);
             int64_t intrinsic_id = intrinsic_func->m_intrinsic_id;
-            switch (static_cast<LCompilers::ASRUtils::IntrinsicScalarFunctions>(intrinsic_id)) {
-                case LCompilers::ASRUtils::IntrinsicScalarFunctions::SymbolicHasSymbolQ: {
+            switch (static_cast<LCompilers::ASRUtils::IntrinsicElementalFunctions>(intrinsic_id)) {
+                case LCompilers::ASRUtils::IntrinsicElementalFunctions::SymbolicHasSymbolQ: {
                     std::string name = "basic_has_symbol";
                     symbolic_dependencies.push_back(name);
                     if (!module_scope->get_symbol(name)) {
@@ -1117,7 +1117,7 @@ public:
                         ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr, nullptr));
                     break;
                 }
-                case LCompilers::ASRUtils::IntrinsicScalarFunctions::SymbolicAddQ: {
+                case LCompilers::ASRUtils::IntrinsicElementalFunctions::SymbolicAddQ: {
                     ASR::symbol_t* basic_get_type_sym = declare_basic_get_type_function(al, loc, module_scope);
                     ASR::expr_t* value1 = handle_argument(al, loc, intrinsic_func->m_args[0]);
                     Vec<ASR::call_arg_t> call_args;
@@ -1135,7 +1135,7 @@ public:
                         ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
                     break;
                 }
-                case LCompilers::ASRUtils::IntrinsicScalarFunctions::SymbolicMulQ: {
+                case LCompilers::ASRUtils::IntrinsicElementalFunctions::SymbolicMulQ: {
                     ASR::symbol_t* basic_get_type_sym = declare_basic_get_type_function(al, loc, module_scope);
                     ASR::expr_t* value1 = handle_argument(al, loc, intrinsic_func->m_args[0]);
                     Vec<ASR::call_arg_t> call_args;
@@ -1153,7 +1153,7 @@ public:
                         ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
                     break;
                 }
-                case LCompilers::ASRUtils::IntrinsicScalarFunctions::SymbolicPowQ: {
+                case LCompilers::ASRUtils::IntrinsicElementalFunctions::SymbolicPowQ: {
                     ASR::symbol_t* basic_get_type_sym = declare_basic_get_type_function(al, loc, module_scope);
                     ASR::expr_t* value1 = handle_argument(al, loc, intrinsic_func->m_args[0]);
                     Vec<ASR::call_arg_t> call_args;
@@ -1171,7 +1171,7 @@ public:
                         ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
                     break;
                 }
-                case LCompilers::ASRUtils::IntrinsicScalarFunctions::SymbolicLogQ: {
+                case LCompilers::ASRUtils::IntrinsicElementalFunctions::SymbolicLogQ: {
                     ASR::symbol_t* basic_get_type_sym = declare_basic_get_type_function(al, loc, module_scope);
                     ASR::expr_t* value1 = handle_argument(al, loc, intrinsic_func->m_args[0]);
                     Vec<ASR::call_arg_t> call_args;
@@ -1189,7 +1189,7 @@ public:
                         ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
                     break;
                 }
-                case LCompilers::ASRUtils::IntrinsicScalarFunctions::SymbolicSinQ: {
+                case LCompilers::ASRUtils::IntrinsicElementalFunctions::SymbolicSinQ: {
                     ASR::symbol_t* basic_get_type_sym = declare_basic_get_type_function(al, loc, module_scope);
                     ASR::expr_t* value1 = handle_argument(al, loc, intrinsic_func->m_args[0]);
                     Vec<ASR::call_arg_t> call_args;
@@ -1238,8 +1238,8 @@ public:
             ASR::stmt_t* stmt = ASRUtils::STMT(ASR::make_SubroutineCall_t(al, x.base.base.loc, basic_assign_sym,
                 basic_assign_sym, call_args.p, call_args.n, nullptr));
             pass_result.push_back(al, stmt);
-        } else if (ASR::is_a<ASR::IntrinsicScalarFunction_t>(*x.m_value)) {
-            ASR::IntrinsicScalarFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicScalarFunction_t>(x.m_value);
+        } else if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*x.m_value)) {
+            ASR::IntrinsicElementalFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(x.m_value);
             if (intrinsic_func->m_type->type == ASR::ttypeType::SymbolicExpression) {
                 process_intrinsic_function(al, x.base.base.loc, intrinsic_func, module_scope, x.m_target);
             } else if (intrinsic_func->m_type->type == ASR::ttypeType::Logical) {
@@ -1269,11 +1269,11 @@ public:
                     ASR::stmt_t* stmt = ASRUtils::STMT(ASR::make_SubroutineCall_t(al, x.base.base.loc, integer_set_sym,
                         integer_set_sym, call_args.p, call_args.n, nullptr));
                     pass_result.push_back(al, stmt);
-                } else if (ASR::is_a<ASR::IntrinsicScalarFunction_t>(*cast_value)) {
-                    ASR::IntrinsicScalarFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicScalarFunction_t>(cast_value);
+                } else if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*cast_value)) {
+                    ASR::IntrinsicElementalFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(cast_value);
                     int64_t intrinsic_id = intrinsic_func->m_intrinsic_id;
-                    if (static_cast<LCompilers::ASRUtils::IntrinsicScalarFunctions>(intrinsic_id) ==
-                        LCompilers::ASRUtils::IntrinsicScalarFunctions::SymbolicInteger) {
+                    if (static_cast<LCompilers::ASRUtils::IntrinsicElementalFunctions>(intrinsic_id) ==
+                        LCompilers::ASRUtils::IntrinsicElementalFunctions::SymbolicInteger) {
                         int const_value = 0;
                         if (ASR::is_a<ASR::IntegerConstant_t>(*cast_arg)){
                             ASR::IntegerConstant_t* const_int = ASR::down_cast<ASR::IntegerConstant_t>(cast_arg);
@@ -1382,8 +1382,8 @@ public:
         transform_stmts(xx.m_body, xx.n_body);
         transform_stmts(xx.m_orelse, xx.n_orelse);
         SymbolTable* module_scope = current_scope->parent;
-        if (ASR::is_a<ASR::IntrinsicScalarFunction_t>(*xx.m_test)) {
-            ASR::IntrinsicScalarFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicScalarFunction_t>(xx.m_test);
+        if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*xx.m_test)) {
+            ASR::IntrinsicElementalFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(xx.m_test);
             if (intrinsic_func->m_type->type == ASR::ttypeType::Logical) {
                 ASR::expr_t* function_call = process_attributes(al, xx.base.base.loc, xx.m_test, module_scope);
                 xx.m_test = function_call;
@@ -1398,8 +1398,8 @@ public:
 
         for (size_t i=0; i<x.n_args; i++) {
             ASR::expr_t* val = x.m_args[i].m_value;
-            if (val && ASR::is_a<ASR::IntrinsicScalarFunction_t>(*val) && ASR::is_a<ASR::SymbolicExpression_t>(*ASRUtils::expr_type(val))) {
-                ASR::IntrinsicScalarFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicScalarFunction_t>(val);
+            if (val && ASR::is_a<ASR::IntrinsicElementalFunction_t>(*val) && ASR::is_a<ASR::SymbolicExpression_t>(*ASRUtils::expr_type(val))) {
+                ASR::IntrinsicElementalFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(val);
                 ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, x.base.base.loc));
                 std::string symengine_var = symengine_stack.push();
                 ASR::symbol_t *arg = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
@@ -1466,8 +1466,8 @@ public:
                     basic_str_sym, basic_str_sym, call_args.p, call_args.n,
                     ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc, 1, -2, nullptr)), nullptr, nullptr));
                 print_tmp.push_back(function_call);
-            } else if (ASR::is_a<ASR::IntrinsicScalarFunction_t>(*val)) {
-                ASR::IntrinsicScalarFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicScalarFunction_t>(val);
+            } else if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*val)) {
+                ASR::IntrinsicElementalFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(val);
                 if (ASR::is_a<ASR::SymbolicExpression_t>(*ASRUtils::expr_type(val))) {
                     ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, x.base.base.loc));
                     std::string symengine_var = symengine_stack.push();
@@ -1585,7 +1585,7 @@ public:
         }
     }
 
-    void visit_IntrinsicFunction(const ASR::IntrinsicScalarFunction_t &x) {
+    void visit_IntrinsicFunction(const ASR::IntrinsicElementalFunction_t &x) {
         if(x.m_type && x.m_type->type == ASR::ttypeType::SymbolicExpression) {
             SymbolTable* module_scope = current_scope->parent;
 
@@ -1603,7 +1603,7 @@ public:
                 }
             }
 
-            ASR::IntrinsicScalarFunction_t &xx = const_cast<ASR::IntrinsicScalarFunction_t&>(x);
+            ASR::IntrinsicElementalFunction_t &xx = const_cast<ASR::IntrinsicElementalFunction_t&>(x);
             ASR::expr_t* target = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, arg));
             process_intrinsic_function(al, x.base.base.loc, &xx, module_scope, target);
         }
@@ -1630,11 +1630,11 @@ public:
         ASR::expr_t* target = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, arg));
         ASR::expr_t* cast_arg = x.m_arg;
         ASR::expr_t* cast_value = x.m_value;
-        if (ASR::is_a<ASR::IntrinsicScalarFunction_t>(*cast_value)) {
-            ASR::IntrinsicScalarFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicScalarFunction_t>(cast_value);
+        if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*cast_value)) {
+            ASR::IntrinsicElementalFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(cast_value);
             int64_t intrinsic_id = intrinsic_func->m_intrinsic_id;
-            if (static_cast<LCompilers::ASRUtils::IntrinsicScalarFunctions>(intrinsic_id) ==
-                LCompilers::ASRUtils::IntrinsicScalarFunctions::SymbolicInteger) {
+            if (static_cast<LCompilers::ASRUtils::IntrinsicElementalFunctions>(intrinsic_id) ==
+                LCompilers::ASRUtils::IntrinsicElementalFunctions::SymbolicInteger) {
                 int const_value = 0;
                 if (ASR::is_a<ASR::IntegerConstant_t>(*cast_arg)){
                     ASR::IntegerConstant_t* const_int = ASR::down_cast<ASR::IntegerConstant_t>(cast_arg);
@@ -1673,8 +1673,8 @@ public:
             ASR::symbol_t *var_sym = nullptr;
             if (ASR::is_a<ASR::Var_t>(*expr)) {
                 var_sym = ASR::down_cast<ASR::Var_t>(expr)->m_v;
-            } else if (ASR::is_a<ASR::IntrinsicScalarFunction_t>(*expr)) {
-                ASR::IntrinsicScalarFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicScalarFunction_t>(expr);
+            } else if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*expr)) {
+                ASR::IntrinsicElementalFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(expr);
                 this->visit_IntrinsicFunction(*intrinsic_func);
                 var_sym = current_scope->get_symbol(symengine_stack.pop());
             } else if (ASR::is_a<ASR::Cast_t>(*expr)) {
@@ -1738,8 +1738,8 @@ public:
                 ASR::stmt_t *assert_stmt = ASRUtils::STMT(ASR::make_Assert_t(al, x.base.base.loc, function_call, x.m_msg));
                 pass_result.push_back(al, assert_stmt);
             }
-        } else if (ASR::is_a<ASR::IntrinsicScalarFunction_t>(*x.m_test)) {
-            ASR::IntrinsicScalarFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicScalarFunction_t>(x.m_test);
+        } else if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*x.m_test)) {
+            ASR::IntrinsicElementalFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(x.m_test);
             if (intrinsic_func->m_type->type == ASR::ttypeType::Logical) {
                 ASR::expr_t* test = process_attributes(al, x.base.base.loc, x.m_test, module_scope);
                 ASR::stmt_t *assert_stmt = ASRUtils::STMT(ASR::make_Assert_t(al, x.base.base.loc, test, x.m_msg));
