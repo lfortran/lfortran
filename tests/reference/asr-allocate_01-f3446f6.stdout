@@ -2,54 +2,6 @@
     (SymbolTable
         1
         {
-            allocate_01:
-                (Program
-                    (SymbolTable
-                        2
-                        {
-                            a:
-                                (Variable
-                                    2
-                                    a
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Allocatable
-                                        (Array
-                                            (Integer 4)
-                                            [(()
-                                            ())]
-                                            DescriptorArray
-                                        )
-                                    )
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
-                            b:
-                                (Variable
-                                    2
-                                    b
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Allocatable
-                                        (Array
-                                            (Real 4)
-                                            [(()
-                                            ())
-                                            (()
-                                            ())]
-                                            DescriptorArray
-                                        )
-                                    )
-                                    ()
                                     Source
                                     Public
                                     Required
