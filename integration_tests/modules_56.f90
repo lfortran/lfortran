@@ -13,8 +13,10 @@ end module
 program main
     use modules_56_module
     implicit none
-    real :: a = 0.0
+    real :: a
+    logical :: res
 
-    print *, is_close_rsp(a)
-    if (is_close_rsp(a)) error stop
+    res = is_close_rsp(a)
+    print *, res
+    if (res) error stop
 end program main
