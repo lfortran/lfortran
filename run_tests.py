@@ -82,7 +82,12 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                         "nested_vars"] and
                 _pass not in optimization_passes):
                 raise Exception(f"Unknown pass: {_pass}")
-    log.debug(f"{color(style.bold)} START TEST: {color(style.reset)} {filename}")
+    if update_reference:
+        log.debug(f"{color(style.bold)} UPDATE TEST: {color(style.reset)} {filename}")
+    elif verify_hash:
+        log.debug(f"{color(style.bold)} VERIFY HASH: {color(style.reset)} {filename}")
+    else:
+        log.debug(f"{color(style.bold)} START TEST: {color(style.reset)} {filename}")
 
     extra_args = f"--no-error-banner {show_verbose}"
     if print_leading_space:
