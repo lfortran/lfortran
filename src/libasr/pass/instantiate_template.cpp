@@ -444,7 +444,7 @@ public:
             char* r_arg_i = x->m_args[i];
             r_args.push_back(al, r_arg_i);
         }
-        
+
         return ASR::down_cast<ASR::require_instantiation_t>(
             ASR::make_Require_t(al, x->base.base.loc, s2c(al, x->m_name), r_args.p, r_args.size()));
     }
@@ -467,7 +467,7 @@ public:
                 std::string struct_name = ASRUtils::symbol_name(s->m_derived_type);
                 if (symbol_subs.find(struct_name) != symbol_subs.end()) {
                     ASR::symbol_t *sym = symbol_subs[struct_name];
-                    return ASRUtils::TYPE(ASR::make_Struct_t(al, ttype->base.loc, sym));   
+                    return ASRUtils::TYPE(ASR::make_Struct_t(al, ttype->base.loc, sym));
                 }
                 return ttype;
             }
@@ -569,7 +569,7 @@ public:
                 throw LCompilersException("Instantiation body of " + sym_name
                     + " symbol is not supported");
             };
-        } 
+        }
     }
 
     void instantiate_Function(ASR::Function_t* x) {
@@ -618,7 +618,7 @@ public:
         for (auto const &sym_pair: new_t->m_symtab->get_scope()) {
             ASR::symbol_t* new_sym_i = sym_pair.second;
             ASR::symbol_t* sym_i = x->m_symtab->get_symbol(sym_pair.first);
-            
+
             BodyInstantiator t(al, type_subs, symbol_subs, new_sym_i, sym_i);
             t.instantiate();
         }
@@ -638,7 +638,7 @@ public:
 
     void instantiate_ClassProcedure(ASR::ClassProcedure_t* x) {
         ASR::ClassProcedure_t* new_c = ASR::down_cast<ASR::ClassProcedure_t>(new_sym);
-        
+
         ASR::symbol_t* new_proc = new_c->m_proc;
         ASR::symbol_t* proc = x->m_proc;
 
@@ -887,7 +887,7 @@ public:
                 std::string struct_name = ASRUtils::symbol_name(s->m_derived_type);
                 if (symbol_subs.find(struct_name) != symbol_subs.end()) {
                     ASR::symbol_t *sym = symbol_subs[struct_name];
-                    ttype = ASRUtils::TYPE(ASR::make_Struct_t(al, s->base.base.loc, sym));   
+                    ttype = ASRUtils::TYPE(ASR::make_Struct_t(al, s->base.base.loc, sym));
                 }
                 return ttype;
             }
