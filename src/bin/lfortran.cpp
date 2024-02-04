@@ -1955,6 +1955,7 @@ int main_app(int argc, char *argv[]) {
     std::string arg_pywrap_array_order="f";
     std::vector<std::string> linker_flags;
     std::vector<std::string> f_flags;
+    std::vector<std::string> O_flags;
 
     CompilerOptions compiler_options;
     compiler_options.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
@@ -1982,6 +1983,7 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--version", arg_version, "Display compiler version information");
     app.add_option("-W", linker_flags, "Linker flags")->allow_extra_args(false);
     app.add_option("-f", f_flags, "All `-f*` flags (only -fPIC supported for now)")->allow_extra_args(false);
+    app.add_option("-O", O_flags, "Optimization level (ignored for now)")->allow_extra_args(false);
 
     // LFortran specific options
     app.add_flag("--cpp", compiler_options.c_preprocessor, "Enable C preprocessing");
