@@ -3334,6 +3334,10 @@ filename = "save2.f90"
 asr = true
 
 [[test]]
+filename = "c_f_pointer.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/save_03.f90"
 asr = true
 

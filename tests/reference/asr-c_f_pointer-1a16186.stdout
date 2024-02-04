@@ -1,0 +1,322 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            c_f_pointer:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            c_arr:
+                                (Variable
+                                    2
+                                    c_arr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Complex 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            c_associated:
+                                (ExternalSymbol
+                                    2
+                                    c_associated
+                                    4 c_associated
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_associated
+                                    Public
+                                ),
+                            c_bool:
+                                (ExternalSymbol
+                                    2
+                                    c_bool
+                                    4 c_bool
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_bool
+                                    Public
+                                ),
+                            c_char:
+                                (ExternalSymbol
+                                    2
+                                    c_char
+                                    4 c_char
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_char
+                                    Public
+                                ),
+                            c_double:
+                                (ExternalSymbol
+                                    2
+                                    c_double
+                                    4 c_double
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_double
+                                    Public
+                                ),
+                            c_double_complex:
+                                (ExternalSymbol
+                                    2
+                                    c_double_complex
+                                    4 c_double_complex
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_double_complex
+                                    Public
+                                ),
+                            c_f_pointer:
+                                (ExternalSymbol
+                                    2
+                                    c_f_pointer
+                                    4 c_f_pointer
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_f_pointer
+                                    Public
+                                ),
+                            c_float:
+                                (ExternalSymbol
+                                    2
+                                    c_float
+                                    4 c_float
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_float
+                                    Public
+                                ),
+                            c_float_complex:
+                                (ExternalSymbol
+                                    2
+                                    c_float_complex
+                                    4 c_float_complex
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_float_complex
+                                    Public
+                                ),
+                            c_int:
+                                (ExternalSymbol
+                                    2
+                                    c_int
+                                    4 c_int
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int
+                                    Public
+                                ),
+                            c_int16_t:
+                                (ExternalSymbol
+                                    2
+                                    c_int16_t
+                                    4 c_int16_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int16_t
+                                    Public
+                                ),
+                            c_int32_t:
+                                (ExternalSymbol
+                                    2
+                                    c_int32_t
+                                    4 c_int32_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int32_t
+                                    Public
+                                ),
+                            c_int64_t:
+                                (ExternalSymbol
+                                    2
+                                    c_int64_t
+                                    4 c_int64_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int64_t
+                                    Public
+                                ),
+                            c_int8_t:
+                                (ExternalSymbol
+                                    2
+                                    c_int8_t
+                                    4 c_int8_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int8_t
+                                    Public
+                                ),
+                            c_loc:
+                                (ExternalSymbol
+                                    2
+                                    c_loc
+                                    4 c_loc
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_loc
+                                    Public
+                                ),
+                            c_long:
+                                (ExternalSymbol
+                                    2
+                                    c_long
+                                    4 c_long
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_long
+                                    Public
+                                ),
+                            c_long_double:
+                                (ExternalSymbol
+                                    2
+                                    c_long_double
+                                    4 c_long_double
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_long_double
+                                    Public
+                                ),
+                            c_long_double_complex:
+                                (ExternalSymbol
+                                    2
+                                    c_long_double_complex
+                                    4 c_long_double_complex
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_long_double_complex
+                                    Public
+                                ),
+                            c_long_long:
+                                (ExternalSymbol
+                                    2
+                                    c_long_long
+                                    4 c_long_long
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_long_long
+                                    Public
+                                ),
+                            c_null_char:
+                                (ExternalSymbol
+                                    2
+                                    c_null_char
+                                    4 c_null_char
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_null_char
+                                    Public
+                                ),
+                            c_null_ptr:
+                                (ExternalSymbol
+                                    2
+                                    c_null_ptr
+                                    4 c_null_ptr
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_null_ptr
+                                    Public
+                                ),
+                            c_ptr:
+                                (ExternalSymbol
+                                    2
+                                    c_ptr
+                                    4 c_ptr
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_ptr
+                                    Public
+                                ),
+                            c_short:
+                                (ExternalSymbol
+                                    2
+                                    c_short
+                                    4 c_short
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_short
+                                    Public
+                                ),
+                            c_size_t:
+                                (ExternalSymbol
+                                    2
+                                    c_size_t
+                                    4 c_size_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_size_t
+                                    Public
+                                ),
+                            r_ptr:
+                                (Variable
+                                    2
+                                    r_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (Array
+                                            (Real 4)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    c_f_pointer
+                    [iso_c_binding]
+                    [(CPtrToPointer
+                        (PointerToCPtr
+                            (GetPointer
+                                (Var 2 c_arr)
+                                (Pointer
+                                    (Array
+                                        (Complex 4)
+                                        [(()
+                                        ())]
+                                        DescriptorArray
+                                    )
+                                )
+                                ()
+                            )
+                            (CPtr)
+                            ()
+                        )
+                        (Var 2 r_ptr)
+                        (ArrayConstant
+                            [(IntegerConstant 4 (Integer 4))]
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4)))]
+                                PointerToDataArray
+                            )
+                            ColMajor
+                        )
+                        ()
+                    )]
+                ),
+            iso_c_binding:
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding)
+        })
+    []
+)
