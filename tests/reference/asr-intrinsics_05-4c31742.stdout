@@ -28,7 +28,7 @@
                     []
                     [(Assignment
                         (Var 2 x)
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Sinh
                             [(RealConstant
                                 1.000000
@@ -50,7 +50,7 @@
                     )
                     (Assignment
                         (Var 2 x)
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Cosh
                             [(RealConstant
                                 1.000000
@@ -72,7 +72,7 @@
                     )
                     (Assignment
                         (Var 2 x)
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Tanh
                             [(RealConstant
                                 1.000000

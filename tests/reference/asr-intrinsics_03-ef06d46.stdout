@@ -114,7 +114,7 @@
                     )
                     (Assignment
                         (Var 2 x)
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Cos
                             [(RealConstant
                                 9.500000
@@ -131,7 +131,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 2 x)
@@ -162,10 +162,10 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Cos
                                         [(Var 2 a)]
                                         0
@@ -215,14 +215,14 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Cos
                                         [(RealBinOp
                                             (Cast
-                                                (IntrinsicScalarFunction
+                                                (IntrinsicElementalFunction
                                                     Cos
                                                     [(RealConstant
                                                         1.500000
@@ -243,12 +243,12 @@
                                                 )
                                             )
                                             Add
-                                            (IntrinsicScalarFunction
+                                            (IntrinsicElementalFunction
                                                 Cos
                                                 [(RealBinOp
                                                     (Var 2 a)
                                                     Add
-                                                    (IntrinsicScalarFunction
+                                                    (IntrinsicElementalFunction
                                                         Cos
                                                         [(Var 2 a)]
                                                         0
@@ -312,7 +312,7 @@
                     )
                     (Assignment
                         (Var 2 r1)
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Cos
                             [(Var 2 a)]
                             0
@@ -338,7 +338,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 2 r1)
@@ -365,7 +365,7 @@
                         []
                     )
                     (Print
-                        [(IntrinsicScalarFunction
+                        [(IntrinsicElementalFunction
                             Abs
                             [(Var 2 i)]
                             0
@@ -377,7 +377,7 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Abs
                                 [(Var 2 i)]
                                 0

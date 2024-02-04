@@ -172,7 +172,7 @@
                                     (Var 5 y)]
                                     [(Assignment
                                         (Var 5 result)
-                                        (IntrinsicScalarFunction
+                                        (IntrinsicElementalFunction
                                             Max
                                             [(Var 5 x)
                                             (Var 5 y)]
@@ -263,7 +263,7 @@
                                     (Var 6 y)]
                                     [(Assignment
                                         (Var 6 result)
-                                        (IntrinsicScalarFunction
+                                        (IntrinsicElementalFunction
                                             Min
                                             [(Var 6 x)
                                             (Var 6 y)]
@@ -645,7 +645,7 @@
                                     (Var 13 y)]
                                     [(Assignment
                                         (Var 13 result)
-                                        (IntrinsicScalarFunction
+                                        (IntrinsicElementalFunction
                                             Max
                                             [(Var 13 x)
                                             (Var 13 y)]
@@ -736,7 +736,7 @@
                                     (Var 14 y)]
                                     [(Assignment
                                         (Var 14 result)
-                                        (IntrinsicScalarFunction
+                                        (IntrinsicElementalFunction
                                             Min
                                             [(Var 14 x)
                                             (Var 14 y)]

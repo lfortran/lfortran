@@ -371,7 +371,7 @@
                                     (Var 10 b)]
                                     [(Assignment
                                         (Var 10 distance)
-                                        (IntrinsicScalarFunction
+                                        (IntrinsicElementalFunction
                                             Sqrt
                                             [(RealBinOp
                                                 (RealBinOp
@@ -557,7 +557,7 @@
                                     (Var 11 distance)]
                                     [(Assignment
                                         (Var 11 distance)
-                                        (IntrinsicScalarFunction
+                                        (IntrinsicElementalFunction
                                             Sqrt
                                             [(RealBinOp
                                                 (RealBinOp
