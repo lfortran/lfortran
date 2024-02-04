@@ -734,6 +734,8 @@ public:
         {"dsin", "sin"},
         {"dcos", "cos"},
         {"dtan", "tan"},
+
+        {"datan", "atan"},
         {"datan2", "atan2"},
 
         {"dimag", "aimag"},
