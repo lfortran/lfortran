@@ -3,14 +3,6 @@ use, intrinsic :: iso_fortran_env, only: i8 => int8, i16 => int16, i32 => int32,
 use, intrinsic :: iso_c_binding, only: c_float, c_double
 implicit none
 
-interface epsilon
-    module procedure sepsilon, depsilon
-end interface
-
-interface tiny
-    module procedure stiny, dtiny
-end interface
-
 interface system_clock
     module procedure i32sys_clock, i64sys_clock
 end interface
@@ -36,30 +28,6 @@ interface dot_product
 end interface
 
 contains
-
-! epsilon ---------------------------------------------------------------------
-
-elemental real(sp) function sepsilon(x) result(r)
-real(sp), intent(in) :: x
-r = 1.19209290E-07
-end function
-
-elemental real(dp) function depsilon(x) result(r)
-real(dp), intent(in) :: x
-r = 2.2204460492503131E-016
-end function
-
-! tiny ---------------------------------------------------------------------
-
-elemental real(sp) function stiny(x) result(r)
-real(sp), intent(in) :: x
-r = 1.17549435E-38
-end function
-
-elemental real(dp) function dtiny(x) result(r)
-real(dp), intent(in) :: x
-r = 2.2250738585072014E-308
-end function
 
 ! cpu_time ---------------------------------------------------------------------
 
