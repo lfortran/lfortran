@@ -5907,7 +5907,8 @@ public:
                             "The argument for " + param + " must be a function",
                             args[i]->base.loc);
                     }
-                    check_restriction(type_subs, symbol_subs, f, f_arg0, loc, diag);
+                    check_restriction(type_subs,
+                        symbol_subs, f, f_arg0, loc, diag, []() { throw SemanticAbort(); });
                 } else {
                     ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
                     if (ASRUtils::is_type_parameter(*param_type)) {
@@ -5985,7 +5986,9 @@ public:
                     ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
                     for (size_t i = 0; i < gen_proc->n_procs && !found; i++) {
                         ASR::symbol_t* proc = gen_proc->m_procs[i];
-                        found = check_restriction(type_subs, symbol_subs, f, proc, loc, diag, false);
+                        found = check_restriction(type_subs,
+                                    symbol_subs, f, proc, loc, diag,
+                                    []() { throw SemanticAbort(); }, false);
                     }
                 }
 
