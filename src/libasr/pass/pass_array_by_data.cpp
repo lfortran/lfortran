@@ -444,6 +444,25 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             }
         }
 
+        static inline void get_dimensions(ASR::expr_t* array, Vec<ASR::expr_t*>& dims,
+                                        Allocator& al) {
+            ASR::ttype_t* array_type = ASRUtils::expr_type(array);
+            ASR::dimension_t* compile_time_dims = nullptr;
+            int n_dims = ASRUtils::extract_dimensions_from_ttype(array_type, compile_time_dims);
+            for( int i = 0; i < n_dims; i++ ) {
+                ASR::expr_t* start = compile_time_dims[i].m_start;
+                if( start == nullptr ) {
+                    start = PassUtils::get_bound(array, i + 1, "lbound", al);
+                }
+                ASR::expr_t* length = compile_time_dims[i].m_length;
+                if( length == nullptr ) {
+                    length = ASRUtils::get_size(array, i + 1, al);
+                }
+                dims.push_back(al, start);
+                dims.push_back(al, length);
+            }
+        }
+
         Vec<ASR::call_arg_t> construct_new_args(size_t n_args, ASR::call_arg_t* orig_args, std::vector<size_t>& indices) {
             Vec<ASR::call_arg_t> new_args;
             new_args.reserve(al, n_args);
@@ -477,7 +496,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
 
                 Vec<ASR::expr_t*> dim_vars;
                 dim_vars.reserve(al, 2);
-                ASRUtils::get_dimensions(orig_arg_i, dim_vars, al);
+                get_dimensions(orig_arg_i, dim_vars, al);
                 for( size_t j = 0; j < dim_vars.size(); j++ ) {
                     ASR::call_arg_t dim_var;
                     dim_var.loc = dim_vars[j]->base.loc;

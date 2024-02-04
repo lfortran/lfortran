@@ -4523,25 +4523,6 @@ static inline ASR::expr_t* get_size(ASR::expr_t* arr_expr, Allocator& al) {
     return ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(al, arr_expr->base.loc, arr_expr, nullptr, int32_type, nullptr));
 }
 
-static inline void get_dimensions(ASR::expr_t* array, Vec<ASR::expr_t*>& dims,
-                                  Allocator& al) {
-    ASR::ttype_t* array_type = ASRUtils::expr_type(array);
-    ASR::dimension_t* compile_time_dims = nullptr;
-    int n_dims = extract_dimensions_from_ttype(array_type, compile_time_dims);
-    for( int i = 0; i < n_dims; i++ ) {
-        ASR::expr_t* start = compile_time_dims[i].m_start;
-        if( start == nullptr ) {
-            start = get_bound<SemanticError>(array, i + 1, "lbound", al);
-        }
-        ASR::expr_t* length = compile_time_dims[i].m_length;
-        if( length == nullptr ) {
-            length = get_size(array, i + 1, al);
-        }
-        dims.push_back(al, start);
-        dims.push_back(al, length);
-    }
-}
-
 static inline ASR::EnumType_t* get_EnumType_from_symbol(ASR::symbol_t* s) {
     ASR::Variable_t* s_var = ASR::down_cast<ASR::Variable_t>(s);
     if( ASR::is_a<ASR::Enum_t>(*s_var->m_type) ) {
