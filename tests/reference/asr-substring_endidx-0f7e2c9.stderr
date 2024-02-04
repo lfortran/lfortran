@@ -2,4 +2,4 @@ semantic error: Substring end index at must be of type integer
  --> tests/errors/substring_endidx.f90:4:17
   |
 4 |     print*, s(1:5.2)
-  |                 ^^^
+  |                 ^^^ 
