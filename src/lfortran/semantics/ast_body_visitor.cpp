@@ -2389,7 +2389,7 @@ public:
 
     ASR::asr_t* create_CFPointer(const AST::SubroutineCall_t& x) {
         Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"shape"};
+        std::vector<std::string> kwarg_names = {"cptr", "fptr", "shape"};
         handle_intrinsic_node_args<AST::SubroutineCall_t>(
             x, args, kwarg_names, 2, 3, std::string("c_f_ptr"));
         ASR::expr_t *cptr = args[0], *fptr = args[1], *shape = args[2];
