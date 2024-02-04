@@ -1860,6 +1860,9 @@ static inline bool main_program_present(const ASR::TranslationUnit_t &unit)
 std::vector<std::string> order_deps(std::map<std::string,
         std::vector<std::string>> const &deps);
 
+std::vector<std::string> remove_duplicate_intrinsic_module_dependencies(
+        std::vector<std::string> module_dependencies);
+
 std::vector<std::string> determine_module_dependencies(
         const ASR::TranslationUnit_t &unit);
 

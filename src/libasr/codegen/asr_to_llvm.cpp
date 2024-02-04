@@ -924,7 +924,7 @@ public:
 
         // Then do all the modules in the right order
         std::vector<std::string> build_order
-            = determine_module_dependencies(x);
+            = ASRUtils::remove_duplicate_intrinsic_module_dependencies(ASRUtils::determine_module_dependencies(x));
         for (auto &item : build_order) {
             LCOMPILERS_ASSERT(x.m_symtab->get_symbol(item)
                 != nullptr);
