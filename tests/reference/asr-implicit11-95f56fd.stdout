@@ -7,26 +7,6 @@
                     (SymbolTable
                         2
                         {
-                            dimag:
-                                (ExternalSymbol
-                                    2
-                                    dimag
-                                    5 dimag
-                                    lfortran_intrinsic_math
-                                    []
-                                    dimag
-                                    Private
-                                ),
-                            dimag@zaimag:
-                                (ExternalSymbol
-                                    2
-                                    dimag@zaimag
-                                    5 zaimag
-                                    lfortran_intrinsic_math
-                                    []
-                                    zaimag
-                                    Private
-                                ),
                             f1:
                                 (Variable
                                     2
@@ -110,20 +90,18 @@
                         ()
                     )
                     (Print
-                        [(FunctionCall
-                            2 dimag@zaimag
-                            2 dimag
-                            [((Var 2 z))]
+                        [(IntrinsicScalarFunction
+                            Aimag
+                            [(Var 2 z)]
+                            0
                             (Real 8)
-                            ()
                             ()
                         )
-                        (FunctionCall
-                            2 dimag@zaimag
-                            2 dimag
-                            [((Var 2 i))]
+                        (IntrinsicScalarFunction
+                            Aimag
+                            [(Var 2 i)]
+                            0
                             (Real 8)
-                            ()
                             ()
                         )]
                         ()
@@ -211,15 +189,7 @@
                     .false.
                     .false.
                     ()
-                ),
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math)
+                )
         })
     []
 )

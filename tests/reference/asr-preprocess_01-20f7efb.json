@@ -1,0 +1,13 @@
+{
+    "basename": "asr-preprocess_01-20f7efb",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/warnings/preprocess_01.f90",
+    "infile_hash": "8b0a43c23607be7c2557620c9ad10af23a6bcf0430bf1d5170b65303",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-preprocess_01-20f7efb.stdout",
+    "stdout_hash": "3ff0534ff3a68c1d3035adf373b2d447474db34dea891e8d3f5658e5",
+    "stderr": "asr-preprocess_01-20f7efb.stderr",
+    "stderr_hash": "add78f2a68b8c40d46c23122eeab18b258daae408143d3fb854b005d",
+    "returncode": 0
+}

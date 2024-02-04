@@ -1,0 +1,13 @@
+{
+    "basename": "asr-substring_startidx-5fb6d57",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/substring_startidx.f90",
+    "infile_hash": "fcff3742bb69cbe950f45a39c1dca614325666b260ee503f8862cfdf",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-substring_startidx-5fb6d57.stderr",
+    "stderr_hash": "564b4a23bb9dc1c50abb4282ce068b3666966efc9fd6fa9de268b987",
+    "returncode": 2
+}

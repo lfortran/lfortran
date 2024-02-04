@@ -40,11 +40,17 @@ enum class IntrinsicScalarFunctions : int64_t {
     Cosh,
     Tanh,
     Atan2,
+    Asinh,
+    Acosh,
+    Atanh,
     Gamma,
+    Log,
+    Log10,
     LogGamma,
     Trunc,
     Fix,
     Abs,
+    Aimag,
     Exp,
     Exp2,
     Expm1,
@@ -129,11 +135,17 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Cosh)
         INTRINSIC_NAME_CASE(Tanh)
         INTRINSIC_NAME_CASE(Atan2)
+        INTRINSIC_NAME_CASE(Asinh)
+        INTRINSIC_NAME_CASE(Acosh)
+        INTRINSIC_NAME_CASE(Atanh)
         INTRINSIC_NAME_CASE(Gamma)
+        INTRINSIC_NAME_CASE(Log)
+        INTRINSIC_NAME_CASE(Log10)
         INTRINSIC_NAME_CASE(LogGamma)
         INTRINSIC_NAME_CASE(Trunc)
         INTRINSIC_NAME_CASE(Fix)
         INTRINSIC_NAME_CASE(Abs)
+        INTRINSIC_NAME_CASE(Aimag)
         INTRINSIC_NAME_CASE(Exp)
         INTRINSIC_NAME_CASE(Exp2)
         INTRINSIC_NAME_CASE(Expm1)
@@ -318,17 +330,17 @@ class ASRBuilder {
     }
 
     // Expressions -------------------------------------------------------------
-    #define i(x, t)   EXPR(ASR::make_IntegerConstant_t(al, loc, x, t))
-    #define i32(x)   EXPR(ASR::make_IntegerConstant_t(al, loc, x, int32))
-    #define i32_n(x) EXPR(ASR::make_IntegerUnaryMinus_t(al, loc, i32(abs(x)),   \
+    #define i(x, t)   ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, x, t))
+    #define i32(x)   ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, x, int32))
+    #define i32_n(x) ASRUtils::EXPR(ASR::make_IntegerUnaryMinus_t(al, loc, i32(abs(x)),   \
         int32, i32(x)))
-    #define i32_neg(x, t) EXPR(ASR::make_IntegerUnaryMinus_t(al, loc, x, t, nullptr))
+    #define i32_neg(x, t) ASRUtils::EXPR(ASR::make_IntegerUnaryMinus_t(al, loc, x, t, nullptr))
 
-    #define f(x, t)   EXPR(ASR::make_RealConstant_t(al, loc, x, t))
-    #define f32(x) EXPR(ASR::make_RealConstant_t(al, loc, x, real32))
-    #define f32_neg(x, t) EXPR(ASR::make_RealUnaryMinus_t(al, loc, x, t, nullptr))
+    #define f(x, t)   ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, x, t))
+    #define f32(x) ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, x, real32))
+    #define f32_neg(x, t) ASRUtils::EXPR(ASR::make_RealUnaryMinus_t(al, loc, x, t, nullptr))
 
-    #define bool32(x)  EXPR(ASR::make_LogicalConstant_t(al, loc, x, logical))
+    #define bool32(x)  ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, x, logical))
 
     #define ListItem(x, pos, type) EXPR(ASR::make_ListItem_t(al, loc, x, pos,   \
         type, nullptr))
@@ -385,8 +397,10 @@ class ASRBuilder {
             ASR::binopType::Add, right, t, nullptr))
 
     #define iSub(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
-            ASR::binopType::Sub, right, int32, nullptr))
-    #define i8Sub(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,     \
+            ASR::binopType::Sub, right, ASRUtils::int32, nullptr))
+    #define i_vSub(left, right, value) ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
+            ASR::binopType::Sub, right, ASRUtils::int32, value))
+    #define i8Sub(left, right) ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, left,     \
         ASR::binopType::Sub, right, int8, nullptr))
     #define i16Sub(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,    \
         ASR::binopType::Sub, right, int16, nullptr))
@@ -994,7 +1008,7 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
         }
 
         ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
-            arg_type, ASRUtils::intent_return_var, ASR::abiType::BindC, false);
+            return_type, ASRUtils::intent_return_var, ASR::abiType::BindC, false);
 
         SetChar dep_1; dep_1.reserve(al, 1);
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
@@ -1002,7 +1016,7 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
             body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
         fn_symtab->add_symbol(c_func_name, s);
         dep.push_back(al, s2c(al, c_func_name));
-        body.push_back(al, b.Assignment(result, b.Call(s, args, arg_type)));
+        body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
     }
 
     ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -1272,6 +1286,7 @@ namespace X {                                                                   
 create_unary_function(Trunc, trunc, trunc)
 create_unary_function(Gamma, tgamma, gamma)
 create_unary_function(LogGamma, lgamma, log_gamma)
+create_unary_function(Log10, log10, log10)
 
 namespace Fix {
     static inline ASR::expr_t *eval_Fix(Allocator &al, const Location &loc,
@@ -1371,6 +1386,46 @@ create_trig(Atan, atan, atan)
 create_trig(Sinh, sinh, sinh)
 create_trig(Cosh, cosh, cosh)
 create_trig(Tanh, tanh, tanh)
+create_trig(Asinh, asinh, asinh)
+create_trig(Acosh, acosh, acosh)
+create_trig(Atanh, atanh, atanh)
+create_trig(Log, log, log)
+
+namespace Aimag {
+
+    static inline ASR::expr_t *eval_Aimag(Allocator &al, const Location &loc,
+            ASR::ttype_t *t, Vec<ASR::expr_t*>& args) {
+        std::complex<double> crv;
+        if( ASRUtils::extract_value(args[0], crv) ) {
+            return f(crv.imag(), t);
+        } else {
+            return nullptr;
+        }
+    }
+
+    static inline ASR::asr_t* create_Aimag(Allocator& al, const Location& loc,
+        Vec<ASR::expr_t*>& args,
+        const std::function<void (const std::string &, const Location &)> err) {
+        ASR::ttype_t *type = ASRUtils::expr_type(args[0]);
+        if (args.n != 1) {
+            err("Intrinsic `aimag` accepts exactly one argument", loc);
+        } else if (!ASRUtils::is_complex(*type)) {
+            err("`x` argument of `aimag` must be complex", args[0]->base.loc);
+        }
+        type = TYPE(ASR::make_Real_t(al, type->base.loc, extract_kind_from_ttype_t(type)));
+        return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_Aimag,
+            static_cast<int64_t>(IntrinsicScalarFunctions::Aimag), 0, type);
+    }
+
+    static inline ASR::expr_t* instantiate_Aimag (Allocator &al,
+            const Location &loc, SymbolTable *scope,
+            Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args,int64_t overload_id)  {
+        return UnaryIntrinsicFunction::instantiate_functions(al, loc, scope,
+            "aimag", arg_types[0], return_type, new_args, overload_id);
+    }
+
+} // namespace Aimag
 
 namespace Atan2 {
     static inline ASR::expr_t *eval_Atan2(Allocator &al, const Location &loc,
@@ -4096,7 +4151,8 @@ namespace Max {
     static inline ASR::expr_t* instantiate_Max(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        std::string func_name = "_lcompilers_max0_" + type_to_str_python(arg_types[0]);
+        std::string func_name = "_lcompilers_max0_" + type_to_str_python(arg_types[0])
+            + "_" + std::to_string(new_args.n);
         std::string fn_name = scope->get_unique_name(func_name);
         SymbolTable *fn_symtab = al.make_new<SymbolTable>(scope);
         Vec<ASR::expr_t*> args;
@@ -4104,8 +4160,8 @@ namespace Max {
         ASRBuilder b(al, loc);
         Vec<ASR::stmt_t*> body; body.reserve(al, args.size());
         SetChar dep; dep.reserve(al, 1);
-        if (scope->get_symbol(fn_name)) {
-            ASR::symbol_t *s = scope->get_symbol(fn_name);
+        if (scope->get_symbol(func_name)) {
+            ASR::symbol_t *s = scope->get_symbol(func_name);
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
             return b.Call(s, new_args, expr_type(f->m_return_var), nullptr);
         }
@@ -4750,6 +4806,10 @@ namespace IntrinsicScalarFunctionRegistry {
                    verify_function>>& intrinsic_function_by_id_db = {
         {static_cast<int64_t>(IntrinsicScalarFunctions::Gamma),
             {&Gamma::instantiate_Gamma, &UnaryIntrinsicFunction::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Log10),
+            {&Log10::instantiate_Log10, &UnaryIntrinsicFunction::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Log),
+            {&Log::instantiate_Log, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::LogGamma),
             {&LogGamma::instantiate_LogGamma, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Trunc),
@@ -4776,6 +4836,12 @@ namespace IntrinsicScalarFunctionRegistry {
             {&Tanh::instantiate_Tanh, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Atan2),
             {&Atan2::instantiate_Atan2, &BinaryIntrinsicFunction::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Asinh),
+            {&Asinh::instantiate_Asinh, &UnaryIntrinsicFunction::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Acosh),
+            {&Acosh::instantiate_Acosh, &UnaryIntrinsicFunction::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Atanh),
+            {&Atanh::instantiate_Atanh, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Exp),
             {nullptr, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Exp2),
@@ -4816,6 +4882,8 @@ namespace IntrinsicScalarFunctionRegistry {
             {&MaxExponent::instantiate_MaxExponent, &MaxExponent::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Abs),
             {&Abs::instantiate_Abs, &Abs::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Aimag),
+            {&Aimag::instantiate_Aimag, &Aimag::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Partition),
             {&Partition::instantiate_Partition, &Partition::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::ListIndex),
@@ -4911,6 +4979,10 @@ namespace IntrinsicScalarFunctionRegistry {
     static const std::map<int64_t, std::string>& intrinsic_function_id_to_name = {
         {static_cast<int64_t>(IntrinsicScalarFunctions::Gamma),
             "gamma"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Log),
+            "log"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Log10),
+            "log10"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::LogGamma),
             "log_gamma"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Trunc),
@@ -4937,8 +5009,16 @@ namespace IntrinsicScalarFunctionRegistry {
             "tanh"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Atan2),
             "atan2"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Asinh),
+            "asinh"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Acosh),
+            "acosh"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Atanh),
+            "atanh"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Abs),
             "abs"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Aimag),
+            "aimag"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Exp),
             "exp"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Exp2),
@@ -5072,6 +5152,8 @@ namespace IntrinsicScalarFunctionRegistry {
         std::tuple<create_intrinsic_function,
                     eval_intrinsic_function>>& intrinsic_function_by_name_db = {
                 {"gamma", {&Gamma::create_Gamma, &Gamma::eval_Gamma}},
+                {"log", {&Log::create_Log, &Log::eval_Log}},
+                {"log10", {&Log10::create_Log10, &Log10::eval_Log10}},
                 {"log_gamma", {&LogGamma::create_LogGamma, &LogGamma::eval_LogGamma}},
                 {"trunc", {&Trunc::create_Trunc, &Trunc::eval_Trunc}},
                 {"fix", {&Fix::create_Fix, &Fix::eval_Fix}},
@@ -5085,7 +5167,11 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"cosh", {&Cosh::create_Cosh, &Cosh::eval_Cosh}},
                 {"tanh", {&Tanh::create_Tanh, &Tanh::eval_Tanh}},
                 {"atan2", {&Atan2::create_Atan2, &Atan2::eval_Atan2}},
+                {"asinh", {&Asinh::create_Asinh, &Asinh::eval_Asinh}},
+                {"acosh", {&Acosh::create_Acosh, &Acosh::eval_Acosh}},
+                {"atanh", {&Atanh::create_Atanh, &Atanh::eval_Atanh}},
                 {"abs", {&Abs::create_Abs, &Abs::eval_Abs}},
+                {"aimag", {&Aimag::create_Aimag, &Aimag::eval_Aimag}},
                 {"exp", {&Exp::create_Exp, &Exp::eval_Exp}},
                 {"exp2", {&Exp2::create_Exp2, &Exp2::eval_Exp2}},
                 {"expm1", {&Expm1::create_Expm1, &Expm1::eval_Expm1}},
@@ -5165,6 +5251,7 @@ namespace IntrinsicScalarFunctionRegistry {
         return ( id_ == IntrinsicScalarFunctions::Abs ||
                  id_ == IntrinsicScalarFunctions::Cos ||
                  id_ == IntrinsicScalarFunctions::Gamma ||
+                 id_ == IntrinsicScalarFunctions::Log ||
                  id_ == IntrinsicScalarFunctions::LogGamma ||
                  id_ == IntrinsicScalarFunctions::Trunc ||
                  id_ == IntrinsicScalarFunctions::Fix ||
@@ -5177,6 +5264,9 @@ namespace IntrinsicScalarFunctionRegistry {
                  id_ == IntrinsicScalarFunctions::Sqrt ||
                  id_ == IntrinsicScalarFunctions::SymbolicSymbol ||
                  id_ == IntrinsicScalarFunctions::Tan ||
+                 id_ == IntrinsicScalarFunctions::Acosh ||
+                 id_ == IntrinsicScalarFunctions::Asinh ||
+                 id_ == IntrinsicScalarFunctions::Atanh ||
                  id_ == IntrinsicScalarFunctions::Cosh ||
                  id_ == IntrinsicScalarFunctions::Sinh ||
                  id_ == IntrinsicScalarFunctions::Tanh);

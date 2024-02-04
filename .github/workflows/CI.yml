@@ -394,6 +394,7 @@ jobs:
         run: |
             ctest
             ./run_tests.py
+            ./run_tests.py -vh
             cd integration_tests
             ./run_tests.py -m
             ./run_tests.py -b llvm
@@ -447,6 +448,7 @@ jobs:
         run: |
             ctest
             ./run_tests.py
+            ./run_tests.py -vh
             cd integration_tests
             ./run_tests.py -m
             ./run_tests.py -b llvm

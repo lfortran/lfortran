@@ -734,10 +734,18 @@ public:
         {"dsin", "sin"},
         {"dcos", "cos"},
         {"dtan", "tan"},
+
+        {"datan", "atan"},
         {"datan2", "atan2"},
 
+        {"dimag", "aimag"},
+        {"imag" , "aimag"},
+
         {"dsign", "sign"},
-        {"dsqrt", "sqrt"}
+        {"dsqrt", "sqrt"},
+
+        {"dlog", "log"},
+        {"dlog10", "log10"},
     };
 
     ASR::asr_t *tmp;
@@ -3072,6 +3080,9 @@ public:
             if( a.m_left ) {
                 if( all_args_eval ) {
                     ASR::expr_t* m_left_expr = ASRUtils::expr_value(a.m_left);
+                    if (!ASR::is_a<ASR::IntegerConstant_t>(*m_left_expr)) {
+                        throw SemanticError("Substring start index at must be of type integer", m_left_expr->base.loc);
+                    }
                     ASR::IntegerConstant_t *m_left = ASR::down_cast<ASR::IntegerConstant_t>(m_left_expr);
                     start = m_left->m_n;
                 }
@@ -3080,15 +3091,19 @@ public:
                 if( all_args_eval ) {
                     flag = true;
                     ASR::expr_t* m_right_expr = ASRUtils::expr_value(a.m_right);
-                    if( ASR::is_a<ASR::IntegerConstant_t>(*m_right_expr) ) {
-                        ASR::IntegerConstant_t *m_right = ASR::down_cast<ASR::IntegerConstant_t>(m_right_expr);
-                        end = m_right->m_n;
+                    if(!ASR::is_a<ASR::IntegerConstant_t>(*m_right_expr)) {
+                        throw SemanticError("Substring end index at must be of type integer", m_right_expr->base.loc);
                     }
+                    ASR::IntegerConstant_t *m_right = ASR::down_cast<ASR::IntegerConstant_t>(m_right_expr);
+                    end = m_right->m_n;
                 }
             }
             if( a.m_step ) {
                 if( all_args_eval ) {
                     ASR::expr_t* m_step_expr = ASRUtils::expr_value(a.m_step);
+                    if(!ASR::is_a<ASR::IntegerConstant_t>(*m_step_expr)) {
+                        throw SemanticError("Substring stride must be of type integer", m_step_expr->base.loc);
+                    }
                     ASR::IntegerConstant_t *m_step = ASR::down_cast<ASR::IntegerConstant_t>(m_step_expr);
                     step = m_step->m_n;
                 }
@@ -3205,12 +3220,20 @@ public:
                                         1, -1, nullptr));
                     }
                     ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
-                    ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
-                                                1, int_type));
                     ASR::expr_t *l = nullptr, *r = nullptr;
+
                     if (m_args[0].m_start) {
-                        l = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-                            args[0].m_left, ASR::binopType::Sub, const_1, int_type, nullptr));
+                        // use 0 based indexing for string slice, so subtract 1 from left index
+                        int32_t offset = 1;
+                        ASR::expr_t* const_1 = i(offset, int_type);
+                        ASR::expr_t* a_value = nullptr;
+                        if (ASR::is_a<ASR::IntegerConstant_t>(*args[0].m_left)) {
+                            int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(
+                                            ASRUtils::expr_value(args[0].m_left))->m_n - offset;
+                            a_value = ASRUtils::EXPR((ASR::make_IntegerConstant_t(al, loc,
+                                                    a, int_type)));
+                        }
+                        l = i_vSub(args[0].m_left, const_1, a_value);
                     }
                     if (m_args[0].m_end) {
                         r = args[0].m_right;
@@ -3977,16 +4000,13 @@ public:
                     al, loc, &val, v_variable_m_type, dest_type);
                 return (ASR::asr_t*)val;
             } else if (var_name == "im") {
-                ASR::expr_t *val = ASR::down_cast<ASR::expr_t>(ASR::make_Var_t(al, loc, v));
-                ASR::symbol_t *fn_aimag = resolve_intrinsic_function(loc, "aimag");
-                Vec<ASR::call_arg_t> args;
-                args.reserve(al, 1);
-                ASR::call_arg_t val_arg;
-                val_arg.loc = val->base.loc;
-                val_arg.m_value = val;
-                args.push_back(al, val_arg);
-                ASR::asr_t *result = create_FunctionCall(loc, fn_aimag, args);
-                return result;
+                ASRUtils::create_intrinsic_function create_func =
+                    ASRUtils::IntrinsicScalarFunctionRegistry::get_create_function("aimag");
+                Vec<ASR::expr_t *> args; args.reserve(al, 1);
+                args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, v)));
+                return create_func(al, loc, args,
+                    [&](const std::string &msg, const Location &loc) {
+                        throw SemanticError(msg, loc); });
             } else {
                 throw SemanticError("Complex variable '" + dt_name + "' only has %re and %im members, not '" + var_name + "'", loc);
             }

@@ -116,7 +116,12 @@ intrinsic_funcs_args = {
         {
             "args": [("int", "int")]
         },
-    ]
+    ],
+    "Aimag": [
+        {
+            "args": [("complex",)]
+        },
+    ],
 }
 
 type_to_asr_type_check = {
