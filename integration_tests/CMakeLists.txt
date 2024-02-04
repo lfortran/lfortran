@@ -1275,6 +1275,7 @@ RUN(NAME character_03 LABELS gfortran llvm)
 RUN(NAME character_04 LABELS gfortran llvm)
 
 RUN(NAME c_ptr_01 LABELS gfortran llvm)
+RUN(NAME c_ptr_02 LABELS gfortran llvm)
 
 RUN(NAME arrayitem_01 LABELS gfortran llvm llvmStackArray)
 
