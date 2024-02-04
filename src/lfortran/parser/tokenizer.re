@@ -236,6 +236,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             pragma = "!LF$" [^\n\x00]*;
             comment = "!" [^\n\x00]*;
             ws_comment = whitespace? comment? newline;
+            ignore_till_newline = [^\n\x00]* newline;
 
             * { token_loc(loc);
                 std::string t = token();
@@ -668,8 +669,50 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
                 }
             }
 
-            // Macros are ignored for now:
-            "#" [^\n\x00]* newline { line_num++; cur_line=cur; continue; }
+            "#" whitespace? "line" whitespace ignore_till_newline { line_num++; cur_line=cur; continue; }
+            "#" whitespace? "ifdef" whitespace ignore_till_newline {
+                Location loc; token_loc(loc);
+                diagnostics.tokenizer_warning_label(
+                    "#ifdef ignored", {loc},
+                    "help: use the '--cpp' command line option to preprocess it");
+                line_num++; cur_line=cur; continue;
+            }
+            "#" whitespace? "elif" whitespace ignore_till_newline {
+                Location loc; token_loc(loc);
+                diagnostics.tokenizer_warning_label(
+                    "#elif ignored", {loc},
+                    "help: use the '--cpp' command line option to preprocess it");
+                line_num++; cur_line=cur; continue;
+            }
+            "#" whitespace? "else" whitespace? newline {
+                Location loc; token_loc(loc);
+                diagnostics.tokenizer_warning_label(
+                    "#else ignored", {loc},
+                    "help: use the '--cpp' command line option to preprocess it");
+                line_num++; cur_line=cur; continue;
+            }
+            "#" whitespace? "endif" whitespace? newline {
+                Location loc; token_loc(loc);
+                diagnostics.tokenizer_warning_label(
+                    "#endif ignored", {loc},
+                    "help: use the '--cpp' command line option to preprocess it");
+                line_num++; cur_line=cur; continue;
+            }
+            "#" whitespace? "define" whitespace ignore_till_newline {
+                Location loc; token_loc(loc);
+                diagnostics.tokenizer_warning_label(
+                    "#define ignored", {loc},
+                    "help: use the '--cpp' command line option to preprocess it");
+                line_num++; cur_line=cur; continue;
+            }
+            // Rest of the Macros are ignored with warning:
+            "#" ignore_till_newline {
+                Location loc; token_loc(loc);
+                diagnostics.tokenizer_warning_label(
+                    "Unsupported macro", {loc},
+                    "Ignored");
+                line_num++; cur_line=cur; continue;
+            }
 
             string1 { token_str(al, yylval.string, '"'); RET(TK_STRING) }
             string2 { token_str(al, yylval.string, '\''); RET(TK_STRING) }
