@@ -1353,8 +1353,8 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         result_var = nullptr;
     }
 
-    void replace_IntrinsicScalarFunction(ASR::IntrinsicScalarFunction_t* x) {
-        if(!ASRUtils::IntrinsicScalarFunctionRegistry::is_elemental(x->m_intrinsic_id)) {
+    void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
+        if(!ASRUtils::IntrinsicElementalFunctionRegistry::is_elemental(x->m_intrinsic_id)) {
             return ;
         }
         replace_intrinsic_function(x);
