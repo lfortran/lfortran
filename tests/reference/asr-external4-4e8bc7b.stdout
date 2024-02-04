@@ -24,14 +24,20 @@
                                     .false.
                                 ),
                             dlog:
-                                (ExternalSymbol
+                                (Variable
                                     2
                                     dlog
-                                    8 dlog
-                                    lfortran_intrinsic_math
                                     []
-                                    dlog
-                                    Private
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
                                 ),
                             dqk15w:
                                 (Function
@@ -243,19 +249,18 @@
                         ()
                     )
                     (Print
-                        [(FunctionCall
-                            2 dlog
-                            ()
-                            [((RealConstant
+                        [(IntrinsicScalarFunction
+                            Log
+                            [(RealConstant
                                 2.000000
                                 (Real 8)
-                            ))]
+                            )]
+                            0
                             (Real 8)
                             (RealConstant
                                 0.693147
                                 (Real 8)
                             )
-                            ()
                         )]
                         ()
                         ()
@@ -265,15 +270,7 @@
                     .false.
                     .false.
                     ()
-                ),
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math)
+                )
         })
     []
 )
