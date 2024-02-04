@@ -720,7 +720,7 @@ RUN(NAME modules_51 LABELS gfortran llvmImplicit)
 RUN(NAME modules_53 LABELS gfortran llvm)
 RUN(NAME modules_54 LABELS gfortran llvm)
 RUN(NAME modules_55 LABELS gfortran llvm)
-RUN(NAME modules_56 LABELS gfortran llvm)
+RUN(NAME modules_56 LABELS gfortran llvm NOFAST)
 RUN(NAME operator_overloading_05_module3 LABELS gfortran llvm EXTRAFILES
         operator_overloading_05_module1.f90 operator_overloading_05_module2.f90)
 RUN(NAME associate_06 LABELS gfortran EXTRAFILES
