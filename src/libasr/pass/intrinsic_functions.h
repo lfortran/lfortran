@@ -85,6 +85,8 @@ enum class IntrinsicScalarFunctions : int64_t {
     Idint,
     Floor,
     Ceiling,
+    Epsilon,
+    Tiny,
     SymbolicSymbol,
     SymbolicAdd,
     SymbolicSub,
@@ -3010,6 +3012,46 @@ namespace Partition {
     }
 
 } // namespace Partition
+
+namespace Epsilon {
+
+    static ASR::expr_t *eval_Epsilon(Allocator &al, const Location &loc,
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &/*args*/) {
+        double epsilon_val = -1;
+        int32_t kind = extract_kind_from_ttype_t(arg_type);
+        switch ( kind ) {
+            case 4: {
+                epsilon_val = std::numeric_limits<float>::epsilon(); break;
+            } case 8: {
+                epsilon_val = std::numeric_limits<double>::epsilon(); break;
+            } default: {
+                break;
+            }
+        }
+        return f(epsilon_val, arg_type);
+    }
+
+}  // namespace Epsilon
+
+namespace Tiny {
+
+    static ASR::expr_t *eval_Tiny(Allocator &al, const Location &loc,
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &/*args*/) {
+        double tiny_value = -1;
+        int32_t kind = extract_kind_from_ttype_t(arg_type);
+        switch ( kind ) {
+            case 4: {
+                tiny_value = std::numeric_limits<float>::min(); break;
+            } case 8: {
+                tiny_value = std::numeric_limits<double>::min(); break;
+            } default: {
+                break;
+            }
+        }
+        return f(tiny_value, arg_type);
+    }
+
+}  // namespace Tiny
 
 namespace SymbolicSymbol {
 
