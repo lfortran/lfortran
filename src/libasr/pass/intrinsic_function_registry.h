@@ -3358,20 +3358,15 @@ namespace Digits {
                 return make_ConstantWithType(make_IntegerConstant_t, 31, int32, loc);
             } else if (kind == 8) {
                 return make_ConstantWithType(make_IntegerConstant_t, 63, int32, loc);
-            } else {
-                throw SemanticError("Kind "+ std::to_string(kind) + " not supported for type Integer", loc);
             }
         } else if (is_real(*type1)) {
             if (kind == 4) {
                 return make_ConstantWithType(make_IntegerConstant_t, 24, int32, loc);
             } else if (kind == 8) {
                 return make_ConstantWithType(make_IntegerConstant_t, 53, int32, loc);
-            } else {
-                throw SemanticError("Kind "+ std::to_string(kind) + " not supported for type Real", loc);
             }
-        } else {
-            throw SemanticError("Argument to `digits` intrinsic must be real or integer", loc);
         }
+        return nullptr;
     }
 
     static inline ASR::asr_t* create_Digits(Allocator& al, const Location& loc,
