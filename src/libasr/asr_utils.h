@@ -8,7 +8,6 @@
 
 #include <libasr/assert.h>
 #include <libasr/asr.h>
-#include <libasr/semantic_exception.h>
 #include <libasr/string_utils.h>
 #include <libasr/utils.h>
 

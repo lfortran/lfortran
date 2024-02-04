@@ -2,7 +2,6 @@
 #include <libasr/asr_utils.h>
 #include <libasr/asr.h>
 #include <libasr/pass/pass_utils.h>
-#include <libasr/semantic_exception.h>
 
 namespace LCompilers {
 
