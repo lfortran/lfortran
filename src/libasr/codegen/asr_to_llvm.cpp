@@ -5116,6 +5116,9 @@ public:
     }
 
     void visit_BlockCall(const ASR::BlockCall_t& x) {
+        std::vector<llvm::Value*> heap_arrays_copy;
+        heap_arrays_copy = heap_arrays;
+        heap_arrays.clear();
         if( x.m_label != -1 ) {
             if( llvm_goto_targets.find(x.m_label) == llvm_goto_targets.end() ) {
                 llvm::BasicBlock *new_target = llvm::BasicBlock::Create(context, "goto_target");
@@ -5125,7 +5128,6 @@ public:
         }
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Block_t>(*x.m_m));
         ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
-        declare_vars(*block);
         std::string block_name;
         if (block->m_name) {
             block_name = std::string(block->m_name);
@@ -5144,6 +5146,7 @@ public:
         fn->getBasicBlockList().push_back(blockend);
 #endif
         builder->SetInsertPoint(blockstart);
+        declare_vars(*block);
         loop_or_block_end.push_back(blockend);
         loop_or_block_end_names.push_back(blockend_name);
         for (size_t i = 0; i < block->n_body; i++) {
@@ -5153,6 +5156,10 @@ public:
         loop_or_block_end_names.pop_back();
         llvm::BasicBlock *last_bb = builder->GetInsertBlock();
         llvm::Instruction *block_terminator = last_bb->getTerminator();
+        for( auto& value: heap_arrays ) {
+            LLVM::lfortran_free(context, *module, *builder, value);
+        }
+        heap_arrays = heap_arrays_copy;
         if (block_terminator == nullptr) {
             // The previous block is not terminated --- terminate it by jumping
             // to blockend
