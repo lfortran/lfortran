@@ -2,7 +2,9 @@
     (SymbolTable
         1
         {
-            c_ptr_02:
+            iso_c_binding:
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
+            test_c_ptr_02:
                 (Program
                     (SymbolTable
                         2
@@ -282,7 +284,7 @@
                                     .false.
                                 )
                         })
-                    c_ptr_02
+                    test_c_ptr_02
                     [iso_c_binding]
                     [(Assignment
                         (Var 2 c_arr)
@@ -357,9 +359,7 @@
                         ()
                         ()
                     )]
-                ),
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding)
+                )
         })
     []
 )
