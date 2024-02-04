@@ -742,7 +742,10 @@ public:
         {"imag" , "aimag"},
 
         {"dsign", "sign"},
-        {"dsqrt", "sqrt"}
+        {"dsqrt", "sqrt"},
+
+        {"dlog", "log"},
+        {"dlog10", "log10"},
     };
 
     ASR::asr_t *tmp;
