@@ -2,4 +2,4 @@ semantic error: Invalid argument `end` supplied
  --> tests/errors/rewind_invalid_kwarg1.f90:3:5
   |
 3 |     REWIND(end="world")
-  |     ^^^^^^^^^^^^^^^^^^^
+  |     ^^^^^^^^^^^^^^^^^^^ 
