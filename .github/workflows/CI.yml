@@ -521,6 +521,35 @@ jobs:
             ./example/specialfunctions_gamma/example_log_gamma
             ./example/specialfunctions_gamma/example_uigamma
 
+      - name: Test stdlib (stdlib_math)
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/Pranavchiku/stdlib-fortran-lang.git
+            cd stdlib-fortran-lang
+            git checkout -t origin/lf-math12
+            git checkout 189d639a6bfde352f10c535b8f14abe9314e5508
+            micromamba activate lf
+            micromamba install -c conda-forge fypp
+            FC=$(pwd)/../src/bin/lfortran cmake .
+            make fortran_stdlib
+            cp src/*.mod ./example/math
+            make VERBOSE=1
+            ./example/math/example_clip_integer
+            ./example/math/example_clip_real
+            ./example/math/example_diff
+            ./example/math/example_gcd
+            ./example/math/example_linspace_complex
+            ./example/math/example_linspace_int16
+            ./example/math/example_logspace_complex
+            ./example/math/example_logspace_int
+            ./example/math/example_logspace_rstart_cbase
+            ./example/math/example_math_all_close
+            ./example/math/example_math_arange
+            ./example/math/example_math_arg
+            ./example/math/example_math_argd
+            ./example/math/example_math_argpi
+            ./example/math/example_math_is_close
+
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
         run: |
