@@ -1571,6 +1571,12 @@ int64_t compute_leading_zeros(int64_t number, int64_t kind) {
     return leading_zeros;
 }
 
+void append_error(diag::Diagnostics& diag, const std::string& msg,
+                const Location& loc) {
+    diag.add(diag::Diagnostic(msg, diag::Level::Error,
+        diag::Stage::Semantic, {diag::Label("", { loc })}));
+}
+
 
 //Initialize pointer to zero so that it can be initialized in first call to get_instance
 ASRUtils::LabelGenerator* ASRUtils::LabelGenerator::label_generator = nullptr;

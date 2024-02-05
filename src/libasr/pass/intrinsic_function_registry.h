@@ -229,14 +229,13 @@ typedef ASR::expr_t* (*eval_intrinsic_function)(
 typedef ASR::asr_t* (*create_intrinsic_function)(
     Allocator&, const Location&,
     Vec<ASR::expr_t*>&,
-    const std::function<void (const std::string &, const Location &)>);
+    diag::Diagnostics&);
 
 typedef void (*verify_function)(
     const ASR::IntrinsicScalarFunction_t&,
     diag::Diagnostics&);
 
 typedef ASR::expr_t* (*get_initial_value_func)(Allocator&, ASR::ttype_t*);
-
 
 class ASRBuilder {
     private:
@@ -1268,12 +1267,14 @@ namespace X {                                                                   
     }                                                                           \
     static inline ASR::asr_t* create_##X(Allocator &al, const Location &loc,    \
         Vec<ASR::expr_t*> &args,                                                \
-        const std::function<void (const std::string &, const Location &)> err) {\
+        diag::Diagnostics& diag) {                                              \
         ASR::ttype_t *type = ASRUtils::expr_type(args[0]);                      \
         if (args.n != 1) {                                                      \
-            err("Intrinsic `"#X"` accepts exactly one argument", loc);          \
+            append_error(diag, "Intrinsic `"#X"` accepts exactly one argument", \
+                loc);                                                           \
         } else if (!ASRUtils::is_real(*type)) {                                 \
-            err("`x` argument of `"#X"` must be real", args[0]->base.loc);      \
+            append_error(diag, "`x` argument of `"#X"` must be real",           \
+                args[0]->base.loc);                                             \
         }                                                                       \
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args,      \
                 eval_##X, static_cast<int64_t>(IntrinsicScalarFunctions::X),    \
@@ -1311,12 +1312,12 @@ namespace Fix {
 
     static inline ASR::asr_t* create_Fix(Allocator& al, const Location& loc,
         Vec<ASR::expr_t*>& args,
-        const std::function<void (const std::string &, const Location &)> err) {
+        diag::Diagnostics& diag) {
         ASR::ttype_t *type = ASRUtils::expr_type(args[0]);
         if (args.n != 1) {
-            err("Intrinsic `fix` accepts exactly one argument", loc);
+            append_error(diag, "Intrinsic `fix` accepts exactly one argument", loc);
         } else if (!ASRUtils::is_real(*type)) {
-            err("`fix` argument of `fix` must be real",
+            append_error(diag, "`fix` argument of `fix` must be real",
                 args[0]->base.loc);
         }
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args,
@@ -1361,13 +1362,14 @@ namespace X {                                                                   
     }                                                                           \
     static inline ASR::asr_t* create_##X(Allocator& al, const Location& loc,    \
         Vec<ASR::expr_t*>& args,                                                \
-        const std::function<void (const std::string &, const Location &)> err)  \
+        diag::Diagnostics& diag)                                                \
     {                                                                           \
         ASR::ttype_t *type = ASRUtils::expr_type(args[0]);                      \
         if (args.n != 1) {                                                      \
-            err("Intrinsic `"#X"` accepts exactly one argument", loc);          \
+            append_error(diag, "Intrinsic `"#X"` accepts exactly one argument", \
+                loc);                                                           \
         } else if (!ASRUtils::is_real(*type) && !ASRUtils::is_complex(*type)) { \
-            err("`x` argument of `"#X"` must be real or complex",               \
+            append_error(diag, "`x` argument of `"#X"` must be real or complex",\
                 args[0]->base.loc);                                             \
         }                                                                       \
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args,      \
@@ -1412,12 +1414,12 @@ namespace Aimag {
 
     static inline ASR::asr_t* create_Aimag(Allocator& al, const Location& loc,
         Vec<ASR::expr_t*>& args,
-        const std::function<void (const std::string &, const Location &)> err) {
+        diag::Diagnostics& diag) {
         ASR::ttype_t *type = ASRUtils::expr_type(args[0]);
         if (args.n != 1) {
-            err("Intrinsic `aimag` accepts exactly one argument", loc);
+            append_error(diag, "Intrinsic `aimag` accepts exactly one argument", loc);
         } else if (!ASRUtils::is_complex(*type)) {
-            err("`x` argument of `aimag` must be complex", args[0]->base.loc);
+            append_error(diag, "`x` argument of `aimag` must be complex", args[0]->base.loc);
         }
         type = TYPE(ASR::make_Real_t(al, type->base.loc, extract_kind_from_ttype_t(type)));
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_Aimag,
@@ -1447,14 +1449,14 @@ namespace Atan2 {
     }
     static inline ASR::asr_t* create_Atan2(Allocator& al, const Location& loc,
         Vec<ASR::expr_t*>& args,
-        const std::function<void (const std::string &, const Location &)> err)
+        diag::Diagnostics& diag)
     {
         ASR::ttype_t *type_1 = ASRUtils::expr_type(args[0]);
         ASR::ttype_t *type_2 = ASRUtils::expr_type(args[1]);
         if (!ASRUtils::is_real(*type_1)) {
-            err("`x` argument of \"atan2\" must be real",args[0]->base.loc);
+            append_error(diag, "`x` argument of \"atan2\" must be real",args[0]->base.loc);
         } else if (!ASRUtils::is_real(*type_2)) {
-            err("`y` argument of \"atan2\" must be real",args[1]->base.loc);
+            append_error(diag, "`y` argument of \"atan2\" must be real",args[1]->base.loc);
         }
         return BinaryIntrinsicFunction::create_BinaryFunction(al, loc, args,
                 eval_Atan2, static_cast<int64_t>(IntrinsicScalarFunctions::Atan2),
@@ -1524,14 +1526,14 @@ namespace Abs {
 
     static inline ASR::asr_t* create_Abs(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         if (args.size() != 1) {
-            err("Intrinsic abs function accepts exactly 1 argument", loc);
+            append_error(diag, "Intrinsic abs function accepts exactly 1 argument", loc);
         }
         ASR::ttype_t *type = ASRUtils::expr_type(args[0]);
         if (!ASRUtils::is_integer(*type) && !ASRUtils::is_real(*type)
                 && !ASRUtils::is_complex(*type)) {
-            err("Argument of the abs function must be Integer, Real or Complex",
+            append_error(diag, "Argument of the abs function must be Integer, Real or Complex",
                 args[0]->base.loc);
         }
         if (is_complex(*type)) {
@@ -1654,12 +1656,12 @@ namespace Radix {
     // Function to create an instance of the 'radix' intrinsic function
     static inline ASR::asr_t* create_Radix(Allocator& al, const Location& loc,
         Vec<ASR::expr_t*>& args,
-        const std::function<void (const std::string &, const Location &)> err) {
+        diag::Diagnostics& diag) {
         if ( args.n != 1 ) {
-            err("Intrinsic `radix` accepts exactly one argument", loc);
+            append_error(diag, "Intrinsic `radix` accepts exactly one argument", loc);
         } else if ( !is_real(*expr_type(args[0]))
                  && !is_integer(*expr_type(args[0])) ) {
-            err("Argument of the `radix` must be Integer or Real", loc);
+            append_error(diag, "Argument of the `radix` must be Integer or Real", loc);
         }
 
         return ASR::make_IntrinsicScalarFunction_t(al, loc,
@@ -1688,18 +1690,18 @@ namespace Sign {
 
     static inline ASR::asr_t* create_Sign(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         if (args.size() != 2) {
-            err("Intrinsic sign function accepts exactly 2 arguments", loc);
+            append_error(diag, "Intrinsic sign function accepts exactly 2 arguments", loc);
         }
         ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
         ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
         if (!ASRUtils::is_integer(*type1) && !ASRUtils::is_real(*type1)) {
-            err("Argument of the sign function must be Integer or Real",
+            append_error(diag, "Argument of the sign function must be Integer or Real",
                 args[0]->base.loc);
         }
         if (!ASRUtils::check_equal_type(type1, type2)) {
-            err("Type mismatch in statement function: "
+            append_error(diag, "Type mismatch in statement function: "
                 "the second argument must have the same type "
                 "and kind as the first argument.", args[1]->base.loc);
         }
@@ -1776,14 +1778,14 @@ namespace Shiftr {
 
     static inline ASR::asr_t* create_Shiftr(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         if (args.size() != 2) {
-            err("Intrinsic `shiftr` function accepts exactly 2 arguments", loc);
+            append_error(diag, "Intrinsic `shiftr` function accepts exactly 2 arguments", loc);
         }
         ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
         ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
         if (!ASRUtils::is_integer(*type1) || !ASRUtils::is_integer(*type2)) {
-            err("Arguments of the `shiftr` function must be Integer",
+            append_error(diag, "Arguments of the `shiftr` function must be Integer",
                 args[0]->base.loc);
         }
 
@@ -1845,14 +1847,14 @@ namespace Shiftl {
 
     static inline ASR::asr_t* create_Shiftl(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         if (args.size() != 2) {
-            err("Intrinsic `shiftl` function accepts exactly 2 arguments", loc);
+            append_error(diag, "Intrinsic `shiftl` function accepts exactly 2 arguments", loc);
         }
         ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
         ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
         if (!ASRUtils::is_integer(*type1) || !ASRUtils::is_integer(*type2)) {
-            err("Arguments of the `shiftl` function must be Integer",
+            append_error(diag, "Arguments of the `shiftl` function must be Integer",
                 args[0]->base.loc);
         }
 
@@ -1909,14 +1911,14 @@ namespace Ishft {
 
     static inline ASR::asr_t* create_Ishft(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         if (args.size() != 2) {
-            err("Intrinsic `ishft` function accepts exactly 2 arguments", loc);
+            append_error(diag, "Intrinsic `ishft` function accepts exactly 2 arguments", loc);
         }
         ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
         ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
         if (!ASRUtils::is_integer(*type1) || !ASRUtils::is_integer(*type2)) {
-            err("Arguments of the `ishft` function must be Integer",
+            append_error(diag, "Arguments of the `ishft` function must be Integer",
                 args[0]->base.loc);
         }
 
@@ -1973,12 +1975,12 @@ namespace Aint {
 
     static inline ASR::asr_t* create_Aint(
             Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         ASR::ttype_t* return_type = expr_type(args[0]);
         if (!(args.size() == 1 || args.size() == 2)) {
-            err("Intrinsic `aint` function accepts exactly 1 or 2 arguments", loc);
+            append_error(diag, "Intrinsic `aint` function accepts exactly 1 or 2 arguments", loc);
         } else if (!ASRUtils::is_real(*return_type)) {
-            err("Argument of the `aint` function must be Real", args[0]->base.loc);
+            append_error(diag, "Argument of the `aint` function must be Real", args[0]->base.loc);
         }
         Vec<ASR::expr_t *> m_args; m_args.reserve(al, 1);
         m_args.push_back(al, args[0]);
@@ -1986,7 +1988,7 @@ namespace Aint {
             int kind = -1;
             if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1])) ||
                     !extract_value(args[1], kind)) {
-                err("`kind` argument of the `aint` function must be a "
+                append_error(diag, "`kind` argument of the `aint` function must be a "
                     "scalar Integer constant", args[1]->base.loc);
             }
             return_type = TYPE(ASR::make_Real_t(al, return_type->base.loc, kind));
@@ -2041,12 +2043,12 @@ namespace Anint {
 
     static inline ASR::asr_t* create_Anint(
             Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         ASR::ttype_t* return_type = expr_type(args[0]);
         if (!(args.size() == 1 || args.size() == 2)) {
-            err("Intrinsic `anint` function accepts exactly 1 or 2 arguments", loc);
+            append_error(diag, "Intrinsic `anint` function accepts exactly 1 or 2 arguments", loc);
         } else if (!ASRUtils::is_real(*return_type)) {
-            err("Argument of the `anint` function must be Real", args[0]->base.loc);
+            append_error(diag, "Argument of the `anint` function must be Real", args[0]->base.loc);
         }
         Vec<ASR::expr_t *> m_args; m_args.reserve(al, 1);
         m_args.push_back(al, args[0]);
@@ -2054,7 +2056,7 @@ namespace Anint {
             int kind = -1;
             if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1])) ||
                     !extract_value(args[1], kind)) {
-                err("`kind` argument of the `anint` function must be a "
+                append_error(diag, "`kind` argument of the `anint` function must be a "
                     "scalar Integer constant", args[1]->base.loc);
             }
             return_type = TYPE(ASR::make_Real_t(al, return_type->base.loc, kind));
@@ -2144,12 +2146,12 @@ namespace Floor {
 
     static inline ASR::asr_t* create_Floor(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         ASR::ttype_t* return_type = TYPE(ASR::make_Integer_t(al, loc, 4));
         if (!(args.size() == 1 || args.size() == 2)) {
-            err("Intrinsic `Floor` function accepts exactly 1 or 2 arguments", loc);
+            append_error(diag, "Intrinsic `Floor` function accepts exactly 1 or 2 arguments", loc);
         } else if (!ASRUtils::is_real(*ASRUtils::expr_type(args[0]))) {
-            err("Argument of the `Floor` function must be Real", args[0]->base.loc);
+            append_error(diag, "Argument of the `Floor` function must be Real", args[0]->base.loc);
         }
         Vec<ASR::expr_t *> m_args; m_args.reserve(al, 1);
         m_args.push_back(al, args[0]);
@@ -2157,7 +2159,7 @@ namespace Floor {
             int kind = -1;
             if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1])) ||
                     !extract_value(args[1], kind)) {
-                err("`kind` argument of the `Floor` function must be a "
+                append_error(diag, "`kind` argument of the `Floor` function must be a "
                     "scalar Integer constant", args[1]->base.loc);
             }
             return_type = TYPE(ASR::make_Integer_t(al, return_type->base.loc, kind));
@@ -2219,12 +2221,12 @@ namespace Ceiling {
 
     static inline ASR::asr_t* create_Ceiling(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         ASR::ttype_t* return_type = TYPE(ASR::make_Integer_t(al, loc, 4));
         if (!(args.size() == 1 || args.size() == 2)) {
-            err("Intrinsic `Ceiling` function accepts exactly 1 or 2 arguments", loc);
+            append_error(diag, "Intrinsic `Ceiling` function accepts exactly 1 or 2 arguments", loc);
         } else if (!ASRUtils::is_real(*ASRUtils::expr_type(args[0]))) {
-            err("Argument of the `Ceiling` function must be Real", args[0]->base.loc);
+            append_error(diag, "Argument of the `Ceiling` function must be Real", args[0]->base.loc);
         }
         Vec<ASR::expr_t *> m_args; m_args.reserve(al, 1);
         m_args.push_back(al, args[0]);
@@ -2232,7 +2234,7 @@ namespace Ceiling {
             int kind = -1;
             if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1])) ||
                     !extract_value(args[1], kind)) {
-                err("`kind` argument of the `Ceiling` function must be a "
+                append_error(diag, "`kind` argument of the `Ceiling` function must be a "
                     "scalar Integer constant", args[1]->base.loc);
             }
             return_type = TYPE(ASR::make_Integer_t(al, return_type->base.loc, kind));
@@ -2299,12 +2301,12 @@ namespace Sqrt {
 
     static inline ASR::asr_t* create_Sqrt(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         ASR::ttype_t* return_type = expr_type(args[0]);
         if ( args.n != 1 ) {
-            err("Intrinsic `sqrt` accepts exactly one argument", loc);
+            append_error(diag, "Intrinsic `sqrt` accepts exactly one argument", loc);
         } else if ( !(is_real(*return_type) || is_complex(*return_type)) ) {
-            err("Argument of the `sqrt` must be Real or Complex", loc);
+            append_error(diag, "Argument of the `sqrt` must be Real or Complex", loc);
         }
         ASR::expr_t *m_value = nullptr;
         if (all_args_evaluated(args)) {
@@ -2340,12 +2342,12 @@ namespace Sngl {
 
     static inline ASR::asr_t* create_Sngl(
             Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         ASR::ttype_t* return_type = real32;
         if ( args.n != 1 ) {
-            err("Intrinsic `sngl` accepts exactly one argument", loc);
+            append_error(diag, "Intrinsic `sngl` accepts exactly one argument", loc);
         } else if ( !is_real(*expr_type(args[0])) ) {
-            err("Argument of the `sngl` must be Real", loc);
+            append_error(diag, "Argument of the `sngl` must be Real", loc);
         }
         Vec<ASR::expr_t *> m_args; m_args.reserve(al, 1);
         m_args.push_back(al, args[0]);
@@ -2408,12 +2410,12 @@ namespace Ifix {
 
     static inline ASR::asr_t* create_Ifix(
             Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         ASR::ttype_t* return_type = int32;
         if ( args.n != 1 ) {
-            err("Intrinsic `ifix` accepts exactly one argument", loc);
+            append_error(diag, "Intrinsic `ifix` accepts exactly one argument", loc);
         } else if ( !is_real(*expr_type(args[0])) ) {
-            err("Argument of the `ifix` must be Real", loc);
+            append_error(diag, "Argument of the `ifix` must be Real", loc);
         }
         Vec<ASR::expr_t *> m_args; m_args.reserve(al, 1);
         m_args.push_back(al, args[0]);
@@ -2476,12 +2478,12 @@ namespace Idint {
 
     static inline ASR::asr_t* create_Idint(
             Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         ASR::ttype_t* return_type = int32;
         if ( args.n != 1 ) {
-            err("Intrinsic `idint` accepts exactly one argument", loc);
+            append_error(diag, "Intrinsic `idint` accepts exactly one argument", loc);
         } else if ( !is_real(*expr_type(args[0])) ) {
-            err("Argument of the `idint` must be Double Precision", loc);
+            append_error(diag, "Argument of the `idint` must be Double Precision", loc);
         }
         Vec<ASR::expr_t *> m_args; m_args.reserve(al, 1);
         m_args.push_back(al, args[0]);
@@ -2546,15 +2548,15 @@ namespace FMA {
 
     static inline ASR::asr_t* create_FMA(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         if (args.size() != 3) {
-            err("Intrinsic FMA function accepts exactly 3 arguments", loc);
+            append_error(diag, "Intrinsic FMA function accepts exactly 3 arguments", loc);
         }
         ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
         ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
         ASR::ttype_t *type3 = ASRUtils::expr_type(args[2]);
         if (!ASRUtils::is_real(*type1) || !ASRUtils::is_real(*type2) || !ASRUtils::is_real(*type3)) {
-            err("Argument of the FMA function must be Real",
+            append_error(diag, "Argument of the FMA function must be Real",
                 args[0]->base.loc);
         }
         ASR::expr_t *m_value = nullptr;
@@ -2614,16 +2616,16 @@ namespace SignFromValue {
 
     static inline ASR::asr_t* create_SignFromValue(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         if (args.size() != 2) {
-            err("Intrinsic SignFromValue function accepts exactly 2 arguments", loc);
+            append_error(diag, "Intrinsic SignFromValue function accepts exactly 2 arguments", loc);
         }
         ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
         ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
         bool eq_type = ASRUtils::types_equal(type1, type2);
         if (!((is_real(*type1) || is_integer(*type1)) &&
                                 (is_real(*type2) || is_integer(*type2)) && eq_type)) {
-            err("Argument of the SignFromValue function must be either Real or Integer "
+            append_error(diag, "Argument of the SignFromValue function must be either Real or Integer "
                 "and must be of equal type",
                 args[0]->base.loc);
         }
@@ -2688,14 +2690,14 @@ namespace FlipSign {
 
     static inline ASR::asr_t* create_FlipSign(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         if (args.size() != 2) {
-            err("Intrinsic FlipSign function accepts exactly 2 arguments", loc);
+            append_error(diag, "Intrinsic FlipSign function accepts exactly 2 arguments", loc);
         }
         ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
         ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
         if (!ASRUtils::is_integer(*type1) || !ASRUtils::is_real(*type2)) {
-            err("Argument of the FlipSign function must be int and real respectively",
+            append_error(diag, "Argument of the FlipSign function must be int and real respectively",
                 args[0]->base.loc);
         }
         ASR::expr_t *m_value = nullptr;
@@ -2792,9 +2794,9 @@ namespace FloorDiv {
 
     static inline ASR::asr_t* create_FloorDiv(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         if (args.size() != 2) {
-            err("Intrinsic FloorDiv function accepts exactly 2 arguments", loc);
+            append_error(diag, "Intrinsic FloorDiv function accepts exactly 2 arguments", loc);
         }
         ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
         ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
@@ -2804,14 +2806,14 @@ namespace FloorDiv {
             (ASRUtils::is_unsigned_integer(*type1) && ASRUtils::is_unsigned_integer(*type2)) ||
             (ASRUtils::is_real(*type1) && ASRUtils::is_real(*type2)) ||
             (ASRUtils::is_logical(*type1) && ASRUtils::is_logical(*type2)))) {
-            err("Argument of the FloorDiv function must be either Real, Integer, Unsigned Integer or Logical",
+            append_error(diag, "Argument of the FloorDiv function must be either Real, Integer, Unsigned Integer or Logical",
                 args[0]->base.loc);
         }
         ASR::expr_t *m_value = nullptr;
         double compile_time_arg2_val;
         if (ASRUtils::extract_value(expr_value(args[1]), compile_time_arg2_val)) {
             if (compile_time_arg2_val == 0.0) {
-                err("Division by 0 is not allowed", args[1]->base.loc);
+                append_error(diag, "Division by 0 is not allowed", args[1]->base.loc);
             }
         }
         if (all_args_evaluated(args)) {
@@ -2888,15 +2890,15 @@ namespace Mod {
 
     static inline ASR::asr_t* create_Mod(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         if (args.size() != 2) {
-            err("Intrinsic Mod function accepts exactly 2 arguments", loc);
+            append_error(diag, "Intrinsic Mod function accepts exactly 2 arguments", loc);
         }
         ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
         ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
         if (!((ASRUtils::is_integer(*type1) && ASRUtils::is_integer(*type2)) ||
             (ASRUtils::is_real(*type1) && ASRUtils::is_real(*type2)))) {
-            err("Argument of the Mod function must be either Real or Integer",
+            append_error(diag, "Argument of the Mod function must be either Real or Integer",
                 args[0]->base.loc);
         }
         ASR::expr_t *m_value = nullptr;
@@ -2982,13 +2984,13 @@ namespace Trailz {
 
     static inline ASR::asr_t* create_Trailz(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         if (args.size() != 1) {
-            err("Intrinsic `trailz` function accepts exactly 1 argument", loc);
+            append_error(diag, "Intrinsic `trailz` function accepts exactly 1 argument", loc);
         }
         ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
         if (!(ASRUtils::is_integer(*type1))) {
-            err("Argument of the `trailz` function must be Integer",
+            append_error(diag, "Argument of the `trailz` function must be Integer",
                 args[0]->base.loc);
         }
         ASR::expr_t *m_value = nullptr;
@@ -3092,13 +3094,13 @@ namespace Leadz {
 
     static inline ASR::asr_t* create_Leadz(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         if (args.size() != 1) {
-            err("Intrinsic `leadz` accepts exactly 1 argument", loc);
+            append_error(diag, "Intrinsic `leadz` accepts exactly 1 argument", loc);
         }
         ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
         if (!(ASRUtils::is_integer(*type1))) {
-            err("Argument of the `leadz` must be Integer",
+            append_error(diag, "Argument of the `leadz` must be Integer",
                 args[0]->base.loc);
         }
         ASR::expr_t *m_value = nullptr;
@@ -3200,18 +3202,18 @@ namespace Hypot {
 
     static inline ASR::asr_t* create_Hypot(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         if (args.size() != 2) {
-            err("Intrinsic Hypot function accepts exactly 2 arguments", loc);
+            append_error(diag, "Intrinsic Hypot function accepts exactly 2 arguments", loc);
         }
         ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
         ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
         if (!(ASRUtils::is_real(*type1))) {
-            err("Argument of the Hypot function must be Integer",
+            append_error(diag, "Argument of the Hypot function must be Integer",
                 args[0]->base.loc);
         }
         if (!(ASRUtils::is_real(*type2))) {
-            err("Argument of the Hypot function must be Integer",
+            append_error(diag, "Argument of the Hypot function must be Integer",
                 args[1]->base.loc);
         }
         ASR::expr_t *m_value = nullptr;
@@ -3271,13 +3273,13 @@ namespace Kind {
 
     static inline ASR::asr_t* create_Kind(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         if (args.size() != 1) {
-            err("Intrinsic kind function accepts exactly 1 argument", loc);
+            append_error(diag, "Intrinsic kind function accepts exactly 1 argument", loc);
         }
         ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
         if (!(ASRUtils::is_integer(*type1) || ASRUtils::is_real(*type1) || ASRUtils::is_logical(*type1) || ASRUtils::is_character(*type1))) {
-            err("Argument of the kind function must be integer, real, logical or character",
+            append_error(diag, "Argument of the kind function must be integer, real, logical or character",
                 args[0]->base.loc);
         }
         ASR::expr_t *m_value = nullptr;
@@ -3323,9 +3325,9 @@ namespace Rank {
 
     static inline ASR::asr_t* create_Rank(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         if (args.size() != 1) {
-            err("Intrinsic `rank` function accepts exactly 1 argument", loc);
+            append_error(diag, "Intrinsic `rank` function accepts exactly 1 argument", loc);
         }
         ASR::expr_t *m_value = nullptr;
         if (all_args_evaluated(args)) {
@@ -3378,13 +3380,13 @@ namespace Digits {
 
     static inline ASR::asr_t* create_Digits(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         if (args.size() != 1) {
-            err("Intrinsic `digits` function accepts exactly 1 argument", loc);
+            append_error(diag, "Intrinsic `digits` function accepts exactly 1 argument", loc);
         }
         ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
         if (!(ASRUtils::is_integer(*type1) || ASRUtils::is_real(*type1))) {
-            err("Arguments to `digits` intrinsic must be integer or real",
+            append_error(diag, "Arguments to `digits` intrinsic must be integer or real",
                 args[0]->base.loc);
         }
         ASR::expr_t *m_value = nullptr;
@@ -3444,18 +3446,18 @@ namespace Repeat {
 
     static inline ASR::asr_t* create_Repeat(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         if (args.size() != 2) {
-            err("Intrinsic repeat function accepts exactly 2 arguments", loc);
+            append_error(diag, "Intrinsic repeat function accepts exactly 2 arguments", loc);
         }
         ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
         ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
         if (!ASRUtils::is_character(*type1)) {
-            err("First argument of the repeat function must be String",
+            append_error(diag, "First argument of the repeat function must be String",
                 args[0]->base.loc);
         }
         if (!ASRUtils::is_integer(*type2)) {
-            err("Second argument of the repeat function must be Integer",
+            append_error(diag, "Second argument of the repeat function must be Integer",
                 args[1]->base.loc);
         }
         ASR::expr_t *m_value = nullptr;
@@ -3536,13 +3538,13 @@ namespace MinExponent {
 
     static inline ASR::asr_t* create_MinExponent(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         if (args.size() != 1) {
-            err("Intrinsic minexponent function accepts exactly 1 arguments", loc);
+            append_error(diag, "Intrinsic minexponent function accepts exactly 1 arguments", loc);
         }
         ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
         if (!(ASRUtils::is_real(*type1))) {
-            err("Argument of the minexponent function must be Real",
+            append_error(diag, "Argument of the minexponent function must be Real",
                 args[0]->base.loc);
         }
         ASR::expr_t *m_value = nullptr;
@@ -3596,13 +3598,13 @@ namespace MaxExponent {
 
     static inline ASR::asr_t* create_MaxExponent(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         if (args.size() != 1) {
-            err("Intrinsic maxexponent function accepts exactly 1 arguments", loc);
+            append_error(diag, "Intrinsic maxexponent function accepts exactly 1 arguments", loc);
         }
         ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
         if (!(ASRUtils::is_real(*type1))) {
-            err("Argument of the maxexponent function must be Real",
+            append_error(diag, "Argument of the maxexponent function must be Real",
                 args[0]->base.loc);
         }
         ASR::expr_t *m_value = nullptr;
@@ -3652,13 +3654,14 @@ namespace X {                                                                   
     }                                                                                     \
     static inline ASR::asr_t* create_##X(Allocator& al, const Location& loc,              \
             Vec<ASR::expr_t*>& args,                                                      \
-            const std::function<void (const std::string &, const Location &)> err) {      \
+            diag::Diagnostics& diag) {                                                    \
         if (args.size() != 1) {                                                           \
-            err("Intrinsic function `"#X"` accepts exactly 1 argument", loc);             \
+            append_error(diag, "Intrinsic function `"#X"` accepts exactly 1 argument",    \
+                loc);                                                                     \
         }                                                                                 \
         ASR::ttype_t *type = ASRUtils::expr_type(args[0]);                                \
         if (!ASRUtils::is_real(*type)) {                                                  \
-            err("Argument of the `"#X"` function must be either Real",                    \
+            append_error(diag, "Argument of the `"#X"` function must be either Real",     \
                 args[0]->base.loc);                                                       \
         }                                                                                 \
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_##X,      \
@@ -3691,13 +3694,13 @@ namespace Exp {
 
     static inline ASR::asr_t* create_Exp(Allocator& al, const Location& loc,
         Vec<ASR::expr_t*>& args,
-        const std::function<void (const std::string &, const Location &)> err) {
+        diag::Diagnostics& diag) {
         if (args.size() != 1) {
-            err("Intrinsic function `exp` accepts exactly 1 argument", loc);
+            append_error(diag, "Intrinsic function `exp` accepts exactly 1 argument", loc);
         }
         ASR::ttype_t *type = ASRUtils::expr_type(args[0]);
         if (!ASRUtils::is_real(*type) && !is_complex(*type)) {
-            err("Argument of the `exp` function must be either Real or Complex",
+            append_error(diag, "Argument of the `exp` function must be either Real or Complex",
                 args[0]->base.loc);
         }
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args,
@@ -3759,7 +3762,7 @@ static inline ASR::expr_t *eval_list_index(Allocator &/*al*/,
 
 static inline ASR::asr_t* create_ListIndex(Allocator& al, const Location& loc,
     Vec<ASR::expr_t*>& args,
-    const std::function<void (const std::string &, const Location &)> err) {
+    diag::Diagnostics& diag) {
     int64_t overload_id = 0;
     ASR::expr_t* list_expr = args[0];
     ASR::ttype_t *type = ASRUtils::expr_type(list_expr);
@@ -3768,20 +3771,20 @@ static inline ASR::asr_t* create_ListIndex(Allocator& al, const Location& loc,
     if (!ASRUtils::check_equal_type(ele_type, list_type)) {
         std::string fnd = ASRUtils::get_type_code(ele_type);
         std::string org = ASRUtils::get_type_code(list_type);
-        err(
+        append_error(diag,
             "Type mismatch in 'index', the types must be compatible "
             "(found: '" + fnd + "', expected: '" + org + "')", loc);
     }
     if (args.size() >= 3) {
         overload_id = 1;
         if(!ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(args[2]))) {
-            err("Third argument to list.index must be an integer", loc);
+            append_error(diag, "Third argument to list.index must be an integer", loc);
         }
     }
     if (args.size() == 4) {
         overload_id = 2;
         if(!ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(args[3]))) {
-            err("Fourth argument to list.index must be an integer", loc);
+            append_error(diag, "Fourth argument to list.index must be an integer", loc);
         }
     }
     Vec<ASR::expr_t*> arg_values;
@@ -3808,9 +3811,9 @@ static inline ASR::expr_t *eval_list_reverse(Allocator &/*al*/,
 
 static inline ASR::asr_t* create_ListReverse(Allocator& al, const Location& loc,
     Vec<ASR::expr_t*>& args,
-    const std::function<void (const std::string &, const Location &)> err) {
+    diag::Diagnostics& diag) {
     if (args.size() != 1) {
-        err("list.reverse() takes no arguments", loc);
+        append_error(diag, "list.reverse() takes no arguments", loc);
     }
 
     Vec<ASR::expr_t*> arg_values;
@@ -3858,13 +3861,13 @@ static inline ASR::expr_t *eval_list_pop(Allocator &/*al*/,
 
 static inline ASR::asr_t* create_ListPop(Allocator& al, const Location& loc,
     Vec<ASR::expr_t*>& args,
-    const std::function<void (const std::string &, const Location &)> err) {
+    diag::Diagnostics& diag) {
     if (args.size() > 2) {
-        err("Call to list.pop must have at most one argument", loc);
+        append_error(diag, "Call to list.pop must have at most one argument", loc);
     }
     if (args.size() == 2 &&
         !ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(args[1]))) {
-        err("Argument to list.pop must be an integer", loc);
+        append_error(diag, "Argument to list.pop must be an integer", loc);
     }
 
     ASR::expr_t* list_expr = args[0];
@@ -3896,15 +3899,15 @@ static inline ASR::expr_t *eval_reserve(Allocator &/*al*/,
 
 static inline ASR::asr_t* create_Reserve(Allocator& al, const Location& loc,
     Vec<ASR::expr_t*>& args,
-    const std::function<void (const std::string &, const Location &)> err) {
+    diag::Diagnostics& diag) {
     if (args.size() != 2) {
-        err("Call to reserve must have exactly two argument", loc);
+        append_error(diag, "Call to reserve must have exactly two argument", loc);
     }
     if (!ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(args[0]))) {
-        err("First argument to reserve must be of list type", loc);
+        append_error(diag, "First argument to reserve must be of list type", loc);
     }
     if (!ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(args[1]))) {
-        err("Second argument to reserve must be an integer", loc);
+        append_error(diag, "Second argument to reserve must be an integer", loc);
     }
 
     Vec<ASR::expr_t*> arg_values;
@@ -3944,9 +3947,9 @@ static inline ASR::expr_t *eval_dict_keys(Allocator &/*al*/,
 
 static inline ASR::asr_t* create_DictKeys(Allocator& al, const Location& loc,
     Vec<ASR::expr_t*>& args,
-    const std::function<void (const std::string &, const Location &)> err) {
+    diag::Diagnostics& diag) {
     if (args.size() != 1) {
-        err("Call to dict.keys must have no argument", loc);
+        append_error(diag, "Call to dict.keys must have no argument", loc);
     }
 
     ASR::expr_t* dict_expr = args[0];
@@ -3990,9 +3993,9 @@ static inline ASR::expr_t *eval_dict_values(Allocator &/*al*/,
 
 static inline ASR::asr_t* create_DictValues(Allocator& al, const Location& loc,
     Vec<ASR::expr_t*>& args,
-    const std::function<void (const std::string &, const Location &)> err) {
+    diag::Diagnostics& diag) {
     if (args.size() != 1) {
-        err("Call to dict.values must have no argument", loc);
+        append_error(diag, "Call to dict.values must have no argument", loc);
     }
 
     ASR::expr_t* dict_expr = args[0];
@@ -4038,13 +4041,13 @@ static inline ASR::expr_t *eval_set_add(Allocator &/*al*/,
 
 static inline ASR::asr_t* create_SetAdd(Allocator& al, const Location& loc,
     Vec<ASR::expr_t*>& args,
-    const std::function<void (const std::string &, const Location &)> err) {
+    diag::Diagnostics& diag) {
     if (args.size() != 2) {
-        err("Call to set.add must have exactly one argument", loc);
+        append_error(diag, "Call to set.add must have exactly one argument", loc);
     }
     if (!ASRUtils::check_equal_type(ASRUtils::expr_type(args[1]),
         ASRUtils::get_contained_type(ASRUtils::expr_type(args[0])))) {
-        err("Argument to set.add must be of same type as set's "
+        append_error(diag, "Argument to set.add must be of same type as set's "
             "element type", loc);
     }
 
@@ -4087,13 +4090,13 @@ static inline ASR::expr_t *eval_set_remove(Allocator &/*al*/,
 
 static inline ASR::asr_t* create_SetRemove(Allocator& al, const Location& loc,
     Vec<ASR::expr_t*>& args,
-    const std::function<void (const std::string &, const Location &)> err) {
+    diag::Diagnostics& diag) {
     if (args.size() != 2) {
-        err("Call to set.remove must have exactly one argument", loc);
+        append_error(diag, "Call to set.remove must have exactly one argument", loc);
     }
     if (!ASRUtils::check_equal_type(ASRUtils::expr_type(args[1]),
         ASRUtils::get_contained_type(ASRUtils::expr_type(args[0])))) {
-        err("Argument to set.remove must be of same type as set's "
+        append_error(diag, "Argument to set.remove must be of same type as set's "
             "element type", loc);
     }
 
@@ -4166,18 +4169,18 @@ namespace Max {
 
     static inline ASR::asr_t* create_Max(
         Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
-        const std::function<void (const std::string &, const Location &)> err) {
+        diag::Diagnostics& diag) {
         bool is_compile_time = true;
         for(size_t i=0; i<100;i++){
             args.erase(nullptr);
         }
         if (args.size() < 2) {
-            err("Intrinsic max0 must have 2 arguments", loc);
+            append_error(diag, "Intrinsic max0 must have 2 arguments", loc);
         }
         ASR::ttype_t *arg_type = ASRUtils::expr_type(args[0]);
         for(size_t i=0;i<args.size();i++){
             if (!ASRUtils::check_equal_type(arg_type, ASRUtils::expr_type(args[i]))) {
-                err("All arguments to max0 must be of the same type and kind", loc);
+                append_error(diag, "All arguments to max0 must be of the same type and kind", loc);
             }
         }
         Vec<ASR::expr_t*> arg_values;
@@ -4315,18 +4318,18 @@ namespace Min {
 
     static inline ASR::asr_t* create_Min(
         Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
-        const std::function<void (const std::string &, const Location &)> err) {
+        diag::Diagnostics& diag) {
         bool is_compile_time = true;
         for(size_t i=0; i<100;i++){
             args.erase(nullptr);
         }
         if (args.size() < 2) {
-            err("Intrinsic min0 must have 2 arguments", loc);
+            append_error(diag, "Intrinsic min0 must have 2 arguments", loc);
         }
         ASR::ttype_t *arg_type = ASRUtils::expr_type(args[0]);
         for(size_t i=0;i<args.size();i++){
             if (!ASRUtils::check_equal_type(arg_type, ASRUtils::expr_type(args[i]))) {
-                err("All arguments to min0 must be of the same type and kind", loc);
+                append_error(diag, "All arguments to min0 must be of the same type and kind", loc);
             }
         }
         Vec<ASR::expr_t*> arg_values;
@@ -4447,14 +4450,14 @@ namespace Partition {
 
     static inline ASR::asr_t *create_partition(Allocator &al, const Location &loc,
             Vec<ASR::expr_t*> &args, ASR::expr_t *s_var,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         ASRBuilder b(al, loc);
         if (args.size() != 1) {
-            err("str.partition() takes exactly one argument", loc);
+            append_error(diag, "str.partition() takes exactly one argument", loc);
         }
         ASR::expr_t *arg = args[0];
         if (!ASRUtils::is_character(*expr_type(arg))) {
-            err("str.partition() takes one arguments of type: str", arg->base.loc);
+            append_error(diag, "str.partition() takes one arguments of type: str", arg->base.loc);
         }
 
         Vec<ASR::expr_t *> e_args; e_args.reserve(al, 2);
@@ -4468,7 +4471,7 @@ namespace Partition {
             std::string s_sep = ASR::down_cast<ASR::StringConstant_t>(arg)->m_s;
             std::string s_str = ASR::down_cast<ASR::StringConstant_t>(s_var)->m_s;
             if (s_sep.size() == 0) {
-                err("Separator cannot be an empty string", arg->base.loc);
+                append_error(diag, "Separator cannot be an empty string", arg->base.loc);
             }
             value = eval_Partition(al, loc, s_str, s_sep);
         }
@@ -4533,14 +4536,14 @@ namespace SymbolicSymbol {
 
     static inline ASR::asr_t* create_SymbolicSymbol(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> err) {
+            diag::Diagnostics& diag) {
         if (args.size() != 1) {
-            err("Intrinsic Symbol function accepts exactly 1 argument", loc);
+            append_error(diag, "Intrinsic Symbol function accepts exactly 1 argument", loc);
         }
 
         ASR::ttype_t *type = ASRUtils::expr_type(args[0]);
         if (!ASRUtils::is_character(*type)) {
-            err("Argument of the Symbol function must be a Character",
+            append_error(diag, "Argument of the Symbol function must be a Character",
                 args[0]->base.loc);
         }
 
@@ -4575,16 +4578,18 @@ namespace X{                                                                    
                                                                                            \
     static inline ASR::asr_t* create_##X(Allocator& al, const Location& loc,               \
             Vec<ASR::expr_t*>& args,                                                       \
-            const std::function<void (const std::string &, const Location &)> err) {       \
+            diag::Diagnostics& diag) {       \
         if (args.size() != 2) {                                                            \
-            err("Intrinsic function `"#X"` accepts exactly 2 arguments", loc);             \
+            append_error(diag, "Intrinsic function `"#X"` accepts exactly 2 arguments",    \
+                loc);                                                                      \
         }                                                                                  \
                                                                                            \
         for (size_t i = 0; i < args.size(); i++) {                                         \
             ASR::ttype_t* argtype = ASRUtils::expr_type(args[i]);                          \
             if(!ASR::is_a<ASR::SymbolicExpression_t>(*argtype)) {                          \
-                err("Arguments of `"#X"` function must be of type SymbolicExpression",     \
-                args[i]->base.loc);                                                        \
+                append_error(diag,                                                         \
+                    "Arguments of `"#X"` function must be of type SymbolicExpression",     \
+                    args[i]->base.loc);                                                    \
             }                                                                              \
         }                                                                                  \
                                                                                            \
@@ -4625,7 +4630,7 @@ namespace X {                                                                   
                                                                                           \
     static inline ASR::asr_t* create_##X(Allocator& al, const Location& loc,              \
             Vec<ASR::expr_t*>& args,                                                      \
-            const std::function<void (const std::string &, const Location &)> /*err*/) {  \
+            diag::Diagnostics& /*diag*/) {  \
         ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, loc));  \
         ASR::expr_t* compile_time_value = eval_##X(al, loc, to_type, args);               \
         return ASR::make_IntrinsicScalarFunction_t(al, loc,                               \
@@ -4658,7 +4663,7 @@ namespace SymbolicInteger {
 
     static inline ASR::asr_t* create_SymbolicInteger(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> /*err*/) {
+            diag::Diagnostics& /*diag*/) {
         ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, loc));
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_SymbolicInteger,
             static_cast<int64_t>(IntrinsicScalarFunctions::SymbolicInteger), 0, to_type);
@@ -4689,16 +4694,16 @@ namespace SymbolicHasSymbolQ {
 
     static inline ASR::asr_t* create_SymbolicHasSymbolQ(Allocator& al,
         const Location& loc, Vec<ASR::expr_t*>& args,
-        const std::function<void (const std::string &, const Location &)> err) {
+        diag::Diagnostics& diag) {
 
         if (args.size() != 2) {
-            err("Intrinsic function SymbolicHasSymbolQ accepts exactly 2 arguments", loc);
+            append_error(diag, "Intrinsic function SymbolicHasSymbolQ accepts exactly 2 arguments", loc);
         }
 
         for (size_t i = 0; i < args.size(); i++) {
             ASR::ttype_t* argtype = ASRUtils::expr_type(args[i]);
             if(!ASR::is_a<ASR::SymbolicExpression_t>(*argtype)) {
-                err("Arguments of SymbolicHasSymbolQ function must be of type SymbolicExpression",
+                append_error(diag, "Arguments of SymbolicHasSymbolQ function must be of type SymbolicExpression",
                     args[i]->base.loc);
             }
         }
@@ -4740,20 +4745,20 @@ namespace SymbolicGetArgument {
 
     static inline ASR::asr_t* create_SymbolicGetArgument(Allocator& al,
         const Location& loc, Vec<ASR::expr_t*>& args,
-        const std::function<void (const std::string &, const Location &)> err) {
+        diag::Diagnostics& diag) {
 
         if (args.size() != 2) {
-            err("Intrinsic function SymbolicGetArguments accepts exactly 2 argument", loc);
+            append_error(diag, "Intrinsic function SymbolicGetArguments accepts exactly 2 argument", loc);
         }
 
         ASR::ttype_t* arg1_type = ASRUtils::expr_type(args[0]);
         ASR::ttype_t* arg2_type = ASRUtils::expr_type(args[1]);
         if (!ASR::is_a<ASR::SymbolicExpression_t>(*arg1_type)) {
-            err("The first argument of SymbolicGetArgument function must be of type SymbolicExpression",
+            append_error(diag, "The first argument of SymbolicGetArgument function must be of type SymbolicExpression",
                     args[0]->base.loc);
         }
         if (!ASR::is_a<ASR::Integer_t>(*arg2_type)) {
-            err("The second argument of SymbolicGetArgument function must be of type Integer",
+            append_error(diag, "The second argument of SymbolicGetArgument function must be of type Integer",
                     args[1]->base.loc);
         }
 
@@ -4785,14 +4790,16 @@ namespace X {                                                                   
                                                                                           \
     static inline ASR::asr_t* create_##X(Allocator& al, const Location& loc,              \
             Vec<ASR::expr_t*>& args,                                                      \
-            const std::function<void (const std::string &, const Location &)> err) {      \
+            diag::Diagnostics& diag) {                                                    \
         if (args.size() != 1) {                                                           \
-            err("Intrinsic " #X " function accepts exactly 1 argument", loc);             \
+            append_error(diag, "Intrinsic " #X " function accepts exactly 1 argument",    \
+                loc);                                                                     \
         }                                                                                 \
                                                                                           \
         ASR::ttype_t* argtype = ASRUtils::expr_type(args[0]);                             \
         if (!ASR::is_a<ASR::SymbolicExpression_t>(*argtype)) {                            \
-            err("Argument of " #X " function must be of type SymbolicExpression",         \
+            append_error(diag,                                                            \
+                "Argument of " #X " function must be of type SymbolicExpression",         \
                 args[0]->base.loc);                                                       \
         }                                                                                 \
                                                                                           \
@@ -4828,14 +4835,16 @@ namespace X {                                                                   
                                                                                           \
     static inline ASR::asr_t* create_##X(Allocator& al, const Location& loc,              \
             Vec<ASR::expr_t*>& args,                                                      \
-            const std::function<void (const std::string &, const Location &)> err) {      \
+            diag::Diagnostics& diag) {                                                    \
         if (args.size() != 1) {                                                           \
-            err("Intrinsic " #X " function accepts exactly 1 argument", loc);             \
+            append_error(diag, "Intrinsic " #X " function accepts exactly 1 argument",    \
+                loc);                                                                     \
         }                                                                                 \
                                                                                           \
         ASR::ttype_t* argtype = ASRUtils::expr_type(args[0]);                             \
         if (!ASR::is_a<ASR::SymbolicExpression_t>(*argtype)) {                            \
-            err("Argument of " #X " function must be of type SymbolicExpression",         \
+            append_error(diag,                                                            \
+                "Argument of " #X " function must be of type SymbolicExpression",         \
                 args[0]->base.loc);                                                       \
         }                                                                                 \
                                                                                           \
@@ -5374,7 +5383,7 @@ namespace IsIostatEnd {
 
     static inline ASR::asr_t* create_IsIostatEnd(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> /*err*/) {
+            diag::Diagnostics& /*diag*/) {
         // Compile time value cannot be computed
         return ASR::make_IntrinsicImpureFunction_t(al, loc,
                 static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::IsIostatEnd),
@@ -5387,7 +5396,7 @@ namespace IsIostatEor {
 
     static inline ASR::asr_t* create_IsIostatEor(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
-            const std::function<void (const std::string &, const Location &)> /*err*/) {
+            diag::Diagnostics& /*diag*/) {
         // Compile time value cannot be computed
         return ASR::make_IntrinsicImpureFunction_t(al, loc,
                 static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::IsIostatEor),
