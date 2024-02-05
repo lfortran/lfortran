@@ -521,6 +521,9 @@ jobs:
             ./example/specialfunctions_gamma/example_log_gamma
             ./example/specialfunctions_gamma/example_uigamma
 
+            cd ../
+            rm -rf stdlib-fortran-lang/
+
       - name: Test stdlib (stdlib_math)
         shell: bash -e -x -l {0}
         run: |
