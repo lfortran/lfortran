@@ -675,7 +675,7 @@ jobs:
             lfortran subprojects/test-drive/src/testdrive.F90 --show-llvm
 
             git checkout lf19
-            git checkout 3f7c56e57e675db22b0fd6b4265a3562641a43ac
+            git checkout 746379b20501460af0feaa1f5de9ebd2d1db1e12
             micromamba install -c conda-forge gfortran fypp
             ./build_test_array_lf.sh
             ./build_test_array_gf.sh
