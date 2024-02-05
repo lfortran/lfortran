@@ -1134,7 +1134,7 @@ namespace Sum {
     static inline ASR::asr_t* create_Sum(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
             diag::Diagnostics& diag) {
-        return ArrIntrinsic::create_ArrIntrinsic(al, loc, args, err,
+        return ArrIntrinsic::create_ArrIntrinsic(al, loc, args, diag,
             IntrinsicArrayFunctions::Sum);
     }
 
@@ -1165,7 +1165,7 @@ namespace Product {
     static inline ASR::asr_t* create_Product(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
             diag::Diagnostics& diag) {
-        return ArrIntrinsic::create_ArrIntrinsic(al, loc, args, err,
+        return ArrIntrinsic::create_ArrIntrinsic(al, loc, args, diag,
             IntrinsicArrayFunctions::Product);
     }
 
@@ -1196,7 +1196,7 @@ namespace MaxVal {
     static inline ASR::asr_t* create_MaxVal(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
             diag::Diagnostics& diag) {
-        return ArrIntrinsic::create_ArrIntrinsic(al, loc, args, err,
+        return ArrIntrinsic::create_ArrIntrinsic(al, loc, args, diag,
             IntrinsicArrayFunctions::MaxVal);
     }
 
@@ -1222,7 +1222,7 @@ namespace MaxLoc {
             Vec<ASR::expr_t*>& args,
             diag::Diagnostics& diag) {
         return ArrIntrinsic::create_MaxMinLoc(al, loc, args,
-            static_cast<int>(IntrinsicArrayFunctions::MaxLoc), err);
+            static_cast<int>(IntrinsicArrayFunctions::MaxLoc), diag);
     }
 
     static inline ASR::expr_t *instantiate_MaxLoc(Allocator &al,
@@ -1421,7 +1421,7 @@ namespace MinVal {
     static inline ASR::asr_t* create_MinVal(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
             diag::Diagnostics& diag) {
-        return ArrIntrinsic::create_ArrIntrinsic(al, loc, args, err,
+        return ArrIntrinsic::create_ArrIntrinsic(al, loc, args, diag,
             IntrinsicArrayFunctions::MinVal);
     }
 
@@ -1447,7 +1447,7 @@ namespace MinLoc {
             Vec<ASR::expr_t*>& args,
             diag::Diagnostics& diag) {
         return ArrIntrinsic::create_MaxMinLoc(al, loc, args,
-            static_cast<int>(IntrinsicArrayFunctions::MinLoc), err);
+            static_cast<int>(IntrinsicArrayFunctions::MinLoc), diag);
     }
 
     static inline ASR::expr_t *instantiate_MinLoc(Allocator &al,
