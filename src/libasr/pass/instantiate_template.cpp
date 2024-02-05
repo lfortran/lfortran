@@ -2,7 +2,6 @@
 #include <libasr/asr_utils.h>
 #include <libasr/asr.h>
 #include <libasr/pass/pass_utils.h>
-#include <libasr/semantic_exception.h>
 
 namespace LCompilers {
 
@@ -445,7 +444,7 @@ public:
             char* r_arg_i = x->m_args[i];
             r_args.push_back(al, r_arg_i);
         }
-        
+
         return ASR::down_cast<ASR::require_instantiation_t>(
             ASR::make_Require_t(al, x->base.base.loc, s2c(al, x->m_name), r_args.p, r_args.size()));
     }
@@ -468,7 +467,7 @@ public:
                 std::string struct_name = ASRUtils::symbol_name(s->m_derived_type);
                 if (symbol_subs.find(struct_name) != symbol_subs.end()) {
                     ASR::symbol_t *sym = symbol_subs[struct_name];
-                    return ASRUtils::TYPE(ASR::make_Struct_t(al, ttype->base.loc, sym));   
+                    return ASRUtils::TYPE(ASR::make_Struct_t(al, ttype->base.loc, sym));
                 }
                 return ttype;
             }
@@ -570,7 +569,7 @@ public:
                 throw LCompilersException("Instantiation body of " + sym_name
                     + " symbol is not supported");
             };
-        } 
+        }
     }
 
     void instantiate_Function(ASR::Function_t* x) {
@@ -619,7 +618,7 @@ public:
         for (auto const &sym_pair: new_t->m_symtab->get_scope()) {
             ASR::symbol_t* new_sym_i = sym_pair.second;
             ASR::symbol_t* sym_i = x->m_symtab->get_symbol(sym_pair.first);
-            
+
             BodyInstantiator t(al, type_subs, symbol_subs, new_sym_i, sym_i);
             t.instantiate();
         }
@@ -639,7 +638,7 @@ public:
 
     void instantiate_ClassProcedure(ASR::ClassProcedure_t* x) {
         ASR::ClassProcedure_t* new_c = ASR::down_cast<ASR::ClassProcedure_t>(new_sym);
-        
+
         ASR::symbol_t* new_proc = new_c->m_proc;
         ASR::symbol_t* proc = x->m_proc;
 
@@ -888,7 +887,7 @@ public:
                 std::string struct_name = ASRUtils::symbol_name(s->m_derived_type);
                 if (symbol_subs.find(struct_name) != symbol_subs.end()) {
                     ASR::symbol_t *sym = symbol_subs[struct_name];
-                    ttype = ASRUtils::TYPE(ASR::make_Struct_t(al, s->base.base.loc, sym));   
+                    ttype = ASRUtils::TYPE(ASR::make_Struct_t(al, s->base.base.loc, sym));
                 }
                 return ttype;
             }
@@ -957,7 +956,8 @@ ASR::symbol_t* rename_symbol(Allocator &al,
 bool check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
         std::map<std::string, ASR::symbol_t*> &symbol_subs,
         ASR::Function_t *f, ASR::symbol_t *sym_arg, const Location &loc,
-        diag::Diagnostics &diagnostics, bool report=true) {
+        diag::Diagnostics &diagnostics,
+        const std::function<void ()> semantic_abort, bool report=true) {
     std::string f_name = f->m_name;
     ASR::Function_t *arg = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(sym_arg));
     std::string arg_name = arg->m_name;
@@ -975,7 +975,7 @@ bool check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
                                 {f->base.base.loc})
                     }
             ));
-            throw SemanticAbort();
+            semantic_abort();
         }
         return false;
     }
@@ -1000,7 +1000,7 @@ bool check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
                                 {arg->m_args[i]->base.loc})
                     }
                 ));
-                throw SemanticAbort();
+                semantic_abort();
             }
             return false;
         }
@@ -1010,7 +1010,9 @@ bool check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
             if (report) {
                 std::string msg = "The restriction argument " + arg_name
                     + " should have a return value";
-                throw SemanticError(msg, loc);
+                diagnostics.add(diag::Diagnostic(msg,
+                    diag::Level::Error, diag::Stage::Semantic, {diag::Label("", {loc})}));
+                semantic_abort();
             }
             return false;
         }
@@ -1030,7 +1032,7 @@ bool check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
                             {arg->m_return_var->base.loc})
                     }
                 ));
-                throw SemanticAbort();
+                semantic_abort();
             }
             return false;
         }
@@ -1039,7 +1041,9 @@ bool check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
             if (report) {
                 std::string msg = "The restriction argument " + arg_name
                     + " should not have a return value";
-                throw SemanticError(msg, loc);
+                diagnostics.add(diag::Diagnostic(msg,
+                    diag::Level::Error, diag::Stage::Semantic, {diag::Label("", {loc})}));
+                semantic_abort();
             }
             return false;
         }

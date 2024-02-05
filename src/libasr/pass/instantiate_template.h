@@ -30,7 +30,8 @@ namespace LCompilers {
     bool check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
         std::map<std::string, ASR::symbol_t*> &symbol_subs,
         ASR::Function_t *f, ASR::symbol_t *sym_arg, const Location &loc,
-        diag::Diagnostics &diagnostics, bool report=true);
+        diag::Diagnostics &diagnostics,
+        const std::function<void ()> semantic_abort, bool report=true);
 
 } // namespace LCompilers
 
