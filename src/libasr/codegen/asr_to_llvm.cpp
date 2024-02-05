@@ -9544,7 +9544,6 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     context.setOpaquePointers(false);
 #endif
     ASRToLLVMVisitor v(al, context, infile, co, diagnostics);
-    LCompilers::PassOptions pass_options;
 
     std::vector<int64_t> skip_optimization_func_instantiation;
     skip_optimization_func_instantiation.push_back(static_cast<int64_t>(
