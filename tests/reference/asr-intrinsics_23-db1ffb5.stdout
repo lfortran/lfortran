@@ -160,7 +160,13 @@
                         ()
                         ()
                     )]
-                )
+                ),
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin),
+            lfortran_intrinsic_math2:
+                (IntrinsicModule lfortran_intrinsic_math2)
         })
     []
 )

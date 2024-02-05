@@ -120,7 +120,7 @@
                     (Assignment
                         (Var 2 x)
                         (Cast
-                            (IntrinsicElementalFunction
+                            (IntrinsicScalarFunction
                                 Atan
                                 [(RealConstant
                                     1.557408
@@ -149,7 +149,7 @@
                     )
                     (Assignment
                         (Var 2 x)
-                        (IntrinsicElementalFunction
+                        (IntrinsicScalarFunction
                             Asinh
                             [(RealConstant
                                 1.175201
@@ -171,7 +171,7 @@
                     )
                     (Assignment
                         (Var 2 x)
-                        (IntrinsicElementalFunction
+                        (IntrinsicScalarFunction
                             Acosh
                             [(RealConstant
                                 1.543081
@@ -193,7 +193,7 @@
                     )
                     (Assignment
                         (Var 2 x)
-                        (IntrinsicElementalFunction
+                        (IntrinsicScalarFunction
                             Atanh
                             [(RealConstant
                                 0.761594

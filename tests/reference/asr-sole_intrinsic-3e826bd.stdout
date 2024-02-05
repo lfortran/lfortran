@@ -116,7 +116,7 @@
                     )
                     (Assignment
                         (Var 2 y)
-                        (IntrinsicElementalFunction
+                        (IntrinsicScalarFunction
                             Aimag
                             [(Var 2 x)]
                             0
