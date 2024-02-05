@@ -43,6 +43,8 @@ enum class IntrinsicScalarFunctions : int64_t {
     Asinh,
     Acosh,
     Atanh,
+    Erf,
+    Erfc,
     Gamma,
     Log,
     Log10,
@@ -138,6 +140,8 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Asinh)
         INTRINSIC_NAME_CASE(Acosh)
         INTRINSIC_NAME_CASE(Atanh)
+        INTRINSIC_NAME_CASE(Erf)
+        INTRINSIC_NAME_CASE(Erfc)
         INTRINSIC_NAME_CASE(Gamma)
         INTRINSIC_NAME_CASE(Log)
         INTRINSIC_NAME_CASE(Log10)
@@ -1287,6 +1291,8 @@ create_unary_function(Trunc, trunc, trunc)
 create_unary_function(Gamma, tgamma, gamma)
 create_unary_function(LogGamma, lgamma, log_gamma)
 create_unary_function(Log10, log10, log10)
+create_unary_function(Erf, erf, erf)
+create_unary_function(Erfc, erfc, erfc)
 
 namespace Fix {
     static inline ASR::expr_t *eval_Fix(Allocator &al, const Location &loc,
@@ -3659,9 +3665,61 @@ namespace X {                                                                   
     }                                                                                     \
 } // namespace X
 
-create_exp_macro(Exp, exp)
 create_exp_macro(Exp2, exp2)
 create_exp_macro(Expm1, expm1)
+
+namespace Exp {
+
+    static inline ASR::expr_t* eval_Exp(Allocator &al, const Location &loc,
+            ASR::ttype_t *t, Vec<ASR::expr_t*> &args) {
+        LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
+        double rv = -1;
+        if( ASRUtils::extract_value(args[0], rv) ) {
+            double val = std::exp(rv);
+            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, val, t));
+        } else {
+            std::complex<double> crv;
+            if( ASRUtils::extract_value(args[0], crv) ) {
+                std::complex<double> val = std::exp(crv);
+                return ASRUtils::EXPR(ASR::make_ComplexConstant_t(
+                    al, loc, val.real(), val.imag(), t));
+            }
+        }
+        return nullptr;
+    }
+
+    static inline ASR::asr_t* create_Exp(Allocator& al, const Location& loc,
+        Vec<ASR::expr_t*>& args,
+        const std::function<void (const std::string &, const Location &)> err) {
+        if (args.size() != 1) {
+            err("Intrinsic function `exp` accepts exactly 1 argument", loc);
+        }
+        ASR::ttype_t *type = ASRUtils::expr_type(args[0]);
+        if (!ASRUtils::is_real(*type) && !is_complex(*type)) {
+            err("Argument of the `exp` function must be either Real or Complex",
+                args[0]->base.loc);
+        }
+        return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args,
+            eval_Exp, static_cast<int64_t>(IntrinsicScalarFunctions::Exp),
+            0, type);
+    }
+
+    static inline ASR::expr_t* instantiate_Exp(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t overload_id) {
+        if (is_real(*arg_types[0])) {
+            Vec<ASR::expr_t *> args; args.reserve(al, 1);
+            args.push_back(al, new_args[0].m_value);
+            return EXPR(ASR::make_IntrinsicScalarFunction_t(al, loc,
+                static_cast<int64_t>(IntrinsicScalarFunctions::Exp),
+                args.p, 1, overload_id, return_type, nullptr));
+        } else {
+            return UnaryIntrinsicFunction::instantiate_functions(al, loc, scope,
+                "exp", arg_types[0], return_type, new_args, overload_id);
+        }
+    }
+
+} // namespace Exp
 
 namespace ListIndex {
 
@@ -4807,6 +4865,10 @@ namespace IntrinsicScalarFunctionRegistry {
             {&Log::instantiate_Log, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::LogGamma),
             {&LogGamma::instantiate_LogGamma, &UnaryIntrinsicFunction::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Erf),
+            {&Erf::instantiate_Erf, &UnaryIntrinsicFunction::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Erfc),
+            {&Erfc::instantiate_Erfc, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Trunc),
             {&Trunc::instantiate_Trunc, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Fix),
@@ -4838,7 +4900,7 @@ namespace IntrinsicScalarFunctionRegistry {
         {static_cast<int64_t>(IntrinsicScalarFunctions::Atanh),
             {&Atanh::instantiate_Atanh, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Exp),
-            {nullptr, &UnaryIntrinsicFunction::verify_args}},
+            {&Exp::instantiate_Exp, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Exp2),
             {nullptr, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Expm1),
@@ -4980,6 +5042,10 @@ namespace IntrinsicScalarFunctionRegistry {
             "log10"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::LogGamma),
             "log_gamma"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Erf),
+            "erf"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Erfc),
+            "erfc"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Trunc),
             "trunc"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Fix),
@@ -5150,6 +5216,8 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"log", {&Log::create_Log, &Log::eval_Log}},
                 {"log10", {&Log10::create_Log10, &Log10::eval_Log10}},
                 {"log_gamma", {&LogGamma::create_LogGamma, &LogGamma::eval_LogGamma}},
+                {"erf", {&Erf::create_Erf, &Erf::eval_Erf}},
+                {"erfc", {&Erfc::create_Erfc, &Erfc::eval_Erfc}},
                 {"trunc", {&Trunc::create_Trunc, &Trunc::eval_Trunc}},
                 {"fix", {&Fix::create_Fix, &Fix::eval_Fix}},
                 {"sin", {&Sin::create_Sin, &Sin::eval_Sin}},
@@ -5248,6 +5316,8 @@ namespace IntrinsicScalarFunctionRegistry {
                  id_ == IntrinsicScalarFunctions::Gamma ||
                  id_ == IntrinsicScalarFunctions::Log ||
                  id_ == IntrinsicScalarFunctions::LogGamma ||
+                 id_ == IntrinsicScalarFunctions::Erf ||
+                 id_ == IntrinsicScalarFunctions::Erfc ||
                  id_ == IntrinsicScalarFunctions::Trunc ||
                  id_ == IntrinsicScalarFunctions::Fix ||
                  id_ == IntrinsicScalarFunctions::Sin ||
@@ -5288,15 +5358,6 @@ namespace IntrinsicScalarFunctionRegistry {
                                       " has no name registered for it");
         }
         return intrinsic_function_id_to_name.at(id);
-    }
-
-    static inline bool is_input_type_supported(const std::string& name, Vec<ASR::expr_t*>& args) {
-        if( name == "exp" ) {
-            if( !ASRUtils::is_real(*ASRUtils::expr_type(args[0])) ) {
-                return false;
-            }
-        }
-        return true;
     }
 
 } // namespace IntrinsicScalarFunctionRegistry
