@@ -4057,9 +4057,11 @@ public:
                     ASRUtils::IntrinsicScalarFunctionRegistry::get_create_function("aimag");
                 Vec<ASR::expr_t *> args; args.reserve(al, 1);
                 args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, v)));
-                return create_func(al, loc, args,
-                    [&](const std::string &msg, const Location &loc) {
-                        throw SemanticError(msg, loc); });
+                ASR::asr_t *func = create_func(al, loc, args, diag);
+                if (func == nullptr) {
+                    throw SemanticAbort();
+                }
+                return func;
             } else {
                 throw SemanticError("Complex variable '" + dt_name + "' only has %re and %im members, not '" + var_name + "'", loc);
             }
@@ -4775,15 +4777,11 @@ public:
                 if( ASRUtils::IntrinsicScalarFunctionRegistry::is_intrinsic_function(var_name) ){
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicScalarFunctionRegistry::get_create_function(var_name);
-                    tmp = create_func(al, x.base.base.loc, args,
-                        [&](const std::string &msg, const Location &loc) {
-                            throw SemanticError(msg, loc); });
+                    tmp = create_func(al, x.base.base.loc, args, diag);
                 } else if ( ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ) {
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicArrayFunctionRegistry::get_create_function(var_name);
-                    tmp = create_func(al, x.base.base.loc, args,
-                        [&](const std::string &msg, const Location &loc) {
-                            throw SemanticError(msg, loc); });
+                    tmp = create_func(al, x.base.base.loc, args, diag);
                 }
             } else if( ASRUtils::IntrinsicImpureFunctionRegistry::is_intrinsic_function(var_name) ) {
                 Vec<ASR::expr_t*> args;
@@ -4794,8 +4792,7 @@ public:
                 }
                 ASRUtils::create_intrinsic_function create_func =
                     ASRUtils::IntrinsicImpureFunctionRegistry::get_create_function(var_name);
-                tmp = create_func(al, x.base.base.loc, args,
-                    [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); });
+                tmp = create_func(al, x.base.base.loc, args, diag);
             } else if( var_name == "size" ) {
                 tmp = create_ArraySize(x);
             } else if( var_name == "lbound" || var_name == "ubound" ) {
@@ -4832,6 +4829,9 @@ public:
                 tmp = create_ArrayAll(x);
             } else {
                 throw LCompilersException("create_" + var_name + " not implemented yet.");
+            }
+            if (tmp == nullptr) {
+                throw SemanticAbort();
             }
             return nullptr;
         }

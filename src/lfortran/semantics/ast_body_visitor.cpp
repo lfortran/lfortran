@@ -2287,10 +2287,11 @@ public:
                     ASRUtils::IntrinsicScalarFunctionRegistry::get_create_function("aimag");
                 Vec<ASR::expr_t*> args; args.reserve(al, 1);
                 args.push_back(al, val);
-                ASR::expr_t *im = ASRUtils::EXPR(create_func(al, loc, args,
-                    [&](const std::string &msg, const Location &loc) {
-                        throw SemanticError(msg, loc); }));
-
+                ASR::asr_t* create_fn = create_func(al, loc, args, diag);
+                if (create_fn == nullptr) {
+                    throw SemanticAbort();
+                }
+                ASR::expr_t *im = ASRUtils::EXPR(create_fn);
                 ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(al, loc, y, im, ASRUtils::expr_type(target), nullptr));
                 value = cmplx;
             }

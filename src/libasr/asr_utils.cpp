@@ -1339,9 +1339,8 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
             args.push_back(al, a_arg);
             LCompilers::ASRUtils::create_intrinsic_function create_function =
                 LCompilers::ASRUtils::IntrinsicScalarFunctionRegistry::get_create_function("SymbolicInteger");
-            value = ASR::down_cast<ASR::expr_t>(create_function(al, a_loc, args,
-                [](const std::string&, const Location&) {
-            }));
+            diag::Diagnostics diag;
+            value = ASR::down_cast<ASR::expr_t>(create_function(al, a_loc, args, diag));
         }
     }
 
@@ -1570,6 +1569,12 @@ int64_t compute_leading_zeros(int64_t number, int64_t kind) {
         total_bits--;
     }
     return leading_zeros;
+}
+
+void append_error(diag::Diagnostics& diag, const std::string& msg,
+                const Location& loc) {
+    diag.add(diag::Diagnostic(msg, diag::Level::Error,
+        diag::Stage::Semantic, {diag::Label("", { loc })}));
 }
 
 
