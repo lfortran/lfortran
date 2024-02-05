@@ -1339,9 +1339,8 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
             args.push_back(al, a_arg);
             LCompilers::ASRUtils::create_intrinsic_function create_function =
                 LCompilers::ASRUtils::IntrinsicScalarFunctionRegistry::get_create_function("SymbolicInteger");
-            value = ASR::down_cast<ASR::expr_t>(create_function(al, a_loc, args,
-                [](const std::string&, const Location&) {
-            }));
+            diag::Diagnostics diag;
+            value = ASR::down_cast<ASR::expr_t>(create_function(al, a_loc, args, diag));
         }
     }
 
