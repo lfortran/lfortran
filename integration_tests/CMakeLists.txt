@@ -1102,15 +1102,7 @@ RUN(NAME template_array_03 LABELS llvm llvmStackArray wasm)
 RUN(NAME template_array_04 LABELS llvm llvmStackArray wasm)
 RUN(NAME template_array_04b LABELS llvm llvmStackArray wasm)
 RUN(NAME template_matrix_01 LABELS llvm)
-RUN(NAME template_matrix_real LABELS llvm EXTRAFILES
-    template_semigroup.f90
-    template_semiring.f90
-    template_monoid.f90
-    template_unitring.f90
-    template_field.f90
-    template_matrix.f90
-    )
-RUN(NAME template_matrix_integer LABELS llvm EXTRAFILES
+RUN(NAME template_matrix_test LABELS llvm EXTRAFILES
     template_semigroup.f90
     template_semiring.f90
     template_monoid.f90
