@@ -232,11 +232,13 @@ static inline ASR::asr_t* create_ArrIntrinsic(
         if( arg2_rank != 0 ) {
             append_error(diag, "dim argument to " + intrinsic_func_name + " must be a scalar and must not be an array",
                 arg2->base.loc);
+            return nullptr;
         }
 
         if( arg3_rank == 0 ) {
             append_error(diag, "mask argument to " + intrinsic_func_name + " must be an array and must not be a scalar",
                 arg3->base.loc);
+            return nullptr;
         }
 
         overload_id = id_array_dim_mask;
@@ -583,11 +585,14 @@ static inline ASR::asr_t* create_MaxMinLoc(Allocator& al, const Location& loc,
     ASR::ttype_t *array_type = expr_type(args[0]);
     if ( !is_array(array_type) ) {
         append_error(diag, "`array` argument of `"+ intrinsic_name +"` must be an array", loc);
+        return nullptr;
     } else if ( !is_integer(*array_type) && !is_real(*array_type) ) {
         append_error(diag, "`array` argument of `"+ intrinsic_name +"` must be integer or "
             "real for now", loc);
+        return nullptr;
     } else if ( args[2] || args[4] ) {
         append_error(diag, "`mask` and `back` keyword argument is not supported yet", loc);
+        return nullptr;
     }
     ASR::ttype_t *return_type = nullptr;
     Vec<ASR::expr_t *> m_args; m_args.reserve(al, 1);
@@ -599,17 +604,21 @@ static inline ASR::asr_t* create_MaxMinLoc(Allocator& al, const Location& loc,
     if (args[3]) {
         if (!extract_value(expr_value(args[3]), kind)) {
             append_error(diag, "Runtime value for `kind` argument is not supported yet", loc);
+            return nullptr;
         }
     }
     if ( args[1] ) {
         if ( !ASR::is_a<ASR::Integer_t>(*expr_type(args[1])) ) {
             append_error(diag, "`dim` should be a scalar integer type", loc);
+            return nullptr;
         } else if (!extract_value(expr_value(args[1]), dim)) {
             append_error(diag, "Runtime values for `dim` argument is not supported yet", loc);
+            return nullptr;
         }
         if ( 1 > dim || dim > n_dims ) {
             append_error(diag, "`dim` argument of `"+ intrinsic_name +"` is out of "
                 "array index range", loc);
+            return nullptr;
         }
         if ( n_dims == 1 ) {
             return_type = TYPE(ASR::make_Integer_t(al, loc, kind)); // 1D
@@ -798,9 +807,11 @@ namespace Shape {
         if (args[1]) {
             if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1]))) {
                 append_error(diag, "`kind` argument of `shape` must be a scalar integer", loc);
+                return nullptr;
             }
             if (!extract_value(args[1], kind)) {
                 append_error(diag, "Only constant value for `kind` is supported for now", loc);
+                return nullptr;
             }
         }
         // TODO: throw error for assumed size array
@@ -923,6 +934,7 @@ namespace Any {
         if( ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(array)) == 0 ) {
             append_error(diag, "mask argument to any must be an array and must not be a scalar",
                 array->base.loc);
+            return nullptr;
         }
 
         // TODO: Add a check for range of values axis can take
@@ -1296,6 +1308,7 @@ namespace Merge {
         if( args.size() != 3 ) {
             append_error(diag, "`merge` intrinsic accepts 3 positional arguments, found " +
                 std::to_string(args.size()), loc);
+            return nullptr;
         }
 
         ASR::expr_t *tsource = args[0], *fsource = args[1], *mask = args[2];
@@ -1311,6 +1324,7 @@ namespace Merge {
         if( tsource_ndims > 0 && fsource_ndims > 0 ) {
             if( tsource_ndims != fsource_ndims ) {
                 append_error(diag, "All arguments of `merge` should be of same rank and dimensions", loc);
+                return nullptr;
             }
 
             if( ASRUtils::extract_physical_type(tsource_type) == ASR::array_physical_typeType::FixedSizeArray &&
@@ -1318,6 +1332,7 @@ namespace Merge {
                 ASRUtils::get_fixed_size_of_array(tsource_mdims, tsource_ndims) !=
                     ASRUtils::get_fixed_size_of_array(fsource_mdims, fsource_ndims) ) {
                 append_error(diag, "`tsource` and `fsource` arguments should have matching size", loc);
+                return nullptr;
             }
         } else {
             if( tsource_ndims > 0 && fsource_ndims == 0 ) {
@@ -1338,10 +1353,12 @@ namespace Merge {
             append_error(diag, "`tsource` and `fsource` arguments to `merge` should be of same type, found " +
                 ASRUtils::get_type_code(tsource_type) + ", " +
                 ASRUtils::get_type_code(fsource_type), loc);
+            return nullptr;
         }
         if( !ASRUtils::is_logical(*mask_type) ) {
             append_error(diag, "`mask` argument to `merge` should be of logical type, found " +
                 ASRUtils::get_type_code(mask_type), loc);
+            return nullptr;
         }
 
         return ASR::make_IntrinsicArrayFunction_t(al, loc,
@@ -1505,20 +1522,24 @@ namespace MatMul {
             // TODO
             append_error(diag, "The `matmul` intrinsic doesn't handle logical or "
                 "complex type yet", loc);
+            return nullptr;
         }
         if ( !matrix_a_numeric && !matrix_a_logical ) {
             append_error(diag, "The argument `matrix_a` in `matmul` must be of type Integer, "
                 "Real, Complex or Logical", matrix_a->base.loc);
+            return nullptr;
         } else if ( matrix_a_numeric ) {
             if( !matrix_b_numeric ) {
                 append_error(diag, "The argument `matrix_b` in `matmul` must be of type "
                     "Integer, Real or Complex if first matrix is of numeric "
                     "type", matrix_b->base.loc);
+                    return nullptr;
             }
         } else {
             if( !matrix_b_logical ) {
                 append_error(diag, "The argument `matrix_b` in `matmul` must be of type Logical"
                     " if first matrix is of Logical type", matrix_b->base.loc);
+                return nullptr;
             }
         }
         if ( matrix_a_numeric || matrix_b_numeric ) {
@@ -1540,9 +1561,11 @@ namespace MatMul {
         if ( matrix_a_rank != 1 && matrix_a_rank != 2 ) {
             append_error(diag, "`matmul` accepts arrays of rank 1 or 2 only, provided an array "
                 "with rank, " + std::to_string(matrix_a_rank), matrix_a->base.loc);
+            return nullptr;
         } else if ( matrix_b_rank != 1 && matrix_b_rank != 2 ) {
             append_error(diag, "`matmul` accepts arrays of rank 1 or 2 only, provided an array "
                 "with rank, " + std::to_string(matrix_b_rank), matrix_b->base.loc);
+            return nullptr;
         }
 
         ASRBuilder b(al, loc);
@@ -1559,6 +1582,7 @@ namespace MatMul {
                     + std::to_string(matrix_a_dim_1) + ", provided an array "
                     "with dimension " + std::to_string(matrix_b_dim_1) +
                     " in `matrix_b('n', m)`", matrix_b->base.loc);
+                return nullptr;
             } else {
                 result_dims.push_back(al, b.set_dim(matrix_b_dims[1].m_start,
                     matrix_b_dims[1].m_length));
@@ -1576,6 +1600,7 @@ namespace MatMul {
                     + std::to_string(matrix_a_dim_2) + ", provided an array "
                     "with dimension " + std::to_string(matrix_b_dim_1) +
                     " in matrix_b" + err_dims, matrix_b->base.loc);
+                return nullptr;
             }
             result_dims.push_back(al, b.set_dim(matrix_a_dims[0].m_start,
                 matrix_a_dims[0].m_length));
@@ -1588,6 +1613,7 @@ namespace MatMul {
             append_error(diag, "The argument `matrix_b` in `matmul` must be of rank 2, "
                 "provided an array with rank, " + std::to_string(matrix_b_rank),
                 matrix_b->base.loc);
+            return nullptr;
         }
         ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         if (is_type_allocatable) {
