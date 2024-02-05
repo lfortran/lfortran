@@ -8,7 +8,7 @@ set(LFORTRAN_NESTED_BUILD no
     CACHE BOOL "Whether we are being called from the LFortran build system")
 
 if(NOT LFORTRAN_NESTED_BUILD)
-  add_subdirectory(legacy)
+    add_subdirectory(legacy)
 endif()
 
 # See the TODO in the installation step below
@@ -36,13 +36,8 @@ lfortran_compile_runtime(lfortran_intrinsic_custom custom)
 lfortran_compile_runtime(lfortran_intrinsic_optimization builtin)
 add_dependencies(lfortran_intrinsic_optimization lfortran_intrinsic_iso_fortran_env)
 
-lfortran_compile_runtime(lfortran_intrinsic_math3 pure)
-add_dependencies(lfortran_intrinsic_math3 lfortran_intrinsic_iso_fortran_env)
-add_dependencies(lfortran_intrinsic_math3 lfortran_intrinsic_builtin)
-
 lfortran_compile_runtime(lfortran_intrinsic_math2 pure)
 add_dependencies(lfortran_intrinsic_math2 lfortran_intrinsic_iso_fortran_env)
-add_dependencies(lfortran_intrinsic_math2 lfortran_intrinsic_math3)
 add_dependencies(lfortran_intrinsic_math2 lfortran_intrinsic_builtin)
 
 lfortran_compile_runtime(lfortran_intrinsic_ieee_arithmetic pure)
@@ -88,7 +83,6 @@ install(
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_ieee_arithmetic.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_iso_c_binding.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_math2.mod
-  ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_math3.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_math.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_trig.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_sin.mod

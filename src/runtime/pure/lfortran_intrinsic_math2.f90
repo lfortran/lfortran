@@ -1,15 +1,15 @@
 ! Temporary module, a subset of lfortran_intrinsic_math that works
 module lfortran_intrinsic_math2
 use, intrinsic :: iso_fortran_env, only: i8 => int8, i16 => int16, i32 => int32, i64 => int64, sp => real32, dp => real64
-use lfortran_intrinsic_math3, only: floor
 implicit none
 
 interface sqrt
     module procedure ssqrt, dsqrt
 end interface
 
-interface ceiling
-    module procedure sceiling, dceiling
+
+interface aimag
+    module procedure saimag, daimag
 end interface
 
 interface nint
@@ -66,22 +66,22 @@ else
 end if
 end function
 
-! ceiling ------------------------------------------------------------------------
+! aimag ------------------------------------------------------------------------
 
-elemental integer function sceiling(x) result(r)
-real(sp), intent(in) :: x
-r = floor(x)
-if (r - x /= 0.0) then
-    r = r + 1
-end if
+elemental real(sp) function saimag(x) result(r)
+complex(sp), intent(in) :: x
+r = 3
+! Uncomment once it is implemented
+!r = x%im
+!error stop "aimag not implemented yet"
 end function
 
-elemental integer function dceiling(x) result(r)
-real(dp), intent(in) :: x
-r = floor(x)
-if (r - x /= 0.0) then
-    r = r + 1
-end if
+elemental real(dp) function daimag(x) result(r)
+complex(dp), intent(in) :: x
+r = 3
+! Uncomment once it is implemented
+!r = x%im
+!error stop "aimag not implemented yet"
 end function
 
 ! nint ------------------------------------------------------------------------
