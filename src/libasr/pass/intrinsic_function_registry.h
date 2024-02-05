@@ -524,6 +524,8 @@ class ASRBuilder {
     #define ArraySize_2(x, dim, t) EXPR(make_ArraySize_t_util(al, loc, x, dim,  \
         t, nullptr))
 
+    #define fEq(x, y) EXPR(ASR::make_RealCompare_t(al, loc, x,               \
+        ASR::cmpopType::Eq, y, logical, nullptr))
     #define fGtE(x, y) EXPR(ASR::make_RealCompare_t(al, loc, x,                 \
         ASR::cmpopType::GtE, y, logical, nullptr))
     #define fLtE(x, y) EXPR(ASR::make_RealCompare_t(al, loc, x,                  \
@@ -2207,12 +2209,15 @@ namespace Ceiling {
 
     static ASR::expr_t *eval_Ceiling(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
-        float val = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
-        int result;
-        if (val <= 0.0) {
+        double val = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        double difference = val - double(int(val));
+        int64_t result;
+        if (difference == 0.0) {
             result = int(val);
-        } else {
-            result = int(val)+1;
+        } else if(val <= 0.0){
+            result = int(val);
+        } else{
+            result = int(val) + 1;
         }
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
     }
@@ -2258,16 +2263,25 @@ namespace Ceiling {
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
         * r = Ceiling(x)
-        * if(x > 0.00){
-        *   r = int(x) + 1
+        * if(x >= 0.00){
+        *   if(x == int(x)){
+        *       r = int(x)
+        *   } else {
+        *       r = int(x) + 1
+        *   }
         * } else {
         *   r = int(x)
         * }
         */
         ASR::expr_t *one = i(1, return_type);
         ASR::expr_t *cast = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::RealToInteger, return_type, nullptr));
-        body.push_back(al, b.If(fGt(args[0], f(0, arg_types[0])), {
-            b.Assignment(result,i_tAdd(cast,one,return_type))}, {b.Assignment(result,cast)
+        ASR::expr_t *cast1 = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, cast, ASR::cast_kindType::IntegerToReal, return_type, nullptr));
+        ASR::expr_t *cast2 = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::RealToReal, return_type, nullptr));
+
+        body.push_back(al, b.If(fGtE(args[0], f(0, arg_types[0])), {
+            b.If(fEq(cast2, cast1), 
+            {b.Assignment(result,cast)}, {b.Assignment(result,i_tAdd(cast,one,return_type))})}, 
+            {b.Assignment(result,cast)
         }));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
