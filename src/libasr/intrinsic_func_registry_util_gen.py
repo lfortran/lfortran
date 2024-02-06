@@ -148,7 +148,7 @@ intrinsic_funcs_args = {
     ],
 }
 
-skip_create_func = ["Aint", "Anint"]
+skip_create_func = ["Aint", "Anint", "Nint"]
 
 type_to_asr_type_check = {
     "int": "is_integer",
