@@ -2081,6 +2081,9 @@ public:
                 // until then, this returns `False`
                 tmp = llvm::ConstantInt::get(context, llvm::APInt(1, 0));
                 break ;
+            } case ASRUtils::IntrinsicImpureFunctions::Allocated : {
+                handle_allocated(x.m_args[0]);
+                break ;
             } default: {
                 throw CodeGenError( ASRUtils::get_impure_intrinsic_name(x.m_impure_intrinsic_id) +
                         " is not implemented by LLVM backend.", x.base.base.loc);
@@ -9064,11 +9067,6 @@ public:
             }
             if( startswith(symbol_name, "_bitwise_or") ) {
                 handle_bitwise_or(x);
-                return ;
-            }
-            if( startswith(symbol_name, "allocated") ){
-                LCOMPILERS_ASSERT(x.n_args == 1);
-                handle_allocated(x.m_args[0].m_value);
                 return ;
             }
         }
