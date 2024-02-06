@@ -709,6 +709,7 @@ public:
         {"merge", {IntrinsicSignature({"tsource", "fsource", "mask"}, 3, 3)}},
         {"sign", {IntrinsicSignature({"a", "b"}, 2, 2)}},
         {"aint", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
+        {"nint", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
         {"anint", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
         {"atan2", {IntrinsicSignature({"y", "x"}, 2, 2)}},
         {"shape", {IntrinsicSignature({"source", "kind"}, 1, 2)}},
