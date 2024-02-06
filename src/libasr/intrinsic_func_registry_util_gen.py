@@ -146,12 +146,11 @@ intrinsic_funcs_args = {
     "Aimag": [
         {
             "args": [("complex",)],
-            "ret_type_arg_idx": 0
         },
     ],
 }
 
-skip_create_func = ["Aint", "Anint", "Nint"]
+skip_create_func = ["Aint", "Anint", "Nint", "Partition", "Floor", "Ceiling", "Aimag"]
 
 type_to_asr_type_check = {
     "int": "is_integer",
