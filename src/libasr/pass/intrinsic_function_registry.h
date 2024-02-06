@@ -2394,8 +2394,8 @@ namespace Ceiling {
         ASR::expr_t *cast2 = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::RealToReal, return_type, nullptr));
 
         body.push_back(al, b.If(fGtE(args[0], f(0, arg_types[0])), {
-            b.If(fEq(cast2, cast1), 
-            {b.Assignment(result,cast)}, {b.Assignment(result,i_tAdd(cast,one,return_type))})}, 
+            b.If(fEq(cast2, cast1),
+            {b.Assignment(result,cast)}, {b.Assignment(result,i_tAdd(cast,one,return_type))})},
             {b.Assignment(result,cast)
         }));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -5585,6 +5585,7 @@ namespace IntrinsicScalarFunctionRegistry {
 enum class IntrinsicImpureFunctions : int64_t {
     IsIostatEnd,
     IsIostatEor,
+    Allocated,
     // ...
 };
 
@@ -5600,6 +5601,28 @@ namespace IsIostatEnd {
     }
 
 } // namespace IsIostatEnd
+
+namespace Allocated {
+
+    static inline ASR::asr_t* create_Allocated(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        // Compile time value cannot be computed
+        if( args.n != 1 ) {
+            append_error(diag, "Intrinsic `allocated` accepts exactly one argument", \
+                loc);                                                           \
+            return nullptr;
+        }
+        if( !ASRUtils::is_allocatable(args.p[0]) ) {
+            append_error(diag, "Intrinsic `allocated` can be called only on" \
+                " allocatable argument", loc);
+            return nullptr;
+        }
+        return ASR::make_IntrinsicImpureFunction_t(al, loc,
+                static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
+                args.p, args.n, 0, logical, nullptr);
+    }
+
+} // namespace Allocated
 
 namespace IsIostatEor {
 
@@ -5620,6 +5643,7 @@ namespace IntrinsicImpureFunctionRegistry {
             eval_intrinsic_function>>& function_by_name_db = {
         {"is_iostat_end", {&IsIostatEnd::create_IsIostatEnd, nullptr}},
         {"is_iostat_eor", {&IsIostatEor::create_IsIostatEor, nullptr}},
+        {"allocated", {&Allocated::create_Allocated, nullptr}},
     };
 
     static inline bool is_intrinsic_function(const std::string& name) {
@@ -5642,6 +5666,7 @@ inline std::string get_impure_intrinsic_name(int x) {
     switch (x) {
         IMPURE_INTRINSIC_NAME_CASE(IsIostatEnd)
         IMPURE_INTRINSIC_NAME_CASE(IsIostatEor)
+        IMPURE_INTRINSIC_NAME_CASE(Allocated)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
