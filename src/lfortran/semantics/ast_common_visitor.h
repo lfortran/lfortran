@@ -2599,8 +2599,9 @@ public:
                                                 if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
                                                     ASR::IntegerConstant_t *integer_const = ASR::down_cast<ASR::IntegerConstant_t>(e);
                                                     int64_t val = integer_const->m_n;
+                                                    double y_val_ = 0.0
                                                     ASR::expr_t *complex_const = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, integer_const->base.base.loc,
-                                                        val, ASRUtils::type_get_past_array(complex_type)));
+                                                        val, y_val_, ASRUtils::type_get_past_array(complex_type)));
                                                     body.push_back(al, complex_const);
                                                 } else {
                                                     is_complex = false;
