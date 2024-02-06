@@ -35,8 +35,6 @@ source_filename = "LFortran"
 @28 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @29 = private unnamed_addr constant [5 x i8] c"%d%s\00", align 1
 
-declare i1 @__module_lfortran_intrinsic_builtin_allocated(%array*)
-
 define void @f(%array** %c) {
 .entry:
   %0 = load %array*, %array** %c, align 8

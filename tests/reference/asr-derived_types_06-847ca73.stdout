@@ -194,16 +194,6 @@
                                                     time
                                                     Public
                                                 ),
-                                            allocated:
-                                                (ExternalSymbol
-                                                    12
-                                                    allocated
-                                                    16 allocated
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    allocated
-                                                    Private
-                                                ),
                                             lhs:
                                                 (Variable
                                                     12
@@ -283,10 +273,9 @@
                                     [(Var 12 lhs)
                                     (Var 12 rhs)]
                                     [(If
-                                        (FunctionCall
-                                            12 allocated
-                                            ()
-                                            [((StructInstanceMember
+                                        (IntrinsicImpureFunction
+                                            Allocated
+                                            [(StructInstanceMember
                                                 (Var 12 rhs)
                                                 12 1_toml_datetime_date
                                                 (Allocatable
@@ -295,9 +284,9 @@
                                                     )
                                                 )
                                                 ()
-                                            ))]
+                                            )]
+                                            0
                                             (Logical 4)
-                                            ()
                                             ()
                                         )
                                         [(SubroutineCall
@@ -316,10 +305,9 @@
                                             )
                                         )
                                         (If
-                                            (FunctionCall
-                                                12 allocated
-                                                ()
-                                                [((StructInstanceMember
+                                            (IntrinsicImpureFunction
+                                                Allocated
+                                                [(StructInstanceMember
                                                     (Var 12 rhs)
                                                     12 1_toml_datetime_time
                                                     (Allocatable
@@ -328,9 +316,9 @@
                                                         )
                                                     )
                                                     ()
-                                                ))]
+                                                )]
+                                                0
                                                 (Logical 4)
-                                                ()
                                                 ()
                                             )
                                             [(SubroutineCall
@@ -361,10 +349,9 @@
                                             []
                                         )]
                                         [(If
-                                            (FunctionCall
-                                                12 allocated
-                                                ()
-                                                [((StructInstanceMember
+                                            (IntrinsicImpureFunction
+                                                Allocated
+                                                [(StructInstanceMember
                                                     (Var 12 rhs)
                                                     12 1_toml_datetime_time
                                                     (Allocatable
@@ -373,9 +360,9 @@
                                                         )
                                                     )
                                                     ()
-                                                ))]
+                                                )]
+                                                0
                                                 (Logical 4)
-                                                ()
                                                 ()
                                             )
                                             [(Assignment
@@ -526,7 +513,7 @@
                                                 (ExternalSymbol
                                                     13
                                                     present
-                                                    16 present
+                                                    34 present
                                                     lfortran_intrinsic_builtin
                                                     []
                                                     present
@@ -780,21 +767,11 @@
                                                     zone
                                                     Public
                                                 ),
-                                            allocated:
-                                                (ExternalSymbol
-                                                    14
-                                                    allocated
-                                                    16 allocated
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    allocated
-                                                    Private
-                                                ),
                                             len_trim:
                                                 (ExternalSymbol
                                                     14
                                                     len_trim
-                                                    41 len_trim
+                                                    16 len_trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     len_trim
@@ -840,7 +817,7 @@
                                                 (ExternalSymbol
                                                     14
                                                     trim
-                                                    41 trim
+                                                    16 trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     trim
@@ -871,19 +848,18 @@
                                     [(Var 14 lhs)
                                     (Var 14 rhs)]
                                     [(If
-                                        (FunctionCall
-                                            14 allocated
-                                            ()
-                                            [((StructInstanceMember
+                                        (IntrinsicImpureFunction
+                                            Allocated
+                                            [(StructInstanceMember
                                                 (Var 14 rhs)
                                                 14 1_toml_time_millisec
                                                 (Allocatable
                                                     (Integer 4)
                                                 )
                                                 ()
-                                            ))]
+                                            )]
+                                            0
                                             (Logical 4)
-                                            ()
                                             ()
                                         )
                                         [(Allocate
@@ -986,19 +962,18 @@
                                         )]
                                     )
                                     (If
-                                        (FunctionCall
-                                            14 allocated
-                                            ()
-                                            [((StructInstanceMember
+                                        (IntrinsicImpureFunction
+                                            Allocated
+                                            [(StructInstanceMember
                                                 (Var 14 rhs)
                                                 14 1_toml_time_zone
                                                 (Allocatable
                                                     (Character 1 -2 ())
                                                 )
                                                 ()
-                                            ))]
+                                            )]
+                                            0
                                             (Logical 4)
-                                            ()
                                             ()
                                         )
                                         [(Assignment
