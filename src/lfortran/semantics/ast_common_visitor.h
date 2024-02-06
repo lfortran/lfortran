@@ -2598,8 +2598,8 @@ public:
                                                 // it will be IntegerConstant_t convert it to ComplexConstant_t
                                                 if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
                                                     ASR::IntegerConstant_t *integer_const = ASR::down_cast<ASR::IntegerConstant_t>(e);
-                                                    int64_t val = integer_const->m_r;
-                                                    ASR::expr_t *complex_const = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, real_const->base.base.loc,
+                                                    int64_t val = integer_const->m_n;
+                                                    ASR::expr_t *complex_const = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, integer_const->base.base.loc,
                                                         val, ASRUtils::type_get_past_array(complex_type)));
                                                     body.push_back(al, complex_const);
                                                 } else {
