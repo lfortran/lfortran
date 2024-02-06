@@ -287,7 +287,7 @@ def add_create_func_return_src(func_name):
         src += indent * 3 + f"arg_values.push_back(al, expr_value(args[{_i}]));\n"
     src += indent * 3 + f"m_value = eval_{func_name}(al, loc, {ret_type}, arg_values);\n"
     src += indent * 2 + "}\n"
-    src += indent * 2 + f"ASR::make_IntrinsicScalarFunction_t(al, loc, static_cast<int64_t>(IntrinsicScalarFunctions::{func_name}), args.p, args.n, 0, {ret_type}, m_value);\n"
+    src += indent * 2 + f"return ASR::make_IntrinsicScalarFunction_t(al, loc, static_cast<int64_t>(IntrinsicScalarFunctions::{func_name}), args.p, args.n, 0, {ret_type}, m_value);\n"
 
 def get_registry_funcs_src():
     global src
@@ -299,7 +299,7 @@ def get_registry_funcs_src():
         src += indent + "}\n\n"
 
         if func_name not in skip_create_func:
-            src += indent + Rf"static inline void create_{func_name}(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) " + "{\n"
+            src += indent + Rf"static inline ASR::asr_t* create_{func_name}(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) " + "{\n"
             add_create_func_arg_type_src(func_name)
             add_create_func_return_src(func_name)
             src += indent + "}\n"
