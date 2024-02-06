@@ -73,7 +73,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Min)
         INTRINSIC_NAME_CASE(Sign)
         INTRINSIC_NAME_CASE(SignFromValue)
-        INTRINSIC_NAME_CASE(nint)
+        INTRINSIC_NAME_CASE(Nint)
         INTRINSIC_NAME_CASE(Aint)
         INTRINSIC_NAME_CASE(Anint)
         INTRINSIC_NAME_CASE(Sqrt)
@@ -228,8 +228,8 @@ namespace IntrinsicScalarFunctionRegistry {
             {nullptr, &Radix::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Aint),
             {&Aint::instantiate_Aint, &Aint::verify_args}},
-        {static_cast<int64_t>(IntrinsicScalarFunctions::nint),
-            {&nint::instantiate_nint, &nint::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Nint),
+            {&Nint::instantiate_Nint, &Nint::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Anint),
             {&Anint::instantiate_Anint, &Anint::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Floor),
@@ -405,7 +405,7 @@ namespace IntrinsicScalarFunctionRegistry {
             "sign"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Aint),
             "aint"},
-        {static_cast<int64_t>(IntrinsicScalarFunctions::nint),
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Nint),
             "nint"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Anint),
             "anint"},
@@ -518,9 +518,9 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"minexponent", {&MinExponent::create_MinExponent, &MinExponent::eval_MinExponent}},
                 {"maxexponent", {&MaxExponent::create_MaxExponent, &MaxExponent::eval_MaxExponent}},
                 {"list.index", {&ListIndex::create_ListIndex, &ListIndex::eval_list_index}},
-                {"list.reverse", {&ListReverse::create_ListReverse, &ListReverse::eval_list_reverse}},
+                {"list.reverse", {&ListReverse::create_ListReverse, &ListReverse::eval_ListReverse}},
                 {"list.pop", {&ListPop::create_ListPop, &ListPop::eval_list_pop}},
-                {"reserve", {&Reserve::create_Reserve, &Reserve::eval_reserve}},
+                {"reserve", {&Reserve::create_Reserve, &Reserve::eval_Reserve}},
                 {"dict.keys", {&DictKeys::create_DictKeys, &DictKeys::eval_dict_keys}},
                 {"dict.values", {&DictValues::create_DictValues, &DictValues::eval_dict_values}},
                 {"set.add", {&SetAdd::create_SetAdd, &SetAdd::eval_set_add}},
@@ -532,7 +532,7 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"radix", {&Radix::create_Radix, Radix::eval_Radix}},
                 {"sign", {&Sign::create_Sign, &Sign::eval_Sign}},
                 {"aint", {&Aint::create_Aint, &Aint::eval_Aint}},
-                {"nint", {&nint::create_nint, &nint::eval_nint}},
+                {"nint", {&Nint::create_Nint, &Nint::eval_Nint}},
                 {"anint", {&Anint::create_Anint, &Anint::eval_Anint}},
                 {"floor", {&Floor::create_Floor, &Floor::eval_Floor}},
                 {"ceiling", {&Ceiling::create_Ceiling, &Ceiling::eval_Ceiling}},

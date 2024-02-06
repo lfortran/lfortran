@@ -1250,9 +1250,9 @@ namespace Anint {
 
 }  // namespace Anint
 
-namespace nint {
+namespace Nint {
 
-    static ASR::expr_t *eval_nint(Allocator &al, const Location &loc,
+    static ASR::expr_t *eval_Nint(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args) {
         double rv = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
         double near_integer = std::round(rv);
@@ -1260,14 +1260,14 @@ namespace nint {
         return make_ConstantWithType(make_IntegerConstant_t, result, arg_type, loc);
     }
 
-    static inline ASR::asr_t* create_nint(Allocator& al, const Location& loc,
+    static inline ASR::asr_t* create_Nint(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         ASR::ttype_t* return_type = TYPE(ASR::make_Integer_t(al, loc, 4));
         if (!(args.size() == 1 || args.size() == 2)) {
-            append_error(diag, "Intrinsic `nint` function accepts exactly 1 or 2 arguments", loc);
+            append_error(diag, "Intrinsic `Nint` function accepts exactly 1 or 2 arguments", loc);
             return nullptr;
         } else if (!ASRUtils::is_real(*ASRUtils::expr_type(args[0]))) {
-            append_error(diag, "Argument of the `nint` function must be Real", args[0]->base.loc);
+            append_error(diag, "Argument of the `Nint` function must be Real", args[0]->base.loc);
             return nullptr;
         }
         Vec<ASR::expr_t *> m_args; m_args.reserve(al, 1);
@@ -1276,7 +1276,7 @@ namespace nint {
             int kind = -1;
             if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1])) ||
                     !extract_value(args[1], kind)) {
-                append_error(diag, "`kind` argument of the `nint` function must be a "
+                append_error(diag, "`kind` argument of the `Nint` function must be a "
                     "scalar Integer constant", args[1]->base.loc);
                 return nullptr;
             }
@@ -1286,14 +1286,14 @@ namespace nint {
         if (all_args_evaluated(m_args)) {
             Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 1);
             arg_values.push_back(al, expr_value(args[0]));
-            m_value = eval_nint(al, loc, return_type, arg_values);
+            m_value = eval_Nint(al, loc, return_type, arg_values);
         }
         return ASR::make_IntrinsicScalarFunction_t(al, loc,
-            static_cast<int64_t>(IntrinsicScalarFunctions::nint),
+            static_cast<int64_t>(IntrinsicScalarFunctions::Nint),
             m_args.p, m_args.n, 0, return_type, m_value);
     }
 
-    static inline ASR::expr_t* instantiate_nint(Allocator &al, const Location &loc,
+    static inline ASR::expr_t* instantiate_Nint(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_nint_" + type_to_str_python(arg_types[0]));
@@ -1323,7 +1323,7 @@ namespace nint {
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
-} // namespace nint
+} // namespace Nint
 
 
 namespace Floor {
@@ -2716,7 +2716,7 @@ static inline ASR::asr_t* create_ListIndex(Allocator& al, const Location& loc,
 
 namespace ListReverse {
 
-static inline ASR::expr_t *eval_list_reverse(Allocator &/*al*/,
+static inline ASR::expr_t *eval_ListReverse(Allocator &/*al*/,
     const Location &/*loc*/, ASR::ttype_t */*t*/, Vec<ASR::expr_t*>& /*args*/) {
     // TODO: To be implemented for ListConstant expression
     return nullptr;
@@ -2787,7 +2787,7 @@ static inline ASR::asr_t* create_ListPop(Allocator& al, const Location& loc,
 
 namespace Reserve {
 
-static inline ASR::expr_t *eval_reserve(Allocator &/*al*/,
+static inline ASR::expr_t *eval_Reserve(Allocator &/*al*/,
     const Location &/*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/) {
     // TODO: To be implemented for ListConstant expression
     return nullptr;

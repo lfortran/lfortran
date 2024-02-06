@@ -97,7 +97,7 @@ intrinsic_funcs_args = {
             "args": [("real",)],
         }
     ],
-    "nint": [
+    "Nint": [
         {
             "args": [("real",)]
         }
