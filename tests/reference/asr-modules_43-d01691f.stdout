@@ -2,8 +2,6 @@
     (SymbolTable
         1
         {
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
             modules_43:
                 (Program
                     (SymbolTable
@@ -87,16 +85,6 @@
                                     (SymbolTable
                                         4
                                         {
-                                            allocated:
-                                                (ExternalSymbol
-                                                    4
-                                                    allocated
-                                                    7 allocated
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    allocated
-                                                    Private
-                                                ),
                                             dir_sources:
                                                 (Variable
                                                     4
@@ -207,12 +195,11 @@
                                     )
                                     (If
                                         (LogicalNot
-                                            (FunctionCall
-                                                4 allocated
-                                                ()
-                                                [((Var 4 sources))]
+                                            (IntrinsicImpureFunction
+                                                Allocated
+                                                [(Var 4 sources)]
+                                                0
                                                 (Logical 4)
-                                                ()
                                                 ()
                                             )
                                             (Logical 4)
@@ -385,7 +372,7 @@
                                 )
                         })
                     modules_43_fpm_sources
-                    [lfortran_intrinsic_builtin]
+                    []
                     .false.
                     .false.
                 )

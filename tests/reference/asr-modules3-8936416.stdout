@@ -2,8 +2,6 @@
     (SymbolTable
         1
         {
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
             tomlf_structure:
                 (Module
                     (SymbolTable
@@ -13,7 +11,7 @@
                                 (ExternalSymbol
                                     13
                                     toml_ordered
-                                    40 toml_ordered
+                                    15 toml_ordered
                                     tomlf_structure_base
                                     []
                                     toml_ordered
@@ -28,16 +26,16 @@
             tomlf_structure_base:
                 (Module
                     (SymbolTable
-                        40
+                        15
                         {
                             destroy:
                                 (Function
                                     (SymbolTable
-                                        43
+                                        18
                                         {
                                             self:
                                                 (Variable
-                                                    43
+                                                    18
                                                     self
                                                     []
                                                     InOut
@@ -45,7 +43,7 @@
                                                     ()
                                                     Default
                                                     (Class
-                                                        40 toml_structure
+                                                        15 toml_structure
                                                     )
                                                     ()
                                                     Source
@@ -55,7 +53,7 @@
                                                 ),
                                             toml_value:
                                                 (ExternalSymbol
-                                                    43
+                                                    18
                                                     toml_value
                                                     9 toml_value
                                                     tomlf_type_value
@@ -67,7 +65,7 @@
                                     destroy
                                     (FunctionType
                                         [(Class
-                                            40 toml_structure
+                                            15 toml_structure
                                         )]
                                         ()
                                         Source
@@ -82,7 +80,7 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 43 self)]
+                                    [(Var 18 self)]
                                     []
                                     ()
                                     Public
@@ -93,7 +91,7 @@
                             toml_ordered:
                                 (StructType
                                     (SymbolTable
-                                        41
+                                        16
                                         {
                                             
                                         })
@@ -106,20 +104,20 @@
                                     .true.
                                     []
                                     ()
-                                    40 toml_structure
+                                    15 toml_structure
                                 ),
                             toml_structure:
                                 (StructType
                                     (SymbolTable
-                                        42
+                                        17
                                         {
                                             destroy:
                                                 (ClassProcedure
-                                                    42
+                                                    17
                                                     destroy
                                                     ()
                                                     destroy
-                                                    40 destroy
+                                                    15 destroy
                                                     Source
                                                     .true.
                                                     .false.
@@ -191,7 +189,7 @@
                                 (ExternalSymbol
                                     2
                                     toml_ordered
-                                    40 toml_ordered
+                                    15 toml_ordered
                                     tomlf_structure_base
                                     []
                                     toml_ordered
@@ -227,7 +225,7 @@
                                                 (ExternalSymbol
                                                     6
                                                     1_destroy
-                                                    42 destroy
+                                                    17 destroy
                                                     1_toml_structure
                                                     []
                                                     destroy
@@ -247,7 +245,7 @@
                                                 (ExternalSymbol
                                                     6
                                                     1_toml_structure
-                                                    40 toml_structure
+                                                    15 toml_structure
                                                     tomlf_structure_base
                                                     []
                                                     toml_structure
@@ -262,16 +260,6 @@
                                                     []
                                                     key
                                                     Public
-                                                ),
-                                            allocated:
-                                                (ExternalSymbol
-                                                    6
-                                                    allocated
-                                                    15 allocated
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    allocated
-                                                    Private
                                                 ),
                                             self:
                                                 (Variable
@@ -312,19 +300,18 @@
                                     []
                                     [(Var 6 self)]
                                     [(If
-                                        (FunctionCall
-                                            6 allocated
-                                            ()
-                                            [((StructInstanceMember
+                                        (IntrinsicImpureFunction
+                                            Allocated
+                                            [(StructInstanceMember
                                                 (Var 6 self)
                                                 6 1_toml_value_key
                                                 (Allocatable
                                                     (Character 1 -2 ())
                                                 )
                                                 ()
-                                            ))]
+                                            )]
+                                            0
                                             (Logical 4)
-                                            ()
                                             ()
                                         )
                                         [(ExplicitDeallocate
@@ -340,10 +327,9 @@
                                         []
                                     )
                                     (If
-                                        (FunctionCall
-                                            6 allocated
-                                            ()
-                                            [((StructInstanceMember
+                                        (IntrinsicImpureFunction
+                                            Allocated
+                                            [(StructInstanceMember
                                                 (Var 6 self)
                                                 6 1_toml_array_list
                                                 (Allocatable
@@ -352,9 +338,9 @@
                                                     )
                                                 )
                                                 ()
-                                            ))]
+                                            )]
+                                            0
                                             (Logical 4)
-                                            ()
                                             ()
                                         )
                                         [(SubroutineCall
@@ -501,7 +487,7 @@
                                 (ExternalSymbol
                                     4
                                     toml_ordered
-                                    40 toml_ordered
+                                    15 toml_ordered
                                     tomlf_structure_base
                                     []
                                     toml_ordered
@@ -519,8 +505,7 @@
                                 )
                         })
                     tomlf_type_array
-                    [lfortran_intrinsic_builtin
-                    tomlf_type_value
+                    [tomlf_type_value
                     tomlf_structure
                     tomlf_structure_base]
                     .true.

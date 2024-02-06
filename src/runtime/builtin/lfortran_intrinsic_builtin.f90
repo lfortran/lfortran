@@ -34,10 +34,6 @@ interface
     integer, intent(in) :: a, b
     end function
 
-    logical function allocated(x)
-    integer, intent(in) :: x(:)
-    end function
-
     integer function minval(x)
     integer, intent(in) :: x(:)
     end function
