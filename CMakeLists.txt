@@ -141,7 +141,7 @@ if (WITH_LLVM)
     endif()
 
     set(LFORTRAN_LLVM_COMPONENTS core support mcjit orcjit native asmparser asmprinter)
-    find_package(LLVM 10...16 REQUIRED)
+    find_package(LLVM 10...<17 REQUIRED)
     message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
     message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
