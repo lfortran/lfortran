@@ -300,7 +300,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         use_custom_loop_params = false;
     }
 
-    #define allocate_result_var(op_arg, op_dims_arg, op_n_dims_arg, result_var_created) if( ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(result_var)) || \
+    #define allocate_result_var(op_arg, op_dims_arg, op_n_dims_arg, result_var_created, reset_bounds) if( ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(result_var)) || \
         ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(result_var)) ) { \
         bool is_dimension_empty = false; \
         for( int i = 0; i < op_n_dims_arg; i++ ) { \
@@ -328,8 +328,13 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             for( int i = 0; i < op_n_dims_arg; i++ ) { \
                 ASR::dimension_t alloc_dim; \
                 alloc_dim.loc = loc; \
-                alloc_dim.m_start = PassUtils::get_bound(op_arg, i + 1, "lbound", al); \
-                alloc_dim.m_length = ASRUtils::compute_length_from_start_end(al, alloc_dim.m_start, \
+                if( reset_bounds && result_var_created ) { \
+                    alloc_dim.m_start = make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, 4, loc); \
+                } else { \
+                    alloc_dim.m_start = PassUtils::get_bound(op_arg, i + 1, "lbound", al); \
+                } \
+                alloc_dim.m_length = ASRUtils::compute_length_from_start_end(al, \
+                    PassUtils::get_bound(op_arg, i + 1, "lbound", al), \
                     PassUtils::get_bound(op_arg, i + 1, "ubound", al)); \
                 alloc_dims.push_back(al, alloc_dim); \
             } \
@@ -378,7 +383,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                     result_var_type, al, current_scope);
                 result_counter += 1;
                 if( allocate ) {
-                    allocate_result_var(arr_expr, arr_expr_dims, arr_expr_n_dims, true);
+                    allocate_result_var(arr_expr, arr_expr_dims, arr_expr_n_dims, true, false);
                 }
             }
 
@@ -882,7 +887,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                                 result_var_type, al, current_scope);
                 result_counter += 1;
                 if( allocate ) {
-                    allocate_result_var(left, left_dims, rank_left, true);
+                    allocate_result_var(left, left_dims, rank_left, true, true);
                 }
                 new_result_var_created = true;
             }
@@ -948,7 +953,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                                 result_var_type, al, current_scope);
                 result_counter += 1;
                 if( allocate ) {
-                    allocate_result_var(arr_expr, arr_expr_dims, arr_expr_n_dims, true);
+                    allocate_result_var(arr_expr, arr_expr_dims, arr_expr_n_dims, true, true);
                 }
                 new_result_var_created = true;
             }
@@ -1111,7 +1116,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                                 loc, result_var_type, al, current_scope);
                 result_counter += 1;
                 if( allocate ) {
-                    allocate_result_var(operand, operand_dims, rank_operand, true);
+                    allocate_result_var(operand, operand_dims, rank_operand, true, true);
                 }
                 result_var_created = true;
             }
@@ -1305,7 +1310,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             ASR::dimension_t* m_dims;
             int n_dims = ASRUtils::extract_dimensions_from_ttype(
                 ASRUtils::expr_type(first_array_operand), m_dims);
-            allocate_result_var(operand, m_dims, n_dims, true);
+            allocate_result_var(operand, m_dims, n_dims, true, false);
             result_var_created = true;
         }
         *current_expr = result_var;
@@ -1467,7 +1472,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 ASR::dimension_t* m_dims;
                 int n_dims = ASRUtils::extract_dimensions_from_ttype(
                     ASRUtils::expr_type(operand), m_dims);
-                allocate_result_var(operand, m_dims, n_dims, result_var_created);
+                allocate_result_var(operand, m_dims, n_dims, result_var_created, false);
                 *current_expr = result_var;
 
                 Vec<ASR::expr_t*> idx_vars, loop_vars, idx_vars_value;
