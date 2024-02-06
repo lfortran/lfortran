@@ -2,8 +2,6 @@
     (SymbolTable
         1
         {
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
             string_17_string_module:
                 (Module
                     (SymbolTable
@@ -30,16 +28,6 @@
                                                     []
                                                     raw
                                                     Public
-                                                ),
-                                            allocated:
-                                                (ExternalSymbol
-                                                    4
-                                                    allocated
-                                                    7 allocated
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    allocated
-                                                    Private
                                                 ),
                                             length:
                                                 (Variable
@@ -96,19 +84,18 @@
                                     []
                                     [(Var 4 string)]
                                     [(If
-                                        (FunctionCall
-                                            4 allocated
-                                            ()
-                                            [((StructInstanceMember
+                                        (IntrinsicImpureFunction
+                                            Allocated
+                                            [(StructInstanceMember
                                                 (Var 4 string)
                                                 4 1_string_type_raw
                                                 (Allocatable
                                                     (Character 1 -2 ())
                                                 )
                                                 ()
-                                            ))]
+                                            )]
+                                            0
                                             (Logical 4)
-                                            ()
                                             ()
                                         )
                                         [(Assignment
@@ -153,16 +140,6 @@
                                                     []
                                                     raw
                                                     Public
-                                                ),
-                                            allocated:
-                                                (ExternalSymbol
-                                                    5
-                                                    allocated
-                                                    7 allocated
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    allocated
-                                                    Private
                                                 ),
                                             maybe_string:
                                                 (Variable
@@ -239,19 +216,18 @@
                                     [len_string]
                                     [(Var 5 string)]
                                     [(If
-                                        (FunctionCall
-                                            5 allocated
-                                            ()
-                                            [((StructInstanceMember
+                                        (IntrinsicImpureFunction
+                                            Allocated
+                                            [(StructInstanceMember
                                                 (Var 5 string)
                                                 5 1_string_type_raw
                                                 (Allocatable
                                                     (Character 1 -2 ())
                                                 )
                                                 ()
-                                            ))]
+                                            )]
+                                            0
                                             (Logical 4)
-                                            ()
                                             ()
                                         )
                                         [(Assignment
@@ -318,7 +294,7 @@
                                 )
                         })
                     string_17_string_module
-                    [lfortran_intrinsic_builtin]
+                    []
                     .false.
                     .false.
                 )

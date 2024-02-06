@@ -2,8 +2,6 @@
     (SymbolTable
         1
         {
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
             tomlf_structure:
                 (Module
                     (SymbolTable
@@ -192,16 +190,6 @@
                                                     key
                                                     Public
                                                 ),
-                                            allocated:
-                                                (ExternalSymbol
-                                                    15
-                                                    allocated
-                                                    18 allocated
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    allocated
-                                                    Private
-                                                ),
                                             self:
                                                 (Variable
                                                     15
@@ -241,19 +229,18 @@
                                     []
                                     [(Var 15 self)]
                                     [(If
-                                        (FunctionCall
-                                            15 allocated
-                                            ()
-                                            [((StructInstanceMember
+                                        (IntrinsicImpureFunction
+                                            Allocated
+                                            [(StructInstanceMember
                                                 (Var 15 self)
                                                 15 1_toml_value_key
                                                 (Allocatable
                                                     (Character 1 -2 ())
                                                 )
                                                 ()
-                                            ))]
+                                            )]
+                                            0
                                             (Logical 4)
-                                            ()
                                             ()
                                         )
                                         [(ExplicitDeallocate
@@ -269,10 +256,9 @@
                                         []
                                     )
                                     (If
-                                        (FunctionCall
-                                            15 allocated
-                                            ()
-                                            [((StructInstanceMember
+                                        (IntrinsicImpureFunction
+                                            Allocated
+                                            [(StructInstanceMember
                                                 (Var 15 self)
                                                 15 1_toml_array_list
                                                 (Allocatable
@@ -281,9 +267,9 @@
                                                     )
                                                 )
                                                 ()
-                                            ))]
+                                            )]
+                                            0
                                             (Logical 4)
-                                            ()
                                             ()
                                         )
                                         [(SubroutineCall
@@ -450,7 +436,6 @@
                     tomlf_type_array
                     [tomlf_type_value
                     tomlf_structure
-                    lfortran_intrinsic_builtin
                     tomlf_structure_base]
                     .false.
                     .false.

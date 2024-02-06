@@ -54,16 +54,6 @@
                                                     n
                                                     Public
                                                 ),
-                                            allocated:
-                                                (ExternalSymbol
-                                                    13
-                                                    allocated
-                                                    15 allocated
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    allocated
-                                                    Private
-                                                ),
                                             i:
                                                 (Variable
                                                     13
@@ -177,10 +167,9 @@
                                         )
                                         ())
                                         [(If
-                                            (FunctionCall
-                                                13 allocated
-                                                ()
-                                                [((StructInstanceMember
+                                            (IntrinsicImpureFunction
+                                                Allocated
+                                                [(StructInstanceMember
                                                     (ArrayItem
                                                         (StructInstanceMember
                                                             (Var 13 self)
@@ -213,9 +202,9 @@
                                                         )
                                                     )
                                                     ()
-                                                ))]
+                                                )]
+                                                0
                                                 (Logical 4)
-                                                ()
                                                 ()
                                             )
                                             [(If
@@ -603,16 +592,6 @@
                                                     key
                                                     Public
                                                 ),
-                                            allocated:
-                                                (ExternalSymbol
-                                                    8
-                                                    allocated
-                                                    15 allocated
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    allocated
-                                                    Private
-                                                ),
                                             self:
                                                 (Variable
                                                     8
@@ -652,19 +631,18 @@
                                     []
                                     [(Var 8 self)]
                                     [(If
-                                        (FunctionCall
-                                            8 allocated
-                                            ()
-                                            [((StructInstanceMember
+                                        (IntrinsicImpureFunction
+                                            Allocated
+                                            [(StructInstanceMember
                                                 (Var 8 self)
                                                 8 1_toml_value_key
                                                 (Allocatable
                                                     (Character 1 -2 ())
                                                 )
                                                 ()
-                                            ))]
+                                            )]
+                                            0
                                             (Logical 4)
-                                            ()
                                             ()
                                         )
                                         [(ExplicitDeallocate
@@ -680,19 +658,18 @@
                                         []
                                     )
                                     (If
-                                        (FunctionCall
-                                            8 allocated
-                                            ()
-                                            [((StructInstanceMember
+                                        (IntrinsicImpureFunction
+                                            Allocated
+                                            [(StructInstanceMember
                                                 (Var 8 self)
                                                 8 1_toml_keyval_raw
                                                 (Allocatable
                                                     (Character 1 -2 ())
                                                 )
                                                 ()
-                                            ))]
+                                            )]
+                                            0
                                             (Logical 4)
-                                            ()
                                             ()
                                         )
                                         [(ExplicitDeallocate
@@ -771,8 +748,7 @@
                                 )
                         })
                     tomlf_type_keyval
-                    [tomlf_type_value
-                    lfortran_intrinsic_builtin]
+                    [tomlf_type_value]
                     .false.
                     .false.
                 ),
@@ -845,16 +821,6 @@
                                                     []
                                                     key
                                                     Public
-                                                ),
-                                            allocated:
-                                                (ExternalSymbol
-                                                    5
-                                                    allocated
-                                                    15 allocated
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    allocated
-                                                    Private
                                                 ),
                                             key:
                                                 (Variable
@@ -929,19 +895,18 @@
                                     [(Var 5 self)
                                     (Var 5 key)]
                                     [(If
-                                        (FunctionCall
-                                            5 allocated
-                                            ()
-                                            [((StructInstanceMember
+                                        (IntrinsicImpureFunction
+                                            Allocated
+                                            [(StructInstanceMember
                                                 (Var 5 self)
                                                 5 1_toml_value_key
                                                 (Allocatable
                                                     (Character 1 -2 ())
                                                 )
                                                 ()
-                                            ))]
+                                            )]
+                                            0
                                             (Logical 4)
-                                            ()
                                             ()
                                         )
                                         [(Assignment
@@ -1036,7 +1001,7 @@
                                 )
                         })
                     tomlf_type_value
-                    [lfortran_intrinsic_builtin]
+                    []
                     .false.
                     .false.
                 )
