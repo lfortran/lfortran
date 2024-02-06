@@ -1668,7 +1668,10 @@ namespace Abs {
 } // namespace Abs
 
 namespace Radix {
-
+    static ASR::expr_t *eval_Radix(Allocator &al, const Location &loc,
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &/*args*/) {
+        return i32(2);
+    }
 
 }  // namespace Radix
 
@@ -5014,7 +5017,7 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"min0", {&Min::create_Min, &Min::eval_Min}},
                 {"max", {&Max::create_Max, &Max::eval_Max}},
                 {"min", {&Min::create_Min, &Min::eval_Min}},
-                {"radix", {&Radix::create_Radix, nullptr}},
+                {"radix", {&Radix::create_Radix, Radix::eval_Radix}},
                 {"sign", {&Sign::create_Sign, &Sign::eval_Sign}},
                 {"aint", {&Aint::create_Aint, &Aint::eval_Aint}},
                 {"nint", {&nint::create_nint, &nint::eval_nint}},
