@@ -5,6 +5,8 @@
 #include <libasr/containers.h>
 #include <map>
 
+#include <libasr/pass/intrinsic_function_registry.h>
+
 namespace LCompilers {
 
 class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocatedCalled> {
@@ -15,25 +17,25 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
         IsAllocatedCalled(std::map<SymbolTable*, std::vector<ASR::symbol_t*>>& scope2var_):
             scope2var(scope2var_) {}
 
-        void visit_FunctionCall(const ASR::FunctionCall_t& x) {
-            ASR::symbol_t* x_m_name = ASRUtils::symbol_get_past_external(x.m_name);
-            if( ASR::is_a<ASR::Function_t>(*x_m_name) &&
-                ASRUtils::is_intrinsic_function2(ASR::down_cast<ASR::Function_t>(x_m_name)) &&
-                std::string(ASRUtils::symbol_name(x_m_name)) == "allocated" ) {
+        void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t& x) {
+            if( x.m_impure_intrinsic_id == static_cast<int64_t>(
+                ASRUtils::IntrinsicImpureFunctions::Allocated) ) {
                 LCOMPILERS_ASSERT(x.n_args == 1);
-                if( ASR::is_a<ASR::Var_t>(*x.m_args[0].m_value) ) {
+                if( ASR::is_a<ASR::Var_t>(*x.m_args[0]) ) {
                     scope2var[current_scope].push_back(
-                        ASR::down_cast<ASR::Var_t>(x.m_args[0].m_value)->m_v);
+                        ASR::down_cast<ASR::Var_t>(x.m_args[0])->m_v);
                 }
-            } else {
-                ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(x.m_name);
-                for( size_t i = 0; i < x.n_args; i++ ) {
-                    if( ASR::is_a<ASR::Allocatable_t>(*func_type->m_arg_types[i]) ||
-                        ASR::is_a<ASR::Pointer_t>(*func_type->m_arg_types[i]) ) {
-                        if( ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value) ) {
-                            scope2var[current_scope].push_back(
-                                ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value)->m_v);
-                        }
+            }
+        }
+
+        void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+            ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(x.m_name);
+            for( size_t i = 0; i < x.n_args; i++ ) {
+                if( ASR::is_a<ASR::Allocatable_t>(*func_type->m_arg_types[i]) ||
+                    ASR::is_a<ASR::Pointer_t>(*func_type->m_arg_types[i]) ) {
+                    if( ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value) ) {
+                        scope2var[current_scope].push_back(
+                            ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value)->m_v);
                     }
                 }
             }
