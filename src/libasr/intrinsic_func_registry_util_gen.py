@@ -312,6 +312,7 @@ HEAD = """#ifndef LIBASR_PASS_INTRINSIC_FUNC_REG_UTIL_H
 
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
+#include <libasr/asr_builder.h>
 
 namespace LCompilers {
 
