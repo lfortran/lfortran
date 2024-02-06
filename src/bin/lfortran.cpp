@@ -1972,8 +1972,8 @@ int main_app(int argc, char *argv[]) {
     app.add_option("-o", compiler_options.arg_o, "Specify the file to place the output into");
     app.add_flag("-v", arg_v, "Be more verbose");
     app.add_flag("-E", arg_E, "Preprocess only; do not compile, assemble or link");
-    app.add_option("-l", arg_l, "Link library option");
-    app.add_option("-L", arg_L, "Library path option");
+    app.add_option("-l", arg_l, "Link library option")->allow_extra_args(false);
+    app.add_option("-L", arg_L, "Library path option")->allow_extra_args(false);
     app.add_option("-I", compiler_options.po.include_dirs, "Include path")->allow_extra_args(false);
     app.add_option("-J", compiler_options.po.mod_files_dir, "Where to save mod files");
     app.add_flag("-g", compiler_options.emit_debug_info, "Compile with debugging information");
