@@ -1669,23 +1669,6 @@ namespace Abs {
 
 namespace Radix {
 
-    // Function to create an instance of the 'radix' intrinsic function
-    static inline ASR::asr_t* create_Radix(Allocator& al, const Location& loc,
-        Vec<ASR::expr_t*>& args,
-        diag::Diagnostics& diag) {
-        if ( args.n != 1 ) {
-            append_error(diag, "Intrinsic `radix` accepts exactly one argument", loc);
-            return nullptr;
-        } else if ( !is_real(*expr_type(args[0]))
-                 && !is_integer(*expr_type(args[0])) ) {
-            append_error(diag, "Argument of the `radix` must be Integer or Real", loc);
-            return nullptr;
-        }
-
-        return ASR::make_IntrinsicScalarFunction_t(al, loc,
-            static_cast<int64_t>(IntrinsicScalarFunctions::Radix),
-            args.p, args.n, 0, int32, i32(2));
-    }
 
 }  // namespace Radix
 
@@ -1704,38 +1687,6 @@ namespace Sign {
             if (iv2 < 0) iv1 = -iv1;
             return make_ConstantWithType(make_IntegerConstant_t, iv1, t1, loc);
         }
-    }
-
-    static inline ASR::asr_t* create_Sign(Allocator& al, const Location& loc,
-            Vec<ASR::expr_t*>& args,
-            diag::Diagnostics& diag) {
-        if (args.size() != 2) {
-            append_error(diag, "Intrinsic sign function accepts exactly 2 arguments", loc);
-            return nullptr;
-        }
-        ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
-        ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
-        if (!ASRUtils::is_integer(*type1) && !ASRUtils::is_real(*type1)) {
-            append_error(diag, "Argument of the sign function must be Integer or Real",
-                args[0]->base.loc);
-            return nullptr;
-        }
-        if (!ASRUtils::check_equal_type(type1, type2)) {
-            append_error(diag, "Type mismatch in statement function: "
-                "the second argument must have the same type "
-                "and kind as the first argument.", args[1]->base.loc);
-            return nullptr;
-        }
-        ASR::expr_t *m_value = nullptr;
-        if (all_args_evaluated(args)) {
-            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 2);
-            arg_values.push_back(al, expr_value(args[0]));
-            arg_values.push_back(al, expr_value(args[1]));
-            m_value = eval_Sign(al, loc, expr_type(args[0]), arg_values);
-        }
-        return ASR::make_IntrinsicScalarFunction_t(al, loc,
-            static_cast<int64_t>(IntrinsicScalarFunctions::Sign),
-            args.p, args.n, 0, ASRUtils::expr_type(args[0]), m_value);
     }
 
     static inline ASR::expr_t* instantiate_Sign(Allocator &al, const Location &loc,
@@ -1932,33 +1883,6 @@ namespace Ishft {
             val = val1 << val2;
         }
         return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
-    }
-
-    static inline ASR::asr_t* create_Ishft(Allocator& al, const Location& loc,
-            Vec<ASR::expr_t*>& args,
-            diag::Diagnostics& diag) {
-        if (args.size() != 2) {
-            append_error(diag, "Intrinsic `ishft` function accepts exactly 2 arguments", loc);
-            return nullptr;
-        }
-        ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
-        ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
-        if (!ASRUtils::is_integer(*type1) || !ASRUtils::is_integer(*type2)) {
-            append_error(diag, "Arguments of the `ishft` function must be Integer",
-                args[0]->base.loc);
-            return nullptr;
-        }
-
-        ASR::expr_t *m_value = nullptr;
-        if (all_args_evaluated(args)) {
-            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 2);
-            arg_values.push_back(al, expr_value(args[0]));
-            arg_values.push_back(al, expr_value(args[1]));
-            m_value = eval_Ishft(al, loc, expr_type(args[0]), arg_values);
-        }
-        return ASR::make_IntrinsicScalarFunction_t(al, loc,
-            static_cast<int64_t>(IntrinsicScalarFunctions::Ishft),
-            args.p, args.n, 0, ASRUtils::expr_type(args[0]), m_value);
     }
 
     static inline ASR::expr_t* instantiate_Ishft(Allocator &al, const Location &loc,
@@ -2426,26 +2350,6 @@ namespace Sqrt {
         }
     }
 
-    static inline ASR::asr_t* create_Sqrt(Allocator& al, const Location& loc,
-            Vec<ASR::expr_t*>& args,
-            diag::Diagnostics& diag) {
-        ASR::ttype_t* return_type = expr_type(args[0]);
-        if ( args.n != 1 ) {
-            append_error(diag, "Intrinsic `sqrt` accepts exactly one argument", loc);
-            return nullptr;
-        } else if ( !(is_real(*return_type) || is_complex(*return_type)) ) {
-            append_error(diag, "Argument of the `sqrt` must be Real or Complex", loc);
-            return nullptr;
-        }
-        ASR::expr_t *m_value = nullptr;
-        if (all_args_evaluated(args)) {
-            m_value = eval_Sqrt(al, loc, return_type, args);
-        }
-        return ASR::make_IntrinsicScalarFunction_t(al, loc,
-            static_cast<int64_t>(IntrinsicScalarFunctions::Sqrt),
-            args.p, args.n, 0, return_type, m_value);
-    }
-
     static inline ASR::expr_t* instantiate_Sqrt(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t overload_id) {
@@ -2467,28 +2371,6 @@ namespace Sngl {
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args) {
         double val = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
         return f(val, arg_type);
-    }
-
-    static inline ASR::asr_t* create_Sngl(
-            Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
-            diag::Diagnostics& diag) {
-        ASR::ttype_t* return_type = real32;
-        if ( args.n != 1 ) {
-            append_error(diag, "Intrinsic `sngl` accepts exactly one argument", loc);
-            return nullptr;
-        } else if ( !is_real(*expr_type(args[0])) ) {
-            append_error(diag, "Argument of the `sngl` must be Real", loc);
-            return nullptr;
-        }
-        Vec<ASR::expr_t *> m_args; m_args.reserve(al, 1);
-        m_args.push_back(al, args[0]);
-        ASR::expr_t *m_value = nullptr;
-        if (all_args_evaluated(m_args)) {
-            m_value = eval_Sngl(al, loc, return_type, m_args);
-        }
-        return ASR::make_IntrinsicScalarFunction_t(al, loc,
-            static_cast<int64_t>(IntrinsicScalarFunctions::Sngl),
-            m_args.p, m_args.n, 0, return_type, m_value);
     }
 
     static inline ASR::expr_t* instantiate_Sngl(Allocator &al, const Location &loc,
@@ -2751,35 +2633,6 @@ namespace SignFromValue {
 
     }
 
-    static inline ASR::asr_t* create_SignFromValue(Allocator& al, const Location& loc,
-            Vec<ASR::expr_t*>& args,
-            diag::Diagnostics& diag) {
-        if (args.size() != 2) {
-            append_error(diag, "Intrinsic SignFromValue function accepts exactly 2 arguments", loc);
-            return nullptr;
-        }
-        ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
-        ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
-        bool eq_type = ASRUtils::types_equal(type1, type2);
-        if (!((is_real(*type1) || is_integer(*type1)) &&
-                                (is_real(*type2) || is_integer(*type2)) && eq_type)) {
-            append_error(diag, "Argument of the SignFromValue function must be either Real or Integer "
-                "and must be of equal type",
-                args[0]->base.loc);
-            return nullptr;
-        }
-        ASR::expr_t *m_value = nullptr;
-        if (all_args_evaluated(args)) {
-            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 2);
-            arg_values.push_back(al, expr_value(args[0]));
-            arg_values.push_back(al, expr_value(args[1]));
-            m_value = eval_SignFromValue(al, loc, expr_type(args[0]), arg_values);
-        }
-        return ASR::make_IntrinsicScalarFunction_t(al, loc,
-            static_cast<int64_t>(IntrinsicScalarFunctions::SignFromValue),
-            args.p, args.n, 0, ASRUtils::expr_type(args[0]), m_value);
-    }
-
     static inline ASR::expr_t* instantiate_SignFromValue(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
@@ -2825,32 +2678,6 @@ namespace FlipSign {
         double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
         if (a % 2 == 1) b = -b;
         return make_ConstantWithType(make_RealConstant_t, b, t1, loc);
-    }
-
-    static inline ASR::asr_t* create_FlipSign(Allocator& al, const Location& loc,
-            Vec<ASR::expr_t*>& args,
-            diag::Diagnostics& diag) {
-        if (args.size() != 2) {
-            append_error(diag, "Intrinsic FlipSign function accepts exactly 2 arguments", loc);
-            return nullptr;
-        }
-        ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
-        ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
-        if (!ASRUtils::is_integer(*type1) || !ASRUtils::is_real(*type2)) {
-            append_error(diag, "Argument of the FlipSign function must be int and real respectively",
-                args[0]->base.loc);
-            return nullptr;
-        }
-        ASR::expr_t *m_value = nullptr;
-        if (all_args_evaluated(args)) {
-            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 2);
-            arg_values.push_back(al, expr_value(args[0]));
-            arg_values.push_back(al, expr_value(args[1]));
-            m_value = eval_FlipSign(al, loc, expr_type(args[1]), arg_values);
-        }
-        return ASR::make_IntrinsicScalarFunction_t(al, loc,
-            static_cast<int64_t>(IntrinsicScalarFunctions::FlipSign),
-            args.p, args.n, 0, ASRUtils::expr_type(args[1]), m_value);
     }
 
     static inline ASR::expr_t* instantiate_FlipSign(Allocator &al, const Location &loc,
@@ -2931,46 +2758,6 @@ namespace FloorDiv {
         return nullptr;
     }
 
-
-
-    static inline ASR::asr_t* create_FloorDiv(Allocator& al, const Location& loc,
-            Vec<ASR::expr_t*>& args,
-            diag::Diagnostics& diag) {
-        if (args.size() != 2) {
-            append_error(diag, "Intrinsic FloorDiv function accepts exactly 2 arguments", loc);
-            return nullptr;
-        }
-        ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
-        ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
-        type1 = ASRUtils::type_get_past_const(type1);
-        type2 = ASRUtils::type_get_past_const(type2);
-        if (!((ASRUtils::is_integer(*type1) && ASRUtils::is_integer(*type2)) ||
-            (ASRUtils::is_unsigned_integer(*type1) && ASRUtils::is_unsigned_integer(*type2)) ||
-            (ASRUtils::is_real(*type1) && ASRUtils::is_real(*type2)) ||
-            (ASRUtils::is_logical(*type1) && ASRUtils::is_logical(*type2)))) {
-            append_error(diag, "Argument of the FloorDiv function must be either Real, Integer, Unsigned Integer or Logical",
-                args[0]->base.loc);
-            return nullptr;
-        }
-        ASR::expr_t *m_value = nullptr;
-        double compile_time_arg2_val;
-        if (ASRUtils::extract_value(expr_value(args[1]), compile_time_arg2_val)) {
-            if (compile_time_arg2_val == 0.0) {
-                append_error(diag, "Division by 0 is not allowed", args[1]->base.loc);
-                return nullptr;
-            }
-        }
-        if (all_args_evaluated(args)) {
-            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 2);
-            arg_values.push_back(al, expr_value(args[0]));
-            arg_values.push_back(al, expr_value(args[1]));
-            m_value = eval_FloorDiv(al, loc, expr_type(args[1]), arg_values);
-        }
-        return ASR::make_IntrinsicScalarFunction_t(al, loc,
-            static_cast<int64_t>(IntrinsicScalarFunctions::FloorDiv),
-            args.p, args.n, 0, ASRUtils::expr_type(args[0]), m_value);
-    }
-
     static inline ASR::expr_t* instantiate_FloorDiv(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
@@ -3030,33 +2817,6 @@ namespace Mod {
             return make_ConstantWithType(make_RealConstant_t, std::fmod(a, b), t1, loc);
         }
         return nullptr;
-    }
-
-    static inline ASR::asr_t* create_Mod(Allocator& al, const Location& loc,
-            Vec<ASR::expr_t*>& args,
-            diag::Diagnostics& diag) {
-        if (args.size() != 2) {
-            append_error(diag, "Intrinsic Mod function accepts exactly 2 arguments", loc);
-            return nullptr;
-        }
-        ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
-        ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
-        if (!((ASRUtils::is_integer(*type1) && ASRUtils::is_integer(*type2)) ||
-            (ASRUtils::is_real(*type1) && ASRUtils::is_real(*type2)))) {
-            append_error(diag, "Argument of the Mod function must be either Real or Integer",
-                args[0]->base.loc);
-            return nullptr;
-        }
-        ASR::expr_t *m_value = nullptr;
-        if (all_args_evaluated(args)) {
-            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 2);
-            arg_values.push_back(al, expr_value(args[0]));
-            arg_values.push_back(al, expr_value(args[1]));
-            m_value = eval_Mod(al, loc, expr_type(args[1]), arg_values);
-        }
-        return ASR::make_IntrinsicScalarFunction_t(al, loc,
-            static_cast<int64_t>(IntrinsicScalarFunctions::Mod),
-            args.p, args.n, 0, ASRUtils::expr_type(args[0]), m_value);
     }
 
     static inline ASR::expr_t* instantiate_Mod(Allocator &al, const Location &loc,
@@ -3126,30 +2886,6 @@ namespace Trailz {
         int64_t kind = ASRUtils::extract_kind_from_ttype_t(t1);
         int64_t trailing_zeros = ASRUtils::compute_trailing_zeros(a, kind);
         return make_ConstantWithType(make_IntegerConstant_t, trailing_zeros, t1, loc);
-    }
-
-    static inline ASR::asr_t* create_Trailz(Allocator& al, const Location& loc,
-            Vec<ASR::expr_t*>& args,
-            diag::Diagnostics& diag) {
-        if (args.size() != 1) {
-            append_error(diag, "Intrinsic `trailz` function accepts exactly 1 argument", loc);
-            return nullptr;
-        }
-        ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
-        if (!(ASRUtils::is_integer(*type1))) {
-            append_error(diag, "Argument of the `trailz` function must be Integer",
-                args[0]->base.loc);
-            return nullptr;
-        }
-        ASR::expr_t *m_value = nullptr;
-        if (all_args_evaluated(args)) {
-            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 1);
-            arg_values.push_back(al, expr_value(args[0]));
-            m_value = eval_Trailz(al, loc, expr_type(args[0]), arg_values);
-        }
-        return ASR::make_IntrinsicScalarFunction_t(al, loc,
-            static_cast<int64_t>(IntrinsicScalarFunctions::Trailz),
-            args.p, args.n, 0, ASRUtils::expr_type(args[0]), m_value);
     }
 
     static inline ASR::expr_t* instantiate_Trailz(Allocator &al, const Location &loc,
@@ -3350,37 +3086,6 @@ namespace Hypot {
         }
     }
 
-    static inline ASR::asr_t* create_Hypot(Allocator& al, const Location& loc,
-            Vec<ASR::expr_t*>& args,
-            diag::Diagnostics& diag) {
-        if (args.size() != 2) {
-            append_error(diag, "Intrinsic Hypot function accepts exactly 2 arguments", loc);
-            return nullptr;
-        }
-        ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
-        ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
-        if (!(ASRUtils::is_real(*type1))) {
-            append_error(diag, "Argument of the Hypot function must be Integer",
-                args[0]->base.loc);
-            return nullptr;
-        }
-        if (!(ASRUtils::is_real(*type2))) {
-            append_error(diag, "Argument of the Hypot function must be Integer",
-                args[1]->base.loc);
-            return nullptr;
-        }
-        ASR::expr_t *m_value = nullptr;
-        if (all_args_evaluated(args)) {
-            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 2);
-            arg_values.push_back(al, expr_value(args[0]));
-            arg_values.push_back(al, expr_value(args[1]));
-            m_value = eval_Hypot(al, loc, expr_type(args[0]), arg_values);
-        }
-        return ASR::make_IntrinsicScalarFunction_t(al, loc,
-            static_cast<int64_t>(IntrinsicScalarFunctions::Hypot),
-            args.p, args.n, 0, ASRUtils::expr_type(args[0]), m_value);
-    }
-
     static inline ASR::expr_t* instantiate_Hypot(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
@@ -3422,30 +3127,6 @@ namespace Kind {
             ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args) {
         int result = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
         return make_ConstantWithType(make_IntegerConstant_t, result, int32, loc);
-    }
-
-    static inline ASR::asr_t* create_Kind(Allocator& al, const Location& loc,
-            Vec<ASR::expr_t*>& args,
-            diag::Diagnostics& diag) {
-        if (args.size() != 1) {
-            append_error(diag, "Intrinsic kind function accepts exactly 1 argument", loc);
-            return nullptr;
-        }
-        ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
-        if (!(ASRUtils::is_integer(*type1) || ASRUtils::is_real(*type1) || ASRUtils::is_logical(*type1) || ASRUtils::is_character(*type1))) {
-            append_error(diag, "Argument of the kind function must be integer, real, logical or character",
-                args[0]->base.loc);
-            return nullptr;
-        }
-        ASR::expr_t *m_value = nullptr;
-        if (all_args_evaluated(args)) {
-            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 1);
-            arg_values.push_back(al, expr_value(args[0]));
-            m_value = eval_Kind(al, loc, expr_type(args[0]), arg_values);
-        }
-        return ASR::make_IntrinsicScalarFunction_t(al, loc,
-            static_cast<int64_t>(IntrinsicScalarFunctions::Kind),
-            args.p, args.n, 0, int32, m_value);
     }
 
     static inline ASR::expr_t* instantiate_Kind(Allocator &al, const Location &loc,
@@ -3534,30 +3215,6 @@ namespace Digits {
         return nullptr;
     }
 
-    static inline ASR::asr_t* create_Digits(Allocator& al, const Location& loc,
-            Vec<ASR::expr_t*>& args,
-            diag::Diagnostics& diag) {
-        if (args.size() != 1) {
-            append_error(diag, "Intrinsic `digits` function accepts exactly 1 argument", loc);
-            return nullptr;
-        }
-        ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
-        if (!(ASRUtils::is_integer(*type1) || ASRUtils::is_real(*type1))) {
-            append_error(diag, "Arguments to `digits` intrinsic must be integer or real",
-                args[0]->base.loc);
-            return nullptr;
-        }
-        ASR::expr_t *m_value = nullptr;
-        if (all_args_evaluated(args)) {
-            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 1);
-            arg_values.push_back(al, expr_value(args[0]));
-            m_value = eval_Digits(al, loc, expr_type(args[0]), arg_values);
-        }
-        return ASR::make_IntrinsicScalarFunction_t(al, loc,
-            static_cast<int64_t>(IntrinsicScalarFunctions::Digits),
-            args.p, args.n, 0, int32, m_value);
-    }
-
     static inline ASR::expr_t* instantiate_Digits(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
@@ -3600,37 +3257,6 @@ namespace Repeat {
         }
         result[new_len] = '\0';
         return make_ConstantWithType(make_StringConstant_t, result, t1, loc);
-    }
-
-    static inline ASR::asr_t* create_Repeat(Allocator& al, const Location& loc,
-            Vec<ASR::expr_t*>& args,
-            diag::Diagnostics& diag) {
-        if (args.size() != 2) {
-            append_error(diag, "Intrinsic repeat function accepts exactly 2 arguments", loc);
-            return nullptr;
-        }
-        ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
-        ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
-        if (!ASRUtils::is_character(*type1)) {
-            append_error(diag, "First argument of the repeat function must be String",
-                args[0]->base.loc);
-            return nullptr;
-        }
-        if (!ASRUtils::is_integer(*type2)) {
-            append_error(diag, "Second argument of the repeat function must be Integer",
-                args[1]->base.loc);
-            return nullptr;
-        }
-        ASR::expr_t *m_value = nullptr;
-        if (all_args_evaluated(args)) {
-            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 2);
-            arg_values.push_back(al, expr_value(args[0]));
-            arg_values.push_back(al, expr_value(args[1]));
-            m_value = eval_Repeat(al, loc, expr_type(args[0]), arg_values);
-        }
-        return ASR::make_IntrinsicScalarFunction_t(al, loc,
-            static_cast<int64_t>(IntrinsicScalarFunctions::Repeat),
-            args.p, args.n, 0, expr_type(args[0]), m_value);
     }
 
     static inline ASR::expr_t* instantiate_Repeat(Allocator &al, const Location &loc,
@@ -3697,30 +3323,6 @@ namespace MinExponent {
 
     }
 
-    static inline ASR::asr_t* create_MinExponent(Allocator& al, const Location& loc,
-            Vec<ASR::expr_t*>& args,
-            diag::Diagnostics& diag) {
-        if (args.size() != 1) {
-            append_error(diag, "Intrinsic minexponent function accepts exactly 1 arguments", loc);
-            return nullptr;
-        }
-        ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
-        if (!(ASRUtils::is_real(*type1))) {
-            append_error(diag, "Argument of the minexponent function must be Real",
-                args[0]->base.loc);
-            return nullptr;
-        }
-        ASR::expr_t *m_value = nullptr;
-        if (all_args_evaluated(args)) {
-            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 1);
-            arg_values.push_back(al, expr_value(args[0]));
-            m_value = eval_MinExponent(al, loc, expr_type(args[0]), arg_values);
-        }
-        return ASR::make_IntrinsicScalarFunction_t(al, loc,
-            static_cast<int64_t>(IntrinsicScalarFunctions::MinExponent),
-            args.p, args.n, 0, int32, m_value);
-    }
-
     static inline ASR::expr_t* instantiate_MinExponent(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
@@ -3757,30 +3359,6 @@ namespace MaxExponent {
         }
         return make_ConstantWithType(make_IntegerConstant_t, result, int32, loc);
 
-    }
-
-    static inline ASR::asr_t* create_MaxExponent(Allocator& al, const Location& loc,
-            Vec<ASR::expr_t*>& args,
-            diag::Diagnostics& diag) {
-        if (args.size() != 1) {
-            append_error(diag, "Intrinsic maxexponent function accepts exactly 1 arguments", loc);
-            return nullptr;
-        }
-        ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
-        if (!(ASRUtils::is_real(*type1))) {
-            append_error(diag, "Argument of the maxexponent function must be Real",
-                args[0]->base.loc);
-            return nullptr;
-        }
-        ASR::expr_t *m_value = nullptr;
-        if (all_args_evaluated(args)) {
-            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 1);
-            arg_values.push_back(al, expr_value(args[0]));
-            m_value = eval_MaxExponent(al, loc, expr_type(args[0]), arg_values);
-        }
-        return ASR::make_IntrinsicScalarFunction_t(al, loc,
-            static_cast<int64_t>(IntrinsicScalarFunctions::MaxExponent),
-            args.p, args.n, 0, int32, m_value);
     }
 
     static inline ASR::expr_t* instantiate_MaxExponent(Allocator &al, const Location &loc,
@@ -3981,26 +3559,6 @@ static inline ASR::expr_t *eval_list_reverse(Allocator &/*al*/,
     return nullptr;
 }
 
-static inline ASR::asr_t* create_ListReverse(Allocator& al, const Location& loc,
-    Vec<ASR::expr_t*>& args,
-    diag::Diagnostics& diag) {
-    if (args.size() != 1) {
-        append_error(diag, "list.reverse() takes no arguments", loc);
-        return nullptr;
-    }
-
-    Vec<ASR::expr_t*> arg_values;
-    arg_values.reserve(al, args.size());
-    for( size_t i = 0; i < args.size(); i++ ) {
-        arg_values.push_back(al, ASRUtils::expr_value(args[i]));
-    }
-    ASR::expr_t* compile_time_value = eval_list_reverse(al, loc, nullptr, arg_values);
-    return ASR::make_Expr_t(al, loc,
-            ASRUtils::EXPR(ASRUtils::make_IntrinsicScalarFunction_t_util(al, loc,
-            static_cast<int64_t>(IntrinsicScalarFunctions::ListReverse),
-            args.p, args.size(), 0, nullptr, compile_time_value)));
-}
-
 } // namespace ListReverse
 
 namespace ListPop {
@@ -4070,34 +3628,6 @@ static inline ASR::expr_t *eval_reserve(Allocator &/*al*/,
     const Location &/*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/) {
     // TODO: To be implemented for ListConstant expression
     return nullptr;
-}
-
-static inline ASR::asr_t* create_Reserve(Allocator& al, const Location& loc,
-    Vec<ASR::expr_t*>& args,
-    diag::Diagnostics& diag) {
-    if (args.size() != 2) {
-        append_error(diag, "Call to reserve must have exactly two argument", loc);
-        return nullptr;
-    }
-    if (!ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(args[0]))) {
-        append_error(diag, "First argument to reserve must be of list type", loc);
-        return nullptr;
-    }
-    if (!ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(args[1]))) {
-        append_error(diag, "Second argument to reserve must be an integer", loc);
-        return nullptr;
-    }
-
-    Vec<ASR::expr_t*> arg_values;
-    arg_values.reserve(al, args.size());
-    for( size_t i = 0; i < args.size(); i++ ) {
-        arg_values.push_back(al, ASRUtils::expr_value(args[i]));
-    }
-    ASR::expr_t* compile_time_value = eval_reserve(al, loc, nullptr, arg_values);
-    return ASR::make_Expr_t(al, loc,
-            ASRUtils::EXPR(ASRUtils::make_IntrinsicScalarFunction_t_util(al, loc,
-            static_cast<int64_t>(IntrinsicScalarFunctions::Reserve),
-            args.p, args.size(), 0, nullptr, compile_time_value)));
 }
 
 } // namespace Reserve
