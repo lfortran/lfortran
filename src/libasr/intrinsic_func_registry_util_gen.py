@@ -109,12 +109,14 @@ intrinsic_funcs_args = {
     ],
     "Floor": [
         {
-            "args": [("real",)]
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
         }
     ],
     "Ceiling": [
         {
-            "args": [("real",)]
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
         }
     ],
     "Sqrt": [
@@ -143,7 +145,8 @@ intrinsic_funcs_args = {
     ],
     "Aimag": [
         {
-            "args": [("complex",)]
+            "args": [("complex",)],
+            "ret_type_arg_idx": 0
         },
     ],
 }
