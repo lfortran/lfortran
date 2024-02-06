@@ -433,6 +433,11 @@ class ASRBuilder {
             left, ASR::binopType::Div, right, real64, nullptr))
     #define i_tDiv(left, right, t) EXPR(ASR::make_IntegerBinOp_t(al, loc,             \
             left, ASR::binopType::Div, right, t, nullptr))
+    
+    #define i_BitLshift(n, bits) EXPR(ASR::make_IntegerBinOp_t(al, loc,             \
+            n, ASR::binopType::BitLShift, bits, nullptr))
+    #define i_BitRshift(n, bits) EXPR(ASR::make_IntegerBinOp_t(al, loc,             \
+            n, ASR::binopType::BitRShift, bits, nullptr))
 
     #define iMul(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
             ASR::binopType::Mul, right, int32, nullptr))
@@ -1834,7 +1839,9 @@ namespace Shiftr {
         * r = x / 2**y
         */
         ASR::expr_t *two = i(2, arg_types[0]);
-        body.push_back(al, b.Assignment(result, i_tDiv(args[0], iPow(two, args[1], arg_types[0]), arg_types[0])));
+        body.push_back(al, b.Assignment(result, i_BitRshift(args[0], args[1], arg_types[0]), arg_types[0])));
+
+        // body.push_back(al, b.Assignment(result, i_tDiv(args[0], iPow(two, args[1], arg_types[0]), arg_types[0])));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
