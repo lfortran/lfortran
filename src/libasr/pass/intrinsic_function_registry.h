@@ -1972,13 +1972,14 @@ namespace Ishft {
         /*
         * r = ishft(x, y)
         * if ( y <= 0) {
-        *   r = x >> y
+        *   r = x >> -1*y
         * } else {
         *   r = x << y
         * }
         */
+        ASR::expr_t *m_one = i(-1, arg_types[0]);
         body.push_back(al, b.If(iLtE(args[1], i(0, arg_types[0])), {
-            b.Assignment(result, i_BitRshift(args[0], args[1], arg_types[0]))
+            b.Assignment(result, i_BitRshift(args[0], iMul(m_one, args[1]), arg_types[0]))
         }, {
             b.Assignment(result, i_BitLshift(args[0], args[1], arg_types[0]))
         }));
