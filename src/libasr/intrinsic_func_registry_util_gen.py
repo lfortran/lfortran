@@ -5,7 +5,7 @@ intrinsic_funcs_args = {
     "Kind": [
         {
             "args": [("int",), ("real",), ("bool",), ("char",)],
-            "ret_type_arg_idx": 0
+            "return": "int32"
         },
     ],
     "FlipSign": [
@@ -41,7 +41,7 @@ intrinsic_funcs_args = {
     "Digits": [
         {
             "args": [("int",), ("real",)],
-            "ret_type_arg_idx": 0
+            "return": "int32"
         },
     ],
     "Repeat": [
@@ -53,13 +53,13 @@ intrinsic_funcs_args = {
     "MinExponent": [
         {
             "args": [("real",)],
-            "ret_type_arg_idx": 0
+            "return": "int32"
         }
     ],
     "MaxExponent": [
         {
             "args": [("real",)],
-            "ret_type_arg_idx": 0
+            "return": "int32"
         }
     ],
     "Partition": [
@@ -71,13 +71,13 @@ intrinsic_funcs_args = {
     "ListReverse": [
         {
             "args": [("list",)],
-            "ret_type_arg_idx": 0
+            "return": "nullptr"
         }
     ],
     "Reserve": [
         {
             "args": [("list", "int")],
-            "ret_type_arg_idx": 0
+            "return": "nullptr"
         }
     ],
     "Sign": [
@@ -89,7 +89,7 @@ intrinsic_funcs_args = {
     "Radix": [
         {
             "args": [("int",), ("real",)],
-            "ret_type_arg_idx": 0
+            "return": "int32"
         },
     ],
     "Aint": [
@@ -110,13 +110,11 @@ intrinsic_funcs_args = {
     "Floor": [
         {
             "args": [("real",)],
-            "ret_type_arg_idx": 0
         }
     ],
     "Ceiling": [
         {
             "args": [("real",)],
-            "ret_type_arg_idx": 0
         }
     ],
     "Sqrt": [
@@ -128,7 +126,7 @@ intrinsic_funcs_args = {
     "Sngl": [
         {
             "args": [("real",)],
-            "ret_type_arg_idx": 0
+            "return": "real32"
         }
     ],
     "SignFromValue": [
