@@ -142,6 +142,7 @@ static inline void verify_args(const ASR::IntrinsicArrayFunction_t& x, diag::Dia
         x.base.base.loc, diagnostics);
     const int64_t id_array = 0, id_array_dim = 1, id_array_mask = 2;
     const int64_t id_array_dim_mask = 3;
+    std::cout<<"x.m_overload_id: "<<x.m_overload_id<<std::endl; //prints 1 for id_array_dim and id_array_mask both.
     switch( x.m_overload_id ) {
         case id_array:
         case id_array_mask: {
