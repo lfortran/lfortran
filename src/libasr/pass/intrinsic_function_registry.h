@@ -2174,8 +2174,7 @@ namespace nint {
     }
 
     static inline ASR::asr_t* create_nint(Allocator& al, const Location& loc,
-            Vec<ASR::expr_t*>& args,
-            diag::Diagnostics& diag) {
+            Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         ASR::ttype_t* return_type = TYPE(ASR::make_Integer_t(al, loc, 4));
         if (!(args.size() == 1 || args.size() == 2)) {
             append_error(diag, "Intrinsic `nint` function accepts exactly 1 or 2 arguments", loc);
@@ -2194,14 +2193,13 @@ namespace nint {
                     "scalar Integer constant", args[1]->base.loc);
                 return nullptr;
             }
-            return_type = TYPE(ASR::make_Integer_t(al, return_type->base.loc, kind));        }
+            return_type = TYPE(ASR::make_Integer_t(al, return_type->base.loc, kind));        
+        }
         ASR::expr_t *m_value = nullptr;
-
         if (all_args_evaluated(m_args)) {
             Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 1);
             arg_values.push_back(al, expr_value(args[0]));
             m_value = eval_nint(al, loc, return_type, arg_values);
-
         }
         return ASR::make_IntrinsicScalarFunction_t(al, loc,
             static_cast<int64_t>(IntrinsicScalarFunctions::nint),
@@ -2211,7 +2209,7 @@ namespace nint {
     static inline ASR::expr_t* instantiate_nint(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_floor_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_nint_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
@@ -2238,9 +2236,6 @@ namespace nint {
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
-
-
-
 } // namespace nint
 
 

@@ -642,7 +642,6 @@ RUN(NAME intrinsics_132 LABELS gfortran llvm)#Floor
 RUN(NAME intrinsics_133 LABELS gfortran llvm)#Ceiling
 RUN(NAME intrinsics_135 LABELS gfortran llvm)#nint
 
-
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
 RUN(NAME parameter_03 LABELS gfortran llvm wasm)
