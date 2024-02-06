@@ -5,6 +5,7 @@
 #include <libasr/asr_verify.h>
 #include <libasr/pass/transform_optional_argument_functions.h>
 #include <libasr/pass/pass_utils.h>
+#include <libasr/pass/intrinsic_function_registry.h>
 
 #include <vector>
 #include <string>
@@ -24,7 +25,7 @@ class ReplacePresentCalls: public ASR::BaseExprReplacer<ReplacePresentCalls> {
 
     public:
 
-    ReplacePresentCalls(Allocator& al_, ASR::Function_t* f_) : al(al_), f(f_)
+    ReplacePresentCalls(Allocator& al_, ASR::Function_t* f_) : al{al_}, f{f_}
     {}
 
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
@@ -365,6 +366,15 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
             }
             ASR::call_arg_t present_arg;
             present_arg.loc = x.m_args[i].loc;
+            if( x.m_args[i].m_value &&
+                ASRUtils::is_allocatable(x.m_args[i].m_value) &&
+                !ASRUtils::is_allocatable(func_arg_j->m_type) ) {
+                ASR::expr_t* is_allocated = ASRUtils::EXPR(ASR::make_IntrinsicImpureFunction_t(
+                    al, x.m_args[i].loc, static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
+                    &x.m_args[i].m_value, 1, 0, logical_t, nullptr));
+                is_present = ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, x.m_args[i].loc,
+                    is_allocated, ASR::logicalbinopType::And, is_present, logical_t, nullptr));
+            }
             present_arg.m_value = is_present;
             new_args.push_back(al, present_arg);
             j++;

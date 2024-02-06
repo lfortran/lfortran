@@ -650,29 +650,89 @@
                                             ((Var 6 compiler_name))
                                             ((Var 6 os_type))
                                             ((Var 6 flags))
-                                            ((LogicalConstant
-                                                .true.
+                                            ((LogicalBinOp
+                                                (IntrinsicImpureFunction
+                                                    Allocated
+                                                    [(Var 6 flags)]
+                                                    0
+                                                    (Logical 4)
+                                                    ()
+                                                )
+                                                And
+                                                (LogicalConstant
+                                                    .true.
+                                                    (Logical 4)
+                                                )
                                                 (Logical 4)
+                                                ()
                                             ))
                                             ((Var 6 c_flags))
-                                            ((LogicalConstant
-                                                .true.
+                                            ((LogicalBinOp
+                                                (IntrinsicImpureFunction
+                                                    Allocated
+                                                    [(Var 6 c_flags)]
+                                                    0
+                                                    (Logical 4)
+                                                    ()
+                                                )
+                                                And
+                                                (LogicalConstant
+                                                    .true.
+                                                    (Logical 4)
+                                                )
                                                 (Logical 4)
+                                                ()
                                             ))
                                             ((Var 6 cxx_flags))
-                                            ((LogicalConstant
-                                                .true.
+                                            ((LogicalBinOp
+                                                (IntrinsicImpureFunction
+                                                    Allocated
+                                                    [(Var 6 cxx_flags)]
+                                                    0
+                                                    (Logical 4)
+                                                    ()
+                                                )
+                                                And
+                                                (LogicalConstant
+                                                    .true.
+                                                    (Logical 4)
+                                                )
                                                 (Logical 4)
+                                                ()
                                             ))
                                             ((Var 6 link_time_flags))
-                                            ((LogicalConstant
-                                                .true.
+                                            ((LogicalBinOp
+                                                (IntrinsicImpureFunction
+                                                    Allocated
+                                                    [(Var 6 link_time_flags)]
+                                                    0
+                                                    (Logical 4)
+                                                    ()
+                                                )
+                                                And
+                                                (LogicalConstant
+                                                    .true.
+                                                    (Logical 4)
+                                                )
                                                 (Logical 4)
+                                                ()
                                             ))
                                             ((Var 6 file_scope_flags))
-                                            ((LogicalConstant
-                                                .true.
+                                            ((LogicalBinOp
+                                                (IntrinsicImpureFunction
+                                                    Allocated
+                                                    [(Var 6 file_scope_flags)]
+                                                    0
+                                                    (Logical 4)
+                                                    ()
+                                                )
+                                                And
+                                                (LogicalConstant
+                                                    .true.
+                                                    (Logical 4)
+                                                )
                                                 (Logical 4)
+                                                ()
                                             ))
                                             ((Var 6 __libasr_created_variable_))
                                             ((LogicalConstant

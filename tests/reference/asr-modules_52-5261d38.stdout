@@ -2,8 +2,6 @@
     (SymbolTable
         1
         {
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
             module_52_fpm_cmd_new:
                 (Module
                     (SymbolTable
@@ -14,16 +12,6 @@
                                     (SymbolTable
                                         3
                                         {
-                                            allocated:
-                                                (ExternalSymbol
-                                                    3
-                                                    allocated
-                                                    15 allocated
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    allocated
-                                                    Private
-                                                ),
                                             input:
                                                 (Variable
                                                     3
@@ -143,12 +131,11 @@
                                     []
                                     [(Var 3 input)]
                                     [(If
-                                        (FunctionCall
-                                            3 allocated
-                                            ()
-                                            [((Var 3 table))]
+                                        (IntrinsicImpureFunction
+                                            Allocated
+                                            [(Var 3 table)]
+                                            0
                                             (Logical 4)
-                                            ()
                                             ()
                                         )
                                         [(ExplicitDeallocate
@@ -179,8 +166,7 @@
                         })
                     module_52_fpm_cmd_new
                     [module_52_tomlf_de
-                    module_52_tomlf_type
-                    lfortran_intrinsic_builtin]
+                    module_52_tomlf_type]
                     .false.
                     .false.
                 ),

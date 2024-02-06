@@ -146,7 +146,6 @@ struct IntrinsicProcedures {
             {"shape", {m_builtin, &not_implemented, false}},
             {"reshape", {m_builtin, &not_implemented, false}},
             {"present", {m_builtin, &not_implemented, false}},
-            {"allocated", {m_builtin, &not_implemented, false}},
             {"minval", {m_builtin, &not_implemented, false}},
             {"maxval", {m_builtin, &not_implemented, false}},
             {"index", {m_string, &not_implemented, false}},
