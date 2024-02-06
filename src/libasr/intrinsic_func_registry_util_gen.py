@@ -260,11 +260,13 @@ def add_create_func_arg_type_src(func_name):
                 condition += " || "
                 cond_in_msg += " or "
         src += 3 * indent + f'if(!({condition}))' + ' {\n'
-        src += 4 * indent + f'err("Unexpected args, {func_name} expects {cond_in_msg} as arguments", loc);\n'
+        src += 4 * indent + f'append_error(diag, "Unexpected args, {func_name} expects {cond_in_msg} as arguments", loc);\n'
+        src += 4 * indent + f'return nullptr;\n'
         src += 3 * indent + '}\n'
         src += 2 * indent + "}"
     src += " else {\n"
-    src += 3 * indent + f'err("Unexpected number of args, {func_name} takes {no_of_args_msg} arguments, found " + std::to_string(args.size()), loc);\n'
+    src += 3 * indent + f'append_error(diag, "Unexpected number of args, {func_name} takes {no_of_args_msg} arguments, found " + std::to_string(args.size()), loc);\n'
+    src += 3 * indent + f'return nullptr;\n'
     src += 2 * indent + "}\n"
 
 
@@ -295,7 +297,7 @@ def get_registry_funcs_src():
         src += indent + "}\n\n"
 
         if func_name not in skip_create_func:
-            src += indent + Rf"static inline void create_{func_name}(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, const std::function<void (const std::string &, const Location &)> err) " + "{\n"
+            src += indent + Rf"static inline void create_{func_name}(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) " + "{\n"
             add_create_func_arg_type_src(func_name)
             add_create_func_return_src(func_name)
             src += indent + "}\n"
