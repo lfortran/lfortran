@@ -1358,6 +1358,7 @@ RUN(NAME transfer_01 LABELS gfortran llvm)
 RUN(NAME transfer_02 LABELS gfortran)
 
 RUN(NAME present_01 LABELS gfortran llvm)
+RUN(NAME present_02 LABELS gfortran llvm)
 RUN(NAME types_20 LABELS gfortran llvm)
 RUN(NAME arrayprint_01 LABELS gfortran llvm)
 RUN(NAME print_arr_05 LABELS gfortran llvm)
