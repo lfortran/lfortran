@@ -310,9 +310,7 @@ def get_registry_funcs_src():
 HEAD = """#ifndef LIBASR_PASS_INTRINSIC_FUNC_REG_UTIL_H
 #define LIBASR_PASS_INTRINSIC_FUNC_REG_UTIL_H
 
-#include <libasr/asr.h>
-#include <libasr/asr_utils.h>
-#include <libasr/asr_builder.h>
+#include <libasr/pass/intrinsic_functions.h>
 
 namespace LCompilers {
 
