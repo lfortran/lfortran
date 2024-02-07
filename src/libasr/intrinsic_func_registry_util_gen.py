@@ -289,20 +289,29 @@ def add_create_func_return_src(func_name):
     src += indent * 2 + "}\n"
     src += indent * 2 + f"return ASR::make_IntrinsicScalarFunction_t(al, loc, static_cast<int64_t>(IntrinsicScalarFunctions::{func_name}), args.p, args.n, 0, {ret_type}, m_value);\n"
 
+def gen_verify_args(func_name):
+    global src
+    src += indent + R"static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {" + "\n"
+    add_verify_arg_type_src(func_name)
+    add_verify_return_type_src(func_name)
+    src += indent + "}\n\n"
+
+def gen_create_function(func_name):
+    global src
+    src += indent + Rf"static inline ASR::asr_t* create_{func_name}(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) " + "{\n"
+    add_create_func_arg_type_src(func_name)
+    add_create_func_return_src(func_name)
+    src += indent + "}\n"
+
+
 def get_registry_funcs_src():
     global src
     for func_name in intrinsic_funcs_args.keys():
         src += f"namespace {func_name}" + " {\n\n"
-        src += indent + R"static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {" + "\n"
-        add_verify_arg_type_src(func_name)
-        add_verify_return_type_src(func_name)
-        src += indent + "}\n\n"
+        gen_verify_args(func_name)
 
         if func_name not in skip_create_func:
-            src += indent + Rf"static inline ASR::asr_t* create_{func_name}(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) " + "{\n"
-            add_create_func_arg_type_src(func_name)
-            add_create_func_return_src(func_name)
-            src += indent + "}\n"
+            gen_create_function(func_name)
         src += "}\n\n"
     return src
 
