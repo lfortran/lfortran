@@ -347,7 +347,7 @@
                                     .false.
                                     ()
                                 ),
-                            build_package_targets:
+                            build_package_build_target_ptr____0:
                                 (Function
                                     (SymbolTable
                                         13
@@ -638,7 +638,7 @@
                                                     .false.
                                                 )
                                         })
-                                    build_package_targets
+                                    build_package_build_target_ptr____0
                                     (FunctionType
                                         [(Array
                                             (Struct
@@ -892,11 +892,11 @@
                                         []
                                         .false.
                                     )
-                                    [build_package_targets]
+                                    [build_package_build_target_ptr____0]
                                     [(Var 10 settings)]
                                     [(SubroutineCall
-                                        2 build_package_targets
-                                        2 build_package_targets
+                                        2 build_package_build_target_ptr____0
+                                        2 build_package_build_target_ptr____0
                                         [((ArrayPhysicalCast
                                             (Var 10 targets)
                                             DescriptorArray

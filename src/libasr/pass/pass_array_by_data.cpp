@@ -126,13 +126,13 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                 } else {
                     break ;
                 }
-                if( std::find(indices.begin(), indices.end(), i) !=
-                    indices.end() ) {
+                if( std::find(indices.begin(), indices.end(), i) != indices.end() ) {
                     if( arg_func ) {
-                        suffix += "_" + std::string(arg_func->m_name);
+                        suffix += "_" + ASRUtils::type_to_str(arg_func->m_function_signature);
                     } else {
-                        suffix += "_" + std::string(arg->m_name);
+                        suffix += "_" + ASRUtils::type_to_str(arg->m_type);
                     }
+                    suffix += "_" + std::to_string(i);
                 }
                 ASR::expr_t* new_arg;
                 if (arg_func) {
@@ -151,6 +151,13 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                 }
             }
             ASR::symbol_t* new_symbol = nullptr;
+            suffix = to_lower(suffix);
+            for( size_t suffixi = 0; suffixi < suffix.size(); suffixi++ ) {
+                if( !((suffix[suffixi] >= 'a' && suffix[suffixi] <= 'z') ||
+                    (suffix[suffixi] >= '0' && suffix[suffixi] <= '9')) ) {
+                    suffix[suffixi] = '_';
+                }
+            }
             std::string new_name = std::string(x->m_name) + suffix;
             if( ASR::is_a<ASR::Function_t>( *((ASR::symbol_t*) x) ) ) {
                 ASR::FunctionType_t* x_func_type = ASRUtils::get_FunctionType(x);
