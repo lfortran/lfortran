@@ -15,10 +15,6 @@ interface random_number
     module procedure sp_rand_num, dp_rand_num
 end interface
 
-interface sign
-    module procedure signi8, signi16, signi32, signi64, signr32, signr64
-end interface
-
 interface conjg
     module procedure conjgz32, conjgz64
 end interface
@@ -105,62 +101,6 @@ interface
 end interface
 call c_dp_rand_num(harvest)
 end subroutine
-
-! sign -------------------------------------------------------------------------
-
-elemental integer(i8) function signi8(x, y) result(r)
-integer(i8), intent(in) :: x, y
-if ((x >= 0 .and. y >= 0) .or. (x <= 0 .and. y <= 0)) then
-    r = x
-else
-    r = -x
-end if
-end function
-
-elemental integer(i16) function signi16(x, y) result(r)
-integer(i16), intent(in) :: x, y
-if ((x >= 0 .and. y >= 0) .or. (x <= 0 .and. y <= 0)) then
-    r = x
-else
-    r = -x
-end if
-end function
-
-elemental integer(i32) function signi32(x, y) result(r)
-integer(i32), intent(in) :: x, y
-if ((x >= 0 .and. y >= 0) .or. (x <= 0 .and. y <= 0)) then
-    r = x
-else
-    r = -x
-end if
-end function
-
-elemental integer(i64) function signi64(x, y) result(r)
-integer(i64), intent(in) :: x, y
-if ((x >= 0 .and. y >= 0) .or. (x <= 0 .and. y <= 0)) then
-    r = x
-else
-    r = -x
-end if
-end function
-
-elemental real(sp) function signr32(x, y) result(r)
-real(sp), intent(in) :: x, y
-if ((x >= 0 .and. y >= 0) .or. (x <= 0 .and. y <= 0)) then
-    r = x
-else
-    r = -x
-end if
-end function
-
-elemental real(dp) function signr64(x, y) result(r)
-real(dp), intent(in) :: x, y
-if ((x >= 0 .and. y >= 0) .or. (x <= 0 .and. y <= 0)) then
-    r = x
-else
-    r = -x
-end if
-end function
 
 function conjgz32(x) result(r)
 complex(sp) :: x
