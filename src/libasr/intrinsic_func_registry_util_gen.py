@@ -209,7 +209,7 @@ intrinsic_funcs_ret_type = {
     "Kind": ["int"],
     "Partition": ["tuple"],
     "ListReverse": ["null"],
-    "Reserve": [ "null"],
+    "ListReserve": [ "null"],
     "Radix": ["int"],
 }
 

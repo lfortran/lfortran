@@ -1824,7 +1824,7 @@ public:
         tmp = list_api->pop_position(plist, pos, asr_el_type, module.get(), name2memidx);
     }
 
-    void generate_Reserve(ASR::expr_t* m_arg, ASR::expr_t* m_ele) {
+    void generate_ListReserve(ASR::expr_t* m_arg, ASR::expr_t* m_ele) {
         // For now, this only handles lists
         ASR::ttype_t* asr_el_type = ASRUtils::get_contained_type(ASRUtils::expr_type(m_arg));
         int64_t ptr_loads_copy = ptr_loads;
@@ -1963,8 +1963,8 @@ public:
                 }
                 break;
             }
-            case ASRUtils::IntrinsicScalarFunctions::Reserve: {
-                generate_Reserve(x.m_args[0], x.m_args[1]);
+            case ASRUtils::IntrinsicScalarFunctions::ListReserve: {
+                generate_ListReserve(x.m_args[0], x.m_args[1]);
                 break;
             }
             case ASRUtils::IntrinsicScalarFunctions::DictKeys: {
