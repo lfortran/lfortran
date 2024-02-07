@@ -8,6 +8,12 @@ intrinsic_funcs_args = {
             "return": "int32"
         },
     ],
+    "FMA": [
+        {
+            "args": [("real", "real", "real")],
+            "ret_type_arg_idx": 0
+        }
+    ],
     "FlipSign": [
         {
             "args": [("int", "real")],
@@ -27,6 +33,12 @@ intrinsic_funcs_args = {
         },
     ],
     "Trailz": [
+        {
+            "args": [("int",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Leadz": [
         {
             "args": [("int",)],
             "ret_type_arg_idx": 0
@@ -135,22 +147,53 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         },
     ],
+    "Ifix": [
+        {
+            "args": [("real",)],
+            "return": "int32"
+        }
+    ],
+    "Idint": [
+        {
+            "args": [("real",)],
+            "return": "int32"
+        }
+    ],
     "Ishft": [
         {
             "args": [("int", "int")],
             "ret_type_arg_idx": 0
         },
     ],
+    "Shiftr": [
+        {
+            "args": [("int", "int")],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Shiftl": [
+        {
+            "args": [("int", "int")],
+            "ret_type_arg_idx": 0
+        }
+    ],
     "Aimag": [
         {
             "args": [("complex",)],
         },
     ],
+    "Rank": [
+        {
+            "args": [("any",)],
+            "return": "int32"
+        }
+    ]
 }
 
 skip_create_func = ["Aint", "Anint", "Nint", "Partition", "Floor", "Ceiling", "Aimag"]
 
 type_to_asr_type_check = {
+    "any": "!ASR::is_a<ASR::TypeParameter_t>",
     "int": "is_integer",
     "uint": "is_unsigned_integer",
     "real": "is_real",
