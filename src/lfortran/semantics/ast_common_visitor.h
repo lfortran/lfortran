@@ -2608,7 +2608,7 @@ public:
                                                 }
                                             }
                                             if (is_integer) {
-                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, a->base.base.loc, body.p, body.size(), complex_type, a->m_storage_format));
+                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, a->base.base.loc, body.p, body.size(), integer_type, a->m_storage_format));
                                                 cast->m_value = ASRUtils::expr_value(array_const);
                                                 value = cast->m_value;
                                             }
@@ -2659,7 +2659,7 @@ public:
                                                 }
                                             }
                                             if (is_real) {
-                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, a->base.base.loc, body.p, body.size(), complex_type, a->m_storage_format));
+                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, a->base.base.loc, body.p, body.size(), real_type, a->m_storage_format));
                                                 cast->m_value = ASRUtils::expr_value(array_const);
                                                 value = cast->m_value;
                                             }
