@@ -21,7 +21,7 @@ source_filename = "LFortran"
 @13 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @14 = private unnamed_addr constant [3 x i8] c"%s\00", align 1
 
-define void @decode_idx(i32* %idx, i32* %__1idx, i32* %__2idx) {
+define void @decode_integer____0(i32* %idx, i32* %__1idx, i32* %__2idx) {
 .entry:
   %0 = load i32, i32* %__1idx, align 4
   %1 = load i32, i32* %__2idx, align 4
@@ -270,7 +270,7 @@ loop.end3:                                        ; preds = %loop.head1
   %147 = getelementptr %dimension_descriptor, %dimension_descriptor* %146, i32 0, i32 2
   %148 = load i32, i32* %147, align 4
   store i32 %148, i32* %call_arg_value4, align 4
-  call void @decode_idx(i32* %134, i32* %call_arg_value, i32* %call_arg_value4)
+  call void @decode_integer____0(i32* %134, i32* %call_arg_value, i32* %call_arg_value4)
   ret i32 0
 }
 
