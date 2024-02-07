@@ -86,7 +86,7 @@ intrinsic_funcs_args = {
             "return": "nullptr"
         }
     ],
-    "Reserve": [
+    "ListReserve": [
         {
             "args": [("list", "int")],
             "return": "nullptr"
