@@ -2613,6 +2613,33 @@ public:
                                                 cast->m_value = ASRUtils::expr_value(array_const);
                                                 value = cast->m_value;
                                             }
+                                        } else if (cast_kind == ASR::cast_kindType::ComplexToComplex) {
+                                            bool is_complex = true;
+                                            ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
+                                            ASR::ttype_t* complex_type = cast->m_type;
+                                            Vec<ASR::expr_t*> body;
+                                            body.reserve(al, a->n_args);
+                                            for (size_t i = 0; i < a->n_args; i++) {
+                                                ASR::expr_t *e = a->m_args[i];
+                                                // it will be ComplexConstant_t convert it to ComplexConstant_t
+                                                if (ASR::is_a<ASR::ComplexConstant_t>(*e)) {
+                                                    ASR::ComplexConstant_t *cplx_const = ASR::down_cast<ASR::ComplexConstant_t>(e);
+                                                    // Till here
+                                                    int64_t val1 = cplx_const->m_re;
+                                                    int64_t val2 = cplx_const->m_im;
+                                                    ASR::expr_t *complex_const = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, cplx_const->base.base.loc,
+                                                        val1, val2, ASRUtils::type_get_past_array(complex_type)));
+                                                    body.push_back(al, complex_const);
+                                                } else {
+                                                    is_complex = false;
+                                                    break;
+                                                }
+                                            }
+                                            if (is_complex) {
+                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, a->base.base.loc, body.p, body.size(), complex_type, a->m_storage_format));
+                                                cast->m_value = ASRUtils::expr_value(array_const);
+                                                value = cast->m_value;
+                                            }
                                         } else {
                                             throw SemanticError("Type mismatch in array initialization",
                                                 x.base.base.loc);
