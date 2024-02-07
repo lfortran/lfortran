@@ -2623,13 +2623,13 @@ public:
                                                 ASR::expr_t *e = a->m_args[i];
                                                 // it will be ComplexConstant_t convert it to ComplexConstant_t
                                                 if (ASR::is_a<ASR::ComplexConstant_t>(*e)) {
-                                                    ASR::ComplexConstant_t *cplx_const = ASR::down_cast<ASR::ComplexConstant_t>(e);
+                                                    ASR::ComplexConstant_t *complex_const = ASR::down_cast<ASR::ComplexConstant_t>(e);
                                                     // Till here
-                                                    int64_t val1 = cplx_const->m_re;
-                                                    int64_t val2 = cplx_const->m_im;
-                                                    ASR::expr_t *complex_const = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, cplx_const->base.base.loc,
+                                                    int64_t val1 = complex_const->m_re;
+                                                    int64_t val2 = complex_const->m_im;
+                                                    ASR::expr_t *complex_const2 = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, complex_const->base.base.loc,
                                                         val1, val2, ASRUtils::type_get_past_array(complex_type)));
-                                                    body.push_back(al, complex_const);
+                                                    body.push_back(al, complex_const2);
                                                 } else {
                                                     is_complex = false;
                                                     break;
