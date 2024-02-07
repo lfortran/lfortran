@@ -173,6 +173,11 @@ intrinsic_funcs_ret_type = {
 src = ""
 indent = "    "
 
+def compute_arg_types(indent, no_of_args, args_arr):
+    global src
+    for i in range(no_of_args):
+        src += indent + f"ASR::ttype_t *arg_type{i} = ASRUtils::type_get_past_const(ASRUtils::expr_type({args_arr}[{i}]));\n"
+
 def add_verify_arg_type_src(func_name):
     global src
     arg_infos = intrinsic_funcs_args[func_name]
@@ -182,14 +187,12 @@ def add_verify_arg_type_src(func_name):
         cond_in_msg = ""
         args_lists = arg_info["args"]
         no_of_args = len(args_lists[0])
+        no_of_args_msg += " or " if i > 0 else ""
+        no_of_args_msg += f"{no_of_args}"
         else_if = "else if" if i > 0 else "if"
         src += 2 * indent + f"{else_if} (x.n_args == {no_of_args}) " + " {\n"
-        if i > 0:
-            no_of_args_msg += " or "
-        no_of_args_msg += f"{no_of_args}"
         src += 3 * indent + f'ASRUtils::require_impl(x.m_overload_id == {i}, "Overload Id for {func_name} expected to be {i}, found " + std::to_string(x.m_overload_id), x.base.base.loc, diagnostics);\n'
-        for _i in range(no_of_args):
-            src += 3 * indent + f"ASR::ttype_t *arg_type{_i} = ASRUtils::type_get_past_const(ASRUtils::expr_type(x.m_args[{_i}]));\n"
+        compute_arg_types(3 * indent, no_of_args, "x.m_args")
         for j, arg_list in enumerate(args_lists):
             subcond = ""
             subcond_in_msg = ""
@@ -237,13 +240,11 @@ def add_create_func_arg_type_src(func_name):
         cond_in_msg = ""
         args_lists = arg_info["args"]
         no_of_args = len(args_lists[0])
+        no_of_args_msg += " or " if i > 0 else ""
+        no_of_args_msg += f"{no_of_args}"
         else_if = "else if" if i > 0 else "if"
         src += 2 * indent + f"{else_if} (args.size() == {no_of_args}) " + " {\n"
-        if i > 0:
-            no_of_args_msg += " or "
-        no_of_args_msg += f"{no_of_args}"
-        for _i in range(no_of_args):
-            src += 3 * indent + f"ASR::ttype_t *arg_type{_i} = ASRUtils::type_get_past_const(ASRUtils::expr_type(args[{_i}]));\n"
+        compute_arg_types(3 * indent, no_of_args, "args")
         for j, arg_list in enumerate(args_lists):
             subcond = ""
             subcond_in_msg = ""
