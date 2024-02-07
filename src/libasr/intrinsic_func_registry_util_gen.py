@@ -146,11 +146,18 @@ intrinsic_funcs_args = {
             "args": [("complex",)],
         },
     ],
+    "Rank": [
+        {
+            "args": [("any",)],
+            "return": "int32"
+        }
+    ]
 }
 
 skip_create_func = ["Aint", "Anint", "Nint", "Partition", "Floor", "Ceiling", "Aimag"]
 
 type_to_asr_type_check = {
+    "any": "!ASR::is_a<ASR::TypeParameter_t>",
     "int": "is_integer",
     "uint": "is_unsigned_integer",
     "real": "is_real",
