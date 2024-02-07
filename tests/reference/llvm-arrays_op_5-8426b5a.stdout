@@ -10,7 +10,7 @@ source_filename = "LFortran"
 @4 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @5 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
-define void @check_c(%complex_4* %c, i32* %__1c, i32* %__2c, i32* %__3c, i32* %__4c, i32* %__5c, i32* %__6c, i32* %op_code) {
+define void @check_complex__________0(%complex_4* %c, i32* %__1c, i32* %__2c, i32* %__3c, i32* %__4c, i32* %__5c, i32* %__6c, i32* %op_code) {
 .entry:
   %i = alloca i32, align 4
   %j = alloca i32, align 4
@@ -1957,7 +1957,7 @@ loop.end350:                                      ; preds = %ifcont278
   store i32 1, i32* %call_arg_value354, align 4
   store i32 1, i32* %call_arg_value355, align 4
   store i32 0, i32* %call_arg_value356, align 4
-  call void @check_c(%complex_4* %339, i32* %call_arg_value, i32* %call_arg_value351, i32* %call_arg_value352, i32* %call_arg_value353, i32* %call_arg_value354, i32* %call_arg_value355, i32* %call_arg_value356)
+  call void @check_complex__________0(%complex_4* %339, i32* %call_arg_value, i32* %call_arg_value351, i32* %call_arg_value352, i32* %call_arg_value353, i32* %call_arg_value354, i32* %call_arg_value355, i32* %call_arg_value356)
   br i1 true, label %then358, label %else359
 
 then358:                                          ; preds = %loop.end350
@@ -4001,7 +4001,7 @@ loop.end866:                                      ; preds = %ifcont794
   store i32 1, i32* %call_arg_value871, align 4
   store i32 1, i32* %call_arg_value872, align 4
   store i32 1, i32* %call_arg_value873, align 4
-  call void @check_c(%complex_4* %748, i32* %call_arg_value867, i32* %call_arg_value868, i32* %call_arg_value869, i32* %call_arg_value870, i32* %call_arg_value871, i32* %call_arg_value872, i32* %call_arg_value873)
+  call void @check_complex__________0(%complex_4* %748, i32* %call_arg_value867, i32* %call_arg_value868, i32* %call_arg_value869, i32* %call_arg_value870, i32* %call_arg_value871, i32* %call_arg_value872, i32* %call_arg_value873)
   ret i32 0
 }
 

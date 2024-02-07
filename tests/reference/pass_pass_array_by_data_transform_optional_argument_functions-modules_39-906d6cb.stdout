@@ -132,8 +132,8 @@
                                     []
                                     []
                                     [(SubroutineCall
-                                        2 filewrite_filedata
-                                        2 filewrite_filedata
+                                        2 filewrite_character____1
+                                        2 filewrite_character____1
                                         [((FunctionCall
                                             2 join_path
                                             ()
@@ -210,14 +210,14 @@
                                     filewrite
                                     Public
                                 ),
-                            filewrite_filedata:
+                            filewrite_character____1:
                                 (ExternalSymbol
                                     2
-                                    filewrite_filedata
-                                    4 filewrite_filedata
+                                    filewrite_character____1
+                                    4 filewrite_character____1
                                     modules_39_module_fpm_filesystem_39
                                     []
-                                    filewrite_filedata
+                                    filewrite_character____1
                                     Public
                                 ),
                             join_path:
@@ -315,7 +315,7 @@
                                     .false.
                                     ()
                                 ),
-                            filewrite_filedata:
+                            filewrite_character____1:
                                 (Function
                                     (SymbolTable
                                         9
@@ -391,7 +391,7 @@
                                                     .false.
                                                 )
                                         })
-                                    filewrite_filedata
+                                    filewrite_character____1
                                     (FunctionType
                                         [(Character 1 -1 ())
                                         (Array
