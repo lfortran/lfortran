@@ -2329,34 +2329,10 @@ namespace Kind {
 
 namespace Rank {
 
-     static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {
-        ASRUtils::require_impl(x.n_args == 1,
-            "Call to `rank` must have exactly 1 argument",
-            x.base.base.loc, diagnostics);
-    }
-
     static ASR::expr_t *eval_Rank(Allocator &al, const Location &loc,
             ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args) {
         int result = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(args[0]));
         return make_ConstantWithType(make_IntegerConstant_t, result, int32, loc);
-    }
-
-    static inline ASR::asr_t* create_Rank(Allocator& al, const Location& loc,
-            Vec<ASR::expr_t*>& args,
-            diag::Diagnostics& diag) {
-        if (args.size() != 1) {
-            append_error(diag, "Intrinsic `rank` function accepts exactly 1 argument", loc);
-            return nullptr;
-        }
-        ASR::expr_t *m_value = nullptr;
-        if (all_args_evaluated(args)) {
-            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 1);
-            arg_values.push_back(al, expr_value(args[0]));
-            m_value = eval_Rank(al, loc, expr_type(args[0]), arg_values);
-        }
-        return ASR::make_IntrinsicScalarFunction_t(al, loc,
-            static_cast<int64_t>(IntrinsicScalarFunctions::Rank),
-            args.p, args.n, 0, int32, m_value);
     }
 
     static inline ASR::expr_t* instantiate_Rank(Allocator &al, const Location &loc,
