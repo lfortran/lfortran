@@ -178,13 +178,25 @@ def compute_arg_types(indent, no_of_args, args_arr):
     for i in range(no_of_args):
         src += indent + f"ASR::ttype_t *arg_type{i} = ASRUtils::type_get_past_const(ASRUtils::expr_type({args_arr}[{i}]));\n"
 
+def compute_arg_condition(no_of_args, args_lists):
+    condition = []
+    cond_in_msg = []
+    for arg_list in args_lists:
+        subcond = []
+        subcond_in_msg = []
+        for i in range(no_of_args):
+            arg = arg_list[i]
+            subcond.append(f"{type_to_asr_type_check[arg]}(*arg_type{i})")
+            subcond_in_msg.append(arg)
+        condition.append(" && ".join(subcond))
+        cond_in_msg.append(", ".join(subcond_in_msg))
+    return (f"({') || ('.join(condition)})", f"({') or ('.join(cond_in_msg)})")
+
 def add_verify_arg_type_src(func_name):
     global src
     arg_infos = intrinsic_funcs_args[func_name]
     no_of_args_msg = ""
     for i, arg_info in enumerate(arg_infos):
-        condition = ""
-        cond_in_msg = ""
         args_lists = arg_info["args"]
         no_of_args = len(args_lists[0])
         no_of_args_msg += " or " if i > 0 else ""
@@ -193,21 +205,7 @@ def add_verify_arg_type_src(func_name):
         src += 2 * indent + f"{else_if} (x.n_args == {no_of_args}) " + " {\n"
         src += 3 * indent + f'ASRUtils::require_impl(x.m_overload_id == {i}, "Overload Id for {func_name} expected to be {i}, found " + std::to_string(x.m_overload_id), x.base.base.loc, diagnostics);\n'
         compute_arg_types(3 * indent, no_of_args, "x.m_args")
-        for j, arg_list in enumerate(args_lists):
-            subcond = ""
-            subcond_in_msg = ""
-            for _j in range(no_of_args):
-                arg = arg_list[_j]
-                subcond += f"{type_to_asr_type_check[arg]}(*arg_type{_j})"
-                subcond_in_msg += arg
-                if _j < no_of_args - 1:
-                    subcond += " && "
-                    subcond_in_msg += ", "
-            condition += f"({subcond})"
-            cond_in_msg += f"({subcond_in_msg})"
-            if j < len(args_lists) - 1:
-                condition += " || "
-                cond_in_msg += " or "
+        condition, cond_in_msg = compute_arg_condition(no_of_args, args_lists)
         src += 3 * indent + f'ASRUtils::require_impl({condition}, "Unexpected args, {func_name} expects {cond_in_msg} as arguments", x.base.base.loc, diagnostics);\n'
         src += 2 * indent + "}"
     src += " else {\n"
@@ -236,8 +234,6 @@ def add_create_func_arg_type_src(func_name):
     arg_infos = intrinsic_funcs_args[func_name]
     no_of_args_msg = ""
     for i, arg_info in enumerate(arg_infos):
-        condition = ""
-        cond_in_msg = ""
         args_lists = arg_info["args"]
         no_of_args = len(args_lists[0])
         no_of_args_msg += " or " if i > 0 else ""
@@ -245,21 +241,7 @@ def add_create_func_arg_type_src(func_name):
         else_if = "else if" if i > 0 else "if"
         src += 2 * indent + f"{else_if} (args.size() == {no_of_args}) " + " {\n"
         compute_arg_types(3 * indent, no_of_args, "args")
-        for j, arg_list in enumerate(args_lists):
-            subcond = ""
-            subcond_in_msg = ""
-            for _j in range(no_of_args):
-                arg = arg_list[_j]
-                subcond += f"{type_to_asr_type_check[arg]}(*arg_type{_j})"
-                subcond_in_msg += arg
-                if _j < no_of_args - 1:
-                    subcond += " && "
-                    subcond_in_msg += ", "
-            condition += f"({subcond})"
-            cond_in_msg += f"({subcond_in_msg})"
-            if j < len(args_lists) - 1:
-                condition += " || "
-                cond_in_msg += " or "
+        condition, cond_in_msg = compute_arg_condition(no_of_args, args_lists)
         src += 3 * indent + f'if(!({condition}))' + ' {\n'
         src += 4 * indent + f'append_error(diag, "Unexpected args, {func_name} expects {cond_in_msg} as arguments", loc);\n'
         src += 4 * indent + f'return nullptr;\n'
