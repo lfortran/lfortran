@@ -200,26 +200,32 @@ public:
             }
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::ComplexToReal) {
             if (ASRUtils::expr_value(*convert_can)) {
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_pointer(dest_type)))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_pointer(dest_type2)))
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::ComplexConstant_t>(*value))
-                ASR::ComplexConstant_t *r = ASR::down_cast<ASR::ComplexConstant_t>(value);
-                double rval = r->m_re;
-                value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
-                    rval, dest_type2);
+                if (ASR::is_a<ASR::ComplexConstant_t>(*value)) {
+                  ASR::ComplexConstant_t *r = ASR::down_cast<ASR::ComplexConstant_t>(value);
+                  double rval = r->m_re;
+                  value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
+                      rval, dest_type2);
+                } else {
+                  value = nullptr;
+                }
             }
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::ComplexToInteger) {
             if (ASRUtils::expr_value(*convert_can)) {
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(dest_type)))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(dest_type2)))
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::ComplexConstant_t>(*value))
-                ASR::ComplexConstant_t *r = ASR::down_cast<ASR::ComplexConstant_t>(value);
-                double rval = r->m_re;
-                int64_t ival = (int64_t)rval;
-                value = (ASR::expr_t *)ASR::make_IntegerConstant_t(al, a_loc,
-                    ival, dest_type2);
+                if (ASR::is_a<ASR::ComplexConstant_t>(*value)) {
+                  ASR::ComplexConstant_t *r = ASR::down_cast<ASR::ComplexConstant_t>(value);
+                  double rval = r->m_re;
+                  int64_t ival = (int64_t)rval;
+                  value = (ASR::expr_t *)ASR::make_IntegerConstant_t(al, a_loc,
+                      ival, dest_type2);
+                } else {
+                  value = nullptr;
+                }
             }
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::IntegerToInteger) {
             if (ASRUtils::expr_value(*convert_can)) {
