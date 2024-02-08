@@ -2389,7 +2389,7 @@ int main_app(int argc, char *argv[]) {
             throw LCompilers::LCompilersException("All files are expected to be executables to be linked together");
         }
     } else {
-        throw LCompilers::LCompilersException("Unknown file type");
+        throw LCompilers::LCompilersException("Unknown file type in " + arg_file);
     }
     return 0;
 }
