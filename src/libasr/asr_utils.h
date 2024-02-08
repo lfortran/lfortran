@@ -227,6 +227,57 @@ static inline int extract_kind_from_ttype_t(const ASR::ttype_t* type) {
     }
 }
 
+static inline void set_kind_to_ttype_t(ASR::ttype_t* type, int kind) {
+    if (type == nullptr) {
+        return;
+    }
+    switch (type->type) {
+        case ASR::ttypeType::Array: {
+            set_kind_to_ttype_t(ASR::down_cast<ASR::Array_t>(type)->m_type, kind);
+            break;
+        }
+        case ASR::ttypeType::Integer : {
+            ASR::down_cast<ASR::Integer_t>(type)->m_kind = kind;
+            break;
+        }
+        case ASR::ttypeType::UnsignedInteger : {
+            ASR::down_cast<ASR::UnsignedInteger_t>(type)->m_kind = kind;
+            break;
+        }
+        case ASR::ttypeType::Real : {
+            ASR::down_cast<ASR::Real_t>(type)->m_kind = kind;
+            break;
+        }
+        case ASR::ttypeType::Complex: {
+            ASR::down_cast<ASR::Complex_t>(type)->m_kind = kind;
+            break;
+        }
+        case ASR::ttypeType::Character: {
+            ASR::down_cast<ASR::Character_t>(type)->m_kind = kind;
+            break;
+        }
+        case ASR::ttypeType::Logical: {
+            ASR::down_cast<ASR::Logical_t>(type)->m_kind = kind;
+            break;
+        }
+        case ASR::ttypeType::Pointer: {
+            set_kind_to_ttype_t(ASR::down_cast<ASR::Pointer_t>(type)->m_type, kind);
+            break;
+        }
+        case ASR::ttypeType::Allocatable: {
+            set_kind_to_ttype_t(ASR::down_cast<ASR::Allocatable_t>(type)->m_type, kind);
+            break;
+        }
+        case ASR::ttypeType::Const: {
+            set_kind_to_ttype_t(ASR::down_cast<ASR::Const_t>(type)->m_type, kind);
+            break;
+        }
+        default : {
+            return;
+        }
+    }
+}
+
 static inline ASR::Variable_t* EXPR2VAR(const ASR::expr_t *f)
 {
     return ASR::down_cast<ASR::Variable_t>(symbol_get_past_external(
