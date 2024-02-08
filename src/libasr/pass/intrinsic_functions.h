@@ -87,6 +87,7 @@ enum class IntrinsicScalarFunctions : int64_t {
     Ceiling,
     Epsilon,
     Tiny,
+    Conjg,
     SymbolicSymbol,
     SymbolicAdd,
     SymbolicSub,
@@ -1199,11 +1200,11 @@ namespace Floor {
         /*
         * r = floor(x)
         * r = int(x)
-        * if(x <= 0.00 && x != r){ 
+        * if(x <= 0.00 && x != r){
         *  r = int(x) - 1
         * }
         */
-      
+
         ASR::expr_t *one = i(1, return_type);
         ASR::expr_t *cast = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::RealToInteger, return_type, nullptr));
         ASR::expr_t *cast1 = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, cast, ASR::cast_kindType::IntegerToReal, return_type, nullptr));
@@ -3052,6 +3053,94 @@ namespace Tiny {
     }
 
 }  // namespace Tiny
+
+namespace Conjg {
+
+    static ASR::expr_t *eval_Conjg(Allocator &al, const Location &loc,
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args) {
+        std::complex<double> crv;
+        if( extract_value(args[0], crv) ) {
+            std::complex<double> val = std::conj(crv);
+            return EXPR(ASR::make_ComplexConstant_t(
+                al, loc, val.real(), val.imag(), arg_type));
+        } else {
+            return nullptr;
+        }
+    }
+
+    static inline ASR::expr_t* instantiate_Conjg(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        std::string func_name = "_lcompilers_conjg_" + type_to_str_python(arg_types[0]);
+        declare_basic_variables(func_name);
+        if (scope->get_symbol(func_name)) {
+            ASR::symbol_t *s = scope->get_symbol(func_name);
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
+            return b.Call(s, new_args, expr_type(f->m_return_var), nullptr);
+        }
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(fn_name, arg_types[0], ReturnVar);
+
+        // * r = real(x) - aimag(x)*(0,1)
+        ASR::ttype_t *real_type = TYPE(ASR::make_Real_t(al, loc,
+            extract_kind_from_ttype_t(arg_types[0])));
+        ASR::expr_t *aimag_of_x;
+        {
+            std::string c_func_name;
+            if (extract_kind_from_ttype_t(arg_types[0]) == 4) {
+                c_func_name = "_lfortran_caimag";
+            } else {
+                c_func_name = "_lfortran_zaimag";
+            }
+            SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
+            Vec<ASR::expr_t*> args_1;
+            {
+                args_1.reserve(al, 1);
+                auto arg = b.Variable(fn_symtab_1, "x", arg_types[0],
+                    ASR::intentType::In, ASR::abiType::BindC, true);
+                args_1.push_back(al, arg);
+            }
+
+            auto return_var_1 = b.Variable(fn_symtab_1, c_func_name, real_type,
+                ASR::intentType::ReturnVar, ASR::abiType::BindC, false);
+
+            SetChar dep_1; dep_1.reserve(al, 1);
+            Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
+            ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1,
+                dep_1, args_1, body_1, return_var_1, ASR::abiType::BindC,
+                ASR::deftypeType::Interface, s2c(al, c_func_name));
+            fn_symtab->add_symbol(c_func_name, s);
+            dep.push_back(al, s2c(al, c_func_name));
+            Vec<ASR::call_arg_t> call_args;
+            {
+                call_args.reserve(al, 1);
+                ASR::call_arg_t arg;
+                arg.loc = args[0]->base.loc;
+                arg.m_value = args[0];
+                call_args.push_back(al, arg);
+            }
+            aimag_of_x = b.Call(s, call_args, real_type);
+        }
+
+        aimag_of_x = EXPR(ASR::make_Cast_t(al, loc, aimag_of_x,
+            ASR::cast_kindType::RealToComplex, arg_types[0], nullptr));
+        ASR::expr_t *constant_complex = EXPR(ASR::make_ComplexConstant_t(al, loc,
+            0.0, 1.0, arg_types[0]));
+        ASR::expr_t *bin_op = b.ElementalMul(aimag_of_x, constant_complex, loc);
+        ASR::expr_t *real_of_x = EXPR(ASR::make_Cast_t(al, loc, args[0],
+            ASR::cast_kindType::ComplexToReal, real_type, nullptr));
+        real_of_x =  EXPR(ASR::make_Cast_t(al, loc, real_of_x,
+            ASR::cast_kindType::RealToComplex, arg_types[0], nullptr));
+        body.push_back(al, b.Assignment(result, b.ElementalSub(real_of_x,
+            bin_op, loc)));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace Conjg
 
 namespace SymbolicSymbol {
 
