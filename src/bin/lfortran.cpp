@@ -96,6 +96,29 @@ std::string read_file(const std::string &filename)
     return std::string(&bytes[0], filesize);
 }
 
+bool is_fortran_file(const std::string& filename) {
+    // List of Fortran file extensions
+    const std::vector<std::string> fortran_extensions {".f", ".F", ".f90", ".F90", ".f95", ".F95"};
+
+    for (const auto& ext : fortran_extensions) {
+        if (endswith(filename, ext)) {
+            return true; // The file is a Fortran file
+        }
+    }
+    return false; // The file is not a Fortran file
+}
+
+bool is_executable(const std::string& filename) {
+    const std::vector<std::string> executable_extensions {".a", ".lib", ".obj", ".o", ".exe", ".res", ".rbj", ".def", ".dll"};
+
+    for (const auto& ext : executable_extensions) {
+        if (endswith(filename, ext)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 #ifdef HAVE_LFORTRAN_LLVM
 
 void section(const std::string &s)
@@ -2324,7 +2347,7 @@ int main_app(int argc, char *argv[]) {
         }
     }
 
-    if (endswith(arg_file, ".f90") || endswith(arg_file, ".f") || endswith(arg_file, ".F90") || endswith(arg_file, ".F")) {
+    if (is_fortran_file(arg_file)) {
         if (backend == Backend::x86) {
             return compile_to_binary_x86(arg_file, outfile,
                     time_report, compiler_options);
@@ -2336,7 +2359,7 @@ int main_app(int argc, char *argv[]) {
             err = compile_to_object_file(arg_file, tmp_o, false,
                 compiler_options, lfortran_pass_manager);
 #else
-            std::cerr << "Compiling Fortran files to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
+            std::cerr << "Compiling Fortran files to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." < std::endl;
             return 1;
 #endif
         } else if (backend == Backend::cpp) {
@@ -2357,10 +2380,16 @@ int main_app(int argc, char *argv[]) {
         return link_executable({tmp_o}, outfile, runtime_library_dir,
                 backend, static_link, shared_link, link_with_gcc, true, arg_v, arg_L,
 		arg_l, linker_flags, compiler_options);
+    } else if (is_executable(arg_file)) {
+        if (std::all_of(arg_files.begin(), arg_files.end(), is_executable)) {
+            return link_executable(arg_files, outfile, runtime_library_dir,
+                    backend, static_link, shared_link, link_with_gcc, true, arg_v, arg_L,
+    		arg_l, linker_flags, compiler_options);
+        } else {
+            throw LCompilers::LCompilersException("All files are expected to be executables to be linked together");
+        }
     } else {
-        return link_executable(arg_files, outfile, runtime_library_dir,
-                backend, static_link, shared_link, link_with_gcc, true, arg_v, arg_L,
-		arg_l, linker_flags, compiler_options);
+        throw LCompilers::LCompilersException("Unknown file type");
     }
     return 0;
 }
