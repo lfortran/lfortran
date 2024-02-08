@@ -57,6 +57,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Leadz)
         INTRINSIC_NAME_CASE(Digits)
         INTRINSIC_NAME_CASE(Repeat)
+        INTRINSIC_NAME_CASE(Range)
         INTRINSIC_NAME_CASE(Hypot)
         INTRINSIC_NAME_CASE(MinExponent)
         INTRINSIC_NAME_CASE(MaxExponent)
@@ -226,6 +227,8 @@ namespace IntrinsicScalarFunctionRegistry {
             {&Sign::instantiate_Sign, &Sign::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Radix),
             {nullptr, &Radix::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Range),
+            {nullptr, &Range::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Aint),
             {&Aint::instantiate_Aint, &Aint::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Nint),
@@ -401,6 +404,8 @@ namespace IntrinsicScalarFunctionRegistry {
             "min"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Radix),
             "radix"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Range),
+            "range"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Sign),
             "sign"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Aint),
@@ -529,7 +534,8 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"min0", {&Min::create_Min, &Min::eval_Min}},
                 {"max", {&Max::create_Max, &Max::eval_Max}},
                 {"min", {&Min::create_Min, &Min::eval_Min}},
-                {"radix", {&Radix::create_Radix, Radix::eval_Radix}},
+                {"radix", {&Radix::create_Radix, &Radix::eval_Radix}},
+                {"range", {&Range::create_Range, &Range::eval_Range}},
                 {"sign", {&Sign::create_Sign, &Sign::eval_Sign}},
                 {"aint", {&Aint::create_Aint, &Aint::eval_Aint}},
                 {"nint", {&Nint::create_Nint, &Nint::eval_Nint}},
@@ -584,6 +590,7 @@ namespace IntrinsicScalarFunctionRegistry {
                  id_ == IntrinsicScalarFunctions::Erfc ||
                  id_ == IntrinsicScalarFunctions::Trunc ||
                  id_ == IntrinsicScalarFunctions::Fix ||
+                 id_ == IntrinsicScalarFunctions::Range ||
                  id_ == IntrinsicScalarFunctions::Sin ||
                  id_ == IntrinsicScalarFunctions::Exp ||
                  id_ == IntrinsicScalarFunctions::Exp2 ||
