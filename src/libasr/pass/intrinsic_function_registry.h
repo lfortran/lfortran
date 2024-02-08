@@ -52,6 +52,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Mod)
         INTRINSIC_NAME_CASE(Trailz)
         INTRINSIC_NAME_CASE(Shiftr)
+        INTRINSIC_NAME_CASE(Rshift)
         INTRINSIC_NAME_CASE(Shiftl)
         INTRINSIC_NAME_CASE(Ishft)
         INTRINSIC_NAME_CASE(Leadz)
@@ -180,6 +181,8 @@ namespace IntrinsicScalarFunctionRegistry {
             {&Trailz::instantiate_Trailz, &Trailz::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Shiftr),
             {&Shiftr::instantiate_Shiftr, &Shiftr::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Rshift),
+            {&Rshift::instantiate_Rshift, &Rshift::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Shiftl),
             {&Shiftl::instantiate_Shiftl, &Shiftl::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Ishft),
@@ -369,6 +372,8 @@ namespace IntrinsicScalarFunctionRegistry {
             "trailz"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Shiftr),
             "shiftr"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::Rshift),
+            "rshift"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Shiftl),
             "shiftl"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Ishft),
@@ -526,6 +531,7 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"mod", {&Mod::create_Mod, &Mod::eval_Mod}},
                 {"trailz", {&Trailz::create_Trailz, &Trailz::eval_Trailz}},
                 {"shiftr", {&Shiftr::create_Shiftr, &Shiftr::eval_Shiftr}},
+                {"rshift", {&Rshift::create_Rshift, &Rshift::eval_Rshift}},
                 {"shiftl", {&Shiftl::create_Shiftl, &Shiftl::eval_Shiftl}},
                 {"lshift", {&Shiftl::create_Shiftl, &Shiftl::eval_Shiftl}},
                 {"ishft", {&Ishft::create_Ishft, &Ishft::eval_Ishft}},
