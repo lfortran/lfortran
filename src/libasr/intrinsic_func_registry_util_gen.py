@@ -365,6 +365,10 @@ def gen_verify_args(func_name):
     global src
     src += indent + R"static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {" + "\n"
     add_verify_arg_type_src(func_name)
+    if func_name in skip_fn_instantiation:
+        src += indent * 2 + 'ASRUtils::require_impl(x.m_value, '\
+            f'"Missing compile time value, `{func_name}` intrinsic output can '\
+            'be computed during compile time", x.base.base.loc, diagnostics);\n'
     add_verify_return_type_src(func_name)
     src += indent + "}\n\n"
 
