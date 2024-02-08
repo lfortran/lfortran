@@ -107,26 +107,36 @@ intrinsic_funcs_args = {
     "Aint": [
         {
             "args": [("real",)],
+            "return": "TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(expr_type(x.m_args[0])))",
+            "kind_arg": True
         }
     ],
     "Nint": [
         {
-            "args": [("real",)]
+            "args": [("real",)],
+            "return": "int32",
+            "kind_arg": True
         }
     ],
     "Anint": [
         {
             "args": [("real",)],
+            "return": "TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(expr_type(x.m_args[0])))",
+            "kind_arg": True
         }
     ],
     "Floor": [
         {
             "args": [("real",)],
+            "return": "int32",
+            "kind_arg": True
         }
     ],
     "Ceiling": [
         {
             "args": [("real",)],
+            "return": "int32",
+            "kind_arg": True
         }
     ],
     "Sqrt": [
@@ -180,6 +190,7 @@ intrinsic_funcs_args = {
     "Aimag": [
         {
             "args": [("complex",)],
+            "return": "TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(expr_type(x.m_args[0])))"
         },
     ],
     "Rank": [
@@ -197,8 +208,7 @@ intrinsic_funcs_args = {
 
 }
 
-skip_create_func = ["Aint", "Anint", "Nint", "Partition", "Floor", "Ceiling", "Aimag"]
-skip_fn_instantiation = ["Radix", "Range"]
+skip_create_func = ["Partition"]
 
 type_to_asr_type_check = {
     "any": "!ASR::is_a<ASR::TypeParameter_t>",
@@ -312,17 +322,24 @@ def add_create_func_return_src(func_name):
     ret_type_val = arg_infos[0].get("return", None)
     ret_type_arg_idx = arg_infos[0].get("ret_type_arg_idx", None)
     ret_type = ret_type_val if ret_type_val else f"expr_type(args[{ret_type_arg_idx}])"
-    if func_name in skip_fn_instantiation:
-        src += indent * 2 + f"ASR::expr_t *m_value = eval_{func_name}(al, loc, {ret_type}, args);\n"
-    else:
-        src += indent * 2 + "ASR::expr_t *m_value = nullptr;\n"
-        src += indent * 2 + "if (all_args_evaluated(args)) {\n"
-        src += indent * 3 + f"Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, {no_of_args});\n"
-        for _i in range(no_of_args):
-            src += indent * 3 + f"arg_values.push_back(al, expr_value(args[{_i}]));\n"
-        src += indent * 3 + f"m_value = eval_{func_name}(al, loc, {ret_type}, arg_values);\n"
+    src += indent * 2 + f"ASR::ttype_t *return_type = {ret_type};\n"
+    if arg_infos[0].get("kind_arg", False):
+        src += indent * 2 + "if ( args[1] != nullptr ) {\n"
+        src += indent * 3 +     "int kind = -1;\n"
+        src += indent * 3 +     "if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1])) || !extract_value(args[1], kind)) {\n"
+        src += indent * 4 +         f'append_error(diag, "`kind` argument of the `{func_name}` function must be a scalar Integer constant", args[1]->base.loc);\n'
+        src += indent * 4 +         "return nullptr;\n"
+        src += indent * 3 +     "}\n"
+        src += indent * 3 +     "set_kind_to_ttype_t(return_type, kind);\n"
         src += indent * 2 + "}\n"
-    src += indent * 2 + f"return ASR::make_IntrinsicScalarFunction_t(al, loc, static_cast<int64_t>(IntrinsicScalarFunctions::{func_name}), args.p, args.n, 0, {ret_type}, m_value);\n"
+    src += indent * 2 + "ASR::expr_t *m_value = nullptr;\n"
+    src += indent * 2 + "if (all_args_evaluated(args)) {\n"
+    src += indent * 3 + f"Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, {no_of_args});\n"
+    for _i in range(no_of_args):
+        src += indent * 3 + f"arg_values.push_back(al, expr_value(args[{_i}]));\n"
+    src += indent * 3 + f"m_value = eval_{func_name}(al, loc, return_type, arg_values);\n"
+    src += indent * 2 + "}\n"
+    src += indent * 2 + f"return ASR::make_IntrinsicScalarFunction_t(al, loc, static_cast<int64_t>(IntrinsicScalarFunctions::{func_name}), args.p, args.n, 0, return_type, m_value);\n"
 
 def gen_verify_args(func_name):
     global src
