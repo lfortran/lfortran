@@ -1219,7 +1219,7 @@ namespace Nint {
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args) {
         double rv = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
         double near_integer = std::round(rv);
-        int result = int(near_integer);
+        int64_t result = int(near_integer);
         return make_ConstantWithType(make_IntegerConstant_t, result, arg_type, loc);
     }
 
