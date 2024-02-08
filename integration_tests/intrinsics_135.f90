@@ -3,6 +3,7 @@ program intrinsics_133
     real :: x = 5.8
     real :: y = 6.0
     real :: z = -5.8
+    double precision :: v = 1e12_8
     integer(kind = 4) :: res_4
     integer(kind = 8) :: res_8
 
@@ -93,5 +94,13 @@ program intrinsics_133
     res_8 = nint(-412.00, 8)
     print *, res_8
     if (res_8 /= -412) error stop
+
+    res_8 = nint(1e12_8, 8)
+    print *, res_8
+    if (res_8 /= 1000000000000_8) error stop
+
+    res_8 = nint(v, 8)
+    print *, res_8
+    if (res_8 /= 1000000000000_8) error stop
 
 end program
