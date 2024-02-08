@@ -225,7 +225,7 @@ namespace IntrinsicScalarFunctionRegistry {
         {static_cast<int64_t>(IntrinsicScalarFunctions::Sign),
             {&Sign::instantiate_Sign, &Sign::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Radix),
-            {&Radix::instantiate_Radix, &Radix::verify_args}},
+            {nullptr, &Radix::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Aint),
             {&Aint::instantiate_Aint, &Aint::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::Nint),
