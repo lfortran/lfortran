@@ -2359,7 +2359,7 @@ int main_app(int argc, char *argv[]) {
             err = compile_to_object_file(arg_file, tmp_o, false,
                 compiler_options, lfortran_pass_manager);
 #else
-            std::cerr << "Compiling Fortran files to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." < std::endl;
+            std::cerr << "Compiling Fortran files to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
             return 1;
 #endif
         } else if (backend == Backend::cpp) {
