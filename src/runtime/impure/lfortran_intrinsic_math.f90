@@ -15,10 +15,6 @@ interface random_number
     module procedure sp_rand_num, dp_rand_num
 end interface
 
-interface conjg
-    module procedure conjgz32, conjgz64
-end interface
-
 interface dot_product
     module procedure dotproductr32r32, dotproductr64r64, dotproductz32z32, dotproductz64z64
 end interface
@@ -101,18 +97,6 @@ interface
 end interface
 call c_dp_rand_num(harvest)
 end subroutine
-
-function conjgz32(x) result(r)
-complex(sp) :: x
-complex(sp) :: r
-r = real(x) - aimag(x)*(0,1)
-end function
-
-function conjgz64(x) result(r)
-complex(dp) :: x
-complex(dp) :: r
-r = real(x, dp) - aimag(x)*(0,1)
-end function
 
 function dotproductr32r32(x, y) result(r)
 real(sp) :: x(:), y(:)
