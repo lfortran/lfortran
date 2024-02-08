@@ -65,7 +65,7 @@ enum class IntrinsicScalarFunctions : int64_t {
     Partition,
     ListReverse,
     ListPop,
-    Reserve,
+    ListReserve,
     DictKeys,
     DictValues,
     SetAdd,
@@ -2562,15 +2562,15 @@ static inline ASR::asr_t* create_ListPop(Allocator& al, const Location& loc,
 
 } // namespace ListPop
 
-namespace Reserve {
+namespace ListReserve {
 
-static inline ASR::expr_t *eval_Reserve(Allocator &/*al*/,
+static inline ASR::expr_t *eval_ListReserve(Allocator &/*al*/,
     const Location &/*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/) {
     // TODO: To be implemented for ListConstant expression
     return nullptr;
 }
 
-} // namespace Reserve
+} // namespace ListReserve
 
 namespace DictKeys {
 

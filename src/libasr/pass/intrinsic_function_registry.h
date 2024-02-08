@@ -64,7 +64,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Partition)
         INTRINSIC_NAME_CASE(ListReverse)
         INTRINSIC_NAME_CASE(ListPop)
-        INTRINSIC_NAME_CASE(Reserve)
+        INTRINSIC_NAME_CASE(ListReserve)
         INTRINSIC_NAME_CASE(DictKeys)
         INTRINSIC_NAME_CASE(DictValues)
         INTRINSIC_NAME_CASE(SetAdd)
@@ -212,8 +212,8 @@ namespace IntrinsicScalarFunctionRegistry {
             {nullptr, &DictValues::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::ListPop),
             {nullptr, &ListPop::verify_args}},
-        {static_cast<int64_t>(IntrinsicScalarFunctions::Reserve),
-            {nullptr, &Reserve::verify_args}},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::ListReserve),
+            {nullptr, &ListReserve::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SetAdd),
             {nullptr, &SetAdd::verify_args}},
         {static_cast<int64_t>(IntrinsicScalarFunctions::SetRemove),
@@ -385,8 +385,8 @@ namespace IntrinsicScalarFunctionRegistry {
             "list.reverse"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::ListPop),
             "list.pop"},
-        {static_cast<int64_t>(IntrinsicScalarFunctions::Reserve),
-            "reserve"},
+        {static_cast<int64_t>(IntrinsicScalarFunctions::ListReserve),
+            "list.reserve"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::DictKeys),
             "dict.keys"},
         {static_cast<int64_t>(IntrinsicScalarFunctions::DictValues),
@@ -520,7 +520,7 @@ namespace IntrinsicScalarFunctionRegistry {
                 {"list.index", {&ListIndex::create_ListIndex, &ListIndex::eval_list_index}},
                 {"list.reverse", {&ListReverse::create_ListReverse, &ListReverse::eval_ListReverse}},
                 {"list.pop", {&ListPop::create_ListPop, &ListPop::eval_list_pop}},
-                {"reserve", {&Reserve::create_Reserve, &Reserve::eval_Reserve}},
+                {"list.reserve", {&ListReserve::create_ListReserve, &ListReserve::eval_ListReserve}},
                 {"dict.keys", {&DictKeys::create_DictKeys, &DictKeys::eval_dict_keys}},
                 {"dict.values", {&DictValues::create_DictValues, &DictValues::eval_dict_values}},
                 {"set.add", {&SetAdd::create_SetAdd, &SetAdd::eval_set_add}},
