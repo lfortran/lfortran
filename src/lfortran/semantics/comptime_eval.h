@@ -99,7 +99,6 @@ struct IntrinsicProcedures {
             {"selected_int_kind", {m_kind, &eval_selected_int_kind, true}},
             {"selected_real_kind", {m_kind, &eval_selected_real_kind, true}},
             {"selected_char_kind", {m_kind, &eval_selected_char_kind, true}},
-            {"range", {m_math, &eval_range, false}},
             {"epsilon", {m_math, &eval_epsilon, false}},
             {"tiny", {m_math, &eval_tiny, false}},
 
@@ -488,52 +487,6 @@ struct IntrinsicProcedures {
         return eval_2args_ri(al, loc, args, compiler_options,
             &IntrinsicProcedures::lfortran_max,
             &IntrinsicProcedures::lfortran_max_i);
-    }
-
-    static ASR::expr_t *eval_range(Allocator &al, const Location &loc,
-            Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options
-            ) {
-        if (args.size() != 1) {
-            throw SemanticError("Intrinsic range function accepts exactly 1 argument", loc);
-        }
-        ASR::ttype_t* t = ASRUtils::expr_type(args[0]);
-        int64_t range_val = -1;
-        if (ASR::is_a<ASR::Real_t>(*t)) {
-            ASR::Real_t* t_real = ASR::down_cast<ASR::Real_t>(t);
-            if( t_real->m_kind == 4 ) {
-                range_val = 37;
-            } else if( t_real->m_kind == 8 ) {
-                range_val = 307;
-            } else {
-                throw SemanticError("Only 32 and 64 bit kinds are supported in range intrinsic.", loc);
-            }
-        } else if (ASR::is_a<ASR::Integer_t>(*t)) {
-            ASR::Integer_t* t_int = ASR::down_cast<ASR::Integer_t>(t);
-            if( t_int->m_kind == 4 ) {
-                range_val = 9;
-            } else if( t_int->m_kind == 8 ) {
-                range_val = 18;
-            } else if( t_int->m_kind == 1 ) {
-                range_val = 2;
-            } else if( t_int->m_kind == 2 ) {
-                range_val = 4;
-            } else {
-                throw SemanticError("Only 32, 64, 8 and 16 bit kinds are supported in range intrinsic.", loc);
-            }
-        } else if (ASR::is_a<ASR::Complex_t>(*t)) {
-            ASR::Complex_t* t_complex = ASR::down_cast<ASR::Complex_t>(t);
-            if( t_complex->m_kind == 4 ) {
-                range_val = 37;
-            } else if( t_complex->m_kind == 8 ) {
-                range_val = 307;
-            } else {
-                throw SemanticError("Only 32 and 64 bit kinds are supported in range intrinsic.", loc);
-            }
-        } else {
-            throw SemanticError("Argument of the range function must be Integer, Real or Complex", loc);
-        }
-        ASR::ttype_t* tmp_int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
-        return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, range_val, tmp_int_type));;
     }
 
     static ASR::expr_t *eval_int(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
