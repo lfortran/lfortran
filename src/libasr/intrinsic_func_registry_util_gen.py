@@ -86,7 +86,7 @@ intrinsic_funcs_args = {
             "return": "nullptr"
         }
     ],
-    "Reserve": [
+    "ListReserve": [
         {
             "args": [("list", "int")],
             "return": "nullptr"
@@ -209,7 +209,7 @@ intrinsic_funcs_ret_type = {
     "Kind": ["int"],
     "Partition": ["tuple"],
     "ListReverse": ["null"],
-    "Reserve": [ "null"],
+    "ListReserve": [ "null"],
     "Radix": ["int"],
 }
 
