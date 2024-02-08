@@ -181,6 +181,12 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         }
     ],
+    "Rshift": [
+        {
+            "args": [("int", "int")],
+            "ret_type_arg_idx": 0
+        }
+    ],
     "Shiftl": [
         {
             "args": [("int", "int")],
