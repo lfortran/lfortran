@@ -96,7 +96,7 @@ std::string read_file(const std::string &filename)
     return std::string(&bytes[0], filesize);
 }
 
-bool is_fortran_file(const std::string& filename) {
+bool has_fortran_extension(const std::string& filename) {
     // List of Fortran file extensions
     const std::vector<std::string> fortran_extensions {".f", ".F", ".f90", ".F90", ".f95", ".F95"};
 
@@ -108,7 +108,7 @@ bool is_fortran_file(const std::string& filename) {
     return false; // The file is not a Fortran file
 }
 
-bool is_executable(const std::string& filename) {
+bool has_binary_extension(const std::string& filename) {
     const std::vector<std::string> executable_extensions {".a", ".lib", ".obj", ".o", ".exe", ".res", ".rbj", ".def", ".dll"};
 
     for (const auto& ext : executable_extensions) {
@@ -2347,7 +2347,7 @@ int main_app(int argc, char *argv[]) {
         }
     }
 
-    if (is_fortran_file(arg_file)) {
+    if (has_fortran_extension(arg_file)) {
         if (backend == Backend::x86) {
             return compile_to_binary_x86(arg_file, outfile,
                     time_report, compiler_options);
@@ -2380,8 +2380,8 @@ int main_app(int argc, char *argv[]) {
         return link_executable({tmp_o}, outfile, runtime_library_dir,
                 backend, static_link, shared_link, link_with_gcc, true, arg_v, arg_L,
 		arg_l, linker_flags, compiler_options);
-    } else if (is_executable(arg_file)) {
-        if (std::all_of(arg_files.begin(), arg_files.end(), is_executable)) {
+    } else if (has_binary_extension(arg_file)) {
+        if (std::all_of(arg_files.begin(), arg_files.end(), has_binary_extension)) {
             return link_executable(arg_files, outfile, runtime_library_dir,
                     backend, static_link, shared_link, link_with_gcc, true, arg_v, arg_L,
     		arg_l, linker_flags, compiler_options);
