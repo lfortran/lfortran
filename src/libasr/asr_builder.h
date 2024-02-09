@@ -76,6 +76,7 @@ class ASRBuilder {
     #define int64        TYPE(ASR::make_Integer_t(al, loc, 8))
     #define real32       TYPE(ASR::make_Real_t(al, loc, 4))
     #define real64       TYPE(ASR::make_Real_t(al, loc, 8))
+    #define complex32    TYPE(ASR::make_Complex_t(al, loc, 4))
     #define logical      TYPE(ASR::make_Logical_t(al, loc, 4))
     #define character(x) TYPE(ASR::make_Character_t(al, loc, 1, x, nullptr))
     #define List(x)      TYPE(ASR::make_List_t(al, loc, x))
