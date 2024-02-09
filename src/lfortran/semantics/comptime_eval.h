@@ -101,7 +101,6 @@ struct IntrinsicProcedures {
             {"selected_char_kind", {m_kind, &eval_selected_char_kind, true}},
 
             {"dot_product", {m_math, &not_implemented, false}},
-            {"conjg", {m_math, &not_implemented, false}},
 
             {"iand", {m_bit, &not_implemented, false}},
             {"ior", {m_bit, &not_implemented, false}},
