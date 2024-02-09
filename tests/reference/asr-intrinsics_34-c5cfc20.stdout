@@ -32,36 +32,6 @@
                                     Required
                                     .false.
                                 ),
-                            epsilon:
-                                (ExternalSymbol
-                                    2
-                                    epsilon
-                                    4 epsilon
-                                    lfortran_intrinsic_math
-                                    []
-                                    epsilon
-                                    Private
-                                ),
-                            epsilon@depsilon:
-                                (ExternalSymbol
-                                    2
-                                    epsilon@depsilon
-                                    4 depsilon
-                                    lfortran_intrinsic_math
-                                    []
-                                    depsilon
-                                    Private
-                                ),
-                            epsilon@sepsilon:
-                                (ExternalSymbol
-                                    2
-                                    epsilon@sepsilon
-                                    4 sepsilon
-                                    lfortran_intrinsic_math
-                                    []
-                                    sepsilon
-                                    Private
-                                ),
                             x:
                                 (Variable
                                     2
@@ -118,50 +88,47 @@
                     intrinsics_34
                     []
                     [(Print
-                        [(FunctionCall
-                            2 epsilon@sepsilon
-                            2 epsilon
-                            [((Var 2 x))]
+                        [(IntrinsicScalarFunction
+                            Epsilon
+                            [(Var 2 x)]
+                            0
                             (Real 4)
                             (RealConstant
                                 0.000000
                                 (Real 4)
                             )
-                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(FunctionCall
-                            2 epsilon@depsilon
-                            2 epsilon
-                            [((Var 2 y))]
+                        [(IntrinsicScalarFunction
+                            Epsilon
+                            [(Var 2 y)]
+                            0
                             (Real 8)
                             (RealConstant
                                 0.000000
                                 (Real 8)
                             )
-                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
                         [(RealBinOp
-                            (FunctionCall
-                                2 epsilon@depsilon
-                                2 epsilon
-                                [((RealConstant
+                            (IntrinsicScalarFunction
+                                Epsilon
+                                [(RealConstant
                                     1.000000
                                     (Real 8)
-                                ))]
+                                )]
+                                0
                                 (Real 8)
                                 (RealConstant
                                     0.000000
                                     (Real 8)
                                 )
-                                ()
                             )
                             Pow
                             (Cast
@@ -190,16 +157,15 @@
                             (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
-                                    (FunctionCall
-                                        2 epsilon@sepsilon
-                                        2 epsilon
-                                        [((Var 2 x))]
+                                    (IntrinsicScalarFunction
+                                        Epsilon
+                                        [(Var 2 x)]
+                                        0
                                         (Real 4)
                                         (RealConstant
                                             0.000000
                                             (Real 4)
                                         )
-                                        ()
                                     )
                                     Sub
                                     (RealConstant
@@ -240,16 +206,15 @@
                             (IntrinsicScalarFunction
                                 Abs
                                 [(RealBinOp
-                                    (FunctionCall
-                                        2 epsilon@depsilon
-                                        2 epsilon
-                                        [((Var 2 y))]
+                                    (IntrinsicScalarFunction
+                                        Epsilon
+                                        [(Var 2 y)]
+                                        0
                                         (Real 8)
                                         (RealConstant
                                             0.000000
                                             (Real 8)
                                         )
-                                        ()
                                     )
                                     Sub
                                     (RealConstant
@@ -291,19 +256,18 @@
                                 Abs
                                 [(RealBinOp
                                     (RealBinOp
-                                        (FunctionCall
-                                            2 epsilon@depsilon
-                                            2 epsilon
-                                            [((RealConstant
+                                        (IntrinsicScalarFunction
+                                            Epsilon
+                                            [(RealConstant
                                                 1.000000
                                                 (Real 8)
-                                            ))]
+                                            )]
+                                            0
                                             (Real 8)
                                             (RealConstant
                                                 0.000000
                                                 (Real 8)
                                             )
-                                            ()
                                         )
                                         Pow
                                         (RealConstant
@@ -350,15 +314,7 @@
                         )]
                         []
                     )]
-                ),
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math)
+                )
         })
     []
 )
