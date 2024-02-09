@@ -107,26 +107,36 @@ intrinsic_funcs_args = {
     "Aint": [
         {
             "args": [("real",)],
+            "return": "TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(expr_type(args[0]))))",
+            "kind_arg": True
         }
     ],
     "Nint": [
         {
-            "args": [("real",)]
+            "args": [("real",)],
+            "return": "int32",
+            "kind_arg": True
         }
     ],
     "Anint": [
         {
             "args": [("real",)],
+            "return": "TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(expr_type(args[0]))))",
+            "kind_arg": True
         }
     ],
     "Floor": [
         {
             "args": [("real",)],
+            "return": "int32",
+            "kind_arg": True
         }
     ],
     "Ceiling": [
         {
             "args": [("real",)],
+            "return": "int32",
+            "kind_arg": True
         }
     ],
     "Sqrt": [
@@ -180,6 +190,7 @@ intrinsic_funcs_args = {
     "Aimag": [
         {
             "args": [("complex",)],
+            "return": "TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(expr_type(args[0]))))"
         },
     ],
     "Rank": [
@@ -197,7 +208,7 @@ intrinsic_funcs_args = {
 
 }
 
-skip_create_func = ["Aint", "Anint", "Nint", "Partition", "Floor", "Ceiling", "Aimag"]
+skip_create_func = ["Partition"]
 skip_fn_instantiation = ["Radix", "Range"]
 
 type_to_asr_type_check = {
@@ -258,8 +269,8 @@ def add_verify_arg_type_src(func_name):
         compute_arg_types(3 * indent, no_of_args, "x.m_args")
         condition, cond_in_msg = compute_arg_condition(no_of_args, args_lists)
         src += 3 * indent + f'ASRUtils::require_impl({condition}, "Unexpected args, {func_name} expects {cond_in_msg} as arguments", x.base.base.loc, diagnostics);\n'
-        src += 2 * indent + "}"
-    src += " else {\n"
+        src += 2 * indent + "}\n"
+    src += 2 * indent + "else {\n"
     src += 3 * indent + f'ASRUtils::require_impl(false, "Unexpected number of args, {func_name} takes {no_of_args_msg} arguments, found " + std::to_string(x.n_args), x.base.base.loc, diagnostics);\n'
     src += 2 * indent + "}\n"
 
@@ -286,19 +297,20 @@ def add_create_func_arg_type_src(func_name):
     no_of_args_msg = ""
     for i, arg_info in enumerate(arg_infos):
         args_lists = arg_info["args"]
+        kind_arg = arg_info.get("kind_arg", False)
         no_of_args = len(args_lists[0])
         no_of_args_msg += " or " if i > 0 else ""
-        no_of_args_msg += f"{no_of_args}"
+        no_of_args_msg += f"{no_of_args + int(kind_arg)}"
         else_if = "else if" if i > 0 else "if"
-        src += 2 * indent + f"{else_if} (args.size() == {no_of_args}) " + " {\n"
+        src += 2 * indent + f"{else_if} (args.size() == {no_of_args + int(kind_arg)}) " + " {\n"
         compute_arg_types(3 * indent, no_of_args, "args")
         condition, cond_in_msg = compute_arg_condition(no_of_args, args_lists)
         src += 3 * indent + f'if(!({condition}))' + ' {\n'
         src += 4 * indent + f'append_error(diag, "Unexpected args, {func_name} expects {cond_in_msg} as arguments", loc);\n'
         src += 4 * indent + f'return nullptr;\n'
         src += 3 * indent + '}\n'
-        src += 2 * indent + "}"
-    src += " else {\n"
+        src += 2 * indent + "}\n"
+    src += 2 * indent + "else {\n"
     src += 3 * indent + f'append_error(diag, "Unexpected number of args, {func_name} takes {no_of_args_msg} arguments, found " + std::to_string(args.size()), loc);\n'
     src += 3 * indent + f'return nullptr;\n'
     src += 2 * indent + "}\n"
@@ -312,17 +324,31 @@ def add_create_func_return_src(func_name):
     ret_type_val = arg_infos[0].get("return", None)
     ret_type_arg_idx = arg_infos[0].get("ret_type_arg_idx", None)
     ret_type = ret_type_val if ret_type_val else f"expr_type(args[{ret_type_arg_idx}])"
-    if func_name in skip_fn_instantiation:
-        src += indent * 2 + f"ASR::expr_t *m_value = eval_{func_name}(al, loc, {ret_type}, args);\n"
-    else:
-        src += indent * 2 + "ASR::expr_t *m_value = nullptr;\n"
-        src += indent * 2 + "if (all_args_evaluated(args)) {\n"
-        src += indent * 3 + f"Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, {no_of_args});\n"
-        for _i in range(no_of_args):
-            src += indent * 3 + f"arg_values.push_back(al, expr_value(args[{_i}]));\n"
-        src += indent * 3 + f"m_value = eval_{func_name}(al, loc, {ret_type}, arg_values);\n"
+    kind_arg = arg_infos[0].get("kind_arg", False)
+    src += indent * 2 + f"ASR::ttype_t *return_type = {ret_type};\n"
+    if kind_arg:
+        src += indent * 2 + "if ( args[1] != nullptr ) {\n"
+        src += indent * 3 +     "int kind = -1;\n"
+        src += indent * 3 +     "if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1])) || !extract_value(args[1], kind)) {\n"
+        src += indent * 4 +         f'append_error(diag, "`kind` argument of the `{func_name}` function must be a scalar Integer constant", args[1]->base.loc);\n'
+        src += indent * 4 +         "return nullptr;\n"
+        src += indent * 3 +     "}\n"
+        src += indent * 3 +     "set_kind_to_ttype_t(return_type, kind);\n"
         src += indent * 2 + "}\n"
-    src += indent * 2 + f"return ASR::make_IntrinsicScalarFunction_t(al, loc, static_cast<int64_t>(IntrinsicScalarFunctions::{func_name}), args.p, args.n, 0, {ret_type}, m_value);\n"
+    src += indent * 2 + "ASR::expr_t *m_value = nullptr;\n"
+    src += indent * 2 + f"Vec<ASR::expr_t*> m_args; m_args.reserve(al, {no_of_args});\n"
+    for _i in range(no_of_args):
+        src += indent * 2 + f"m_args.push_back(al, args[{_i}]);\n"
+    if func_name in skip_fn_instantiation:
+        src += indent * 2 + f"m_value = eval_{func_name}(al, loc, {ret_type}, args);\n"
+    else:
+        src += indent * 2 + "if (all_args_evaluated(m_args)) {\n"
+        src += indent * 3 +     f"Vec<ASR::expr_t*> args_values; args_values.reserve(al, {no_of_args});\n"
+        for _i in range(no_of_args):
+            src += indent * 3 + f"args_values.push_back(al, expr_value(m_args[{_i}]));\n"
+        src += indent * 3 +     f"m_value = eval_{func_name}(al, loc, return_type, args_values);\n"
+        src += indent * 2 + "}\n"
+    src += indent * 2 + f"return ASR::make_IntrinsicScalarFunction_t(al, loc, static_cast<int64_t>(IntrinsicScalarFunctions::{func_name}), m_args.p, m_args.n, 0, return_type, m_value);\n"
 
 def gen_verify_args(func_name):
     global src
