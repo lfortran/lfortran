@@ -214,7 +214,7 @@
                                 ()
                             )
                             (RealBinOp
-                                (IntrinsicScalarFunction
+                                (IntrinsicElementalFunction
                                     Sin
                                     [(ArrayItem
                                         (Var 2 x)
@@ -241,7 +241,7 @@
                                         )
                                     )
                                     Sub
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Cos
                                         [(RealBinOp
                                             (ArrayItem

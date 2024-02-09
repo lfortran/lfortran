@@ -2772,9 +2772,9 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
             }
             break;
         }
-        case ASR::exprType::IntrinsicScalarFunction: {
-            ASR::IntrinsicScalarFunction_t* kind_isf =
-                ASR::down_cast<ASR::IntrinsicScalarFunction_t>(kind_expr);
+        case ASR::exprType::IntrinsicElementalFunction: {
+            ASR::IntrinsicElementalFunction_t* kind_isf =
+                ASR::down_cast<ASR::IntrinsicElementalFunction_t>(kind_expr);
             if (kind_isf->m_intrinsic_id == 0 && kind_isf->m_value) {
                 // m_intrinsic_id: 0 -> kind intrinsic
                 LCOMPILERS_ASSERT( ASR::is_a<ASR::IntegerConstant_t>(*kind_isf->m_value) );
@@ -2839,7 +2839,7 @@ inline int extract_len(ASR::expr_t* len_expr, const Location& loc) {
             a_len = -3;
             break;
         }
-        case ASR::exprType::IntrinsicScalarFunction: {
+        case ASR::exprType::IntrinsicElementalFunction: {
             a_len = -3;
             break;
         }
@@ -5096,7 +5096,7 @@ static inline ASR::expr_t* cast_to_descriptor(Allocator& al, ASR::expr_t* arg) {
     return arg;
 }
 
-static inline ASR::asr_t* make_IntrinsicScalarFunction_t_util(
+static inline ASR::asr_t* make_IntrinsicElementalFunction_t_util(
     Allocator &al, const Location &a_loc, int64_t a_intrinsic_id,
     ASR::expr_t** a_args, size_t n_args, int64_t a_overload_id,
     ASR::ttype_t* a_type, ASR::expr_t* a_value) {
@@ -5115,7 +5115,7 @@ static inline ASR::asr_t* make_IntrinsicScalarFunction_t_util(
         }
     }
 
-    return ASR::make_IntrinsicScalarFunction_t(al, a_loc, a_intrinsic_id,
+    return ASR::make_IntrinsicElementalFunction_t(al, a_loc, a_intrinsic_id,
         a_args, n_args, a_overload_id, a_type, a_value);
 }
 

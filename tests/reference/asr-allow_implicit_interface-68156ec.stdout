@@ -393,7 +393,7 @@
                             (RealBinOp
                                 (Var 2 u)
                                 Div
-                                (IntrinsicScalarFunction
+                                (IntrinsicElementalFunction
                                     Exp
                                     [(RealBinOp
                                         (Var 2 y)

@@ -249,7 +249,7 @@
                         ()
                     )
                     (Print
-                        [(IntrinsicScalarFunction
+                        [(IntrinsicElementalFunction
                             Log
                             [(RealConstant
                                 2.000000

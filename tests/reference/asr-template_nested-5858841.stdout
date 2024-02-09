@@ -916,7 +916,7 @@
                                     )
                                     (If
                                         (RealCompare
-                                            (IntrinsicScalarFunction
+                                            (IntrinsicElementalFunction
                                                 Abs
                                                 [(RealBinOp
                                                     (FunctionCall

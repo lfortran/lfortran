@@ -133,7 +133,7 @@
                                                     (Var 3 absdiff)
                                                     (IntrinsicArrayFunction
                                                         Shape
-                                                        [(IntrinsicScalarFunction
+                                                        [(IntrinsicElementalFunction
                                                             Abs
                                                             [(FunctionCall
                                                                 2 solution
@@ -177,7 +177,7 @@
                                                     ()
                                                 )
                                                 Div
-                                                (IntrinsicScalarFunction
+                                                (IntrinsicElementalFunction
                                                     Abs
                                                     [(FunctionCall
                                                         2 solution
@@ -217,7 +217,7 @@
                                     )
                                     (If
                                         (RealCompare
-                                            (IntrinsicScalarFunction
+                                            (IntrinsicElementalFunction
                                                 Abs
                                                 [(RealBinOp
                                                     (ArrayItem
@@ -256,7 +256,7 @@
                                     )
                                     (If
                                         (RealCompare
-                                            (IntrinsicScalarFunction
+                                            (IntrinsicElementalFunction
                                                 Abs
                                                 [(RealBinOp
                                                     (ArrayItem

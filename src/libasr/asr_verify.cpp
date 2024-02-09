@@ -1008,16 +1008,16 @@ public:
         }
     }
 
-    void visit_IntrinsicScalarFunction(const ASR::IntrinsicScalarFunction_t& x) {
+    void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
         if( !check_external ) {
-            BaseWalkVisitor<VerifyVisitor>::visit_IntrinsicScalarFunction(x);
+            BaseWalkVisitor<VerifyVisitor>::visit_IntrinsicElementalFunction(x);
             return ;
         }
-        ASRUtils::verify_function verify_ = ASRUtils::IntrinsicScalarFunctionRegistry
+        ASRUtils::verify_function verify_ = ASRUtils::IntrinsicElementalFunctionRegistry
             ::get_verify_function(x.m_intrinsic_id);
         LCOMPILERS_ASSERT(verify_ != nullptr);
         verify_(x, diagnostics);
-        BaseWalkVisitor<VerifyVisitor>::visit_IntrinsicScalarFunction(x);
+        BaseWalkVisitor<VerifyVisitor>::visit_IntrinsicElementalFunction(x);
     }
 
     void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t& x) {
