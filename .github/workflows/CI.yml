@@ -530,7 +530,7 @@ jobs:
             git clone https://github.com/Pranavchiku/stdlib-fortran-lang.git
             cd stdlib-fortran-lang
             git checkout -t origin/lf-math12
-            git checkout 189d639a6bfde352f10c535b8f14abe9314e5508
+            git checkout 83794fb2fc4a63ce1b79127fa55a7cb9ca418358
             micromamba activate lf
             micromamba install -c conda-forge fypp
             FC=$(pwd)/../src/bin/lfortran cmake .
@@ -552,6 +552,9 @@ jobs:
             ./example/math/example_math_argd
             ./example/math/example_math_argpi
             ./example/math/example_math_is_close
+
+            cd ../
+            rm -rf stdlib-fortran-lang
 
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
