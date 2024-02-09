@@ -2283,19 +2283,12 @@ public:
                 const Location& loc = x.base.base.loc;
                 ASR::expr_t *val = target;
 
-                ASRUtils::create_intrinsic_function create_func =
-                    ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function("aimag");
-                Vec<ASR::expr_t*> args; args.reserve(al, 1);
-                args.push_back(al, val);
-                int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
-                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
-                args.push_back(al, i(kind, type));
-                ASR::asr_t* create_fn = create_func(al, loc, args, diag);
-                if (create_fn == nullptr) {
-                    throw SemanticAbort();
-                }
-                ASR::expr_t *im = ASRUtils::EXPR(create_fn);
-                ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(al, loc, y, im, ASRUtils::expr_type(target), nullptr));
+                ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
+                    ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(val))));
+                ASR::expr_t *im = ASRUtils::EXPR(ASR::make_ComplexIm_t(al, loc,
+                    val, real_type, nullptr));
+                ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(
+                    al, loc, y, im, ASRUtils::expr_type(target), nullptr));
                 value = cmplx;
             }
         } else if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*target)) {

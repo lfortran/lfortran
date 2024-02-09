@@ -589,11 +589,11 @@ namespace Aimag {
     }
 
     static inline ASR::expr_t* instantiate_Aimag (Allocator &al,
-            const Location &loc, SymbolTable *scope,
-            Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& new_args,int64_t overload_id)  {
-        return UnaryIntrinsicFunction::instantiate_functions(al, loc, scope,
-            "aimag", arg_types[0], return_type, new_args, overload_id);
+            const Location &loc, SymbolTable* /*scope*/,
+            Vec<ASR::ttype_t*>& /*arg_types*/, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t> &new_args,int64_t /*overload_id*/)  {
+        return EXPR(ASR::make_ComplexIm_t(al, loc, new_args[0].m_value,
+            return_type, nullptr));
     }
 
 } // namespace Aimag
@@ -760,47 +760,13 @@ namespace Abs {
             ASR::symbol_t *sym_result = ASR::down_cast<ASR::Var_t>(result)->m_v;
             ASR::Variable_t *r_var = ASR::down_cast<ASR::Variable_t>(sym_result);
             r_var->m_type = return_type = real_type;
-            ASR::expr_t *aimag_of_x;
-            {
-                std::string c_func_name;
-                if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 4) {
-                    c_func_name = "_lfortran_caimag";
-                } else {
-                    c_func_name = "_lfortran_zaimag";
-                }
-                SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
-                Vec<ASR::expr_t*> args_1;
-                {
-                    args_1.reserve(al, 1);
-                    auto arg = b.Variable(fn_symtab_1, "x", arg_types[0],
-                        ASR::intentType::In, ASR::abiType::BindC, true);
-                    args_1.push_back(al, arg);
-                }
 
-                auto return_var_1 = b.Variable(fn_symtab_1, c_func_name, real_type,
-                    ASR::intentType::ReturnVar, ASR::abiType::BindC, false);
-
-                SetChar dep_1; dep_1.reserve(al, 1);
-                Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
-                ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
-                    body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
-                fn_symtab->add_symbol(c_func_name, s);
-                dep.push_back(al, s2c(al, c_func_name));
-                Vec<ASR::call_arg_t> call_args;
-                {
-                    call_args.reserve(al, 1);
-                    ASR::call_arg_t arg;
-                    arg.loc = args[0]->base.loc;
-                    arg.m_value = args[0];
-                    call_args.push_back(al, arg);
-                }
-                aimag_of_x = b.Call(s, call_args, real_type);
-            }
-            ASR::expr_t *constant_two = make_ConstantWithType(make_RealConstant_t, 2.0, real_type, loc);
-            ASR::expr_t *constant_point_five = make_ConstantWithType(make_RealConstant_t, 0.5, real_type, loc);
-            ASR::expr_t *real_of_x = EXPR(ASR::make_Cast_t(al, loc, args[0],
-                ASR::cast_kindType::ComplexToReal, real_type, nullptr));
-
+            ASR::expr_t *aimag_of_x = EXPR(ASR::make_ComplexIm_t(al, loc,
+                args[0], real_type, nullptr));
+            ASR::expr_t *constant_two = f(2.0, real_type);
+            ASR::expr_t *constant_point_five = f(0.5, real_type);
+            ASR::expr_t *real_of_x = EXPR(ASR::make_ComplexRe_t(al, loc,
+                args[0], real_type, nullptr));
             ASR::expr_t *bin_op_1 = b.ElementalPow(real_of_x, constant_two, loc);
             ASR::expr_t *bin_op_2 = b.ElementalPow(aimag_of_x, constant_two, loc);
 
@@ -3109,52 +3075,16 @@ namespace Conjg {
         // * r = real(x) - aimag(x)*(0,1)
         ASR::ttype_t *real_type = TYPE(ASR::make_Real_t(al, loc,
             extract_kind_from_ttype_t(arg_types[0])));
-        ASR::expr_t *aimag_of_x;
-        {
-            std::string c_func_name;
-            if (extract_kind_from_ttype_t(arg_types[0]) == 4) {
-                c_func_name = "_lfortran_caimag";
-            } else {
-                c_func_name = "_lfortran_zaimag";
-            }
-            SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
-            Vec<ASR::expr_t*> args_1;
-            {
-                args_1.reserve(al, 1);
-                auto arg = b.Variable(fn_symtab_1, "x", arg_types[0],
-                    ASR::intentType::In, ASR::abiType::BindC, true);
-                args_1.push_back(al, arg);
-            }
-
-            auto return_var_1 = b.Variable(fn_symtab_1, c_func_name, real_type,
-                ASR::intentType::ReturnVar, ASR::abiType::BindC, false);
-
-            SetChar dep_1; dep_1.reserve(al, 1);
-            Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
-            ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1,
-                dep_1, args_1, body_1, return_var_1, ASR::abiType::BindC,
-                ASR::deftypeType::Interface, s2c(al, c_func_name));
-            fn_symtab->add_symbol(c_func_name, s);
-            dep.push_back(al, s2c(al, c_func_name));
-            Vec<ASR::call_arg_t> call_args;
-            {
-                call_args.reserve(al, 1);
-                ASR::call_arg_t arg;
-                arg.loc = args[0]->base.loc;
-                arg.m_value = args[0];
-                call_args.push_back(al, arg);
-            }
-            aimag_of_x = b.Call(s, call_args, real_type);
-        }
-
+        ASR::expr_t *aimag_of_x = EXPR(ASR::make_ComplexIm_t(al, loc,
+            args[0], real_type, nullptr));
         aimag_of_x = EXPR(ASR::make_Cast_t(al, loc, aimag_of_x,
             ASR::cast_kindType::RealToComplex, arg_types[0], nullptr));
         ASR::expr_t *constant_complex = EXPR(ASR::make_ComplexConstant_t(al, loc,
             0.0, 1.0, arg_types[0]));
         ASR::expr_t *bin_op = b.ElementalMul(aimag_of_x, constant_complex, loc);
-        ASR::expr_t *real_of_x = EXPR(ASR::make_Cast_t(al, loc, args[0],
-            ASR::cast_kindType::ComplexToReal, real_type, nullptr));
-        real_of_x =  EXPR(ASR::make_Cast_t(al, loc, real_of_x,
+        ASR::expr_t *real_of_x = EXPR(ASR::make_ComplexRe_t(al, loc,
+            args[0], real_type, nullptr));
+        real_of_x = EXPR(ASR::make_Cast_t(al, loc, real_of_x,
             ASR::cast_kindType::RealToComplex, arg_types[0], nullptr));
         body.push_back(al, b.Assignment(result, b.ElementalSub(real_of_x,
             bin_op, loc)));
