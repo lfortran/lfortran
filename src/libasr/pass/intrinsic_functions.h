@@ -58,6 +58,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Digits,
     Repeat,
     Hypot,
+    Adjustl,
     MinExponent,
     MaxExponent,
     FloorDiv,
