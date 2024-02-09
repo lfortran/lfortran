@@ -235,7 +235,8 @@ public:
         std::vector<std::string> to_be_erased;
         for (auto it = symtab->get_scope().begin(); it != symtab->get_scope().end(); ++it) {
             uint64_t h = get_hash((ASR::asr_t*)it->second);
-            if (symtab->parent && fn_unused.find(h) != fn_unused.end()) {
+            if ((symtab->parent || (!symtab->parent && startswith(it->first, "_lcompilers_")))
+                    && fn_unused.find(h) != fn_unused.end()) {
                 to_be_erased.push_back(it->first);
             } else {
                 this->visit_symbol(*it->second);

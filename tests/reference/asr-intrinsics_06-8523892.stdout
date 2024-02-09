@@ -7,83 +7,13 @@
                     (SymbolTable
                         2
                         {
-                            acosh:
-                                (ExternalSymbol
-                                    2
-                                    acosh
-                                    4 acosh
-                                    lfortran_intrinsic_math
-                                    []
-                                    acosh
-                                    Private
-                                ),
-                            acosh@sacosh:
-                                (ExternalSymbol
-                                    2
-                                    acosh@sacosh
-                                    4 sacosh
-                                    lfortran_intrinsic_math
-                                    []
-                                    sacosh
-                                    Private
-                                ),
-                            asinh:
-                                (ExternalSymbol
-                                    2
-                                    asinh
-                                    4 asinh
-                                    lfortran_intrinsic_math
-                                    []
-                                    asinh
-                                    Private
-                                ),
-                            asinh@sasinh:
-                                (ExternalSymbol
-                                    2
-                                    asinh@sasinh
-                                    4 sasinh
-                                    lfortran_intrinsic_math
-                                    []
-                                    sasinh
-                                    Private
-                                ),
-                            atanh:
-                                (ExternalSymbol
-                                    2
-                                    atanh
-                                    4 atanh
-                                    lfortran_intrinsic_math
-                                    []
-                                    atanh
-                                    Private
-                                ),
-                            atanh@satanh:
-                                (ExternalSymbol
-                                    2
-                                    atanh@satanh
-                                    4 satanh
-                                    lfortran_intrinsic_math
-                                    []
-                                    satanh
-                                    Private
-                                ),
-                            datan:
-                                (ExternalSymbol
-                                    2
-                                    datan
-                                    4 datan
-                                    lfortran_intrinsic_math
-                                    []
-                                    datan
-                                    Private
-                                ),
                             dp:
                                 (Variable
                                     2
                                     dp
                                     []
                                     Local
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Kind
                                         [(RealConstant
                                             0.000000
@@ -123,7 +53,7 @@
                     []
                     [(Assignment
                         (Var 2 x)
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Asin
                             [(RealConstant
                                 0.841471
@@ -145,7 +75,7 @@
                     )
                     (Assignment
                         (Var 2 x)
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Acos
                             [(RealConstant
                                 0.540302
@@ -167,7 +97,7 @@
                     )
                     (Assignment
                         (Var 2 x)
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Atan
                             [(RealConstant
                                 1.557408
@@ -190,19 +120,18 @@
                     (Assignment
                         (Var 2 x)
                         (Cast
-                            (FunctionCall
-                                2 datan
-                                ()
-                                [((RealConstant
+                            (IntrinsicElementalFunction
+                                Atan
+                                [(RealConstant
                                     1.557408
                                     (Real 8)
-                                ))]
+                                )]
+                                0
                                 (Real 8)
                                 (RealConstant
                                     1.000000
                                     (Real 8)
                                 )
-                                ()
                             )
                             RealToReal
                             (Real 4)
@@ -220,19 +149,18 @@
                     )
                     (Assignment
                         (Var 2 x)
-                        (FunctionCall
-                            2 asinh@sasinh
-                            2 asinh
-                            [((RealConstant
+                        (IntrinsicElementalFunction
+                            Asinh
+                            [(RealConstant
                                 1.175201
                                 (Real 4)
-                            ))]
+                            )]
+                            0
                             (Real 4)
                             (RealConstant
                                 1.000000
                                 (Real 4)
                             )
-                            ()
                         )
                         ()
                     )
@@ -243,19 +171,18 @@
                     )
                     (Assignment
                         (Var 2 x)
-                        (FunctionCall
-                            2 acosh@sacosh
-                            2 acosh
-                            [((RealConstant
+                        (IntrinsicElementalFunction
+                            Acosh
+                            [(RealConstant
                                 1.543081
                                 (Real 4)
-                            ))]
+                            )]
+                            0
                             (Real 4)
                             (RealConstant
                                 1.000000
                                 (Real 4)
                             )
-                            ()
                         )
                         ()
                     )
@@ -266,19 +193,18 @@
                     )
                     (Assignment
                         (Var 2 x)
-                        (FunctionCall
-                            2 atanh@satanh
-                            2 atanh
-                            [((RealConstant
+                        (IntrinsicElementalFunction
+                            Atanh
+                            [(RealConstant
                                 0.761594
                                 (Real 4)
-                            ))]
+                            )]
+                            0
                             (Real 4)
                             (RealConstant
                                 1.000000
                                 (Real 4)
                             )
-                            ()
                         )
                         ()
                     )
@@ -287,15 +213,7 @@
                         ()
                         ()
                     )]
-                ),
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math)
+                )
         })
     []
 )

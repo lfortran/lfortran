@@ -7,26 +7,6 @@
                     (SymbolTable
                         3
                         {
-                            dimag:
-                                (ExternalSymbol
-                                    3
-                                    dimag
-                                    5 dimag
-                                    lfortran_intrinsic_math
-                                    []
-                                    dimag
-                                    Private
-                                ),
-                            dimag@zaimag:
-                                (ExternalSymbol
-                                    3
-                                    dimag@zaimag
-                                    5 zaimag
-                                    lfortran_intrinsic_math
-                                    []
-                                    zaimag
-                                    Private
-                                ),
                             ls:
                                 (Variable
                                     3
@@ -79,12 +59,11 @@
                     []
                     [(If
                         (RealCompare
-                            (FunctionCall
-                                3 dimag@zaimag
-                                3 dimag
-                                [((Var 3 z))]
+                            (IntrinsicElementalFunction
+                                Aimag
+                                [(Var 3 z)]
+                                0
                                 (Real 8)
-                                ()
                                 ()
                             )
                             Eq
@@ -176,15 +155,7 @@
                     .false.
                     .false.
                     ()
-                ),
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math)
+                )
         })
     []
 )

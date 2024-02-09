@@ -1462,8 +1462,12 @@ int compile_to_binary_fortran(const std::string &infile,
 int link_executable(const std::vector<std::string> &infiles,
     const std::string &outfile,
     const std::string &runtime_library_dir, Backend backend,
-    bool static_executable, bool link_with_gcc, bool kokkos,
-    bool verbose, CompilerOptions &compiler_options)
+    bool static_executable, bool shared_executable,
+    bool link_with_gcc, bool kokkos, bool verbose,
+    const std::vector<std::string> &lib_dirs,
+    const std::vector<std::string> &libraries,
+    const std::vector<std::string> &linker_flags,
+    CompilerOptions &compiler_options)
 {
     /*
     The `gcc` line for dynamic linking that is constructed below:
@@ -1527,11 +1531,26 @@ int link_executable(const std::vector<std::string> &infiles,
 #endif
     size_t dot_index = outfile.find_last_of(".");
     std::string file_name = outfile.substr(0, dot_index);
-    std::string extra_runtime_linker_path;
-    if (!compiler_options.runtime_linker_paths.empty()) {
-        for (auto &s: compiler_options.runtime_linker_paths) {
-            extra_runtime_linker_path += " -Wl,-rpath," + s;
+    std::string extra_linker_flags;
+    if (!linker_flags.empty()) {
+        for (auto &s: linker_flags) {
+            extra_linker_flags += " -W" + s;
         }
+    }
+    std::string extra_library_flags;
+    if (!lib_dirs.empty()) {
+        for (auto &s: lib_dirs) {
+            extra_library_flags += " -L" + s;
+        }
+    }
+    if (!libraries.empty()) {
+        for (auto &s: libraries) {
+            extra_library_flags += " -l" + s;
+        }
+    }
+    if(static_executable && shared_executable) {
+        std::cout << "Cannot use static_executable and shared_executable together" << std::endl;
+        return 10;
     }
     if (backend == Backend::llvm) {
         std::string run_cmd = "", compile_cmd = "";
@@ -1568,14 +1587,20 @@ int link_executable(const std::vector<std::string> &infiles,
                 }
                 runtime_lib = "lfortran_runtime_static";
             }
+            if (shared_executable) {
+                options += " -shared ";
+            }
             compile_cmd = CC + options + " -o " + outfile + " ";
             for (auto &s : infiles) {
                 compile_cmd += s + " ";
             }
+	    if(!extra_library_flags.empty()) {
+	        compile_cmd += extra_library_flags + " ";
+	    }
             compile_cmd += + " -L"
                 + base_path + " -Wl,-rpath," + base_path;
-            if (!extra_runtime_linker_path.empty()) {
-                compile_cmd += extra_runtime_linker_path;
+            if (!extra_linker_flags.empty()) {
+                compile_cmd += extra_linker_flags;
             }
             compile_cmd += " -l" + runtime_lib + " -lm";
             run_cmd = "./" + outfile;
@@ -1622,10 +1647,13 @@ int link_executable(const std::vector<std::string> &infiles,
         for (auto &s : infiles) {
             cmd += s + " ";
         }
+	if(!extra_library_flags.empty()) {
+	    cmd += extra_library_flags + " ";
+	}
         cmd += " -L" + base_path
             + " -Wl,-rpath," + base_path;
-        if (!extra_runtime_linker_path.empty()) {
-            cmd += extra_runtime_linker_path;
+        if (!extra_linker_flags.empty()) {
+            cmd += extra_linker_flags;
         }
         cmd += " -l" + runtime_lib + " -lm";
 	if (verbose) {
@@ -1642,6 +1670,9 @@ int link_executable(const std::vector<std::string> &infiles,
         if (static_executable) {
             options += " -static ";
         }
+        if (shared_executable) {
+            options += " -shared ";
+        }
         if (compiler_options.openmp) {
             options += " -fopenmp ";
         }
@@ -1654,6 +1685,9 @@ int link_executable(const std::vector<std::string> &infiles,
         for (auto &s : infiles) {
             cmd += s + " ";
         }
+	if(!extra_library_flags.empty()) {
+	    cmd += extra_library_flags + " ";
+	}
         cmd += " " + post_options + " -lm";
 	if (verbose) {
             std::cout << cmd << std::endl;
@@ -1679,6 +1713,9 @@ int link_executable(const std::vector<std::string> &infiles,
         for (auto &s : infiles) {
             cmd += s + " ";
         }
+	if(!extra_library_flags.empty()) {
+	    cmd += extra_library_flags + " ";
+	}
         cmd += " -L" + base_path
             + " -Wl,-rpath," + base_path;
         cmd += " -l" + runtime_lib + " -lm";
@@ -1859,47 +1896,6 @@ EMSCRIPTEN_KEEPALIVE char* emit_wasm_from_source(char *input) {
 
 #endif
 
-void _parse_linker_args(std::string& arg, std::vector<std::string>& linker_flags) {
-    if (arg == "") return;
-    std::string current_arg = "";
-    for( size_t i = 0; i < arg.size(); i++ ) {
-        char ch = arg[i];
-        if (ch != ',') {
-            current_arg.push_back(ch);
-        } else {
-            linker_flags.push_back(current_arg);
-            current_arg.clear();
-        }
-    }
-    if (!current_arg.empty()) {
-        linker_flags.push_back(current_arg);
-    }
-}
-
-void _get_rpath_from_linker_flags(std::vector<std::string>& linker_flags, CompilerOptions &co) {
-    if (!linker_flags.empty() && linker_flags[0] != "l") {
-        LCompilers::LCompilersException("Linker arguments must start with -Wl");
-        return;
-    }
-    if (linker_flags.empty()) {
-        return;
-    }
-    bool is_rpath = false;
-    for( size_t i = 1; i < linker_flags.size(); i++ ) {
-        if (linker_flags[i][0] == '-') {
-            if (linker_flags[i] == "-rpath") {
-                is_rpath = true;
-            } else {
-                is_rpath = false;
-            }
-            continue;
-        }
-        if (is_rpath) {
-            co.runtime_linker_paths.push_back(linker_flags[i]);
-        }
-    }
-}
-
 int main_app(int argc, char *argv[]) {
     int dirname_length;
     LCompilers::LFortran::get_executable_path(LCompilers::binary_executable_path, dirname_length);
@@ -1937,6 +1933,7 @@ int main_app(int argc, char *argv[]) {
     bool show_fortran = false;
     bool time_report = false;
     bool static_link = false;
+    bool shared_link = false;
     std::string skip_pass;
     std::string arg_backend = "llvm";
     std::string arg_kernel_f;
@@ -1958,6 +1955,7 @@ int main_app(int argc, char *argv[]) {
     std::string arg_pywrap_array_order="f";
     std::vector<std::string> linker_flags;
     std::vector<std::string> f_flags;
+    std::vector<std::string> O_flags;
 
     CompilerOptions compiler_options;
     compiler_options.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
@@ -1974,8 +1972,8 @@ int main_app(int argc, char *argv[]) {
     app.add_option("-o", compiler_options.arg_o, "Specify the file to place the output into");
     app.add_flag("-v", arg_v, "Be more verbose");
     app.add_flag("-E", arg_E, "Preprocess only; do not compile, assemble or link");
-    app.add_option("-l", arg_l, "Link library option");
-    app.add_option("-L", arg_L, "Library path option");
+    app.add_option("-l", arg_l, "Link library option")->allow_extra_args(false);
+    app.add_option("-L", arg_L, "Library path option")->allow_extra_args(false);
     app.add_option("-I", compiler_options.po.include_dirs, "Include path")->allow_extra_args(false);
     app.add_option("-J", compiler_options.po.mod_files_dir, "Where to save mod files");
     app.add_flag("-g", compiler_options.emit_debug_info, "Compile with debugging information");
@@ -1985,6 +1983,7 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--version", arg_version, "Display compiler version information");
     app.add_option("-W", linker_flags, "Linker flags")->allow_extra_args(false);
     app.add_option("-f", f_flags, "All `-f*` flags (only -fPIC supported for now)")->allow_extra_args(false);
+    app.add_option("-O", O_flags, "Optimization level (ignored for now)")->allow_extra_args(false);
 
     // LFortran specific options
     app.add_flag("--cpp", compiler_options.c_preprocessor, "Enable C preprocessing");
@@ -2016,6 +2015,7 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--symtab-only", compiler_options.symtab_only, "Only create symbol tables in ASR (skip executable stmt)");
     app.add_flag("--time-report", time_report, "Show compilation time report");
     app.add_flag("--static", static_link, "Create a static executable");
+    app.add_flag("--shared", shared_link, "Create a shared executable");
     app.add_flag("--no-warnings", compiler_options.no_warnings, "Turn off all warnings");
     app.add_flag("--no-error-banner", compiler_options.no_error_banner, "Turn off error banner");
     app.add_option("--error-format", compiler_options.error_format, "Control how errors are produced (human, short)")->capture_default_str();
@@ -2082,12 +2082,6 @@ int main_app(int argc, char *argv[]) {
     app.require_subcommand(0, 1);
     CLI11_PARSE(app, argc, argv);
     lcompilers_unique_ID = compiler_options.generate_object_code ? get_unique_ID() : "";
-    if (!linker_flags.empty()) {
-        std::string linker_flags_args = linker_flags[0];
-        linker_flags.clear();
-        _parse_linker_args(linker_flags_args, linker_flags);
-        _get_rpath_from_linker_flags(linker_flags, compiler_options);
-    }
 
     if (arg_version) {
         std::string version = LFORTRAN_VERSION;
@@ -2123,6 +2117,11 @@ int main_app(int argc, char *argv[]) {
             std::cerr << "The flag `-f" << f_flag << "` is not supported" << std::endl;
             return 1;
         }
+    }
+
+    if(static_link && shared_link) {
+        std::cerr << "Options '--static' and '--shared' cannot be used together" << std::endl;
+        return 1;
     }
 
     if( compiler_options.po.fast ) {
@@ -2356,10 +2355,12 @@ int main_app(int argc, char *argv[]) {
         }
         if (err) return err;
         return link_executable({tmp_o}, outfile, runtime_library_dir,
-                backend, static_link, link_with_gcc, true, arg_v, compiler_options);
+                backend, static_link, shared_link, link_with_gcc, true, arg_v, arg_L,
+		arg_l, linker_flags, compiler_options);
     } else {
         return link_executable(arg_files, outfile, runtime_library_dir,
-                backend, static_link, link_with_gcc, true, arg_v, compiler_options);
+                backend, static_link, shared_link, link_with_gcc, true, arg_v, arg_L,
+		arg_l, linker_flags, compiler_options);
     }
     return 0;
 }

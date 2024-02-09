@@ -126,13 +126,13 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                 } else {
                     break ;
                 }
-                if( std::find(indices.begin(), indices.end(), i) !=
-                    indices.end() ) {
+                if( std::find(indices.begin(), indices.end(), i) != indices.end() ) {
                     if( arg_func ) {
-                        suffix += "_" + std::string(arg_func->m_name);
+                        suffix += "_" + ASRUtils::type_to_str(arg_func->m_function_signature);
                     } else {
-                        suffix += "_" + std::string(arg->m_name);
+                        suffix += "_" + ASRUtils::type_to_str(arg->m_type);
                     }
+                    suffix += "_" + std::to_string(i);
                 }
                 ASR::expr_t* new_arg;
                 if (arg_func) {
@@ -151,6 +151,13 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                 }
             }
             ASR::symbol_t* new_symbol = nullptr;
+            suffix = to_lower(suffix);
+            for( size_t suffixi = 0; suffixi < suffix.size(); suffixi++ ) {
+                if( !((suffix[suffixi] >= 'a' && suffix[suffixi] <= 'z') ||
+                    (suffix[suffixi] >= '0' && suffix[suffixi] <= '9')) ) {
+                    suffix[suffixi] = '_';
+                }
+            }
             std::string new_name = std::string(x->m_name) + suffix;
             if( ASR::is_a<ASR::Function_t>( *((ASR::symbol_t*) x) ) ) {
                 ASR::FunctionType_t* x_func_type = ASRUtils::get_FunctionType(x);
@@ -444,6 +451,25 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             }
         }
 
+        static inline void get_dimensions(ASR::expr_t* array, Vec<ASR::expr_t*>& dims,
+                                        Allocator& al) {
+            ASR::ttype_t* array_type = ASRUtils::expr_type(array);
+            ASR::dimension_t* compile_time_dims = nullptr;
+            int n_dims = ASRUtils::extract_dimensions_from_ttype(array_type, compile_time_dims);
+            for( int i = 0; i < n_dims; i++ ) {
+                ASR::expr_t* start = compile_time_dims[i].m_start;
+                if( start == nullptr ) {
+                    start = PassUtils::get_bound(array, i + 1, "lbound", al);
+                }
+                ASR::expr_t* length = compile_time_dims[i].m_length;
+                if( length == nullptr ) {
+                    length = ASRUtils::get_size(array, i + 1, al);
+                }
+                dims.push_back(al, start);
+                dims.push_back(al, length);
+            }
+        }
+
         Vec<ASR::call_arg_t> construct_new_args(size_t n_args, ASR::call_arg_t* orig_args, std::vector<size_t>& indices) {
             Vec<ASR::call_arg_t> new_args;
             new_args.reserve(al, n_args);
@@ -477,7 +503,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
 
                 Vec<ASR::expr_t*> dim_vars;
                 dim_vars.reserve(al, 2);
-                ASRUtils::get_dimensions(orig_arg_i, dim_vars, al);
+                get_dimensions(orig_arg_i, dim_vars, al);
                 for( size_t j = 0; j < dim_vars.size(); j++ ) {
                     ASR::call_arg_t dim_var;
                     dim_var.loc = dim_vars[j]->base.loc;

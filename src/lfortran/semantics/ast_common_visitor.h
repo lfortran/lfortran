@@ -709,6 +709,7 @@ public:
         {"merge", {IntrinsicSignature({"tsource", "fsource", "mask"}, 3, 3)}},
         {"sign", {IntrinsicSignature({"a", "b"}, 2, 2)}},
         {"aint", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
+        {"nint", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
         {"anint", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
         {"atan2", {IntrinsicSignature({"y", "x"}, 2, 2)}},
         {"shape", {IntrinsicSignature({"source", "kind"}, 1, 2)}},
@@ -735,10 +736,19 @@ public:
         {"dsin", "sin"},
         {"dcos", "cos"},
         {"dtan", "tan"},
+
+        {"datan", "atan"},
         {"datan2", "atan2"},
 
+        {"dimag", "aimag"},
+        {"imag" , "aimag"},
+
         {"dsign", "sign"},
-        {"dsqrt", "sqrt"}
+        {"dsqrt", "sqrt"},
+
+        {"dlog", "log"},
+        {"dlog10", "log10"},
+        {"dexp", "exp"},
     };
 
     ASR::asr_t *tmp;
@@ -2530,6 +2540,160 @@ public:
                                                 cast->m_value = ASRUtils::expr_value(array_const);
                                                 value = cast->m_value;
                                             }
+                                        } else if (cast_kind == ASR::cast_kindType::RealToInteger) {
+                                            bool is_real = true;
+                                            ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
+                                            ASR::ttype_t* int_type = cast->m_type;
+                                            Vec<ASR::expr_t*> body;
+                                            body.reserve(al, a->n_args);
+                                            for (size_t i = 0; i < a->n_args; i++) {
+                                                ASR::expr_t *e = a->m_args[i];
+                                                // it will be RealConstant_t convert it to IntegerConstant_t
+                                                if (ASR::is_a<ASR::RealConstant_t>(*e)) {
+                                                    ASR::RealConstant_t *real_const = ASR::down_cast<ASR::RealConstant_t>(e);
+                                                    int64_t val = real_const->m_r;
+                                                    ASR::expr_t *int_const = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, real_const->base.base.loc,
+                                                        val, ASRUtils::type_get_past_array(int_type)));
+                                                    body.push_back(al, int_const);
+                                                } else {
+                                                    is_real = false;
+                                                    break;
+                                                }
+                                            }
+                                            if (is_real) {
+                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, a->base.base.loc, body.p, body.size(), int_type, a->m_storage_format));
+                                                cast->m_value = ASRUtils::expr_value(array_const);
+                                                value = cast->m_value;
+                                            }
+                                        } else if (cast_kind == ASR::cast_kindType::RealToReal) {
+                                            bool is_real1 = true;
+                                            ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
+                                            ASR::ttype_t* real_type = cast->m_type;
+                                            Vec<ASR::expr_t*> body;
+                                            body.reserve(al, a->n_args);
+                                            for (size_t i = 0; i < a->n_args; i++) {
+                                                ASR::expr_t *e = a->m_args[i];
+                                                if (ASR::is_a<ASR::RealConstant_t>(*e)) {
+                                                    ASR::RealConstant_t *real_const = ASR::down_cast<ASR::RealConstant_t>(e);
+                                                    int64_t val = real_const->m_r;
+                                                    ASR::expr_t *real_const2 = ASRUtils::EXPR(ASR::make_RealConstant_t(al, real_const->base.base.loc,
+                                                        val, ASRUtils::type_get_past_array(real_type)));
+                                                    body.push_back(al, real_const2);
+                                                } else {
+                                                    is_real1 = false;
+                                                    break;
+                                                }
+                                            }
+                                            if (is_real1) {
+                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, a->base.base.loc, body.p, body.size(), real_type, a->m_storage_format));
+                                                cast->m_value = ASRUtils::expr_value(array_const);
+                                                value = cast->m_value;
+                                            }
+                                        } else if (cast_kind == ASR::cast_kindType::ComplexToInteger) {
+                                            bool is_integer = true;
+                                            ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
+                                            ASR::ttype_t* integer_type = cast->m_type;
+                                            Vec<ASR::expr_t*> body;
+                                            body.reserve(al, a->n_args);
+                                            for (size_t i = 0; i < a->n_args; i++) {
+                                                ASR::expr_t *e = a->m_args[i];
+                                                // it will be ComplexConstant_t convert it to IntegerConstant_t
+                                                if (ASR::is_a<ASR::ComplexConstant_t>(*e)) {
+                                                    ASR::ComplexConstant_t *complex_const = ASR::down_cast<ASR::ComplexConstant_t>(e);
+                                                    int64_t val = complex_const->m_re;
+                                                    ASR::expr_t *integer_const = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, complex_const->base.base.loc,
+                                                        val, ASRUtils::type_get_past_array(integer_type)));
+                                                    body.push_back(al, integer_const);
+                                                } else {
+                                                    is_integer = false;
+                                                    break;
+                                                }
+                                            }
+                                            if (is_integer) {
+                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, a->base.base.loc, body.p, body.size(), integer_type, a->m_storage_format));
+                                                cast->m_value = ASRUtils::expr_value(array_const);
+                                                value = cast->m_value;
+                                            }
+                                        } else if (cast_kind == ASR::cast_kindType::IntegerToComplex) {
+                                            bool is_complex = true;
+                                            ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
+                                            ASR::ttype_t* complex_type = cast->m_type;
+                                            Vec<ASR::expr_t*> body;
+                                            body.reserve(al, a->n_args);
+                                            for (size_t i = 0; i < a->n_args; i++) {
+                                                ASR::expr_t *e = a->m_args[i];
+                                                // it will be IntegerConstant_t convert it to ComplexConstant_t
+                                                if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
+                                                    ASR::IntegerConstant_t *integer_const = ASR::down_cast<ASR::IntegerConstant_t>(e);
+                                                    int64_t val = integer_const->m_n;
+                                                    double y_val_ = 0.0;
+                                                    ASR::expr_t *complex_const = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, integer_const->base.base.loc,
+                                                        val, y_val_, ASRUtils::type_get_past_array(complex_type)));
+                                                    body.push_back(al, complex_const);
+                                                } else {
+                                                    is_complex = false;
+                                                    break;
+                                                }
+                                            }
+                                            if (is_complex) {
+                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, a->base.base.loc, body.p, body.size(), complex_type, a->m_storage_format));
+                                                cast->m_value = ASRUtils::expr_value(array_const);
+                                                value = cast->m_value;
+                                            }
+                                        } else if (cast_kind == ASR::cast_kindType::ComplexToReal) {
+                                            bool is_real = true;
+                                            ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
+                                            ASR::ttype_t* real_type = cast->m_type;
+                                            Vec<ASR::expr_t*> body;
+                                            body.reserve(al, a->n_args);
+                                            for (size_t i = 0; i < a->n_args; i++) {
+                                                ASR::expr_t *e = a->m_args[i];
+                                                // it will be ComplexConstant_t convert it to RealConstant_t
+                                                if (ASR::is_a<ASR::ComplexConstant_t>(*e)) {
+                                                    ASR::ComplexConstant_t *complex_const = ASR::down_cast<ASR::ComplexConstant_t>(e);
+                                                    int64_t val = complex_const->m_re;
+                                                    ASR::expr_t *real_const = ASRUtils::EXPR(ASR::make_RealConstant_t(al, complex_const->base.base.loc,
+                                                        val, ASRUtils::type_get_past_array(real_type)));
+                                                    body.push_back(al, real_const);
+                                                } else {
+                                                    is_real = false;
+                                                    break;
+                                                }
+                                            }
+                                            if (is_real) {
+                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, a->base.base.loc, body.p, body.size(), real_type, a->m_storage_format));
+                                                cast->m_value = ASRUtils::expr_value(array_const);
+                                                value = cast->m_value;
+                                            }
+                                        } else if (cast_kind == ASR::cast_kindType::ComplexToComplex) {
+                                            bool is_complex = true;
+                                            ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
+                                            ASR::ttype_t* complex_type = cast->m_type;
+                                            Vec<ASR::expr_t*> body;
+                                            body.reserve(al, a->n_args);
+                                            for (size_t i = 0; i < a->n_args; i++) {
+                                                ASR::expr_t *e = a->m_args[i];
+                                                // it will be ComplexConstant_t convert it to ComplexConstant_t
+                                                if (ASR::is_a<ASR::ComplexConstant_t>(*e)) {
+                                                    ASR::ComplexConstant_t *complex_const = ASR::down_cast<ASR::ComplexConstant_t>(e);
+                                                    int64_t val1 = complex_const->m_re;
+                                                    int64_t val2 = complex_const->m_im;
+                                                    ASR::expr_t *complex_const2 = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, complex_const->base.base.loc,
+                                                        val1, val2, ASRUtils::type_get_past_array(complex_type)));
+                                                    body.push_back(al, complex_const2);
+                                                } else {
+                                                    is_complex = false;
+                                                    break;
+                                                }
+                                            }
+                                            if (is_complex) {
+                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, a->base.base.loc, body.p, body.size(), complex_type, a->m_storage_format));
+                                                cast->m_value = ASRUtils::expr_value(array_const);
+                                                value = cast->m_value;
+                                            }
+                                        } else {
+                                            throw SemanticError("Type mismatch in array initialization",
+                                                x.base.base.loc);
                                         }
                                     }
                                 } else {
@@ -3073,6 +3237,9 @@ public:
             if( a.m_left ) {
                 if( all_args_eval ) {
                     ASR::expr_t* m_left_expr = ASRUtils::expr_value(a.m_left);
+                    if (!ASR::is_a<ASR::IntegerConstant_t>(*m_left_expr)) {
+                        throw SemanticError("Substring start index at must be of type integer", m_left_expr->base.loc);
+                    }
                     ASR::IntegerConstant_t *m_left = ASR::down_cast<ASR::IntegerConstant_t>(m_left_expr);
                     start = m_left->m_n;
                 }
@@ -3081,15 +3248,19 @@ public:
                 if( all_args_eval ) {
                     flag = true;
                     ASR::expr_t* m_right_expr = ASRUtils::expr_value(a.m_right);
-                    if( ASR::is_a<ASR::IntegerConstant_t>(*m_right_expr) ) {
-                        ASR::IntegerConstant_t *m_right = ASR::down_cast<ASR::IntegerConstant_t>(m_right_expr);
-                        end = m_right->m_n;
+                    if(!ASR::is_a<ASR::IntegerConstant_t>(*m_right_expr)) {
+                        throw SemanticError("Substring end index at must be of type integer", m_right_expr->base.loc);
                     }
+                    ASR::IntegerConstant_t *m_right = ASR::down_cast<ASR::IntegerConstant_t>(m_right_expr);
+                    end = m_right->m_n;
                 }
             }
             if( a.m_step ) {
                 if( all_args_eval ) {
                     ASR::expr_t* m_step_expr = ASRUtils::expr_value(a.m_step);
+                    if(!ASR::is_a<ASR::IntegerConstant_t>(*m_step_expr)) {
+                        throw SemanticError("Substring stride must be of type integer", m_step_expr->base.loc);
+                    }
                     ASR::IntegerConstant_t *m_step = ASR::down_cast<ASR::IntegerConstant_t>(m_step_expr);
                     step = m_step->m_n;
                 }
@@ -3206,12 +3377,20 @@ public:
                                         1, -1, nullptr));
                     }
                     ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
-                    ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
-                                                1, int_type));
                     ASR::expr_t *l = nullptr, *r = nullptr;
+
                     if (m_args[0].m_start) {
-                        l = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-                            args[0].m_left, ASR::binopType::Sub, const_1, int_type, nullptr));
+                        // use 0 based indexing for string slice, so subtract 1 from left index
+                        int32_t offset = 1;
+                        ASR::expr_t* const_1 = i(offset, int_type);
+                        ASR::expr_t* a_value = nullptr;
+                        if (ASR::is_a<ASR::IntegerConstant_t>(*args[0].m_left)) {
+                            int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(
+                                            ASRUtils::expr_value(args[0].m_left))->m_n - offset;
+                            a_value = ASRUtils::EXPR((ASR::make_IntegerConstant_t(al, loc,
+                                                    a, int_type)));
+                        }
+                        l = i_vSub(args[0].m_left, const_1, a_value);
                     }
                     if (m_args[0].m_end) {
                         r = args[0].m_right;
@@ -3978,16 +4157,15 @@ public:
                     al, loc, &val, v_variable_m_type, dest_type);
                 return (ASR::asr_t*)val;
             } else if (var_name == "im") {
-                ASR::expr_t *val = ASR::down_cast<ASR::expr_t>(ASR::make_Var_t(al, loc, v));
-                ASR::symbol_t *fn_aimag = resolve_intrinsic_function(loc, "aimag");
-                Vec<ASR::call_arg_t> args;
-                args.reserve(al, 1);
-                ASR::call_arg_t val_arg;
-                val_arg.loc = val->base.loc;
-                val_arg.m_value = val;
-                args.push_back(al, val_arg);
-                ASR::asr_t *result = create_FunctionCall(loc, fn_aimag, args);
-                return result;
+                ASRUtils::create_intrinsic_function create_func =
+                    ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function("aimag");
+                Vec<ASR::expr_t *> args; args.reserve(al, 1);
+                args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, v)));
+                ASR::asr_t *func = create_func(al, loc, args, diag);
+                if (func == nullptr) {
+                    throw SemanticAbort();
+                }
+                return func;
             } else {
                 throw SemanticError("Complex variable '" + dt_name + "' only has %re and %im members, not '" + var_name + "'", loc);
             }
@@ -4103,35 +4281,6 @@ public:
                                 kind->base.loc);
         }
         return ASR::down_cast<ASR::IntegerConstant_t>(kind_value)->m_n;
-    }
-
-    ASR::asr_t* create_Floor(const AST::FuncCallOrArray_t &x,
-            ASR::ExternalSymbol_t* gp_ext, ASR::symbol_t* v) {
-        Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"A", "kind"};
-        handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "floor");
-        ASR::expr_t* kind = args[1];
-        int64_t kind_value = handle_kind(kind);
-        ASR::ttype_t *kind_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
-                x.base.base.loc, kind_value));
-        ASR::expr_t* kind_arg = ASR::down_cast<ASR::expr_t>(
-                ASR::make_IntegerConstant_t(al, x.base.base.loc, 0, kind_type));
-        Vec<ASR::call_arg_t> args2;
-        args2.reserve(al, 2);
-        ASR::call_arg_t arg1;
-        arg1.loc = args[0]->base.loc;
-        arg1.m_value = args[0];
-        args2.push_back(al, arg1);
-        ASR::call_arg_t kind_arg2;
-        kind_arg2.loc = x.base.base.loc;
-        kind_arg2.m_value = kind_arg;
-        args2.push_back(al, kind_arg2);
-        ASR::GenericProcedure_t* gp = ASR::down_cast<ASR::GenericProcedure_t>(
-                gp_ext->m_external);
-        int idx = ASRUtils::select_generic_procedure(args2, *gp, x.base.base.loc,
-                        [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); },
-                        true);
-        return symbol_resolve_external_generic_procedure_util(gp->base.base.loc, idx, v, args2, gp, gp_ext);
     }
 
     ASR::asr_t* create_ArrayBound(const AST::FuncCallOrArray_t& x, std::string& bound_name) {
@@ -4692,7 +4841,7 @@ public:
         bool is_double_precision_intrinsic = intrinsic_mapping.count(var_name);
         if (intrinsic_procedures_as_asr_nodes.is_intrinsic_present_in_ASR(var_name) ||
             intrinsic_procedures_as_asr_nodes.is_kind_based_selection_required(var_name) ||
-            ASRUtils::IntrinsicScalarFunctionRegistry::is_intrinsic_function(var_name) ||
+            ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ||
             ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ||
             ASRUtils::IntrinsicImpureFunctionRegistry::is_intrinsic_function(var_name) ||
             is_double_precision_intrinsic) {
@@ -4710,7 +4859,7 @@ public:
             if (is_double_precision_intrinsic) {
                 var_name = intrinsic_mapping[var_name];
             }
-            if( ASRUtils::IntrinsicScalarFunctionRegistry::is_intrinsic_function(var_name) ||
+            if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ||
                     ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ) {
                 std::vector<IntrinsicSignature> signatures = get_intrinsic_signature(var_name);
                 Vec<ASR::expr_t*> args;
@@ -4729,23 +4878,14 @@ public:
                     throw SemanticError("No matching signature found for intrinsic " + var_name,
                                         x.base.base.loc);
                 }
-                if( ASRUtils::IntrinsicScalarFunctionRegistry::is_intrinsic_function(var_name) ){
+                if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ){
                     ASRUtils::create_intrinsic_function create_func =
-                        ASRUtils::IntrinsicScalarFunctionRegistry::get_create_function(var_name);
-                    if( !ASRUtils::IntrinsicScalarFunctionRegistry::is_input_type_supported(var_name, args) ) {
-                        is_function = true;
-                        return resolve_intrinsic_function(x.base.base.loc, var_name);
-                    } else {
-                        tmp = create_func(al, x.base.base.loc, args,
-                            [&](const std::string &msg, const Location &loc) {
-                                throw SemanticError(msg, loc); });
-                    }
+                        ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
+                    tmp = create_func(al, x.base.base.loc, args, diag);
                 } else if ( ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ) {
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicArrayFunctionRegistry::get_create_function(var_name);
-                    tmp = create_func(al, x.base.base.loc, args,
-                        [&](const std::string &msg, const Location &loc) {
-                            throw SemanticError(msg, loc); });
+                    tmp = create_func(al, x.base.base.loc, args, diag);
                 }
             } else if( ASRUtils::IntrinsicImpureFunctionRegistry::is_intrinsic_function(var_name) ) {
                 Vec<ASR::expr_t*> args;
@@ -4756,8 +4896,7 @@ public:
                 }
                 ASRUtils::create_intrinsic_function create_func =
                     ASRUtils::IntrinsicImpureFunctionRegistry::get_create_function(var_name);
-                tmp = create_func(al, x.base.base.loc, args,
-                    [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); });
+                tmp = create_func(al, x.base.base.loc, args, diag);
             } else if( var_name == "size" ) {
                 tmp = create_ArraySize(x);
             } else if( var_name == "lbound" || var_name == "ubound" ) {
@@ -4794,6 +4933,9 @@ public:
                 tmp = create_ArrayAll(x);
             } else {
                 throw LCompilersException("create_" + var_name + " not implemented yet.");
+            }
+            if (tmp == nullptr) {
+                throw SemanticAbort();
             }
             return nullptr;
         }
@@ -5328,25 +5470,11 @@ public:
             if (ASRUtils::is_intrinsic_symbol(f2)) {
                 // Here we handle all intrinsic functions that are implemented
                 // in Fortran, but have different interface (API), e.g.,
-                // the `kind` argument is handled differently, such as `floor`.
+                // the `kind` argument is handled differently, such as `not`.
                 // In these cases we have to handle them here, since we need
                 // to process the arguments ourselves, not via comparison
-                // with the `floor` implementation.
-                if (var_name == "floor") {
-                    if (ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
-                        // The above check is needed to ensure we are in an
-                        // intrinsic module and calling an external, that is, we
-                        // skip a locally defined `floor` function in an
-                        // intrinsic module
-                        ASR::ExternalSymbol_t *p = ASR::down_cast<ASR::ExternalSymbol_t>(v);
-                        ASR::symbol_t *f2 = ASR::down_cast<ASR::ExternalSymbol_t>(v)->m_external;
-                        if (ASR::is_a<ASR::GenericProcedure_t>(*f2)) {
-                            LCOMPILERS_ASSERT(std::string(ASR::down_cast<ASR::GenericProcedure_t>(f2)->m_name) == "floor")
-                            tmp = create_Floor(x, p, v);
-                            return;
-                        }
-                    }
-                } else if (var_name == "not") {
+                // with the `not` implementation.
+                if (var_name == "not") {
                     Vec<ASR::call_arg_t> args;
                     visit_expr_list(x.m_args, x.n_args, args);
                     LCOMPILERS_ASSERT(args.size() == 1);
@@ -5888,7 +6016,8 @@ public:
                             "The argument for " + param + " must be a function",
                             args[i]->base.loc);
                     }
-                    check_restriction(type_subs, symbol_subs, f, f_arg0, loc, diag);
+                    check_restriction(type_subs,
+                        symbol_subs, f, f_arg0, loc, diag, []() { throw SemanticAbort(); });
                 } else {
                     ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
                     if (ASRUtils::is_type_parameter(*param_type)) {
@@ -5966,7 +6095,9 @@ public:
                     ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
                     for (size_t i = 0; i < gen_proc->n_procs && !found; i++) {
                         ASR::symbol_t* proc = gen_proc->m_procs[i];
-                        found = check_restriction(type_subs, symbol_subs, f, proc, loc, diag, false);
+                        found = check_restriction(type_subs,
+                                    symbol_subs, f, proc, loc, diag,
+                                    []() { throw SemanticAbort(); }, false);
                     }
                 }
 

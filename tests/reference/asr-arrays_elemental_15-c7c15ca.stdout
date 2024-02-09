@@ -152,7 +152,7 @@
                                     (Assignment
                                         (Var 7 cos2d)
                                         (RealBinOp
-                                            (IntrinsicScalarFunction
+                                            (IntrinsicElementalFunction
                                                 Cos
                                                 [(ArrayPhysicalCast
                                                     (Var 7 array2d)
@@ -455,10 +455,10 @@
                                     )
                                     (Assignment
                                         (Var 6 sin1d)
-                                        (IntrinsicScalarFunction
+                                        (IntrinsicElementalFunction
                                             Sin
                                             [(ArrayPhysicalCast
-                                                (IntrinsicScalarFunction
+                                                (IntrinsicElementalFunction
                                                     Sin
                                                     [(ArrayPhysicalCast
                                                         (Var 6 array1d)
@@ -592,7 +592,7 @@
                                     (Assignment
                                         (Var 6 sinnd)
                                         (RealBinOp
-                                            (IntrinsicScalarFunction
+                                            (IntrinsicElementalFunction
                                                 Sin
                                                 [(ArrayPhysicalCast
                                                     (Var 6 arraynd)
@@ -1010,7 +1010,7 @@
                                         (Var 8 observed)
                                         (RealBinOp
                                             (RealBinOp
-                                                (IntrinsicScalarFunction
+                                                (IntrinsicElementalFunction
                                                     Sin
                                                     [(ArrayPhysicalCast
                                                         (Var 8 arraynd)
@@ -1099,7 +1099,7 @@
                                             )
                                             Add
                                             (RealBinOp
-                                                (IntrinsicScalarFunction
+                                                (IntrinsicElementalFunction
                                                     Cos
                                                     [(ArrayPhysicalCast
                                                         (Var 8 arraynd)
@@ -1249,7 +1249,7 @@
                                         ())
                                         [(If
                                             (RealCompare
-                                                (IntrinsicScalarFunction
+                                                (IntrinsicElementalFunction
                                                     Abs
                                                     [(RealBinOp
                                                         (ArrayItem
@@ -1449,12 +1449,12 @@
                                         ())
                                         [(If
                                             (RealCompare
-                                                (IntrinsicScalarFunction
+                                                (IntrinsicElementalFunction
                                                     Abs
                                                     [(RealBinOp
-                                                        (IntrinsicScalarFunction
+                                                        (IntrinsicElementalFunction
                                                             Sin
-                                                            [(IntrinsicScalarFunction
+                                                            [(IntrinsicElementalFunction
                                                                 Sin
                                                                 [(ArrayItem
                                                                     (Var 3 array)
@@ -1706,11 +1706,11 @@
                                             ())
                                             [(If
                                                 (RealCompare
-                                                    (IntrinsicScalarFunction
+                                                    (IntrinsicElementalFunction
                                                         Abs
                                                         [(RealBinOp
                                                             (RealBinOp
-                                                                (IntrinsicScalarFunction
+                                                                (IntrinsicElementalFunction
                                                                     Cos
                                                                     [(ArrayItem
                                                                         (Var 5 array)
@@ -2026,11 +2026,11 @@
                                                 ())
                                                 [(If
                                                     (RealCompare
-                                                        (IntrinsicScalarFunction
+                                                        (IntrinsicElementalFunction
                                                             Abs
                                                             [(RealBinOp
                                                                 (RealBinOp
-                                                                    (IntrinsicScalarFunction
+                                                                    (IntrinsicElementalFunction
                                                                         Sin
                                                                         [(ArrayItem
                                                                             (Var 4 array)

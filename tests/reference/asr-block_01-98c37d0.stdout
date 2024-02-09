@@ -100,7 +100,7 @@
                                                     (Assignment
                                                         (Var 2 d)
                                                         (Cast
-                                                            (IntrinsicScalarFunction
+                                                            (IntrinsicElementalFunction
                                                                 Cos
                                                                 [(RealBinOp
                                                                     (Var 4 b)

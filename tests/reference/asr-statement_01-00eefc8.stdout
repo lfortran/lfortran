@@ -44,16 +44,6 @@
                                     (SymbolTable
                                         4
                                         {
-                                            dexp:
-                                                (ExternalSymbol
-                                                    4
-                                                    dexp
-                                                    6 dexp
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    dexp
-                                                    Private
-                                                ),
                                             z:
                                                 (Variable
                                                     4
@@ -106,12 +96,11 @@
                                     [(Var 4 z)]
                                     [(Assignment
                                         (Var 4 zexp_return_var_name)
-                                        (FunctionCall
-                                            4 dexp
-                                            ()
-                                            [((Var 4 z))]
+                                        (IntrinsicElementalFunction
+                                            Exp
+                                            [(Var 4 z)]
+                                            0
                                             (Real 8)
-                                            ()
                                             ()
                                         )
                                         ()
@@ -147,14 +136,6 @@
                     .false.
                     ()
                 ),
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math),
             statement_01:
                 (Program
                     (SymbolTable

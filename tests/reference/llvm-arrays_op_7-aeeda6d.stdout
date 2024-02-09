@@ -11,7 +11,7 @@ source_filename = "LFortran"
 @7 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @8 = private unnamed_addr constant [3 x i8] c"%s\00", align 1
 
-define void @f_x_y(i32* %x, i32* %__1x, i32* %__2x, i32* %y, i32* %__1y, i32* %__2y) {
+define void @f_integer____0_integer____1(i32* %x, i32* %__1x, i32* %__2x, i32* %y, i32* %__1y, i32* %__2y) {
 .entry:
   %__1_t = alloca i32, align 4
   %__1_v = alloca i32, align 4
@@ -132,7 +132,7 @@ loop.end:                                         ; preds = %ifcont4
   %16 = getelementptr [3 x i32], [3 x i32]* %y, i32 0, i32 0
   store i32 1, i32* %call_arg_value6, align 4
   store i32 3, i32* %call_arg_value7, align 4
-  call void @f_x_y(i32* %15, i32* %call_arg_value, i32* %call_arg_value5, i32* %16, i32* %call_arg_value6, i32* %call_arg_value7)
+  call void @f_integer____0_integer____1(i32* %15, i32* %call_arg_value, i32* %call_arg_value5, i32* %16, i32* %call_arg_value6, i32* %call_arg_value7)
   br i1 true, label %then9, label %else10
 
 then9:                                            ; preds = %loop.end

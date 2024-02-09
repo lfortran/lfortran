@@ -138,21 +138,23 @@ public:
     if (cast_kind == error_case) {
       std::string allowed_types_str = type_names[dest_type2->type][1];
       std::string dest_type_str = type_names[dest_type2->type][0];
-      std::string error_msg =
-          "Only " + allowed_types_str + " can be assigned to " + dest_type_str;
+      std::string error_msg = "Only " + allowed_types_str + " can be assigned to " + dest_type_str;
       throw SemanticError(error_msg, a_loc);
     } else if (cast_kind != default_case) {
         ASR::expr_t *value=nullptr;
         if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::RealToInteger) {
             if (ASRUtils::expr_value(*convert_can)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*dest_type2))
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(*convert_can)))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::RealConstant_t>(*value))
-                ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(value);
-                int64_t i = r->m_r;
-                value = (ASR::expr_t *)ASR::make_IntegerConstant_t(al, a_loc,
-                    i, dest_type2);
+                if (ASR::is_a<ASR::RealConstant_t>(*value)) {
+                    ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(value);
+                    int64_t i = r->m_r;
+                    value = (ASR::expr_t *)ASR::make_IntegerConstant_t(al, a_loc,
+                        i, dest_type2);
+                } else {
+                    value = nullptr;
+                }
             }
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::IntegerToReal) {
             if (ASRUtils::expr_value(*convert_can)) {
@@ -161,32 +163,34 @@ public:
                   *ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
                 if (ASR::is_a<ASR::IntegerConstant_t>(*value)) {
-                  ASR::IntegerConstant_t *i = ASR::down_cast<ASR::IntegerConstant_t>(value);
-                  double rval = static_cast<double>(i->m_n);
-                  value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
+                    ASR::IntegerConstant_t *i = ASR::down_cast<ASR::IntegerConstant_t>(value);
+                    double rval = static_cast<double>(i->m_n);
+                    value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
                                                                  rval, dest_type2);
                 } else {
                   // TODO: Handle cases where this is say, a constant Array
                   // See https://gitlab.com/lfortran/lfortran/-/merge_requests/1162#note_647992506
-                  value = nullptr; // Reset
+                    value = nullptr; // Reset
                 }
             }
-
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::RealToReal) {
             if (ASRUtils::expr_value(*convert_can)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*dest_type2));
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(*convert_can)))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::RealConstant_t>(*value))
-                ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(value);
-                double rval = r->m_r;
-                value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
-                    rval, dest_type2);
+                if (ASR::is_a<ASR::RealConstant_t>(*value)) {
+                    ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(value);
+                    double rval = r->m_r;
+                    value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
+                        rval, dest_type2);
+              } else {
+                    value = nullptr;
+              }
             }
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::RealToComplex) {
             if (ASRUtils::expr_value(*convert_can)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::type_get_past_pointer(dest_type)))
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(*convert_can)))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::RealConstant_t>(*value))
                 ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(value);
@@ -196,31 +200,37 @@ public:
             }
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::ComplexToReal) {
             if (ASRUtils::expr_value(*convert_can)) {
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_pointer(dest_type)))
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(*convert_can)))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_pointer(dest_type2)))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::ComplexConstant_t>(*value))
-                ASR::ComplexConstant_t *r = ASR::down_cast<ASR::ComplexConstant_t>(value);
-                double rval = r->m_re;
-                value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
-                    rval, dest_type2);
+                if (ASR::is_a<ASR::ComplexConstant_t>(*value)) {
+                  ASR::ComplexConstant_t *r = ASR::down_cast<ASR::ComplexConstant_t>(value);
+                  double rval = r->m_re;
+                  value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
+                      rval, dest_type2);
+                } else {
+                  value = nullptr;
+                }
             }
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::ComplexToInteger) {
             if (ASRUtils::expr_value(*convert_can)) {
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(dest_type)))
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(*convert_can)))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(dest_type2)))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::ComplexConstant_t>(*value))
-                ASR::ComplexConstant_t *r = ASR::down_cast<ASR::ComplexConstant_t>(value);
-                double rval = r->m_re;
-                int64_t ival = (int64_t)rval;
-                value = (ASR::expr_t *)ASR::make_IntegerConstant_t(al, a_loc,
-                    ival, dest_type2);
+                if (ASR::is_a<ASR::ComplexConstant_t>(*value)) {
+                  ASR::ComplexConstant_t *r = ASR::down_cast<ASR::ComplexConstant_t>(value);
+                  double rval = r->m_re;
+                  int64_t ival = (int64_t)rval;
+                  value = (ASR::expr_t *)ASR::make_IntegerConstant_t(al, a_loc,
+                      ival, dest_type2);
+                } else {
+                  value = nullptr;
+                }
             }
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::IntegerToInteger) {
             if (ASRUtils::expr_value(*convert_can)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*dest_type2))
-                LCOMPILERS_ASSERT(ASRUtils::is_integer(*ASRUtils::expr_type(*convert_can)))
+                LCOMPILERS_ASSERT(ASRUtils::is_integer(*ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
                 if( ASR::is_a<ASR::IntegerConstant_t>(*value) ) {
                     ASR::IntegerConstant_t *i = ASR::down_cast<ASR::IntegerConstant_t>(value);
@@ -232,7 +242,7 @@ public:
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::IntegerToComplex) {
             if (ASRUtils::expr_value(*convert_can)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*dest_type2))
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(*convert_can)))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
                 if( ASR::is_a<ASR::IntegerConstant_t>(*value) ) {
                     ASR::IntegerConstant_t *i = ASR::down_cast<ASR::IntegerConstant_t>(value);
@@ -244,7 +254,7 @@ public:
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::ComplexToComplex) {
             if (ASRUtils::expr_value(*convert_can)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*dest_type2))
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(*convert_can)))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
                 if( ASR::is_a<ASR::ComplexConstant_t>(*value) ) {
                     ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(value);
@@ -252,6 +262,8 @@ public:
                     double im = c->m_im;
                     value = (ASR::expr_t *)ASR::make_ComplexConstant_t(al, a_loc,
                       re, im, dest_type2);
+                } else {
+                    value = nullptr;
                 }
             }
         }

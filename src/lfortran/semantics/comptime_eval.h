@@ -88,9 +88,6 @@ struct IntrinsicProcedures {
             {"newunit", {m_custom, &not_implemented, false}},
 
             // Require evaluated arguments
-            {"aimag", {m_math, &eval_aimag, true}},
-            {"imag", {m_math, &eval_aimag, true}},
-            {"dimag", {m_math, &eval_aimag, true}},
             {"floor", {m_math3, &eval_floor, true}},
             {"ceiling", {m_math2, &eval_ceiling, true}},
             {"nint", {m_math2, &eval_nint, true}},
@@ -102,34 +99,8 @@ struct IntrinsicProcedures {
             {"selected_int_kind", {m_kind, &eval_selected_int_kind, true}},
             {"selected_real_kind", {m_kind, &eval_selected_real_kind, true}},
             {"selected_char_kind", {m_kind, &eval_selected_char_kind, true}},
-            {"exp", {m_math, &eval_exp, true}},
-            {"dexp", {m_math, &eval_dexp, true}},
-            {"sexp", {m_math, &eval_sexp, true}},
-            {"cexp", {m_math, &eval_cexp, true}},
-            {"zexp", {m_math, &eval_zexp, true}},
-            {"range", {m_math, &eval_range, false}},
-            {"epsilon", {m_math, &eval_epsilon, false}},
-            {"tiny", {m_math, &eval_tiny, false}},
-            {"log", {m_math, &eval_log, true}},
-            {"alog", {m_math, &eval_alog, true}},
-            {"slog", {m_math, &eval_slog, true}},
-            {"dlog", {m_math, &eval_dlog, true}},
-            {"clog", {m_math, &eval_clog, true}},
-            {"zlog", {m_math, &eval_zlog, true}},
-            {"erf", {m_math, &eval_erf, true}},
-            {"erfc", {m_math, &eval_erfc, true}},
-            {"datan", {m_math, &eval_datan, true}},
-            {"dcos", {m_math, &eval_dcos, true}},
-            {"dsin", {m_math, &eval_dsin, true}},
-            {"log10", {m_math, &eval_log10, true}},
-            {"dlog10", {m_math, &eval_dlog10, true}},
-
-            {"asinh", {m_math, &eval_asinh, true}},
-            {"acosh", {m_math, &eval_acosh, true}},
-            {"atanh", {m_math, &eval_atanh, true}},
 
             {"dot_product", {m_math, &not_implemented, false}},
-            {"conjg", {m_math, &not_implemented, false}},
 
             {"iand", {m_bit, &not_implemented, false}},
             {"ior", {m_bit, &not_implemented, false}},
@@ -171,7 +142,6 @@ struct IntrinsicProcedures {
             {"shape", {m_builtin, &not_implemented, false}},
             {"reshape", {m_builtin, &not_implemented, false}},
             {"present", {m_builtin, &not_implemented, false}},
-            {"allocated", {m_builtin, &not_implemented, false}},
             {"minval", {m_builtin, &not_implemented, false}},
             {"maxval", {m_builtin, &not_implemented, false}},
             {"index", {m_string, &not_implemented, false}},
@@ -273,39 +243,6 @@ struct IntrinsicProcedures {
         int64_t not_arg = ~(arg_int->m_n);
         ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, arg_int_type->m_kind));
         return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, not_arg, int_type));
-    }
-
-    static ASR::expr_t *eval_tiny(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &) {
-        // We assume the input is valid
-        // ASR::expr_t* tiny_expr = args[0];
-        ASR::ttype_t* tiny_type = ASRUtils::expr_type(args[0]);
-        // TODO: Arrays of reals are a valid argument for tiny
-        if (ASRUtils::is_array(tiny_type)){
-            throw SemanticError("Array values not implemented yet",
-                                loc);
-        }
-        // TODO: Figure out how to deal with higher precision later
-        if (ASR::is_a<ASR::Real_t>(*tiny_type)) {
-            // We don't actually need the value yet, it is enough to know it is a double
-            // but it might provide further information later (precision)
-            // double tiny_val = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(tiny_expr))->m_r;
-            int tiny_kind = ASRUtils::extract_kind_from_ttype_t(tiny_type);
-            if (tiny_kind == 4){
-                float low_val = std::numeric_limits<float>::min();
-                return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc,
-                                                                                low_val, // value
-                                                                                tiny_type));
-            } else {
-                double low_val = std::numeric_limits<double>::min();
-                return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc,
-                                                                                low_val, // value
-                                                                                tiny_type));
-                    }
-        }
-        else {
-            throw SemanticError("Argument for tiny must be Real",
-                                loc);
-        }
     }
 
     static ASR::expr_t *eval_floor(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
@@ -442,55 +379,6 @@ struct IntrinsicProcedures {
         }
     }
 
-#define TRIG_CB(X) static std::complex<double> lfortran_z##X(std::complex<double> x) { return std::X(x); }
-#define TRIG_CB2(X) static ASR::expr_t *eval_##X(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) { \
-        return eval_trig(al, loc, args, compiler_options, &X, &lfortran_z##X); \
-    }
-#define TRIG2_CB(X, Y) static std::complex<double> lfortran_z##Y(std::complex<double> x) { return std::X(x); }
-#define TRIG2_CB2(X, Y) static ASR::expr_t *eval_##Y(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) { \
-        return eval_trig(al, loc, args, compiler_options, &X, &lfortran_z##Y); \
-    }
-#define TRIG(X) TRIG_CB(X) \
-    TRIG_CB2(X)
-#define TRIG2(X, Y) TRIG2_CB(X, Y) \
-    TRIG2_CB2(X, Y)
-
-TRIG(asin)
-TRIG(acos)
-TRIG(asinh)
-TRIG(acosh)
-TRIG(atanh)
-
-TRIG(exp)
-TRIG(log)
-
-TRIG2(exp, dexp)
-TRIG2(exp, sexp)
-TRIG2(exp, cexp)
-TRIG2(exp, zexp)
-
-TRIG2(log, alog)
-TRIG2(log, dlog)
-TRIG2(log10, dlog10)
-TRIG2(log, slog)
-TRIG2(log, clog)
-TRIG2(log, zlog)
-
-TRIG2(sin, dsin)
-TRIG2(cos, dcos)
-TRIG2(atan, datan)
-
-
-    static ASR::expr_t *eval_erf(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        return eval_trig(al, loc, args, compiler_options, &erf, nullptr);
-    }
-    static ASR::expr_t *eval_erfc(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        return eval_trig(al, loc, args, compiler_options, &erfc, nullptr);
-    }
-    static ASR::expr_t *eval_log10(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        return eval_trig(al, loc, args, compiler_options, &log10, nullptr);
-    }
-
     static double lfortran_modulo(double x, double y) {
         if (x > 0 && y > 0) {
             return std::fmod(x, y);
@@ -565,72 +453,6 @@ TRIG2(atan, datan)
             &IntrinsicProcedures::lfortran_max_i);
     }
 
-    static ASR::expr_t *eval_range(Allocator &al, const Location &loc,
-            Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options
-            ) {
-        if (args.size() != 1) {
-            throw SemanticError("Intrinsic range function accepts exactly 1 argument", loc);
-        }
-        ASR::ttype_t* t = ASRUtils::expr_type(args[0]);
-        int64_t range_val = -1;
-        if (ASR::is_a<ASR::Real_t>(*t)) {
-            ASR::Real_t* t_real = ASR::down_cast<ASR::Real_t>(t);
-            if( t_real->m_kind == 4 ) {
-                range_val = 37;
-            } else if( t_real->m_kind == 8 ) {
-                range_val = 307;
-            } else {
-                throw SemanticError("Only 32 and 64 bit kinds are supported in range intrinsic.", loc);
-            }
-        } else if (ASR::is_a<ASR::Integer_t>(*t)) {
-            ASR::Integer_t* t_int = ASR::down_cast<ASR::Integer_t>(t);
-            if( t_int->m_kind == 4 ) {
-                range_val = 9;
-            } else if( t_int->m_kind == 8 ) {
-                range_val = 18;
-            } else if( t_int->m_kind == 1 ) {
-                range_val = 2;
-            } else if( t_int->m_kind == 2 ) {
-                range_val = 4;
-            } else {
-                throw SemanticError("Only 32, 64, 8 and 16 bit kinds are supported in range intrinsic.", loc);
-            }
-        } else if (ASR::is_a<ASR::Complex_t>(*t)) {
-            ASR::Complex_t* t_complex = ASR::down_cast<ASR::Complex_t>(t);
-            if( t_complex->m_kind == 4 ) {
-                range_val = 37;
-            } else if( t_complex->m_kind == 8 ) {
-                range_val = 307;
-            } else {
-                throw SemanticError("Only 32 and 64 bit kinds are supported in range intrinsic.", loc);
-            }
-        } else {
-            throw SemanticError("Argument of the range function must be Integer, Real or Complex", loc);
-        }
-        ASR::ttype_t* tmp_int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
-        return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, range_val, tmp_int_type));;
-    }
-
-    static ASR::expr_t *eval_aimag(Allocator &al, const Location &loc,
-            Vec<ASR::expr_t*> &args, const CompilerOptions &
-            ) {
-        LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
-        if (args.size() != 1) {
-            throw SemanticError("Intrinsic trig function accepts exactly 1 argument", loc);
-        }
-        ASR::expr_t* trig_arg = args[0];
-        ASR::ttype_t* t = ASRUtils::expr_type(args[0]);
-        if (ASR::is_a<ASR::Complex_t>(*t)) {
-            double im = ASR::down_cast<ASR::ComplexConstant_t>(trig_arg)->m_im;
-            double result = im;
-            int kind = ASRUtils::extract_kind_from_ttype_t(t);
-            t = ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind));
-            return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, result, t));
-        } else {
-            throw SemanticError("Argument of the aimag() function must be Complex", loc);
-        }
-    }
-
     static ASR::expr_t *eval_int(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
         ASR::expr_t* int_expr = args[0];
         if( int_expr->type == ASR::exprType::IntegerBOZ ) {
@@ -689,27 +511,6 @@ TRIG2(atan, datan)
         } else {
             throw SemanticError("achar() must have one integer argument", loc);
         }
-    }
-
-    static ASR::expr_t *eval_epsilon(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &) {
-        LCOMPILERS_ASSERT(args.size() == 1);
-        ASR::ttype_t* t = ASRUtils::expr_type(args[0]);
-        if (!ASR::is_a<ASR::Real_t>(*t)) {
-            throw SemanticError("Only inputs of real type are accepted in epsilon intrinsic.", loc);
-        }
-        ASR::Real_t* t_real = ASR::down_cast<ASR::Real_t>(t);
-        if( t_real->m_kind == 4 ) {
-            float epsilon_val = std::numeric_limits<float>::epsilon();
-            return ASR::down_cast<ASR::expr_t>(
-                    ASR::make_RealConstant_t(al, loc, epsilon_val, t));
-        } else if( t_real->m_kind == 8 ) {
-            double epsilon_val = std::numeric_limits<double>::epsilon();
-            return ASR::down_cast<ASR::expr_t>(
-                    ASR::make_RealConstant_t(al, loc, epsilon_val, t));
-        } else {
-            throw SemanticError("Only 32 and 64 bit kinds are supported in epsilon intrinsic.", loc);
-        }
-        return nullptr;
     }
 
     static ASR::expr_t *eval_adjustl(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &) {

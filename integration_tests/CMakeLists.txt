@@ -438,6 +438,7 @@ RUN(NAME arrays_35 LABELS gfortran llvm)
 RUN(NAME arrays_36 LABELS gfortran llvm)
 RUN(NAME arrays_37 LABELS gfortran llvm)
 RUN(NAME arrays_38 LABELS gfortran llvm)
+RUN(NAME arrays_39 LABELS gfortran llvm)
 
 
 # GFortran
@@ -641,7 +642,7 @@ RUN(NAME intrinsics_131 LABELS gfortran llvm)#max for strings
 RUN(NAME intrinsics_132 LABELS gfortran llvm)#Floor
 RUN(NAME intrinsics_133 LABELS gfortran llvm)#Ceiling
 RUN(NAME intrinsics_134 LABELS gfortran llvm)#Adjustl
-
+RUN(NAME intrinsics_135 LABELS gfortran llvm)#nint
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
@@ -722,6 +723,7 @@ RUN(NAME modules_51 LABELS gfortran llvmImplicit)
 RUN(NAME modules_53 LABELS gfortran llvm)
 RUN(NAME modules_54 LABELS gfortran llvm)
 RUN(NAME modules_55 LABELS gfortran llvm)
+RUN(NAME modules_56 LABELS gfortran llvm NOFAST)
 RUN(NAME operator_overloading_05_module3 LABELS gfortran llvm EXTRAFILES
         operator_overloading_05_module1.f90 operator_overloading_05_module2.f90)
 RUN(NAME associate_06 LABELS gfortran EXTRAFILES
@@ -908,6 +910,8 @@ RUN(NAME block_03 LABELS gfortran llvm)
 RUN(NAME block_04 LABELS gfortran llvm)
 RUN(NAME block_05 LABELS gfortran llvm)
 RUN(NAME block_06 LABELS gfortran llvm wasm)
+RUN(NAME block_07 LABELS gfortran llvm)
+RUN(NAME block_08 LABELS gfortran llvm)
 RUN(NAME associate_01 LABELS gfortran llvm)
 RUN(NAME associate_02 LABELS gfortran llvm)
 RUN(NAME associate_03 LABELS gfortran llvm)
@@ -1101,15 +1105,7 @@ RUN(NAME template_array_03 LABELS llvm llvmStackArray wasm)
 RUN(NAME template_array_04 LABELS llvm llvmStackArray wasm)
 RUN(NAME template_array_04b LABELS llvm llvmStackArray wasm)
 RUN(NAME template_matrix_01 LABELS llvm)
-RUN(NAME template_matrix_real LABELS llvm EXTRAFILES
-    template_semigroup.f90
-    template_semiring.f90
-    template_monoid.f90
-    template_unitring.f90
-    template_field.f90
-    template_matrix.f90
-    )
-RUN(NAME template_matrix_integer LABELS llvm EXTRAFILES
+RUN(NAME template_matrix_test LABELS llvm EXTRAFILES
     template_semigroup.f90
     template_semiring.f90
     template_monoid.f90
@@ -1170,6 +1166,7 @@ RUN(NAME pass_array_by_data_04 LABELS gfortran llvm llvmStackArray)
 RUN(NAME pass_array_by_data_05 LABELS gfortran llvm llvmStackArray)
 RUN(NAME pass_array_by_data_06 LABELS gfortran llvm llvmStackArray wasm)
 RUN(NAME pass_array_by_data_07 LABELS gfortran llvm llvmStackArray)
+RUN(NAME pass_array_by_data_08 LABELS gfortran llvm llvmStackArray)
 
 RUN(NAME implicit_deallocate_01 LABELS gfortran llvm)
 
@@ -1189,8 +1186,6 @@ RUN(NAME do_loop_02 LABELS gfortran llvm)
 RUN(NAME do_loop_03 LABELS gfortran llvm
     EXTRA_ARGS --use-loop-variable-after-loop)
 RUN(NAME do_loop_04 LABELS llvm) # This test is not supported by gfortran, as it uses a loop variable after the loop ( bad code practice )
-
-RUN(NAME block_07 LABELS gfortran llvm)
 
 RUN(NAME complex_11 LABELS gfortran llvmImplicit wasm)
 RUN(NAME complex_12 LABELS gfortran llvm wasm)
@@ -1277,6 +1272,7 @@ RUN(NAME character_03 LABELS gfortran llvm)
 RUN(NAME character_04 LABELS gfortran llvm)
 
 RUN(NAME c_ptr_01 LABELS gfortran llvm)
+RUN(NAME c_ptr_02 LABELS gfortran llvm)
 
 RUN(NAME arrayitem_01 LABELS gfortran llvm llvmStackArray)
 
@@ -1364,6 +1360,7 @@ RUN(NAME transfer_01 LABELS gfortran llvm)
 RUN(NAME transfer_02 LABELS gfortran)
 
 RUN(NAME present_01 LABELS gfortran llvm)
+RUN(NAME present_02 LABELS gfortran llvm)
 RUN(NAME types_20 LABELS gfortran llvm)
 RUN(NAME arrayprint_01 LABELS gfortran llvm)
 RUN(NAME print_arr_05 LABELS gfortran llvm)
@@ -1380,3 +1377,7 @@ RUN(NAME elemental_05 LABELS gfortran llvm)
 RUN(NAME elemental_06 LABELS gfortran llvm)
 RUN(NAME elemental_07 LABELS gfortran llvm)
 RUN(NAME elemental_08 LABELS gfortran llvm)
+
+RUN(NAME types_21 LABELS gfortran llvm)
+RUN(NAME types_22 LABELS gfortran llvm)
+RUN(NAME types_23 LABELS gfortran llvm)

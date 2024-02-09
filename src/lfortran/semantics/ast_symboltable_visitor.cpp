@@ -2570,6 +2570,9 @@ public:
 
     void visit_Use(const AST::Use_t &x) {
         std::string msym = to_lower(x.m_module);
+        if (msym == "ieee_arithmetic") {
+            msym = "lfortran_intrinsic_" + msym;
+        }
         Str msym_c; msym_c.from_str_view(msym);
         char *msym_cc = msym_c.c_str(al);
         current_module_dependencies.push_back(al, msym_cc);
@@ -2986,7 +2989,9 @@ public:
                             "The argument for " + param + " must be a function",
                             x.m_args[i]->base.loc);
                     }
-                    check_restriction(type_subs, symbol_subs, f, f_arg0, x.m_args[i]->base.loc, diag);
+                    check_restriction(type_subs,
+                        symbol_subs, f, f_arg0, x.m_args[i]->base.loc, diag,
+                        []() { throw SemanticAbort(); });
                 } else {
                     ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
                     if (ASRUtils::is_type_parameter(*param_type)) {
@@ -3075,7 +3080,9 @@ public:
                     ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
                     for (size_t i = 0; i < gen_proc->n_procs && !found; i++) {
                         ASR::symbol_t* proc = gen_proc->m_procs[i];
-                        found = check_restriction(type_subs, symbol_subs, f, proc, x.m_args[i]->base.loc, diag, false);
+                        found = check_restriction(type_subs,
+                            symbol_subs, f, proc, x.m_args[i]->base.loc, diag,
+                            []() { throw SemanticAbort(); }, false);
                     }
                 }
 

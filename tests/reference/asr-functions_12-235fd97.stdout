@@ -16,7 +16,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     huge
-                                                    30 huge
+                                                    29 huge
                                                     lfortran_intrinsic_math2
                                                     []
                                                     huge
@@ -26,7 +26,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     huge@i32huge
-                                                    30 i32huge
+                                                    29 i32huge
                                                     lfortran_intrinsic_math2
                                                     []
                                                     i32huge
@@ -164,9 +164,7 @@
             lfortran_intrinsic_builtin:
                 (IntrinsicModule lfortran_intrinsic_builtin),
             lfortran_intrinsic_math2:
-                (IntrinsicModule lfortran_intrinsic_math2),
-            lfortran_intrinsic_math3:
-                (IntrinsicModule lfortran_intrinsic_math3)
+                (IntrinsicModule lfortran_intrinsic_math2)
         })
     []
 )

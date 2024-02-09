@@ -8,7 +8,6 @@
 
 #include <libasr/assert.h>
 #include <libasr/asr.h>
-#include <libasr/semantic_exception.h>
 #include <libasr/string_utils.h>
 #include <libasr/utils.h>
 
@@ -224,6 +223,57 @@ static inline int extract_kind_from_ttype_t(const ASR::ttype_t* type) {
         }
         default : {
             return -1;
+        }
+    }
+}
+
+static inline void set_kind_to_ttype_t(ASR::ttype_t* type, int kind) {
+    if (type == nullptr) {
+        return;
+    }
+    switch (type->type) {
+        case ASR::ttypeType::Array: {
+            set_kind_to_ttype_t(ASR::down_cast<ASR::Array_t>(type)->m_type, kind);
+            break;
+        }
+        case ASR::ttypeType::Integer : {
+            ASR::down_cast<ASR::Integer_t>(type)->m_kind = kind;
+            break;
+        }
+        case ASR::ttypeType::UnsignedInteger : {
+            ASR::down_cast<ASR::UnsignedInteger_t>(type)->m_kind = kind;
+            break;
+        }
+        case ASR::ttypeType::Real : {
+            ASR::down_cast<ASR::Real_t>(type)->m_kind = kind;
+            break;
+        }
+        case ASR::ttypeType::Complex: {
+            ASR::down_cast<ASR::Complex_t>(type)->m_kind = kind;
+            break;
+        }
+        case ASR::ttypeType::Character: {
+            ASR::down_cast<ASR::Character_t>(type)->m_kind = kind;
+            break;
+        }
+        case ASR::ttypeType::Logical: {
+            ASR::down_cast<ASR::Logical_t>(type)->m_kind = kind;
+            break;
+        }
+        case ASR::ttypeType::Pointer: {
+            set_kind_to_ttype_t(ASR::down_cast<ASR::Pointer_t>(type)->m_type, kind);
+            break;
+        }
+        case ASR::ttypeType::Allocatable: {
+            set_kind_to_ttype_t(ASR::down_cast<ASR::Allocatable_t>(type)->m_type, kind);
+            break;
+        }
+        case ASR::ttypeType::Const: {
+            set_kind_to_ttype_t(ASR::down_cast<ASR::Const_t>(type)->m_type, kind);
+            break;
+        }
+        default : {
+            return;
         }
     }
 }
@@ -2722,9 +2772,9 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
             }
             break;
         }
-        case ASR::exprType::IntrinsicScalarFunction: {
-            ASR::IntrinsicScalarFunction_t* kind_isf =
-                ASR::down_cast<ASR::IntrinsicScalarFunction_t>(kind_expr);
+        case ASR::exprType::IntrinsicElementalFunction: {
+            ASR::IntrinsicElementalFunction_t* kind_isf =
+                ASR::down_cast<ASR::IntrinsicElementalFunction_t>(kind_expr);
             if (kind_isf->m_intrinsic_id == 0 && kind_isf->m_value) {
                 // m_intrinsic_id: 0 -> kind intrinsic
                 LCOMPILERS_ASSERT( ASR::is_a<ASR::IntegerConstant_t>(*kind_isf->m_value) );
@@ -2789,7 +2839,7 @@ inline int extract_len(ASR::expr_t* len_expr, const Location& loc) {
             a_len = -3;
             break;
         }
-        case ASR::exprType::IntrinsicScalarFunction: {
+        case ASR::exprType::IntrinsicElementalFunction: {
             a_len = -3;
             break;
         }
@@ -4524,25 +4574,6 @@ static inline ASR::expr_t* get_size(ASR::expr_t* arr_expr, Allocator& al) {
     return ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(al, arr_expr->base.loc, arr_expr, nullptr, int32_type, nullptr));
 }
 
-static inline void get_dimensions(ASR::expr_t* array, Vec<ASR::expr_t*>& dims,
-                                  Allocator& al) {
-    ASR::ttype_t* array_type = ASRUtils::expr_type(array);
-    ASR::dimension_t* compile_time_dims = nullptr;
-    int n_dims = extract_dimensions_from_ttype(array_type, compile_time_dims);
-    for( int i = 0; i < n_dims; i++ ) {
-        ASR::expr_t* start = compile_time_dims[i].m_start;
-        if( start == nullptr ) {
-            start = get_bound<SemanticError>(array, i + 1, "lbound", al);
-        }
-        ASR::expr_t* length = compile_time_dims[i].m_length;
-        if( length == nullptr ) {
-            length = get_size(array, i + 1, al);
-        }
-        dims.push_back(al, start);
-        dims.push_back(al, length);
-    }
-}
-
 static inline ASR::EnumType_t* get_EnumType_from_symbol(ASR::symbol_t* s) {
     ASR::Variable_t* s_var = ASR::down_cast<ASR::Variable_t>(s);
     if( ASR::is_a<ASR::Enum_t>(*s_var->m_type) ) {
@@ -5065,7 +5096,7 @@ static inline ASR::expr_t* cast_to_descriptor(Allocator& al, ASR::expr_t* arg) {
     return arg;
 }
 
-static inline ASR::asr_t* make_IntrinsicScalarFunction_t_util(
+static inline ASR::asr_t* make_IntrinsicElementalFunction_t_util(
     Allocator &al, const Location &a_loc, int64_t a_intrinsic_id,
     ASR::expr_t** a_args, size_t n_args, int64_t a_overload_id,
     ASR::ttype_t* a_type, ASR::expr_t* a_value) {
@@ -5084,7 +5115,7 @@ static inline ASR::asr_t* make_IntrinsicScalarFunction_t_util(
         }
     }
 
-    return ASR::make_IntrinsicScalarFunction_t(al, a_loc, a_intrinsic_id,
+    return ASR::make_IntrinsicElementalFunction_t(al, a_loc, a_intrinsic_id,
         a_args, n_args, a_overload_id, a_type, a_value);
 }
 
@@ -5169,6 +5200,8 @@ inline ASR::ttype_t* make_Pointer_t_util(Allocator& al, const Location& loc, ASR
 
 int64_t compute_trailing_zeros(int64_t number, int64_t kind);
 int64_t compute_leading_zeros(int64_t number, int64_t kind);
+void append_error(diag::Diagnostics& diag, const std::string& msg,
+                const Location& loc);
 
 static inline bool is_simd_array(ASR::expr_t *v) {
     return (ASR::is_a<ASR::Array_t>(*expr_type(v)) &&

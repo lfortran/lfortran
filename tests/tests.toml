@@ -417,6 +417,10 @@ filename = "warnings/character_01.f90"
 asr = true
 
 [[test]]
+filename = "warnings/preprocess_01.f90"
+asr = true
+
+[[test]]
 filename = "preprocessor1.f90"
 asr_preprocess = true
 
@@ -3334,6 +3338,10 @@ filename = "save2.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/c_ptr_02.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/save_03.f90"
 asr = true
 
@@ -3690,4 +3698,39 @@ asr = true
 
 [[test]]
 filename = "errors/min_02.f90"
+asr = true
+
+[[test]]
+filename = "errors/open_invalid_kwarg1.f90"
+asr = true
+
+[[test]]
+filename = "errors/close_invalid_kwarg1.f90"
+asr = true
+
+[[test]]
+filename = "errors/rewind_invalid_kwarg1.f90"
+asr = true
+
+[[test]]
+filename = "errors/flush_invalid_kwarg1.f90"
+asr = true
+
+[[test]]
+filename = "warnings/open_notimplemented_kwarg1.f90"
+asr = true
+
+[[test]]
+filename = "errors/substring_startidx.f90"
+asr = true
+
+[[test]]
+filename = "errors/substring_endidx.f90"
+asr = true
+
+[[test]]
+filename = "errors/substring_stride.f90"
+
+[[test]]
+filename = "shiftl1.f90"
 asr = true

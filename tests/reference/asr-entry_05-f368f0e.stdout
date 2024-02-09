@@ -404,13 +404,13 @@
                                                 (Real 8)
                                             )
                                             Mul
-                                            (IntrinsicScalarFunction
+                                            (IntrinsicElementalFunction
                                                 Max
                                                 [(Var 4 abstol)
                                                 (RealBinOp
                                                     (Var 4 reltol)
                                                     Mul
-                                                    (IntrinsicScalarFunction
+                                                    (IntrinsicElementalFunction
                                                         Abs
                                                         [(Var 6 zx)]
                                                         0
@@ -686,7 +686,7 @@
                         ())
                         [(If
                             (RealCompare
-                                (IntrinsicScalarFunction
+                                (IntrinsicElementalFunction
                                     Abs
                                     [(RealBinOp
                                         (ArrayItem

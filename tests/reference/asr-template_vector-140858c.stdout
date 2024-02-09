@@ -2,8 +2,6 @@
     (SymbolTable
         1
         {
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
             template_vector:
                 (Program
                     (SymbolTable
@@ -244,16 +242,6 @@
                                                                     sz
                                                                     Public
                                                                 ),
-                                                            allocated:
-                                                                (ExternalSymbol
-                                                                    10
-                                                                    allocated
-                                                                    13 allocated
-                                                                    lfortran_intrinsic_builtin
-                                                                    []
-                                                                    allocated
-                                                                    Private
-                                                                ),
                                                             i:
                                                                 (Variable
                                                                     10
@@ -351,10 +339,9 @@
                                                     (Var 10 n)]
                                                     [(If
                                                         (LogicalNot
-                                                            (FunctionCall
-                                                                10 allocated
-                                                                ()
-                                                                [((StructInstanceMember
+                                                            (IntrinsicImpureFunction
+                                                                Allocated
+                                                                [(StructInstanceMember
                                                                     (Var 10 this)
                                                                     10 1_intvector_elements
                                                                     (Allocatable
@@ -366,9 +353,9 @@
                                                                         )
                                                                     )
                                                                     ()
-                                                                ))]
+                                                                )]
+                                                                0
                                                                 (Logical 4)
-                                                                ()
                                                                 ()
                                                             )
                                                             (Logical 4)
@@ -900,16 +887,6 @@
                                                                     sz
                                                                     Public
                                                                 ),
-                                                            allocated:
-                                                                (ExternalSymbol
-                                                                    6
-                                                                    allocated
-                                                                    13 allocated
-                                                                    lfortran_intrinsic_builtin
-                                                                    []
-                                                                    allocated
-                                                                    Private
-                                                                ),
                                                             i:
                                                                 (Variable
                                                                     6
@@ -1009,10 +986,9 @@
                                                     (Var 6 n)]
                                                     [(If
                                                         (LogicalNot
-                                                            (FunctionCall
-                                                                6 allocated
-                                                                ()
-                                                                [((StructInstanceMember
+                                                            (IntrinsicImpureFunction
+                                                                Allocated
+                                                                [(StructInstanceMember
                                                                     (Var 6 this)
                                                                     6 1_vector_elements
                                                                     (Allocatable
@@ -1026,9 +1002,9 @@
                                                                         )
                                                                     )
                                                                     ()
-                                                                ))]
+                                                                )]
+                                                                0
                                                                 (Logical 4)
-                                                                ()
                                                                 ()
                                                             )
                                                             (Logical 4)
@@ -1322,8 +1298,7 @@
                                 )
                         })
                     template_vector_m
-                    [lfortran_intrinsic_builtin
-                    template_vector_m]
+                    [template_vector_m]
                     .false.
                     .false.
                 )

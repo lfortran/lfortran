@@ -394,6 +394,7 @@ jobs:
         run: |
             ctest
             ./run_tests.py
+            ./run_tests.py -vh
             cd integration_tests
             ./run_tests.py -m
             ./run_tests.py -b llvm
@@ -447,6 +448,7 @@ jobs:
         run: |
             ctest
             ./run_tests.py
+            ./run_tests.py -vh
             cd integration_tests
             ./run_tests.py -m
             ./run_tests.py -b llvm
@@ -503,8 +505,8 @@ jobs:
         run: |
             git clone https://github.com/Pranavchiku/stdlib-fortran-lang.git
             cd stdlib-fortran-lang
-            git checkout -t origin/lf-special-function-gamma-2
-            git checkout 6b1c348d02576739df10c755cdcee2520ec18fe6
+            git checkout -t origin/lf-special-function-gamma-3
+            git checkout 95d77d69335d2086034b3509a8d072e918c1809d
             micromamba activate lf
             micromamba install -c conda-forge fypp
             FC=$(pwd)/../src/bin/lfortran cmake .
@@ -518,6 +520,42 @@ jobs:
             ./example/specialfunctions_gamma/example_log_factorial
             ./example/specialfunctions_gamma/example_log_gamma
             ./example/specialfunctions_gamma/example_uigamma
+
+            cd ../
+            rm -rf stdlib-fortran-lang
+
+      - name: Test stdlib (stdlib_linalg)
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/Pranavchiku/stdlib-fortran-lang.git
+            cd stdlib-fortran-lang
+            git checkout -t origin/lf-linalg4
+            git checkout 09729bdb1e1e364cc5283f7d775019636265d264
+            micromamba activate lf
+            micromamba install -c conda-forge fypp
+            FC="$(pwd)/../src/bin/lfortran --realloc-lhs" cmake .
+            make fortran_stdlib
+            cp ./src/*.mod ./example/linalg
+            make
+            ./example/linalg/example_eye1
+            ./example/linalg/example_is_symmetric
+            ./example/linalg/example_cross_product
+            ./example/linalg/example_eye2
+            ./example/linalg/example_is_triangular
+            ./example/linalg/example_diag1
+            ./example/linalg/example_is_diagonal
+            ./example/linalg/example_kronecker_product
+            ./example/linalg/example_diag2
+            ./example/linalg/example_is_hermitian
+            ./example/linalg/example_outer_product
+            ./example/linalg/example_diag3
+            ./example/linalg/example_is_hessenberg
+            ./example/linalg/example_trace
+            ./example/linalg/example_diag4
+            ./example/linalg/example_is_skew_symmetric
+
+            cd ../
+            rm -rf stdlib-fortran-lang
 
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
@@ -673,12 +711,13 @@ jobs:
             lfortran subprojects/test-drive/src/testdrive.F90 --show-llvm
 
             git checkout lf19
-            git checkout e5b48c20eb074522945d0398620e4f27aab967b5
-            ./build_test_array.sh
+            git checkout b7533a11a770225dd995e81c34c552fa089cfc01
+            micromamba install -c conda-forge fypp
+            ./build_test_array_lf.sh
+            ./build_test_array_gf.sh
 
             # Run tests (specialfunctions_gamma, ascii, version, optval, error)
             micromamba activate lf
-            micromamba install -c conda-forge fypp
             ./build.sh
 
   test_llvm:

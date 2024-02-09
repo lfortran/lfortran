@@ -176,7 +176,7 @@
                     (Assignment
                         (Var 2 ca0)
                         (Cast
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Exp
                                 [(RealBinOp
                                     (RealBinOp

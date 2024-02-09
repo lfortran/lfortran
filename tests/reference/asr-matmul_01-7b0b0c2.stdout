@@ -6,8 +6,6 @@
                 (IntrinsicModule lfortran_intrinsic_iso_c_binding),
             iso_fortran_env:
                 (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
             lfortran_intrinsic_math:
                 (IntrinsicModule lfortran_intrinsic_math),
             matmul_01:
@@ -131,7 +129,7 @@
                                     dp
                                     []
                                     Local
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Kind
                                         [(RealConstant
                                             0.000000
@@ -765,7 +763,7 @@
                         (Var 6 err)
                         (IntrinsicArrayFunction
                             MaxVal
-                            [(IntrinsicScalarFunction
+                            [(IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 6 c)
@@ -1028,7 +1026,7 @@
                         (Var 6 err)
                         (IntrinsicArrayFunction
                             MaxVal
-                            [(IntrinsicScalarFunction
+                            [(IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 6 c)

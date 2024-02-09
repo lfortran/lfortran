@@ -1824,7 +1824,7 @@ public:
         tmp = list_api->pop_position(plist, pos, asr_el_type, module.get(), name2memidx);
     }
 
-    void generate_Reserve(ASR::expr_t* m_arg, ASR::expr_t* m_ele) {
+    void generate_ListReserve(ASR::expr_t* m_arg, ASR::expr_t* m_ele) {
         // For now, this only handles lists
         ASR::ttype_t* asr_el_type = ASRUtils::get_contained_type(ASRUtils::expr_type(m_arg));
         int64_t ptr_loads_copy = ptr_loads;
@@ -1916,13 +1916,13 @@ public:
         llvm_utils->set_api->remove_item(pset, el, *module, asr_el_type);
     }
 
-    void visit_IntrinsicScalarFunction(const ASR::IntrinsicScalarFunction_t& x) {
+    void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        switch (static_cast<ASRUtils::IntrinsicScalarFunctions>(x.m_intrinsic_id)) {
-            case ASRUtils::IntrinsicScalarFunctions::ListIndex: {
+        switch (static_cast<ASRUtils::IntrinsicElementalFunctions>(x.m_intrinsic_id)) {
+            case ASRUtils::IntrinsicElementalFunctions::ListIndex: {
                 ASR::expr_t* m_arg = x.m_args[0];
                 ASR::expr_t* m_ele = x.m_args[1];
                 ASR::expr_t* m_start = nullptr;
@@ -1948,11 +1948,11 @@ public:
                 generate_ListIndex(m_arg, m_ele, m_start, m_end);
                 break ;
             }
-            case ASRUtils::IntrinsicScalarFunctions::ListReverse: {
+            case ASRUtils::IntrinsicElementalFunctions::ListReverse: {
                 generate_ListReverse(x.m_args[0]);
                 break;
             }
-            case ASRUtils::IntrinsicScalarFunctions::ListPop: {
+            case ASRUtils::IntrinsicElementalFunctions::ListPop: {
                 switch(x.m_overload_id) {
                     case 0:
                         generate_ListPop_0(x.m_args[0]);
@@ -1963,27 +1963,27 @@ public:
                 }
                 break;
             }
-            case ASRUtils::IntrinsicScalarFunctions::Reserve: {
-                generate_Reserve(x.m_args[0], x.m_args[1]);
+            case ASRUtils::IntrinsicElementalFunctions::ListReserve: {
+                generate_ListReserve(x.m_args[0], x.m_args[1]);
                 break;
             }
-            case ASRUtils::IntrinsicScalarFunctions::DictKeys: {
+            case ASRUtils::IntrinsicElementalFunctions::DictKeys: {
                 generate_DictElems(x.m_args[0], 0);
                 break;
             }
-            case ASRUtils::IntrinsicScalarFunctions::DictValues: {
+            case ASRUtils::IntrinsicElementalFunctions::DictValues: {
                 generate_DictElems(x.m_args[0], 1);
                 break;
             }
-            case ASRUtils::IntrinsicScalarFunctions::SetAdd: {
+            case ASRUtils::IntrinsicElementalFunctions::SetAdd: {
                 generate_SetAdd(x.m_args[0], x.m_args[1]);
                 break;
             }
-            case ASRUtils::IntrinsicScalarFunctions::SetRemove: {
+            case ASRUtils::IntrinsicElementalFunctions::SetRemove: {
                 generate_SetRemove(x.m_args[0], x.m_args[1]);
                 break;
             }
-            case ASRUtils::IntrinsicScalarFunctions::Exp: {
+            case ASRUtils::IntrinsicElementalFunctions::Exp: {
                 switch (x.m_overload_id) {
                     case 0: {
                         ASR::expr_t* m_arg = x.m_args[0];
@@ -1997,7 +1997,7 @@ public:
                 }
                 break ;
             }
-            case ASRUtils::IntrinsicScalarFunctions::Exp2: {
+            case ASRUtils::IntrinsicElementalFunctions::Exp2: {
                 switch (x.m_overload_id) {
                     case 0: {
                         ASR::expr_t* m_arg = x.m_args[0];
@@ -2011,7 +2011,7 @@ public:
                 }
                 break ;
             }
-            case ASRUtils::IntrinsicScalarFunctions::Expm1: {
+            case ASRUtils::IntrinsicElementalFunctions::Expm1: {
                 switch (x.m_overload_id) {
                     case 0: {
                         ASR::expr_t* m_arg = x.m_args[0];
@@ -2025,7 +2025,7 @@ public:
                 }
                 break ;
             }
-            case ASRUtils::IntrinsicScalarFunctions::FlipSign: {
+            case ASRUtils::IntrinsicElementalFunctions::FlipSign: {
                 Vec<ASR::call_arg_t> args;
                 args.reserve(al, 2);
                 ASR::call_arg_t arg0_, arg1_;
@@ -2036,7 +2036,7 @@ public:
                 generate_flip_sign(args.p);
                 break;
             }
-            case ASRUtils::IntrinsicScalarFunctions::FMA: {
+            case ASRUtils::IntrinsicElementalFunctions::FMA: {
                 Vec<ASR::call_arg_t> args;
                 args.reserve(al, 3);
                 ASR::call_arg_t arg0_, arg1_, arg2_;
@@ -2049,7 +2049,7 @@ public:
                 generate_fma(args.p);
                 break;
             }
-            case ASRUtils::IntrinsicScalarFunctions::SignFromValue: {
+            case ASRUtils::IntrinsicElementalFunctions::SignFromValue: {
                 Vec<ASR::call_arg_t> args;
                 args.reserve(al, 2);
                 ASR::call_arg_t arg0_, arg1_;
@@ -2061,7 +2061,7 @@ public:
                 break;
             }
             default: {
-                throw CodeGenError("Either the '" + ASRUtils::IntrinsicScalarFunctionRegistry::
+                throw CodeGenError("Either the '" + ASRUtils::IntrinsicElementalFunctionRegistry::
                         get_intrinsic_function_name(x.m_intrinsic_id) +
                         "' intrinsic is not implemented by LLVM backend or "
                         "the compile-time value is not available", x.base.base.loc);
@@ -2080,6 +2080,9 @@ public:
                 // TODO: Fix this once the iostat is implemented in file handling;
                 // until then, this returns `False`
                 tmp = llvm::ConstantInt::get(context, llvm::APInt(1, 0));
+                break ;
+            } case ASRUtils::IntrinsicImpureFunctions::Allocated : {
+                handle_allocated(x.m_args[0]);
                 break ;
             } default: {
                 throw CodeGenError( ASRUtils::get_impure_intrinsic_name(x.m_impure_intrinsic_id) +
@@ -5116,6 +5119,9 @@ public:
     }
 
     void visit_BlockCall(const ASR::BlockCall_t& x) {
+        std::vector<llvm::Value*> heap_arrays_copy;
+        heap_arrays_copy = heap_arrays;
+        heap_arrays.clear();
         if( x.m_label != -1 ) {
             if( llvm_goto_targets.find(x.m_label) == llvm_goto_targets.end() ) {
                 llvm::BasicBlock *new_target = llvm::BasicBlock::Create(context, "goto_target");
@@ -5125,7 +5131,6 @@ public:
         }
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Block_t>(*x.m_m));
         ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
-        declare_vars(*block);
         std::string block_name;
         if (block->m_name) {
             block_name = std::string(block->m_name);
@@ -5144,6 +5149,7 @@ public:
         fn->getBasicBlockList().push_back(blockend);
 #endif
         builder->SetInsertPoint(blockstart);
+        declare_vars(*block);
         loop_or_block_end.push_back(blockend);
         loop_or_block_end_names.push_back(blockend_name);
         for (size_t i = 0; i < block->n_body; i++) {
@@ -5153,6 +5159,10 @@ public:
         loop_or_block_end_names.pop_back();
         llvm::BasicBlock *last_bb = builder->GetInsertBlock();
         llvm::Instruction *block_terminator = last_bb->getTerminator();
+        for( auto& value: heap_arrays ) {
+            LLVM::lfortran_free(context, *module, *builder, value);
+        }
+        heap_arrays = heap_arrays_copy;
         if (block_terminator == nullptr) {
             // The previous block is not terminated --- terminate it by jumping
             // to blockend
@@ -9059,11 +9069,6 @@ public:
                 handle_bitwise_or(x);
                 return ;
             }
-            if( startswith(symbol_name, "allocated") ){
-                LCOMPILERS_ASSERT(x.n_args == 1);
-                handle_allocated(x.m_args[0].m_value);
-                return ;
-            }
         }
 
         bool intrinsic_function = ASRUtils::is_intrinsic_function2(s);
@@ -9537,15 +9542,14 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     context.setOpaquePointers(false);
 #endif
     ASRToLLVMVisitor v(al, context, infile, co, diagnostics);
-    LCompilers::PassOptions pass_options;
 
     std::vector<int64_t> skip_optimization_func_instantiation;
     skip_optimization_func_instantiation.push_back(static_cast<int64_t>(
-                    ASRUtils::IntrinsicScalarFunctions::FlipSign));
+                    ASRUtils::IntrinsicElementalFunctions::FlipSign));
     skip_optimization_func_instantiation.push_back(static_cast<int64_t>(
-                    ASRUtils::IntrinsicScalarFunctions::FMA));
+                    ASRUtils::IntrinsicElementalFunctions::FMA));
     skip_optimization_func_instantiation.push_back(static_cast<int64_t>(
-                    ASRUtils::IntrinsicScalarFunctions::SignFromValue));
+                    ASRUtils::IntrinsicElementalFunctions::SignFromValue));
 
     co.po.run_fun = run_fn;
     co.po.always_run = false;

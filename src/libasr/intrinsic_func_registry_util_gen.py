@@ -5,41 +5,61 @@ intrinsic_funcs_args = {
     "Kind": [
         {
             "args": [("int",), ("real",), ("bool",), ("char",)],
+            "return": "int32"
         },
+    ],
+    "FMA": [
+        {
+            "args": [("real", "real", "real")],
+            "ret_type_arg_idx": 0
+        }
     ],
     "FlipSign": [
         {
-            "args": [("int", "real")]
+            "args": [("int", "real")],
+            "ret_type_arg_idx": 1
         }
     ],
     "FloorDiv": [
         {
             "args": [("int", "int"), ("uint", "uint"), ("real", "real"), ("bool", "bool")],
+            "ret_type_arg_idx": 0
         },
     ],
     "Mod": [
         {
-            "args": [("int", "int"), ("real", "real")]
+            "args": [("int", "int"), ("real", "real")],
+            "ret_type_arg_idx": 0
         },
     ],
     "Trailz": [
         {
-            "args": [("int",)]
+            "args": [("int",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Leadz": [
+        {
+            "args": [("int",)],
+            "ret_type_arg_idx": 0
         },
     ],
     "Hypot": [
         {
-            "args": [("real", "real")]
+            "args": [("real", "real")],
+            "ret_type_arg_idx": 0
         }
     ],
     "Digits": [
         {
-            "args": [("int",), ("real",)]
+            "args": [("int",), ("real",)],
+            "return": "int32"
         },
     ],
     "Repeat": [
         {
-            "args": [("char", "int")]
+            "args": [("char", "int")],
+            "ret_type_arg_idx": 0
         }
     ],
     "Adjustl": [
@@ -49,82 +69,172 @@ intrinsic_funcs_args = {
     ],
     "MinExponent": [
         {
-            "args": [("real",)]
+            "args": [("real",)],
+            "return": "int32"
         }
     ],
     "MaxExponent": [
         {
-            "args": [("real",)]
+            "args": [("real",)],
+            "return": "int32"
         }
     ],
     "Partition": [
         {
             "args": [("char", "char")],
+            "ret_type_arg_idx": 0
         }
     ],
     "ListReverse": [
         {
             "args": [("list",)],
+            "return": "nullptr"
         }
     ],
-    "Reserve": [
+    "ListReserve": [
         {
             "args": [("list", "int")],
+            "return": "nullptr"
         }
     ],
     "Sign": [
         {
-            "args": [("int", "int"), ("real", "real")]
+            "args": [("int", "int"), ("real", "real")],
+            "ret_type_arg_idx": 0
         },
     ],
     "Radix": [
         {
             "args": [("int",), ("real",)],
+            "return": "int32"
         },
     ],
     "Aint": [
         {
-            "args": [("real",)]
+            "args": [("real",)],
+            "return": "TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(expr_type(args[0]))))",
+            "kind_arg": True
+        }
+    ],
+    "Nint": [
+        {
+            "args": [("real",)],
+            "return": "int32",
+            "kind_arg": True
         }
     ],
     "Anint": [
         {
-            "args": [("real",)]
+            "args": [("real",)],
+            "return": "TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(expr_type(args[0]))))",
+            "kind_arg": True
         }
     ],
     "Floor": [
         {
-            "args": [("real",)]
+            "args": [("real",)],
+            "return": "int32",
+            "kind_arg": True
         }
     ],
     "Ceiling": [
         {
-            "args": [("real",)]
+            "args": [("real",)],
+            "return": "int32",
+            "kind_arg": True
         }
     ],
     "Sqrt": [
         {
-            "args": [("real",), ("complex",)]
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
         },
     ],
     "Sngl": [
         {
-            "args": [("real",)]
+            "args": [("real",)],
+            "return": "real32"
         }
     ],
     "SignFromValue": [
         {
-            "args": [("int", "int"), ("real", "real")]
+            "args": [("int", "int"), ("real", "real")],
+            "ret_type_arg_idx": 0
         },
+    ],
+    "Ifix": [
+        {
+            "args": [("real",)],
+            "return": "int32"
+        }
+    ],
+    "Idint": [
+        {
+            "args": [("real",)],
+            "return": "int32"
+        }
     ],
     "Ishft": [
         {
-            "args": [("int", "int")]
+            "args": [("int", "int")],
+            "ret_type_arg_idx": 0
         },
-    ]
+    ],
+    "Shiftr": [
+        {
+            "args": [("int", "int")],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Shiftl": [
+        {
+            "args": [("int", "int")],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Aimag": [
+        {
+            "args": [("complex",)],
+            "return": "TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(expr_type(args[0]))))"
+        },
+    ],
+    "Rank": [
+        {
+            "args": [("any",)],
+            "return": "int32"
+        }
+    ],
+    "Range": [
+        {
+            "args": [("int",), ("real",), ("complex",)],
+            "return": "int32"
+        },
+    ],
+    "Epsilon": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Tiny": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Conjg": [
+        {
+            "args": [("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
 }
 
+skip_create_func = ["Partition"]
+compile_time_only_fn = ["Radix", "Range", "Epsilon", "Tiny"]
+
 type_to_asr_type_check = {
+    "any": "!ASR::is_a<ASR::TypeParameter_t>",
     "int": "is_integer",
     "uint": "is_unsigned_integer",
     "real": "is_real",
@@ -140,52 +250,53 @@ intrinsic_funcs_ret_type = {
     "Kind": ["int"],
     "Partition": ["tuple"],
     "ListReverse": ["null"],
-    "Reserve": [ "null"],
+    "ListReserve": [ "null"],
     "Radix": ["int"],
 }
 
 src = ""
 indent = "    "
 
-def add_arg_type_src(func_name):
+def compute_arg_types(indent, no_of_args, args_arr):
+    global src
+    for i in range(no_of_args):
+        src += indent + f"ASR::ttype_t *arg_type{i} = ASRUtils::type_get_past_const(ASRUtils::expr_type({args_arr}[{i}]));\n"
+
+def compute_arg_condition(no_of_args, args_lists):
+    condition = []
+    cond_in_msg = []
+    for arg_list in args_lists:
+        subcond = []
+        subcond_in_msg = []
+        for i in range(no_of_args):
+            arg = arg_list[i]
+            subcond.append(f"{type_to_asr_type_check[arg]}(*arg_type{i})")
+            subcond_in_msg.append(arg)
+        condition.append(" && ".join(subcond))
+        cond_in_msg.append(", ".join(subcond_in_msg))
+    return (f"({') || ('.join(condition)})", f"({') or ('.join(cond_in_msg)})")
+
+def add_verify_arg_type_src(func_name):
     global src
     arg_infos = intrinsic_funcs_args[func_name]
     no_of_args_msg = ""
     for i, arg_info in enumerate(arg_infos):
-        condition = ""
-        cond_in_msg = ""
         args_lists = arg_info["args"]
         no_of_args = len(args_lists[0])
+        no_of_args_msg += " or " if i > 0 else ""
+        no_of_args_msg += f"{no_of_args}"
         else_if = "else if" if i > 0 else "if"
         src += 2 * indent + f"{else_if} (x.n_args == {no_of_args}) " + " {\n"
-        if i > 0:
-            no_of_args_msg += " or "
-        no_of_args_msg += f"{no_of_args}"
         src += 3 * indent + f'ASRUtils::require_impl(x.m_overload_id == {i}, "Overload Id for {func_name} expected to be {i}, found " + std::to_string(x.m_overload_id), x.base.base.loc, diagnostics);\n'
-        for _i in range(no_of_args):
-            src += 3 * indent + f"ASR::ttype_t *arg_type{_i} = ASRUtils::type_get_past_const(ASRUtils::expr_type(x.m_args[{_i}]));\n"
-        for j, arg_list in enumerate(args_lists):
-            subcond = ""
-            subcond_in_msg = ""
-            for _j in range(no_of_args):
-                arg = arg_list[_j]
-                subcond += f"{type_to_asr_type_check[arg]}(*arg_type{_j})"
-                subcond_in_msg += arg
-                if _j < no_of_args - 1:
-                    subcond += " && "
-                    subcond_in_msg += ", "
-            condition += f"({subcond})"
-            cond_in_msg += f"({subcond_in_msg})"
-            if j < len(args_lists) - 1:
-                condition += " || "
-                cond_in_msg += " or "
+        compute_arg_types(3 * indent, no_of_args, "x.m_args")
+        condition, cond_in_msg = compute_arg_condition(no_of_args, args_lists)
         src += 3 * indent + f'ASRUtils::require_impl({condition}, "Unexpected args, {func_name} expects {cond_in_msg} as arguments", x.base.base.loc, diagnostics);\n'
-        src += 2 * indent + "}"
-    src += " else {\n"
+        src += 2 * indent + "}\n"
+    src += 2 * indent + "else {\n"
     src += 3 * indent + f'ASRUtils::require_impl(false, "Unexpected number of args, {func_name} takes {no_of_args_msg} arguments, found " + std::to_string(x.n_args), x.base.base.loc, diagnostics);\n'
     src += 2 * indent + "}\n"
 
-def add_return_type_src(func_name):
+def add_verify_return_type_src(func_name):
     if func_name not in intrinsic_funcs_ret_type.keys():
         return ""
     global src
@@ -202,14 +313,92 @@ def add_return_type_src(func_name):
             ret_type_cond_in_msg += " or "
     src += 2 * indent + f'ASRUtils::require_impl({ret_type_cond}, "Unexpected return type, {func_name} expects `{ret_type_cond_in_msg}` as return type", x.base.base.loc, diagnostics);\n'
 
+def add_create_func_arg_type_src(func_name):
+    global src
+    arg_infos = intrinsic_funcs_args[func_name]
+    no_of_args_msg = ""
+    for i, arg_info in enumerate(arg_infos):
+        args_lists = arg_info["args"]
+        kind_arg = arg_info.get("kind_arg", False)
+        no_of_args = len(args_lists[0])
+        no_of_args_msg += " or " if i > 0 else ""
+        no_of_args_msg += f"{no_of_args + int(kind_arg)}"
+        else_if = "else if" if i > 0 else "if"
+        src += 2 * indent + f"{else_if} (args.size() == {no_of_args + int(kind_arg)}) " + " {\n"
+        compute_arg_types(3 * indent, no_of_args, "args")
+        condition, cond_in_msg = compute_arg_condition(no_of_args, args_lists)
+        src += 3 * indent + f'if(!({condition}))' + ' {\n'
+        src += 4 * indent + f'append_error(diag, "Unexpected args, {func_name} expects {cond_in_msg} as arguments", loc);\n'
+        src += 4 * indent + f'return nullptr;\n'
+        src += 3 * indent + '}\n'
+        src += 2 * indent + "}\n"
+    src += 2 * indent + "else {\n"
+    src += 3 * indent + f'append_error(diag, "Unexpected number of args, {func_name} takes {no_of_args_msg} arguments, found " + std::to_string(args.size()), loc);\n'
+    src += 3 * indent + f'return nullptr;\n'
+    src += 2 * indent + "}\n"
+
+
+def add_create_func_return_src(func_name):
+    global src, indent
+    arg_infos = intrinsic_funcs_args[func_name]
+    args_lists = arg_infos[0]["args"]
+    no_of_args = len(args_lists[0])
+    ret_type_val = arg_infos[0].get("return", None)
+    ret_type_arg_idx = arg_infos[0].get("ret_type_arg_idx", None)
+    ret_type = ret_type_val if ret_type_val else f"expr_type(args[{ret_type_arg_idx}])"
+    kind_arg = arg_infos[0].get("kind_arg", False)
+    src += indent * 2 + f"ASR::ttype_t *return_type = {ret_type};\n"
+    if kind_arg:
+        src += indent * 2 + "if ( args[1] != nullptr ) {\n"
+        src += indent * 3 +     "int kind = -1;\n"
+        src += indent * 3 +     "if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1])) || !extract_value(args[1], kind)) {\n"
+        src += indent * 4 +         f'append_error(diag, "`kind` argument of the `{func_name}` function must be a scalar Integer constant", args[1]->base.loc);\n'
+        src += indent * 4 +         "return nullptr;\n"
+        src += indent * 3 +     "}\n"
+        src += indent * 3 +     "set_kind_to_ttype_t(return_type, kind);\n"
+        src += indent * 2 + "}\n"
+    src += indent * 2 + "ASR::expr_t *m_value = nullptr;\n"
+    src += indent * 2 + f"Vec<ASR::expr_t*> m_args; m_args.reserve(al, {no_of_args});\n"
+    for _i in range(no_of_args):
+        src += indent * 2 + f"m_args.push_back(al, args[{_i}]);\n"
+    if func_name in compile_time_only_fn:
+        src += indent * 2 + f"m_value = eval_{func_name}(al, loc, {ret_type}, args);\n"
+    else:
+        src += indent * 2 + "if (all_args_evaluated(m_args)) {\n"
+        src += indent * 3 +     f"Vec<ASR::expr_t*> args_values; args_values.reserve(al, {no_of_args});\n"
+        for _i in range(no_of_args):
+            src += indent * 3 + f"args_values.push_back(al, expr_value(m_args[{_i}]));\n"
+        src += indent * 3 +     f"m_value = eval_{func_name}(al, loc, return_type, args_values);\n"
+        src += indent * 2 + "}\n"
+    src += indent * 2 + f"return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::{func_name}), m_args.p, m_args.n, 0, return_type, m_value);\n"
+
+def gen_verify_args(func_name):
+    global src
+    src += indent + R"static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {" + "\n"
+    add_verify_arg_type_src(func_name)
+    if func_name in compile_time_only_fn:
+        src += indent * 2 + 'ASRUtils::require_impl(x.m_value, '\
+            f'"Missing compile time value, `{func_name}` intrinsic output must '\
+            'be computed during compile time", x.base.base.loc, diagnostics);\n'
+    add_verify_return_type_src(func_name)
+    src += indent + "}\n\n"
+
+def gen_create_function(func_name):
+    global src
+    src += indent + Rf"static inline ASR::asr_t* create_{func_name}(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) " + "{\n"
+    add_create_func_arg_type_src(func_name)
+    add_create_func_return_src(func_name)
+    src += indent + "}\n"
+
+
 def get_registry_funcs_src():
     global src
     for func_name in intrinsic_funcs_args.keys():
         src += f"namespace {func_name}" + " {\n\n"
-        src += indent + R"static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {" + "\n"
-        add_arg_type_src(func_name)
-        add_return_type_src(func_name)
-        src += indent + "}\n\n"
+        gen_verify_args(func_name)
+
+        if func_name not in skip_create_func:
+            gen_create_function(func_name)
         src += "}\n\n"
     return src
 
@@ -217,8 +406,7 @@ def get_registry_funcs_src():
 HEAD = """#ifndef LIBASR_PASS_INTRINSIC_FUNC_REG_UTIL_H
 #define LIBASR_PASS_INTRINSIC_FUNC_REG_UTIL_H
 
-#include <libasr/asr.h>
-#include <libasr/asr_utils.h>
+#include <libasr/pass/intrinsic_functions.h>
 
 namespace LCompilers {
 

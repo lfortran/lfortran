@@ -1,0 +1,13 @@
+{
+    "basename": "asr-shiftl1-0ff5448",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/shiftl1.f90",
+    "infile_hash": "c0c9708eb1b78ae3123b7f35e798bdaf8cac8feb729db248ae3045cb",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-shiftl1-0ff5448.stdout",
+    "stdout_hash": "265d61b753d29c892dbcf2952f05f77913f377137e5079104e2a9f2b",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
