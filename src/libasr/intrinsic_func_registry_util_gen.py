@@ -209,6 +209,7 @@ intrinsic_funcs_args = {
 }
 
 skip_create_func = ["Partition"]
+skip_fn_instantiation = ["Radix", "Range"]
 
 type_to_asr_type_check = {
     "any": "!ASR::is_a<ASR::TypeParameter_t>",
@@ -338,12 +339,15 @@ def add_create_func_return_src(func_name):
     src += indent * 2 + f"Vec<ASR::expr_t*> m_args; m_args.reserve(al, {no_of_args});\n"
     for _i in range(no_of_args):
         src += indent * 2 + f"m_args.push_back(al, args[{_i}]);\n"
-    src += indent * 2 + "if (all_args_evaluated(m_args)) {\n"
-    src += indent * 3 +     f"Vec<ASR::expr_t*> args_values; args_values.reserve(al, {no_of_args});\n"
-    for _i in range(no_of_args):
-        src += indent * 3 + f"args_values.push_back(al, expr_value(m_args[{_i}]));\n"
-    src += indent * 3 +     f"m_value = eval_{func_name}(al, loc, return_type, args_values);\n"
-    src += indent * 2 + "}\n"
+    if func_name in skip_fn_instantiation:
+        src += indent * 2 + f"m_value = eval_{func_name}(al, loc, {ret_type}, args);\n"
+    else:
+        src += indent * 2 + "if (all_args_evaluated(m_args)) {\n"
+        src += indent * 3 +     f"Vec<ASR::expr_t*> args_values; args_values.reserve(al, {no_of_args});\n"
+        for _i in range(no_of_args):
+            src += indent * 3 + f"args_values.push_back(al, expr_value(m_args[{_i}]));\n"
+        src += indent * 3 +     f"m_value = eval_{func_name}(al, loc, return_type, args_values);\n"
+        src += indent * 2 + "}\n"
     src += indent * 2 + f"return ASR::make_IntrinsicScalarFunction_t(al, loc, static_cast<int64_t>(IntrinsicScalarFunctions::{func_name}), m_args.p, m_args.n, 0, return_type, m_value);\n"
 
 def gen_verify_args(func_name):
