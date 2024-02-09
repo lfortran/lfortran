@@ -583,22 +583,6 @@ namespace Aimag {
         }
     }
 
-    static inline ASR::asr_t* create_Aimag(Allocator& al, const Location& loc,
-        Vec<ASR::expr_t*>& args,
-        diag::Diagnostics& diag) {
-        ASR::ttype_t *type = ASRUtils::expr_type(args[0]);
-        if (args.n != 1) {
-            append_error(diag, "Intrinsic `aimag` accepts exactly one argument", loc);
-            return nullptr;
-        } else if (!ASRUtils::is_complex(*type)) {
-            append_error(diag, "`x` argument of `aimag` must be complex", args[0]->base.loc);
-            return nullptr;
-        }
-        type = TYPE(ASR::make_Real_t(al, type->base.loc, extract_kind_from_ttype_t(type)));
-        return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_Aimag,
-            static_cast<int64_t>(IntrinsicScalarFunctions::Aimag), 0, type);
-    }
-
     static inline ASR::expr_t* instantiate_Aimag (Allocator &al,
             const Location &loc, SymbolTable *scope,
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
@@ -1050,38 +1034,6 @@ namespace Aint {
         return f(std::trunc(rv), arg_type);
     }
 
-    static inline ASR::asr_t* create_Aint(
-            Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
-            diag::Diagnostics& diag) {
-        ASR::ttype_t* return_type = expr_type(args[0]);
-        if (!(args.size() == 1 || args.size() == 2)) {
-            append_error(diag, "Intrinsic `aint` function accepts exactly 1 or 2 arguments", loc);
-            return nullptr;
-        } else if (!ASRUtils::is_real(*return_type)) {
-            append_error(diag, "Argument of the `aint` function must be Real", args[0]->base.loc);
-            return nullptr;
-        }
-        Vec<ASR::expr_t *> m_args; m_args.reserve(al, 1);
-        m_args.push_back(al, args[0]);
-        if ( args[1] ) {
-            int kind = -1;
-            if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1])) ||
-                    !extract_value(args[1], kind)) {
-                append_error(diag, "`kind` argument of the `aint` function must be a "
-                    "scalar Integer constant", args[1]->base.loc);
-                return nullptr;
-            }
-            return_type = TYPE(ASR::make_Real_t(al, return_type->base.loc, kind));
-        }
-        ASR::expr_t *m_value = nullptr;
-        if (all_args_evaluated(m_args)) {
-            m_value = eval_Aint(al, loc, return_type, m_args);
-        }
-        return ASR::make_IntrinsicScalarFunction_t(al, loc,
-            static_cast<int64_t>(IntrinsicScalarFunctions::Aint),
-            m_args.p, m_args.n, 0, return_type, m_value);
-    }
-
     static inline ASR::expr_t* instantiate_Aint(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
@@ -1119,38 +1071,6 @@ namespace Anint {
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args) {
         double rv = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
         return f(std::round(rv), arg_type);
-    }
-
-    static inline ASR::asr_t* create_Anint(
-            Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
-            diag::Diagnostics& diag) {
-        ASR::ttype_t* return_type = expr_type(args[0]);
-        if (!(args.size() == 1 || args.size() == 2)) {
-            append_error(diag, "Intrinsic `anint` function accepts exactly 1 or 2 arguments", loc);
-            return nullptr;
-        } else if (!ASRUtils::is_real(*return_type)) {
-            append_error(diag, "Argument of the `anint` function must be Real", args[0]->base.loc);
-            return nullptr;
-        }
-        Vec<ASR::expr_t *> m_args; m_args.reserve(al, 1);
-        m_args.push_back(al, args[0]);
-        if ( args[1] ) {
-            int kind = -1;
-            if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1])) ||
-                    !extract_value(args[1], kind)) {
-                append_error(diag, "`kind` argument of the `anint` function must be a "
-                    "scalar Integer constant", args[1]->base.loc);
-                return nullptr;
-            }
-            return_type = TYPE(ASR::make_Real_t(al, return_type->base.loc, kind));
-        }
-        ASR::expr_t *m_value = nullptr;
-        if (all_args_evaluated(m_args)) {
-            m_value = eval_Anint(al, loc, return_type, m_args);
-        }
-        return ASR::make_IntrinsicScalarFunction_t(al, loc,
-            static_cast<int64_t>(IntrinsicScalarFunctions::Anint),
-            m_args.p, m_args.n, 0, return_type, m_value);
     }
 
     static inline ASR::expr_t* instantiate_Anint(Allocator &al, const Location &loc,
@@ -1223,39 +1143,6 @@ namespace Nint {
         return make_ConstantWithType(make_IntegerConstant_t, result, arg_type, loc);
     }
 
-    static inline ASR::asr_t* create_Nint(Allocator& al, const Location& loc,
-            Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
-        ASR::ttype_t* return_type = TYPE(ASR::make_Integer_t(al, loc, 4));
-        if (!(args.size() == 1 || args.size() == 2)) {
-            append_error(diag, "Intrinsic `Nint` function accepts exactly 1 or 2 arguments", loc);
-            return nullptr;
-        } else if (!ASRUtils::is_real(*ASRUtils::expr_type(args[0]))) {
-            append_error(diag, "Argument of the `Nint` function must be Real", args[0]->base.loc);
-            return nullptr;
-        }
-        Vec<ASR::expr_t *> m_args; m_args.reserve(al, 1);
-        m_args.push_back(al, args[0]);
-        if ( args[1] != nullptr ) {
-            int kind = -1;
-            if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1])) ||
-                    !extract_value(args[1], kind)) {
-                append_error(diag, "`kind` argument of the `Nint` function must be a "
-                    "scalar Integer constant", args[1]->base.loc);
-                return nullptr;
-            }
-            return_type = TYPE(ASR::make_Integer_t(al, return_type->base.loc, kind));
-        }
-        ASR::expr_t *m_value = nullptr;
-        if (all_args_evaluated(m_args)) {
-            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 1);
-            arg_values.push_back(al, expr_value(args[0]));
-            m_value = eval_Nint(al, loc, return_type, arg_values);
-        }
-        return ASR::make_IntrinsicScalarFunction_t(al, loc,
-            static_cast<int64_t>(IntrinsicScalarFunctions::Nint),
-            m_args.p, m_args.n, 0, return_type, m_value);
-    }
-
     static inline ASR::expr_t* instantiate_Nint(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
@@ -1299,42 +1186,6 @@ namespace Floor {
             result = result-1;
         }
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
-    }
-
-    static inline ASR::asr_t* create_Floor(Allocator& al, const Location& loc,
-            Vec<ASR::expr_t*>& args,
-            diag::Diagnostics& diag) {
-        ASR::ttype_t* return_type = TYPE(ASR::make_Integer_t(al, loc, 4));
-        if (!(args.size() == 1 || args.size() == 2)) {
-            append_error(diag, "Intrinsic `Floor` function accepts exactly 1 or 2 arguments", loc);
-            return nullptr;
-        } else if (!ASRUtils::is_real(*ASRUtils::expr_type(args[0]))) {
-            append_error(diag, "Argument of the `Floor` function must be Real", args[0]->base.loc);
-            return nullptr;
-        }
-        Vec<ASR::expr_t *> m_args; m_args.reserve(al, 1);
-        m_args.push_back(al, args[0]);
-        if ( args[1] != nullptr ) {
-            int kind = -1;
-            if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1])) ||
-                    !extract_value(args[1], kind)) {
-                append_error(diag, "`kind` argument of the `Floor` function must be a "
-                    "scalar Integer constant", args[1]->base.loc);
-                return nullptr;
-            }
-            return_type = TYPE(ASR::make_Integer_t(al, return_type->base.loc, kind));
-        }
-        ASR::expr_t *m_value = nullptr;
-
-        if (all_args_evaluated(m_args)) {
-            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 1);
-            arg_values.push_back(al, expr_value(args[0]));
-            m_value = eval_Floor(al, loc, return_type, arg_values);
-
-        }
-        return ASR::make_IntrinsicScalarFunction_t(al, loc,
-            static_cast<int64_t>(IntrinsicScalarFunctions::Floor),
-            m_args.p, m_args.n, 0, return_type, m_value);
     }
 
     static inline ASR::expr_t* instantiate_Floor(Allocator &al, const Location &loc,
@@ -1383,42 +1234,6 @@ namespace Ceiling {
             result = int(val) + 1;
         }
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
-    }
-
-    static inline ASR::asr_t* create_Ceiling(Allocator& al, const Location& loc,
-            Vec<ASR::expr_t*>& args,
-            diag::Diagnostics& diag) {
-        ASR::ttype_t* return_type = TYPE(ASR::make_Integer_t(al, loc, 4));
-        if (!(args.size() == 1 || args.size() == 2)) {
-            append_error(diag, "Intrinsic `Ceiling` function accepts exactly 1 or 2 arguments", loc);
-            return nullptr;
-        } else if (!ASRUtils::is_real(*ASRUtils::expr_type(args[0]))) {
-            append_error(diag, "Argument of the `Ceiling` function must be Real", args[0]->base.loc);
-            return nullptr;
-        }
-        Vec<ASR::expr_t *> m_args; m_args.reserve(al, 1);
-        m_args.push_back(al, args[0]);
-        if ( args[1] != nullptr ) {
-            int kind = -1;
-            if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1])) ||
-                    !extract_value(args[1], kind)) {
-                append_error(diag, "`kind` argument of the `Ceiling` function must be a "
-                    "scalar Integer constant", args[1]->base.loc);
-                return nullptr;
-            }
-            return_type = TYPE(ASR::make_Integer_t(al, return_type->base.loc, kind));
-        }
-        ASR::expr_t *m_value = nullptr;
-
-        if (all_args_evaluated(m_args)) {
-            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 1);
-            arg_values.push_back(al, expr_value(args[0]));
-            m_value = eval_Ceiling(al, loc, return_type, arg_values);
-
-        }
-        return ASR::make_IntrinsicScalarFunction_t(al, loc,
-            static_cast<int64_t>(IntrinsicScalarFunctions::Ceiling),
-            m_args.p, m_args.n, 0, return_type, m_value);
     }
 
     static inline ASR::expr_t* instantiate_Ceiling(Allocator &al, const Location &loc,
