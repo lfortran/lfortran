@@ -107,7 +107,7 @@ intrinsic_funcs_args = {
     "Aint": [
         {
             "args": [("real",)],
-            "return": "TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(expr_type(args[0]))))",
+            "ret_type_arg_idx": 0,
             "kind_arg": True
         }
     ],
@@ -121,7 +121,7 @@ intrinsic_funcs_args = {
     "Anint": [
         {
             "args": [("real",)],
-            "return": "TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(expr_type(args[0]))))",
+            "ret_type_arg_idx": 0,
             "kind_arg": True
         }
     ],
@@ -340,7 +340,13 @@ def add_create_func_return_src(func_name):
     no_of_args = len(args_lists[0])
     ret_type_val = arg_infos[0].get("return", None)
     ret_type_arg_idx = arg_infos[0].get("ret_type_arg_idx", None)
-    ret_type = ret_type_val if ret_type_val else f"expr_type(args[{ret_type_arg_idx}])"
+    if ret_type_val:
+        ret_type = ret_type_val
+    else:
+        src += indent * 2 + "ASRUtils::ExprStmtDuplicator expr_duplicator(al);\n"
+        src += indent * 2 + "expr_duplicator.allow_procedure_calls = true;\n"
+        src += indent * 2 + f"ASR::ttype_t* type_ = expr_duplicator.duplicate_ttype(expr_type(args[{ret_type_arg_idx}]));\n"
+        ret_type = "type_"
     kind_arg = arg_infos[0].get("kind_arg", False)
     src += indent * 2 + f"ASR::ttype_t *return_type = {ret_type};\n"
     if kind_arg:
