@@ -220,7 +220,7 @@ intrinsic_funcs_args = {
 }
 
 skip_create_func = ["Partition"]
-skip_fn_instantiation = ["Radix", "Range", "Epsilon", "Tiny"]
+compile_time_only_fn = ["Radix", "Range", "Epsilon", "Tiny"]
 
 type_to_asr_type_check = {
     "any": "!ASR::is_a<ASR::TypeParameter_t>",
@@ -350,7 +350,7 @@ def add_create_func_return_src(func_name):
     src += indent * 2 + f"Vec<ASR::expr_t*> m_args; m_args.reserve(al, {no_of_args});\n"
     for _i in range(no_of_args):
         src += indent * 2 + f"m_args.push_back(al, args[{_i}]);\n"
-    if func_name in skip_fn_instantiation:
+    if func_name in compile_time_only_fn:
         src += indent * 2 + f"m_value = eval_{func_name}(al, loc, {ret_type}, args);\n"
     else:
         src += indent * 2 + "if (all_args_evaluated(m_args)) {\n"
@@ -365,6 +365,10 @@ def gen_verify_args(func_name):
     global src
     src += indent + R"static inline void verify_args(const ASR::IntrinsicScalarFunction_t& x, diag::Diagnostics& diagnostics) {" + "\n"
     add_verify_arg_type_src(func_name)
+    if func_name in compile_time_only_fn:
+        src += indent * 2 + 'ASRUtils::require_impl(x.m_value, '\
+            f'"Missing compile time value, `{func_name}` intrinsic output must '\
+            'be computed during compile time", x.base.base.loc, diagnostics);\n'
     add_verify_return_type_src(func_name)
     src += indent + "}\n\n"
 
