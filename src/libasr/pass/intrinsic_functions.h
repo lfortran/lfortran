@@ -1558,7 +1558,7 @@ namespace FlipSign {
 namespace FloorDiv {
 
     static ASR::expr_t *eval_FloorDiv(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
         ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
         type1 = ASRUtils::type_get_past_const(type1);
@@ -1576,18 +1576,34 @@ namespace FloorDiv {
         if (is_int1 && is_int2) {
             int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
             int64_t b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+            if (b == 0) {
+                append_error(diag, "Division by `0` is not allowed", loc);
+                return nullptr;
+            }
             return make_ConstantWithType(make_IntegerConstant_t, a / b, t1, loc);
         } else if (is_unsigned_int1 && is_unsigned_int2) {
             int64_t a = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(args[0])->m_n;
             int64_t b = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(args[1])->m_n;
+            if (b == 0) {
+                append_error(diag, "Division by `0` is not allowed", loc);
+                return nullptr;
+            }
             return make_ConstantWithType(make_UnsignedIntegerConstant_t, a / b, t1, loc);
         } else if (is_logical1 && is_logical2) {
             bool a = ASR::down_cast<ASR::LogicalConstant_t>(args[0])->m_value;
             bool b = ASR::down_cast<ASR::LogicalConstant_t>(args[1])->m_value;
+            if (b == 0) {
+                append_error(diag, "Division by `0` is not allowed", loc);
+                return nullptr;
+            }
             return make_ConstantWithType(make_LogicalConstant_t, a / b, t1, loc);
         } else if (is_real1 && is_real2) {
             double a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+            if (b == 0.0) {
+                append_error(diag, "Division by `0` is not allowed", loc);
+                return nullptr;
+            }
             double r = a / b;
             int64_t result = (int64_t)r;
             if ( r >= 0.0 || (double)result == r) {
@@ -1978,7 +1994,7 @@ namespace Rank {
 namespace Digits {
 
     static ASR::expr_t *eval_Digits(Allocator &al, const Location &loc,
-            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
         int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
         if (is_integer(*type1)) {
@@ -1986,13 +2002,19 @@ namespace Digits {
                 return make_ConstantWithType(make_IntegerConstant_t, 31, int32, loc);
             } else if (kind == 8) {
                 return make_ConstantWithType(make_IntegerConstant_t, 63, int32, loc);
+            } else {
+                append_error(diag, "Kind "+ std::to_string(kind) + " not supported for type Integer", loc);
             }
         } else if (is_real(*type1)) {
             if (kind == 4) {
                 return make_ConstantWithType(make_IntegerConstant_t, 24, int32, loc);
             } else if (kind == 8) {
                 return make_ConstantWithType(make_IntegerConstant_t, 53, int32, loc);
+            } else {
+                append_error(diag, "Kind "+ std::to_string(kind) + " not supported for type Real", loc);
             }
+        } else {
+            append_error(diag, "Argument to `digits` intrinsic must be real or integer", loc);
         }
         return nullptr;
     }
