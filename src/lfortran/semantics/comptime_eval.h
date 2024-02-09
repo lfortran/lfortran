@@ -99,8 +99,6 @@ struct IntrinsicProcedures {
             {"selected_int_kind", {m_kind, &eval_selected_int_kind, true}},
             {"selected_real_kind", {m_kind, &eval_selected_real_kind, true}},
             {"selected_char_kind", {m_kind, &eval_selected_char_kind, true}},
-            {"epsilon", {m_math, &eval_epsilon, false}},
-            {"tiny", {m_math, &eval_tiny, false}},
 
             {"dot_product", {m_math, &not_implemented, false}},
             {"conjg", {m_math, &not_implemented, false}},
@@ -246,39 +244,6 @@ struct IntrinsicProcedures {
         int64_t not_arg = ~(arg_int->m_n);
         ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, arg_int_type->m_kind));
         return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, not_arg, int_type));
-    }
-
-    static ASR::expr_t *eval_tiny(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &) {
-        // We assume the input is valid
-        // ASR::expr_t* tiny_expr = args[0];
-        ASR::ttype_t* tiny_type = ASRUtils::expr_type(args[0]);
-        // TODO: Arrays of reals are a valid argument for tiny
-        if (ASRUtils::is_array(tiny_type)){
-            throw SemanticError("Array values not implemented yet",
-                                loc);
-        }
-        // TODO: Figure out how to deal with higher precision later
-        if (ASR::is_a<ASR::Real_t>(*tiny_type)) {
-            // We don't actually need the value yet, it is enough to know it is a double
-            // but it might provide further information later (precision)
-            // double tiny_val = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(tiny_expr))->m_r;
-            int tiny_kind = ASRUtils::extract_kind_from_ttype_t(tiny_type);
-            if (tiny_kind == 4){
-                float low_val = std::numeric_limits<float>::min();
-                return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc,
-                                                                                low_val, // value
-                                                                                tiny_type));
-            } else {
-                double low_val = std::numeric_limits<double>::min();
-                return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc,
-                                                                                low_val, // value
-                                                                                tiny_type));
-                    }
-        }
-        else {
-            throw SemanticError("Argument for tiny must be Real",
-                                loc);
-        }
     }
 
     static ASR::expr_t *eval_floor(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
@@ -547,27 +512,6 @@ struct IntrinsicProcedures {
         } else {
             throw SemanticError("achar() must have one integer argument", loc);
         }
-    }
-
-    static ASR::expr_t *eval_epsilon(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &) {
-        LCOMPILERS_ASSERT(args.size() == 1);
-        ASR::ttype_t* t = ASRUtils::expr_type(args[0]);
-        if (!ASR::is_a<ASR::Real_t>(*t)) {
-            throw SemanticError("Only inputs of real type are accepted in epsilon intrinsic.", loc);
-        }
-        ASR::Real_t* t_real = ASR::down_cast<ASR::Real_t>(t);
-        if( t_real->m_kind == 4 ) {
-            float epsilon_val = std::numeric_limits<float>::epsilon();
-            return ASR::down_cast<ASR::expr_t>(
-                    ASR::make_RealConstant_t(al, loc, epsilon_val, t));
-        } else if( t_real->m_kind == 8 ) {
-            double epsilon_val = std::numeric_limits<double>::epsilon();
-            return ASR::down_cast<ASR::expr_t>(
-                    ASR::make_RealConstant_t(al, loc, epsilon_val, t));
-        } else {
-            throw SemanticError("Only 32 and 64 bit kinds are supported in epsilon intrinsic.", loc);
-        }
-        return nullptr;
     }
 
     static ASR::expr_t *eval_adjustl(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &) {
