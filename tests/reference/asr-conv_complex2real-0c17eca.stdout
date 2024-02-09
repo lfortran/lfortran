@@ -79,7 +79,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 2 x)

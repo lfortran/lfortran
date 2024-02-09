@@ -13,7 +13,7 @@
                                     dp
                                     []
                                     Local
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Kind
                                         [(RealConstant
                                             0.000000
@@ -53,7 +53,7 @@
                     []
                     [(Assignment
                         (Var 2 x)
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Asin
                             [(RealConstant
                                 0.841471
@@ -75,7 +75,7 @@
                     )
                     (Assignment
                         (Var 2 x)
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Acos
                             [(RealConstant
                                 0.540302
@@ -97,7 +97,7 @@
                     )
                     (Assignment
                         (Var 2 x)
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Atan
                             [(RealConstant
                                 1.557408
@@ -120,7 +120,7 @@
                     (Assignment
                         (Var 2 x)
                         (Cast
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Atan
                                 [(RealConstant
                                     1.557408
@@ -149,7 +149,7 @@
                     )
                     (Assignment
                         (Var 2 x)
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Asinh
                             [(RealConstant
                                 1.175201
@@ -171,7 +171,7 @@
                     )
                     (Assignment
                         (Var 2 x)
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Acosh
                             [(RealConstant
                                 1.543081
@@ -193,7 +193,7 @@
                     )
                     (Assignment
                         (Var 2 x)
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Atanh
                             [(RealConstant
                                 0.761594

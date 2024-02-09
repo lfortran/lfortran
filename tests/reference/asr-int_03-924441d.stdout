@@ -34,7 +34,7 @@
                                     dp
                                     []
                                     Local
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Kind
                                         [(RealConstant
                                             0.000000

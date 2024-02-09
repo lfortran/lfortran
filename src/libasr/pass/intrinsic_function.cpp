@@ -40,13 +40,13 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         al(al_), global_scope(global_scope_), func2intrinsicid(func2intrinsicid_) {}
 
 
-    void replace_IntrinsicScalarFunction(ASR::IntrinsicScalarFunction_t* x) {
+    void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
         if (x->m_value) {
             *current_expr = x->m_value;
             return;
         }
         Vec<ASR::call_arg_t> new_args; new_args.reserve(al, x->n_args);
-        // Replace any IntrinsicScalarFunctions in the argument first:
+        // Replace any IntrinsicElementalFunctions in the argument first:
         for( size_t i = 0; i < x->n_args; i++ ) {
             ASR::expr_t** current_expr_copy_ = current_expr;
             current_expr = &(x->m_args[i]);
@@ -64,7 +64,7 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         // We could maintain a mapping of type -> id and look it up.
 
         ASRUtils::impl_function instantiate_function =
-            ASRUtils::IntrinsicScalarFunctionRegistry::get_instantiate_function(x->m_intrinsic_id);
+            ASRUtils::IntrinsicElementalFunctionRegistry::get_instantiate_function(x->m_intrinsic_id);
         if( instantiate_function == nullptr ) {
             return ;
         }

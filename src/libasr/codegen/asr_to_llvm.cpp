@@ -1916,13 +1916,13 @@ public:
         llvm_utils->set_api->remove_item(pset, el, *module, asr_el_type);
     }
 
-    void visit_IntrinsicScalarFunction(const ASR::IntrinsicScalarFunction_t& x) {
+    void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        switch (static_cast<ASRUtils::IntrinsicScalarFunctions>(x.m_intrinsic_id)) {
-            case ASRUtils::IntrinsicScalarFunctions::ListIndex: {
+        switch (static_cast<ASRUtils::IntrinsicElementalFunctions>(x.m_intrinsic_id)) {
+            case ASRUtils::IntrinsicElementalFunctions::ListIndex: {
                 ASR::expr_t* m_arg = x.m_args[0];
                 ASR::expr_t* m_ele = x.m_args[1];
                 ASR::expr_t* m_start = nullptr;
@@ -1948,11 +1948,11 @@ public:
                 generate_ListIndex(m_arg, m_ele, m_start, m_end);
                 break ;
             }
-            case ASRUtils::IntrinsicScalarFunctions::ListReverse: {
+            case ASRUtils::IntrinsicElementalFunctions::ListReverse: {
                 generate_ListReverse(x.m_args[0]);
                 break;
             }
-            case ASRUtils::IntrinsicScalarFunctions::ListPop: {
+            case ASRUtils::IntrinsicElementalFunctions::ListPop: {
                 switch(x.m_overload_id) {
                     case 0:
                         generate_ListPop_0(x.m_args[0]);
@@ -1963,27 +1963,27 @@ public:
                 }
                 break;
             }
-            case ASRUtils::IntrinsicScalarFunctions::ListReserve: {
+            case ASRUtils::IntrinsicElementalFunctions::ListReserve: {
                 generate_ListReserve(x.m_args[0], x.m_args[1]);
                 break;
             }
-            case ASRUtils::IntrinsicScalarFunctions::DictKeys: {
+            case ASRUtils::IntrinsicElementalFunctions::DictKeys: {
                 generate_DictElems(x.m_args[0], 0);
                 break;
             }
-            case ASRUtils::IntrinsicScalarFunctions::DictValues: {
+            case ASRUtils::IntrinsicElementalFunctions::DictValues: {
                 generate_DictElems(x.m_args[0], 1);
                 break;
             }
-            case ASRUtils::IntrinsicScalarFunctions::SetAdd: {
+            case ASRUtils::IntrinsicElementalFunctions::SetAdd: {
                 generate_SetAdd(x.m_args[0], x.m_args[1]);
                 break;
             }
-            case ASRUtils::IntrinsicScalarFunctions::SetRemove: {
+            case ASRUtils::IntrinsicElementalFunctions::SetRemove: {
                 generate_SetRemove(x.m_args[0], x.m_args[1]);
                 break;
             }
-            case ASRUtils::IntrinsicScalarFunctions::Exp: {
+            case ASRUtils::IntrinsicElementalFunctions::Exp: {
                 switch (x.m_overload_id) {
                     case 0: {
                         ASR::expr_t* m_arg = x.m_args[0];
@@ -1997,7 +1997,7 @@ public:
                 }
                 break ;
             }
-            case ASRUtils::IntrinsicScalarFunctions::Exp2: {
+            case ASRUtils::IntrinsicElementalFunctions::Exp2: {
                 switch (x.m_overload_id) {
                     case 0: {
                         ASR::expr_t* m_arg = x.m_args[0];
@@ -2011,7 +2011,7 @@ public:
                 }
                 break ;
             }
-            case ASRUtils::IntrinsicScalarFunctions::Expm1: {
+            case ASRUtils::IntrinsicElementalFunctions::Expm1: {
                 switch (x.m_overload_id) {
                     case 0: {
                         ASR::expr_t* m_arg = x.m_args[0];
@@ -2025,7 +2025,7 @@ public:
                 }
                 break ;
             }
-            case ASRUtils::IntrinsicScalarFunctions::FlipSign: {
+            case ASRUtils::IntrinsicElementalFunctions::FlipSign: {
                 Vec<ASR::call_arg_t> args;
                 args.reserve(al, 2);
                 ASR::call_arg_t arg0_, arg1_;
@@ -2036,7 +2036,7 @@ public:
                 generate_flip_sign(args.p);
                 break;
             }
-            case ASRUtils::IntrinsicScalarFunctions::FMA: {
+            case ASRUtils::IntrinsicElementalFunctions::FMA: {
                 Vec<ASR::call_arg_t> args;
                 args.reserve(al, 3);
                 ASR::call_arg_t arg0_, arg1_, arg2_;
@@ -2049,7 +2049,7 @@ public:
                 generate_fma(args.p);
                 break;
             }
-            case ASRUtils::IntrinsicScalarFunctions::SignFromValue: {
+            case ASRUtils::IntrinsicElementalFunctions::SignFromValue: {
                 Vec<ASR::call_arg_t> args;
                 args.reserve(al, 2);
                 ASR::call_arg_t arg0_, arg1_;
@@ -2061,7 +2061,7 @@ public:
                 break;
             }
             default: {
-                throw CodeGenError("Either the '" + ASRUtils::IntrinsicScalarFunctionRegistry::
+                throw CodeGenError("Either the '" + ASRUtils::IntrinsicElementalFunctionRegistry::
                         get_intrinsic_function_name(x.m_intrinsic_id) +
                         "' intrinsic is not implemented by LLVM backend or "
                         "the compile-time value is not available", x.base.base.loc);
@@ -9545,11 +9545,11 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
 
     std::vector<int64_t> skip_optimization_func_instantiation;
     skip_optimization_func_instantiation.push_back(static_cast<int64_t>(
-                    ASRUtils::IntrinsicScalarFunctions::FlipSign));
+                    ASRUtils::IntrinsicElementalFunctions::FlipSign));
     skip_optimization_func_instantiation.push_back(static_cast<int64_t>(
-                    ASRUtils::IntrinsicScalarFunctions::FMA));
+                    ASRUtils::IntrinsicElementalFunctions::FMA));
     skip_optimization_func_instantiation.push_back(static_cast<int64_t>(
-                    ASRUtils::IntrinsicScalarFunctions::SignFromValue));
+                    ASRUtils::IntrinsicElementalFunctions::SignFromValue));
 
     co.po.run_fun = run_fn;
     co.po.always_run = false;

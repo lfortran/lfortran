@@ -116,7 +116,7 @@
                     []
                     [(If
                         (IntegerCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Min
                                 [(Var 2 a)
                                 (Var 2 b)
@@ -147,7 +147,7 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Max
                                 [(Var 2 a)
                                 (Var 2 b)
@@ -174,7 +174,7 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Max
                                 [(Var 2 a)
                                 (Var 2 b)]
@@ -197,7 +197,7 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Min
                                 [(Var 2 a)
                                 (Var 2 b)]
@@ -224,7 +224,7 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Max
                                 [(Var 2 a)
                                 (Var 2 b)

@@ -12,7 +12,7 @@
                     intrinsics_12
                     []
                     [(Print
-                        [(IntrinsicScalarFunction
+                        [(IntrinsicElementalFunction
                             Kind
                             [(IntegerConstant 5 (Integer 4))]
                             0
@@ -23,7 +23,7 @@
                         ()
                     )
                     (Print
-                        [(IntrinsicScalarFunction
+                        [(IntrinsicElementalFunction
                             Kind
                             [(IntegerConstant 5 (Integer 4))]
                             0
@@ -34,7 +34,7 @@
                         ()
                     )
                     (Print
-                        [(IntrinsicScalarFunction
+                        [(IntrinsicElementalFunction
                             Kind
                             [(IntegerConstant 5 (Integer 8))]
                             0
@@ -45,7 +45,7 @@
                         ()
                     )
                     (Print
-                        [(IntrinsicScalarFunction
+                        [(IntrinsicElementalFunction
                             Kind
                             [(RealConstant
                                 0.000000
@@ -59,7 +59,7 @@
                         ()
                     )
                     (Print
-                        [(IntrinsicScalarFunction
+                        [(IntrinsicElementalFunction
                             Kind
                             [(RealConstant
                                 0.000000
@@ -73,7 +73,7 @@
                         ()
                     )
                     (Print
-                        [(IntrinsicScalarFunction
+                        [(IntrinsicElementalFunction
                             Kind
                             [(RealConstant
                                 5.000000
@@ -87,7 +87,7 @@
                         ()
                     )
                     (Print
-                        [(IntrinsicScalarFunction
+                        [(IntrinsicElementalFunction
                             Kind
                             [(RealConstant
                                 5.000000
@@ -101,7 +101,7 @@
                         ()
                     )
                     (Print
-                        [(IntrinsicScalarFunction
+                        [(IntrinsicElementalFunction
                             Kind
                             [(LogicalConstant
                                 .true.

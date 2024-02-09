@@ -161,7 +161,7 @@
                                     ri3
                                     [i3]
                                     Local
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Range
                                         [(Var 2 i3)]
                                         0
@@ -183,7 +183,7 @@
                                     ri4
                                     [i4]
                                     Local
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Range
                                         [(Var 2 i4)]
                                         0
@@ -203,14 +203,14 @@
                     intrinsics_30
                     [iso_fortran_env]
                     [(Print
-                        [(IntrinsicScalarFunction
+                        [(IntrinsicElementalFunction
                             Range
                             [(Var 2 i1)]
                             0
                             (Integer 4)
                             (IntegerConstant 9 (Integer 4))
                         )
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Range
                             [(Var 2 i2)]
                             0
@@ -223,14 +223,14 @@
                         ()
                     )
                     (Print
-                        [(IntrinsicScalarFunction
+                        [(IntrinsicElementalFunction
                             Range
                             [(Var 2 r1)]
                             0
                             (Integer 4)
                             (IntegerConstant 37 (Integer 4))
                         )
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Range
                             [(Var 2 r2)]
                             0
@@ -241,14 +241,14 @@
                         ()
                     )
                     (Print
-                        [(IntrinsicScalarFunction
+                        [(IntrinsicElementalFunction
                             Range
                             [(Var 2 c1)]
                             0
                             (Integer 4)
                             (IntegerConstant 37 (Integer 4))
                         )
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Range
                             [(Var 2 c2)]
                             0
@@ -292,7 +292,7 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Range
                                 [(Var 2 i1)]
                                 0
@@ -314,7 +314,7 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Range
                                 [(Var 2 i2)]
                                 0
@@ -336,7 +336,7 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Range
                                 [(Var 2 r1)]
                                 0
@@ -358,7 +358,7 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Range
                                 [(Var 2 r2)]
                                 0
@@ -380,7 +380,7 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Range
                                 [(Var 2 c1)]
                                 0
@@ -402,7 +402,7 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Range
                                 [(Var 2 c2)]
                                 0
