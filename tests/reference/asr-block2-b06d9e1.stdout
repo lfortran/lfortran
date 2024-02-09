@@ -79,7 +79,7 @@
                                     main
                                     [(Assignment
                                         (Var 2 delta)
-                                        (IntrinsicScalarFunction
+                                        (IntrinsicElementalFunction
                                             Abs
                                             [(Var 2 ratio)]
                                             0

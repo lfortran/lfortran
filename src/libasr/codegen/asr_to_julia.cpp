@@ -1881,7 +1881,7 @@ public:
         src = out;
     }
 
-    void visit_IntrinsicScalarFunction(const ASR::IntrinsicScalarFunction_t &x) {
+    void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t &x) {
         std::string out;
         LCOMPILERS_ASSERT(x.n_args == 1);
         visit_expr(*x.m_args[0]);

@@ -76,7 +76,7 @@
                     [(Assignment
                         (Var 2 a)
                         (Cast
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Max
                                 [(IntegerConstant 1 (Integer 4))
                                 (IntegerConstant 2 (Integer 4))]
@@ -96,7 +96,7 @@
                     (Assignment
                         (Var 2 b)
                         (Cast
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Max
                                 [(IntegerConstant 1 (Integer 4))
                                 (IntegerBinOp

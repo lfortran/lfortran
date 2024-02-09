@@ -300,7 +300,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Abs
                                 [(ComplexBinOp
                                     (Var 2 x)
@@ -337,7 +337,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Abs
                                 [(ComplexBinOp
                                     (Var 2 y)
@@ -374,7 +374,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Abs
                                 [(ComplexBinOp
                                     (Var 2 z)
@@ -411,7 +411,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Abs
                                 [(ComplexBinOp
                                     (Var 2 x2)
@@ -465,7 +465,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Abs
                                 [(ComplexBinOp
                                     (Var 2 y2)
@@ -519,7 +519,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Abs
                                 [(ComplexBinOp
                                     (Var 2 z2)

@@ -203,7 +203,7 @@
                     []
                     [(Assignment
                         (Var 2 brcmp1)
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Exp
                             [(RealUnaryMinus
                                 (FunctionCall

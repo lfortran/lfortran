@@ -166,7 +166,7 @@
                                     x1
                                     [a1]
                                     Local
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Floor
                                         [(Var 2 a1)]
                                         0
@@ -188,7 +188,7 @@
                                     x2
                                     [a2]
                                     Local
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Floor
                                         [(Var 2 a2)]
                                         0
@@ -210,7 +210,7 @@
                                     x3
                                     [a3]
                                     Local
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Floor
                                         [(Var 2 a3)]
                                         0
@@ -232,7 +232,7 @@
                                     y1
                                     [b1]
                                     Local
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Floor
                                         [(Var 2 b1)]
                                         0
@@ -254,7 +254,7 @@
                                     y2
                                     [b2]
                                     Local
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Floor
                                         [(Var 2 b2)]
                                         0
@@ -276,7 +276,7 @@
                                     y3
                                     [b3]
                                     Local
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Floor
                                         [(Var 2 b3)]
                                         0

@@ -13,7 +13,7 @@
                                     dp
                                     []
                                     Local
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Kind
                                         [(RealConstant
                                             0.000000
@@ -204,7 +204,7 @@
                     [(Assignment
                         (Var 2 x_ceil)
                         (Cast
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Ceiling
                                 [(Var 2 x)]
                                 0
@@ -220,7 +220,7 @@
                     (Assignment
                         (Var 2 y_ceil)
                         (Cast
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Ceiling
                                 [(Var 2 y)]
                                 0
@@ -235,7 +235,7 @@
                     )
                     (Assignment
                         (Var 2 z_ceil)
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Ceiling
                             [(Var 2 z)]
                             0
@@ -246,7 +246,7 @@
                     )
                     (Assignment
                         (Var 2 w_ceil)
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Ceiling
                             [(Var 2 w)]
                             0
@@ -257,7 +257,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 2 x_ceil)
@@ -293,7 +293,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 2 y_ceil)
@@ -363,7 +363,7 @@
                     )
                     (Print
                         [(Var 2 x_ceil)
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Ceiling
                             [(Var 2 x_ceil)]
                             0
@@ -375,7 +375,7 @@
                     )
                     (Print
                         [(Var 2 y_ceil)
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Ceiling
                             [(Var 2 y_ceil)]
                             0

@@ -108,7 +108,7 @@
                                     dp
                                     []
                                     Local
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Kind
                                         [(RealConstant
                                             0.000000
@@ -394,7 +394,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 2 ti)
@@ -452,7 +452,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 2 sum)
@@ -483,7 +483,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
                                     (FunctionCall

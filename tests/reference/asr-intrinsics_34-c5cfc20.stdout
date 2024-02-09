@@ -13,7 +13,7 @@
                                     dp
                                     []
                                     Local
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Kind
                                         [(RealConstant
                                             0.000000
@@ -88,7 +88,7 @@
                     intrinsics_34
                     []
                     [(Print
-                        [(IntrinsicScalarFunction
+                        [(IntrinsicElementalFunction
                             Epsilon
                             [(Var 2 x)]
                             0
@@ -102,7 +102,7 @@
                         ()
                     )
                     (Print
-                        [(IntrinsicScalarFunction
+                        [(IntrinsicElementalFunction
                             Epsilon
                             [(Var 2 y)]
                             0
@@ -117,7 +117,7 @@
                     )
                     (Print
                         [(RealBinOp
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Epsilon
                                 [(RealConstant
                                     1.000000
@@ -154,10 +154,10 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Epsilon
                                         [(Var 2 x)]
                                         0
@@ -203,10 +203,10 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Epsilon
                                         [(Var 2 y)]
                                         0
@@ -252,11 +252,11 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
                                     (RealBinOp
-                                        (IntrinsicScalarFunction
+                                        (IntrinsicElementalFunction
                                             Epsilon
                                             [(RealConstant
                                                 1.000000

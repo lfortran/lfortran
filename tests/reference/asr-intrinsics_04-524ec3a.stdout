@@ -82,7 +82,7 @@
                     )
                     (Assignment
                         (Var 2 x)
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Tan
                             [(Var 2 x)]
                             0
@@ -98,7 +98,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 2 x)
@@ -129,10 +129,10 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Tan
                                         [(RealConstant
                                             1.500000
@@ -181,14 +181,14 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Tan
                                         [(RealBinOp
                                             (Cast
-                                                (IntrinsicScalarFunction
+                                                (IntrinsicElementalFunction
                                                     Tan
                                                     [(RealConstant
                                                         1.500000
@@ -209,12 +209,12 @@
                                                 )
                                             )
                                             Add
-                                            (IntrinsicScalarFunction
+                                            (IntrinsicElementalFunction
                                                 Tan
                                                 [(RealBinOp
                                                     (Var 2 x)
                                                     Add
-                                                    (IntrinsicScalarFunction
+                                                    (IntrinsicElementalFunction
                                                         Tan
                                                         [(Var 2 x)]
                                                         0
@@ -298,7 +298,7 @@
                     )
                     (Assignment
                         (Var 2 z)
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Tan
                             [(Var 2 z)]
                             0
@@ -314,7 +314,7 @@
                     )
                     (If
                         (RealCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
                                     (Cast
@@ -351,11 +351,11 @@
                     (If
                         (RealCompare
                             (Cast
-                                (IntrinsicScalarFunction
+                                (IntrinsicElementalFunction
                                     Abs
                                     [(RealBinOp
                                         (Cast
-                                            (IntrinsicScalarFunction
+                                            (IntrinsicElementalFunction
                                                 Tan
                                                 [(ComplexConstructor
                                                     (RealConstant

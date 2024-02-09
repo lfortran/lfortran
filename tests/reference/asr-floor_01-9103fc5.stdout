@@ -167,7 +167,7 @@
                         (LogicalBinOp
                             (LogicalBinOp
                                 (IntegerCompare
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Floor
                                         [(Var 2 x1)]
                                         0
@@ -184,7 +184,7 @@
                                 )
                                 Or
                                 (IntegerCompare
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Floor
                                         [(Var 2 x2)]
                                         0
@@ -207,7 +207,7 @@
                             )
                             Or
                             (IntegerCompare
-                                (IntrinsicScalarFunction
+                                (IntrinsicElementalFunction
                                     Floor
                                     [(Var 2 x3)]
                                     0
@@ -237,7 +237,7 @@
                         (LogicalBinOp
                             (LogicalBinOp
                                 (IntegerCompare
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Floor
                                         [(Var 2 y1)]
                                         0
@@ -258,7 +258,7 @@
                                 )
                                 Or
                                 (IntegerCompare
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Floor
                                         [(Var 2 y2)]
                                         0
@@ -285,7 +285,7 @@
                             )
                             Or
                             (IntegerCompare
-                                (IntrinsicScalarFunction
+                                (IntrinsicElementalFunction
                                     Floor
                                     [(Var 2 y3)]
                                     0
@@ -321,21 +321,21 @@
                         []
                     )
                     (Print
-                        [(IntrinsicScalarFunction
+                        [(IntrinsicElementalFunction
                             Floor
                             [(Var 2 x1)]
                             0
                             (Integer 4)
                             (IntegerConstant 3 (Integer 4))
                         )
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Floor
                             [(Var 2 x2)]
                             0
                             (Integer 4)
                             (IntegerConstant 3 (Integer 4))
                         )
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Floor
                             [(Var 2 x3)]
                             0
@@ -346,21 +346,21 @@
                         ()
                     )
                     (Print
-                        [(IntrinsicScalarFunction
+                        [(IntrinsicElementalFunction
                             Floor
                             [(Var 2 y1)]
                             0
                             (Integer 4)
                             (IntegerConstant -4 (Integer 4))
                         )
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Floor
                             [(Var 2 y2)]
                             0
                             (Integer 4)
                             (IntegerConstant -4 (Integer 4))
                         )
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Floor
                             [(Var 2 y3)]
                             0

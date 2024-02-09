@@ -1143,7 +1143,7 @@ public:
             r += ASRUtils::symbol_name(x.m_name);
         }
         if (r == "bit_size") {
-            // TODO: Remove this once bit_size is implemented in IntrinsicScalarFunction
+            // TODO: Remove this once bit_size is implemented in IntrinsicElementalFunction
             visit_expr(*x.m_value);
             return;
         }
@@ -1158,7 +1158,7 @@ public:
         s = r;
     }
 
-    void visit_IntrinsicScalarFunction(const ASR::IntrinsicScalarFunction_t &x) {
+    void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t &x) {
         std::string out;
         switch (x.m_intrinsic_id) {
             SET_INTRINSIC_NAME(Abs, "abs");
@@ -1167,7 +1167,7 @@ public:
             SET_INTRINSIC_NAME(Min, "min");
             SET_INTRINSIC_NAME(Sqrt, "sqrt");
             default : {
-                throw LCompilersException("IntrinsicScalarFunction: `"
+                throw LCompilersException("IntrinsicElementalFunction: `"
                     + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)
                     + "` is not implemented");
             }
