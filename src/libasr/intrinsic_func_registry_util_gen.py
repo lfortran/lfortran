@@ -190,7 +190,8 @@ intrinsic_funcs_args = {
     "Aimag": [
         {
             "args": [("complex",)],
-            "return": "TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(expr_type(args[0]))))"
+            "return": "real32",
+            "kind_arg": True
         },
     ],
     "Rank": [

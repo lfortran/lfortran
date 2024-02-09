@@ -2287,6 +2287,9 @@ public:
                     ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function("aimag");
                 Vec<ASR::expr_t*> args; args.reserve(al, 1);
                 args.push_back(al, val);
+                int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
+                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
+                args.push_back(al, i(kind, type));
                 ASR::asr_t* create_fn = create_func(al, loc, args, diag);
                 if (create_fn == nullptr) {
                     throw SemanticAbort();
