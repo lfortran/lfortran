@@ -530,7 +530,7 @@ jobs:
             git clone https://github.com/Pranavchiku/stdlib-fortran-lang.git
             cd stdlib-fortran-lang
             git checkout -t origin/lf-math12
-            git checkout 83794fb2fc4a63ce1b79127fa55a7cb9ca418358
+            git checkout c56509856e73bc9c8b806a20046e8299edf49dbe
             micromamba activate lf
             micromamba install -c conda-forge fypp
             FC=$(pwd)/../src/bin/lfortran cmake .
