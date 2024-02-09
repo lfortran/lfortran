@@ -113,7 +113,6 @@ struct IntrinsicProcedures {
             // left unevaluated in body visitor
             {"trim", {m_string, &not_implemented, false}},
             {"len_trim", {m_string, &not_implemented, false}},
-            {"adjustl", {m_string, &eval_adjustl, false}},
             {"adjustr", {m_string, &not_implemented, false}},
             {"lgt", {m_string, &not_implemented, false}},
             {"llt", {m_string, &not_implemented, false}},
@@ -511,30 +510,6 @@ struct IntrinsicProcedures {
         } else {
             throw SemanticError("achar() must have one integer argument", loc);
         }
-    }
-
-    static ASR::expr_t *eval_adjustl(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &) {
-        LCOMPILERS_ASSERT(args.size() == 1);
-        ASR::expr_t* args0 = ASRUtils::expr_value(args[0]);
-        if( !ASRUtils::is_value_constant(args0) ) {
-            return nullptr;
-        }
-        ASR::StringConstant_t* string_constant = ASR::down_cast<ASR::StringConstant_t>(args0);
-        std::string str = string_constant->m_s;
-        std::string adjusted_str = "";
-        std::string spaces = "";
-        size_t i = 0;
-        for( ; i < str.size() && str[i] == ' '; i++ ) {
-            spaces.push_back(' ');
-        }
-        for( ; i < str.size(); i++ ) {
-            adjusted_str.push_back(str[i]);
-        }
-        adjusted_str += spaces;
-
-        return ASR::down_cast<ASR::expr_t>(ASR::make_StringConstant_t(
-                    al, loc, s2c(al, adjusted_str),
-                    ASRUtils::expr_type(args[0])));
     }
 
     static ASR::expr_t *eval_new_line(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &) {
