@@ -521,6 +521,7 @@ jobs:
             ./example/specialfunctions_gamma/example_log_gamma
             ./example/specialfunctions_gamma/example_uigamma
 
+            cd ../
             rm -rf stdlib-fortran-lang
 
       - name: Test stdlib (stdlib_linalg)
@@ -553,6 +554,7 @@ jobs:
             ./example/linalg/example_diag4
             ./example/linalg/example_is_skew_symmetric
 
+            cd ../
             rm -rf stdlib-fortran-lang
 
       - name: Test Legacy Minpack (SciPy)
