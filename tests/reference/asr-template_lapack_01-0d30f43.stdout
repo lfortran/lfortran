@@ -1468,7 +1468,7 @@
                                                     dp
                                                     []
                                                     Local
-                                                    (IntrinsicScalarFunction
+                                                    (IntrinsicElementalFunction
                                                         Kind
                                                         [(RealConstant
                                                             1.000000
@@ -2035,7 +2035,7 @@
                                                     dp
                                                     []
                                                     Local
-                                                    (IntrinsicScalarFunction
+                                                    (IntrinsicElementalFunction
                                                         Kind
                                                         [(RealConstant
                                                             1.000000
@@ -4221,7 +4221,7 @@
                                                     dp
                                                     []
                                                     Local
-                                                    (IntrinsicScalarFunction
+                                                    (IntrinsicElementalFunction
                                                         Kind
                                                         [(RealConstant
                                                             1.000000

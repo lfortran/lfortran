@@ -90,14 +90,14 @@
                         ()
                     )
                     (Print
-                        [(IntrinsicScalarFunction
+                        [(IntrinsicElementalFunction
                             Aimag
                             [(Var 2 z)]
                             0
                             (Real 8)
                             ()
                         )
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Aimag
                             [(Var 2 i)]
                             0

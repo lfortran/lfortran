@@ -4158,7 +4158,7 @@ public:
                 return (ASR::asr_t*)val;
             } else if (var_name == "im") {
                 ASRUtils::create_intrinsic_function create_func =
-                    ASRUtils::IntrinsicScalarFunctionRegistry::get_create_function("aimag");
+                    ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function("aimag");
                 Vec<ASR::expr_t *> args; args.reserve(al, 1);
                 args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, v)));
                 ASR::asr_t *func = create_func(al, loc, args, diag);
@@ -4841,7 +4841,7 @@ public:
         bool is_double_precision_intrinsic = intrinsic_mapping.count(var_name);
         if (intrinsic_procedures_as_asr_nodes.is_intrinsic_present_in_ASR(var_name) ||
             intrinsic_procedures_as_asr_nodes.is_kind_based_selection_required(var_name) ||
-            ASRUtils::IntrinsicScalarFunctionRegistry::is_intrinsic_function(var_name) ||
+            ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ||
             ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ||
             ASRUtils::IntrinsicImpureFunctionRegistry::is_intrinsic_function(var_name) ||
             is_double_precision_intrinsic) {
@@ -4859,7 +4859,7 @@ public:
             if (is_double_precision_intrinsic) {
                 var_name = intrinsic_mapping[var_name];
             }
-            if( ASRUtils::IntrinsicScalarFunctionRegistry::is_intrinsic_function(var_name) ||
+            if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ||
                     ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ) {
                 std::vector<IntrinsicSignature> signatures = get_intrinsic_signature(var_name);
                 Vec<ASR::expr_t*> args;
@@ -4878,9 +4878,9 @@ public:
                     throw SemanticError("No matching signature found for intrinsic " + var_name,
                                         x.base.base.loc);
                 }
-                if( ASRUtils::IntrinsicScalarFunctionRegistry::is_intrinsic_function(var_name) ){
+                if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ){
                     ASRUtils::create_intrinsic_function create_func =
-                        ASRUtils::IntrinsicScalarFunctionRegistry::get_create_function(var_name);
+                        ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
                     tmp = create_func(al, x.base.base.loc, args, diag);
                 } else if ( ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ) {
                     ASRUtils::create_intrinsic_function create_func =

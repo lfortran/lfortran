@@ -3010,11 +3010,11 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
     }
 
     #define SET_INTRINSIC_NAME(X, func_name)                                    \
-        case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::X)) : {  \
+        case (static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::X)) : {  \
             out += func_name; break;                                            \
         }
 
-    void visit_IntrinsicScalarFunction(const ASR::IntrinsicScalarFunction_t &x) {
+    void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t &x) {
         CHECK_FAST_C_CPP(compiler_options, x);
         std::string out;
         std::string indent(4, ' ');
@@ -3035,7 +3035,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             SET_INTRINSIC_NAME(Trunc, "trunc");
             SET_INTRINSIC_NAME(Fix, "fix");
             SET_INTRINSIC_NAME(FloorDiv, "floordiv");
-            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::FMA)) : {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::FMA)) : {
                 this->visit_expr(*x.m_args[0]);
                 std::string a = src;
                 this->visit_expr(*x.m_args[1]);
@@ -3046,7 +3046,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 return;
             }
             default : {
-                throw LCompilersException("IntrinsicScalarFunction: `"
+                throw LCompilersException("IntrinsicElementalFunction: `"
                     + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)
                     + "` is not implemented");
             }

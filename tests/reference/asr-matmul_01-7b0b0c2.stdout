@@ -129,7 +129,7 @@
                                     dp
                                     []
                                     Local
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Kind
                                         [(RealConstant
                                             0.000000
@@ -763,7 +763,7 @@
                         (Var 6 err)
                         (IntrinsicArrayFunction
                             MaxVal
-                            [(IntrinsicScalarFunction
+                            [(IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 6 c)
@@ -1026,7 +1026,7 @@
                         (Var 6 err)
                         (IntrinsicArrayFunction
                             MaxVal
-                            [(IntrinsicScalarFunction
+                            [(IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
                                     (Var 6 c)

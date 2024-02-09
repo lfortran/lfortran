@@ -29,7 +29,7 @@
                                     x
                                     []
                                     Local
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Tiny
                                         [(RealConstant
                                             1.000000
@@ -60,7 +60,7 @@
                                     y
                                     [b]
                                     Local
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Tiny
                                         [(Var 2 b)]
                                         0

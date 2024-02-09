@@ -36,7 +36,7 @@
                         (RealCompare
                             (Var 2 z)
                             Lt
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Tiny
                                 [(RealConstant
                                     1.000000

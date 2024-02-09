@@ -59,7 +59,7 @@
                     []
                     [(If
                         (RealCompare
-                            (IntrinsicScalarFunction
+                            (IntrinsicElementalFunction
                                 Aimag
                                 [(Var 3 z)]
                                 0
