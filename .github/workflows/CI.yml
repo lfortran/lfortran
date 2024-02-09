@@ -530,7 +530,7 @@ jobs:
             git clone https://github.com/Pranavchiku/stdlib-fortran-lang.git
             cd stdlib-fortran-lang
             git checkout -t origin/lf-linalg4
-            git checkout eabfce3e5129ee3d83098d17b819c08739542eb3
+            git checkout 09729bdb1e1e364cc5283f7d775019636265d264
             micromamba activate lf
             micromamba install -c conda-forge fypp
             FC="$(pwd)/../src/bin/lfortran --realloc-lhs" cmake .
