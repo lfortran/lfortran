@@ -169,7 +169,7 @@ class ASRBuilder {
             ASR::binopType::Add, right, real32, nullptr))
     #define r64Add(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,       \
             ASR::binopType::Add, right, real64, nullptr))
-    #define i_tAdd(left, right, t) EXPR(ASR::make_IntegerBinOp_t(al, loc, left, \
+    #define i_tAdd(left, right, t) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
             ASR::binopType::Add, right, t, nullptr))
 
     #define iSub(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
@@ -188,7 +188,7 @@ class ASRBuilder {
             ASR::binopType::Sub, right, real32, nullptr))
     #define r64Sub(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,       \
             ASR::binopType::Sub, right, real64, nullptr))
-    #define i_tSub(left, right, t) EXPR(ASR::make_IntegerBinOp_t(al, loc, left, \
+    #define i_tSub(left, right, t) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
             ASR::binopType::Sub, right, t, nullptr))
 
     #define iDiv(left, right) r2i32(EXPR(ASR::make_RealBinOp_t(al, loc,         \
@@ -203,13 +203,8 @@ class ASRBuilder {
             left, ASR::binopType::Div, right, real32, nullptr))
     #define r64Div(left, right) EXPR(ASR::make_RealBinOp_t(al, loc,             \
             left, ASR::binopType::Div, right, real64, nullptr))
-    #define i_tDiv(left, right, t) EXPR(ASR::make_IntegerBinOp_t(al, loc,       \
+    #define i_tDiv(left, right, t) EXPR(ASR::make_IntegerBinOp_t(al, loc,             \
             left, ASR::binopType::Div, right, t, nullptr))
-
-    #define i_BitRshift(n, bits, t) EXPR(ASR::make_IntegerBinOp_t(al, loc,      \
-            n, ASR::binopType::BitRShift, bits, t, nullptr))
-    #define i_BitLshift(n, bits, t) EXPR(ASR::make_IntegerBinOp_t(al, loc,      \
-            n, ASR::binopType::BitLShift, bits, t, nullptr))
 
     #define iMul(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
             ASR::binopType::Mul, right, int32, nullptr))
@@ -223,7 +218,7 @@ class ASRBuilder {
             ASR::binopType::Mul, right, real32, nullptr))
     #define r64Mul(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,       \
             ASR::binopType::Mul, right, real64, nullptr))
-    #define i_tMul(left, right, t) EXPR(ASR::make_IntegerBinOp_t(al, loc, left, \
+    #define i_tMul(left, right, t) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
             ASR::binopType::Mul, right, t, nullptr))
 
     #define iPow(left, right, t) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,   \
