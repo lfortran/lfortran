@@ -13,7 +13,7 @@
                                     i32
                                     []
                                     Local
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Huge
                                         [(IntegerConstant 0 (Integer 4))]
                                         0
@@ -35,7 +35,7 @@
                                     i64
                                     []
                                     Local
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Huge
                                         [(IntegerConstant 0 (Integer 8))]
                                         0
@@ -57,7 +57,7 @@
                                     y
                                     []
                                     Local
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Huge
                                         [(RealConstant
                                             0.000000
@@ -88,7 +88,7 @@
                                     z
                                     []
                                     Local
-                                    (IntrinsicScalarFunction
+                                    (IntrinsicElementalFunction
                                         Huge
                                         [(RealConstant
                                             0.000000
@@ -125,21 +125,21 @@
                         ()
                     )
                     (Print
-                        [(IntrinsicScalarFunction
+                        [(IntrinsicElementalFunction
                             Huge
                             [(IntegerConstant 0 (Integer 4))]
                             0
                             (Integer 4)
                             (IntegerConstant 2147483647 (Integer 4))
                         )
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Huge
                             [(IntegerConstant 0 (Integer 8))]
                             0
                             (Integer 8)
                             (IntegerConstant 9223372036854775807 (Integer 8))
                         )
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Huge
                             [(RealConstant
                                 0.000000
@@ -152,7 +152,7 @@
                                 (Real 4)
                             )
                         )
-                        (IntrinsicScalarFunction
+                        (IntrinsicElementalFunction
                             Huge
                             [(RealConstant
                                 0.000000
