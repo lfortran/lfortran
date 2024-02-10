@@ -790,6 +790,7 @@ public:
     bool is_common_variable = false;
     bool _processing_dimensions = false;
     bool is_implicit_interface = false;
+    bool declaring_variable = false;
     Vec<ASR::stmt_t*> *current_body = nullptr;
 
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;
@@ -1736,6 +1737,7 @@ public:
     }
 
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
+        declaring_variable = true;
         if (x.m_vartype == nullptr &&
                 x.n_attributes == 1 &&
                 AST::is_a<AST::AttrNamelist_t>(*x.m_attributes[0])) {
@@ -2794,6 +2796,7 @@ public:
                 }
             } // for m_syms
         }
+        declaring_variable = false;
     }
 
     void visit_Interface(const AST::Interface_t &/*x*/) {
@@ -5609,6 +5612,9 @@ public:
                 tmp = create_FunctionCallWithASTNode(x, v, args_with_mdt);
             } else {
                 tmp = create_FunctionCallWithASTNode(x, v, args);
+            }
+            if (declaring_variable) {
+                current_function_dependencies.push_back_unique(al, ASRUtils::symbol_name(v));
             }
         } else {
             switch (f2->type) {
