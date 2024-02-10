@@ -4156,18 +4156,10 @@ public:
                     al, loc, &val, v_variable_m_type, dest_type);
                 return (ASR::asr_t*)val;
             } else if (var_name == "im") {
-                ASRUtils::create_intrinsic_function create_func =
-                    ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function("aimag");
-                Vec<ASR::expr_t *> args; args.reserve(al, 1);
-                args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, v)));
-                int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
-                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
-                args.push_back(al, i(kind, type));
-                ASR::asr_t *func = create_func(al, loc, args, diag);
-                if (func == nullptr) {
-                    throw SemanticAbort();
-                }
-                return func;
+                ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
+                    ASRUtils::extract_kind_from_ttype_t(v_variable_m_type)));
+                return ASR::make_ComplexIm_t(al, loc, ASRUtils::EXPR(
+                    ASR::make_Var_t(al, loc, v)), real_type, nullptr);
             } else {
                 throw SemanticError("Complex variable '" + dt_name + "' only has %re and %im members, not '" + var_name + "'", loc);
             }
