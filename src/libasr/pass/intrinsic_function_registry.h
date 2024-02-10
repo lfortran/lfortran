@@ -52,7 +52,6 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Mod)
         INTRINSIC_NAME_CASE(Trailz)
         INTRINSIC_NAME_CASE(Shiftr)
-        INTRINSIC_NAME_CASE(Rshift)
         INTRINSIC_NAME_CASE(Shiftl)
         INTRINSIC_NAME_CASE(Ishft)
         INTRINSIC_NAME_CASE(Leadz)
@@ -181,8 +180,6 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Trailz::instantiate_Trailz, &Trailz::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Shiftr),
             {&Shiftr::instantiate_Shiftr, &Shiftr::verify_args}},
-        {static_cast<int64_t>(IntrinsicElementalFunctions::Rshift),
-            {&Rshift::instantiate_Rshift, &Rshift::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Shiftl),
             {&Shiftl::instantiate_Shiftl, &Shiftl::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ishft),
@@ -372,8 +369,6 @@ namespace IntrinsicElementalFunctionRegistry {
             "trailz"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Shiftr),
             "shiftr"},
-        {static_cast<int64_t>(IntrinsicElementalFunctions::Rshift),
-            "rshift"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Shiftl),
             "shiftl"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ishft),
@@ -531,7 +526,6 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"mod", {&Mod::create_Mod, &Mod::eval_Mod}},
                 {"trailz", {&Trailz::create_Trailz, &Trailz::eval_Trailz}},
                 {"shiftr", {&Shiftr::create_Shiftr, &Shiftr::eval_Shiftr}},
-                {"rshift", {&Rshift::create_Rshift, &Rshift::eval_Rshift}},
                 {"shiftl", {&Shiftl::create_Shiftl, &Shiftl::eval_Shiftl}},
                 {"lshift", {&Shiftl::create_Shiftl, &Shiftl::eval_Shiftl}},
                 {"ishft", {&Ishft::create_Ishft, &Ishft::eval_Ishft}},
