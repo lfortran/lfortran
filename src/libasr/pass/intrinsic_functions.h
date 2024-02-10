@@ -3117,7 +3117,7 @@ namespace Conjg {
 namespace Huge {
 
     static ASR::expr_t *eval_Huge(Allocator &al, const Location &loc,
-            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &/*args*/) {
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& diag) {
         int32_t kind = extract_kind_from_ttype_t(arg_type);
         if (ASR::is_a<ASR::Integer_t>(*arg_type)) {
             int64_t huge_value = -1;
@@ -3127,7 +3127,8 @@ namespace Huge {
                 } case 8: {
                     huge_value = std::numeric_limits<int64_t>::max(); break;
                 } default: {
-                    break;
+                    append_error(diag, "Kind " + std::to_string(kind) + " is not supported yet", loc);
+                    return nullptr;
                 }
             }
             return i(huge_value, arg_type);
@@ -3139,7 +3140,8 @@ namespace Huge {
                 } case 8: {
                     huge_value = std::numeric_limits<double>::max(); break;
                 } default: {
-                    break;
+                    append_error(diag, "Kind " + std::to_string(kind) + " is not supported yet", loc);
+                    return nullptr;
                 }
             }
             return f(huge_value, arg_type);
