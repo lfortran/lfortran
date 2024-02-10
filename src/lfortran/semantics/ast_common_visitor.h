@@ -5614,7 +5614,7 @@ public:
                 tmp = create_FunctionCallWithASTNode(x, v, args);
             }
             if (declaring_variable) {
-                current_function_dependencies.push_back_unique(al, ASRUtils::symbol_name(v));
+                current_function_dependencies.push_back(al, ASRUtils::symbol_name(v));
             }
         } else {
             switch (f2->type) {
