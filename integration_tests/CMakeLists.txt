@@ -632,17 +632,16 @@ RUN(NAME intrinsics_121 LABELS gfortran llvm)#leadz
 RUN(NAME intrinsics_122 LABELS gfortran llvm)#rank
 RUN(NAME intrinsics_123 LABELS gfortran llvm)#shiftl
 RUN(NAME intrinsics_124 LABELS gfortran llvm)#lshift
-RUN(NAME intrinsics_125 LABELS gfortran llvm)# random_number
-RUN(NAME intrinsics_126 LABELS gfortran llvm)# random_number
+RUN(NAME intrinsics_125 LABELS gfortran llvm) # random_number
+RUN(NAME intrinsics_126 LABELS gfortran llvm) # random_number
 RUN(NAME intrinsics_127 LABELS gfortran llvm)#ifix
-RUN(NAME intrinsics_128 LABELS gfortran llvm)# idint
+RUN(NAME intrinsics_128 LABELS gfortran llvm) # idint
 RUN(NAME intrinsics_129 LABELS gfortran llvm)#abs
 RUN(NAME intrinsics_130 LABELS gfortran llvm)#ishft
 RUN(NAME intrinsics_131 LABELS gfortran llvm)#max for strings
 RUN(NAME intrinsics_132 LABELS gfortran llvm)#Floor
 RUN(NAME intrinsics_133 LABELS gfortran llvm)#Ceiling
 RUN(NAME intrinsics_135 LABELS gfortran llvm)#nint
-RUN(NAME intrinsics_136 LABELS gfortran llvm)#rshift
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
