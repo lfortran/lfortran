@@ -2291,21 +2291,21 @@ public:
                     al, loc, y, im, ASRUtils::expr_type(target), nullptr));
                 value = cmplx;
             }
-        } else if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*target)) {
-            ASR::IntrinsicElementalFunction_t* i = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(target);
-            if (ASRUtils::IntrinsicElementalFunctionRegistry::get_intrinsic_function_name(i->m_intrinsic_id) == "aimag") {
-                /*
-                    Case: x % im = y
-                    we do: x = cmplx(x%re, y)
-                    i.e. target = x, value = cmplx(x%re, y)
-                */
-                target = i->m_args[0];
-                ASR::expr_t* y = value;
-                const Location& loc = x.base.base.loc;
-                ASR::expr_t* re = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, target, ASR::cast_kindType::ComplexToReal, ASRUtils::expr_type(y), nullptr));
-                ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(al, loc, re, y, ASRUtils::expr_type(target), nullptr));
-                value = cmplx;
-            }
+        } else if ( ASR::is_a<ASR::ComplexIm_t>(*target) ) {
+            ASR::ComplexIm_t* im = ASR::down_cast<ASR::ComplexIm_t>(target);
+            /*
+                Case: x % im = y
+                we do: x = cmplx(x%re, y)
+                i.e. target = x, value = cmplx(x%re, y)
+            */
+            target = im->m_arg;
+            ASR::expr_t* y = value;
+            const Location& loc = x.base.base.loc;
+            ASR::expr_t* re = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, target,
+                ASR::cast_kindType::ComplexToReal, ASRUtils::expr_type(y), nullptr));
+            ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(al,
+                loc, re, y, ASRUtils::expr_type(target), nullptr));
+            value = cmplx;
         }
         ASR::ttype_t *target_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(target));
         if( target->type != ASR::exprType::Var &&
