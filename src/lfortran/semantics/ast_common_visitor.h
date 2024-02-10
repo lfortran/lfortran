@@ -4160,6 +4160,9 @@ public:
                     ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function("aimag");
                 Vec<ASR::expr_t *> args; args.reserve(al, 1);
                 args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, v)));
+                int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
+                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
+                args.push_back(al, i(kind, type));
                 ASR::asr_t *func = create_func(al, loc, args, diag);
                 if (func == nullptr) {
                     throw SemanticAbort();
@@ -4849,6 +4852,17 @@ public:
         return false;
     }
 
+    void fill_optional_kind_arg(std::string &name, Vec<ASR::expr_t*> &args) {
+        if (name == "aimag") {
+            if (args.size() == 1) {
+                Location &loc = args[0]->base.loc;
+                int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
+                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
+                args.push_back(al, i(kind, type));
+            }
+        }
+    }
+
     ASR::symbol_t* intrinsic_as_node(const AST::FuncCallOrArray_t &x,
                                      bool& is_function) {
         std::string var_name = to_lower(x.m_func);
@@ -4878,6 +4892,7 @@ public:
                                         x.base.base.loc);
                 }
                 if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ){
+                    fill_optional_kind_arg(var_name, args);
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
                     tmp = create_func(al, x.base.base.loc, args, diag);
