@@ -2283,36 +2283,29 @@ public:
                 const Location& loc = x.base.base.loc;
                 ASR::expr_t *val = target;
 
-                ASRUtils::create_intrinsic_function create_func =
-                    ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function("aimag");
-                Vec<ASR::expr_t*> args; args.reserve(al, 1);
-                args.push_back(al, val);
-                int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
-                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
-                args.push_back(al, i(kind, type));
-                ASR::asr_t* create_fn = create_func(al, loc, args, diag);
-                if (create_fn == nullptr) {
-                    throw SemanticAbort();
-                }
-                ASR::expr_t *im = ASRUtils::EXPR(create_fn);
-                ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(al, loc, y, im, ASRUtils::expr_type(target), nullptr));
+                ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
+                    ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(val))));
+                ASR::expr_t *im = ASRUtils::EXPR(ASR::make_ComplexIm_t(al, loc,
+                    val, real_type, nullptr));
+                ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(
+                    al, loc, y, im, ASRUtils::expr_type(target), nullptr));
                 value = cmplx;
             }
-        } else if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*target)) {
-            ASR::IntrinsicElementalFunction_t* i = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(target);
-            if (ASRUtils::IntrinsicElementalFunctionRegistry::get_intrinsic_function_name(i->m_intrinsic_id) == "aimag") {
-                /*
-                    Case: x % im = y
-                    we do: x = cmplx(x%re, y)
-                    i.e. target = x, value = cmplx(x%re, y)
-                */
-                target = i->m_args[0];
-                ASR::expr_t* y = value;
-                const Location& loc = x.base.base.loc;
-                ASR::expr_t* re = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, target, ASR::cast_kindType::ComplexToReal, ASRUtils::expr_type(y), nullptr));
-                ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(al, loc, re, y, ASRUtils::expr_type(target), nullptr));
-                value = cmplx;
-            }
+        } else if ( ASR::is_a<ASR::ComplexIm_t>(*target) ) {
+            ASR::ComplexIm_t* im = ASR::down_cast<ASR::ComplexIm_t>(target);
+            /*
+                Case: x % im = y
+                we do: x = cmplx(x%re, y)
+                i.e. target = x, value = cmplx(x%re, y)
+            */
+            target = im->m_arg;
+            ASR::expr_t* y = value;
+            const Location& loc = x.base.base.loc;
+            ASR::expr_t* re = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, target,
+                ASR::cast_kindType::ComplexToReal, ASRUtils::expr_type(y), nullptr));
+            ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(al,
+                loc, re, y, ASRUtils::expr_type(target), nullptr));
+            value = cmplx;
         }
         ASR::ttype_t *target_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(target));
         if( target->type != ASR::exprType::Var &&

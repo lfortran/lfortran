@@ -849,16 +849,6 @@ LFORTRAN_API double_complex_t _lfortran_zsqrt(double_complex_t x)
 
 // aimag -----------------------------------------------------------------------
 
-LFORTRAN_API float _lfortran_caimag(float_complex_t x)
-{
-    return cimagf(x);
-}
-
-LFORTRAN_API double _lfortran_zaimag(double_complex_t x)
-{
-    return cimag(x);
-}
-
 LFORTRAN_API void _lfortran_complex_aimag_32(struct _lfortran_complex_32 *x, float *res)
 {
     *res = x->im;
