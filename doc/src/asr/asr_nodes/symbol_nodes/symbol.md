@@ -39,6 +39,8 @@ symbol
         self_argument, identifier proc_name, symbol proc, abi abi)
     | AssociateBlock(symbol_table symtab, identifier name, stmt* body)
     | Block(symbol_table symtab, identifier name, stmt* body)
+    | Requirement(symbol_table symtab, identifier name, identifier* args, require_instantiation* requires)
+    | Template(symbol_table symtab, identifier name, identifier* args, require_instantiation* requires)
 ```
 
 ### Arguments
@@ -62,6 +64,7 @@ symbol
 | `deftype`                  |Implementation/Interface|
 | `presence`                 |Required/Optional|
 | `self_argument`            |the argument which contains the object calling the class procedure |
+| `requires`                 |assigning types to requirement or template arguments    |
 
 ### Return values
 
@@ -126,6 +129,8 @@ Symbols in LFortran are:
 10. ClassProcedure
 11. AssociateBlock
 12. Block
+13. Requirement
+14. Template
 
 ## Types
 
