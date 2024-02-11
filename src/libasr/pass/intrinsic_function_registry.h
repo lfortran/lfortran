@@ -191,7 +191,7 @@ namespace IntrinsicElementalFunctionRegistry {
         {static_cast<int64_t>(IntrinsicElementalFunctions::Kind),
             {&Kind::instantiate_Kind, &Kind::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Rank),
-            {&Rank::instantiate_Rank, &Rank::verify_args}},
+            {nullptr, &Rank::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Digits),
             {&Digits::instantiate_Digits, &Digits::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Repeat),
