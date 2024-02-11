@@ -3045,7 +3045,7 @@ namespace Epsilon {
 namespace Tiny {
 
     static ASR::expr_t *eval_Tiny(Allocator &al, const Location &loc,
-            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& diag) {
         double tiny_value = -1;
         int32_t kind = extract_kind_from_ttype_t(arg_type);
         switch ( kind ) {
@@ -3054,7 +3054,8 @@ namespace Tiny {
             } case 8: {
                 tiny_value = std::numeric_limits<double>::min(); break;
             } default: {
-                break;
+                append_error(diag, "Kind " + std::to_string(kind) + " is not supported yet", loc);
+                    return nullptr;
             }
         }
         return f(tiny_value, arg_type);
