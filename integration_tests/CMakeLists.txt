@@ -458,12 +458,12 @@ RUN(NAME arrays_15 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_inputs_15 LABELS gfortran llvm llvmStackArray) # constant arrays
 RUN(NAME arrays_16_func LABELS gfortran llvm llvmStackArray)
 
-RUN(NAME arrays_intrin_01 LABELS gfortran) # minval, maxval
+RUN(NAME arrays_intrin_01 LABELS gfortran fortran) # minval, maxval
 RUN(NAME arrays_intrin_02 LABELS gfortran) # all, any
 RUN(NAME arrays_intrin_03 LABELS gfortran llvm llvmStackArray) # maxval
-RUN(NAME arrays_intrin_04 LABELS gfortran llvm llvmStackArray) # maxval
+RUN(NAME arrays_intrin_04 LABELS gfortran llvm llvmStackArray fortran) # maxval
 RUN(NAME arrays_intrin_05 LABELS gfortran llvm llvmStackArray) # minval
-RUN(NAME arrays_intrin_06 LABELS gfortran llvm llvmStackArray) # minval
+RUN(NAME arrays_intrin_06 LABELS gfortran llvm llvmStackArray fortran) # minval
 RUN(NAME arrays_intrin_07 LABELS gfortran llvm llvmStackArray) # min
 RUN(NAME any_01 LABELS gfortran)
 RUN(NAME any_02 LABELS gfortran llvm)
