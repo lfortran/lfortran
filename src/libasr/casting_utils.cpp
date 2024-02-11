@@ -59,12 +59,6 @@ namespace LCompilers::CastingUtil {
                       const std::function<void (const std::string &, const Location &)> semantic_error) {
         ASR::ttype_t* left_type = ASRUtils::expr_type(left_expr);
         ASR::ttype_t* right_type = ASRUtils::expr_type(right_expr);
-        if( ASR::is_a<ASR::Const_t>(*left_type) ) {
-            left_type = ASRUtils::get_contained_type(left_type);
-        }
-        if( ASR::is_a<ASR::Const_t>(*right_type) ) {
-            right_type = ASRUtils::get_contained_type(right_type);
-        }
         left_type = ASRUtils::type_get_past_pointer(left_type);
         right_type = ASRUtils::type_get_past_pointer(right_type);
         if( ASRUtils::check_equal_type(left_type, right_type) ||

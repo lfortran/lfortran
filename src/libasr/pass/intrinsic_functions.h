@@ -1527,8 +1527,6 @@ namespace FloorDiv {
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
         ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
-        type1 = ASRUtils::type_get_past_const(type1);
-        type2 = ASRUtils::type_get_past_const(type2);
         bool is_real1 = is_real(*type1);
         bool is_real2 = is_real(*type2);
         bool is_int1 = is_integer(*type1);

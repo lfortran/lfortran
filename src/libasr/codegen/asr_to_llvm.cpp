@@ -2310,7 +2310,7 @@ public:
             }
 
             ASR::ttype_t* x_mv_type_ = ASRUtils::type_get_past_allocatable(
-                ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_const(x_mv_type)));
+                ASRUtils::type_get_past_pointer(x_mv_type));
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Array_t>(*x_mv_type_));
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(x_mv_type_);
             bool is_bindc_array = ASRUtils::expr_abi(x.m_v) == ASR::abiType::BindC;
@@ -3529,7 +3529,7 @@ public:
                             is_malloc_array_type, is_array_type, is_list, v->m_type);
                     }
                     ASR::expr_t* init_expr = v->m_symbolic_value;
-                    if( !ASR::is_a<ASR::Const_t>(*v->m_type) ) {
+                    if( v->m_storage != ASR::storage_typeType::Parameter ) {
                         for( size_t i = 0; i < v->n_dependencies; i++ ) {
                             std::string variable_name = v->m_dependencies[i];
                             ASR::symbol_t* dep_sym = x.m_symtab->resolve_symbol(variable_name);
@@ -7621,9 +7621,6 @@ public:
         }
 
         load_non_array_non_character_pointers(v, ASRUtils::expr_type(v), tmp);
-        if( ASR::is_a<ASR::Const_t>(*t) ) {
-            t = ASRUtils::get_contained_type(t);
-        }
         t = ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(t));
         int a_kind = ASRUtils::extract_kind_from_ttype_t(t);
 
@@ -7949,7 +7946,7 @@ public:
                                 }
                             } else if ( x_abi == ASR::abiType::BindC ) {
                                 if (orig_arg->m_abi == ASR::abiType::BindC && orig_arg->m_value_attr) {
-                                    ASR::ttype_t* arg_type = ASRUtils::type_get_past_const(arg->m_type);
+                                    ASR::ttype_t* arg_type = arg->m_type;
                                     if (ASR::is_a<ASR::Complex_t>(*arg_type)) {
                                         int c_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
                                         if (c_kind == 4) {
