@@ -1213,15 +1213,20 @@ public:
             SET_INTRINSIC_NAME(Max, "max");
             SET_INTRINSIC_NAME(Min, "min");
             SET_INTRINSIC_NAME(Sqrt, "sqrt");
+            SET_INTRINSIC_NAME(Mod, "mod");
             default : {
                 throw LCompilersException("IntrinsicElementalFunction: `"
                     + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)
                     + "` is not implemented");
             }
         }
-        LCOMPILERS_ASSERT(x.n_args == 1);
-        visit_expr(*x.m_args[0]);
-        out += "(" + s + ")";
+        out += "(";
+        for (size_t i = 0; i < x.n_args; i ++) {
+            visit_expr(*x.m_args[i]);
+            out += s;
+            if (i < x.n_args-1) out += ", ";
+        }
+        out += ")";
         s = out;
     }
 
