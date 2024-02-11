@@ -1238,6 +1238,7 @@ public:
             SET_ARR_INTRINSIC_NAME(Sum, "sum");
             SET_ARR_INTRINSIC_NAME(Shape, "shape");
             SET_ARR_INTRINSIC_NAME(MaxVal, "maxval");
+            SET_ARR_INTRINSIC_NAME(MinVal, "minval");
             default : {
                 throw LCompilersException("IntrinsicArrayFunction: `"
                     + ASRUtils::get_array_intrinsic_name(x.m_arr_intrinsic_id)
