@@ -194,7 +194,7 @@ namespace IntrinsicElementalFunctionRegistry {
         {static_cast<int64_t>(IntrinsicElementalFunctions::Kind),
             {&Kind::instantiate_Kind, &Kind::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Rank),
-            {&Rank::instantiate_Rank, &Rank::verify_args}},
+            {nullptr, &Rank::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Digits),
             {&Digits::instantiate_Digits, &Digits::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Repeat),
@@ -601,35 +601,6 @@ namespace IntrinsicElementalFunctionRegistry {
 
     static inline bool is_intrinsic_function(int64_t id) {
         return intrinsic_function_by_id_db.find(id) != intrinsic_function_by_id_db.end();
-    }
-
-    static inline bool is_elemental(int64_t id) {
-        IntrinsicElementalFunctions id_ = static_cast<IntrinsicElementalFunctions>(id);
-        return ( id_ == IntrinsicElementalFunctions::Abs ||
-                 id_ == IntrinsicElementalFunctions::Cos ||
-                 id_ == IntrinsicElementalFunctions::Gamma ||
-                 id_ == IntrinsicElementalFunctions::Log ||
-                 id_ == IntrinsicElementalFunctions::LogGamma ||
-                 id_ == IntrinsicElementalFunctions::Erf ||
-                 id_ == IntrinsicElementalFunctions::Erfc ||
-                 id_ == IntrinsicElementalFunctions::Trunc ||
-                 id_ == IntrinsicElementalFunctions::Fix ||
-                 id_ == IntrinsicElementalFunctions::Range ||
-                 id_ == IntrinsicElementalFunctions::Sin ||
-                 id_ == IntrinsicElementalFunctions::Exp ||
-                 id_ == IntrinsicElementalFunctions::Exp2 ||
-                 id_ == IntrinsicElementalFunctions::Expm1 ||
-                 id_ == IntrinsicElementalFunctions::Min ||
-                 id_ == IntrinsicElementalFunctions::Max ||
-                 id_ == IntrinsicElementalFunctions::Sqrt ||
-                 id_ == IntrinsicElementalFunctions::SymbolicSymbol ||
-                 id_ == IntrinsicElementalFunctions::Tan ||
-                 id_ == IntrinsicElementalFunctions::Acosh ||
-                 id_ == IntrinsicElementalFunctions::Asinh ||
-                 id_ == IntrinsicElementalFunctions::Atanh ||
-                 id_ == IntrinsicElementalFunctions::Cosh ||
-                 id_ == IntrinsicElementalFunctions::Sinh ||
-                 id_ == IntrinsicElementalFunctions::Tanh);
     }
 
     static inline create_intrinsic_function get_create_function(const std::string& name) {

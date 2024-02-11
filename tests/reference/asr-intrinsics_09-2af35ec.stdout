@@ -36,13 +36,12 @@
                         (RealCompare
                             (Var 2 z)
                             Lt
-                            (IntrinsicElementalFunction
+                            (TypeInquiry
                                 Tiny
-                                [(RealConstant
+                                (RealConstant
                                     1.000000
                                     (Real 4)
-                                )]
-                                0
+                                )
                                 (Real 4)
                                 (RealConstant
                                     0.000000
