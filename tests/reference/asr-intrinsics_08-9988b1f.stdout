@@ -29,13 +29,12 @@
                                     x
                                     []
                                     Local
-                                    (IntrinsicElementalFunction
+                                    (TypeInquiry
                                         Tiny
-                                        [(RealConstant
+                                        (RealConstant
                                             1.000000
                                             (Real 4)
-                                        )]
-                                        0
+                                        )
                                         (Real 4)
                                         (RealConstant
                                             0.000000
@@ -60,10 +59,9 @@
                                     y
                                     [b]
                                     Local
-                                    (IntrinsicElementalFunction
+                                    (TypeInquiry
                                         Tiny
-                                        [(Var 2 b)]
-                                        0
+                                        (Var 2 b)
                                         (Real 8)
                                         (RealConstant
                                             0.000000

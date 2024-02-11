@@ -1354,9 +1354,6 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
     }
 
     void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
-        if(!ASRUtils::IntrinsicElementalFunctionRegistry::is_elemental(x->m_intrinsic_id)) {
-            return ;
-        }
         replace_intrinsic_function(x);
     }
 
