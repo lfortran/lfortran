@@ -87,7 +87,6 @@ struct IntrinsicProcedures {
             {"newunit", {m_custom, &not_implemented, false}},
 
             // Require evaluated arguments
-            {"modulo", {m_math2, &eval_modulo, true}},
             {"selected_char_kind", {m_kind, &eval_selected_char_kind, true}},
 
             // These will fail if used in symbol table visitor, but will be
@@ -290,38 +289,12 @@ struct IntrinsicProcedures {
         }
     }
 
-    static double lfortran_modulo(double x, double y) {
-        if (x > 0 && y > 0) {
-            return std::fmod(x, y);
-        } else if (x < 0 && y < 0) {
-            return -std::fmod(-x, -y);
-        } else {
-            return std::remainder(x, y);
-        }
-    }
-
-    static int64_t lfortran_modulo_i(int64_t x, int64_t y) {
-        if (x > 0 && y > 0) {
-            return std::fmod(x, y);
-        } else if (x < 0 && y < 0) {
-            return -std::fmod(-x, -y);
-        } else {
-            return std::remainder(x, y);
-        }
-    }
-
     static double lfortran_mod(double x, double y) {
         return std::fmod(x, y);
     }
 
     static int64_t lfortran_mod_i(int64_t x, int64_t y) {
         return std::fmod(x, y);
-    }
-
-    static ASR::expr_t *eval_modulo(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        return eval_2args_ri(al, loc, args, compiler_options,
-            &IntrinsicProcedures::lfortran_modulo,
-            &IntrinsicProcedures::lfortran_modulo_i);
     }
 
     static ASR::expr_t *eval_int(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
