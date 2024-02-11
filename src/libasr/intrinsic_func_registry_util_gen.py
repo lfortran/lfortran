@@ -370,8 +370,11 @@ def add_create_func_return_src(func_name):
     for _i in range(no_of_args):
         src += indent * 2 + f"m_args.push_back(al, args[{_i}]);\n"
     if func_name in compile_time_only_fn:
-        src += indent * 2 + f"m_value = eval_{func_name}(al, loc, {ret_type}, args, diag);\n"
-        src += indent * 2 + f"return ASR::make_TypeInquiry_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::{func_name}), m_args[0], return_type, m_value);\n"
+        src += indent * 2 + f"return_type = ASRUtils::extract_type(return_type);\n"
+        src += indent * 2 + f"m_value = eval_{func_name}(al, loc, return_type, args, diag);\n"
+        src += indent * 2 + "return ASR::make_TypeInquiry_t(al, loc, "\
+            f"static_cast<int64_t>(IntrinsicElementalFunctions::{func_name}), "\
+            "m_args[0], return_type, m_value);\n"
 
     else:
         src += indent * 2 + "if (all_args_evaluated(m_args)) {\n"
