@@ -227,7 +227,13 @@ intrinsic_funcs_args = {
 }
 
 skip_create_func = ["Partition"]
-compile_time_only_fn = ["Radix", "Range", "Epsilon", "Tiny"]
+compile_time_only_fn = [
+    "Epsilon",
+    "Radix",
+    "Range",
+    "Rank",
+    "Tiny",
+]
 
 type_to_asr_type_check = {
     "any": "!ASR::is_a<ASR::TypeParameter_t>",
