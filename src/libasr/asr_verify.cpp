@@ -653,6 +653,11 @@ public:
                      (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(x.m_symbolic_value)),
                     "Initialisation of " + std::string(x.m_name) +
                     " must reduce to a compile time constant.");
+
+            if (x.m_storage == ASR::storage_typeType::Parameter) {
+                require(x.m_symbolic_value != nullptr,
+                "Constant variable must have a value assigned");
+            }
         }
 
         if (x.m_symbolic_value)
