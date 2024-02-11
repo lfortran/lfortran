@@ -32,6 +32,12 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         },
     ],
+    "Modulo": [
+        {
+            "args": [("int", "int"), ("real", "real")],
+            "ret_type_arg_idx": 0
+        },
+    ],
     "Trailz": [
         {
             "args": [("int",)],

@@ -50,6 +50,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     FMA,
     FlipSign,
     Mod,
+    Modulo,
     Trailz,
     Shiftr,
     Rshift,
@@ -2297,6 +2298,7 @@ namespace Mod {
 } // namespace Mod
 
 namespace Maskl {
+
     static ASR::expr_t* eval_Maskl(Allocator& al, const Location& loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         int32_t kind = ASRUtils::extract_kind_from_ttype_t(t1);
@@ -2335,9 +2337,87 @@ namespace Maskl {
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
-}  // namespace Maskl
+} // namespace Maskl
+
+namespace Modulo {
+
+    static ASR::expr_t *eval_Modulo(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        bool is_real1 = is_real(*ASRUtils::expr_type(args[0]));
+        bool is_real2 = is_real(*ASRUtils::expr_type(args[1]));
+        bool is_int1 = is_integer(*ASRUtils::expr_type(args[0]));
+        bool is_int2 = is_integer(*ASRUtils::expr_type(args[1]));
+
+        if (is_int1 && is_int2) {
+            int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+            int64_t b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+            if ( a*b > 0 ) {
+                return make_ConstantWithType(make_IntegerConstant_t, a % b, t1, loc);
+            } else {
+                return make_ConstantWithType(make_IntegerConstant_t, a % b + b, t1, loc);
+            }
+        } else if (is_real1 && is_real2) {
+            double a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+            if ( a*b > 0 ) {
+                return make_ConstantWithType(make_RealConstant_t, std::fmod(a, b), t1, loc);
+            } else {
+                return make_ConstantWithType(make_RealConstant_t, std::fmod(a, b) + b, t1, loc);
+            }
+        }
+        return nullptr;
+    }
+
+    static inline ASR::expr_t* instantiate_Modulo(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("");
+        fill_func_arg("a", arg_types[0]);
+        fill_func_arg("p", arg_types[1]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        /*
+        function modulo(a, p) result(d)
+            if ( a*p > 0 ) then
+                d = mod(a, p)
+            else 
+                d = mod(a, p) + p
+            end if
+        end function
+        */
+
+        Vec<ASR::ttype_t*> arg_types_mod; arg_types_mod.reserve(al, 2);
+        arg_types_mod.push_back(al, arg_types[0]); arg_types_mod.push_back(al, arg_types[1]);
+
+        Vec<ASR::call_arg_t> new_args_mod; new_args_mod.reserve(al, 2);
+        ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = args[0];
+        ASR::call_arg_t arg2; arg2.loc = loc; arg2.m_value = args[1];
+        new_args_mod.push_back(al, arg1); new_args_mod.push_back(al, arg2);
+
+        ASR::expr_t* func_call_mod = Mod::instantiate_Mod(al, loc, scope, arg_types_mod, return_type, new_args_mod, 0);
+        ASR::expr_t *cond_int = iGt(i_tMul(args[0], args[1], arg_types[0]), i(0, arg_types[0]));
+        ASR::expr_t *cond_real = fGt(r_tMul(args[0], args[1], arg_types[0]), f(0.0, arg_types[0]));
+        if (is_real(*arg_types[0])) {
+            body.push_back(al, b.If(cond_real
+                , { b.Assignment(result, func_call_mod) }
+                , { b.Assignment(result, r_tAdd(func_call_mod, args[1], arg_types[0])) }
+            ));
+        } else {
+            body.push_back(al, b.If(cond_int
+                , { b.Assignment(result, func_call_mod) }
+                , { b.Assignment(result, i_tAdd(func_call_mod, args[1], arg_types[0])) }
+            ));
+        }
+        
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+}  // namespace Modulo
 
 namespace Maskr {
+    
     static ASR::expr_t* eval_Maskr(Allocator& al, const Location& loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         int32_t kind = ASRUtils::extract_kind_from_ttype_t(t1);
@@ -2373,7 +2453,9 @@ namespace Maskr {
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
+
 }  // namespace Maskr
+
 
 namespace Trailz {
 

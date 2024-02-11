@@ -174,6 +174,8 @@ class ASRBuilder {
             ASR::binopType::Add, right, real64, nullptr))
     #define i_tAdd(left, right, t) EXPR(ASR::make_IntegerBinOp_t(al, loc, left, \
             ASR::binopType::Add, right, t, nullptr))
+    #define r_tAdd(left, right, t) EXPR(ASR::make_RealBinOp_t(al, loc, left, \
+            ASR::binopType::Add, right, t, nullptr))
 
     #define iSub(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
             ASR::binopType::Sub, right, ASRUtils::int32, nullptr))
@@ -225,8 +227,8 @@ class ASRBuilder {
             ASR::binopType::Mul, right, real64, nullptr))
     #define i_tMul(left, right, t) EXPR(ASR::make_IntegerBinOp_t(al, loc, left, \
             ASR::binopType::Mul, right, t, nullptr))
-    #define r_tMul(left, right, t) EXPR(ASR::make_RealBinOp_t(al, loc, left,    \
-        ASR::binopType::Mul, right, t, nullptr))
+    #define r_tMul(left, right, t) EXPR(ASR::make_RealBinOp_t(al, loc, left, \
+            ASR::binopType::Mul, right, t, nullptr))
 
     #define iPow(left, right, t) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,   \
             ASR::binopType::Pow, right, t, nullptr))

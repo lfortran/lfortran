@@ -50,6 +50,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(FlipSign)
         INTRINSIC_NAME_CASE(FloorDiv)
         INTRINSIC_NAME_CASE(Mod)
+        INTRINSIC_NAME_CASE(Modulo)
         INTRINSIC_NAME_CASE(Trailz)
         INTRINSIC_NAME_CASE(Shiftr)
         INTRINSIC_NAME_CASE(Rshift)
@@ -199,6 +200,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&FloorDiv::instantiate_FloorDiv, &FloorDiv::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Mod),
             {&Mod::instantiate_Mod, &Mod::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Modulo),
+            {&Modulo::instantiate_Modulo, &Modulo::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Trailz),
             {&Trailz::instantiate_Trailz, &Trailz::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Shiftr),
@@ -434,6 +437,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "floordiv"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Mod),
             "mod"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Modulo),
+            "modulo"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Trailz),
             "trailz"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Shiftr),
@@ -639,6 +644,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"fma", {&FMA::create_FMA, &FMA::eval_FMA}},
                 {"floordiv", {&FloorDiv::create_FloorDiv, &FloorDiv::eval_FloorDiv}},
                 {"mod", {&Mod::create_Mod, &Mod::eval_Mod}},
+                {"modulo", {&Modulo::create_Modulo, &Modulo::eval_Modulo}},
                 {"trailz", {&Trailz::create_Trailz, &Trailz::eval_Trailz}},
                 {"shiftr", {&Shiftr::create_Shiftr, &Shiftr::eval_Shiftr}},
                 {"rshift", {&Rshift::create_Rshift, &Rshift::eval_Rshift}},

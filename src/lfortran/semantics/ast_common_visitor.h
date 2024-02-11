@@ -719,6 +719,7 @@ public:
         {"atan2", {IntrinsicSignature({"y", "x"}, 2, 2)}},
         {"shape", {IntrinsicSignature({"source", "kind"}, 1, 2)}},
         {"mod", {IntrinsicSignature({"a", "p"}, 2, 2)}},
+        {"modulo", {IntrinsicSignature({"a", "p"}, 2, 2)}},
         {"repeat", {IntrinsicSignature({"string", "ncopies"}, 2, 2)}},
         {"adjustl", {IntrinsicSignature({"string"}, 1, 1)}},
         {"hypot", {IntrinsicSignature({"x", "y"}, 2, 2)}},
