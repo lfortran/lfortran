@@ -8,5 +8,7 @@ Block.md
 ExternalSymbol.md
 Variable.md
 program.md
+Requirement.md
+Template.md
 symbol.md
 ```
