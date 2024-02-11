@@ -1668,7 +1668,7 @@ class PickleVisitorVisitor(ASDLVisitor):
                     self.emit(    's.append("()");', 3)
                     self.emit("}", 2)
                 else:
-                    if field.name == "intrinsic_id":
+                    if field.name == "intrinsic_id" or field.name == "inquiry_id":
                         self.emit('s.append(self().convert_intrinsic_id(x.m_%s));' % field.name, 2)
                     elif field.name == "impure_intrinsic_id":
                         self.emit('s.append(self().convert_impure_intrinsic_id(x.m_%s));' % field.name, 2)
