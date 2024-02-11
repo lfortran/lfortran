@@ -299,26 +299,6 @@
                                     Required
                                     .false.
                                 ),
-                            modulo:
-                                (ExternalSymbol
-                                    2
-                                    modulo
-                                    4 modulo
-                                    lfortran_intrinsic_math2
-                                    []
-                                    modulo
-                                    Private
-                                ),
-                            modulo@imodulo:
-                                (ExternalSymbol
-                                    2
-                                    modulo@imodulo
-                                    4 imodulo
-                                    lfortran_intrinsic_math2
-                                    []
-                                    imodulo
-                                    Private
-                                ),
                             number:
                                 (Variable
                                     2
@@ -367,18 +347,31 @@
                         )
                         ()
                     )
-                    (Assignment
-                        (Var 2 x)
-                        (FunctionCall
-                            1 _lcompilers_optimization_flipsign_f32
-                            1 _lcompilers_optimization_flipsign_f32
-                            [((Var 2 number))
-                            ((Var 2 x))]
-                            (Real 4)
-                            ()
+                    (If
+                        (IntegerCompare
+                            (IntrinsicElementalFunction
+                                Modulo
+                                [(Var 2 number)
+                                (IntegerConstant 2 (Integer 4))]
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            Eq
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
                             ()
                         )
-                        ()
+                        [(Assignment
+                            (Var 2 x)
+                            (RealUnaryMinus
+                                (Var 2 x)
+                                (Real 4)
+                                ()
+                            )
+                            ()
+                        )]
+                        []
                     )
                     (If
                         (RealCompare
@@ -428,18 +421,31 @@
                         )
                         ()
                     )
-                    (Assignment
-                        (Var 2 x)
-                        (FunctionCall
-                            1 _lcompilers_optimization_flipsign_f321
-                            1 _lcompilers_optimization_flipsign_f321
-                            [((Var 2 number))
-                            ((Var 2 x))]
-                            (Real 4)
-                            ()
+                    (If
+                        (IntegerCompare
+                            (IntrinsicElementalFunction
+                                Modulo
+                                [(Var 2 number)
+                                (IntegerConstant 2 (Integer 4))]
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            Eq
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
                             ()
                         )
-                        ()
+                        [(Assignment
+                            (Var 2 x)
+                            (RealUnaryMinus
+                                (Var 2 x)
+                                (Real 4)
+                                ()
+                            )
+                            ()
+                        )]
+                        []
                     )
                     (If
                         (RealCompare
@@ -469,13 +475,7 @@
                         )]
                         []
                     )]
-                ),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math2:
-                (IntrinsicModule lfortran_intrinsic_math2)
+                )
         })
     []
 )
