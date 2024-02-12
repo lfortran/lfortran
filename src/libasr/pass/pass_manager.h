@@ -203,6 +203,7 @@ namespace LCompilers {
             _passes = {
                 "nested_vars",
                 "global_stmts",
+                "transform_optional_argument_functions",
                 "init_expr",
                 "implied_do_loops",
                 "class_constructor",
@@ -225,7 +226,6 @@ namespace LCompilers {
                 "select_case",
                 "inline_function_calls",
                 "unused_functions",
-                "transform_optional_argument_functions",
                 "unique_symbols",
                 "insert_deallocate",
             };
@@ -233,6 +233,7 @@ namespace LCompilers {
             _with_optimization_passes = {
                 "nested_vars",
                 "global_stmts",
+                "transform_optional_argument_functions",
                 "init_expr",
                 "implied_do_loops",
                 "class_constructor",
@@ -260,7 +261,6 @@ namespace LCompilers {
                 "sign_from_value",
                 "div_to_mul",
                 "fma",
-                "transform_optional_argument_functions",
                 "inline_function_calls",
                 "unique_symbols",
                 "insert_deallocate",
