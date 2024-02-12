@@ -13,10 +13,9 @@
                                     i32
                                     []
                                     Local
-                                    (IntrinsicElementalFunction
+                                    (TypeInquiry
                                         Huge
-                                        [(IntegerConstant 0 (Integer 4))]
-                                        0
+                                        (IntegerConstant 0 (Integer 4))
                                         (Integer 4)
                                         (IntegerConstant 2147483647 (Integer 4))
                                     )
@@ -35,10 +34,9 @@
                                     i64
                                     []
                                     Local
-                                    (IntrinsicElementalFunction
+                                    (TypeInquiry
                                         Huge
-                                        [(IntegerConstant 0 (Integer 8))]
-                                        0
+                                        (IntegerConstant 0 (Integer 8))
                                         (Integer 8)
                                         (IntegerConstant 9223372036854775807 (Integer 8))
                                     )
@@ -57,13 +55,12 @@
                                     y
                                     []
                                     Local
-                                    (IntrinsicElementalFunction
+                                    (TypeInquiry
                                         Huge
-                                        [(RealConstant
+                                        (RealConstant
                                             0.000000
                                             (Real 4)
-                                        )]
-                                        0
+                                        )
                                         (Real 4)
                                         (RealConstant
                                             340282346638528859811704183484516925440.000000
@@ -88,13 +85,12 @@
                                     z
                                     []
                                     Local
-                                    (IntrinsicElementalFunction
+                                    (TypeInquiry
                                         Huge
-                                        [(RealConstant
+                                        (RealConstant
                                             0.000000
                                             (Real 8)
-                                        )]
-                                        0
+                                        )
                                         (Real 8)
                                         (RealConstant
                                             179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368.000000
@@ -125,40 +121,36 @@
                         ()
                     )
                     (Print
-                        [(IntrinsicElementalFunction
+                        [(TypeInquiry
                             Huge
-                            [(IntegerConstant 0 (Integer 4))]
-                            0
+                            (IntegerConstant 0 (Integer 4))
                             (Integer 4)
                             (IntegerConstant 2147483647 (Integer 4))
                         )
-                        (IntrinsicElementalFunction
+                        (TypeInquiry
                             Huge
-                            [(IntegerConstant 0 (Integer 8))]
-                            0
+                            (IntegerConstant 0 (Integer 8))
                             (Integer 8)
                             (IntegerConstant 9223372036854775807 (Integer 8))
                         )
-                        (IntrinsicElementalFunction
+                        (TypeInquiry
                             Huge
-                            [(RealConstant
+                            (RealConstant
                                 0.000000
                                 (Real 4)
-                            )]
-                            0
+                            )
                             (Real 4)
                             (RealConstant
                                 340282346638528859811704183484516925440.000000
                                 (Real 4)
                             )
                         )
-                        (IntrinsicElementalFunction
+                        (TypeInquiry
                             Huge
-                            [(RealConstant
+                            (RealConstant
                                 0.000000
                                 (Real 8)
-                            )]
-                            0
+                            )
                             (Real 8)
                             (RealConstant
                                 179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368.000000
