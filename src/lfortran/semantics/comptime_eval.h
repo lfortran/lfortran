@@ -45,7 +45,6 @@ struct IntrinsicProceduresAsASRNodes {
 struct IntrinsicProcedures {
     const std::string m_kind = "lfortran_intrinsic_kind";
     const std::string m_builtin = "lfortran_intrinsic_builtin";
-    const std::string m_trig = "lfortran_intrinsic_trig";
     const std::string m_math = "lfortran_intrinsic_math";
     const std::string m_math2 = "lfortran_intrinsic_math2";
     const std::string m_math3 = "lfortran_intrinsic_math3";
