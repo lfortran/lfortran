@@ -18,9 +18,9 @@ program intrinsics_137
     if (huge(j) /= 9223372036854775807_int64) error stop
   
     print*, huge(r)
-    ! if (abs(huge(r) - 3.40282347e+38_sp) > 1e-5_sp) error stop
+    if ((huge(r) - 3.40282347e+38) / 3.40282347e+38 > 1e-8_sp) error stop
   
     print*, huge(d)
-    if (abs(huge(d) - 1.79769313486231571e+308_dp) > 1e-5_dp) error stop
+    if (abs(huge(d) - 1.79769313486231571e+308_dp) > 1e-8_dp) error stop
 
 end program intrinsics_137
