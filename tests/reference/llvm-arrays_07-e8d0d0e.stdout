@@ -1040,7 +1040,7 @@ loop.end69:                                       ; preds = %loop.head67
   %385 = load %dimension_descriptor*, %dimension_descriptor** %384, align 8
   %386 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %385, i32 0
   %387 = getelementptr %dimension_descriptor, %dimension_descriptor* %386, i32 0, i32 0
-  store i32 1, i32* %387, align 4
+  store i32 2, i32* %387, align 4
   %388 = getelementptr %dimension_descriptor, %dimension_descriptor* %386, i32 0, i32 1
   store i32 1, i32* %388, align 4
   %389 = getelementptr %dimension_descriptor, %dimension_descriptor* %386, i32 0, i32 2
@@ -1132,7 +1132,7 @@ ifcont78:                                         ; preds = %else77, %then76
   %445 = add i32 %444, 1
   %446 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %442, i32 0
   %447 = getelementptr %dimension_descriptor, %dimension_descriptor* %446, i32 0, i32 0
-  store i32 1, i32* %447, align 4
+  store i32 2, i32* %447, align 4
   %448 = getelementptr %dimension_descriptor, %dimension_descriptor* %446, i32 0, i32 1
   store i32 1, i32* %448, align 4
   %449 = getelementptr %dimension_descriptor, %dimension_descriptor* %446, i32 0, i32 2
@@ -1221,7 +1221,7 @@ ifcont86:                                         ; preds = %else85, %then84
   %502 = add i32 %501, 1
   %503 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %499, i32 0
   %504 = getelementptr %dimension_descriptor, %dimension_descriptor* %503, i32 0, i32 0
-  store i32 1, i32* %504, align 4
+  store i32 2, i32* %504, align 4
   %505 = getelementptr %dimension_descriptor, %dimension_descriptor* %503, i32 0, i32 1
   store i32 1, i32* %505, align 4
   %506 = getelementptr %dimension_descriptor, %dimension_descriptor* %503, i32 0, i32 2
@@ -1310,7 +1310,7 @@ ifcont94:                                         ; preds = %else93, %then92
   %559 = add i32 %558, 1
   %560 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %556, i32 0
   %561 = getelementptr %dimension_descriptor, %dimension_descriptor* %560, i32 0, i32 0
-  store i32 1, i32* %561, align 4
+  store i32 2, i32* %561, align 4
   %562 = getelementptr %dimension_descriptor, %dimension_descriptor* %560, i32 0, i32 1
   store i32 1, i32* %562, align 4
   %563 = getelementptr %dimension_descriptor, %dimension_descriptor* %560, i32 0, i32 2
@@ -1413,7 +1413,7 @@ ifcont106:                                        ; preds = %else105, %then104
   %620 = add i32 %619, 1
   %621 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %617, i32 0
   %622 = getelementptr %dimension_descriptor, %dimension_descriptor* %621, i32 0, i32 0
-  store i32 1, i32* %622, align 4
+  store i32 2, i32* %622, align 4
   %623 = getelementptr %dimension_descriptor, %dimension_descriptor* %621, i32 0, i32 1
   store i32 1, i32* %623, align 4
   %624 = getelementptr %dimension_descriptor, %dimension_descriptor* %621, i32 0, i32 2
@@ -1516,7 +1516,7 @@ ifcont118:                                        ; preds = %else117, %then116
   %681 = add i32 %680, 1
   %682 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %678, i32 0
   %683 = getelementptr %dimension_descriptor, %dimension_descriptor* %682, i32 0, i32 0
-  store i32 1, i32* %683, align 4
+  store i32 2, i32* %683, align 4
   %684 = getelementptr %dimension_descriptor, %dimension_descriptor* %682, i32 0, i32 1
   store i32 1, i32* %684, align 4
   %685 = getelementptr %dimension_descriptor, %dimension_descriptor* %682, i32 0, i32 2
@@ -2355,7 +2355,7 @@ loop.end230:                                      ; preds = %loop.head225
   %1118 = load %dimension_descriptor*, %dimension_descriptor** %1117, align 8
   %1119 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %1118, i32 0
   %1120 = getelementptr %dimension_descriptor, %dimension_descriptor* %1119, i32 0, i32 0
-  store i32 1, i32* %1120, align 4
+  store i32 2, i32* %1120, align 4
   %1121 = getelementptr %dimension_descriptor, %dimension_descriptor* %1119, i32 0, i32 1
   store i32 1, i32* %1121, align 4
   %1122 = getelementptr %dimension_descriptor, %dimension_descriptor* %1119, i32 0, i32 2
@@ -2505,7 +2505,7 @@ ifcont244:                                        ; preds = %else243, %then242, 
   %1214 = add i32 %1213, 1
   %1215 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %1211, i32 0
   %1216 = getelementptr %dimension_descriptor, %dimension_descriptor* %1215, i32 0, i32 0
-  store i32 1, i32* %1216, align 4
+  store i32 2, i32* %1216, align 4
   %1217 = getelementptr %dimension_descriptor, %dimension_descriptor* %1215, i32 0, i32 1
   store i32 1, i32* %1217, align 4
   %1218 = getelementptr %dimension_descriptor, %dimension_descriptor* %1215, i32 0, i32 2
@@ -2601,7 +2601,7 @@ ifcont254:                                        ; preds = %else253, %then252, 
   %1271 = add i32 %1270, 1
   %1272 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %1268, i32 0
   %1273 = getelementptr %dimension_descriptor, %dimension_descriptor* %1272, i32 0, i32 0
-  store i32 3, i32* %1273, align 4
+  store i32 6, i32* %1273, align 4
   %1274 = getelementptr %dimension_descriptor, %dimension_descriptor* %1272, i32 0, i32 1
   store i32 1, i32* %1274, align 4
   %1275 = getelementptr %dimension_descriptor, %dimension_descriptor* %1272, i32 0, i32 2
@@ -2718,7 +2718,7 @@ ifcont270:                                        ; preds = %else269, %then268, 
   %1332 = add i32 %1331, 1
   %1333 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %1329, i32 0
   %1334 = getelementptr %dimension_descriptor, %dimension_descriptor* %1333, i32 0, i32 0
-  store i32 1, i32* %1334, align 4
+  store i32 2, i32* %1334, align 4
   %1335 = getelementptr %dimension_descriptor, %dimension_descriptor* %1333, i32 0, i32 1
   store i32 1, i32* %1335, align 4
   %1336 = getelementptr %dimension_descriptor, %dimension_descriptor* %1333, i32 0, i32 2
@@ -2728,7 +2728,7 @@ ifcont270:                                        ; preds = %else269, %then268, 
   %1339 = add i32 %1338, 1
   %1340 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %1329, i32 1
   %1341 = getelementptr %dimension_descriptor, %dimension_descriptor* %1340, i32 0, i32 0
-  store i32 3, i32* %1341, align 4
+  store i32 6, i32* %1341, align 4
   %1342 = getelementptr %dimension_descriptor, %dimension_descriptor* %1340, i32 0, i32 1
   store i32 1, i32* %1342, align 4
   %1343 = getelementptr %dimension_descriptor, %dimension_descriptor* %1340, i32 0, i32 2
@@ -2927,7 +2927,7 @@ ifcont301:                                        ; preds = %else300, %then299, 
   %1436 = add i32 %1435, 1
   %1437 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %1433, i32 0
   %1438 = getelementptr %dimension_descriptor, %dimension_descriptor* %1437, i32 0, i32 0
-  store i32 1, i32* %1438, align 4
+  store i32 2, i32* %1438, align 4
   %1439 = getelementptr %dimension_descriptor, %dimension_descriptor* %1437, i32 0, i32 1
   store i32 1, i32* %1439, align 4
   %1440 = getelementptr %dimension_descriptor, %dimension_descriptor* %1437, i32 0, i32 2
@@ -2937,7 +2937,7 @@ ifcont301:                                        ; preds = %else300, %then299, 
   %1443 = add i32 %1442, 1
   %1444 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %1433, i32 1
   %1445 = getelementptr %dimension_descriptor, %dimension_descriptor* %1444, i32 0, i32 0
-  store i32 3, i32* %1445, align 4
+  store i32 12, i32* %1445, align 4
   %1446 = getelementptr %dimension_descriptor, %dimension_descriptor* %1444, i32 0, i32 1
   store i32 1, i32* %1446, align 4
   %1447 = getelementptr %dimension_descriptor, %dimension_descriptor* %1444, i32 0, i32 2
@@ -3098,7 +3098,7 @@ ifcont320:                                        ; preds = %else319, %then318, 
   %1536 = add i32 %1535, 1
   %1537 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %1533, i32 0
   %1538 = getelementptr %dimension_descriptor, %dimension_descriptor* %1537, i32 0, i32 0
-  store i32 1, i32* %1538, align 4
+  store i32 2, i32* %1538, align 4
   %1539 = getelementptr %dimension_descriptor, %dimension_descriptor* %1537, i32 0, i32 1
   store i32 1, i32* %1539, align 4
   %1540 = getelementptr %dimension_descriptor, %dimension_descriptor* %1537, i32 0, i32 2
