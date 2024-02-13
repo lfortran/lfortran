@@ -37,6 +37,7 @@ public:
     // in the Fortran 2018 standard
     int last_expr_precedence;
     std::string format_string;
+    std::string tu_functions;
 
     // Used for importing struct type inside interface
     bool is_interface = false;
@@ -134,6 +135,15 @@ public:
         }
         if (apply_indent) {
             dec_indent();
+        }
+    }
+
+    void handle_line_truncation(std::string &r, int i_level, int line_length=80) {
+        int line_segments_count = r.size()/line_length;
+        for (int i = 1; i <= line_segments_count; i ++) {
+            int index = r.find_last_of(',', line_length*i);
+            r.insert(index + 2, "&\n" + indent +
+                std::string(i_level*indent_spaces, ' '));
         }
     }
 
@@ -251,21 +261,25 @@ public:
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Module_t>(*item.second)) {
                 visit_symbol(*item.second);
-            r += s;
+                r += s;
+                r += "\n";
             }
         }
 
+        tu_functions = "";
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
                 visit_symbol(*item.second);
-            r += s;
+                tu_functions += s;
+                tu_functions += "\n";
             }
         }
 
+        // Main program
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Program_t>(*item.second)) {
                 visit_symbol(*item.second);
-            r += s;
+                r += s;
             }
         }
         s = r;
@@ -328,7 +342,16 @@ public:
                 }
                 visit_symbol(*item.second);
                 r += s;
+                r += "\n";
             }
+        }
+        if (tu_functions.size() > 0) {
+            if (prepend_contains_keyword) {
+                r += "\n";
+                r += "contains";
+                r += "\n\n";
+            }
+            r += tu_functions;
         }
         r += "end program";
         r += " ";
@@ -460,6 +483,7 @@ public:
             if (i < x.n_args-1) r += ", ";
         }
         r += ")";
+        handle_line_truncation(r, 2);
         if (type->m_abi == ASR::abiType::BindC) {
             r += " bind(c";
             if (type->m_bindc_name) {
@@ -690,6 +714,7 @@ public:
                 }
                 r += ")";
             }
+            if (i < x.n_args-1) r += ", ";
         }
         r += ")\n";
         s = r;
@@ -737,7 +762,18 @@ public:
         s += "\n";
     }
 
-    // void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {}
+    void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {
+        std::string r = indent;
+        r += "deallocate(";
+        for (size_t i = 0; i < x.n_vars; i ++) {
+            visit_expr(*x.m_vars[i]);
+            r += s;
+            if (i < x.n_vars-1) r += ", ";
+        }
+        r += ")";
+        r += "\n";
+        s = r;
+    }
 
     void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t &x) {
         std::string r = indent;
@@ -1059,6 +1095,7 @@ public:
             if (i < x.n_args-1) r += ", ";
         }
         r += ")\n";
+        handle_line_truncation(r, 1);
         s = r;
     }
 
@@ -1123,7 +1160,18 @@ public:
     // void visit_Expr(const ASR::Expr_t &x) {}
 
     /********************************** Expr **********************************/
-    // void visit_IfExp(const ASR::IfExp_t &x) {}
+    void visit_IfExp(const ASR::IfExp_t &x) {
+        std::string r = "";
+        visit_expr(*x.m_test);
+        r += s;
+        r += " ? ";
+        visit_expr(*x.m_body);
+        r += s;
+        r += " : ";
+        visit_expr(*x.m_orelse);
+        r += s;
+        s = r;
+    }
 
     void visit_ComplexConstructor(const ASR::ComplexConstructor_t &x) {
         visit_expr(*x.m_re);
@@ -1166,15 +1214,20 @@ public:
             SET_INTRINSIC_NAME(Max, "max");
             SET_INTRINSIC_NAME(Min, "min");
             SET_INTRINSIC_NAME(Sqrt, "sqrt");
+            SET_INTRINSIC_NAME(Mod, "mod");
             default : {
                 throw LCompilersException("IntrinsicElementalFunction: `"
                     + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)
                     + "` is not implemented");
             }
         }
-        LCOMPILERS_ASSERT(x.n_args == 1);
-        visit_expr(*x.m_args[0]);
-        out += "(" + s + ")";
+        out += "(";
+        for (size_t i = 0; i < x.n_args; i ++) {
+            visit_expr(*x.m_args[i]);
+            out += s;
+            if (i < x.n_args-1) out += ", ";
+        }
+        out += ")";
         s = out;
     }
 
@@ -1190,8 +1243,10 @@ public:
             SET_ARR_INTRINSIC_NAME(Any, "any");
             SET_ARR_INTRINSIC_NAME(Sum, "sum");
             SET_ARR_INTRINSIC_NAME(Shape, "shape");
+            SET_ARR_INTRINSIC_NAME(MaxVal, "maxval");
+            SET_ARR_INTRINSIC_NAME(MinVal, "minval");
             default : {
-                throw LCompilersException("IntrinsicFunction: `"
+                throw LCompilersException("IntrinsicArrayFunction: `"
                     + ASRUtils::get_array_intrinsic_name(x.m_arr_intrinsic_id)
                     + "` is not implemented");
             }
@@ -1223,6 +1278,12 @@ public:
 
     void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
         s = std::to_string(x.m_n);
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        if (kind != 4) {
+            // We skip this for default kind
+            s += "_";
+            s += std::to_string(kind);
+        }
         last_expr_precedence = Precedence::Ext;
     }
 
@@ -1554,8 +1615,7 @@ public:
     }
 
     void visit_ArrayReshape(const ASR::ArrayReshape_t &x) {
-        std::string r;
-        r += "reshape(";
+        std::string r = "reshape(";
         visit_expr(*x.m_array);
         r += s;
         r += ", ";
