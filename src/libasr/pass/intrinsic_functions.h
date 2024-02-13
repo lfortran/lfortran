@@ -74,6 +74,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Max,
     Min,
     Radix,
+    Fraction,
     Range,
     Sign,
     SignFromValue,
@@ -2259,6 +2260,43 @@ namespace Exp {
     }
 
 } // namespace Exp
+
+namespace Fraction {
+    static ASR::expr_t *eval_Fraction(Allocator &al, const Location &loc,
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        double value_X = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
+        double result = value_X * std::pow(2, (-1*(std::exp(value_X))));
+        return f(result, arg_type);
+    }
+
+    static inline ASR::expr_t* instantiate_Fraction(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("");
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        /*
+        * r = fraction(x, y)
+        * r = x * 2**(-exp(x))
+        */
+
+       //TODO: Radix for most of the device is 2, so we can use the i2r32(2) instead of args[1]. Fix (find a way to get the radix of the device and use it here)
+        ASR::ttype_t* return_type_real = expr_type(args[0]);
+
+        Vec<ASR::ttype_t*> arg_types_mod; arg_types_mod.reserve(al, 1);
+        arg_types_mod.push_back(al, arg_types[0]);
+
+        Vec<ASR::call_arg_t> new_args_mod; new_args_mod.reserve(al, 1);
+        ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = args[0];
+        new_args_mod.push_back(al, arg1);
+
+        ASR::expr_t* func_call_exp = Exp::instantiate_Exp(al, loc, scope, arg_types_mod, return_type_real, new_args_mod, 0);
+        body.push_back(al, b.Assignment(result, r_tMul(args[0], rPow(i(2, arg_types[0]), func_call_exp, arg_types[0]), arg_types[0])));        
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+}  // namespace Fraction
 
 namespace ListIndex {
 
