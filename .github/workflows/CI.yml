@@ -711,14 +711,10 @@ jobs:
             lfortran subprojects/test-drive/src/testdrive.F90 --show-llvm
 
             git checkout lf19
-            git checkout a1cffc8a24ca5bb6fb648cb5602bced349e26aa1
+            git checkout 3e70b69d1d20a591b386595219a2a544691507f6
             micromamba install -c conda-forge fypp
-            ./build_test_array_lf.sh
-            ./build_test_array_gf.sh
-
-            # Run tests (specialfunctions_gamma, ascii, version, optval, error)
-            micromamba activate lf
-            ./build.sh
+            ./build_test_lf.sh
+            ./build_test_gf.sh
 
   test_llvm:
     name: Test LLVM ${{ matrix.llvm-version }}
