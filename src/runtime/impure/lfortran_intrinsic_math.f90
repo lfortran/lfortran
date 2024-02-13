@@ -101,21 +101,49 @@ end subroutine
 function dotproductr32r32(x, y) result(r)
 real(sp) :: x(:), y(:)
 real(sp) :: r
+integer :: i
+
+r = 0.0_sp
+do i = lbound(x, 1), ubound(x, 1)
+    r = r + x(i) * y(i)
+end do
+
 end function
 
 function dotproductr64r64(x, y) result(r)
 real(dp) :: x(:), y(:)
 real(dp) :: r
+integer :: i
+
+r = 0.0_dp
+do i = lbound(x, 1), ubound(x, 1)
+    r = r + x(i) * y(i)
+end do
+
 end function
 
 function dotproductz32z32(x, y) result(r)
 complex(sp) :: x(:), y(:)
 complex(sp) :: r
+integer :: i
+
+r = cmplx(0.0_sp, 0.0_sp)
+do i = lbound(x, 1), ubound(x, 1)
+    r = r + x(i) * y(i)
+end do
+
 end function
 
 function dotproductz64z64(x, y) result(r)
 complex(dp) :: x(:), y(:)
 complex(dp) :: r
+integer :: i
+
+r = cmplx(0.0_dp, 0.0_dp)
+do i = lbound(x, 1), ubound(x, 1)
+    r = r + x(i) * y(i)
+end do
+
 end function
 
 
