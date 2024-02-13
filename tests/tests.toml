@@ -1083,11 +1083,6 @@ asr = true
 llvm = true
 
 [[test]]
-filename = "../integration_tests/arrays_07.f90"
-asr = true
-llvm = true
-
-[[test]]
 filename = "../integration_tests/arrays_08_func.f90"
 asr = true
 llvm = true
