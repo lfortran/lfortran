@@ -815,9 +815,8 @@ namespace Scale {
         * r = scale(x, y)
         * r = x * 2**y
         */
-        body.push_back(al, b.Assignment(result, r_tMul(args[0], iPow(i(2, arg_types[1]), args[1], arg_types[0]), arg_types[0])));
-        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        body.push_back(al, b.Assignment(result, r_tMul(args[0], i2r32(iPow(i(2, arg_types[1]), args[1], arg_types[1])), arg_types[0])));        
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
