@@ -2371,7 +2371,7 @@ namespace Modulo {
     static inline ASR::expr_t* instantiate_Modulo(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("");
+        declare_basic_variables("_lcompilers_optimization_modulo_" + type_to_str_python(arg_types[0]));
         fill_func_arg("a", arg_types[0]);
         fill_func_arg("p", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
