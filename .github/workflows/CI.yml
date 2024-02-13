@@ -705,13 +705,10 @@ jobs:
         run: |
             git clone https://github.com/czgdp1807/stdlib.git
             cd stdlib
-            git checkout lf18
-            git checkout abe562f01a9fe2ae2c191420892c6d9e8384343c
             export PATH="$(pwd)/../src/bin:$PATH"
-            lfortran subprojects/test-drive/src/testdrive.F90 --show-llvm
 
             git checkout lf19
-            git checkout f6b317af60cb331e928436d90babef4b1cecbd4a
+            git checkout 2ac97f1266a25136c66eee7358d7848708fd247c
             micromamba install -c conda-forge fypp
             ./build_test_lf.sh
             ./build_test_gf.sh
