@@ -338,4 +338,4 @@ semigroup_m:
 
 * [Requirement](Requirement.md)
 
-* [Type Parameter](../type_nodes/TypeParameter.md)
+* [Generics](../../generics.md)
