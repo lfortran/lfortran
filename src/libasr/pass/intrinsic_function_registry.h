@@ -235,7 +235,7 @@ namespace IntrinsicElementalFunctionRegistry {
         {static_cast<int64_t>(IntrinsicElementalFunctions::Radix),
             {nullptr, &Radix::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Scale),
-            {nullptr, &Scale::verify_args}},
+            {&Scale::instantiate_Scale, &Scale::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Range),
             {nullptr, &Range::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Aint),
