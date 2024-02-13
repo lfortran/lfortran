@@ -723,7 +723,7 @@ public:
         {"ishft", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
         {"floor", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
         {"ceiling", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
-        {"scale", {IntrinsicSignature({"a", "kind"}, 2, 2)}},
+        {"scale", {IntrinsicSignature({"X", "I"}, 2, 2)}},
     };
 
     std::map<std::string, std::string> intrinsic_mapping = {
