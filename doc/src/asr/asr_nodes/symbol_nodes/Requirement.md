@@ -202,4 +202,4 @@ semigroup_m:
 
 * [Template](Template.md)
 
-* [Type Parameter](../type_nodes/TypeParameter.md)
+* [Generics](../../generics.md)
