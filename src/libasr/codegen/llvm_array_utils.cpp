@@ -456,7 +456,7 @@ namespace LCompilers {
                     llvm::Value* target_dim_des = llvm_utils->create_ptr_gep(target_dim_des_array, j);
                     llvm::Value* value_stride = get_stride(value_dim_des, true);
                     llvm::Value* target_stride = get_stride(target_dim_des, false);
-                    builder->CreateStore(value_stride, target_stride);
+                    builder->CreateStore(builder->CreateMul(value_stride, ds[i]), target_stride);
                     // Diverges from LPython, 0 should be stored there.
                     builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1)),
                                          get_lower_bound(target_dim_des, false));
@@ -509,7 +509,7 @@ namespace LCompilers {
                                                                         llvm::APInt(32, 1))
                                               );
                     llvm::Value* target_dim_des = llvm_utils->create_ptr_gep(target_dim_des_array, j);
-                    builder->CreateStore(stride,
+                    builder->CreateStore(builder->CreateMul(stride, ds[i]),
                                          get_stride(target_dim_des, false));
                     builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1)),
                                          get_lower_bound(target_dim_des, false));
