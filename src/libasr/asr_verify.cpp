@@ -913,6 +913,12 @@ public:
         verify_args(x);
     }
 
+    void visit_AssociateBlockCall(const AssociateBlockCall_t &x) {
+        require(symtab_in_scope(current_symtab, x.m_m),
+            "AssociateBlockCall::m_name '" + std::string(symbol_name(x.m_m)) +
+                "' cannot point outside of its symbol table");
+    }
+
     SymbolTable *get_dt_symtab(ASR::symbol_t *dt) {
         LCOMPILERS_ASSERT(dt)
         SymbolTable *symtab = ASRUtils::symbol_symtab(ASRUtils::symbol_get_past_external(dt));
