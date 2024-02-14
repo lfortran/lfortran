@@ -1014,7 +1014,6 @@ namespace Ishft {
         *   r = x << y
         * }
         */
-        ASR::expr_t *two = i(2, arg_types[0]);
         ASR::expr_t *m_one = i(-1, arg_types[0]);
         body.push_back(al, b.If(iLtE(args[1], i(0, arg_types[0])), {
             b.Assignment(result, i_BitRshift(args[0], iMul(m_one, args[1]), arg_types[0]))
