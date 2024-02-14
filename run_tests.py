@@ -51,6 +51,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     mod_to_asr = is_included("mod_to_asr")
     llvm = is_included("llvm")
     cpp = is_included("cpp")
+    cpp_infer = is_included("cpp_infer")
     c = is_included("c")
     is_cumulative_pass = is_included("cumulative")
     julia = is_included("julia")
@@ -94,6 +95,8 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         extra_args += " --print-leading-space"
     if interactive:
         extra_args += " --interactive-parse"
+    if cpp_infer:
+        extra_args += " --cpp-infer"
 
     if tokens:
         run_test(
