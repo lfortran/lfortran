@@ -970,10 +970,9 @@ namespace Shiftl {
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
         * r = shiftl(x, y)
-        * r = x * 2**y
+        * r = x << y
         */
-        ASR::expr_t *two = i(2, arg_types[0]);
-        body.push_back(al, b.Assignment(result, i_tMul(args[0], iPow(two, args[1], arg_types[0]), arg_types[0])));
+        body.push_back(al, b.Assignment(result, i_BitLshift(args[0], args[1], arg_types[0])));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1010,17 +1009,17 @@ namespace Ishft {
         /*
         * r = ishft(x, y)
         * if ( y <= 0) {
-        *   r = x / 2 ** ( -1 * y )
+        *   r = x >> ( -1 * y)
         * } else {
-        *   r = x * 2 ** y
+        *   r = x << y
         * }
         */
         ASR::expr_t *two = i(2, arg_types[0]);
         ASR::expr_t *m_one = i(-1, arg_types[0]);
         body.push_back(al, b.If(iLtE(args[1], i(0, arg_types[0])), {
-            b.Assignment(result, i_tDiv(args[0], iPow(two, iMul(m_one, args[1]), arg_types[0]), arg_types[0]))
+            b.Assignment(result, i_BitRshift(args[0], iMul(m_one, args[1]), arg_types[0]))
         }, {
-            b.Assignment(result, i_tMul(args[0], iPow(two, args[1], arg_types[0]), arg_types[0]))
+            b.Assignment(result, i_BitLshift(args[0], args[1], arg_types[0]))
         }));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
