@@ -13,7 +13,7 @@ namespace LCompilers::LFortran {
 class ImplicitCastRules {
 private:
   //! Default case when no conversion is needed.
-  static const int default_case = -1;
+  static const int no_cast_required = -1;
   //! Error case when conversion is not possible or is illegal.
   static const int error_case = -2;
   static const int integer_to_real = ASR::cast_kindType::IntegerToReal;
@@ -50,32 +50,32 @@ private:
   static constexpr const int rule_map[num_types][num_types] = {
 
       // Integer
-      {integer_to_integer, integer_to_unsigned_integer, integer_to_real, integer_to_complex, error_case,
-       integer_to_logical, error_case},
+      {integer_to_integer, integer_to_unsigned_integer, integer_to_real, integer_to_complex,
+       error_case, integer_to_logical, error_case},
 
       // Unsigned Integer
-      {error_case, error_case, error_case, error_case, error_case,
-       error_case, error_case},
+      {error_case, error_case, error_case, error_case,
+       error_case, error_case, error_case},
 
       // Real
-      {real_to_integer, error_case, real_to_real, real_to_complex, default_case,
-       default_case, default_case},
+      {real_to_integer, error_case, real_to_real, real_to_complex,
+       no_cast_required, no_cast_required, no_cast_required},
 
       // Complex
-      {complex_to_integer, error_case, complex_to_real, complex_to_complex, default_case,
-       default_case, default_case},
+      {complex_to_integer, error_case, complex_to_real, complex_to_complex,
+       no_cast_required, no_cast_required, no_cast_required},
 
       // Character
-      {default_case, default_case, default_case, default_case, default_case, default_case,
-       default_case},
+      {no_cast_required, no_cast_required, no_cast_required, no_cast_required,
+       no_cast_required, no_cast_required, no_cast_required},
 
       // Logical
-      {default_case, default_case, default_case, default_case, default_case, default_case,
-       default_case},
+      {no_cast_required, no_cast_required, no_cast_required, no_cast_required,
+       no_cast_required, no_cast_required, no_cast_required},
 
       // Derived
-      {default_case, default_case, default_case, default_case, default_case, default_case,
-       default_case},
+      {no_cast_required, no_cast_required, no_cast_required, no_cast_required,
+       no_cast_required, no_cast_required, no_cast_required},
   };
 
   /*
@@ -140,7 +140,7 @@ public:
       std::string dest_type_str = type_names[dest_type2->type][0];
       std::string error_msg = "Only " + allowed_types_str + " can be assigned to " + dest_type_str;
       throw SemanticError(error_msg, a_loc);
-    } else if (cast_kind != default_case) {
+    } else if (cast_kind != no_cast_required) {
         ASR::expr_t *value=nullptr;
         if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::RealToInteger) {
             if (ASRUtils::expr_value(*convert_can)) {
@@ -189,14 +189,15 @@ public:
             }
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::RealToComplex) {
             if (ASRUtils::expr_value(*convert_can)) {
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::type_get_past_pointer(dest_type)))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::type_get_past_pointer(dest_type2)))
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::RealConstant_t>(*value))
-                ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(value);
-                double rval = r->m_r;
-                value = (ASR::expr_t *)ASR::make_ComplexConstant_t(al, a_loc,
-                    rval, 0, dest_type2);
+                if( ASR::is_a<ASR::RealConstant_t>(*value) ) {
+                    ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(value);
+                    double rval = r->m_r;
+                    value = (ASR::expr_t *)ASR::make_ComplexConstant_t(al, a_loc,
+                      rval, 0, dest_type2);
+                }
             }
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::ComplexToReal) {
             if (ASRUtils::expr_value(*convert_can)) {
