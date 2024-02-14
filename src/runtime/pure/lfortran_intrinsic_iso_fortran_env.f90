@@ -18,4 +18,6 @@ integer, parameter :: real_kinds(2) = [4, 8]
 integer, parameter :: character_kinds(1) = [1]
 integer, parameter :: logical_kinds(1) = [4]
 
+integer, parameter :: iostat_end = -1
+
 end module
