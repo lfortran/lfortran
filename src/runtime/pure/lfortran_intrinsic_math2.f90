@@ -7,21 +7,12 @@ interface sqrt
     module procedure ssqrt, dsqrt
 end interface
 
-
 interface aimag
     module procedure saimag, daimag
 end interface
 
-interface nint
-    module procedure snint, dnint
-end interface
-
 interface modulo
     module procedure imodulo, smodulo, dmodulo
-end interface
-
-interface mod
-    module procedure i8mod, i16mod, imod, i64mod, smod, dmod
 end interface
 
 interface min
@@ -38,10 +29,6 @@ end interface
 
 interface min0
     module procedure imin, imin8, imin16, imin64, imin_3_args, imin_6args
-end interface
-
-interface huge
-    module procedure i32huge, i64huge, sphuge, dphuge
 end interface
 
 contains
@@ -84,26 +71,6 @@ r = 3
 !error stop "aimag not implemented yet"
 end function
 
-! nint ------------------------------------------------------------------------
-
-elemental integer function snint(x) result(r)
-real(sp), intent(in) :: x
-if (x >= 0) then
-    r = x+0.5_sp
-else
-    r = x-1+0.5_sp
-end if
-end function
-
-elemental integer function dnint(x) result(r)
-real(dp), intent(in) :: x
-if (x >= 0) then
-    r = x+0.5_dp
-else
-    r = x-1+0.5_dp
-end if
-end function
-
 ! modulo -----------------------------------------------------------------------
 
 elemental integer function imodulo(x, y) result(r)
@@ -119,56 +86,6 @@ end function
 elemental real(dp) function dmodulo(x, y) result(r)
 real(dp), intent(in) :: x, y
 r = x-floor(x/y)*y
-end function
-
-! mod --------------------------------------------------------------------------
-
-elemental integer(i16) function i16mod(x, y) result(r)
-integer(i16), intent(in) :: x, y
-r = x-floor(real(x)/y)*y
-if (x < 0 .and. y < 0) return
-if (x < 0) r = r - y
-if (y < 0) r = r - y
-end function
-
-elemental integer(i8) function i8mod(x, y) result(r)
-integer(i8), intent(in) :: x, y
-r = x-floor(real(x)/y)*y
-if (x < 0 .and. y < 0) return
-if (x < 0) r = r - y
-if (y < 0) r = r - y
-end function
-
-elemental integer function imod(x, y) result(r)
-integer, intent(in) :: x, y
-r = x-floor(real(x)/y)*y
-if (x < 0 .and. y < 0) return
-if (x < 0) r = r - y
-if (y < 0) r = r - y
-end function
-
-elemental integer function i64mod(x, y) result(r)
-integer(i64), intent(in) :: x, y
-r = x-floor(real(x)/y)*y
-if (x < 0 .and. y < 0) return
-if (x < 0) r = r - y
-if (y < 0) r = r - y
-end function
-
-elemental real(sp) function smod(x, y) result(r)
-real(sp), intent(in) :: x, y
-r = x-floor(x/y)*y
-if (x < 0 .and. y < 0) return
-if (x < 0) r = r - y
-if (y < 0) r = r - y
-end function
-
-elemental real(dp) function dmod(x, y) result(r)
-real(dp), intent(in) :: x, y
-r = x-floor(x/y)*y
-if (x < 0 .and. y < 0) return
-if (x < 0) r = r - y
-if (y < 0) r = r - y
 end function
 
 ! min --------------------------------------------------------------------------
@@ -349,32 +266,6 @@ elemental real(dp) function dmax_3args(x, y, z) result(r)
 real(dp), intent(in) :: x, y, z
 r = dmax(x, y)
 r = dmax(r, z)
-end function
-
-! huge -------------------------------------------------------------------------
-
-elemental integer(i32) function i32huge(x) result(r)
-integer(i32), intent(in) :: x
-r = 2147483647_i32
-! r = 2**31 - 1
-end function
-
-elemental integer(i64) function i64huge(x) result(r)
-integer(i64), intent(in) :: x
-r = 9223372036854775807_i64
-! r = 2**63 - 1
-end function
-
-elemental real(sp) function sphuge(x) result(r)
-real(sp), intent(in) :: x
-r = 3.40282347e38
-! r = 2**128 * (1 - 2**-24)
-end function
-
-elemental real(dp) function dphuge(x) result(r)
-real(dp), intent(in) :: x
-r = 1.7976931348623157d308
-! r = 2**1024 * (1 - 2**-53)
 end function
 
 end module
