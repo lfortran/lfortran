@@ -85,6 +85,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Floor)
         INTRINSIC_NAME_CASE(Ceiling)
         INTRINSIC_NAME_CASE(Epsilon)
+        INTRINSIC_NAME_CASE(Precision)
         INTRINSIC_NAME_CASE(Tiny)
         INTRINSIC_NAME_CASE(Conjg)
         INTRINSIC_NAME_CASE(Huge)
@@ -260,6 +261,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&SignFromValue::instantiate_SignFromValue, &SignFromValue::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Epsilon),
             {nullptr, &UnaryIntrinsicFunction::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Precision),
+            {nullptr, &Precision::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Tiny),
             {nullptr, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Huge),
@@ -449,6 +452,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "signfromvalue"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Epsilon),
             "epsilon"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Precision),
+            "precision"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Tiny),
             "tiny"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Huge),
@@ -573,6 +578,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"ifix", {&Ifix::create_Ifix, &Ifix::eval_Ifix}},
                 {"idint", {&Idint::create_Idint, &Idint::eval_Idint}},
                 {"epsilon", {&Epsilon::create_Epsilon, &Epsilon::eval_Epsilon}},
+                {"precision", {&Precision::create_Precision, &Precision::eval_Precision}},
                 {"tiny", {&Tiny::create_Tiny, &Tiny::eval_Tiny}},
                 {"conjg", {&Conjg::create_Conjg, &Conjg::eval_Conjg}},
                 {"huge", {&Huge::create_Huge, &Huge::eval_Huge}},
