@@ -87,6 +87,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Epsilon)
         INTRINSIC_NAME_CASE(Tiny)
         INTRINSIC_NAME_CASE(Conjg)
+        INTRINSIC_NAME_CASE(Huge)
         INTRINSIC_NAME_CASE(SymbolicSymbol)
         INTRINSIC_NAME_CASE(SymbolicAdd)
         INTRINSIC_NAME_CASE(SymbolicSub)
@@ -260,6 +261,8 @@ namespace IntrinsicElementalFunctionRegistry {
         {static_cast<int64_t>(IntrinsicElementalFunctions::Epsilon),
             {nullptr, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Tiny),
+            {nullptr, &UnaryIntrinsicFunction::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Huge),
             {nullptr, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicSymbol),
             {nullptr, &SymbolicSymbol::verify_args}},
@@ -448,6 +451,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "epsilon"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Tiny),
             "tiny"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Huge),
+            "huge"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicSymbol),
             "Symbol"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicAdd),
@@ -570,6 +575,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"epsilon", {&Epsilon::create_Epsilon, &Epsilon::eval_Epsilon}},
                 {"tiny", {&Tiny::create_Tiny, &Tiny::eval_Tiny}},
                 {"conjg", {&Conjg::create_Conjg, &Conjg::eval_Conjg}},
+                {"huge", {&Huge::create_Huge, &Huge::eval_Huge}},
                 {"Symbol", {&SymbolicSymbol::create_SymbolicSymbol, &SymbolicSymbol::eval_SymbolicSymbol}},
                 {"SymbolicAdd", {&SymbolicAdd::create_SymbolicAdd, &SymbolicAdd::eval_SymbolicAdd}},
                 {"SymbolicSub", {&SymbolicSub::create_SymbolicSub, &SymbolicSub::eval_SymbolicSub}},

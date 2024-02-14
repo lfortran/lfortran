@@ -230,6 +230,12 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         },
     ],
+    "Huge": [
+        {
+            "args": [("int",), ("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
 }
 
 skip_create_func = ["Partition"]
@@ -239,6 +245,7 @@ compile_time_only_fn = [
     "Range",
     "Rank",
     "Tiny",
+    "Huge",
 ]
 
 type_to_asr_type_check = {

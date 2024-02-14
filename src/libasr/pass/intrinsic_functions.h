@@ -89,6 +89,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Epsilon,
     Tiny,
     Conjg,
+    Huge,
     SymbolicSymbol,
     SymbolicAdd,
     SymbolicSub,
@@ -3044,7 +3045,7 @@ namespace Epsilon {
 namespace Tiny {
 
     static ASR::expr_t *eval_Tiny(Allocator &al, const Location &loc,
-            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& diag) {
         double tiny_value = -1;
         int32_t kind = extract_kind_from_ttype_t(arg_type);
         switch ( kind ) {
@@ -3053,7 +3054,8 @@ namespace Tiny {
             } case 8: {
                 tiny_value = std::numeric_limits<double>::min(); break;
             } default: {
-                break;
+                append_error(diag, "Kind " + std::to_string(kind) + " is not supported yet", loc);
+                    return nullptr;
             }
         }
         return f(tiny_value, arg_type);
@@ -3112,6 +3114,42 @@ namespace Conjg {
     }
 
 } // namespace Conjg
+
+namespace Huge {
+
+    static ASR::expr_t *eval_Huge(Allocator &al, const Location &loc,
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& diag) {
+        int32_t kind = extract_kind_from_ttype_t(arg_type);
+        if (ASR::is_a<ASR::Integer_t>(*arg_type)) {
+            int64_t huge_value = -1;
+            switch ( kind ) {
+                case 4: {
+                    huge_value = std::numeric_limits<int32_t>::max(); break;
+                } case 8: {
+                    huge_value = std::numeric_limits<int64_t>::max(); break;
+                } default: {
+                    append_error(diag, "Kind " + std::to_string(kind) + " is not supported yet", loc);
+                    return nullptr;
+                }
+            }
+            return i(huge_value, arg_type);
+        } else {
+            double huge_value = -1;
+            switch ( kind ) {
+                case 4: {
+                    huge_value = std::numeric_limits<float>::max(); break;
+                } case 8: {
+                    huge_value = std::numeric_limits<double>::max(); break;
+                } default: {
+                    append_error(diag, "Kind " + std::to_string(kind) + " is not supported yet", loc);
+                    return nullptr;
+                }
+            }
+            return f(huge_value, arg_type);
+        }
+    }
+
+}  // namespace Huge
 
 namespace SymbolicSymbol {
 
