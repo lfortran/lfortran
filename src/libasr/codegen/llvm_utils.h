@@ -96,6 +96,25 @@ namespace LCompilers {
         return builder.CreateCall(fn_printf, args);
     }
 
+    static inline llvm::Value* lfortran_str_copy(llvm::Value* dest, llvm::Value *src, bool is_allocatable,
+        llvm::Module &module, llvm::IRBuilder<> &builder, llvm::LLVMContext &context) {
+        std::string runtime_func_name = "_lfortran_strcpy";
+        llvm::Function *fn = module.getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                     llvm::Type::getVoidTy(context), {
+                        llvm::Type::getInt8PtrTy(context)->getPointerTo(),
+                        llvm::Type::getInt8PtrTy(context),
+                        llvm::Type::getInt8Ty(context)
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, module);
+        }
+        llvm::Value* free_string = llvm::ConstantInt::get(
+            llvm::Type::getInt8Ty(context), llvm::APInt(8, is_allocatable));
+        return builder.CreateCall(fn, {dest, src, free_string});
+    }
+
     static inline void print_error(llvm::LLVMContext &context, llvm::Module &module,
         llvm::IRBuilder<> &builder, const std::vector<llvm::Value*> &args)
     {
