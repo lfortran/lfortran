@@ -1706,6 +1706,10 @@ LFORTRAN_API void _lfortran_string_init(int size_plus_one, char *s) {
 
 // bit  ------------------------------------------------------------------------
 
+LFORTRAN_API int16_t _lfortran_iand16(int16_t x, int16_t y) {
+    return x & y;
+}
+
 LFORTRAN_API int32_t _lfortran_iand32(int32_t x, int32_t y) {
     return x & y;
 }
