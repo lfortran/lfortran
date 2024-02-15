@@ -3984,7 +3984,7 @@ public:
     }
 
     ASR::asr_t* create_FunctionFromFunctionTypeVariable(const Location &loc,
-                Vec<ASR::call_arg_t>& args, ASR::symbol_t *v) {
+                Vec<ASR::call_arg_t>& args, ASR::symbol_t *v, bool is_dt_present=false) {
         ASR::FunctionType_t* func = ASR::down_cast<ASR::FunctionType_t>(ASRUtils::symbol_type(v));
         ASR::ttype_t *return_type = func->m_return_var_type;
         if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter()) {
@@ -3992,8 +3992,15 @@ public:
         }
         // TODO: Uncomment later
         // ASRUtils::set_absent_optional_arguments_to_null(args, ASR::down_cast<ASR::Function_t>(v), al);
-        return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
-            args.p, args.size(), return_type, nullptr, nullptr);
+        if( is_dt_present ) {
+            ASR::expr_t* dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
+                al, loc, args.p[0].m_value, v, ASRUtils::symbol_type(v), nullptr));
+            return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
+                args.p + 1, args.size() - 1, return_type, nullptr, dt);
+        } else {
+            return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
+                args.p, args.size(), return_type, nullptr, nullptr);
+        }
     }
 
     // `fn` is a local Function or GenericProcedure (that resolves to a
@@ -4018,12 +4025,12 @@ public:
     }
 
     ASR::asr_t* create_FunctionCallWithASTNode(const AST::FuncCallOrArray_t& x,
-                ASR::symbol_t *v, Vec<ASR::call_arg_t>& args) {
+                ASR::symbol_t *v, Vec<ASR::call_arg_t>& args, bool is_dt_present=false) {
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
         if (ASR::is_a<ASR::Function_t>(*f2)) {
             return create_Function(x.base.base.loc, args, v);
         } else if (ASR::is_a<ASR::Variable_t>(*f2)) {
-            return create_FunctionFromFunctionTypeVariable(x.base.base.loc, args, v);
+            return create_FunctionFromFunctionTypeVariable(x.base.base.loc, args, v, is_dt_present);
         } else {
             LCOMPILERS_ASSERT(ASR::is_a<ASR::GenericProcedure_t>(*f2))
             return create_GenericProcedureWithASTNode(x, args, v);
@@ -5610,7 +5617,7 @@ public:
                 }
             }
             if (x.n_member >= 1) {
-                tmp = create_FunctionCallWithASTNode(x, v, args_with_mdt);
+                tmp = create_FunctionCallWithASTNode(x, v, args_with_mdt, true);
             } else {
                 tmp = create_FunctionCallWithASTNode(x, v, args);
             }
