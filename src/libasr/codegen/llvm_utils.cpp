@@ -1934,12 +1934,20 @@ namespace LCompilers {
                 }
                 break ;
             };
-            case ASR::ttypeType::Allocatable:
             case ASR::ttypeType::Character:
             case ASR::ttypeType::FunctionType:
             case ASR::ttypeType::CPtr: {
                 LLVM::CreateStore(*builder, src, dest);
                 break ;
+            }
+            case ASR::ttypeType::Allocatable: {
+                ASR::Allocatable_t* alloc_type = ASR::down_cast<ASR::Allocatable_t>(asr_type);
+                if( ASR::is_a<ASR::Character_t>(*alloc_type->m_type) ) {
+                    lfortran_str_copy(dest, src, true, *module, *builder, context);
+                } else {
+                    LLVM::CreateStore(*builder, src, dest);
+                }
+                break;
             }
             case ASR::ttypeType::Tuple: {
                 ASR::Tuple_t* tuple_type = ASR::down_cast<ASR::Tuple_t>(asr_type);

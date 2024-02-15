@@ -145,7 +145,7 @@ define i8* @__module_testdrive_derived_types_32_real_dp_to_string(double* %val) 
   %2 = load double, double* %val, align 8
   call void (i8**, i8*, ...) @_lfortran_string_write(i8** %buffer, i8* getelementptr inbounds ([10 x i8], [10 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0), double %2)
   %3 = call i8* @__module_lfortran_intrinsic_string_trim(i8** %buffer)
-  store i8* %3, i8** %string, align 8
+  call void @_lfortran_strcpy(i8** %string, i8* %3, i8 1)
   br label %return
 
 return:                                           ; preds = %.entry
@@ -154,6 +154,8 @@ return:                                           ; preds = %.entry
 }
 
 declare void @_lfortran_string_write(i8**, i8*, ...)
+
+declare void @_lfortran_strcpy(i8**, i8*, i8)
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:

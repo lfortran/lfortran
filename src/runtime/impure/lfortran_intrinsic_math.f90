@@ -4,7 +4,7 @@ use, intrinsic :: iso_c_binding, only: c_float, c_double
 implicit none
 
 interface system_clock
-    module procedure i32sys_clock, i64sys_clock
+    module procedure i32sys_clock, i64sys_clock, i64r64sys_clock
 end interface
 
 interface srand
@@ -57,6 +57,20 @@ interface
     end subroutine
 end interface
 call c_i64sys_clock(count, count_rate, count_max)
+end subroutine
+
+pure subroutine i64r64sys_clock(count, count_rate, count_max)
+integer(8), intent(out) :: count
+real(8), intent(out), optional :: count_rate
+integer(8), intent(out), optional :: count_max
+interface
+    pure subroutine c_i64r64sys_clock(count, count_rate, count_max) &
+        bind(c, name="_lfortran_i64r64sys_clock")
+        integer(8), intent(out) :: count, count_max
+        real(8), intent(out) :: count_rate
+    end subroutine
+end interface
+call c_i64r64sys_clock(count, count_rate, count_max)
 end subroutine
 
 ! srand ----------------------------------------------------------------

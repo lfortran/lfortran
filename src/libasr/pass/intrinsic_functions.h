@@ -2054,8 +2054,9 @@ namespace Repeat {
         fill_func_arg("x", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -10, nullptr)));
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -3,
-            ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, args[0], ASRUtils::TYPE(
-                ASR::make_Integer_t(al, loc, 4)), nullptr)))), ReturnVar);
+            ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, args[0], ASRUtils::expr_type(args[1]), nullptr)),
+                ASR::binopType::Mul, args[1], ASRUtils::expr_type(args[1]), nullptr)))), ReturnVar);
         auto itr = declare("r", arg_types[1], Local);
         /*
             function repeat_(s, n) result(r)
@@ -2079,11 +2080,15 @@ namespace Repeat {
         ASR::expr_t *cond = iGt(itr, i(0, arg_types[1]));
         std::vector<ASR::stmt_t*> while_loop_body;
         if (arg_1_kind == 4) {
+            while_loop_body.push_back(b.Assignment(ASRUtils::EXPR(ASR::make_StringItem_t(
+                al, loc, result, itr, ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, 1, nullptr)),
+                nullptr)), args[0]));
             while_loop_body.push_back(b.Assignment(itr, iSub(itr, i(1, arg_types[1]))));
-            while_loop_body.push_back(b.Assignment(result, b.Add(result, args[0])));
         } else {
+            while_loop_body.push_back(b.Assignment(ASRUtils::EXPR(ASR::make_StringItem_t(
+                al, loc, result, itr, ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, 1, nullptr)),
+                nullptr)), args[0]));
             while_loop_body.push_back(b.Assignment(itr, i64Sub(itr, i(1, arg_types[1]))));
-            while_loop_body.push_back(b.Assignment(result, b.Add(result, args[0])));
         }
         body.push_back(al, b.While(cond, while_loop_body));
 

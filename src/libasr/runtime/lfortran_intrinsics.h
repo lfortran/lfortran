@@ -212,6 +212,7 @@ LFORTRAN_API char* _lfortran_str_slice(char* s, int32_t idx1, int32_t idx2, int3
                         bool idx1_present, bool idx2_present);
 LFORTRAN_API char* _lfortran_str_slice_assign(char* s, char *r, int32_t idx1, int32_t idx2, int32_t step,
                         bool idx1_present, bool idx2_present);
+LFORTRAN_API int16_t _lfortran_iand16(int16_t x, int16_t y);
 LFORTRAN_API int32_t _lfortran_iand32(int32_t x, int32_t y);
 LFORTRAN_API int64_t _lfortran_iand64(int64_t x, int64_t y);
 LFORTRAN_API int32_t _lfortran_not32(int32_t x);
@@ -247,6 +248,8 @@ LFORTRAN_API void _lfortran_i32sys_clock(
         int32_t *count, int32_t *rate, int32_t *max);
 LFORTRAN_API void _lfortran_i64sys_clock(
         uint64_t *count, int64_t *rate, int64_t *max);
+LFORTRAN_API void _lfortran_i64r64sys_clock(
+        uint64_t *count, double *rate, int64_t *max);
 LFORTRAN_API double _lfortran_time();
 LFORTRAN_API void _lfortran_sp_rand_num(float *x);
 LFORTRAN_API void _lfortran_dp_rand_num(double *x);
