@@ -218,6 +218,12 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         }
     ],
+    "Precision": [
+        {
+            "args": [("real",), ("complex",)],
+            "return": "int32"
+        }
+    ],
     "Tiny": [
         {
             "args": [("real",)],
@@ -243,6 +249,7 @@ compile_time_only_fn = [
     "Epsilon",
     "Radix",
     "Range",
+    "Precision",
     "Rank",
     "Tiny",
     "Huge",
