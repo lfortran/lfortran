@@ -51,6 +51,7 @@
 #include <libasr/pass/insert_deallocate.h>
 #include <libasr/pass/replace_print_struct_type.h>
 #include <libasr/pass/promote_allocatable_to_nonallocatable.h>
+#include <libasr/pass/replace_function_call_in_declaration.h>
 #include <libasr/codegen/asr_to_fortran.h>
 #include <libasr/asr_verify.h>
 #include <libasr/pickle.h>
@@ -102,6 +103,7 @@ namespace LCompilers {
             {"init_expr", &pass_replace_init_expr},
             {"nested_vars", &pass_nested_vars},
             {"where", &pass_replace_where},
+            {"function_call_in_declaration", &pass_replace_function_call_in_declaration},
             {"print_struct_type", &pass_replace_print_struct_type},
             {"unique_symbols", &pass_unique_symbols},
             {"insert_deallocate", &pass_insert_deallocate},
@@ -209,6 +211,7 @@ namespace LCompilers {
                 "class_constructor",
                 "pass_list_expr",
                 "where",
+                "function_call_in_declaration",
                 "subroutine_from_function",
                 "array_op",
                 "symbolic",
@@ -239,6 +242,7 @@ namespace LCompilers {
                 "class_constructor",
                 "pass_list_expr",
                 "where",
+                "function_call_in_declaration",
                 "subroutine_from_function",
                 "array_op",
                 "symbolic",
