@@ -87,6 +87,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Floor,
     Ceiling,
     Epsilon,
+    Precision,
     Tiny,
     Conjg,
     Huge,
@@ -3041,6 +3042,28 @@ namespace Epsilon {
     }
 
 }  // namespace Epsilon
+
+namespace Precision {
+
+    static ASR::expr_t *eval_Precision(Allocator &al, const Location &loc,
+            ASR::ttype_t* /*return_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        int64_t precision_val = -1;
+        ASR::ttype_t *arg_type = expr_type(args[0]);
+        int32_t kind = extract_kind_from_ttype_t(arg_type);
+        switch ( kind ) {
+            case 4: {
+                precision_val = 6; break;
+            } case 8: {
+                precision_val = 15; break;
+            } default: {
+                append_error(diag, "Kind " + std::to_string(kind) + " is not supported yet", loc);
+                return nullptr;
+            }
+        }
+        return i32(precision_val);
+    }
+
+}  // namespace Precision
 
 namespace Tiny {
 

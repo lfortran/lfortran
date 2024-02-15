@@ -749,6 +749,9 @@ public:
         {"dlog", "log"},
         {"dlog10", "log10"},
         {"dexp", "exp"},
+
+        {"dmin1", "min"},
+        {"dmax1", "max"},
     };
 
     ASR::asr_t *tmp;
