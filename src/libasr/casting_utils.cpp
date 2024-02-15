@@ -55,8 +55,7 @@ namespace LCompilers::CastingUtil {
     int get_src_dest(ASR::expr_t* left_expr, ASR::expr_t* right_expr,
                       ASR::expr_t*& src_expr, ASR::expr_t*& dest_expr,
                       ASR::ttype_t*& src_type, ASR::ttype_t*& dest_type,
-                      bool is_assign,
-                      const std::function<void (const std::string &, const Location &)> semantic_error) {
+                      bool is_assign) {
         ASR::ttype_t* left_type = ASRUtils::expr_type(left_expr);
         ASR::ttype_t* right_type = ASRUtils::expr_type(right_expr);
         if( ASR::is_a<ASR::Const_t>(*left_type) ) {
@@ -73,12 +72,10 @@ namespace LCompilers::CastingUtil {
         }
         if( is_assign ) {
             if( ASRUtils::is_real(*left_type) && ASRUtils::is_integer(*right_type)) {
-                semantic_error("Assigning integer to float is not supported",
-                                    right_expr->base.loc);
+                throw LCompilersException("Assigning integer to float is not supported");
             }
             if ( ASRUtils::is_complex(*left_type) && !ASRUtils::is_complex(*right_type)) {
-                semantic_error("Assigning non-complex to complex is not supported",
-                        right_expr->base.loc);
+                throw LCompilersException("Assigning non-complex to complex is not supported");
             }
             dest_expr = left_expr, dest_type = left_type;
             src_expr = right_expr, src_type = right_type;
