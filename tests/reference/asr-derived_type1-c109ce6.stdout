@@ -11,7 +11,7 @@
                                 (ExternalSymbol
                                     2
                                     1_enum_escape_newline
-                                    8 newline
+                                    11 newline
                                     enum_escape
                                     []
                                     newline
@@ -20,13 +20,13 @@
                             enum_escape:
                                 (StructType
                                     (SymbolTable
-                                        8
+                                        11
                                         {
                                             achar:
                                                 (ExternalSymbol
-                                                    8
+                                                    11
                                                     achar
-                                                    10 achar
+                                                    13 achar
                                                     lfortran_intrinsic_builtin
                                                     []
                                                     achar
@@ -34,12 +34,12 @@
                                                 ),
                                             newline:
                                                 (Variable
-                                                    8
+                                                    11
                                                     newline
                                                     [tfc]
                                                     Local
                                                     (FunctionCall
-                                                        8 achar
+                                                        11 achar
                                                         ()
                                                         [((IntegerConstant 10 (Integer 4)))
                                                         ((Var 2 tfc))]
