@@ -346,6 +346,7 @@ RUN(NAME functions_16 LABELS gfortran)
 RUN(NAME functions_17 LABELS gfortran llvm)
 RUN(NAME functions_18 LABELS gfortran llvm)
 RUN(NAME functions_19 LABELS gfortran llvm)
+RUN(NAME functions_20 LABELS gfortran llvm)
 
 RUN(NAME common_01 LABELS gfortran)
 
