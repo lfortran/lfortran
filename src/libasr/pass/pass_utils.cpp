@@ -5,6 +5,7 @@
 #include <libasr/asr_verify.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
+#include <libasr/casting_utils.h>
 
 namespace LCompilers {
 
@@ -869,6 +870,24 @@ namespace LCompilers {
                 unit.m_symtab, arg_types, type, args, 0);
         }
 
+        void cast_util(ASR::expr_t*& left, ASR::expr_t*& right, Allocator& al, bool is_assign=false) {
+            ASR::ttype_t *src_type = nullptr, *dest_type = nullptr;
+            ASR::expr_t *src_expr = nullptr, *dest_expr = nullptr;
+            int casted_expression_signal = LCompilers::CastingUtil::get_src_dest(
+                left, right, src_expr, dest_expr, src_type, dest_type, is_assign);
+            if( casted_expression_signal != 2 ) {
+                src_expr = CastingUtil::perform_casting(
+                src_expr, src_type, dest_type, al, src_expr->base.loc);
+                if( casted_expression_signal == 0 ) {
+                    left = src_expr;
+                    right = dest_expr;
+                } else if( casted_expression_signal == 1 ) {
+                    left = dest_expr;
+                    right = src_expr;
+                }
+            }
+        }
+
         Vec<ASR::stmt_t*> replace_doloop(Allocator &al, const ASR::DoLoop_t &loop,
                                          int comp, bool use_loop_variable_after_loop) {
             Location loc = loop.base.base.loc;
@@ -879,6 +898,14 @@ namespace LCompilers {
             ASR::stmt_t *inc_stmt = nullptr;
             ASR::stmt_t *loop_init_stmt = nullptr;
             ASR::stmt_t *stmt_add_c_after_loop = nullptr;
+            if( loop.m_head.m_v ) {
+                ASR::expr_t* loop_head = loop.m_head.m_v;
+                cast_util(loop_head, a, al, true);
+                cast_util(loop_head, b, al, true);
+                if( c ) {
+                    cast_util(loop_head, c, al, true);
+                }
+            }
             if( !a && !b && !c ) {
                 int a_kind = 4;
                 if( loop.m_head.m_v ) {
@@ -983,9 +1010,11 @@ namespace LCompilers {
                                 ASR::binopType::Add, c, type, nullptr)), nullptr));
                 if (cond == nullptr) {
                     ASR::ttype_t *log_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+                    ASR::expr_t* left = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
+                                            ASR::binopType::Add, c, type, nullptr));
+
                     cond = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
-                        ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
-                            ASR::binopType::Add, c, type, nullptr)), cmp_op, b, log_type, nullptr));
+                        left, cmp_op, b, log_type, nullptr));
                 }
             }
             Vec<ASR::stmt_t*> body;
