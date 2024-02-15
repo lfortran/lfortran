@@ -1,9 +1,9 @@
 module lfortran_intrinsic_bit
-use, intrinsic :: iso_fortran_env, only: int8, int32, int64
+use, intrinsic :: iso_fortran_env, only: int8, int16, int32, int64
 implicit none
 
 interface iand
-    module procedure iand32, iand64
+    module procedure iand16, iand32, iand64
 end interface
 
 interface not
@@ -61,6 +61,19 @@ end interface
 contains
 
 ! iand --------------------------------------------------------------------------
+
+elemental integer(int16) function iand16(x, y) result(r)
+integer(int16), intent(in) :: x
+integer(int16), intent(in) :: y
+interface
+    pure integer(int16) function c_iand16(x, y) bind(c, name="_lfortran_iand16")
+    import :: int16
+    integer(int16), intent(in), value :: x
+    integer(int16), intent(in), value :: y
+    end function
+end interface
+r = c_iand16(x, y)
+end function
 
 elemental integer(int32) function iand32(x, y) result(r)
 integer(int32), intent(in) :: x
