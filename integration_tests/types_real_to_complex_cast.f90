@@ -5,5 +5,5 @@ program types_real_to_complex_cast
     c = 1.0_dp
     i = 1.2_dp
     c = i
-    if (abs(c - 1.2_dp) > 1e-8) error stop
+    if (abs(c - 1.2_dp) > 1e-12_dp) error stop
 end program
