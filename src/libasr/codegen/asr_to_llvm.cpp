@@ -3602,8 +3602,9 @@ public:
                                 if (strlen == -3) {
                                     LCOMPILERS_ASSERT(t->m_len_expr)
                                     this->visit_expr(*t->m_len_expr);
-                                    arg_size = builder->CreateAdd(tmp,
-                                        llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+                                    arg_size = builder->CreateAdd(builder->CreateSExtOrTrunc(tmp,
+                                            llvm::Type::getInt32Ty(context)),
+                                            llvm::ConstantInt::get(context, llvm::APInt(32, 1)) );
                                 } else {
                                     // Compile time length
                                     arg_size = llvm::ConstantInt::get(context,
@@ -4785,8 +4786,12 @@ public:
                      (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target)
                          && ASRUtils::is_character(*target_type))) &&
                     !ASR::is_a<ASR::DictItem_t>(*x.m_target) ) {
-                    builder->CreateStore(value, target);
-                    strings_to_be_deallocated.erase(strings_to_be_deallocated.back());
+                    if( ASRUtils::is_allocatable(x.m_target) ) {
+                        tmp = lfortran_str_copy(target, value, true);
+                    } else {
+                        builder->CreateStore(value, target);
+                        strings_to_be_deallocated.erase(strings_to_be_deallocated.back());
+                    }
                     return;
                 } else if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
                     ASR::Variable_t *asr_target = EXPR2VAR(x.m_target);
@@ -5073,7 +5078,7 @@ public:
         } else if (
             m_new == ASR::array_physical_typeType::PointerToDataArray &&
             m_old == ASR::array_physical_typeType::CharacterArraySinglePointer) {
-        //     tmp = LLVM::CreateLoad(*builder, arr_descr->get_pointer_to_data(tmp));
+        //
             if (ASRUtils::is_fixed_size_array(m_type)) {
                 if( (ASRUtils::expr_value(m_arg) &&
                     !ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(m_arg))) ||
@@ -5081,7 +5086,7 @@ public:
                     tmp = llvm_utils->create_gep(tmp, 0);
                 }
             } else {
-                LCOMPILERS_ASSERT(false);
+                tmp = LLVM::CreateLoad(*builder, arr_descr->get_pointer_to_data(tmp));
             }
         } else if (
             m_new == ASR::array_physical_typeType::CharacterArraySinglePointer &&
@@ -5902,7 +5907,9 @@ public:
         llvm::AllocaInst *parg = builder->CreateAlloca(character_type, nullptr);
         builder->CreateStore(tmp, parg);
         ASR::ttype_t* arg_type = ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_arg));
-        tmp = lfortran_str_len(parg, ASRUtils::is_array(arg_type));
+        tmp = builder->CreateSExtOrTrunc(
+            lfortran_str_len(parg, ASRUtils::is_array(arg_type)),
+            llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get()));
     }
 
     void visit_StringOrd(const ASR::StringOrd_t &x) {
@@ -5938,7 +5945,8 @@ public:
         ptr_loads = ptr_loads_copy;
         llvm::Value *str = tmp;
         if( is_assignment_target ) {
-            idx = builder->CreateSub(idx, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+            idx = builder->CreateSub(builder->CreateSExtOrTrunc(idx, llvm::Type::getInt32Ty(context)),
+                llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
             std::vector<llvm::Value*> idx_vec = {idx};
             tmp = CreateGEP(str, idx_vec);
         } else {
@@ -8929,6 +8937,24 @@ public:
             return ;
         }
 
+        std::vector<llvm::Value*> args;
+        if( x.m_dt && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt) &&
+            ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(x.m_name)) &&
+            ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(x.m_name)) ) {
+            uint64_t ptr_loads_copy = ptr_loads;
+            ptr_loads = 1;
+            this->visit_expr(*x.m_dt);
+            ptr_loads = ptr_loads_copy;
+            llvm::Value* callee = LLVM::CreateLoad(*builder, tmp);
+
+            args = convert_call_args(x, false);
+            llvm::FunctionType* fntype = llvm_utils->get_function_type(
+                ASR::down_cast<ASR::FunctionType_t>(ASRUtils::expr_type(x.m_dt)),
+                module.get());
+            tmp = builder->CreateCall(fntype, callee, args);
+            return ;
+        }
+
         const ASR::symbol_t *proc_sym = symbol_get_past_external(x.m_name);
         std::string proc_sym_name = "";
         bool is_deferred = false;
@@ -8946,7 +8972,6 @@ public:
         }
 
         ASR::Function_t *s = nullptr;
-        std::vector<llvm::Value*> args;
         std::string self_argument = "";
         if (ASR::is_a<ASR::Function_t>(*proc_sym)) {
             s = ASR::down_cast<ASR::Function_t>(proc_sym);
