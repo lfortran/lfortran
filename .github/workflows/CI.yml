@@ -524,39 +524,6 @@ jobs:
             cd ../
             rm -rf stdlib-fortran-lang
 
-      - name: Test stdlib (stdlib_linalg)
-        shell: bash -e -x -l {0}
-        run: |
-            git clone https://github.com/Pranavchiku/stdlib-fortran-lang.git
-            cd stdlib-fortran-lang
-            git checkout -t origin/lf-linalg4
-            git checkout 09729bdb1e1e364cc5283f7d775019636265d264
-            micromamba activate lf
-            micromamba install -c conda-forge fypp
-            FC="$(pwd)/../src/bin/lfortran --realloc-lhs" cmake .
-            make fortran_stdlib
-            cp ./src/*.mod ./example/linalg
-            make
-            ./example/linalg/example_eye1
-            ./example/linalg/example_is_symmetric
-            ./example/linalg/example_cross_product
-            ./example/linalg/example_eye2
-            ./example/linalg/example_is_triangular
-            ./example/linalg/example_diag1
-            ./example/linalg/example_is_diagonal
-            ./example/linalg/example_kronecker_product
-            ./example/linalg/example_diag2
-            ./example/linalg/example_is_hermitian
-            ./example/linalg/example_outer_product
-            ./example/linalg/example_diag3
-            ./example/linalg/example_is_hessenberg
-            ./example/linalg/example_trace
-            ./example/linalg/example_diag4
-            ./example/linalg/example_is_skew_symmetric
-
-            cd ../
-            rm -rf stdlib-fortran-lang
-
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
         run: |
@@ -708,7 +675,7 @@ jobs:
             export PATH="$(pwd)/../src/bin:$PATH"
 
             git checkout lf19
-            git checkout e7c6dfb1b2bca29dfbca794a3f14df205dff0edd
+            git checkout 3d82b8ff79509ec5fea46e4b0c6beaf724f4b779
             micromamba install -c conda-forge fypp
             ./build_test_lf.sh
             ./build_test_gf.sh

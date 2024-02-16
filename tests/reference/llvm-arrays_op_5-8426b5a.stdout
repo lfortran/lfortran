@@ -166,9 +166,9 @@ then:                                             ; preds = %loop.body4
   store %complex_4 %91, %complex_4* %101, align 4
   %102 = getelementptr %complex_4, %complex_4* %101, i32 0, i32 1
   %103 = load float, float* %102, align 4
-  %104 = fcmp une float %94, %97
-  %105 = fcmp une float %100, %103
-  %106 = and i1 %104, %105
+  %104 = fcmp one float %94, %97
+  %105 = fcmp one float %100, %103
+  %106 = or i1 %104, %105
   br i1 %106, label %then5, label %else
 
 then5:                                            ; preds = %then
@@ -276,9 +276,9 @@ then7:                                            ; preds = %else6
   store %complex_4 %166, %complex_4* %176, align 4
   %177 = getelementptr %complex_4, %complex_4* %176, i32 0, i32 1
   %178 = load float, float* %177, align 4
-  %179 = fcmp une float %169, %172
-  %180 = fcmp une float %175, %178
-  %181 = and i1 %179, %180
+  %179 = fcmp one float %169, %172
+  %180 = fcmp one float %175, %178
+  %181 = or i1 %179, %180
   br i1 %181, label %then8, label %else9
 
 then8:                                            ; preds = %then7
