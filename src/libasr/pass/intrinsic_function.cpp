@@ -123,6 +123,9 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         }
     }
 
+    void replace_TypeInquiry(ASR::TypeInquiry_t* x) {
+        *current_expr = x->m_value;
+    }
 };
 
 /*

@@ -2624,8 +2624,13 @@ public:
                             x.m_symbols[i])->m_opName;
                         break;
                     }
+                    case AST::use_symbolType::UseWrite: {
+                        remote_sym = AST::down_cast<AST::UseWrite_t>(
+                            x.m_symbols[i])->m_id;
+                        break;
+                    }
                     default:
-                        throw SemanticError("Symbol with use not supported yet", x.base.base.loc);
+                        throw SemanticError("Symbol with use not supported yet " + std::to_string(x.m_symbols[i]->type), x.base.base.loc);
                 }
                 std::string local_sym;
                 if (AST::is_a<AST::UseSymbol_t>(*x.m_symbols[i]) &&

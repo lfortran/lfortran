@@ -705,20 +705,13 @@ jobs:
         run: |
             git clone https://github.com/czgdp1807/stdlib.git
             cd stdlib
-            git checkout lf18
-            git checkout abe562f01a9fe2ae2c191420892c6d9e8384343c
             export PATH="$(pwd)/../src/bin:$PATH"
-            lfortran subprojects/test-drive/src/testdrive.F90 --show-llvm
 
             git checkout lf19
-            git checkout b7533a11a770225dd995e81c34c552fa089cfc01
+            git checkout e7c6dfb1b2bca29dfbca794a3f14df205dff0edd
             micromamba install -c conda-forge fypp
-            ./build_test_array_lf.sh
-            ./build_test_array_gf.sh
-
-            # Run tests (specialfunctions_gamma, ascii, version, optval, error)
-            micromamba activate lf
-            ./build.sh
+            ./build_test_lf.sh
+            ./build_test_gf.sh
 
   test_llvm:
     name: Test LLVM ${{ matrix.llvm-version }}

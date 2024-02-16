@@ -13,8 +13,7 @@ namespace LCompilers::CastingUtil {
     int get_src_dest(ASR::expr_t* left_expr, ASR::expr_t* right_expr,
                       ASR::expr_t*& src_expr, ASR::expr_t*& dest_expr,
                       ASR::ttype_t*& src_type, ASR::ttype_t*& dest_type,
-                      bool is_assign,
-                      const std::function<void (const std::string &, const Location &)> semantic_error);
+                      bool is_assign);
 
     ASR::expr_t* perform_casting(ASR::expr_t* expr, ASR::ttype_t* src,
                                  ASR::ttype_t* dest, Allocator& al,

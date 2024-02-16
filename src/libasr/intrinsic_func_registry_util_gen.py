@@ -50,6 +50,12 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         }
     ],
+    "Selected_int_kind": [
+        {
+            "args": [("int",)],
+            "return": "int32"
+        }
+    ],
     "Digits": [
         {
             "args": [("int",), ("real",)],
@@ -113,7 +119,7 @@ intrinsic_funcs_args = {
     "Aint": [
         {
             "args": [("real",)],
-            "return": "TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(expr_type(args[0]))))",
+            "ret_type_arg_idx": 0,
             "kind_arg": True
         }
     ],
@@ -127,7 +133,7 @@ intrinsic_funcs_args = {
     "Anint": [
         {
             "args": [("real",)],
-            "return": "TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(expr_type(args[0]))))",
+            "ret_type_arg_idx": 0,
             "kind_arg": True
         }
     ],
@@ -187,6 +193,12 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         }
     ],
+    "Rshift": [
+        {
+            "args": [("int", "int")],
+            "ret_type_arg_idx": 0
+        }
+    ],
     "Shiftl": [
         {
             "args": [("int", "int")],
@@ -196,7 +208,8 @@ intrinsic_funcs_args = {
     "Aimag": [
         {
             "args": [("complex",)],
-            "return": "TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(expr_type(args[0]))))"
+            "return": "real32",
+            "kind_arg": True
         },
     ],
     "Rank": [
@@ -217,6 +230,12 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         }
     ],
+    "Precision": [
+        {
+            "args": [("real",), ("complex",)],
+            "return": "int32"
+        }
+    ],
     "Tiny": [
         {
             "args": [("real",)],
@@ -229,10 +248,24 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         },
     ],
+    "Huge": [
+        {
+            "args": [("int",), ("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
 }
 
 skip_create_func = ["Partition"]
-compile_time_only_fn = ["Radix", "Range", "Epsilon", "Tiny"]
+compile_time_only_fn = [
+    "Epsilon",
+    "Radix",
+    "Range",
+    "Precision",
+    "Rank",
+    "Tiny",
+    "Huge",
+]
 
 type_to_asr_type_check = {
     "any": "!ASR::is_a<ASR::TypeParameter_t>",
@@ -346,7 +379,13 @@ def add_create_func_return_src(func_name):
     no_of_args = len(args_lists[0])
     ret_type_val = arg_infos[0].get("return", None)
     ret_type_arg_idx = arg_infos[0].get("ret_type_arg_idx", None)
-    ret_type = ret_type_val if ret_type_val else f"expr_type(args[{ret_type_arg_idx}])"
+    if ret_type_val:
+        ret_type = ret_type_val
+    else:
+        src += indent * 2 + "ASRUtils::ExprStmtDuplicator expr_duplicator(al);\n"
+        src += indent * 2 + "expr_duplicator.allow_procedure_calls = true;\n"
+        src += indent * 2 + f"ASR::ttype_t* type_ = expr_duplicator.duplicate_ttype(expr_type(args[{ret_type_arg_idx}]));\n"
+        ret_type = "type_"
     kind_arg = arg_infos[0].get("kind_arg", False)
     src += indent * 2 + f"ASR::ttype_t *return_type = {ret_type};\n"
     if kind_arg:
@@ -363,15 +402,20 @@ def add_create_func_return_src(func_name):
     for _i in range(no_of_args):
         src += indent * 2 + f"m_args.push_back(al, args[{_i}]);\n"
     if func_name in compile_time_only_fn:
-        src += indent * 2 + f"m_value = eval_{func_name}(al, loc, {ret_type}, args);\n"
+        src += indent * 2 + f"return_type = ASRUtils::extract_type(return_type);\n"
+        src += indent * 2 + f"m_value = eval_{func_name}(al, loc, return_type, args, diag);\n"
+        src += indent * 2 + "return ASR::make_TypeInquiry_t(al, loc, "\
+            f"static_cast<int64_t>(IntrinsicElementalFunctions::{func_name}), "\
+            "m_args[0], return_type, m_value);\n"
+
     else:
         src += indent * 2 + "if (all_args_evaluated(m_args)) {\n"
         src += indent * 3 +     f"Vec<ASR::expr_t*> args_values; args_values.reserve(al, {no_of_args});\n"
         for _i in range(no_of_args):
             src += indent * 3 + f"args_values.push_back(al, expr_value(m_args[{_i}]));\n"
-        src += indent * 3 +     f"m_value = eval_{func_name}(al, loc, return_type, args_values);\n"
+        src += indent * 3 +     f"m_value = eval_{func_name}(al, loc, return_type, args_values, diag);\n"
         src += indent * 2 + "}\n"
-    src += indent * 2 + f"return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::{func_name}), m_args.p, m_args.n, 0, return_type, m_value);\n"
+        src += indent * 2 + f"return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::{func_name}), m_args.p, m_args.n, 0, return_type, m_value);\n"
 
 def gen_verify_args(func_name):
     global src

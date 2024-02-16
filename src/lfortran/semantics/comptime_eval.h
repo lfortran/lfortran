@@ -45,7 +45,6 @@ struct IntrinsicProceduresAsASRNodes {
 struct IntrinsicProcedures {
     const std::string m_kind = "lfortran_intrinsic_kind";
     const std::string m_builtin = "lfortran_intrinsic_builtin";
-    const std::string m_trig = "lfortran_intrinsic_trig";
     const std::string m_math = "lfortran_intrinsic_math";
     const std::string m_math2 = "lfortran_intrinsic_math2";
     const std::string m_math3 = "lfortran_intrinsic_math3";
@@ -88,15 +87,7 @@ struct IntrinsicProcedures {
             {"newunit", {m_custom, &not_implemented, false}},
 
             // Require evaluated arguments
-            {"floor", {m_math3, &eval_floor, true}},
-            {"ceiling", {m_math2, &eval_ceiling, true}},
-            {"nint", {m_math2, &eval_nint, true}},
             {"modulo", {m_math2, &eval_modulo, true}},
-            {"max", {m_math2, &eval_max, true}},
-            {"dmin1", {m_math2, &eval_dmin1, true}},
-            {"max0", {m_math2, &eval_max0, true}},
-            {"dmax1", {m_math2, &eval_dmax1, true}},
-            {"selected_int_kind", {m_kind, &eval_selected_int_kind, true}},
             {"selected_real_kind", {m_kind, &eval_selected_real_kind, true}},
             {"selected_char_kind", {m_kind, &eval_selected_char_kind, true}},
 
@@ -141,16 +132,11 @@ struct IntrinsicProcedures {
             {"shape", {m_builtin, &not_implemented, false}},
             {"reshape", {m_builtin, &not_implemented, false}},
             {"present", {m_builtin, &not_implemented, false}},
-            {"minval", {m_builtin, &not_implemented, false}},
-            {"maxval", {m_builtin, &not_implemented, false}},
             {"index", {m_string, &not_implemented, false}},
             {"system_clock", {m_math, &not_implemented, false}},
             {"random_number", {m_math, &not_implemented, false}},
             {"srand", {m_math, &not_implemented, false}},
             {"date_and_time", {m_string, &not_implemented, false}},
-
-            // Inquiry function
-            {"huge", {m_math2, &eval_huge, false}},
 
             // Transformational function
             {"all", {m_builtin, &not_implemented, false}},
@@ -412,46 +398,6 @@ struct IntrinsicProcedures {
             &IntrinsicProcedures::lfortran_modulo_i);
     }
 
-    static double lfortran_min(double x, double y) {
-        return std::fmin(x, y);
-    }
-
-    static int64_t lfortran_min_i(int64_t x, int64_t y) {
-        return std::fmin(x, y);
-    }
-
-    static ASR::expr_t *eval_dmin1(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        return eval_2args_ri(al, loc, args, compiler_options,
-            &IntrinsicProcedures::lfortran_min,
-            &IntrinsicProcedures::lfortran_min_i);
-    }
-
-    static double lfortran_max(double x, double y) {
-        return std::fmax(x, y);
-    }
-
-    static int64_t lfortran_max_i(int64_t x, int64_t y) {
-        return std::fmax(x, y);
-    }
-
-    static ASR::expr_t *eval_max(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        return eval_2args_ri(al, loc, args, compiler_options,
-            &IntrinsicProcedures::lfortran_max,
-            &IntrinsicProcedures::lfortran_max_i);
-    }
-
-    static ASR::expr_t *eval_dmax1(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        return eval_2args_ri(al, loc, args, compiler_options,
-            &IntrinsicProcedures::lfortran_max,
-            &IntrinsicProcedures::lfortran_max_i);
-    }
-
-    static ASR::expr_t *eval_max0(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        return eval_2args_ri(al, loc, args, compiler_options,
-            &IntrinsicProcedures::lfortran_max,
-            &IntrinsicProcedures::lfortran_max_i);
-    }
-
     static ASR::expr_t *eval_int(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
         ASR::expr_t* int_expr = args[0];
         if( int_expr->type == ASR::exprType::IntegerBOZ ) {
@@ -520,49 +466,6 @@ struct IntrinsicProcedures {
                     ASRUtils::expr_type(args[0])));
     }
 
-    static ASR::expr_t *eval_selected_int_kind(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
-        /*
-            GFortran output:
-            R =            1 selected_int_kind(R)           1
-            R =            2 selected_int_kind(R)           1
-            R =            3 selected_int_kind(R)           2
-            R =            4 selected_int_kind(R)           2
-            R =            5 selected_int_kind(R)           4
-            R =            6 selected_int_kind(R)           4
-            R =            7 selected_int_kind(R)           4
-            R =            8 selected_int_kind(R)           4
-            R =            9 selected_int_kind(R)           4
-            R =           10 selected_int_kind(R)           8
-            R =           11 selected_int_kind(R)           8
-        */
-        ASR::expr_t* real_expr = args[0];
-        ASR::ttype_t* real_type = ASRUtils::expr_type(real_expr);
-        if (ASR::is_a<ASR::Integer_t>(*real_type)) {
-            int64_t R = ASR::down_cast<ASR::IntegerConstant_t>(
-                ASRUtils::expr_value(real_expr))->m_n;
-            int a_kind = 4;
-            if (compiler_options.po.default_integer_kind != 4) {
-                // the default integer kind is 4 unless it was set on the command line
-                a_kind = compiler_options.po.default_integer_kind;
-            } else if (R < 3) {
-                a_kind = 1;
-            } else if (R < 5) {
-                a_kind = 2;
-            } else if (R < 10) {
-                a_kind = 4;
-            } else {
-                a_kind = 8;
-            }
-            ASR::ttype_t *type = ASRUtils::TYPE(
-                    ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
-            return ASR::down_cast<ASR::expr_t>(
-                ASR::make_IntegerConstant_t(al, loc,
-                a_kind, type));
-        } else {
-            throw SemanticError("integer_int_kind() must have one integer argument", loc);
-        }
-    }
     static ASR::expr_t *eval_selected_real_kind(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
         // TODO: Be more standards compliant 16.9.170
@@ -715,42 +618,6 @@ struct IntrinsicProcedures {
 
     static int64_t lfortran_ieor64(int64_t x, int64_t y) {
         return x ^ y;
-    }
-
-    static ASR::expr_t *eval_huge(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &) {
-        ASR::ttype_t* huge_type = ASRUtils::expr_type(args[0]);
-        // TODO: Arrays are a valid argument for huge
-        if (ASRUtils::is_array(huge_type)) {
-            throw SemanticError("Array values not implemented yet", loc);
-        }
-        if (ASR::is_a<ASR::Integer_t>(*huge_type)) {
-            int kind = ASRUtils::extract_kind_from_ttype_t(huge_type);
-            if (kind == 4) {
-                int32_t max_val = std::numeric_limits<int>::max();
-                return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, max_val, huge_type));
-            } else if (kind == 8) {
-                int64_t max_val = std::numeric_limits<int64_t>::max();
-                return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, max_val, huge_type));
-            } else {
-                throw SemanticError("Only int32, int64 kind is supported", loc);
-            }
-        } else if (ASR::is_a<ASR::Real_t>(*huge_type)) {
-            // TODO: Figure out how to deal with higher precision later
-            int kind = ASRUtils::extract_kind_from_ttype_t(huge_type);
-            if (kind == 4) {
-                float max_val = std::numeric_limits<float>::max();
-                return ASR::down_cast<ASR::expr_t>(
-                    ASR::make_RealConstant_t(al, loc, max_val, huge_type)
-                );
-            } else {
-                double max_val = std::numeric_limits<double>::max();
-                return ASR::down_cast<ASR::expr_t>(
-                    ASR::make_RealConstant_t(al, loc, max_val, huge_type)
-                );
-            }
-        } else {
-            throw SemanticError("Argument for huge() must be Real or Integer", loc);
-        }
     }
 
 }; // ComptimeEval

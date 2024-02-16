@@ -53,7 +53,6 @@ void load_rtlib(Allocator &al, ASR::TranslationUnit_t &tu, CompilerOptions &comp
     SymbolTable *tu_symtab = tu.m_symtab;
     const std::string m_kind = "lfortran_intrinsic_kind";
     const std::string m_builtin = "lfortran_intrinsic_builtin";
-    const std::string m_trig = "lfortran_intrinsic_trig";
     const std::string m_math = "lfortran_intrinsic_math";
     const std::string m_math2 = "lfortran_intrinsic_math2";
     const std::string m_math3 = "lfortran_intrinsic_math3";
@@ -61,7 +60,7 @@ void load_rtlib(Allocator &al, ASR::TranslationUnit_t &tu, CompilerOptions &comp
     const std::string m_bit = "lfortran_intrinsic_bit";
     const std::string m_ieee_arithmetic = "lfortran_intrinsic_ieee_arithmetic";
     std::vector<std::string> intrinsic_modules = {
-        m_trig, m_math2,
+        m_math2,
     };
     for (auto &module_name : intrinsic_modules) {
         Location loc;

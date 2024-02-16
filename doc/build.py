@@ -72,6 +72,7 @@ all_redirects = {
             "bit/btest",
             "bit/shiftl",
             "bit/shiftr",
+            "bit/rshift",
             "character/achar",
             "character/adjustl",
             "character/adjustr",

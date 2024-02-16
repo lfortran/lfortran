@@ -1940,6 +1940,9 @@ int main_app(int argc, char *argv[]) {
     bool print_targets = false;
     bool link_with_gcc = false;
     bool fixed_form_infer = false;
+    bool cpp = false;
+    bool cpp_infer = false;
+    bool no_cpp = false;
 
     std::string arg_fmt_file;
     int arg_fmt_indent = 4;
@@ -1986,7 +1989,9 @@ int main_app(int argc, char *argv[]) {
     app.add_option("-O", O_flags, "Optimization level (ignored for now)")->allow_extra_args(false);
 
     // LFortran specific options
-    app.add_flag("--cpp", compiler_options.c_preprocessor, "Enable C preprocessing");
+    app.add_flag("--cpp", cpp, "Enable C preprocessing");
+    app.add_flag("--cpp-infer", cpp_infer, "Use heuristics to infer if a file needs preprocessing");
+    app.add_flag("--no-cpp", no_cpp, "Disable C preprocessing");
     app.add_flag("--fixed-form", compiler_options.fixed_form, "Use fixed form Fortran source parsing");
     app.add_flag("--fixed-form-infer", fixed_form_infer, "Use heuristics to infer if a file is in fixed form");
     app.add_flag("--no-prescan", arg_no_prescan, "Turn off prescan");
@@ -2197,6 +2202,20 @@ int main_app(int argc, char *argv[]) {
     // Gfortran does the same thing
     if (fixed_form_infer && endswith(arg_file, ".f")) {
         compiler_options.fixed_form = true;
+    }
+
+    if (cpp && no_cpp) {
+        throw LCompilers::LCompilersException("Cannot use --cpp and --no-cpp at the same time");
+    } else if(cpp) {
+        compiler_options.c_preprocessor = true;
+    } else if(no_cpp) {
+        compiler_options.c_preprocessor = false;
+    // Decide if a file gets preprocessing based on the extension
+    // Gfortran does the same thing
+    } else if (cpp_infer && (endswith(arg_file, ".F90") || endswith(arg_file, ".F"))) {
+        compiler_options.c_preprocessor = true;
+    } else {
+        compiler_options.c_preprocessor = false;
     }
 
     std::string outfile;

@@ -189,7 +189,8 @@ static inline void verify_args(const ASR::IntrinsicArrayFunction_t& x, diag::Dia
 }
 
 static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & /*al*/,
-    const Location & /*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/) {
+    const Location & /*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/,
+    diag::Diagnostics& /*diag*/) {
     return nullptr;
 }
 
@@ -283,7 +284,7 @@ static inline ASR::asr_t* create_ArrIntrinsic(
         }
         return_type = ASRUtils::duplicate_type(al, array_type, &dims);
     }
-    value = eval_ArrIntrinsic(al, loc, return_type, arg_values);
+    value = eval_ArrIntrinsic(al, loc, return_type, arg_values, diag);
 
     Vec<ASR::expr_t*> arr_intrinsic_args;
     arr_intrinsic_args.reserve(al, 3);
@@ -490,7 +491,8 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al,
     int result_dims = extract_n_dims_from_ttype(return_type);
     ASR::expr_t* return_var = nullptr;
     if( result_dims > 0 ) {
-        fill_func_arg("result", return_type)
+        ASR::expr_t *result = declare("result", return_type, Out);
+        args.push_back(al, result);
     } else if( result_dims == 0 ) {
         return_var = declare("result", return_type, ReturnVar);
     }
@@ -769,7 +771,7 @@ namespace Shape {
     }
 
     static ASR::expr_t *eval_Shape(Allocator &al, const Location &loc,
-            ASR::ttype_t *type, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t *type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASR::dimension_t *m_dims;
         size_t n_dims = extract_dimensions_from_ttype(expr_type(args[0]), m_dims);
         Vec<ASR::expr_t *> m_shapes; m_shapes.reserve(al, n_dims);
@@ -818,7 +820,7 @@ namespace Shape {
         int n_dims = extract_n_dims_from_ttype(expr_type(args[0]));
         ASR::ttype_t *return_type = b.Array({n_dims},
             TYPE(ASR::make_Integer_t(al, loc, kind)));
-        ASR::expr_t *m_value = eval_Shape(al, loc, return_type, args);
+        ASR::expr_t *m_value = eval_Shape(al, loc, return_type, args, diag);
 
         return ASRUtils::make_IntrinsicArrayFunction_t_util(al, loc,
             static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Shape),
@@ -915,7 +917,8 @@ namespace Any {
     }
 
     static inline ASR::expr_t *eval_Any(Allocator & /*al*/,
-        const Location & /*loc*/, ASR::ttype_t */*t*/, Vec<ASR::expr_t*>& /*args*/) {
+        const Location & /*loc*/, ASR::ttype_t */*t*/, Vec<ASR::expr_t*>& /*args*/,
+        diag::Diagnostics& /*diag*/) {
         return nullptr;
     }
 
@@ -974,7 +977,7 @@ namespace Any {
                 logical_return_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
             }
         }
-        value = eval_Any(al, loc, logical_return_type, arg_values);
+        value = eval_Any(al, loc, logical_return_type, arg_values, diag);
 
         any_args.push_back(al, array);
         if( axis ) {
@@ -1139,7 +1142,8 @@ namespace Sum {
     }
 
     static inline ASR::expr_t *eval_Sum(Allocator & /*al*/,
-        const Location & /*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/) {
+        const Location & /*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/,
+        diag::Diagnostics& /*diag*/) {
         return nullptr;
     }
 
@@ -1170,7 +1174,8 @@ namespace Product {
     }
 
     static inline ASR::expr_t *eval_Product(Allocator & /*al*/,
-        const Location & /*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/) {
+        const Location & /*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/,
+        diag::Diagnostics& /*diag*/) {
         return nullptr;
     }
 
@@ -1201,7 +1206,8 @@ namespace MaxVal {
     }
 
     static inline ASR::expr_t *eval_MaxVal(Allocator & /*al*/,
-        const Location & /*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/) {
+        const Location & /*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/,
+        diag::Diagnostics& /*diag*/) {
         return nullptr;
     }
 
@@ -1284,7 +1290,7 @@ namespace Merge {
 
     static inline ASR::expr_t* eval_Merge(
         Allocator &/*al*/, const Location &/*loc*/, ASR::ttype_t *,
-            Vec<ASR::expr_t*>& args) {
+            Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         LCOMPILERS_ASSERT(args.size() == 3);
         ASR::expr_t *tsource = args[0], *fsource = args[1], *mask = args[2];
         if( ASRUtils::is_array(ASRUtils::expr_type(mask)) ) {
@@ -1431,7 +1437,8 @@ namespace MinVal {
     }
 
     static inline ASR::expr_t *eval_MinVal(Allocator & /*al*/,
-        const Location & /*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/) {
+        const Location & /*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/,
+        diag::Diagnostics& /*diag*/) {
         return nullptr;
     }
 
@@ -1491,7 +1498,7 @@ namespace MatMul {
     }
 
     static inline ASR::expr_t *eval_MatMul(Allocator &,
-        const Location &, ASR::ttype_t *, Vec<ASR::expr_t*>&) {
+        const Location &, ASR::ttype_t *, Vec<ASR::expr_t*>&, diag::Diagnostics&) {
         // TODO
         return nullptr;
     }
@@ -1619,7 +1626,7 @@ namespace MatMul {
         if (is_type_allocatable) {
             ret_type = TYPE(ASR::make_Allocatable_t(al, loc, ret_type));
         }
-        ASR::expr_t *value = eval_MatMul(al, loc, ret_type, args);
+        ASR::expr_t *value = eval_MatMul(al, loc, ret_type, args, diag);
         return make_IntrinsicArrayFunction_t_util(al, loc,
             static_cast<int64_t>(IntrinsicArrayFunctions::MatMul),
             args.p, args.n, overload_id, ret_type, value);

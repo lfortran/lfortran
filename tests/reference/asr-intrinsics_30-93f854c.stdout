@@ -161,10 +161,9 @@
                                     ri3
                                     [i3]
                                     Local
-                                    (IntrinsicElementalFunction
+                                    (TypeInquiry
                                         Range
-                                        [(Var 2 i3)]
-                                        0
+                                        (Var 2 i3)
                                         (Integer 4)
                                         (IntegerConstant 2 (Integer 4))
                                     )
@@ -183,10 +182,9 @@
                                     ri4
                                     [i4]
                                     Local
-                                    (IntrinsicElementalFunction
+                                    (TypeInquiry
                                         Range
-                                        [(Var 2 i4)]
-                                        0
+                                        (Var 2 i4)
                                         (Integer 4)
                                         (IntegerConstant 4 (Integer 4))
                                     )
@@ -203,17 +201,15 @@
                     intrinsics_30
                     [iso_fortran_env]
                     [(Print
-                        [(IntrinsicElementalFunction
+                        [(TypeInquiry
                             Range
-                            [(Var 2 i1)]
-                            0
+                            (Var 2 i1)
                             (Integer 4)
                             (IntegerConstant 9 (Integer 4))
                         )
-                        (IntrinsicElementalFunction
+                        (TypeInquiry
                             Range
-                            [(Var 2 i2)]
-                            0
+                            (Var 2 i2)
                             (Integer 4)
                             (IntegerConstant 18 (Integer 4))
                         )
@@ -223,17 +219,15 @@
                         ()
                     )
                     (Print
-                        [(IntrinsicElementalFunction
+                        [(TypeInquiry
                             Range
-                            [(Var 2 r1)]
-                            0
+                            (Var 2 r1)
                             (Integer 4)
                             (IntegerConstant 37 (Integer 4))
                         )
-                        (IntrinsicElementalFunction
+                        (TypeInquiry
                             Range
-                            [(Var 2 r2)]
-                            0
+                            (Var 2 r2)
                             (Integer 4)
                             (IntegerConstant 307 (Integer 4))
                         )]
@@ -241,17 +235,15 @@
                         ()
                     )
                     (Print
-                        [(IntrinsicElementalFunction
+                        [(TypeInquiry
                             Range
-                            [(Var 2 c1)]
-                            0
+                            (Var 2 c1)
                             (Integer 4)
                             (IntegerConstant 37 (Integer 4))
                         )
-                        (IntrinsicElementalFunction
+                        (TypeInquiry
                             Range
-                            [(Var 2 c2)]
-                            0
+                            (Var 2 c2)
                             (Integer 4)
                             (IntegerConstant 307 (Integer 4))
                         )]
@@ -292,10 +284,9 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntrinsicElementalFunction
+                            (TypeInquiry
                                 Range
-                                [(Var 2 i1)]
-                                0
+                                (Var 2 i1)
                                 (Integer 4)
                                 (IntegerConstant 9 (Integer 4))
                             )
@@ -314,10 +305,9 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntrinsicElementalFunction
+                            (TypeInquiry
                                 Range
-                                [(Var 2 i2)]
-                                0
+                                (Var 2 i2)
                                 (Integer 4)
                                 (IntegerConstant 18 (Integer 4))
                             )
@@ -336,10 +326,9 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntrinsicElementalFunction
+                            (TypeInquiry
                                 Range
-                                [(Var 2 r1)]
-                                0
+                                (Var 2 r1)
                                 (Integer 4)
                                 (IntegerConstant 37 (Integer 4))
                             )
@@ -358,10 +347,9 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntrinsicElementalFunction
+                            (TypeInquiry
                                 Range
-                                [(Var 2 r2)]
-                                0
+                                (Var 2 r2)
                                 (Integer 4)
                                 (IntegerConstant 307 (Integer 4))
                             )
@@ -380,10 +368,9 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntrinsicElementalFunction
+                            (TypeInquiry
                                 Range
-                                [(Var 2 c1)]
-                                0
+                                (Var 2 c1)
                                 (Integer 4)
                                 (IntegerConstant 37 (Integer 4))
                             )
@@ -402,10 +389,9 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntrinsicElementalFunction
+                            (TypeInquiry
                                 Range
-                                [(Var 2 c2)]
-                                0
+                                (Var 2 c2)
                                 (Integer 4)
                                 (IntegerConstant 307 (Integer 4))
                             )

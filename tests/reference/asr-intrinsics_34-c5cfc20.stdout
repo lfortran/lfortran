@@ -88,10 +88,9 @@
                     intrinsics_34
                     []
                     [(Print
-                        [(IntrinsicElementalFunction
+                        [(TypeInquiry
                             Epsilon
-                            [(Var 2 x)]
-                            0
+                            (Var 2 x)
                             (Real 4)
                             (RealConstant
                                 0.000000
@@ -102,10 +101,9 @@
                         ()
                     )
                     (Print
-                        [(IntrinsicElementalFunction
+                        [(TypeInquiry
                             Epsilon
-                            [(Var 2 y)]
-                            0
+                            (Var 2 y)
                             (Real 8)
                             (RealConstant
                                 0.000000
@@ -117,13 +115,12 @@
                     )
                     (Print
                         [(RealBinOp
-                            (IntrinsicElementalFunction
+                            (TypeInquiry
                                 Epsilon
-                                [(RealConstant
+                                (RealConstant
                                     1.000000
                                     (Real 8)
-                                )]
-                                0
+                                )
                                 (Real 8)
                                 (RealConstant
                                     0.000000
@@ -157,10 +154,9 @@
                             (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
-                                    (IntrinsicElementalFunction
+                                    (TypeInquiry
                                         Epsilon
-                                        [(Var 2 x)]
-                                        0
+                                        (Var 2 x)
                                         (Real 4)
                                         (RealConstant
                                             0.000000
@@ -206,10 +202,9 @@
                             (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
-                                    (IntrinsicElementalFunction
+                                    (TypeInquiry
                                         Epsilon
-                                        [(Var 2 y)]
-                                        0
+                                        (Var 2 y)
                                         (Real 8)
                                         (RealConstant
                                             0.000000
@@ -256,13 +251,12 @@
                                 Abs
                                 [(RealBinOp
                                     (RealBinOp
-                                        (IntrinsicElementalFunction
+                                        (TypeInquiry
                                             Epsilon
-                                            [(RealConstant
+                                            (RealConstant
                                                 1.000000
                                                 (Real 8)
-                                            )]
-                                            0
+                                            )
                                             (Real 8)
                                             (RealConstant
                                                 0.000000

@@ -446,17 +446,20 @@ namespace LCompilers {
             for( int i = 0; i < value_rank; i++ ) {
                 if( ds[i] != nullptr ) {
                     llvm::Value* dim_length = builder->CreateAdd(
-                                                builder->CreateSDiv(
-                                                    builder->CreateSub(ubs[i], lbs[i]),
-                                                    ds[i]),
-                                                llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
-                                                                        llvm::APInt(32, 1))
-                                              );
+                        builder->CreateSDiv(
+                            builder->CreateSub(
+                                builder->CreateSExtOrTrunc(ubs[i], llvm::Type::getInt32Ty(context)),
+                                builder->CreateSExtOrTrunc(lbs[i], llvm::Type::getInt32Ty(context))),
+                            builder->CreateSExtOrTrunc(ds[i], llvm::Type::getInt32Ty(context))),
+                        llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
+                                                llvm::APInt(32, 1))
+                        );
                     llvm::Value* value_dim_des = llvm_utils->create_ptr_gep(value_dim_des_array, i);
                     llvm::Value* target_dim_des = llvm_utils->create_ptr_gep(target_dim_des_array, j);
                     llvm::Value* value_stride = get_stride(value_dim_des, true);
                     llvm::Value* target_stride = get_stride(target_dim_des, false);
-                    builder->CreateStore(value_stride, target_stride);
+                    builder->CreateStore(builder->CreateMul(value_stride, builder->CreateSExtOrTrunc(
+                        ds[i], llvm::Type::getInt32Ty(context))), target_stride);
                     // Diverges from LPython, 0 should be stored there.
                     builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1)),
                                          get_lower_bound(target_dim_des, false));
@@ -502,15 +505,17 @@ namespace LCompilers {
             for( int i = 0; i < value_rank; i++ ) {
                 if( ds[i] != nullptr ) {
                     llvm::Value* dim_length = builder->CreateAdd(
-                                                builder->CreateSDiv(
-                                                    builder->CreateSub(ubs[i], lbs[i]),
-                                                    ds[i]),
-                                                llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
-                                                                        llvm::APInt(32, 1))
-                                              );
+                        builder->CreateSDiv(
+                            builder->CreateSub(
+                                builder->CreateSExtOrTrunc(ubs[i], llvm::Type::getInt32Ty(context)),
+                                builder->CreateSExtOrTrunc(lbs[i], llvm::Type::getInt32Ty(context))),
+                            builder->CreateSExtOrTrunc(ds[i], llvm::Type::getInt32Ty(context))),
+                        llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
+                                                llvm::APInt(32, 1))
+                        );
                     llvm::Value* target_dim_des = llvm_utils->create_ptr_gep(target_dim_des_array, j);
-                    builder->CreateStore(stride,
-                                         get_stride(target_dim_des, false));
+                    builder->CreateStore(builder->CreateMul(stride, builder->CreateSExtOrTrunc(
+                        ds[i], llvm::Type::getInt32Ty(context))), get_stride(target_dim_des, false));
                     builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1)),
                                          get_lower_bound(target_dim_des, false));
                     builder->CreateStore(dim_length,
@@ -581,7 +586,7 @@ namespace LCompilers {
                 llvm::Value* dim_des_ptr = llvm_utils->create_ptr_gep(dim_des_arr_ptr, r);
                 llvm::Value* lval = LLVM::CreateLoad(*builder, llvm_utils->create_gep(dim_des_ptr, 1));
                 // first cast curr_llvm_idx to 32 bit
-                curr_llvm_idx = builder->CreateSExt(curr_llvm_idx, llvm::Type::getInt32Ty(context));
+                curr_llvm_idx = builder->CreateSExtOrTrunc(curr_llvm_idx, llvm::Type::getInt32Ty(context));
                 curr_llvm_idx = builder->CreateSub(curr_llvm_idx, lval);
                 if( check_for_bounds ) {
                     // check_single_element(curr_llvm_idx, arr); TODO: To be implemented

@@ -52,6 +52,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Mod,
     Trailz,
     Shiftr,
+    Rshift,
     Shiftl,
     Ishft,
     Leadz,
@@ -59,6 +60,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Repeat,
     Hypot,
     Adjustl,
+    Selected_int_kind,
     MinExponent,
     MaxExponent,
     FloorDiv,
@@ -87,8 +89,10 @@ enum class IntrinsicElementalFunctions : int64_t {
     Floor,
     Ceiling,
     Epsilon,
+    Precision,
     Tiny,
     Conjg,
+    Huge,
     SymbolicSymbol,
     SymbolicAdd,
     SymbolicSub,
@@ -122,7 +126,7 @@ typedef ASR::expr_t* (*impl_function)(
 
 typedef ASR::expr_t* (*eval_intrinsic_function)(
     Allocator&, const Location &, ASR::ttype_t *,
-    Vec<ASR::expr_t*>&);
+    Vec<ASR::expr_t*>&, diag::Diagnostics&);
 
 typedef ASR::asr_t* (*create_intrinsic_function)(
     Allocator&, const Location&,
@@ -200,12 +204,12 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
 
 static inline ASR::asr_t* create_UnaryFunction(Allocator& al, const Location& loc,
     Vec<ASR::expr_t*>& args, eval_intrinsic_function eval_function,
-    int64_t intrinsic_id, int64_t overload_id, ASR::ttype_t* type) {
+    int64_t intrinsic_id, int64_t overload_id, ASR::ttype_t* type, diag::Diagnostics& diag) {
     ASR::expr_t *value = nullptr;
     if (ASRUtils::all_args_evaluated(args)) {
         Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 1);
         arg_values.push_back(al, ASRUtils::expr_value(args[0]));
-        value = eval_function(al, loc, type, arg_values);
+        value = eval_function(al, loc, type, arg_values, diag);
     }
 
     return ASRUtils::make_IntrinsicElementalFunction_t_util(al, loc, intrinsic_id,
@@ -384,7 +388,7 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
 
 static inline ASR::asr_t* create_BinaryFunction(Allocator& al, const Location& loc,
     Vec<ASR::expr_t*>& args, eval_intrinsic_function eval_function,
-    int64_t intrinsic_id, int64_t overload_id, ASR::ttype_t* type) {
+    int64_t intrinsic_id, int64_t overload_id, ASR::ttype_t* type, diag::Diagnostics& diag) {
     ASR::expr_t *value = nullptr;
     ASR::expr_t *arg_value_1 = ASRUtils::expr_value(args[0]);
     ASR::expr_t *arg_value_2 = ASRUtils::expr_value(args[1]);
@@ -393,7 +397,7 @@ static inline ASR::asr_t* create_BinaryFunction(Allocator& al, const Location& l
         arg_values.reserve(al, 2);
         arg_values.push_back(al, arg_value_1);
         arg_values.push_back(al, arg_value_2);
-        value = eval_function(al, loc, type, arg_values);
+        value = eval_function(al, loc, type, arg_values, diag);
     }
 
     return ASRUtils::make_IntrinsicElementalFunction_t_util(al, loc, intrinsic_id,
@@ -430,7 +434,8 @@ static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x,
 #define create_unary_function(X, eval_X, lc_rt_name)                            \
 namespace X {                                                                   \
     static inline ASR::expr_t *eval_##X(Allocator &al, const Location &loc,     \
-            ASR::ttype_t *t, Vec<ASR::expr_t*> &args) {                         \
+            ASR::ttype_t *t, Vec<ASR::expr_t*> &args,                           \
+            diag::Diagnostics& /*diag*/) {                                      \
         double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;          \
         return f(std::eval_X(rv), t);                                           \
     }                                                                           \
@@ -449,7 +454,7 @@ namespace X {                                                                   
         }                                                                       \
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args,      \
                 eval_##X, static_cast<int64_t>(IntrinsicElementalFunctions::X), \
-                0, type);                                                       \
+                0, type, diag);                                                 \
     }                                                                           \
     static inline ASR::expr_t* instantiate_##X (Allocator &al,                  \
             const Location &loc, SymbolTable *scope,                            \
@@ -469,7 +474,7 @@ create_unary_function(Erfc, erfc, erfc)
 
 namespace Fix {
     static inline ASR::expr_t *eval_Fix(Allocator &al, const Location &loc,
-            ASR::ttype_t *t, Vec<ASR::expr_t*>& args) {
+            ASR::ttype_t *t, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         LCOMPILERS_ASSERT(args.size() == 1);
         double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
         double val;
@@ -495,7 +500,7 @@ namespace Fix {
         }
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args,
                 eval_Fix, static_cast<int64_t>(IntrinsicElementalFunctions::Fix),
-                0, type);
+                0, type, diag);
     }
 
     static inline ASR::expr_t* instantiate_Fix (Allocator &al,
@@ -517,7 +522,8 @@ namespace Fix {
 #define create_trig(X, stdeval, lcompilers_name)                                \
 namespace X {                                                                   \
     static inline ASR::expr_t *eval_##X(Allocator &al, const Location &loc,     \
-            ASR::ttype_t *t, Vec<ASR::expr_t*>& args) {                         \
+            ASR::ttype_t *t, Vec<ASR::expr_t*>& args,                           \
+            diag::Diagnostics& /*diag*/) {                                      \
         LCOMPILERS_ASSERT(args.size() == 1);                                    \
         double rv = -1;                                                         \
         if( ASRUtils::extract_value(args[0], rv) ) {                            \
@@ -549,7 +555,7 @@ namespace X {                                                                   
         }                                                                       \
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args,      \
                 eval_##X, static_cast<int64_t>(IntrinsicElementalFunctions::X), \
-                0, type);                                                       \
+                0, type, diag);                                                 \
     }                                                                           \
     static inline ASR::expr_t* instantiate_##X (Allocator &al,                  \
             const Location &loc, SymbolTable *scope,                            \
@@ -578,7 +584,7 @@ create_trig(Log, log, log)
 namespace Aimag {
 
     static inline ASR::expr_t *eval_Aimag(Allocator &al, const Location &loc,
-            ASR::ttype_t *t, Vec<ASR::expr_t*>& args) {
+            ASR::ttype_t *t, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         std::complex<double> crv;
         if( ASRUtils::extract_value(args[0], crv) ) {
             return f(crv.imag(), t);
@@ -588,18 +594,18 @@ namespace Aimag {
     }
 
     static inline ASR::expr_t* instantiate_Aimag (Allocator &al,
-            const Location &loc, SymbolTable *scope,
-            Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& new_args,int64_t overload_id)  {
-        return UnaryIntrinsicFunction::instantiate_functions(al, loc, scope,
-            "aimag", arg_types[0], return_type, new_args, overload_id);
+            const Location &loc, SymbolTable* /*scope*/,
+            Vec<ASR::ttype_t*>& /*arg_types*/, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t> &new_args,int64_t /*overload_id*/)  {
+        return EXPR(ASR::make_ComplexIm_t(al, loc, new_args[0].m_value,
+            return_type, nullptr));
     }
 
 } // namespace Aimag
 
 namespace Atan2 {
     static inline ASR::expr_t *eval_Atan2(Allocator &al, const Location &loc,
-            ASR::ttype_t *t, Vec<ASR::expr_t*>& args) {
+            ASR::ttype_t *t, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         LCOMPILERS_ASSERT(args.size() == 2);
         double rv = -1, rv2 = -1;
         if( ASRUtils::extract_value(args[0], rv) && ASRUtils::extract_value(args[1], rv2) ) {
@@ -623,7 +629,7 @@ namespace Atan2 {
         }
         return BinaryIntrinsicFunction::create_BinaryFunction(al, loc, args,
                 eval_Atan2, static_cast<int64_t>(IntrinsicElementalFunctions::Atan2),
-                0, type_1);
+                0, type_1, diag);
     }
     static inline ASR::expr_t* instantiate_Atan2 (Allocator &al,
             const Location &loc, SymbolTable *scope,
@@ -665,7 +671,7 @@ namespace Abs {
     }
 
     static ASR::expr_t *eval_Abs(Allocator &al, const Location &loc,
-            ASR::ttype_t *t, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t *t, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
         ASR::expr_t* arg = args[0];
         if (ASRUtils::is_real(*expr_type(arg))) {
@@ -706,7 +712,8 @@ namespace Abs {
                 ASRUtils::extract_kind_from_ttype_t(type)));
         }
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_Abs,
-            static_cast<int64_t>(IntrinsicElementalFunctions::Abs), 0, ASRUtils::type_get_past_allocatable(type));
+            static_cast<int64_t>(IntrinsicElementalFunctions::Abs), 0,
+            ASRUtils::type_get_past_allocatable(type), diag);
     }
 
     static inline ASR::expr_t* instantiate_Abs(Allocator &al, const Location &loc,
@@ -758,47 +765,13 @@ namespace Abs {
             ASR::symbol_t *sym_result = ASR::down_cast<ASR::Var_t>(result)->m_v;
             ASR::Variable_t *r_var = ASR::down_cast<ASR::Variable_t>(sym_result);
             r_var->m_type = return_type = real_type;
-            ASR::expr_t *aimag_of_x;
-            {
-                std::string c_func_name;
-                if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 4) {
-                    c_func_name = "_lfortran_caimag";
-                } else {
-                    c_func_name = "_lfortran_zaimag";
-                }
-                SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
-                Vec<ASR::expr_t*> args_1;
-                {
-                    args_1.reserve(al, 1);
-                    auto arg = b.Variable(fn_symtab_1, "x", arg_types[0],
-                        ASR::intentType::In, ASR::abiType::BindC, true);
-                    args_1.push_back(al, arg);
-                }
 
-                auto return_var_1 = b.Variable(fn_symtab_1, c_func_name, real_type,
-                    ASR::intentType::ReturnVar, ASR::abiType::BindC, false);
-
-                SetChar dep_1; dep_1.reserve(al, 1);
-                Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
-                ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
-                    body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
-                fn_symtab->add_symbol(c_func_name, s);
-                dep.push_back(al, s2c(al, c_func_name));
-                Vec<ASR::call_arg_t> call_args;
-                {
-                    call_args.reserve(al, 1);
-                    ASR::call_arg_t arg;
-                    arg.loc = args[0]->base.loc;
-                    arg.m_value = args[0];
-                    call_args.push_back(al, arg);
-                }
-                aimag_of_x = b.Call(s, call_args, real_type);
-            }
-            ASR::expr_t *constant_two = make_ConstantWithType(make_RealConstant_t, 2.0, real_type, loc);
-            ASR::expr_t *constant_point_five = make_ConstantWithType(make_RealConstant_t, 0.5, real_type, loc);
-            ASR::expr_t *real_of_x = EXPR(ASR::make_Cast_t(al, loc, args[0],
-                ASR::cast_kindType::ComplexToReal, real_type, nullptr));
-
+            ASR::expr_t *aimag_of_x = EXPR(ASR::make_ComplexIm_t(al, loc,
+                args[0], real_type, nullptr));
+            ASR::expr_t *constant_two = f(2.0, real_type);
+            ASR::expr_t *constant_point_five = f(0.5, real_type);
+            ASR::expr_t *real_of_x = EXPR(ASR::make_ComplexRe_t(al, loc,
+                args[0], real_type, nullptr));
             ASR::expr_t *bin_op_1 = b.ElementalPow(real_of_x, constant_two, loc);
             ASR::expr_t *bin_op_2 = b.ElementalPow(aimag_of_x, constant_two, loc);
 
@@ -819,7 +792,7 @@ namespace Abs {
 namespace Radix {
 
     static ASR::expr_t *eval_Radix(Allocator &al, const Location &loc,
-            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &/*args*/) {
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
         return i32(2);
     }
 
@@ -828,7 +801,7 @@ namespace Radix {
 namespace Range {
 
     static ASR::expr_t *eval_Range(Allocator &al, const Location &loc,
-            ASR::ttype_t */*return_type*/, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t */*return_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t range_val = -1;
         ASR::ttype_t *arg_type = expr_type(args[0]);
         int32_t kind = extract_kind_from_ttype_t(arg_type);
@@ -865,7 +838,7 @@ namespace Range {
 namespace Sign {
 
     static ASR::expr_t *eval_Sign(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         if (ASRUtils::is_real(*t1)) {
             double rv1 = std::abs(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
             double rv2 = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
@@ -920,7 +893,7 @@ namespace Sign {
 namespace Shiftr {
 
     static ASR::expr_t *eval_Shiftr(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         int64_t val = val1 >> val2;
@@ -930,7 +903,7 @@ namespace Shiftr {
     static inline ASR::expr_t* instantiate_Shiftr(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_sign_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("");
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -950,10 +923,42 @@ namespace Shiftr {
 
 } // namespace Shiftr
 
+namespace Rshift {
+
+    static ASR::expr_t *eval_Rshift(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        int64_t val = val1 >> val2;
+        return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_Rshift(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("");
+        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("y", arg_types[1]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        /*
+        * r = rshift(x, y)
+        * r = x >> y
+        */
+        body.push_back(al, b.Assignment(result, i_BitRshift(args[0], args[1], arg_types[0])));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+
+    }
+
+} // namespace Rshift
+
 namespace Shiftl {
 
     static ASR::expr_t *eval_Shiftl(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         int64_t val = val1 << val2;
@@ -969,10 +974,9 @@ namespace Shiftl {
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
         * r = shiftl(x, y)
-        * r = x * 2**y
+        * r = x << y
         */
-        ASR::expr_t *two = i(2, arg_types[0]);
-        body.push_back(al, b.Assignment(result, i_tMul(args[0], iPow(two, args[1], arg_types[0]), arg_types[0])));
+        body.push_back(al, b.Assignment(result, i_BitLshift(args[0], args[1], arg_types[0])));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -986,7 +990,7 @@ namespace Shiftl {
 namespace Ishft {
 
     static ASR::expr_t *eval_Ishft(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         int64_t val;
@@ -1009,17 +1013,16 @@ namespace Ishft {
         /*
         * r = ishft(x, y)
         * if ( y <= 0) {
-        *   r = x / 2 ** ( -1 * y )
+        *   r = x >> ( -1 * y)
         * } else {
-        *   r = x * 2 ** y
+        *   r = x << y
         * }
         */
-        ASR::expr_t *two = i(2, arg_types[0]);
         ASR::expr_t *m_one = i(-1, arg_types[0]);
         body.push_back(al, b.If(iLtE(args[1], i(0, arg_types[0])), {
-            b.Assignment(result, i_tDiv(args[0], iPow(two, iMul(m_one, args[1]), arg_types[0]), arg_types[0]))
+            b.Assignment(result, i_BitRshift(args[0], iMul(m_one, args[1]), arg_types[0]))
         }, {
-            b.Assignment(result, i_tMul(args[0], iPow(two, args[1], arg_types[0]), arg_types[0]))
+            b.Assignment(result, i_BitLshift(args[0], args[1], arg_types[0]))
         }));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -1033,7 +1036,7 @@ namespace Ishft {
 namespace Aint {
 
     static ASR::expr_t *eval_Aint(Allocator &al, const Location &loc,
-            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         double rv = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
         return f(std::trunc(rv), arg_type);
     }
@@ -1072,7 +1075,7 @@ namespace Aint {
 namespace Anint {
 
     static ASR::expr_t *eval_Anint(Allocator &al, const Location &loc,
-            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         double rv = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
         return f(std::round(rv), arg_type);
     }
@@ -1140,7 +1143,7 @@ namespace Anint {
 namespace Nint {
 
     static ASR::expr_t *eval_Nint(Allocator &al, const Location &loc,
-            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         double rv = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
         double near_integer = std::round(rv);
         int64_t result = int64_t(near_integer);
@@ -1183,7 +1186,7 @@ namespace Nint {
 namespace Floor {
 
     static ASR::expr_t *eval_Floor(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         float val = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
         int64_t result = int64_t(val);
         if(val<=0.0 && val!=result) {
@@ -1226,7 +1229,7 @@ namespace Floor {
 namespace Ceiling {
 
     static ASR::expr_t *eval_Ceiling(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         double val = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
         double difference = val - double(int(val));
         int64_t result;
@@ -1280,7 +1283,7 @@ namespace Ceiling {
 namespace Sqrt {
 
     static ASR::expr_t *eval_Sqrt(Allocator &al, const Location &loc,
-            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         if (is_real(*arg_type)) {
             double val = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
             return f(std::sqrt(val), arg_type);
@@ -1314,7 +1317,7 @@ namespace Sqrt {
 namespace Sngl {
 
     static ASR::expr_t *eval_Sngl(Allocator &al, const Location &loc,
-            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         double val = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
         return f(val, arg_type);
     }
@@ -1350,7 +1353,7 @@ namespace Sngl {
 namespace Ifix {
 
     static ASR::expr_t *eval_Ifix(Allocator &al, const Location &loc,
-            ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int val = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
         return make_ConstantWithType(make_IntegerConstant_t, val, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), loc);
     }
@@ -1386,7 +1389,7 @@ namespace Ifix {
 namespace Idint {
 
     static ASR::expr_t *eval_Idint(Allocator &al, const Location &loc,
-            ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int val = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
         return make_ConstantWithType(make_IntegerConstant_t, val, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), loc);
     }
@@ -1422,7 +1425,7 @@ namespace Idint {
 namespace FMA {
 
     static ASR::expr_t *eval_FMA(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         double a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
         double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
         double c = ASR::down_cast<ASR::RealConstant_t>(args[2])->m_r;
@@ -1457,7 +1460,7 @@ namespace FMA {
 namespace SignFromValue {
 
     static ASR::expr_t *eval_SignFromValue(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         if (is_real(*t1)) {
             double a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
@@ -1511,7 +1514,7 @@ namespace SignFromValue {
 namespace FlipSign {
 
     static ASR::expr_t *eval_FlipSign(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
         if (a % 2 == 1) b = -b;
@@ -1556,7 +1559,7 @@ namespace FlipSign {
 namespace FloorDiv {
 
     static ASR::expr_t *eval_FloorDiv(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
         ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
         type1 = ASRUtils::type_get_past_const(type1);
@@ -1574,18 +1577,34 @@ namespace FloorDiv {
         if (is_int1 && is_int2) {
             int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
             int64_t b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+            if (b == 0) {
+                append_error(diag, "Division by `0` is not allowed", loc);
+                return nullptr;
+            }
             return make_ConstantWithType(make_IntegerConstant_t, a / b, t1, loc);
         } else if (is_unsigned_int1 && is_unsigned_int2) {
             int64_t a = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(args[0])->m_n;
             int64_t b = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(args[1])->m_n;
+            if (b == 0) {
+                append_error(diag, "Division by `0` is not allowed", loc);
+                return nullptr;
+            }
             return make_ConstantWithType(make_UnsignedIntegerConstant_t, a / b, t1, loc);
         } else if (is_logical1 && is_logical2) {
             bool a = ASR::down_cast<ASR::LogicalConstant_t>(args[0])->m_value;
             bool b = ASR::down_cast<ASR::LogicalConstant_t>(args[1])->m_value;
+            if (b == 0) {
+                append_error(diag, "Division by `0` is not allowed", loc);
+                return nullptr;
+            }
             return make_ConstantWithType(make_LogicalConstant_t, a / b, t1, loc);
         } else if (is_real1 && is_real2) {
             double a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+            if (b == 0.0) {
+                append_error(diag, "Division by `0` is not allowed", loc);
+                return nullptr;
+            }
             double r = a / b;
             int64_t result = (int64_t)r;
             if ( r >= 0.0 || (double)result == r) {
@@ -1639,7 +1658,7 @@ namespace FloorDiv {
 namespace Mod {
 
     static ASR::expr_t *eval_Mod(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         bool is_real1 = is_real(*ASRUtils::expr_type(args[0]));
         bool is_real2 = is_real(*ASRUtils::expr_type(args[1]));
         bool is_int1 = is_integer(*ASRUtils::expr_type(args[0]));
@@ -1719,7 +1738,7 @@ namespace Mod {
 namespace Trailz {
 
     static ASR::expr_t *eval_Trailz(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t kind = ASRUtils::extract_kind_from_ttype_t(t1);
         int64_t trailing_zeros = ASRUtils::compute_trailing_zeros(a, kind);
@@ -1797,7 +1816,7 @@ namespace Trailz {
 namespace Leadz {
 
     static ASR::expr_t *eval_Leadz(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t kind = ASRUtils::extract_kind_from_ttype_t(t1);
         int64_t leading_zeros = ASRUtils::compute_leading_zeros(a, kind);
@@ -1877,7 +1896,7 @@ namespace Leadz {
 namespace Hypot {
 
     static ASR::expr_t *eval_Hypot(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int kind = ASRUtils::extract_kind_from_ttype_t(t1);
         if (kind == 4) {
             float a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
@@ -1925,10 +1944,57 @@ namespace Hypot {
 
 } // namespace Hypot
 
+namespace Selected_int_kind {
+
+    static ASR::expr_t *eval_Selected_int_kind(Allocator &al, const Location &loc,
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        int64_t val = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        int64_t result;
+        if (val <= 2) {
+            result = 1;
+        } else if (val <= 4) {
+            result = 2;
+        } else if (val <= 9) {
+            result = 4;
+        } else {
+            result = 8;
+        }
+        return i32(result);
+    }
+
+    static inline ASR::expr_t* instantiate_Selected_int_kind(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("");
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(fn_name, int32, ReturnVar);
+        auto number = declare("num", arg_types[0], Local);
+        body.push_back(al, b.Assignment(number, args[0]));
+        body.push_back(al, b.If(iLtE(number, i(2, arg_types[0])), {
+            b.Assignment(result, i(1, int32))
+        }, {
+            b.If(iLtE(number, i(4, arg_types[0])), {
+                b.Assignment(result, i(2, int32))
+            }, {
+                b.If(iLtE(number, i(9, arg_types[0])), {
+                    b.Assignment(result, i(4, int32))
+                }, {
+                    b.Assignment(result, i(8, int32))
+                })
+            })
+        }));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+} // namespace Selected_int_kind
+
 namespace Kind {
 
     static ASR::expr_t *eval_Kind(Allocator &al, const Location &loc,
-            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int result = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
         return make_ConstantWithType(make_IntegerConstant_t, result, int32, loc);
     }
@@ -1952,23 +2018,8 @@ namespace Kind {
 namespace Rank {
 
     static ASR::expr_t *eval_Rank(Allocator &al, const Location &loc,
-            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args) {
-        int result = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(args[0]));
-        return make_ConstantWithType(make_IntegerConstant_t, result, int32, loc);
-    }
-
-    static inline ASR::expr_t* instantiate_Rank(Allocator &al, const Location &loc,
-            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_optimization_rank_" + type_to_str_python(arg_types[0]));
-        fill_func_arg("x", arg_types[0]);
-        auto result = declare(fn_name, int32, ReturnVar);
-        body.push_back(al, b.Assignment(result, i32(ASRUtils::extract_n_dims_from_ttype(arg_types[0]))));
-
-        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
-        scope->add_symbol(fn_name, f_sym);
-        return b.Call(f_sym, new_args, return_type, nullptr);
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        return i32(extract_n_dims_from_ttype(expr_type(args[0])));
     }
 
 } // namespace Rank
@@ -1976,7 +2027,7 @@ namespace Rank {
 namespace Digits {
 
     static ASR::expr_t *eval_Digits(Allocator &al, const Location &loc,
-            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
         int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
         if (is_integer(*type1)) {
@@ -1984,13 +2035,19 @@ namespace Digits {
                 return make_ConstantWithType(make_IntegerConstant_t, 31, int32, loc);
             } else if (kind == 8) {
                 return make_ConstantWithType(make_IntegerConstant_t, 63, int32, loc);
+            } else {
+                append_error(diag, "Kind "+ std::to_string(kind) + " not supported for type Integer", loc);
             }
         } else if (is_real(*type1)) {
             if (kind == 4) {
                 return make_ConstantWithType(make_IntegerConstant_t, 24, int32, loc);
             } else if (kind == 8) {
                 return make_ConstantWithType(make_IntegerConstant_t, 53, int32, loc);
+            } else {
+                append_error(diag, "Kind "+ std::to_string(kind) + " not supported for type Real", loc);
             }
+        } else {
+            append_error(diag, "Argument to `digits` intrinsic must be real or integer", loc);
         }
         return nullptr;
     }
@@ -2026,7 +2083,7 @@ namespace Digits {
 namespace Repeat {
 
     static ASR::expr_t *eval_Repeat(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         char* str = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
         int64_t n = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         size_t len = std::strlen(str);
@@ -2046,8 +2103,9 @@ namespace Repeat {
         fill_func_arg("x", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -10, nullptr)));
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -3,
-            ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, args[0], ASRUtils::TYPE(
-                ASR::make_Integer_t(al, loc, 4)), nullptr)))), ReturnVar);
+            ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, args[0], ASRUtils::expr_type(args[1]), nullptr)),
+                ASR::binopType::Mul, args[1], ASRUtils::expr_type(args[1]), nullptr)))), ReturnVar);
         auto itr = declare("r", arg_types[1], Local);
         /*
             function repeat_(s, n) result(r)
@@ -2071,11 +2129,15 @@ namespace Repeat {
         ASR::expr_t *cond = iGt(itr, i(0, arg_types[1]));
         std::vector<ASR::stmt_t*> while_loop_body;
         if (arg_1_kind == 4) {
+            while_loop_body.push_back(b.Assignment(ASRUtils::EXPR(ASR::make_StringItem_t(
+                al, loc, result, itr, ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, 1, nullptr)),
+                nullptr)), args[0]));
             while_loop_body.push_back(b.Assignment(itr, iSub(itr, i(1, arg_types[1]))));
-            while_loop_body.push_back(b.Assignment(result, b.Add(result, args[0])));
         } else {
+            while_loop_body.push_back(b.Assignment(ASRUtils::EXPR(ASR::make_StringItem_t(
+                al, loc, result, itr, ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, 1, nullptr)),
+                nullptr)), args[0]));
             while_loop_body.push_back(b.Assignment(itr, i64Sub(itr, i(1, arg_types[1]))));
-            while_loop_body.push_back(b.Assignment(result, b.Add(result, args[0])));
         }
         body.push_back(al, b.While(cond, while_loop_body));
 
@@ -2173,7 +2235,7 @@ namespace Adjustl {
 namespace MinExponent {
 
     static ASR::expr_t *eval_MinExponent(Allocator &al, const Location &loc,
-            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASR::RealConstant_t* a = ASR::down_cast<ASR::RealConstant_t>(args[0]);
         int m_kind = ASRUtils::extract_kind_from_ttype_t(a->m_type);
         int result;
@@ -2211,7 +2273,7 @@ namespace MinExponent {
 namespace MaxExponent {
 
     static ASR::expr_t *eval_MaxExponent(Allocator &al, const Location &loc,
-            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASR::RealConstant_t* a = ASR::down_cast<ASR::RealConstant_t>(args[0]);
         int m_kind = ASRUtils::extract_kind_from_ttype_t(a->m_type);
         int result;
@@ -2249,7 +2311,7 @@ namespace MaxExponent {
 #define create_exp_macro(X, stdeval)                                                      \
 namespace X {                                                                             \
     static inline ASR::expr_t* eval_##X(Allocator &al, const Location &loc,               \
-            ASR::ttype_t *t, Vec<ASR::expr_t*> &args) {                                   \
+            ASR::ttype_t *t, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {      \
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));                            \
         double rv = -1;                                                                   \
         if( ASRUtils::extract_value(args[0], rv) ) {                                      \
@@ -2273,7 +2335,7 @@ namespace X {                                                                   
             return nullptr;                                                               \
         }                                                                                 \
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_##X,      \
-            static_cast<int64_t>(IntrinsicElementalFunctions::X), 0, type);               \
+            static_cast<int64_t>(IntrinsicElementalFunctions::X), 0, type, diag);         \
     }                                                                                     \
 } // namespace X
 
@@ -2283,7 +2345,7 @@ create_exp_macro(Expm1, expm1)
 namespace Exp {
 
     static inline ASR::expr_t* eval_Exp(Allocator &al, const Location &loc,
-            ASR::ttype_t *t, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t *t, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
         double rv = -1;
         if( ASRUtils::extract_value(args[0], rv) ) {
@@ -2315,7 +2377,7 @@ namespace Exp {
         }
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args,
             eval_Exp, static_cast<int64_t>(IntrinsicElementalFunctions::Exp),
-            0, type);
+            0, type, diag);
     }
 
     static inline ASR::expr_t* instantiate_Exp(Allocator &al, const Location &loc,
@@ -2364,7 +2426,7 @@ static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag:
 }
 
 static inline ASR::expr_t *eval_list_index(Allocator &/*al*/,
-    const Location &/*loc*/, ASR::ttype_t */*t*/, Vec<ASR::expr_t*>& /*args*/) {
+    const Location &/*loc*/, ASR::ttype_t */*t*/, Vec<ASR::expr_t*>& /*args*/, diag::Diagnostics& /*diag*/) {
     // TODO: To be implemented for ListConstant expression
     return nullptr;
 }
@@ -2406,7 +2468,7 @@ static inline ASR::asr_t* create_ListIndex(Allocator& al, const Location& loc,
         arg_values.push_back(al, ASRUtils::expr_value(args[i]));
     }
     ASR::ttype_t *to_type = int32;
-    ASR::expr_t* compile_time_value = eval_list_index(al, loc, to_type, arg_values);
+    ASR::expr_t* compile_time_value = eval_list_index(al, loc, to_type, arg_values, diag);
     return ASR::make_IntrinsicElementalFunction_t(al, loc,
             static_cast<int64_t>(IntrinsicElementalFunctions::ListIndex),
             args.p, args.size(), overload_id, to_type, compile_time_value);
@@ -2417,7 +2479,7 @@ static inline ASR::asr_t* create_ListIndex(Allocator& al, const Location& loc,
 namespace ListReverse {
 
 static inline ASR::expr_t *eval_ListReverse(Allocator &/*al*/,
-    const Location &/*loc*/, ASR::ttype_t */*t*/, Vec<ASR::expr_t*>& /*args*/) {
+    const Location &/*loc*/, ASR::ttype_t */*t*/, Vec<ASR::expr_t*>& /*args*/, diag::Diagnostics& /*diag*/) {
     // TODO: To be implemented for ListConstant expression
     return nullptr;
 }
@@ -2448,7 +2510,7 @@ static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag:
 }
 
 static inline ASR::expr_t *eval_list_pop(Allocator &/*al*/,
-    const Location &/*loc*/, ASR::ttype_t */*t*/, Vec<ASR::expr_t*>& /*args*/) {
+    const Location &/*loc*/, ASR::ttype_t */*t*/, Vec<ASR::expr_t*>& /*args*/, diag::Diagnostics& /*diag*/) {
     // TODO: To be implemented for ListConstant expression
     return nullptr;
 }
@@ -2476,7 +2538,7 @@ static inline ASR::asr_t* create_ListPop(Allocator& al, const Location& loc,
         arg_values.push_back(al, ASRUtils::expr_value(args[i]));
     }
     ASR::ttype_t *to_type = list_type;
-    ASR::expr_t* compile_time_value = eval_list_pop(al, loc, to_type, arg_values);
+    ASR::expr_t* compile_time_value = eval_list_pop(al, loc, to_type, arg_values, diag);
     int64_t overload_id = (args.size() == 2);
     return ASR::make_IntrinsicElementalFunction_t(al, loc,
             static_cast<int64_t>(IntrinsicElementalFunctions::ListPop),
@@ -2488,7 +2550,7 @@ static inline ASR::asr_t* create_ListPop(Allocator& al, const Location& loc,
 namespace ListReserve {
 
 static inline ASR::expr_t *eval_ListReserve(Allocator &/*al*/,
-    const Location &/*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/) {
+    const Location &/*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/, diag::Diagnostics& /*diag*/) {
     // TODO: To be implemented for ListConstant expression
     return nullptr;
 }
@@ -2511,7 +2573,7 @@ static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag:
 }
 
 static inline ASR::expr_t *eval_dict_keys(Allocator &/*al*/,
-    const Location &/*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/) {
+    const Location &/*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/, diag::Diagnostics& /*diag*/) {
     // TODO: To be implemented for DictConstant expression
     return nullptr;
 }
@@ -2534,7 +2596,7 @@ static inline ASR::asr_t* create_DictKeys(Allocator& al, const Location& loc,
         arg_values.push_back(al, ASRUtils::expr_value(args[i]));
     }
     ASR::ttype_t *to_type = List(dict_keys_type);
-    ASR::expr_t* compile_time_value = eval_dict_keys(al, loc, to_type, arg_values);
+    ASR::expr_t* compile_time_value = eval_dict_keys(al, loc, to_type, arg_values, diag);
     return ASR::make_IntrinsicElementalFunction_t(al, loc,
             static_cast<int64_t>(IntrinsicElementalFunctions::DictKeys),
             args.p, args.size(), 0, to_type, compile_time_value);
@@ -2558,7 +2620,7 @@ static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag:
 }
 
 static inline ASR::expr_t *eval_dict_values(Allocator &/*al*/,
-    const Location &/*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/) {
+    const Location &/*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/, diag::Diagnostics& /*diag*/) {
     // TODO: To be implemented for DictConstant expression
     return nullptr;
 }
@@ -2581,7 +2643,7 @@ static inline ASR::asr_t* create_DictValues(Allocator& al, const Location& loc,
         arg_values.push_back(al, ASRUtils::expr_value(args[i]));
     }
     ASR::ttype_t *to_type = List(dict_values_type);
-    ASR::expr_t* compile_time_value = eval_dict_values(al, loc, to_type, arg_values);
+    ASR::expr_t* compile_time_value = eval_dict_values(al, loc, to_type, arg_values, diag);
     return ASR::make_IntrinsicElementalFunction_t(al, loc,
             static_cast<int64_t>(IntrinsicElementalFunctions::DictValues),
             args.p, args.size(), 0, to_type, compile_time_value);
@@ -2607,7 +2669,7 @@ static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag:
 }
 
 static inline ASR::expr_t *eval_set_add(Allocator &/*al*/,
-    const Location &/*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/) {
+    const Location &/*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/, diag::Diagnostics& /*diag*/) {
     // TODO: To be implemented for SetConstant expression
     return nullptr;
 }
@@ -2631,7 +2693,7 @@ static inline ASR::asr_t* create_SetAdd(Allocator& al, const Location& loc,
     for( size_t i = 0; i < args.size(); i++ ) {
         arg_values.push_back(al, ASRUtils::expr_value(args[i]));
     }
-    ASR::expr_t* compile_time_value = eval_set_add(al, loc, nullptr, arg_values);
+    ASR::expr_t* compile_time_value = eval_set_add(al, loc, nullptr, arg_values, diag);
     return ASR::make_Expr_t(al, loc,
             ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(al, loc,
             static_cast<int64_t>(IntrinsicElementalFunctions::SetAdd),
@@ -2658,7 +2720,7 @@ static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag:
 }
 
 static inline ASR::expr_t *eval_set_remove(Allocator &/*al*/,
-    const Location &/*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/) {
+    const Location &/*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/, diag::Diagnostics& /*diag*/) {
     // TODO: To be implemented for SetConstant expression
     return nullptr;
 }
@@ -2682,7 +2744,7 @@ static inline ASR::asr_t* create_SetRemove(Allocator& al, const Location& loc,
     for( size_t i = 0; i < args.size(); i++ ) {
         arg_values.push_back(al, ASRUtils::expr_value(args[i]));
     }
-    ASR::expr_t* compile_time_value = eval_set_remove(al, loc, nullptr, arg_values);
+    ASR::expr_t* compile_time_value = eval_set_remove(al, loc, nullptr, arg_values, diag);
     return ASR::make_Expr_t(al, loc,
             ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(al, loc,
             static_cast<int64_t>(IntrinsicElementalFunctions::SetRemove),
@@ -2714,7 +2776,7 @@ namespace Max {
     }
 
     static ASR::expr_t *eval_Max(Allocator &al, const Location &loc,
-            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
         if (ASR::is_a<ASR::Real_t>(*arg_type)) {
             double max_val = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
@@ -2773,7 +2835,7 @@ namespace Max {
             arg_values.push_back(al, arg_value);
         }
         if (is_compile_time) {
-            ASR::expr_t *value = eval_Max(al, loc, expr_type(args[0]), arg_values);
+            ASR::expr_t *value = eval_Max(al, loc, expr_type(args[0]), arg_values, diag);
             return ASR::make_IntrinsicElementalFunction_t(al, loc,
                 static_cast<int64_t>(IntrinsicElementalFunctions::Max),
                 args.p, args.n, 0, ASRUtils::expr_type(args[0]), value);
@@ -2865,7 +2927,7 @@ namespace Min {
     }
 
     static ASR::expr_t *eval_Min(Allocator &al, const Location &loc,
-            ASR::ttype_t *arg_type, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t *arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
         if (ASR::is_a<ASR::Real_t>(*arg_type)) {
             double min_val = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
@@ -2924,7 +2986,7 @@ namespace Min {
             arg_values.push_back(al, arg_value);
         }
         if (is_compile_time) {
-            ASR::expr_t *value = eval_Min(al, loc, expr_type(args[0]), arg_values);
+            ASR::expr_t *value = eval_Min(al, loc, expr_type(args[0]), arg_values, diag);
             return ASR::make_IntrinsicElementalFunction_t(al, loc,
                 static_cast<int64_t>(IntrinsicElementalFunctions::Min),
                 args.p, args.n, 0, ASRUtils::expr_type(args[0]), value);
@@ -3101,7 +3163,7 @@ namespace Partition {
 namespace Epsilon {
 
     static ASR::expr_t *eval_Epsilon(Allocator &al, const Location &loc,
-            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &/*args*/) {
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
         double epsilon_val = -1;
         int32_t kind = extract_kind_from_ttype_t(arg_type);
         switch ( kind ) {
@@ -3118,10 +3180,32 @@ namespace Epsilon {
 
 }  // namespace Epsilon
 
+namespace Precision {
+
+    static ASR::expr_t *eval_Precision(Allocator &al, const Location &loc,
+            ASR::ttype_t* /*return_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        int64_t precision_val = -1;
+        ASR::ttype_t *arg_type = expr_type(args[0]);
+        int32_t kind = extract_kind_from_ttype_t(arg_type);
+        switch ( kind ) {
+            case 4: {
+                precision_val = 6; break;
+            } case 8: {
+                precision_val = 15; break;
+            } default: {
+                append_error(diag, "Kind " + std::to_string(kind) + " is not supported yet", loc);
+                return nullptr;
+            }
+        }
+        return i32(precision_val);
+    }
+
+}  // namespace Precision
+
 namespace Tiny {
 
     static ASR::expr_t *eval_Tiny(Allocator &al, const Location &loc,
-            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &/*args*/) {
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& diag) {
         double tiny_value = -1;
         int32_t kind = extract_kind_from_ttype_t(arg_type);
         switch ( kind ) {
@@ -3130,7 +3214,8 @@ namespace Tiny {
             } case 8: {
                 tiny_value = std::numeric_limits<double>::min(); break;
             } default: {
-                break;
+                append_error(diag, "Kind " + std::to_string(kind) + " is not supported yet", loc);
+                    return nullptr;
             }
         }
         return f(tiny_value, arg_type);
@@ -3141,7 +3226,7 @@ namespace Tiny {
 namespace Conjg {
 
     static ASR::expr_t *eval_Conjg(Allocator &al, const Location &loc,
-            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         std::complex<double> crv;
         if( extract_value(args[0], crv) ) {
             std::complex<double> val = std::conj(crv);
@@ -3168,52 +3253,16 @@ namespace Conjg {
         // * r = real(x) - aimag(x)*(0,1)
         ASR::ttype_t *real_type = TYPE(ASR::make_Real_t(al, loc,
             extract_kind_from_ttype_t(arg_types[0])));
-        ASR::expr_t *aimag_of_x;
-        {
-            std::string c_func_name;
-            if (extract_kind_from_ttype_t(arg_types[0]) == 4) {
-                c_func_name = "_lfortran_caimag";
-            } else {
-                c_func_name = "_lfortran_zaimag";
-            }
-            SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
-            Vec<ASR::expr_t*> args_1;
-            {
-                args_1.reserve(al, 1);
-                auto arg = b.Variable(fn_symtab_1, "x", arg_types[0],
-                    ASR::intentType::In, ASR::abiType::BindC, true);
-                args_1.push_back(al, arg);
-            }
-
-            auto return_var_1 = b.Variable(fn_symtab_1, c_func_name, real_type,
-                ASR::intentType::ReturnVar, ASR::abiType::BindC, false);
-
-            SetChar dep_1; dep_1.reserve(al, 1);
-            Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
-            ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1,
-                dep_1, args_1, body_1, return_var_1, ASR::abiType::BindC,
-                ASR::deftypeType::Interface, s2c(al, c_func_name));
-            fn_symtab->add_symbol(c_func_name, s);
-            dep.push_back(al, s2c(al, c_func_name));
-            Vec<ASR::call_arg_t> call_args;
-            {
-                call_args.reserve(al, 1);
-                ASR::call_arg_t arg;
-                arg.loc = args[0]->base.loc;
-                arg.m_value = args[0];
-                call_args.push_back(al, arg);
-            }
-            aimag_of_x = b.Call(s, call_args, real_type);
-        }
-
+        ASR::expr_t *aimag_of_x = EXPR(ASR::make_ComplexIm_t(al, loc,
+            args[0], real_type, nullptr));
         aimag_of_x = EXPR(ASR::make_Cast_t(al, loc, aimag_of_x,
             ASR::cast_kindType::RealToComplex, arg_types[0], nullptr));
         ASR::expr_t *constant_complex = EXPR(ASR::make_ComplexConstant_t(al, loc,
             0.0, 1.0, arg_types[0]));
         ASR::expr_t *bin_op = b.ElementalMul(aimag_of_x, constant_complex, loc);
-        ASR::expr_t *real_of_x = EXPR(ASR::make_Cast_t(al, loc, args[0],
-            ASR::cast_kindType::ComplexToReal, real_type, nullptr));
-        real_of_x =  EXPR(ASR::make_Cast_t(al, loc, real_of_x,
+        ASR::expr_t *real_of_x = EXPR(ASR::make_ComplexRe_t(al, loc,
+            args[0], real_type, nullptr));
+        real_of_x = EXPR(ASR::make_Cast_t(al, loc, real_of_x,
             ASR::cast_kindType::RealToComplex, arg_types[0], nullptr));
         body.push_back(al, b.Assignment(result, b.ElementalSub(real_of_x,
             bin_op, loc)));
@@ -3225,6 +3274,42 @@ namespace Conjg {
     }
 
 } // namespace Conjg
+
+namespace Huge {
+
+    static ASR::expr_t *eval_Huge(Allocator &al, const Location &loc,
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& diag) {
+        int32_t kind = extract_kind_from_ttype_t(arg_type);
+        if (ASR::is_a<ASR::Integer_t>(*arg_type)) {
+            int64_t huge_value = -1;
+            switch ( kind ) {
+                case 4: {
+                    huge_value = std::numeric_limits<int32_t>::max(); break;
+                } case 8: {
+                    huge_value = std::numeric_limits<int64_t>::max(); break;
+                } default: {
+                    append_error(diag, "Kind " + std::to_string(kind) + " is not supported yet", loc);
+                    return nullptr;
+                }
+            }
+            return i(huge_value, arg_type);
+        } else {
+            double huge_value = -1;
+            switch ( kind ) {
+                case 4: {
+                    huge_value = std::numeric_limits<float>::max(); break;
+                } case 8: {
+                    huge_value = std::numeric_limits<double>::max(); break;
+                } default: {
+                    append_error(diag, "Kind " + std::to_string(kind) + " is not supported yet", loc);
+                    return nullptr;
+                }
+            }
+            return f(huge_value, arg_type);
+        }
+    }
+
+}  // namespace Huge
 
 namespace SymbolicSymbol {
 
@@ -3241,7 +3326,7 @@ namespace SymbolicSymbol {
     }
 
     static inline ASR::expr_t *eval_SymbolicSymbol(Allocator &/*al*/,
-    const Location &/*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/) {
+    const Location &/*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/, diag::Diagnostics& /*diag*/) {
         // TODO
         return nullptr;
     }
@@ -3263,7 +3348,7 @@ namespace SymbolicSymbol {
 
         ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, loc));
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_SymbolicSymbol,
-            static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicSymbol), 0, to_type);
+            static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicSymbol), 0, to_type, diag);
     }
 
 } // namespace SymbolicSymbol
@@ -3285,14 +3370,14 @@ namespace X{                                                                    
     }                                                                                      \
                                                                                            \
     static inline ASR::expr_t* eval_##X(Allocator &/*al*/, const Location &/*loc*/,        \
-            ASR::ttype_t *, Vec<ASR::expr_t*> &/*args*/) {                                 \
+            ASR::ttype_t *, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {    \
         /*TODO*/                                                                           \
         return nullptr;                                                                    \
     }                                                                                      \
                                                                                            \
     static inline ASR::asr_t* create_##X(Allocator& al, const Location& loc,               \
             Vec<ASR::expr_t*>& args,                                                       \
-            diag::Diagnostics& diag) {       \
+            diag::Diagnostics& diag) {                                                     \
         if (args.size() != 2) {                                                            \
             append_error(diag, "Intrinsic function `"#X"` accepts exactly 2 arguments",    \
                 loc);                                                                      \
@@ -3315,7 +3400,7 @@ namespace X{                                                                    
             arg_values.push_back(al, ASRUtils::expr_value(args[i]));                       \
         }                                                                                  \
         ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, loc));   \
-        ASR::expr_t* compile_time_value = eval_##X(al, loc, to_type, arg_values);          \
+        ASR::expr_t* compile_time_value = eval_##X(al, loc, to_type, arg_values, diag);    \
         return ASR::make_IntrinsicElementalFunction_t(al, loc,                             \
                 static_cast<int64_t>(IntrinsicElementalFunctions::X),                      \
                 args.p, args.size(), 0, to_type, compile_time_value);                      \
@@ -3339,16 +3424,16 @@ namespace X {                                                                   
     }                                                                                     \
                                                                                           \
     static inline ASR::expr_t* eval_##X(Allocator &/*al*/, const Location &/*loc*/,       \
-            ASR::ttype_t *, Vec<ASR::expr_t*> &/*args*/) {                                \
+            ASR::ttype_t *, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {   \
         /*TODO*/                                                                          \
         return nullptr;                                                                   \
     }                                                                                     \
                                                                                           \
     static inline ASR::asr_t* create_##X(Allocator& al, const Location& loc,              \
             Vec<ASR::expr_t*>& args,                                                      \
-            diag::Diagnostics& /*diag*/) {  \
+            diag::Diagnostics& diag) {                                                    \
         ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, loc));  \
-        ASR::expr_t* compile_time_value = eval_##X(al, loc, to_type, args);               \
+        ASR::expr_t* compile_time_value = eval_##X(al, loc, to_type, args, diag);         \
         return ASR::make_IntrinsicElementalFunction_t(al, loc,                            \
                 static_cast<int64_t>(IntrinsicElementalFunctions::X),                     \
                 nullptr, 0, 0, to_type, compile_time_value);                              \
@@ -3372,17 +3457,17 @@ namespace SymbolicInteger {
     }
 
     static inline ASR::expr_t* eval_SymbolicInteger(Allocator &/*al*/,
-    const Location &/*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/) {
+    const Location &/*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/, diag::Diagnostics& /*diag*/) {
         // TODO
         return nullptr;
     }
 
     static inline ASR::asr_t* create_SymbolicInteger(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
-            diag::Diagnostics& /*diag*/) {
+            diag::Diagnostics& diag) {
         ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, loc));
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_SymbolicInteger,
-            static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicInteger), 0, to_type);
+            static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicInteger), 0, to_type, diag);
     }
 
 } // namespace SymbolicInteger
@@ -3403,7 +3488,7 @@ namespace SymbolicHasSymbolQ {
     }
 
     static inline ASR::expr_t* eval_SymbolicHasSymbolQ(Allocator &/*al*/,
-        const Location &/*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*> &/*args*/) {
+        const Location &/*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
         /*TODO*/
         return nullptr;
     }
@@ -3432,7 +3517,7 @@ namespace SymbolicHasSymbolQ {
             arg_values.push_back(al, ASRUtils::expr_value(args[i]));
         }
 
-        ASR::expr_t* compile_time_value = eval_SymbolicHasSymbolQ(al, loc, logical, arg_values);
+        ASR::expr_t* compile_time_value = eval_SymbolicHasSymbolQ(al, loc, logical, arg_values, diag);
         return ASR::make_IntrinsicElementalFunction_t(al, loc,
             static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicHasSymbolQ),
             args.p, args.size(), 0, logical, compile_time_value);
@@ -3456,7 +3541,7 @@ namespace SymbolicGetArgument {
     }
 
     static inline ASR::expr_t* eval_SymbolicGetArgument(Allocator &/*al*/,
-        const Location &/*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*> &/*args*/) {
+        const Location &/*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
         /*TODO*/
         return nullptr;
     }
@@ -3486,7 +3571,7 @@ namespace SymbolicGetArgument {
         ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, loc));
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_SymbolicGetArgument,
             static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicGetArgument),
-            0, to_type);
+            0, to_type, diag);
     }
 } // namespace SymbolicGetArgument
 
@@ -3504,7 +3589,7 @@ namespace X {                                                                   
     }                                                                                     \
                                                                                           \
     static inline ASR::expr_t* eval_##X(Allocator &/*al*/, const Location &/*loc*/,       \
-            ASR::ttype_t *, Vec<ASR::expr_t*> &/*args*/) {                                \
+            ASR::ttype_t *, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {   \
         /*TODO*/                                                                          \
         return nullptr;                                                                   \
     }                                                                                     \
@@ -3527,7 +3612,7 @@ namespace X {                                                                   
         }                                                                                 \
                                                                                           \
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_##X,      \
-            static_cast<int64_t>(IntrinsicElementalFunctions::X), 0, logical);            \
+            static_cast<int64_t>(IntrinsicElementalFunctions::X), 0, logical, diag);      \
     }                                                                                     \
 } // namespace X
 
@@ -3551,7 +3636,7 @@ namespace X {                                                                   
     }                                                                                     \
                                                                                           \
     static inline ASR::expr_t* eval_##X(Allocator &/*al*/, const Location &/*loc*/,       \
-            ASR::ttype_t *, Vec<ASR::expr_t*> &/*args*/) {                                \
+            ASR::ttype_t *, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {   \
         /*TODO*/                                                                          \
         return nullptr;                                                                   \
     }                                                                                     \
@@ -3575,7 +3660,7 @@ namespace X {                                                                   
                                                                                           \
         ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, loc));  \
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_##X,      \
-            static_cast<int64_t>(IntrinsicElementalFunctions::X), 0, to_type);            \
+            static_cast<int64_t>(IntrinsicElementalFunctions::X), 0, to_type, diag);      \
     }                                                                                     \
 } // namespace X
 

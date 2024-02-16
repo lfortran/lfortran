@@ -1029,17 +1029,13 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
     def make_visitor(self, name, fields):
         self.emit("")
         self.emit("ASR::asr_t* duplicate_%s(%s_t* x) {" % (name, name), 1)
-        self.used = False
-        arguments = []
+        arguments = ["al", "x->base.base.loc"]
         for field in fields:
             ret_value = self.visitField(field)
             for node_arg in ret_value:
                 arguments.append(node_arg)
-        if not self.used:
-            self.emit("return (asr_t*)x;", 2)
-        else:
-            node_arg_str = ', '.join(arguments)
-            self.emit("return make_%s_t(al, x->base.base.loc, %s);" %(name, node_arg_str), 2)
+        node_arg_str = ', '.join(arguments)
+        self.emit("return make_%s_t(%s);" %(name, node_arg_str), 2)
         if self.is_stmt:
             self.duplicate_stmt.append(("    case ASR::stmtType::%s: {" % name, 2))
             if name == "SubroutineCall":
@@ -1088,7 +1084,6 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
             field.type == "dimension"):
             level = 2
             if field.seq:
-                self.used = True
                 pointer_char = ''
                 if (field.type != "call_arg" and
                     field.type != "array_index" and
@@ -1141,7 +1136,6 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
                 self.emit("}", level)
                 arguments = ("m_" + field.name + ".p", "x->n_" + field.name)
             else:
-                self.used = True
                 if field.type == "symbol":
                     self.emit("%s_t* m_%s = x->m_%s;" % (field.type, field.name, field.name), level)
                 elif field.type == "do_loop_head":
@@ -1674,7 +1668,7 @@ class PickleVisitorVisitor(ASDLVisitor):
                     self.emit(    's.append("()");', 3)
                     self.emit("}", 2)
                 else:
-                    if field.name == "intrinsic_id":
+                    if field.name == "intrinsic_id" or field.name == "inquiry_id":
                         self.emit('s.append(self().convert_intrinsic_id(x.m_%s));' % field.name, 2)
                     elif field.name == "impure_intrinsic_id":
                         self.emit('s.append(self().convert_impure_intrinsic_id(x.m_%s));' % field.name, 2)
