@@ -5516,13 +5516,15 @@ public:
         llvm::Value *real_res, *img_res;
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
-                real_res = builder->CreateFCmpUEQ(real_left, real_right);
-                img_res = builder->CreateFCmpUEQ(img_left, img_right);
+                real_res = builder->CreateFCmpOEQ(real_left, real_right);
+                img_res = builder->CreateFCmpOEQ(img_left, img_right);
+                tmp = builder->CreateAnd(real_res, img_res);
                 break;
             }
             case (ASR::cmpopType::NotEq) : {
-                real_res = builder->CreateFCmpUNE(real_left, real_right);
-                img_res = builder->CreateFCmpUNE(img_left, img_right);
+                real_res = builder->CreateFCmpONE(real_left, real_right);
+                img_res = builder->CreateFCmpONE(img_left, img_right);
+                tmp = builder->CreateOr(real_res, img_res);
                 break;
             }
             default : {
@@ -5530,7 +5532,6 @@ public:
                         x.base.base.loc);
             }
         }
-        tmp = builder->CreateAnd(real_res, img_res);
     }
 
     void visit_StringCompare(const ASR::StringCompare_t &x) {
@@ -6391,6 +6392,15 @@ public:
             el_type = llvm::Type::getInt1Ty(context);
         } else if (ASR::is_a<ASR::Character_t>(*x_m_type)) {
             el_type = character_type;
+        } else if (ASR::is_a<ASR::Complex_t>(*x_m_type)) {
+            int complex_kind = ASR::down_cast<ASR::Complex_t>(x_m_type)->m_kind;
+            if( complex_kind == 4 ) {
+                el_type = llvm_utils->complex_type_4;
+            } else if( complex_kind == 8 ) {
+                el_type = llvm_utils->complex_type_8;
+            } else {
+                LCOMPILERS_ASSERT(false);
+            }
         } else {
             throw CodeGenError("ConstArray type not supported yet");
         }
