@@ -3440,14 +3440,19 @@ public:
                 throw SemanticError("Empty array constructor is not allowed", x.base.base.loc);
             }
         }
+        bool implied_do_loops_present = false;
         for (size_t i=0; i<x.n_args; i++) {
             this->visit_expr(*x.m_args[i]);
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
+            if( ASR::is_a<ASR::ImpliedDoLoop_t>(*expr) ) {
+                implied_do_loops_present = true;
+            }
             if (type == nullptr) {
                 type = ASRUtils::expr_type(expr);
             } else {
                 if (!ASRUtils::check_equal_type(ASRUtils::expr_type(expr), type)) {
-                    ImplicitCastRules::set_converted_value(al, expr->base.loc, &expr, ASRUtils::expr_type(expr), type);
+                    ImplicitCastRules::set_converted_value(al, expr->base.loc,
+                        &expr, ASRUtils::expr_type(expr), type);
                 }
             }
             body.push_back(al, expr);
@@ -3456,9 +3461,13 @@ public:
         dim.loc = x.base.base.loc;
         ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
         ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int_type));
-        ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, x.n_args, int_type));
         dim.m_start = one;
-        dim.m_length = x_n_args;
+        if( implied_do_loops_present ) {
+            dim.m_length = nullptr;
+        } else {
+            ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, x.n_args, int_type));
+            dim.m_length = x_n_args;
+        }
         dims.push_back(al, dim);
         type = ASRUtils::duplicate_type(al, type, &dims);
         tmp = ASRUtils::make_ArrayConstant_t_util(al, x.base.base.loc, body.p,
