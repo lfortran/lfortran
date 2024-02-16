@@ -59,6 +59,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Digits,
     Repeat,
     Hypot,
+    Selected_int_kind,
     MinExponent,
     MaxExponent,
     FloorDiv,
@@ -1941,6 +1942,53 @@ namespace Hypot {
     }
 
 } // namespace Hypot
+
+namespace Selected_int_kind {
+
+    static ASR::expr_t *eval_Selected_int_kind(Allocator &al, const Location &loc,
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        int64_t val = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        int64_t result;
+        if (val <= 2) {
+            result = 1;
+        } else if (val <= 4) {
+            result = 2;
+        } else if (val <= 9) {
+            result = 4;
+        } else {
+            result = 8;
+        }
+        return i32(result);
+    }
+
+    static inline ASR::expr_t* instantiate_Selected_int_kind(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("");
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(fn_name, int32, ReturnVar);
+        auto number = declare("num", arg_types[0], Local);
+        body.push_back(al, b.Assignment(number, args[0]));
+        body.push_back(al, b.If(iLtE(number, i(2, arg_types[0])), {
+            b.Assignment(result, i(1, int32))
+        }, {
+            b.If(iLtE(number, i(4, arg_types[0])), {
+                b.Assignment(result, i(2, int32))
+            }, {
+                b.If(iLtE(number, i(9, arg_types[0])), {
+                    b.Assignment(result, i(4, int32))
+                }, {
+                    b.Assignment(result, i(8, int32))
+                })
+            })
+        }));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+} // namespace Selected_int_kind
 
 namespace Kind {
 
