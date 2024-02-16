@@ -500,6 +500,13 @@ class ASRBuilder {
             ASRUtils::TYPE(ASR::make_Logical_t( al, loc, 4)), nullptr));
     }
 
+    ASR::expr_t* ElementalAnd(ASR::expr_t* left, ASR::expr_t* right,
+        const Location& loc) {
+        return ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, loc,
+            left, ASR::And, right,
+            ASRUtils::TYPE(ASR::make_Logical_t( al, loc, 4)), nullptr));
+    }
+
     ASR::expr_t* Or(ASR::expr_t* left, ASR::expr_t* right,
         const Location& loc) {
         return ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, loc,

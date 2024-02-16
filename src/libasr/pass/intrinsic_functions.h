@@ -652,8 +652,8 @@ namespace Abs {
         ASR::ttype_t* output_type = x.m_type;
         std::string input_type_str = ASRUtils::get_type_code(input_type);
         std::string output_type_str = ASRUtils::get_type_code(output_type);
-        if( ASR::is_a<ASR::Complex_t>(*ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_array(input_type))) ) {
-            ASRUtils::require_impl(ASR::is_a<ASR::Real_t>(*output_type),
+        if( ASRUtils::is_complex(*input_type) ) {
+            ASRUtils::require_impl(ASRUtils::is_real(*output_type),
                 "Abs intrinsic must return output of real for complex input, found: " + output_type_str,
                 loc, diagnostics);
             int input_kind = ASRUtils::extract_kind_from_ttype_t(input_type);

@@ -3702,6 +3702,7 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        std::cout<<"Function.begin: "<<x.m_name<<std::endl;
         loop_head.clear();
         loop_head_names.clear();
         loop_or_block_end.clear();
@@ -3742,6 +3743,7 @@ public:
         loop_or_block_end_names.clear();
         heap_arrays.clear();
         strings_to_be_deallocated.reserve(al, 1);
+        std::cout<<"Function.end: "<<x.m_name<<std::endl;
     }
 
     void instantiate_function(const ASR::Function_t &x){

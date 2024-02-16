@@ -5107,9 +5107,15 @@ static inline ASR::asr_t* make_IntrinsicElementalFunction_t_util(
             continue;
         }
         ASR::expr_t* arg = a_args[i];
+        if( ASRUtils::is_array(ASRUtils::expr_type(arg)) &&
+            !ASRUtils::is_array(a_type) ) {
+            ASR::dimension_t* dims;
+            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(arg), dims);
+            a_type = ASRUtils::make_Array_t_util(al, a_loc, a_type, dims, n_dims);
+        }
+
         ASR::ttype_t* arg_type = ASRUtils::type_get_past_allocatable(
             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(arg)));
-
         if( ASRUtils::is_array(arg_type) ) {
             a_args[i] = cast_to_descriptor(al, arg);
         }
