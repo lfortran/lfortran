@@ -912,29 +912,40 @@ public:
         r = indent;
         r += "open";
         r += "(";
+        bool prefix_comma = false;
         if (x.m_newunit) {
             visit_expr(*x.m_newunit);
             r += s;
+            prefix_comma = true;
         } else {
             throw CodeGenError("open() function must be called with a file unit number");
         }
         if (x.m_filename) {
-            r += ", ";
+            if (prefix_comma) {
+                r += ", ";
+            }
             r += "file=";
             visit_expr(*x.m_filename);
             r += s;
+            prefix_comma = true;
         }
         if (x.m_status) {
-            r += ", ";
+            if (prefix_comma) {
+                r += ", ";
+            }
             r += "status=";
             visit_expr(*x.m_status);
             r += s;
+            prefix_comma = true;
         }
         if (x.m_form) {
-            r += ", ";
+            if (prefix_comma) {
+                r += ", ";
+            }
             r += "form=";
             visit_expr(*x.m_form);
             r += s;
+            prefix_comma = true;
         }
         r += ")";
         r += "\n";
@@ -1004,17 +1015,361 @@ public:
         s = r;
     }
 
-    // void visit_FileBackspace(const ASR::FileBackspace_t &x) {}
+    void visit_FileBackspace(const ASR::FileBackspace_t &x) {
+        std::string r = indent;
+        r += "backspace";
+        r += "(";
+        bool prefix_comma = false;
+        if (x.m_unit) {
+            visit_expr(*x.m_unit);
+            r += s;
+            prefix_comma = true;
+        } else {
+            throw CodeGenError("backspace() function must be called with a file unit number");
+        }
+        if (x.m_iostat) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "iostat=";
+            visit_expr(*x.m_iostat);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_err) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "err=";
+            visit_expr(*x.m_err);
+            r += s;
+            prefix_comma = true;
+        }
+        r += ")";
+        r += "\n";
+        s = r;
+    }
 
-    // void visit_FileRewind(const ASR::FileRewind_t &x) {}
+    void visit_FileRewind(const ASR::FileRewind_t &x) {
+        std::string r = indent;
+        r += "rewind";
+        r += "(";
+        bool prefix_comma = false;
+        if (x.m_unit) {
+            visit_expr(*x.m_unit);
+            r += s;
+            prefix_comma = true;
+        } else {
+            throw CodeGenError("rewind() function must be called with a file unit number");
+        }
+        if (x.m_iostat) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "iostat=";
+            visit_expr(*x.m_iostat);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_err) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "err=";
+            visit_expr(*x.m_err);
+            r += s;
+            prefix_comma = true;
+        }
+        r += ")";
+        r += "\n";
+        s = r;
+    }
 
-    // void visit_FileInquire(const ASR::FileInquire_t &x) {}
+    void visit_FileInquire(const ASR::FileInquire_t &x) {
+        std::string r = indent;
+        r += "inquire";
+        r += " (";
+        bool prefix_comma = false;
+        if (x.m_unit) {
+            visit_expr(*x.m_unit);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_file) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "file=";
+            visit_expr(*x.m_file);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_iostat) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "iostat=";
+            visit_expr(*x.m_iostat);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_err) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "err=";
+            visit_expr(*x.m_err);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_exist) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "exist=";
+            visit_expr(*x.m_exist);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_opened) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "opened=";
+            visit_expr(*x.m_opened);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_number) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "number=";
+            visit_expr(*x.m_number);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_named) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "named=";
+            visit_expr(*x.m_named);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_name) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "name=";
+            visit_expr(*x.m_name);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_access) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "access=";
+            visit_expr(*x.m_access);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_sequential) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "sequential=";
+            visit_expr(*x.m_sequential);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_direct) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "direct=";
+            visit_expr(*x.m_direct);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_form) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "form=";
+            visit_expr(*x.m_form);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_formatted) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "formatted=";
+            visit_expr(*x.m_formatted);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_unformatted) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "unformatted=";
+            visit_expr(*x.m_unformatted);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_recl) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "recl=";
+            visit_expr(*x.m_recl);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_nextrec) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "nextrec=";
+            visit_expr(*x.m_nextrec);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_blank) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "blank=";
+            visit_expr(*x.m_blank);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_position) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "position=";
+            visit_expr(*x.m_position);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_action) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "action=";
+            visit_expr(*x.m_action);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_read) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "read=";
+            visit_expr(*x.m_read);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_write) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "write=";
+            visit_expr(*x.m_write);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_readwrite) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "readwrite=";
+            visit_expr(*x.m_readwrite);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_delim) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "delim=";
+            visit_expr(*x.m_delim);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_pad) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "pad=";
+            visit_expr(*x.m_pad);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_flen) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "flen=";
+            visit_expr(*x.m_flen);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_blocksize) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "blocksize=";
+            visit_expr(*x.m_blocksize);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_convert) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "convert=";
+            visit_expr(*x.m_convert);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_carriagecontrol) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "carriagecontrol=";
+            visit_expr(*x.m_carriagecontrol);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_iolength) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "iolength=";
+            visit_expr(*x.m_iolength);
+            r += s;
+            prefix_comma = true;
+        }
+        r += ")";
+        r += "\n";
+        s = r;
+    }
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
         std::string r = indent;
         r += "write";
         r += "(";
-        if (!x.m_unit) {
+        if (x.m_unit) {
+            visit_expr(*x.m_unit);
+            r += s;
+            r += ", ";
+        } else {
             r += "*, ";
         }
         if (x.n_values > 0 && is_a<ASR::StringFormat_t>(*x.m_values[0])) {
@@ -1147,7 +1502,49 @@ public:
 
     // void visit_Nullify(const ASR::Nullify_t &x) {}
 
-    // void visit_Flush(const ASR::Flush_t &x) {}
+    void visit_Flush(const ASR::Flush_t &x) {
+        std::string r = indent;
+        r += "flush";
+        r += "(";
+        bool prefix_comma = false;
+        if (x.m_unit) {
+            visit_expr(*x.m_unit);
+            r += s;
+            prefix_comma = true;
+        } else {
+            throw CodeGenError("flush() function must be called with a file unit number");
+        }
+        if (x.m_err) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "err=";
+            visit_expr(*x.m_err);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_iomsg) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "iomsg=";
+            visit_expr(*x.m_iomsg);
+            r += s;
+            prefix_comma = true;
+        }
+        if (x.m_iostat) {
+            if (prefix_comma) {
+                r += ", ";
+            }
+            r += "iostat=";
+            visit_expr(*x.m_iostat);
+            r += s;
+            prefix_comma = true;
+        }
+        r += ")";
+        r += "\n";
+        s = r;
+    }
 
     // void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {}
 
