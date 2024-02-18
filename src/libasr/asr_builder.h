@@ -227,7 +227,7 @@ class ASRBuilder {
             ASR::binopType::Pow, right, t, nullptr))
     #define And(x, y) EXPR(ASR::make_LogicalBinOp_t(al, loc, x,                 \
             ASR::logicalbinopType::And, y, logical, nullptr))
-    #define Not(x)    EXPR(ASR::make_LogicalNot_t(al, loc, x, logical, nullptr))
+    #define Not(x) EXPR(ASR::make_LogicalNot_t(al, loc, x, logical, nullptr))
 
     #define i_BitRshift(n, bits, t) EXPR(ASR::make_IntegerBinOp_t(al, loc,      \
             n, ASR::binopType::BitRShift, bits, t, nullptr))

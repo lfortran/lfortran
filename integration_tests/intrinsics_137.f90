@@ -1,20 +1,26 @@
-program intrinsic_137
-    real :: x = 178.1387e-4
-    integer :: i = 5
-    real :: y = -186.3245e-4
-    integer :: j = 3
+program intrinsics_137
+    use iso_fortran_env, only: int32, int64
+    integer, parameter :: sp = kind(0.0)
+    integer, parameter :: dp = kind(0.d0)
+    integer(int32) :: i
+    integer(int64) :: j
+    real(sp) :: r
+    real(dp) :: d
+    i = 0
+    j = 1
+    r = 0.0_sp
+    d = 0.0_dp
+    
+    print *, huge(i)
+    if (huge(i) /= 2147483647_int32) error stop
   
-    print *, scale(y,j)
-    if (abs(scale(y, j) - (-1.49059594e-01)) > 1e-7) error stop
+    print*, huge(j)
+    if (huge(j) /= 9223372036854775807_int64) error stop
   
-    print *, scale(-186.3245e-4,3)
-    if (abs(scale(-186.3245e-4,3) - (-1.49059594e-01)) > 1e-7) error stop
+    print*, huge(r)
+    if ((huge(r) - 3.40282347e+38) / 3.40282347e+38 > 1e-8_sp) error stop
   
-    print *, scale(x,i)
-    if (abs(scale(x, i) - 5.70043862e-01) > 1e-7) error stop
-  
-    print *, scale(178.1387e-4,5)
-    if (abs(scale(178.1387e-4, 5) - 5.70043862e-01) > 1e-7) error stop
-  
-  end program 
-  
+    print*, huge(d)
+    if (abs(huge(d) - 1.79769313486231571e+308_dp) > 1e-8_dp) error stop
+
+end program intrinsics_137

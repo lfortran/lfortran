@@ -1825,10 +1825,10 @@ static inline ASR::expr_t* get_minimum_value_with_given_type(Allocator& al, ASR:
         case ASR::ttypeType::Integer: {
             int64_t val;
             switch (kind) {
-                case 1: val = std::numeric_limits<int8_t>::min(); break;
-                case 2: val = std::numeric_limits<int16_t>::min(); break;
-                case 4: val = std::numeric_limits<int32_t>::min(); break;
-                case 8: val = std::numeric_limits<int64_t>::min(); break;
+                case 1: val = std::numeric_limits<int8_t>::min()+1; break;
+                case 2: val = std::numeric_limits<int16_t>::min()+1; break;
+                case 4: val = std::numeric_limits<int32_t>::min()+1; break;
+                case 8: val = std::numeric_limits<int64_t>::min()+1; break;
                 default:
                     throw LCompilersException("get_minimum_value_with_given_type: Unsupported integer kind " + std::to_string(kind));
             }

@@ -12,26 +12,6 @@
                                     (SymbolTable
                                         3
                                         {
-                                            huge:
-                                                (ExternalSymbol
-                                                    3
-                                                    huge
-                                                    29 huge
-                                                    lfortran_intrinsic_math2
-                                                    []
-                                                    huge
-                                                    Private
-                                                ),
-                                            huge@i32huge:
-                                                (ExternalSymbol
-                                                    3
-                                                    huge@i32huge
-                                                    29 i32huge
-                                                    lfortran_intrinsic_math2
-                                                    []
-                                                    i32huge
-                                                    Private
-                                                ),
                                             r:
                                                 (Variable
                                                     3
@@ -101,13 +81,11 @@
                                                     []
                                                     Local
                                                     (Cast
-                                                        (FunctionCall
-                                                            3 huge@i32huge
-                                                            3 huge
-                                                            [((IntegerConstant 1 (Integer 4)))]
+                                                        (TypeInquiry
+                                                            Huge
+                                                            (IntegerConstant 1 (Integer 4))
                                                             (Integer 4)
                                                             (IntegerConstant 2147483647 (Integer 4))
-                                                            ()
                                                         )
                                                         IntegerToReal
                                                         (Real 4)
@@ -155,16 +133,11 @@
                                 )
                         })
                     functions_12
-                    [lfortran_intrinsic_builtin
-                    lfortran_intrinsic_math2]
+                    [lfortran_intrinsic_builtin]
                     []
                 ),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
             lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math2:
-                (IntrinsicModule lfortran_intrinsic_math2)
+                (IntrinsicModule lfortran_intrinsic_builtin)
         })
     []
 )

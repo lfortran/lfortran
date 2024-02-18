@@ -50,6 +50,12 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         }
     ],
+    "Selected_int_kind": [
+        {
+            "args": [("int",)],
+            "return": "int32"
+        }
+    ],
     "Digits": [
         {
             "args": [("int",), ("real",)],
@@ -218,6 +224,12 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         }
     ],
+    "Precision": [
+        {
+            "args": [("real",), ("complex",)],
+            "return": "int32"
+        }
+    ],
     "Tiny": [
         {
             "args": [("real",)],
@@ -236,6 +248,12 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         }
     ]
+    "Huge": [
+        {
+            "args": [("int",), ("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
 }
 
 skip_create_func = ["Partition"]
@@ -243,8 +261,10 @@ compile_time_only_fn = [
     "Epsilon",
     "Radix",
     "Range",
+    "Precision",
     "Rank",
     "Tiny",
+    "Huge",
 ]
 
 type_to_asr_type_check = {

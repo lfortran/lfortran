@@ -60,6 +60,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Repeat)
         INTRINSIC_NAME_CASE(Range)
         INTRINSIC_NAME_CASE(Hypot)
+        INTRINSIC_NAME_CASE(Selected_int_kind)
         INTRINSIC_NAME_CASE(MinExponent)
         INTRINSIC_NAME_CASE(MaxExponent)
         INTRINSIC_NAME_CASE(ListIndex)
@@ -86,8 +87,10 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Floor)
         INTRINSIC_NAME_CASE(Ceiling)
         INTRINSIC_NAME_CASE(Epsilon)
+        INTRINSIC_NAME_CASE(Precision)
         INTRINSIC_NAME_CASE(Tiny)
         INTRINSIC_NAME_CASE(Conjg)
+        INTRINSIC_NAME_CASE(Huge)
         INTRINSIC_NAME_CASE(SymbolicSymbol)
         INTRINSIC_NAME_CASE(SymbolicAdd)
         INTRINSIC_NAME_CASE(SymbolicSub)
@@ -262,8 +265,14 @@ namespace IntrinsicElementalFunctionRegistry {
             {&SignFromValue::instantiate_SignFromValue, &SignFromValue::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Epsilon),
             {nullptr, &UnaryIntrinsicFunction::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Precision),
+            {nullptr, &Precision::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Tiny),
             {nullptr, &UnaryIntrinsicFunction::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Huge),
+            {nullptr, &UnaryIntrinsicFunction::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Selected_int_kind),
+            {&Selected_int_kind::instantiate_Selected_int_kind, &Selected_int_kind::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicSymbol),
             {nullptr, &SymbolicSymbol::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicAdd),
@@ -385,6 +394,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "leadz"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Hypot),
             "hypot"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Selected_int_kind),
+            "selected_int_kind"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Kind),
             "kind"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Rank),
@@ -451,8 +462,12 @@ namespace IntrinsicElementalFunctionRegistry {
             "signfromvalue"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Epsilon),
             "epsilon"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Precision),
+            "precision"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Tiny),
             "tiny"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Huge),
+            "huge"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicSymbol),
             "Symbol"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicAdd),
@@ -542,6 +557,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"ishft", {&Ishft::create_Ishft, &Ishft::eval_Ishft}},
                 {"leadz", {&Leadz::create_Leadz, &Leadz::eval_Leadz}},
                 {"hypot", {&Hypot::create_Hypot, &Hypot::eval_Hypot}},
+                {"selected_int_kind", {&Selected_int_kind::create_Selected_int_kind, &Selected_int_kind::eval_Selected_int_kind}},
                 {"kind", {&Kind::create_Kind, &Kind::eval_Kind}},
                 {"rank", {&Rank::create_Rank, &Rank::eval_Rank}},
                 {"digits", {&Digits::create_Digits, &Digits::eval_Digits}},
@@ -574,8 +590,10 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"ifix", {&Ifix::create_Ifix, &Ifix::eval_Ifix}},
                 {"idint", {&Idint::create_Idint, &Idint::eval_Idint}},
                 {"epsilon", {&Epsilon::create_Epsilon, &Epsilon::eval_Epsilon}},
+                {"precision", {&Precision::create_Precision, &Precision::eval_Precision}},
                 {"tiny", {&Tiny::create_Tiny, &Tiny::eval_Tiny}},
                 {"conjg", {&Conjg::create_Conjg, &Conjg::eval_Conjg}},
+                {"huge", {&Huge::create_Huge, &Huge::eval_Huge}},
                 {"Symbol", {&SymbolicSymbol::create_SymbolicSymbol, &SymbolicSymbol::eval_SymbolicSymbol}},
                 {"SymbolicAdd", {&SymbolicAdd::create_SymbolicAdd, &SymbolicAdd::eval_SymbolicAdd}},
                 {"SymbolicSub", {&SymbolicSub::create_SymbolicSub, &SymbolicSub::eval_SymbolicSub}},

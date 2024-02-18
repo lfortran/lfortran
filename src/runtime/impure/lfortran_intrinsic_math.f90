@@ -4,7 +4,7 @@ use, intrinsic :: iso_c_binding, only: c_float, c_double
 implicit none
 
 interface system_clock
-    module procedure i32sys_clock, i64sys_clock
+    module procedure i32sys_clock, i64sys_clock, i64r64sys_clock
 end interface
 
 interface srand
@@ -59,6 +59,20 @@ end interface
 call c_i64sys_clock(count, count_rate, count_max)
 end subroutine
 
+pure subroutine i64r64sys_clock(count, count_rate, count_max)
+integer(8), intent(out) :: count
+real(8), intent(out), optional :: count_rate
+integer(8), intent(out), optional :: count_max
+interface
+    pure subroutine c_i64r64sys_clock(count, count_rate, count_max) &
+        bind(c, name="_lfortran_i64r64sys_clock")
+        integer(8), intent(out) :: count, count_max
+        real(8), intent(out) :: count_rate
+    end subroutine
+end interface
+call c_i64r64sys_clock(count, count_rate, count_max)
+end subroutine
+
 ! srand ----------------------------------------------------------------
 
 pure subroutine f_srand(seed)
@@ -101,21 +115,49 @@ end subroutine
 function dotproductr32r32(x, y) result(r)
 real(sp) :: x(:), y(:)
 real(sp) :: r
+integer :: i
+
+r = 0.0_sp
+do i = lbound(x, 1), ubound(x, 1)
+    r = r + x(i) * y(i)
+end do
+
 end function
 
 function dotproductr64r64(x, y) result(r)
 real(dp) :: x(:), y(:)
 real(dp) :: r
+integer :: i
+
+r = 0.0_dp
+do i = lbound(x, 1), ubound(x, 1)
+    r = r + x(i) * y(i)
+end do
+
 end function
 
 function dotproductz32z32(x, y) result(r)
 complex(sp) :: x(:), y(:)
 complex(sp) :: r
+integer :: i
+
+r = cmplx(0.0_sp, 0.0_sp)
+do i = lbound(x, 1), ubound(x, 1)
+    r = r + x(i) * y(i)
+end do
+
 end function
 
 function dotproductz64z64(x, y) result(r)
 complex(dp) :: x(:), y(:)
 complex(dp) :: r
+integer :: i
+
+r = cmplx(0.0_dp, 0.0_dp)
+do i = lbound(x, 1), ubound(x, 1)
+    r = r + x(i) * y(i)
+end do
+
 end function
 
 

@@ -345,6 +345,8 @@ RUN(NAME functions_15 LABELS gfortran llvm)
 RUN(NAME functions_16 LABELS gfortran)
 RUN(NAME functions_17 LABELS gfortran llvm)
 RUN(NAME functions_18 LABELS gfortran llvm)
+RUN(NAME functions_19 LABELS gfortran llvm)
+RUN(NAME functions_20 LABELS gfortran llvm)
 
 RUN(NAME common_01 LABELS gfortran)
 
@@ -458,12 +460,12 @@ RUN(NAME arrays_15 LABELS gfortran llvm llvmStackArray)
 RUN(NAME arrays_inputs_15 LABELS gfortran llvm llvmStackArray) # constant arrays
 RUN(NAME arrays_16_func LABELS gfortran llvm llvmStackArray)
 
-RUN(NAME arrays_intrin_01 LABELS gfortran) # minval, maxval
+RUN(NAME arrays_intrin_01 LABELS gfortran fortran) # minval, maxval
 RUN(NAME arrays_intrin_02 LABELS gfortran) # all, any
 RUN(NAME arrays_intrin_03 LABELS gfortran llvm llvmStackArray) # maxval
-RUN(NAME arrays_intrin_04 LABELS gfortran llvm llvmStackArray) # maxval
+RUN(NAME arrays_intrin_04 LABELS gfortran llvm llvmStackArray fortran) # maxval
 RUN(NAME arrays_intrin_05 LABELS gfortran llvm llvmStackArray) # minval
-RUN(NAME arrays_intrin_06 LABELS gfortran llvm llvmStackArray) # minval
+RUN(NAME arrays_intrin_06 LABELS gfortran llvm llvmStackArray fortran) # minval
 RUN(NAME arrays_intrin_07 LABELS gfortran llvm llvmStackArray) # min
 RUN(NAME any_01 LABELS gfortran)
 RUN(NAME any_02 LABELS gfortran llvm)
@@ -645,6 +647,9 @@ RUN(NAME intrinsics_133 LABELS gfortran llvm)#Ceiling
 RUN(NAME intrinsics_135 LABELS gfortran llvm)#nint
 RUN(NAME intrinsics_136 LABELS gfortran llvm)#rshift
 RUN(NAME intrinsics_137 LABELS gfortran llvm)#scale
+RUN(NAME intrinsics_137 LABELS gfortran llvm)#huge
+RUN(NAME intrinsics_138 LABELS gfortran llvm)#precision
+RUN(NAME intrinsics_140 LABELS gfortran llvm)#selected_int_kind
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
@@ -1204,6 +1209,7 @@ RUN(NAME array_op_04 LABELS gfortran llvm llvmStackArray)
 RUN(NAME array_slice_01 LABELS gfortran llvm llvmStackArray c)
 RUN(NAME array_slice_02 LABELS gfortran llvm llvmStackArray)
 RUN(NAME array_slice_03 LABELS gfortran llvm llvmStackArray c)
+RUN(NAME array_slice_04 LABELS gfortran llvm llvmStackArray)
 
 RUN(NAME declaration_01 LABELS gfortran llvm)
 
@@ -1383,3 +1389,5 @@ RUN(NAME elemental_08 LABELS gfortran llvm)
 RUN(NAME types_21 LABELS gfortran llvm)
 RUN(NAME types_22 LABELS gfortran llvm)
 RUN(NAME types_23 LABELS gfortran llvm)
+RUN(NAME types_real_to_complex_cast LABELS gfortran llvm)
+RUN(NAME types_real_array_to_complex_array_cast LABELS gfortran llvm)

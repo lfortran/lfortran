@@ -59,6 +59,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Digits,
     Repeat,
     Hypot,
+    Selected_int_kind,
     MinExponent,
     MaxExponent,
     FloorDiv,
@@ -88,8 +89,10 @@ enum class IntrinsicElementalFunctions : int64_t {
     Floor,
     Ceiling,
     Epsilon,
+    Precision,
     Tiny,
     Conjg,
+    Huge,
     SymbolicSymbol,
     SymbolicAdd,
     SymbolicSub,
@@ -1000,10 +1003,9 @@ namespace Shiftl {
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
         * r = shiftl(x, y)
-        * r = x * 2**y
+        * r = x << y
         */
-        ASR::expr_t *two = i(2, arg_types[0]);
-        body.push_back(al, b.Assignment(result, i_tMul(args[0], iPow(two, args[1], arg_types[0]), arg_types[0])));
+        body.push_back(al, b.Assignment(result, i_BitLshift(args[0], args[1], arg_types[0])));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1040,17 +1042,16 @@ namespace Ishft {
         /*
         * r = ishft(x, y)
         * if ( y <= 0) {
-        *   r = x / 2 ** ( -1 * y )
+        *   r = x >> ( -1 * y)
         * } else {
-        *   r = x * 2 ** y
+        *   r = x << y
         * }
         */
-        ASR::expr_t *two = i(2, arg_types[0]);
         ASR::expr_t *m_one = i(-1, arg_types[0]);
         body.push_back(al, b.If(iLtE(args[1], i(0, arg_types[0])), {
-            b.Assignment(result, i_tDiv(args[0], iPow(two, iMul(m_one, args[1]), arg_types[0]), arg_types[0]))
+            b.Assignment(result, i_BitRshift(args[0], iMul(m_one, args[1]), arg_types[0]))
         }, {
-            b.Assignment(result, i_tMul(args[0], iPow(two, args[1], arg_types[0]), arg_types[0]))
+            b.Assignment(result, i_BitLshift(args[0], args[1], arg_types[0]))
         }));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -1972,6 +1973,53 @@ namespace Hypot {
 
 } // namespace Hypot
 
+namespace Selected_int_kind {
+
+    static ASR::expr_t *eval_Selected_int_kind(Allocator &al, const Location &loc,
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        int64_t val = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        int64_t result;
+        if (val <= 2) {
+            result = 1;
+        } else if (val <= 4) {
+            result = 2;
+        } else if (val <= 9) {
+            result = 4;
+        } else {
+            result = 8;
+        }
+        return i32(result);
+    }
+
+    static inline ASR::expr_t* instantiate_Selected_int_kind(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("");
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(fn_name, int32, ReturnVar);
+        auto number = declare("num", arg_types[0], Local);
+        body.push_back(al, b.Assignment(number, args[0]));
+        body.push_back(al, b.If(iLtE(number, i(2, arg_types[0])), {
+            b.Assignment(result, i(1, int32))
+        }, {
+            b.If(iLtE(number, i(4, arg_types[0])), {
+                b.Assignment(result, i(2, int32))
+            }, {
+                b.If(iLtE(number, i(9, arg_types[0])), {
+                    b.Assignment(result, i(4, int32))
+                }, {
+                    b.Assignment(result, i(8, int32))
+                })
+            })
+        }));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+} // namespace Selected_int_kind
+
 namespace Kind {
 
     static ASR::expr_t *eval_Kind(Allocator &al, const Location &loc,
@@ -2084,8 +2132,9 @@ namespace Repeat {
         fill_func_arg("x", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -10, nullptr)));
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -3,
-            ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, args[0], ASRUtils::TYPE(
-                ASR::make_Integer_t(al, loc, 4)), nullptr)))), ReturnVar);
+            ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, args[0], ASRUtils::expr_type(args[1]), nullptr)),
+                ASR::binopType::Mul, args[1], ASRUtils::expr_type(args[1]), nullptr)))), ReturnVar);
         auto itr = declare("r", arg_types[1], Local);
         /*
             function repeat_(s, n) result(r)
@@ -2109,11 +2158,15 @@ namespace Repeat {
         ASR::expr_t *cond = iGt(itr, i(0, arg_types[1]));
         std::vector<ASR::stmt_t*> while_loop_body;
         if (arg_1_kind == 4) {
+            while_loop_body.push_back(b.Assignment(ASRUtils::EXPR(ASR::make_StringItem_t(
+                al, loc, result, itr, ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, 1, nullptr)),
+                nullptr)), args[0]));
             while_loop_body.push_back(b.Assignment(itr, iSub(itr, i(1, arg_types[1]))));
-            while_loop_body.push_back(b.Assignment(result, b.Add(result, args[0])));
         } else {
+            while_loop_body.push_back(b.Assignment(ASRUtils::EXPR(ASR::make_StringItem_t(
+                al, loc, result, itr, ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, 1, nullptr)),
+                nullptr)), args[0]));
             while_loop_body.push_back(b.Assignment(itr, i64Sub(itr, i(1, arg_types[1]))));
-            while_loop_body.push_back(b.Assignment(result, b.Add(result, args[0])));
         }
         body.push_back(al, b.While(cond, while_loop_body));
 
@@ -3073,10 +3126,32 @@ namespace Epsilon {
 
 }  // namespace Epsilon
 
+namespace Precision {
+
+    static ASR::expr_t *eval_Precision(Allocator &al, const Location &loc,
+            ASR::ttype_t* /*return_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        int64_t precision_val = -1;
+        ASR::ttype_t *arg_type = expr_type(args[0]);
+        int32_t kind = extract_kind_from_ttype_t(arg_type);
+        switch ( kind ) {
+            case 4: {
+                precision_val = 6; break;
+            } case 8: {
+                precision_val = 15; break;
+            } default: {
+                append_error(diag, "Kind " + std::to_string(kind) + " is not supported yet", loc);
+                return nullptr;
+            }
+        }
+        return i32(precision_val);
+    }
+
+}  // namespace Precision
+
 namespace Tiny {
 
     static ASR::expr_t *eval_Tiny(Allocator &al, const Location &loc,
-            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& diag) {
         double tiny_value = -1;
         int32_t kind = extract_kind_from_ttype_t(arg_type);
         switch ( kind ) {
@@ -3085,7 +3160,8 @@ namespace Tiny {
             } case 8: {
                 tiny_value = std::numeric_limits<double>::min(); break;
             } default: {
-                break;
+                append_error(diag, "Kind " + std::to_string(kind) + " is not supported yet", loc);
+                    return nullptr;
             }
         }
         return f(tiny_value, arg_type);
@@ -3144,6 +3220,42 @@ namespace Conjg {
     }
 
 } // namespace Conjg
+
+namespace Huge {
+
+    static ASR::expr_t *eval_Huge(Allocator &al, const Location &loc,
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& diag) {
+        int32_t kind = extract_kind_from_ttype_t(arg_type);
+        if (ASR::is_a<ASR::Integer_t>(*arg_type)) {
+            int64_t huge_value = -1;
+            switch ( kind ) {
+                case 4: {
+                    huge_value = std::numeric_limits<int32_t>::max(); break;
+                } case 8: {
+                    huge_value = std::numeric_limits<int64_t>::max(); break;
+                } default: {
+                    append_error(diag, "Kind " + std::to_string(kind) + " is not supported yet", loc);
+                    return nullptr;
+                }
+            }
+            return i(huge_value, arg_type);
+        } else {
+            double huge_value = -1;
+            switch ( kind ) {
+                case 4: {
+                    huge_value = std::numeric_limits<float>::max(); break;
+                } case 8: {
+                    huge_value = std::numeric_limits<double>::max(); break;
+                } default: {
+                    append_error(diag, "Kind " + std::to_string(kind) + " is not supported yet", loc);
+                    return nullptr;
+                }
+            }
+            return f(huge_value, arg_type);
+        }
+    }
+
+}  // namespace Huge
 
 namespace SymbolicSymbol {
 

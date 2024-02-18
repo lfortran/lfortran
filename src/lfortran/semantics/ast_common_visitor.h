@@ -750,6 +750,9 @@ public:
         {"dlog", "log"},
         {"dlog10", "log10"},
         {"dexp", "exp"},
+
+        {"dmin1", "min"},
+        {"dmax1", "max"},
     };
 
     ASR::asr_t *tmp;
@@ -3438,14 +3441,19 @@ public:
                 throw SemanticError("Empty array constructor is not allowed", x.base.base.loc);
             }
         }
+        bool implied_do_loops_present = false;
         for (size_t i=0; i<x.n_args; i++) {
             this->visit_expr(*x.m_args[i]);
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
+            if( ASR::is_a<ASR::ImpliedDoLoop_t>(*expr) ) {
+                implied_do_loops_present = true;
+            }
             if (type == nullptr) {
                 type = ASRUtils::expr_type(expr);
             } else {
                 if (!ASRUtils::check_equal_type(ASRUtils::expr_type(expr), type)) {
-                    ImplicitCastRules::set_converted_value(al, expr->base.loc, &expr, ASRUtils::expr_type(expr), type);
+                    ImplicitCastRules::set_converted_value(al, expr->base.loc,
+                        &expr, ASRUtils::expr_type(expr), type);
                 }
             }
             body.push_back(al, expr);
@@ -3454,9 +3462,13 @@ public:
         dim.loc = x.base.base.loc;
         ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
         ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int_type));
-        ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, x.n_args, int_type));
         dim.m_start = one;
-        dim.m_length = x_n_args;
+        if( implied_do_loops_present ) {
+            dim.m_length = nullptr;
+        } else {
+            ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, x.n_args, int_type));
+            dim.m_length = x_n_args;
+        }
         dims.push_back(al, dim);
         type = ASRUtils::duplicate_type(al, type, &dims);
         tmp = ASRUtils::make_ArrayConstant_t_util(al, x.base.base.loc, body.p,
@@ -3982,7 +3994,7 @@ public:
     }
 
     ASR::asr_t* create_FunctionFromFunctionTypeVariable(const Location &loc,
-                Vec<ASR::call_arg_t>& args, ASR::symbol_t *v) {
+                Vec<ASR::call_arg_t>& args, ASR::symbol_t *v, bool is_dt_present=false) {
         ASR::FunctionType_t* func = ASR::down_cast<ASR::FunctionType_t>(ASRUtils::symbol_type(v));
         ASR::ttype_t *return_type = func->m_return_var_type;
         if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter()) {
@@ -3990,8 +4002,15 @@ public:
         }
         // TODO: Uncomment later
         // ASRUtils::set_absent_optional_arguments_to_null(args, ASR::down_cast<ASR::Function_t>(v), al);
-        return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
-            args.p, args.size(), return_type, nullptr, nullptr);
+        if( is_dt_present ) {
+            ASR::expr_t* dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
+                al, loc, args.p[0].m_value, v, ASRUtils::symbol_type(v), nullptr));
+            return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
+                args.p + 1, args.size() - 1, return_type, nullptr, dt);
+        } else {
+            return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
+                args.p, args.size(), return_type, nullptr, nullptr);
+        }
     }
 
     // `fn` is a local Function or GenericProcedure (that resolves to a
@@ -4016,12 +4035,12 @@ public:
     }
 
     ASR::asr_t* create_FunctionCallWithASTNode(const AST::FuncCallOrArray_t& x,
-                ASR::symbol_t *v, Vec<ASR::call_arg_t>& args) {
+                ASR::symbol_t *v, Vec<ASR::call_arg_t>& args, bool is_dt_present=false) {
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
         if (ASR::is_a<ASR::Function_t>(*f2)) {
             return create_Function(x.base.base.loc, args, v);
         } else if (ASR::is_a<ASR::Variable_t>(*f2)) {
-            return create_FunctionFromFunctionTypeVariable(x.base.base.loc, args, v);
+            return create_FunctionFromFunctionTypeVariable(x.base.base.loc, args, v, is_dt_present);
         } else {
             LCOMPILERS_ASSERT(ASR::is_a<ASR::GenericProcedure_t>(*f2))
             return create_GenericProcedureWithASTNode(x, args, v);
@@ -5608,7 +5627,7 @@ public:
                 }
             }
             if (x.n_member >= 1) {
-                tmp = create_FunctionCallWithASTNode(x, v, args_with_mdt);
+                tmp = create_FunctionCallWithASTNode(x, v, args_with_mdt, true);
             } else {
                 tmp = create_FunctionCallWithASTNode(x, v, args);
             }

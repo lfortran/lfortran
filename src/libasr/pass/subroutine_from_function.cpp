@@ -175,7 +175,7 @@ class ReplaceFunctionCallWithSubroutineCall:
                 is_return_var_handled = fn->m_return_var == nullptr;
             }
             if (is_return_var_handled) {
-                ASR::ttype_t* result_var_type = x->m_type;
+                ASR::ttype_t* result_var_type = ASRUtils::duplicate_type(al, x->m_type);
                 bool is_allocatable = false;
                 bool is_func_call_allocatable = false;
                 bool is_result_var_allocatable = false;

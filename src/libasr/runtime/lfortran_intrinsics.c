@@ -1321,9 +1321,13 @@ LFORTRAN_API void _lfortran_strcpy(char** x, char *y, int8_t free_target)
         if (*x) {
             free((void *)*x);
         }
+        *x = (char*) malloc((strlen(y) + 1) * sizeof(char));
+        _lfortran_string_init(strlen(y) + 1, *x);
     }
-    *x = (char*) malloc((strlen(y) + 1) * sizeof(char));
-    _lfortran_string_init(strlen(y) + 1, *x);
+    if( *x == NULL ) {
+        *x = (char*) malloc((strlen(y) + 1) * sizeof(char));
+        _lfortran_string_init(strlen(y) + 1, *x);
+    }
     for (size_t i = 0; i < strlen(*x); i++) {
         if (i < strlen(y)) {
             x[0][i] = y[i];
@@ -1706,6 +1710,10 @@ LFORTRAN_API void _lfortran_string_init(int size_plus_one, char *s) {
 
 // bit  ------------------------------------------------------------------------
 
+LFORTRAN_API int16_t _lfortran_iand16(int16_t x, int16_t y) {
+    return x & y;
+}
+
 LFORTRAN_API int32_t _lfortran_iand32(int32_t x, int32_t y) {
     return x & y;
 }
@@ -1890,6 +1898,36 @@ LFORTRAN_API void _lfortran_i32sys_clock(
 
 LFORTRAN_API void _lfortran_i64sys_clock(
         uint64_t *count, int64_t *rate, int64_t *max) {
+#if defined(_WIN32)
+        *count = - INT_MAX;
+        *rate = 0;
+        *max = 0;
+#else
+    struct timespec ts;
+    if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
+        *count = (uint64_t)(ts.tv_nsec) + ((uint64_t)ts.tv_sec * 1000000000);
+        // FIXME: Rate can be in microseconds or nanoseconds depending on
+        //          resolution of the underlying platform clock.
+        *rate = 1e9; // nanoseconds
+        *max = LLONG_MAX;
+    } else {
+        *count = - LLONG_MAX;
+        *rate = 0;
+        *max = 0;
+    }
+#endif
+}
+
+LFORTRAN_API void _lfortran_i64r64sys_clock(
+        uint64_t *count, double *rate, int64_t *max) {
+double ratev;
+int64_t maxv;
+if( rate == NULL ) {
+    rate = &ratev;
+}
+if( max == NULL ) {
+    max = &maxv;
+}
 #if defined(_WIN32)
         *count = - INT_MAX;
         *rate = 0;
