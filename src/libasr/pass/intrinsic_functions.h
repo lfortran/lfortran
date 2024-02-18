@@ -75,6 +75,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Max,
     Min,
     Radix,
+    Scale,
     Range,
     Sign,
     SignFromValue,
@@ -796,6 +797,35 @@ namespace Radix {
     }
 
 }  // namespace Radix
+
+namespace Scale {
+    static ASR::expr_t *eval_Scale(Allocator &al, const Location &loc,
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        double value_X = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
+        int64_t value_I = ASR::down_cast<ASR::IntegerConstant_t>(expr_value(args[1]))->m_n;
+        double result = value_X * std::pow(2, value_I);
+        return f(result, arg_type);
+    }
+
+    static inline ASR::expr_t* instantiate_Scale(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("");
+        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("y", arg_types[1]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        /*
+        * r = scale(x, y)
+        * r = x * 2**y
+        */
+
+       //TODO: Radix for most of the device is 2, so we can use the i2r32(2) instead of args[1]. Fix (find a way to get the radix of the device and use it here)
+        body.push_back(al, b.Assignment(result, r_tMul(args[0], i2r32(iPow(i(2, arg_types[1]), args[1], arg_types[1])), arg_types[0])));        
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+}  // namespace Scale
 
 namespace Range {
 
