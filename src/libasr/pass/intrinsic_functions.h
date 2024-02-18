@@ -2228,7 +2228,7 @@ namespace Adjustl {
         body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
     scope->add_symbol(fn_name, f_sym);
     return b.Call(f_sym, new_args, return_type, nullptr);
-}
+    }
 
 } // namespace AdjustL
 
