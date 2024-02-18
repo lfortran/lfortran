@@ -646,10 +646,10 @@ RUN(NAME intrinsics_132 LABELS gfortran llvm)#Floor
 RUN(NAME intrinsics_133 LABELS gfortran llvm)#Ceiling
 RUN(NAME intrinsics_135 LABELS gfortran llvm)#nint
 RUN(NAME intrinsics_136 LABELS gfortran llvm)#rshift
-RUN(NAME intrinsics_137 LABELS gfortran llvm)#scale
 RUN(NAME intrinsics_137 LABELS gfortran llvm)#huge
 RUN(NAME intrinsics_138 LABELS gfortran llvm)#precision
 RUN(NAME intrinsics_140 LABELS gfortran llvm)#selected_int_kind
+RUN(NAME intrinsics_141 LABELS gfortran llvm)#scale
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)

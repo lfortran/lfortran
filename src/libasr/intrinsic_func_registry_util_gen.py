@@ -247,7 +247,7 @@ intrinsic_funcs_args = {
             "args": [("real", "int")],
             "ret_type_arg_idx": 0
         }
-    ]
+    ],
     "Huge": [
         {
             "args": [("int",), ("real",)],
