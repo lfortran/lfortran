@@ -4119,9 +4119,7 @@ public:
             throw SemanticError("Variable '" + dt_name + "' not declared", loc);
         }
         ASR::Variable_t* v_variable = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(v));
-        ASR::ttype_t* v_variable_m_type = ASRUtils::type_get_past_array(
-            ASRUtils::type_get_past_allocatable(
-            ASRUtils::type_get_past_pointer(v_variable->m_type)));
+        ASR::ttype_t* v_variable_m_type = ASRUtils::extract_type(v_variable->m_type);
         if (ASR::is_a<ASR::Struct_t>(*v_variable_m_type) ||
                 ASR::is_a<ASR::Class_t>(*v_variable_m_type)) {
             ASR::ttype_t* v_type = v_variable_m_type;
