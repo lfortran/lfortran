@@ -242,6 +242,12 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         },
     ],
+    "Scale": [
+        {
+            "args": [("real", "int")],
+            "ret_type_arg_idx": 0
+        }
+    ],
     "Huge": [
         {
             "args": [("int",), ("real",)],
