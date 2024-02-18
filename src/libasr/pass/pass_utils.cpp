@@ -75,6 +75,12 @@ namespace LCompilers {
             } else if (ASR::is_a<ASR::ComplexConstructor_t>(*x)) {
                 ASR::ComplexConstructor_t* cc = ASR::down_cast<ASR::ComplexConstructor_t>(x);
                 return get_rank(cc->m_re);
+            } else if (ASR::is_a<ASR::ComplexIm_t>(*x)) {
+                ASR::ComplexIm_t* cc = ASR::down_cast<ASR::ComplexIm_t>(x);
+                return get_rank(cc->m_arg);
+            } else if (ASR::is_a<ASR::ComplexRe_t>(*x)) {
+                ASR::ComplexRe_t* cc = ASR::down_cast<ASR::ComplexRe_t>(x);
+                return get_rank(cc->m_arg);
             }
             return n_dims;
         }
