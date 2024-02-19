@@ -9,6 +9,7 @@
 
 #include <cmath>
 #include <string>
+#include <numeric>
 #include <tuple>
 
 namespace LCompilers {
@@ -27,6 +28,7 @@ enum class IntrinsicArrayFunctions : int64_t {
     Product,
     Shape,
     Sum,
+    Dot_Product
     // ...
 };
 
@@ -47,6 +49,7 @@ inline std::string get_array_intrinsic_name(int x) {
         ARRAY_INTRINSIC_NAME_CASE(Product)
         ARRAY_INTRINSIC_NAME_CASE(Shape)
         ARRAY_INTRINSIC_NAME_CASE(Sum)
+        ARRAY_INTRINSIC_NAME_CASE(Dot_Product)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
@@ -1720,6 +1723,281 @@ namespace MatMul {
 
 } // namespace MatMul
 
+namespace Dot_Product {
+
+    static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
+            diag::Diagnostics& diagnostics) {
+        require_impl(x.n_args == 2, "`dot_product` intrinsic accepts exactly"
+            "two arguments", x.base.base.loc, diagnostics);
+        require_impl(x.m_args[0], "`vector_a` argument of `dot_product` intrinsic "
+            "cannot be nullptr", x.base.base.loc, diagnostics);
+        require_impl(x.m_args[1], "`vector_b` argument of `dot_product` intrinsic "
+            "cannot be nullptr", x.base.base.loc, diagnostics);
+    }
+
+    template<typename T>
+    void populate_vector_complex(std::vector<T> &a, std::vector<T>& b, ASR::expr_t *vector_a, ASR::expr_t* vector_b, int dim) {
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*vector_a)) {
+            vector_a = ASR::down_cast<ASR::ArrayPhysicalCast_t>(vector_a)->m_arg;
+        }
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*vector_b)) {
+            vector_b = ASR::down_cast<ASR::ArrayPhysicalCast_t>(vector_b)->m_arg;
+        }
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*vector_a) && ASR::is_a<ASR::ArrayConstant_t>(*vector_b));
+        ASR::ArrayConstant_t *a_const = ASR::down_cast<ASR::ArrayConstant_t>(vector_a);
+        ASR::ArrayConstant_t *b_const = ASR::down_cast<ASR::ArrayConstant_t>(vector_b);
+
+        for (int i = 0; i < dim; i++) {
+            ASR::expr_t* arg_a = a_const->m_args[i];
+            ASR::expr_t* arg_b = b_const->m_args[i];
+
+            if (ASR::is_a<ASR::ComplexConstructor_t>(*arg_a)) {
+                arg_a = ASR::down_cast<ASR::ComplexConstructor_t>(arg_a)->m_value;
+            }
+            if (ASR::is_a<ASR::ComplexConstructor_t>(*arg_b)) {
+                arg_b = ASR::down_cast<ASR::ComplexConstructor_t>(arg_b)->m_value;
+            }
+
+            if (arg_a && arg_b && ASR::is_a<ASR::ComplexConstant_t>(*arg_a)) {
+                ASR::ComplexConstant_t *c_a = ASR::down_cast<ASR::ComplexConstant_t>(arg_a);
+                ASR::ComplexConstant_t *c_b = ASR::down_cast<ASR::ComplexConstant_t>(arg_b);
+                a[i] = {c_a->m_re, c_a->m_im};
+                b[i] = {c_b->m_re, c_b->m_im};
+            } else {
+                LCOMPILERS_ASSERT(false);
+            }
+        }
+    }
+
+    template<typename T>
+    void populate_vector(std::vector<T> &a, std::vector<T>& b, ASR::expr_t *vector_a, ASR::expr_t* vector_b, int dim) {
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*vector_a)) {
+            vector_a = ASR::down_cast<ASR::ArrayPhysicalCast_t>(vector_a)->m_arg;
+        }
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*vector_b)) {
+            vector_b = ASR::down_cast<ASR::ArrayPhysicalCast_t>(vector_b)->m_arg;
+        }
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*vector_a) && ASR::is_a<ASR::ArrayConstant_t>(*vector_b));
+        ASR::ArrayConstant_t *a_const = ASR::down_cast<ASR::ArrayConstant_t>(vector_a);
+        ASR::ArrayConstant_t *b_const = ASR::down_cast<ASR::ArrayConstant_t>(vector_b);
+
+        for (int i = 0; i < dim; i++) {
+            ASR::expr_t* arg_a = a_const->m_args[i];
+            ASR::expr_t* arg_b = b_const->m_args[i];
+
+            if (ASR::is_a<ASR::IntegerConstant_t>(*arg_a)) {
+                a[i] = ASR::down_cast<ASR::IntegerConstant_t>(arg_a)->m_n;
+                b[i] = ASR::down_cast<ASR::IntegerConstant_t>(arg_b)->m_n;
+            } else if (ASR::is_a<ASR::RealConstant_t>(*arg_a)) {
+                a[i] = ASR::down_cast<ASR::RealConstant_t>(arg_a)->m_r;
+                b[i] = ASR::down_cast<ASR::RealConstant_t>(arg_b)->m_r;
+            } else if (ASR::is_a<ASR::LogicalConstant_t>(*arg_a)) {
+                a[i] = ASR::down_cast<ASR::LogicalConstant_t>(arg_a)->m_value;
+                b[i] = ASR::down_cast<ASR::LogicalConstant_t>(arg_b)->m_value;
+            } else {
+                LCOMPILERS_ASSERT(false);
+            }
+        }
+    }
+
+    static inline ASR::expr_t *eval_Dot_Product(Allocator & al,
+        const Location & loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        ASR::expr_t *vector_a = args[0], *vector_b = args[1];
+        ASR::ttype_t *type_vector_a = ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(expr_type(vector_a)));
+        ASR::ttype_t* type_a = ASRUtils::type_get_past_array(type_vector_a);
+
+        int kind = ASRUtils::extract_kind_from_ttype_t(type_a);
+        int dim = ASRUtils::get_fixed_size_of_array(type_vector_a);
+
+        if (ASRUtils::is_real(*type_a)) {
+            if (kind == 4) {
+                std::vector<float> a(dim), b(dim);
+                populate_vector(a, b, vector_a, vector_b, dim);
+                float result = std::inner_product(a.begin(), a.end(), b.begin(), 0.0f);
+                return make_ConstantWithType(make_RealConstant_t, result, return_type, loc);
+            } else if (kind == 8) {
+                std::vector<double> a(dim), b(dim);
+                populate_vector(a, b, vector_a, vector_b, dim);
+                double result = std::inner_product(a.begin(), a.end(), b.begin(), 0.0);
+                return make_ConstantWithType(make_RealConstant_t, result, return_type, loc);
+            } else {
+                append_error(diag, "The `dot_product` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
+                return nullptr;
+            }
+        } else if (ASRUtils::is_integer(*type_a)) {
+            if (kind == 4) {
+                std::vector<int32_t> a(dim), b(dim);
+                populate_vector(a, b, vector_a, vector_b, dim);
+                int32_t result = std::inner_product(a.begin(), a.end(), b.begin(), 0);
+                return make_ConstantWithType(make_IntegerConstant_t, result, return_type, loc);
+            } else if (kind == 8) {
+                std::vector<int64_t> a(dim), b(dim);
+                populate_vector(a, b, vector_a, vector_b, dim);
+                int64_t result = std::inner_product(a.begin(), a.end(), b.begin(), 0);
+                return make_ConstantWithType(make_IntegerConstant_t, result, return_type, loc);
+            } else {
+                append_error(diag, "The `dot_product` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
+                return nullptr;
+            }
+        } else if (ASRUtils::is_logical(*type_a)) {
+            std::vector<bool> a(dim), b(dim);
+            populate_vector(a, b, vector_a, vector_b, dim);
+            bool result = false;
+            for (int i = 0; i < dim; i++) {
+                result = result || (a[i] && b[i]);
+            }
+            return make_ConstantWithType(make_LogicalConstant_t, result, return_type, loc);
+        } else if (ASRUtils::is_complex(*type_a)) {
+            if (kind == 4) {
+                std::vector<std::pair<float, float>> a(dim), b(dim);
+                populate_vector_complex(a, b, vector_a, vector_b, dim);
+                std::pair<float, float> result = {0.0f, 0.0f};
+                for (int i = 0; i < dim; i++) {
+                    result.first += a[i].first * b[i].first + (a[i].second * b[i].second);
+                    result.second += a[i].first * b[i].second + ((-a[i].second)* b[i].first);
+                }
+                return EXPR(make_ComplexConstant_t(al, loc, result.first, result.second, return_type));
+            } else if (kind == 8) {
+                std::vector<std::pair<double, double>> a(dim), b(dim);
+                populate_vector_complex(a, b, vector_a, vector_b, dim);
+                std::pair<double, double> result = {0.0, 0.0};
+                for (int i = 0; i < dim; i++) {
+                    result.first += a[i].first * b[i].first + (a[i].second * b[i].second);
+                    result.second += a[i].first * b[i].second + ((-a[i].second)* b[i].first);
+                }
+                return EXPR(make_ComplexConstant_t(al, loc, result.first, result.second, return_type));
+            } else {
+                append_error(diag, "The `dot_product` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
+                return nullptr;
+            }
+        } else {
+            append_error(diag, "The `dot_product` intrinsic doesn't handle type " + ASRUtils::get_type_code(type_a) + " yet", loc);
+            return nullptr;
+        }
+        return nullptr;
+    }
+
+    static inline ASR::asr_t* create_Dot_Product(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args,
+            diag::Diagnostics& diag) {
+        ASR::expr_t *matrix_a = args[0], *matrix_b = args[1];
+        ASR::ttype_t *type_a = expr_type(matrix_a);
+        ASR::ttype_t *type_b = expr_type(matrix_b);
+        ASR::ttype_t *ret_type = nullptr;
+        bool matrix_a_numeric = is_integer(*type_a) ||
+                                is_real(*type_a) ||
+                                is_complex(*type_a);
+        bool matrix_a_logical = is_logical(*type_a);
+        bool matrix_b_numeric = is_integer(*type_b) ||
+                                is_real(*type_b) ||
+                                is_complex(*type_b);
+        bool matrix_b_logical = is_logical(*type_b);
+        if ( !matrix_a_numeric && !matrix_a_logical ) {
+            append_error(diag, "The argument `matrix_a` in `dot_product` must be of type Integer, "
+                "Real, Complex or Logical", matrix_a->base.loc);
+            return nullptr;
+        } else if ( matrix_a_numeric ) {
+            if( !matrix_b_numeric ) {
+                append_error(diag, "The argument `matrix_b` in `dot_product` must be of type "
+                    "Integer, Real or Complex if first matrix is of numeric "
+                    "type", matrix_b->base.loc);
+                    return nullptr;
+            }
+        } else {
+            if( !matrix_b_logical ) {
+                append_error(diag, "The argument `matrix_b` in `dot_product` must be of type Logical"
+                    " if first matrix is of Logical type", matrix_b->base.loc);
+                return nullptr;
+            }
+        }
+        ret_type = extract_type(type_a);
+        ASR::dimension_t* matrix_a_dims = nullptr;
+        ASR::dimension_t* matrix_b_dims = nullptr;
+        int matrix_a_rank = extract_dimensions_from_ttype(type_a, matrix_a_dims);
+        int matrix_b_rank = extract_dimensions_from_ttype(type_b, matrix_b_dims);
+        if ( matrix_a_rank != 1) {
+            append_error(diag, "`dot_product` accepts arrays of rank 1 only, provided an array "
+                "with rank, " + std::to_string(matrix_a_rank), matrix_a->base.loc);
+            return nullptr;
+        } else if ( matrix_b_rank != 1 ) {
+            append_error(diag, "`dot_product` accepts arrays of rank 1 only, provided an array "
+                "with rank, " + std::to_string(matrix_b_rank), matrix_b->base.loc);
+            return nullptr;
+        }
+
+        int overload_id = 1;
+        int matrix_a_dim_1 = -1, matrix_b_dim_1 = -1;
+        if ( !dimension_expr_equal(matrix_a_dims[0].m_length, matrix_b_dims[0].m_length) ) {
+            append_error(diag, "The argument `matrix_b` must be of dimension "
+                + std::to_string(matrix_a_dim_1) + ", provided an array "
+                "with dimension " + std::to_string(matrix_b_dim_1) +
+                " in `matrix_b('n')`", matrix_b->base.loc);
+            return nullptr;
+        }
+
+        ASR::expr_t *value = nullptr;
+        if (all_args_evaluated(args)) {
+            value = eval_Dot_Product(al, loc, ret_type, args, diag);
+        }
+        return make_IntrinsicArrayFunction_t_util(al, loc,
+            static_cast<int64_t>(IntrinsicArrayFunctions::Dot_Product),
+            args.p, args.n, overload_id, ret_type, value);
+    }
+
+    static inline ASR::expr_t *instantiate_Dot_Product(Allocator &al,
+            const Location &loc, SymbolTable *scope,
+            Vec<ASR::ttype_t*> &arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t> &m_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_dot_product");
+        fill_func_arg("matrix_a", duplicate_type_with_empty_dims(al, arg_types[0]));
+        fill_func_arg("matrix_b", duplicate_type_with_empty_dims(al, arg_types[1]));
+        ASR::expr_t *result = declare("result", return_type, ReturnVar);
+        ASR::expr_t *i = declare("i", int32, Local);
+        /*
+            res = 0
+            do i = LBound(matrix_a, 1), UBound(matrix_a, 1)
+                res = res + matrix_a(i) * matrix_b(i)
+            end do
+        */
+        if (is_logical(*return_type)) {
+            body.push_back(al, b.Assignment(result, ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, false, return_type))));
+            body.push_back(al, b.DoLoop(i, LBound(args[0], 1), UBound(args[0], 1), {
+                b.Assignment(result, b.Or(result, And(b.ArrayItem_01(args[0], {i}), b.ArrayItem_01(args[1], {i})), loc))
+            }));
+        } else if (is_complex(*return_type)) {
+            body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexConstant_t(al, loc, 0.0, 0.0, return_type))));
+
+            Vec<ASR::call_arg_t> new_args_conjg; new_args_conjg.reserve(al, 1);
+            ASR::call_arg_t call_arg; call_arg.loc = loc;
+            call_arg.m_value = b.ArrayItem_01(args[0], {i});
+            new_args_conjg.push_back(al, call_arg);
+
+            Vec<ASR::ttype_t*> arg_types_conjg; arg_types_conjg.reserve(al, 1);
+            arg_types_conjg.push_back(al, return_type);
+
+            ASR::expr_t* func_call_conjg = Conjg::instantiate_Conjg(al, loc, scope, arg_types_conjg, return_type, new_args_conjg, 0);
+            body.push_back(al, b.DoLoop(i, LBound(args[0], 1), UBound(args[0], 1), {
+                b.Assignment(result, b.Add(result, EXPR(ASR::make_ComplexBinOp_t(al, loc, func_call_conjg, ASR::binopType::Mul, b.ArrayItem_01(args[1], {i}), return_type, nullptr))))
+            }, nullptr));
+        } else {
+            if (is_real(*return_type)) {
+                body.push_back(al, b.Assignment(result, make_ConstantWithType(make_RealConstant_t, 0.0, return_type, loc)));
+            } else {
+                body.push_back(al, b.Assignment(result, make_ConstantWithType(make_IntegerConstant_t, 0, return_type, loc)));
+            }
+            body.push_back(al, b.DoLoop(i, LBound(args[0], 1), UBound(args[0], 1), {
+                b.Assignment(result, b.Add(result, b.Mul(b.ArrayItem_01(args[0], {i}), b.ArrayItem_01(args[1], {i}))))
+            }, nullptr));
+        }
+        body.push_back(al, Return());
+        ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+                body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, fn_sym);
+        return b.Call(fn_sym, m_args, return_type, nullptr);
+    }
+
+} // namespace Dot_Product
+
 namespace IntrinsicArrayFunctionRegistry {
 
     static const std::map<int64_t, std::tuple<impl_function,
@@ -1744,6 +2022,8 @@ namespace IntrinsicArrayFunctionRegistry {
             {&Shape::instantiate_Shape, &Shape::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::Sum),
             {&Sum::instantiate_Sum, &Sum::verify_args}},
+        {static_cast<int64_t>(IntrinsicArrayFunctions::Dot_Product),
+            {&Dot_Product::instantiate_Dot_Product, &Dot_Product::verify_args}},
     };
 
     static const std::map<std::string, std::tuple<create_intrinsic_function,
@@ -1758,6 +2038,7 @@ namespace IntrinsicArrayFunctionRegistry {
         {"product", {&Product::create_Product, &Product::eval_Product}},
         {"shape", {&Shape::create_Shape, &Shape::eval_Shape}},
         {"sum", {&Sum::create_Sum, &Sum::eval_Sum}},
+        {"dot_product", {&Dot_Product::create_Dot_Product, &Dot_Product::eval_Dot_Product}},
     };
 
     static inline bool is_intrinsic_function(const std::string& name) {
