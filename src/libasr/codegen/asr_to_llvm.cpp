@@ -7373,24 +7373,29 @@ public:
         llvm::Value *status = nullptr, *form = nullptr;
         this->visit_expr_wrapper(x.m_newunit, true);
         unit_val = tmp;
+        int ptr_copy = ptr_loads;
         if (x.m_filename) {
-            this->visit_expr_wrapper(x.m_filename, true);
+            ptr_loads = 1;
+            this->visit_expr_wrapper(x.m_filename);
             f_name = tmp;
         } else {
             f_name = llvm::Constant::getNullValue(character_type);
         }
         if (x.m_status) {
-            this->visit_expr_wrapper(x.m_status, true);
+            ptr_loads = 1;
+            this->visit_expr_wrapper(x.m_status);
             status = tmp;
         } else {
             status = llvm::Constant::getNullValue(character_type);
         }
         if (x.m_form) {
-            this->visit_expr_wrapper(x.m_form, true);
+            ptr_loads = 1;
+            this->visit_expr_wrapper(x.m_form);
             form = tmp;
         } else {
             form = llvm::Constant::getNullValue(character_type);
         }
+        ptr_loads = ptr_copy;
         std::string runtime_func_name = "_lfortran_open";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
