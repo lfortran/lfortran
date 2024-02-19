@@ -9,6 +9,7 @@ program string_12
     character(len=*), parameter :: letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" !! A .. Za .. z
     character(len=*), parameter :: uppercase = letters(1:26) !! A .. Z
     character(len=*), parameter :: lowercase = letters(27:) !! a .. z
+    character(len=*), parameter :: string = char(len(letters))
 
     print *, fullhex_digits
     print *, hex_digits
@@ -18,5 +19,7 @@ program string_12
     print *, letters
     print *, uppercase
     print *, lowercase
+    print *, "char(", len(letters), ") = ", string
+    if (string /= "4") error stop
 
 end program
