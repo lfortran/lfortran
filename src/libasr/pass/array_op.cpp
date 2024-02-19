@@ -309,6 +309,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 break; \
             } \
         } \
+        ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)); \
         Vec<ASR::alloc_arg_t> alloc_args; \
         alloc_args.reserve(al, 1); \
         if( !is_dimension_empty ) { \
@@ -332,10 +333,16 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                     alloc_dim.m_start = make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, 4, loc); \
                 } else { \
                     alloc_dim.m_start = PassUtils::get_bound(op_arg, i + 1, "lbound", al); \
+                    alloc_dim.m_start = CastingUtil::perform_casting(alloc_dim.m_start, \
+                        ASRUtils::expr_type(alloc_dim.m_start), int32_type, al, loc); \
                 } \
-                alloc_dim.m_length = ASRUtils::compute_length_from_start_end(al, \
-                    PassUtils::get_bound(op_arg, i + 1, "lbound", al), \
-                    PassUtils::get_bound(op_arg, i + 1, "ubound", al)); \
+                ASR::expr_t* lbound = PassUtils::get_bound(op_arg, i + 1, "lbound", al); \
+                lbound = CastingUtil::perform_casting(lbound, \
+                    ASRUtils::expr_type(lbound), int32_type, al, loc); \
+                ASR::expr_t* ubound = PassUtils::get_bound(op_arg, i + 1, "ubound", al); \
+                ubound = CastingUtil::perform_casting(ubound, \
+                    ASRUtils::expr_type(ubound), int32_type, al, loc); \
+                alloc_dim.m_length = ASRUtils::compute_length_from_start_end(al, lbound, ubound); \
                 alloc_dims.push_back(al, alloc_dim); \
             } \
             ASR::alloc_arg_t alloc_arg; \
@@ -690,8 +697,9 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         x_dims.reserve(al, x->n_args);
         const Location& loc = x->base.base.loc;
         ASRUtils::ASRBuilder builder(al, loc);
+        ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
         ASR::expr_t* i32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-            al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+            al, loc, 1, int32_type));
         Vec<ASR::dimension_t> empty_dims;
         empty_dims.reserve(al, x->n_args);
         for( size_t i = 0; i < x->n_args; i++ ) {
@@ -728,9 +736,19 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                     length_value = make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t,
                         ((const_end - const_start)/const_step) + 1, 4, loc);
                 }
+
+                ASR::expr_t* m_right = x->m_args[i].m_right;
+                ASR::expr_t* m_left = x->m_args[i].m_left;
+                ASR::expr_t* m_step = x->m_args[i].m_step;
+                m_right = CastingUtil::perform_casting(m_right,
+                    ASRUtils::expr_type(m_right), int32_type, al, loc);
+                m_left = CastingUtil::perform_casting(m_left,
+                    ASRUtils::expr_type(m_left), int32_type, al, loc);
+                m_step = CastingUtil::perform_casting(m_step,
+                    ASRUtils::expr_type(m_step), int32_type, al, loc);
                 x_dim.m_length = builder.ElementalAdd(builder.ElementalDiv(
-                    builder.ElementalSub(x->m_args[i].m_right, x->m_args[i].m_left, loc),
-                    x->m_args[i].m_step, loc), i32_one, loc, length_value);
+                    builder.ElementalSub(m_right, m_left, loc),
+                    m_step, loc), i32_one, loc, length_value);
                 x_dims.push_back(al, x_dim);
             }
         }
@@ -1719,6 +1737,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
         }
 
         void visit_Assignment(const ASR::Assignment_t &x) {
+            const Location& loc = x.base.base.loc;
             if (ASRUtils::is_simd_array(x.m_target)) {
                 size_t n_dims = 1;
                 if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
@@ -1751,11 +1770,16 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                         ASRUtils::expr_type(x.m_value), m_dims);
                     Vec<ASR::dimension_t> vec_dims;
                     vec_dims.reserve(al, n_dims);
+                    ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
                     for( size_t i = 0; i < n_dims; i++ ) {
                         ASR::dimension_t dim;
                         dim.loc = x.m_value->base.loc;
                         dim.m_start = PassUtils::get_bound(x.m_value, i + 1, "lbound", al);
                         dim.m_length = ASRUtils::get_size(x.m_value, i + 1, al);
+                        dim.m_start = CastingUtil::perform_casting(dim.m_start,
+                            ASRUtils::expr_type(dim.m_start), int32_type, al, loc);
+                        dim.m_length = CastingUtil::perform_casting(dim.m_length,
+                            ASRUtils::expr_type(dim.m_length), int32_type, al, loc);
                         vec_dims.push_back(al, dim);
                     }
 
