@@ -1725,7 +1725,7 @@ public:
                 if (dest_kind == 4 || dest_kind == 8) {
                     s = "cmplx(" + s + ", " + "0.0" + ", " + "kind=" + std::to_string(dest_kind) + ")";
                 } else {
-                    throw CodeGenError("Cast IntegerToInteger: Unsupported Kind " + std::to_string(dest_kind));
+                    throw CodeGenError("Cast IntegerToComplex: Unsupported Kind " + std::to_string(dest_kind));
                 }
                 last_expr_precedence = Precedence::Ext;
                 break;
@@ -1755,37 +1755,12 @@ public:
                 last_expr_precedence = Precedence::Ext;
                 break;
             }
-            case (ASR::cast_kindType::LogicalToCharacter) : {
-                s = "char(" + s + ")";
-                last_expr_precedence = Precedence::Ext;
-                break;
-            }
             case (ASR::cast_kindType::IntegerToLogical) : {
                 // Implicit conversion between integer -> logical
                 break;
             }
-            case (ASR::cast_kindType::LogicalToReal) : {
-                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-                switch (dest_kind) {
-                    case 4: r = "real(" + s + ", " + "kind=dest_kind" + ")"; break;
-                    case 8: r = "real(" + s + ", " + "kind=dest_kind" + ")"; break;
-                    default: throw CodeGenError("Cast LogicalToReal: Unsupported Kind " + std::to_string(dest_kind));
-                }
-                last_expr_precedence = Precedence::Ext;
-                break;
-            }
-            case (ASR::cast_kindType::RealToLogical) : {
-                s = "(bool)(" + s + ")";
-                last_expr_precedence = Precedence::Ext;
-                break;
-            }
             case (ASR::cast_kindType::CharacterToLogical) : {
                 s = "(bool)(len(" + s + ") > 0)";
-                last_expr_precedence = Precedence::Ext;
-                break;
-            }
-            case (ASR::cast_kindType::ComplexToLogical) : {
-                s = "(bool)(" + s + ")";
                 last_expr_precedence = Precedence::Ext;
                 break;
             }
