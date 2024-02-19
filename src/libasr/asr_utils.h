@@ -987,111 +987,102 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
     if( a_value == nullptr ) {
         return false;
     }
-    if (ASR::is_a<ASR::IntegerConstant_t>(*a_value)) {
-        // OK
-    } else if (ASR::is_a<ASR::IntegerBOZ_t>(*a_value)) {
-        // OK
-    } else if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*a_value)) {
-        ASR::expr_t *val = ASR::down_cast<ASR::IntegerUnaryMinus_t>(
-            a_value)->m_value;
-        return is_value_constant(val);
-    } else if (ASR::is_a<ASR::UnsignedIntegerConstant_t>(*a_value)) {
-        // OK
-    } else if (ASR::is_a<ASR::RealConstant_t>(*a_value)) {
-        // OK
-    } else if (ASR::is_a<ASR::RealUnaryMinus_t>(*a_value)) {
-        ASR::expr_t *val = ASR::down_cast<ASR::RealUnaryMinus_t>(
-            a_value)->m_value;
-        return is_value_constant(val);
-    } else if (ASR::is_a<ASR::ComplexConstant_t>(*a_value)) {
-        // OK
-    } else if (ASR::is_a<ASR::LogicalConstant_t>(*a_value)) {
-        // OK
-    } else if (ASR::is_a<ASR::StringConstant_t>(*a_value)) {
-        // OK
-    } else if(ASR::is_a<ASR::ArrayConstant_t>(*a_value)) {
-        ASR::ArrayConstant_t* array_constant = ASR::down_cast<ASR::ArrayConstant_t>(a_value);
-        for( size_t i = 0; i < array_constant->n_args; i++ ) {
-            if( !ASRUtils::is_value_constant(array_constant->m_args[i]) &&
-                !ASRUtils::is_value_constant(ASRUtils::expr_value(array_constant->m_args[i])) ) {
+    switch ( a_value->type ) {
+        case ASR::exprType::IntegerConstant:
+        case ASR::exprType::IntegerBOZ:
+        case ASR::exprType::UnsignedIntegerConstant:
+        case ASR::exprType::RealConstant:
+        case ASR::exprType::ComplexConstant:
+        case ASR::exprType::LogicalConstant:
+        case ASR::exprType::ImpliedDoLoop:
+        case ASR::exprType::PointerNullConstant:
+        case ASR::exprType::StringConstant: {
+            return true;
+        }
+        case ASR::exprType::IntegerUnaryMinus:
+        case ASR::exprType::RealUnaryMinus:
+        case ASR::exprType::IntegerBinOp:
+        case ASR::exprType::StringLen: {
+            return is_value_constant(expr_value(a_value));
+        } case ASR::exprType::ArrayConstant: {
+            ASR::ArrayConstant_t* array_constant = ASR::down_cast<ASR::ArrayConstant_t>(a_value);
+            for( size_t i = 0; i < array_constant->n_args; i++ ) {
+                if( !ASRUtils::is_value_constant(array_constant->m_args[i]) &&
+                    !ASRUtils::is_value_constant(ASRUtils::expr_value(array_constant->m_args[i])) ) {
+                    return false;
+                }
+            }
+            return true;
+        } case ASR::exprType::ListConstant: {
+            ASR::ListConstant_t* list_constant = ASR::down_cast<ASR::ListConstant_t>(a_value);
+            for( size_t i = 0; i < list_constant->n_args; i++ ) {
+                if( !ASRUtils::is_value_constant(list_constant->m_args[i]) &&
+                    !ASRUtils::is_value_constant(ASRUtils::expr_value(list_constant->m_args[i])) ) {
+                    return false;
+                }
+            }
+            return true;
+        } case ASR::exprType::FunctionCall: {
+            ASR::FunctionCall_t* func_call_t = ASR::down_cast<ASR::FunctionCall_t>(a_value);
+            if( !ASRUtils::is_intrinsic_symbol(ASRUtils::symbol_get_past_external(func_call_t->m_name)) ) {
                 return false;
             }
-        }
-        return true;
-    } else if(ASR::is_a<ASR::ListConstant_t>(*a_value)) {
-        ASR::ListConstant_t* list_constant = ASR::down_cast<ASR::ListConstant_t>(a_value);
-        for( size_t i = 0; i < list_constant->n_args; i++ ) {
-            if( !ASRUtils::is_value_constant(list_constant->m_args[i]) &&
-                !ASRUtils::is_value_constant(ASRUtils::expr_value(list_constant->m_args[i])) ) {
-                return false;
-            }
-        }
-        return true;
-    } else if(ASR::is_a<ASR::FunctionCall_t>(*a_value)) {
-        ASR::FunctionCall_t* func_call_t = ASR::down_cast<ASR::FunctionCall_t>(a_value);
-        if( !ASRUtils::is_intrinsic_symbol(ASRUtils::symbol_get_past_external(func_call_t->m_name)) ) {
-            return false;
-        }
 
-        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
-            ASRUtils::symbol_get_past_external(func_call_t->m_name));
-        for( size_t i = 0; i < func_call_t->n_args; i++ ) {
-            if (func_call_t->m_args[i].m_value == nullptr &&
-                ASRUtils::EXPR2VAR(func->m_args[i])->m_presence == ASR::presenceType::Optional) {
-                continue;
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
+                ASRUtils::symbol_get_past_external(func_call_t->m_name));
+            for( size_t i = 0; i < func_call_t->n_args; i++ ) {
+                if (func_call_t->m_args[i].m_value == nullptr &&
+                    ASRUtils::EXPR2VAR(func->m_args[i])->m_presence == ASR::presenceType::Optional) {
+                    continue;
+                }
+                if( !ASRUtils::is_value_constant(func_call_t->m_args[i].m_value) ) {
+                    return false;
+                }
             }
-            if( !ASRUtils::is_value_constant(func_call_t->m_args[i].m_value) ) {
+            return true;
+        } case ASR::exprType::StructInstanceMember: {
+            ASR::StructInstanceMember_t*
+                struct_member_t = ASR::down_cast<ASR::StructInstanceMember_t>(a_value);
+            return is_value_constant(struct_member_t->m_v);
+        } case ASR::exprType::Var: {
+            ASR::Var_t* var_t = ASR::down_cast<ASR::Var_t>(a_value);
+            if( ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(var_t->m_v)) ) {
+                ASR::Variable_t* variable_t = ASR::down_cast<ASR::Variable_t>(
+                    ASRUtils::symbol_get_past_external(var_t->m_v));
+                return variable_t->m_storage == ASR::storage_typeType::Parameter;
+            } else {
                 return false;
             }
-        }
-        return true;
-    } else if( ASR::is_a<ASR::StructInstanceMember_t>(*a_value) ) {
-        ASR::StructInstanceMember_t* struct_member_t = ASR::down_cast<ASR::StructInstanceMember_t>(a_value);
-        return is_value_constant(struct_member_t->m_v);
-    } else if( ASR::is_a<ASR::Var_t>(*a_value) ) {
-        ASR::Var_t* var_t = ASR::down_cast<ASR::Var_t>(a_value);
-        if( ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(var_t->m_v)) ) {
-            ASR::Variable_t* variable_t = ASR::down_cast<ASR::Variable_t>(
-                ASRUtils::symbol_get_past_external(var_t->m_v));
-            return variable_t->m_storage == ASR::storage_typeType::Parameter;
-        } else {
+        } case ASR::exprType::Cast: {
+            ASR::Cast_t* cast_t = ASR::down_cast<ASR::Cast_t>(a_value);
+            return is_value_constant(cast_t->m_arg);
+        } case ASR::exprType::ArrayReshape: {
+            ASR::ArrayReshape_t*
+                array_reshape = ASR::down_cast<ASR::ArrayReshape_t>(a_value);
+            return is_value_constant(array_reshape->m_array) && is_value_constant(array_reshape->m_shape);
+        } case ASR::exprType::ArrayPhysicalCast: {
+            ASR::ArrayPhysicalCast_t*
+                array_physical_t = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_value);
+            return is_value_constant(array_physical_t->m_arg);
+        } case ASR::exprType::StructTypeConstructor: {
+            ASR::StructTypeConstructor_t* struct_type_constructor =
+                ASR::down_cast<ASR::StructTypeConstructor_t>(a_value);
+            bool is_constant = true;
+            for( size_t i = 0; i < struct_type_constructor->n_args; i++ ) {
+                if( struct_type_constructor->m_args[i].m_value ) {
+                    is_constant = is_constant &&
+                                (is_value_constant(
+                                    struct_type_constructor->m_args[i].m_value) ||
+                                is_value_constant(
+                                    ASRUtils::expr_value(
+                                        struct_type_constructor->m_args[i].m_value)));
+                }
+            }
+            return is_constant;
+        } default: {
             return false;
         }
-    } else if(ASR::is_a<ASR::ImpliedDoLoop_t>(*a_value)) {
-        // OK
-    } else if(ASR::is_a<ASR::Cast_t>(*a_value)) {
-        ASR::Cast_t* cast_t = ASR::down_cast<ASR::Cast_t>(a_value);
-        return is_value_constant(cast_t->m_arg);
-    } else if(ASR::is_a<ASR::PointerNullConstant_t>(*a_value)) {
-        // OK
-    } else if(ASR::is_a<ASR::ArrayReshape_t>(*a_value)) {
-        ASR::ArrayReshape_t* array_reshape = ASR::down_cast<ASR::ArrayReshape_t>(a_value);
-        return is_value_constant(array_reshape->m_array) && is_value_constant(array_reshape->m_shape);
-    } else if(ASR::is_a<ASR::ArrayPhysicalCast_t>(*a_value)) {
-        ASR::ArrayPhysicalCast_t* array_physical_t = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_value);
-        return is_value_constant(array_physical_t->m_arg);
-    } else if( ASR::is_a<ASR::StructTypeConstructor_t>(*a_value) ) {
-        ASR::StructTypeConstructor_t* struct_type_constructor =
-            ASR::down_cast<ASR::StructTypeConstructor_t>(a_value);
-        bool is_constant = true;
-        for( size_t i = 0; i < struct_type_constructor->n_args; i++ ) {
-            if( struct_type_constructor->m_args[i].m_value ) {
-                is_constant = is_constant &&
-                              (is_value_constant(
-                                struct_type_constructor->m_args[i].m_value) ||
-                              is_value_constant(
-                                ASRUtils::expr_value(
-                                    struct_type_constructor->m_args[i].m_value)));
-            }
-        }
-        return is_constant;
-    } else if( ASR::is_a<ASR::IntegerBinOp_t>(*a_value) ) {
-        ASR::IntegerBinOp_t* int_binop = ASR::down_cast<ASR::IntegerBinOp_t>(a_value);
-        return is_value_constant(int_binop->m_value);
-    } else {
-        return false;
     }
-    return true;
 }
 
 static inline bool is_value_constant(ASR::expr_t *a_value, int64_t& const_value) {
@@ -1319,14 +1310,6 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
             value = (T) int_boz->m_v;
             break;
         }
-        case ASR::exprType::IntegerUnaryMinus: {
-            ASR::IntegerUnaryMinus_t*
-                const_int = ASR::down_cast<ASR::IntegerUnaryMinus_t>(value_expr);
-            if (!extract_value(const_int->m_value, value)) {
-                return false;
-            }
-            break;
-        }
         case ASR::exprType::UnsignedIntegerConstant: {
             ASR::UnsignedIntegerConstant_t* const_int = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(value_expr);
             value = (T) const_int->m_n;
@@ -1335,14 +1318,6 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
         case ASR::exprType::RealConstant: {
             ASR::RealConstant_t* const_real = ASR::down_cast<ASR::RealConstant_t>(value_expr);
             value = (T) const_real->m_r;
-            break;
-        }
-        case ASR::exprType::RealUnaryMinus: {
-            ASR::RealUnaryMinus_t*
-                const_int = ASR::down_cast<ASR::RealUnaryMinus_t>(value_expr);
-            if (!extract_value(const_int->m_value, value)) {
-                return false;
-            }
             break;
         }
         case ASR::exprType::LogicalConstant: {
@@ -1358,16 +1333,12 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
             }
             break;
         }
-        case ASR::exprType::FunctionCall: {
-            ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(value_expr);
-            if (!extract_value(func_call->m_value, value)) {
-                return false;
-            }
-            break;
-        }
-        case ASR::exprType::IntegerBinOp: {
-            ASR::IntegerBinOp_t* int_binop = ASR::down_cast<ASR::IntegerBinOp_t>(value_expr);
-            if (!extract_value(int_binop->m_value, value)) {
+        case ASR::exprType::IntegerUnaryMinus:
+        case ASR::exprType::RealUnaryMinus:
+        case ASR::exprType::FunctionCall:
+        case ASR::exprType::IntegerBinOp:
+        case ASR::exprType::StringLen: {
+            if (!extract_value(expr_value(value_expr), value)) {
                 return false;
             }
             break;
