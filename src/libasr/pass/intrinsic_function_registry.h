@@ -61,6 +61,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Range)
         INTRINSIC_NAME_CASE(Hypot)
         INTRINSIC_NAME_CASE(Selected_int_kind)
+        INTRINSIC_NAME_CASE(Selected_real_kind)
         INTRINSIC_NAME_CASE(MinExponent)
         INTRINSIC_NAME_CASE(MaxExponent)
         INTRINSIC_NAME_CASE(ListIndex)
@@ -282,6 +283,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {nullptr, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Selected_int_kind),
             {&Selected_int_kind::instantiate_Selected_int_kind, &Selected_int_kind::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Selected_real_kind),
+            {&Selected_real_kind::instantiate_Selected_real_kind, &Selected_real_kind::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicSymbol),
             {nullptr, &SymbolicSymbol::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicAdd),
@@ -405,6 +408,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "hypot"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Selected_int_kind),
             "selected_int_kind"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Selected_real_kind),
+            "selected_real_kind"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Kind),
             "kind"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Rank),
@@ -573,6 +578,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"leadz", {&Leadz::create_Leadz, &Leadz::eval_Leadz}},
                 {"hypot", {&Hypot::create_Hypot, &Hypot::eval_Hypot}},
                 {"selected_int_kind", {&Selected_int_kind::create_Selected_int_kind, &Selected_int_kind::eval_Selected_int_kind}},
+                {"selected_real_kind", {&Selected_real_kind::create_Selected_real_kind, &Selected_real_kind::eval_Selected_real_kind}},
                 {"kind", {&Kind::create_Kind, &Kind::eval_Kind}},
                 {"rank", {&Rank::create_Rank, &Rank::eval_Rank}},
                 {"digits", {&Digits::create_Digits, &Digits::eval_Digits}},

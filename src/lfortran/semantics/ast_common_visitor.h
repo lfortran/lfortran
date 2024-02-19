@@ -732,6 +732,7 @@ public:
         {"dprod", {IntrinsicSignature({"X", "Y"}, 2, 2)}},
         {"maskr", {IntrinsicSignature({"i", "kind"}, 1, 2)}},
         {"maskl", {IntrinsicSignature({"i", "kind"}, 1, 2)}},
+        {"selected_real_kind", {IntrinsicSignature({"p", "r", "radix"}, 0, 3)}},
     };
 
     std::map<std::string, std::string> intrinsic_mapping = {
@@ -4987,6 +4988,7 @@ public:
                 }
                 if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ){
                     fill_optional_kind_arg(var_name, args);
+                    // fill_optional_absent_arg(var_name, args);
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
                     tmp = create_func(al, x.base.base.loc, args, diag);

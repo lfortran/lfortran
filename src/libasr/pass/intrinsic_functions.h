@@ -60,6 +60,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Repeat,
     Hypot,
     Selected_int_kind,
+    Selected_real_kind,
     MinExponent,
     MaxExponent,
     FloorDiv,
@@ -2128,6 +2129,100 @@ namespace Selected_int_kind {
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 } // namespace Selected_int_kind
+
+namespace Selected_real_kind {
+
+    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+        if (x.n_args > 3) {
+            append_error(diagnostics, "selected_real_kind takes atmost 3 arguments", x.base.base.loc);
+        }
+    }
+
+    static inline ASR::expr_t *eval_Selected_real_kind(Allocator &al, const Location &loc,
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        int64_t result = 4;
+        int64_t p = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        int64_t r = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        int64_t radix = ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n;
+        if (p > 6) {
+            result = 8;
+        }
+        if (r > 37) {
+            result = 8;
+        }    
+        if (radix != 2) {
+            result = -5;
+        }
+        return i32(result);
+    }
+
+    static inline ASR::asr_t *create_Selected_real_kind(Allocator &al, const Location &loc,
+            Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        ASRBuilder b(al, loc);
+        if (args.size() > 3) {
+            append_error(diag, "selected_real_kind takes atmost 3 arguments", loc);
+            return nullptr;
+        }
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 3);
+        for (int i=0; i<2; i++) {
+            if (args[i]) {
+                m_args.push_back(al, args[i]);
+            } else {
+                m_args.push_back(al, i(0, int32));
+            }
+        }
+        if (args[2]) {
+            m_args.push_back(al, args[2]);
+        } else {
+            m_args.push_back(al, i(2, int32));
+        }
+        ASR::ttype_t *return_type = int32;
+        ASR::expr_t *value = nullptr;
+        if (all_args_evaluated(m_args)) {
+            Vec<ASR::expr_t*> args_values; args_values.reserve(al, 3);
+            args_values.push_back(al, expr_value(m_args[0]));
+            args_values.push_back(al, expr_value(m_args[1]));
+            args_values.push_back(al, expr_value(m_args[2]));
+            value = eval_Selected_real_kind(al, loc, nullptr, args_values, diag);
+        }
+        return ASR::make_IntrinsicElementalFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicElementalFunctions::Selected_real_kind),
+            m_args.p, m_args.n, 0, return_type, value);
+    }
+
+    static inline ASR::expr_t* instantiate_Selected_real_kind(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("");
+        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("y", arg_types[1]);
+        fill_func_arg("z", arg_types[2]);
+        auto result = declare(fn_name, int32, ReturnVar);
+        auto p = declare("p", arg_types[0], Local);
+        auto r = declare("r", arg_types[1], Local);
+        auto radix = declare("radix", arg_types[2], Local);
+        
+        body.push_back(al, b.Assignment(p, args[0]));
+        body.push_back(al, b.Assignment(r, args[1]));
+        body.push_back(al, b.Assignment(radix, args[2]));
+        body.push_back(al, b.Assignment(result, i(4, int32)));
+
+        body.push_back(al, b.If(iGt(p, i(6, arg_types[0])), {
+            b.Assignment(result, i(8, int32))
+        }, {}));
+        body.push_back(al, b.If(iGt(r, i(37, arg_types[1])), {
+            b.Assignment(result, i(8, int32))
+        }, {}));
+        body.push_back(al, b.If(iNotEq(radix, i(2, arg_types[2])), {
+            b.Assignment(result, i(-5, int32))
+        }, {}));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+} // namespace Selected_real_kind
 
 namespace Kind {
 
