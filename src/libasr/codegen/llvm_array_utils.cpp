@@ -261,12 +261,10 @@ namespace LCompilers {
             llvm::Value* offset_val = llvm_utils->create_gep(arr, 1);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), offset_val);
             llvm::Value* dim_des_val = llvm_utils->create_gep(arr, 2);
-            llvm::Value* llvm_ndims = builder->CreateAlloca(llvm::Type::getInt32Ty(context), nullptr);
-            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), llvm_ndims);
-            llvm::Value* dim_des_first = builder->CreateAlloca(dim_des,
-                                                               LLVM::CreateLoad(*builder, llvm_ndims));
-            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), get_rank(arr, true));
+            llvm::Value* arr_rank = llvm::ConstantInt::get(context, llvm::APInt(32, n_dims));
+            llvm::Value* dim_des_first = builder->CreateAlloca(dim_des, arr_rank);
             builder->CreateStore(dim_des_first, dim_des_val);
+            builder->CreateStore(arr_rank, get_rank(arr, true));
             dim_des_val = LLVM::CreateLoad(*builder, dim_des_val);
             llvm::Value* prod = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
             for( int r = 0; r < n_dims; r++ ) {
