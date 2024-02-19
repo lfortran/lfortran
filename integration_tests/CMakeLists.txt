@@ -650,6 +650,7 @@ RUN(NAME intrinsics_137 LABELS gfortran llvm)#huge
 RUN(NAME intrinsics_138 LABELS gfortran llvm)#precision
 RUN(NAME intrinsics_140 LABELS gfortran llvm)#selected_int_kind
 RUN(NAME intrinsics_141 LABELS gfortran llvm)#scale
+RUN(NAME intrinsics_142 LABELS gfortran llvm)#dprod
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
