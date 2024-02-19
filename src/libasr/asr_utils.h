@@ -1001,7 +1001,8 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
         }
         case ASR::exprType::IntegerUnaryMinus:
         case ASR::exprType::RealUnaryMinus:
-        case ASR::exprType::IntegerBinOp: {
+        case ASR::exprType::IntegerBinOp:
+        case ASR::exprType::StringLen: {
             return is_value_constant(expr_value(a_value));
         } case ASR::exprType::ArrayConstant: {
             ASR::ArrayConstant_t* array_constant = ASR::down_cast<ASR::ArrayConstant_t>(a_value);
@@ -1335,7 +1336,8 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
         case ASR::exprType::IntegerUnaryMinus:
         case ASR::exprType::RealUnaryMinus:
         case ASR::exprType::FunctionCall:
-        case ASR::exprType::IntegerBinOp: {
+        case ASR::exprType::IntegerBinOp:
+        case ASR::exprType::StringLen: {
             if (!extract_value(expr_value(value_expr), value)) {
                 return false;
             }
