@@ -336,7 +336,7 @@ namespace LCompilers {
                 }
 
                 void visit_FunctionCall(const ASR::FunctionCall_t& x) {
-                    if (fill_function_dependencies) { 
+                    if (fill_function_dependencies) {
                         ASR::symbol_t* asr_owner_sym = nullptr;
                         if (current_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
                             asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
@@ -353,7 +353,7 @@ namespace LCompilers {
                                 }
                             } else {
                                 function_dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
-                            }    
+                            }
                         }
                     }
                     if( ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) &&
@@ -374,7 +374,7 @@ namespace LCompilers {
                         }
 
                         SymbolTable* temp_scope = current_scope;
-                        
+
                         if (asr_owner_sym && temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(x.m_name)->get_counter() &&
                             !ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) && !ASR::is_a<ASR::Variable_t>(*x.m_name)) {
                             if (ASR::is_a<ASR::AssociateBlock_t>(*asr_owner_sym) || ASR::is_a<ASR::Block_t>(*asr_owner_sym)) {
@@ -384,7 +384,7 @@ namespace LCompilers {
                                 }
                             } else {
                                 function_dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
-                            }    
+                            }
                         }
                     }
 
@@ -584,7 +584,7 @@ namespace LCompilers {
                             idoloop_m_values_i, cast_kind, casted_type, nullptr));
                     }
                     ASR::stmt_t* doloop_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, arr_var->base.loc,
-                                                    array_ref, idoloop->m_values[i], nullptr));
+                                                    array_ref, idoloop_m_values_i, nullptr));
                     doloop_body.push_back(al, doloop_stmt);
                     if( arr_idx != nullptr ) {
                         ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr_var->base.loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, arr_var->base.loc, 4))));
