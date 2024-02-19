@@ -275,7 +275,7 @@ public:
                 }
             } else {
                 const std::unordered_set<std::string> unsupported_args {"iostat", "iomsg", "err", "blank", "access", \
-                                                                            "recl", "fileopt", "action", "position"};
+                                                                        "recl", "fileopt", "action", "position", "pad"};
                 if (unsupported_args.find(m_arg_str) == unsupported_args.end()) {
                     throw SemanticError("Invalid argument `" + m_arg_str + "` supplied", x.base.base.loc);
                 } else {
