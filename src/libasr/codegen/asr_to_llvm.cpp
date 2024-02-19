@@ -6069,12 +6069,16 @@ public:
                 llvm::Type *type;
                 int a_kind;
                 a_kind = down_cast<ASR::Integer_t>(ASRUtils::extract_type(x.m_type))->m_kind;
-                type = llvm_utils->getFPType(a_kind);
+                if( a_kind <= 4 ) {
+                    type = llvm_utils->getFPType(4);
+                } else {
+                    type = llvm_utils->getFPType(8);
+                }
                 llvm::Value *fleft = builder->CreateSIToFP(left_val,
                         type);
                 llvm::Value *fright = builder->CreateSIToFP(right_val,
                         type);
-                std::string func_name = a_kind == 4 ? "llvm.pow.f32" : "llvm.pow.f64";
+                std::string func_name = a_kind <= 4 ? "llvm.pow.f32" : "llvm.pow.f64";
                 llvm::Function *fn_pow = module->getFunction(func_name);
                 if (!fn_pow) {
                     llvm::FunctionType *function_type = llvm::FunctionType::get(

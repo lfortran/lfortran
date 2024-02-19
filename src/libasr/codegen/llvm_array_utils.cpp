@@ -443,12 +443,11 @@ namespace LCompilers {
             int j = 0;
             for( int i = 0; i < value_rank; i++ ) {
                 if( ds[i] != nullptr ) {
+                    llvm::Value* ubsi = builder->CreateSExtOrTrunc(ubs[i], llvm::Type::getInt32Ty(context));
+                    llvm::Value* lbsi = builder->CreateSExtOrTrunc(lbs[i], llvm::Type::getInt32Ty(context));
+                    llvm::Value* dsi = builder->CreateSExtOrTrunc(ds[i], llvm::Type::getInt32Ty(context));
                     llvm::Value* dim_length = builder->CreateAdd(
-                        builder->CreateSDiv(
-                            builder->CreateSub(
-                                builder->CreateSExtOrTrunc(ubs[i], llvm::Type::getInt32Ty(context)),
-                                builder->CreateSExtOrTrunc(lbs[i], llvm::Type::getInt32Ty(context))),
-                            builder->CreateSExtOrTrunc(ds[i], llvm::Type::getInt32Ty(context))),
+                        builder->CreateSDiv(builder->CreateSub(ubsi, lbsi), dsi),
                         llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                                                 llvm::APInt(32, 1))
                         );
@@ -456,7 +455,7 @@ namespace LCompilers {
                     llvm::Value* target_dim_des = llvm_utils->create_ptr_gep(target_dim_des_array, j);
                     llvm::Value* value_stride = get_stride(value_dim_des, true);
                     llvm::Value* target_stride = get_stride(target_dim_des, false);
-                    builder->CreateStore(builder->CreateMul(value_stride, builder->CreateSExtOrTrunc(
+                    builder->CreateStore(builder->CreateMul(value_stride, builder->CreateZExtOrTrunc(
                         ds[i], llvm::Type::getInt32Ty(context))), target_stride);
                     // Diverges from LPython, 0 should be stored there.
                     builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1)),
@@ -502,17 +501,16 @@ namespace LCompilers {
             llvm::Value* stride = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
             for( int i = 0; i < value_rank; i++ ) {
                 if( ds[i] != nullptr ) {
+                    llvm::Value* ubsi = builder->CreateSExtOrTrunc(ubs[i], llvm::Type::getInt32Ty(context));
+                    llvm::Value* lbsi = builder->CreateSExtOrTrunc(lbs[i], llvm::Type::getInt32Ty(context));
+                    llvm::Value* dsi = builder->CreateSExtOrTrunc(ds[i], llvm::Type::getInt32Ty(context));
                     llvm::Value* dim_length = builder->CreateAdd(
-                        builder->CreateSDiv(
-                            builder->CreateSub(
-                                builder->CreateSExtOrTrunc(ubs[i], llvm::Type::getInt32Ty(context)),
-                                builder->CreateSExtOrTrunc(lbs[i], llvm::Type::getInt32Ty(context))),
-                            builder->CreateSExtOrTrunc(ds[i], llvm::Type::getInt32Ty(context))),
+                        builder->CreateSDiv(builder->CreateSub(ubsi, lbsi), dsi),
                         llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                                                 llvm::APInt(32, 1))
                         );
                     llvm::Value* target_dim_des = llvm_utils->create_ptr_gep(target_dim_des_array, j);
-                    builder->CreateStore(builder->CreateMul(stride, builder->CreateSExtOrTrunc(
+                    builder->CreateStore(builder->CreateMul(stride, builder->CreateZExtOrTrunc(
                         ds[i], llvm::Type::getInt32Ty(context))), get_stride(target_dim_des, false));
                     builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1)),
                                          get_lower_bound(target_dim_des, false));
@@ -677,7 +675,7 @@ namespace LCompilers {
             if( dim ) {
                 tmp = builder->CreateSub(dim, llvm::ConstantInt::get(context, llvm::APInt(dim_kind * 8, 1)));
                 tmp = this->get_dimension_size(dim_des_val, tmp);
-                tmp = builder->CreateSExt(tmp, llvm_utils->getIntType(kind));
+                tmp = builder->CreateSExtOrTrunc(tmp, llvm_utils->getIntType(kind));
                 return tmp;
             }
             llvm::BasicBlock &entry_block = builder->GetInsertBlock()->getParent()->getEntryBlock();
@@ -703,7 +701,7 @@ namespace LCompilers {
             llvm::Value* r_val = LLVM::CreateLoad(*builder, r);
             llvm::Value* ret_val = LLVM::CreateLoad(*builder, llvm_size);
             llvm::Value* dim_size = this->get_dimension_size(dim_des_val, r_val);
-            dim_size = builder->CreateSExt(dim_size, llvm_utils->getIntType(kind));
+            dim_size = builder->CreateSExtOrTrunc(dim_size, llvm_utils->getIntType(kind));
             ret_val = builder->CreateMul(ret_val, dim_size);
             builder->CreateStore(ret_val, llvm_size);
             r_val = builder->CreateAdd(r_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));

@@ -572,8 +572,7 @@ namespace LCompilers {
             }
         }
 
-        ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim, std::string bound,
-                                Allocator& al) {
+        ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim, std::string bound, Allocator& al) {
             ASR::ttype_t* x_mv_type = ASRUtils::expr_type(arr_expr);
             ASR::dimension_t* m_dims;
             int n_dims = ASRUtils::extract_dimensions_from_ttype(x_mv_type, m_dims);
@@ -1055,13 +1054,19 @@ namespace LCompilers {
             ASRUtils::ASRBuilder builder(al, loc);
             for( size_t k = 0; k < x->n_args; k++ ) {
                 ASR::expr_t* curr_init = x->m_args[k];
+                if( ASR::is_a<ASR::Cast_t>(*curr_init) ) {
+                    perform_cast = true;
+                    cast_kind = ASR::down_cast<ASR::Cast_t>(curr_init)->m_kind;
+                    casted_type = ASR::down_cast<ASR::Cast_t>(curr_init)->m_type;
+                    curr_init = ASR::down_cast<ASR::Cast_t>(curr_init)->m_arg;
+                }
                 if( ASR::is_a<ASR::ImpliedDoLoop_t>(*curr_init) ) {
                     ASR::ImpliedDoLoop_t* idoloop = ASR::down_cast<ASR::ImpliedDoLoop_t>(curr_init);
-                    create_do_loop(al, idoloop, arr_var, result_vec, idx_var, perform_cast, cast_kind);
+                    create_do_loop(al, idoloop, arr_var, result_vec, idx_var, perform_cast, cast_kind, casted_type);
                 } else if( ASR::is_a<ASR::ArrayConstant_t>(*curr_init) ) {
                     ASR::ArrayConstant_t* array_constant_t = ASR::down_cast<ASR::ArrayConstant_t>(curr_init);
                     visit_ArrayConstant(array_constant_t, al, arr_var, result_vec,
-                                        idx_var, current_scope, perform_cast, cast_kind);
+                                        idx_var, current_scope, perform_cast, cast_kind, casted_type);
                 } else if( ASR::is_a<ASR::Var_t>(*curr_init) ) {
                     ASR::ttype_t* element_type = ASRUtils::expr_type(curr_init);
                     if( ASRUtils::is_array(element_type) ) {
