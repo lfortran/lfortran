@@ -3766,3 +3766,7 @@ asr = true
 [[test]]
 filename = "errors/fixed_number_of_args.f90"
 asr = true
+
+[[test]]
+filename = "errors/asr_verify.f90"
+asr = true
