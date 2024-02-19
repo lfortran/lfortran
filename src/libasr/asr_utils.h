@@ -425,6 +425,15 @@ static inline ASR::abiType expr_abi(ASR::expr_t* e) {
         case ASR::exprType::GetPointer: {
             return ASRUtils::expr_abi(ASR::down_cast<ASR::GetPointer_t>(e)->m_arg);
         }
+        case ASR::exprType::ComplexIm: {
+            return ASRUtils::expr_abi(ASR::down_cast<ASR::ComplexIm_t>(e)->m_arg);
+        }
+        case ASR::exprType::ComplexRe: {
+            return ASRUtils::expr_abi(ASR::down_cast<ASR::ComplexRe_t>(e)->m_arg);
+        }
+        case ASR::exprType::ArrayPhysicalCast: {
+            return ASRUtils::expr_abi(ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg);
+        }
         default:
             throw LCompilersException("Cannot extract the ABI of " +
                     std::to_string(e->type) + " expression.");
