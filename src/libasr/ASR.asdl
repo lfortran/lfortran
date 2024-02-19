@@ -82,7 +82,7 @@ expr
     | IntrinsicElementalFunction(int intrinsic_id, expr* args, int overload_id, ttype? type, expr? value)
     | IntrinsicArrayFunction(int arr_intrinsic_id, expr* args, int overload_id, ttype? type, expr? value)
     | IntrinsicImpureFunction(int impure_intrinsic_id, expr* args, int overload_id, ttype? type, expr? value)
-    | TypeInquiry(int inquiry_id, expr? v, ttype type, expr value)
+    | TypeInquiry(int inquiry_id, ttype arg_type, expr? arg, ttype type, expr value)
     | StructTypeConstructor(symbol dt_sym, call_arg* args, ttype type, expr? value)
     | EnumTypeConstructor(symbol dt_sym, expr* args, ttype type, expr? value)
     | UnionTypeConstructor(symbol dt_sym, expr* args, ttype type, expr? value)
