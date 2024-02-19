@@ -9422,6 +9422,7 @@ public:
                     {
                         if( x.m_bound == ASR::arrayboundType::LBound ) {
                             this->visit_expr_wrapper(m_dims[i].m_start, true);
+                            tmp = builder->CreateSExtOrTrunc(tmp, target_type);
                             builder->CreateStore(tmp, target);
                         } else if( x.m_bound == ASR::arrayboundType::UBound ) {
                             llvm::Value *lbound = nullptr, *length = nullptr;
