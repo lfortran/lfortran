@@ -88,7 +88,6 @@ struct IntrinsicProcedures {
 
             // Require evaluated arguments
             {"modulo", {m_math2, &eval_modulo, true}},
-            {"selected_real_kind", {m_kind, &eval_selected_real_kind, true}},
             {"selected_char_kind", {m_kind, &eval_selected_char_kind, true}},
 
             {"dot_product", {m_math, &not_implemented, false}},
@@ -491,30 +490,6 @@ struct IntrinsicProcedures {
                     ASRUtils::expr_type(args[0])));
     }
 
-    static ASR::expr_t *eval_selected_real_kind(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
-        // TODO: Be more standards compliant 16.9.170
-        // e.g. selected_real_kind(6, 70)
-        ASR::expr_t* real_expr = args[0];
-        ASR::ttype_t* real_type = ASRUtils::expr_type(real_expr);
-        if (ASR::is_a<ASR::Integer_t>(*real_type)) {
-            int64_t R = ASR::down_cast<ASR::IntegerConstant_t>(
-                ASRUtils::expr_value(real_expr))->m_n;
-            int a_kind = 4;
-            if (R < 7) {
-                a_kind = 4;
-            } else {
-                a_kind = 8;
-            }
-            ASR::ttype_t *type = ASRUtils::TYPE(
-                    ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
-            return ASR::down_cast<ASR::expr_t>(
-                ASR::make_IntegerConstant_t(al, loc,
-                a_kind, type));
-        } else {
-            throw SemanticError("integer_real_kind() must have one integer argument", loc);
-        }
-    }
     static ASR::expr_t *eval_selected_char_kind(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
         ASR::expr_t* real_expr = args[0];
