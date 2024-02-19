@@ -830,11 +830,11 @@ namespace Scale {
 
 namespace Dprod {
     static ASR::expr_t *eval_Dprod(Allocator &al, const Location &loc,
-            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* return_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         double value_X = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
         double value_Y = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[1]))->m_r;
         double result = value_X * value_Y;
-        return f(result, arg_type);
+        return f(result, return_type);
     }
 
     static inline ASR::expr_t* instantiate_Dprod(Allocator &al, const Location &loc,
@@ -848,11 +848,7 @@ namespace Dprod {
         * r = dprod(x, y)
         * r = x * y
         */
-        ASR::expr_t *cast = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::RealToReal, return_type, nullptr));
-        ASR::expr_t *cast1 = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[1], ASR::cast_kindType::RealToReal, return_type, nullptr));
-        body.push_back(al, b.Assignment(result, r_tMul(cast,cast1, return_type)));     
-
-
+        body.push_back(al, b.Assignment(result, r2r64(r32Mul(args[0],args[1]))));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
