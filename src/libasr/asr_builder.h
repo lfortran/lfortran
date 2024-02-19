@@ -117,6 +117,7 @@ class ASRBuilder {
     #define f32_neg(x, t) ASRUtils::EXPR(ASR::make_RealUnaryMinus_t(al, loc, x, t, nullptr))
 
     #define bool32(x)  ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, x, logical))
+    #define c32(x, y) ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, loc, x, y, complex32))
 
     #define ListItem(x, pos, type) EXPR(ASR::make_ListItem_t(al, loc, x, pos,   \
         type, nullptr))
@@ -254,6 +255,10 @@ class ASRBuilder {
                     right, type, nullptr));
                 break;
             }
+            case ASR::ttypeType::Complex : {
+                return EXPR(ASR::make_ComplexBinOp_t(al, loc, left,
+                    ASR::binopType::Add, right, type, nullptr));
+            }
             default: {
                 LCOMPILERS_ASSERT(false);
                 return nullptr;
@@ -275,6 +280,10 @@ class ASRBuilder {
                 return EXPR(ASR::make_RealBinOp_t(al, loc, left,
                     ASR::binopType::Mul, right, type, nullptr));
                 break;
+            }
+            case ASR::ttypeType::Complex : {
+                return EXPR(ASR::make_ComplexBinOp_t(al, loc, left,
+                    ASR::binopType::Mul, right, type, nullptr));
             }
             default: {
                 LCOMPILERS_ASSERT(false);
