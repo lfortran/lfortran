@@ -2,7 +2,7 @@
     "basename": "fortran-real_to_complex_cast_in_comparison-655651c",
     "cmd": "lfortran --show-fortran --no-color {infile} -o {outfile}",
     "infile": "tests/real_to_complex_cast_in_comparison.f90",
-    "infile_hash": "a98d6a438cee195a8076aa78283fbfb8faa0090090016ba15dc661f8",
+    "infile_hash": "b24f703e12ad69de41d2e7963f95416d6e78e2a032b22b228316972c",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "fortran-real_to_complex_cast_in_comparison-655651c.stdout",

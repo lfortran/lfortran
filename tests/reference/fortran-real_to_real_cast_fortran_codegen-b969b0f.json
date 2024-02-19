@@ -2,7 +2,7 @@
     "basename": "fortran-real_to_real_cast_fortran_codegen-b969b0f",
     "cmd": "lfortran --show-fortran --no-color {infile} -o {outfile}",
     "infile": "tests/real_to_real_cast_fortran_codegen.f90",
-    "infile_hash": "a6e94af0a48eebc8a838b99aa99e15ff160108f2126016142e0f6931",
+    "infile_hash": "101385afd4eb558d127d1dad0192c160bee2cfc84bb2413cf32f4196",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "fortran-real_to_real_cast_fortran_codegen-b969b0f.stdout",
