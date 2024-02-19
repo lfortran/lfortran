@@ -2152,7 +2152,7 @@ namespace Repeat {
 namespace Adjustl {
 
     static ASR::expr_t *eval_Adjustl(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         char* str = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
         size_t len = std::strlen(str);
         size_t first_non_space = 0;
