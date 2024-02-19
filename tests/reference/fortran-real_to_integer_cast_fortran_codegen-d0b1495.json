@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-real_to_integer_cast_fortran_codegen-d0b1495",
+    "cmd": "lfortran --show-fortran --no-color {infile} -o {outfile}",
+    "infile": "tests/real_to_integer_cast_fortran_codegen.f90",
+    "infile_hash": "555da54a2d361456a4244e839c77d11fa87e2309d5a9be6ff36b7716",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-real_to_integer_cast_fortran_codegen-d0b1495.stdout",
+    "stdout_hash": "d36d579561a47ee209fd345ab4f8f4f5e460eb5ddbb5d51d06bf8fb6",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

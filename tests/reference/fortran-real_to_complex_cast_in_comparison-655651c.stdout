@@ -1,0 +1,18 @@
+program expr2
+implicit none
+integer(4), parameter :: dp = 8
+real(8) :: zero
+zero = 0.000000d0
+
+contains
+
+elemental complex(8) function dabs(x) result(r)
+    complex(8), intent(in) :: x
+    if (x /= cmplx(zero, 0.0, kind=8)) then
+        r = x
+    else
+        r = cmplx(0, 0.0, kind=8) - x
+    end if
+end function dabs
+
+end program expr2
