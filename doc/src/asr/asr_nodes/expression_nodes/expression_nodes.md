@@ -23,11 +23,15 @@ ComplexUnaryMinus
 DerivedTypeConstructor
 FunctionCall
 IfExp
+ichar
+implieddoloop
 IntegerBOZ
+IntegerBinOp
 IntegerBitNot
 IntegerCompare
 IntegerConstant
 IntegerUnaryMinus
+IntrinsicFunction
 LogicalBinOp
 LogicalCompare
 LogicalConstant
@@ -38,8 +42,6 @@ RealUnaryMinus
 StringCompare
 StringConcat
 StringConstant
+TypeInquiry
 Var
-ichar
-implieddoloop.md
-IntegerBinOp
 ```
