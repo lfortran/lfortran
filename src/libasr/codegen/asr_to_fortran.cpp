@@ -1688,7 +1688,6 @@ public:
             {ASR::cast_kindType::ComplexToReal, {"real", {4, 8}}},
             {ASR::cast_kindType::RealToComplex, {"cmplx", {4, 8}}},
             {ASR::cast_kindType::LogicalToInteger, {"int", {1, 2, 4, 8}}},
-            {ASR::cast_kindType::IntegerToLogical, {"logical", {1, 2, 4, 8}}}
         };
 
         if (cast_map.find(x.m_kind) != cast_map.end()) {
