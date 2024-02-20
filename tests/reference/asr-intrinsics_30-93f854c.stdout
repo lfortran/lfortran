@@ -163,6 +163,7 @@
                                     Local
                                     (TypeInquiry
                                         Range
+                                        (Integer 1)
                                         (Var 2 i3)
                                         (Integer 4)
                                         (IntegerConstant 2 (Integer 4))
@@ -184,6 +185,7 @@
                                     Local
                                     (TypeInquiry
                                         Range
+                                        (Integer 2)
                                         (Var 2 i4)
                                         (Integer 4)
                                         (IntegerConstant 4 (Integer 4))
@@ -203,12 +205,14 @@
                     [(Print
                         [(TypeInquiry
                             Range
+                            (Integer 4)
                             (Var 2 i1)
                             (Integer 4)
                             (IntegerConstant 9 (Integer 4))
                         )
                         (TypeInquiry
                             Range
+                            (Integer 8)
                             (Var 2 i2)
                             (Integer 4)
                             (IntegerConstant 18 (Integer 4))
@@ -221,12 +225,14 @@
                     (Print
                         [(TypeInquiry
                             Range
+                            (Real 4)
                             (Var 2 r1)
                             (Integer 4)
                             (IntegerConstant 37 (Integer 4))
                         )
                         (TypeInquiry
                             Range
+                            (Real 8)
                             (Var 2 r2)
                             (Integer 4)
                             (IntegerConstant 307 (Integer 4))
@@ -237,12 +243,14 @@
                     (Print
                         [(TypeInquiry
                             Range
+                            (Complex 4)
                             (Var 2 c1)
                             (Integer 4)
                             (IntegerConstant 37 (Integer 4))
                         )
                         (TypeInquiry
                             Range
+                            (Complex 8)
                             (Var 2 c2)
                             (Integer 4)
                             (IntegerConstant 307 (Integer 4))
@@ -286,6 +294,7 @@
                         (IntegerCompare
                             (TypeInquiry
                                 Range
+                                (Integer 4)
                                 (Var 2 i1)
                                 (Integer 4)
                                 (IntegerConstant 9 (Integer 4))
@@ -307,6 +316,7 @@
                         (IntegerCompare
                             (TypeInquiry
                                 Range
+                                (Integer 8)
                                 (Var 2 i2)
                                 (Integer 4)
                                 (IntegerConstant 18 (Integer 4))
@@ -328,6 +338,7 @@
                         (IntegerCompare
                             (TypeInquiry
                                 Range
+                                (Real 4)
                                 (Var 2 r1)
                                 (Integer 4)
                                 (IntegerConstant 37 (Integer 4))
@@ -349,6 +360,7 @@
                         (IntegerCompare
                             (TypeInquiry
                                 Range
+                                (Real 8)
                                 (Var 2 r2)
                                 (Integer 4)
                                 (IntegerConstant 307 (Integer 4))
@@ -370,6 +382,7 @@
                         (IntegerCompare
                             (TypeInquiry
                                 Range
+                                (Complex 4)
                                 (Var 2 c1)
                                 (Integer 4)
                                 (IntegerConstant 37 (Integer 4))
@@ -391,6 +404,7 @@
                         (IntegerCompare
                             (TypeInquiry
                                 Range
+                                (Complex 8)
                                 (Var 2 c2)
                                 (Integer 4)
                                 (IntegerConstant 307 (Integer 4))
