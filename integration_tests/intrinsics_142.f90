@@ -1,38 +1,26 @@
-program intrinsic_142
-    real :: a, b, c
-    double precision :: result
-    a = 5.2
-    b = 3.2
-    c = -4.1
+program intrinsics_142
+    integer, dimension(3) :: a, b
+    integer(8), dimension(5) :: c, d
+    integer :: res
+    integer(8) :: res_8
+    a = [1, 2, 3]
+    b = [4, 5, 6]
+    c = [1_8, 2_8, 3_8, 4_8, 5_8]
+    d = [6_8, 7_8, 8_8, 9_8, 10_8]
 
-    result = dprod(a,b)
-    print *, result
-    if (abs(result - (16.64)) > 1e-5) error stop
+    res = dot_product([1, 2, 3],[4, 5, 6])
+    print *, res
+    if (res /= 32) error stop
 
-    result = dprod(a,c)
-    print *, dprod(a,c)
-    if (abs(result - (-21.32)) > 1e-5) error stop
+    res = dot_product(a, b)
+    print *, res
+    if (res /= 32) error stop
 
-    result = dprod(b,c)
-    print *, result
-    if (abs(result - (-13.12)) > 1e-5) error stop
+    res_8 = dot_product([1_8, 2_8, 3_8, 4_8, 5_8],[6_8, 7_8, 8_8, 9_8, 10_8])
+    print *, res_8
+    if (res_8 /= 130) error stop
 
-    result = dprod(5.2,3.2)
-    print *, result
-    if (abs(result - (16.64)) > 1e-5) error stop
-
-    result = dprod(5.2,-4.1)
-    print *, result
-    if (abs(result - (-21.32)) > 1e-5) error stop
-
-    result = dprod(3.2,-4.1)
-    print *, result
-    if (abs(result - (-13.12)) > 1e-5) error stop
-
-    print *, kind(dprod(a,b))
-    if (kind(dprod(a,b)) /= 8) error stop
-
-    print *, kind(dprod(5.2, 3.2))
-    if (kind(dprod(5.2, 3.2)) /= 8) error stop
-    
-end program
+    res_8 = dot_product(c, d)
+    print *, res_8
+    if (res_8 /= 130) error stop
+end program intrinsics_142

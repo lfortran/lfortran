@@ -213,6 +213,36 @@
                                     Required
                                     .false.
                                 ),
+                            string:
+                                (Variable
+                                    2
+                                    string
+                                    [letters]
+                                    Local
+                                    (StringChr
+                                        (StringLen
+                                            (Var 2 letters)
+                                            (Integer 4)
+                                            (IntegerConstant 52 (Integer 4))
+                                        )
+                                        (Character 1 1 ())
+                                        (StringConstant
+                                            "4"
+                                            (Character 1 1 ())
+                                        )
+                                    )
+                                    (StringConstant
+                                        "4"
+                                        (Character 1 1 ())
+                                    )
+                                    Parameter
+                                    (Character 1 1 ())
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
                             uppercase:
                                 (Variable
                                     2
@@ -290,6 +320,43 @@
                         [(Var 2 lowercase)]
                         ()
                         ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "char("
+                            (Character 1 5 ())
+                        )
+                        (StringLen
+                            (Var 2 letters)
+                            (Integer 4)
+                            (IntegerConstant 52 (Integer 4))
+                        )
+                        (StringConstant
+                            ") = "
+                            (Character 1 4 ())
+                        )
+                        (Var 2 string)]
+                        ()
+                        ()
+                    )
+                    (If
+                        (StringCompare
+                            (Var 2 string)
+                            NotEq
+                            (StringConstant
+                                "4"
+                                (Character 1 1 ())
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
                     )]
                 )
         })

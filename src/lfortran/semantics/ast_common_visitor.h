@@ -692,6 +692,7 @@ public:
         {"product", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3),
                 IntrinsicSignature({"array", "mask"}, 1, 2)}},
         {"matmul", {IntrinsicSignature({"matrix_a", "matrix_b"}, 2, 2)}},
+        {"dot_product", {IntrinsicSignature({"vector_a", "vector_b"}, 2, 2)}},
         {"maxval", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3),
                 IntrinsicSignature({"array", "mask"}, 1, 2)}},
         {"maxloc", {IntrinsicSignature({"array", "dim", "mask", "kind", "back"}, 1, 5),
@@ -4120,9 +4121,7 @@ public:
             throw SemanticError("Variable '" + dt_name + "' not declared", loc);
         }
         ASR::Variable_t* v_variable = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(v));
-        ASR::ttype_t* v_variable_m_type = ASRUtils::type_get_past_array(
-            ASRUtils::type_get_past_allocatable(
-            ASRUtils::type_get_past_pointer(v_variable->m_type)));
+        ASR::ttype_t* v_variable_m_type = ASRUtils::extract_type(v_variable->m_type);
         if (ASR::is_a<ASR::Struct_t>(*v_variable_m_type) ||
                 ASR::is_a<ASR::Class_t>(*v_variable_m_type)) {
             ASR::ttype_t* v_type = v_variable_m_type;
@@ -4170,20 +4169,43 @@ public:
                 throw SemanticError("Variable '" + dt_name + "' doesn't have any member named, '" + var_name + "'.", loc);
             }
         } else if (ASR::is_a<ASR::Complex_t>(*v_variable_m_type)) {
-            if (var_name == "re") {
-                ASR::expr_t *val = ASR::down_cast<ASR::expr_t>(ASR::make_Var_t(al, loc, v));
-                int kind = ASRUtils::extract_kind_from_ttype_t(v_variable_m_type);
-                ASR::ttype_t *dest_type = ASR::down_cast<ASR::ttype_t>(ASR::make_Real_t(al, loc, kind));
-                ImplicitCastRules::set_converted_value(
-                    al, loc, &val, v_variable_m_type, dest_type);
-                return (ASR::asr_t*)val;
-            } else if (var_name == "im") {
-                ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
-                    ASRUtils::extract_kind_from_ttype_t(v_variable_m_type)));
-                return ASR::make_ComplexIm_t(al, loc, ASRUtils::EXPR(
-                    ASR::make_Var_t(al, loc, v)), real_type, nullptr);
-            } else {
+            if (var_name != "re" && var_name != "im") {
                 throw SemanticError("Complex variable '" + dt_name + "' only has %re and %im members, not '" + var_name + "'", loc);
+            }
+
+            if (ASRUtils::is_array(v_variable->m_type)) {
+                ASR::expr_t* desc_arr = ASRUtils::cast_to_descriptor(al, ASRUtils::EXPR(
+                        ASR::make_Var_t(al, loc, v)));
+                ASR::ttype_t* v_variable_arr_type = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(v_variable->m_type));
+                int kind = ASRUtils::extract_kind_from_ttype_t(v_variable_arr_type);
+                ASR::dimension_t* m_dims = nullptr;
+                int n_dims = ASRUtils::extract_dimensions_from_ttype(v_variable_arr_type, m_dims);
+                Vec<ASR::dimension_t> dim_vec;
+                dim_vec.from_pointer_n_copy(al, m_dims, n_dims);
+                ASR::ttype_t *real_type = ASR::down_cast<ASR::ttype_t>(
+                    ASR::make_Real_t(al, loc, kind));
+                ASR::ttype_t* complex_arr_ret_type = ASRUtils::duplicate_type(al, real_type, &dim_vec,
+                    ASR::array_physical_typeType::DescriptorArray, true);
+                if (var_name == "re") {
+                    return ASR::make_ComplexRe_t(al, loc, desc_arr, complex_arr_ret_type, nullptr);
+                } else {
+                    return ASR::make_ComplexIm_t(al, loc, desc_arr, complex_arr_ret_type, nullptr);
+                }
+            } else {
+                if (var_name == "re") {
+                    ASR::expr_t *val = ASR::down_cast<ASR::expr_t>(ASR::make_Var_t(al, loc, v));
+                    int kind = ASRUtils::extract_kind_from_ttype_t(v_variable_m_type);
+                    ASR::ttype_t *dest_type = ASR::down_cast<ASR::ttype_t>(ASR::make_Real_t(al, loc, kind));
+                    ImplicitCastRules::set_converted_value(
+                        al, loc, &val, v_variable_m_type, dest_type);
+                    return (ASR::asr_t*)val;
+                } else {
+                    ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
+                        ASRUtils::extract_kind_from_ttype_t(v_variable_m_type)));
+                    return ASR::make_ComplexIm_t(al, loc, ASRUtils::EXPR(
+                        ASR::make_Var_t(al, loc, v)), real_type, nullptr);
+                }
             }
         } else {
             throw SemanticError("Variable '" + dt_name + "' is not a derived type", loc);

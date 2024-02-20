@@ -6069,12 +6069,16 @@ public:
                 llvm::Type *type;
                 int a_kind;
                 a_kind = down_cast<ASR::Integer_t>(ASRUtils::extract_type(x.m_type))->m_kind;
-                type = llvm_utils->getFPType(a_kind);
+                if( a_kind <= 4 ) {
+                    type = llvm_utils->getFPType(4);
+                } else {
+                    type = llvm_utils->getFPType(8);
+                }
                 llvm::Value *fleft = builder->CreateSIToFP(left_val,
                         type);
                 llvm::Value *fright = builder->CreateSIToFP(right_val,
                         type);
-                std::string func_name = a_kind == 4 ? "llvm.pow.f32" : "llvm.pow.f64";
+                std::string func_name = a_kind <= 4 ? "llvm.pow.f32" : "llvm.pow.f64";
                 llvm::Function *fn_pow = module->getFunction(func_name);
                 if (!fn_pow) {
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
@@ -6693,9 +6697,53 @@ public:
         arg_kind = ASRUtils::extract_kind_from_ttype_t(curr_type);
     }
 
+    template <typename T>
+    void handle_arr_for_complex_im_re(const T& t) {
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 2 - LLVM::is_llvm_pointer(*ASRUtils::expr_type(t.m_arg));
+        this->visit_expr_wrapper(t.m_arg, false);
+        ptr_loads = ptr_loads_copy;
+        llvm::Value* des_complex_arr = tmp;
+        tmp = CreateLoad(arr_descr->get_pointer_to_data(des_complex_arr));
+        int kind = ASRUtils::extract_kind_from_ttype_t(t.m_type);
+        llvm::Type* pointer_cast_type = nullptr;
+        if (kind == 4) {
+            pointer_cast_type = llvm::Type::getFloatPtrTy(context);
+        } else {
+            pointer_cast_type = llvm::Type::getDoublePtrTy(context);
+        }
+        tmp = builder->CreateBitCast(tmp, pointer_cast_type);
+        PointerToData_to_Descriptor(t.m_type, t.m_type);
+        llvm::Value* des_real_arr = tmp;
+        llvm::Value* arr_data = CreateLoad(arr_descr->get_pointer_to_data(des_complex_arr));
+        tmp = builder->CreateBitCast(arr_data, pointer_cast_type);
+        builder->CreateStore(tmp, arr_descr->get_pointer_to_data(des_real_arr));
+        if (std::is_same<T, ASR::ComplexIm_t>::value) {
+            llvm::Value* incremented_offset = builder->CreateAdd(
+                arr_descr->get_offset(des_real_arr, true),
+                llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+            builder->CreateStore(incremented_offset, arr_descr->get_offset(des_real_arr, false));
+        }
+        int n_dims = ASRUtils::extract_n_dims_from_ttype(t.m_type);
+        llvm::Value* dim_des_real_arr = arr_descr->get_pointer_to_dimension_descriptor_array(des_real_arr, true);
+        for (int i = 0; i < n_dims; i++) {
+            llvm::Value* dim_idx = llvm::ConstantInt::get(context, llvm::APInt(32, i));
+            llvm::Value* dim_des_real_arr_idx = arr_descr->get_pointer_to_dimension_descriptor(dim_des_real_arr, dim_idx);
+            llvm::Value* doubled_stride = builder->CreateMul(
+                arr_descr->get_stride(dim_des_real_arr_idx, true),
+                llvm::ConstantInt::get(context, llvm::APInt(32, 2)));
+            builder->CreateStore(doubled_stride, arr_descr->get_stride(dim_des_real_arr_idx, false));
+        }
+        tmp = des_real_arr;
+    }
+
     void visit_ComplexRe(const ASR::ComplexRe_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        if (ASRUtils::is_array(x.m_type)) {
+            handle_arr_for_complex_im_re(x);
             return;
         }
         this->visit_expr_wrapper(x.m_arg, true);
@@ -6729,6 +6777,10 @@ public:
     void visit_ComplexIm(const ASR::ComplexIm_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        if (ASRUtils::is_array(x.m_type)) {
+            handle_arr_for_complex_im_re(x);
             return;
         }
         ASR::ttype_t* curr_type = extract_ttype_t_from_expr(x.m_arg);
@@ -7369,24 +7421,29 @@ public:
         llvm::Value *status = nullptr, *form = nullptr;
         this->visit_expr_wrapper(x.m_newunit, true);
         unit_val = tmp;
+        int ptr_copy = ptr_loads;
         if (x.m_filename) {
-            this->visit_expr_wrapper(x.m_filename, true);
+            ptr_loads = 1;
+            this->visit_expr_wrapper(x.m_filename);
             f_name = tmp;
         } else {
             f_name = llvm::Constant::getNullValue(character_type);
         }
         if (x.m_status) {
-            this->visit_expr_wrapper(x.m_status, true);
+            ptr_loads = 1;
+            this->visit_expr_wrapper(x.m_status);
             status = tmp;
         } else {
             status = llvm::Constant::getNullValue(character_type);
         }
         if (x.m_form) {
-            this->visit_expr_wrapper(x.m_form, true);
+            ptr_loads = 1;
+            this->visit_expr_wrapper(x.m_form);
             form = tmp;
         } else {
             form = llvm::Constant::getNullValue(character_type);
         }
+        ptr_loads = ptr_copy;
         std::string runtime_func_name = "_lfortran_open";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {

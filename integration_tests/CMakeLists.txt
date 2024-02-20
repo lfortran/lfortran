@@ -651,6 +651,10 @@ RUN(NAME intrinsics_138 LABELS gfortran llvm)#precision
 RUN(NAME intrinsics_140 LABELS gfortran llvm)#selected_int_kind
 RUN(NAME intrinsics_141 LABELS gfortran llvm)#scale
 RUN(NAME intrinsics_142 LABELS gfortran llvm)#dprod
+RUN(NAME intrinsics_142 LABELS gfortran llvm)#dot_product
+RUN(NAME intrinsics_143 LABELS gfortran llvm)#dot_product
+RUN(NAME intrinsics_144 LABELS gfortran llvm)#dot_product
+RUN(NAME intrinsics_145 LABELS gfortran llvm)#dot_product
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
@@ -930,6 +934,8 @@ RUN(NAME associate_08 LABELS gfortran)
 RUN(NAME associate_09 LABELS gfortran llvm)
 RUN(NAME associate_10 LABELS gfortran llvm)
 RUN(NAME associate_11 LABELS gfortran llvm)
+RUN(NAME associate_12 LABELS gfortran llvm)
+RUN(NAME associate_13 LABELS gfortran llvm)
 
 RUN(NAME real_dp_01 LABELS gfortran llvm wasm)
 RUN(NAME real_dp_02 LABELS gfortran llvm wasm)
