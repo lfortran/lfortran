@@ -28,7 +28,8 @@ enum class IntrinsicArrayFunctions : int64_t {
     Product,
     Shape,
     Sum,
-    Dot_Product
+    Dot_Product,
+    Transpose,
     // ...
 };
 
@@ -50,6 +51,7 @@ inline std::string get_array_intrinsic_name(int x) {
         ARRAY_INTRINSIC_NAME_CASE(Shape)
         ARRAY_INTRINSIC_NAME_CASE(Sum)
         ARRAY_INTRINSIC_NAME_CASE(Dot_Product)
+        ARRAY_INTRINSIC_NAME_CASE(Transpose)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
@@ -1998,6 +2000,93 @@ namespace Dot_Product {
 
 } // namespace Dot_Product
 
+namespace Transpose {
+
+    static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
+            diag::Diagnostics& diagnostics) {
+        require_impl(x.n_args == 1, "`transpose` intrinsic accepts exactly"
+            "one arguments", x.base.base.loc, diagnostics);
+        require_impl(x.m_args[0], "`matrix` argument of `transpose` intrinsic "
+            "cannot be nullptr", x.base.base.loc, diagnostics);
+    }
+
+    static inline ASR::expr_t *eval_Transpose(Allocator &/*al*/,
+        const Location &/*loc*/, ASR::ttype_t */*return_type*/, Vec<ASR::expr_t*>& /*args*/, diag::Diagnostics& /*diag*/) {
+        // TODO
+        return nullptr;
+    }
+
+    static inline ASR::asr_t* create_Transpose(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args,
+            diag::Diagnostics& diag) {
+        ASR::expr_t *matrix_a = args[0];
+        bool is_type_allocatable = false;
+        if (ASRUtils::is_allocatable(matrix_a)) {
+            // TODO: Use Array type as return type instead of allocatable
+            //  for both Array and Allocatable as input arguments.
+            is_type_allocatable = true;
+        }
+        ASR::ttype_t *type_a = expr_type(matrix_a);
+        ASR::ttype_t *ret_type = nullptr;
+        ret_type = extract_type(type_a);
+        ASR::dimension_t* matrix_a_dims = nullptr;
+        int matrix_a_rank = extract_dimensions_from_ttype(type_a, matrix_a_dims);
+        if ( matrix_a_rank != 2 ) {
+            append_error(diag, "`transpose` accepts arrays of rank 2 only, provided an array "
+                "with rank, " + std::to_string(matrix_a_rank), matrix_a->base.loc);
+            return nullptr;
+        }
+        ASRBuilder b(al, loc);
+        Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, 2);
+        int overload_id = 2;
+        result_dims.push_back(al, b.set_dim(matrix_a_dims[0].m_start,
+        matrix_a_dims[1].m_length));
+        result_dims.push_back(al, b.set_dim(matrix_a_dims[1].m_start,
+            matrix_a_dims[0].m_length));
+        ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
+        if (is_type_allocatable) {
+            ret_type = TYPE(ASR::make_Allocatable_t(al, loc, ret_type));
+        }
+        ASR::expr_t *value = nullptr;
+        if (all_args_evaluated(args)) {
+            value = eval_Transpose(al, loc, ret_type, args, diag);
+        }
+        return make_IntrinsicArrayFunction_t_util(al, loc,
+            static_cast<int64_t>(IntrinsicArrayFunctions::Transpose),
+            args.p, args.n, overload_id, ret_type, value);
+    }
+
+    static inline ASR::expr_t *instantiate_Transpose(Allocator &al,
+            const Location &loc, SymbolTable *scope,
+            Vec<ASR::ttype_t*> &arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t> &m_args, int64_t /*overload_id*/) {
+        /*
+            do i = lbound(m,1), ubound(m,1)
+                do j = lbound(m,2), ubound(m,2)
+                    result(j,i) = m(i,j)
+                end do
+            end do
+         */
+        declare_basic_variables("_lcompilers_transpose");
+        fill_func_arg("matrix_a", duplicate_type_with_empty_dims(al, arg_types[0]));
+        ASR::expr_t *result = declare("result", return_type, Out);
+        args.push_back(al, result);
+        ASR::expr_t *i = declare("i", int32, Local);
+        ASR::expr_t *j = declare("j", int32, Local);
+        body.push_back(al, b.DoLoop(i, LBound(args[0], 1), UBound(args[0], 1), {
+            b.DoLoop(j, LBound(args[0], 2), UBound(args[0], 2), {
+                b.Assignment(b.ArrayItem_01(result, {j, i}), b.ArrayItem_01(args[0], {i, j}))
+            }, nullptr)
+        }, nullptr));
+        body.push_back(al, Return());
+        ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+                body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, fn_sym);
+        return b.Call(fn_sym, m_args, return_type, nullptr);
+    }
+
+} // namespace Transpose
+
 namespace IntrinsicArrayFunctionRegistry {
 
     static const std::map<int64_t, std::tuple<impl_function,
@@ -2024,6 +2113,8 @@ namespace IntrinsicArrayFunctionRegistry {
             {&Sum::instantiate_Sum, &Sum::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::Dot_Product),
             {&Dot_Product::instantiate_Dot_Product, &Dot_Product::verify_args}},
+        {static_cast<int64_t>(IntrinsicArrayFunctions::Transpose),
+            {&Transpose::instantiate_Transpose, &Transpose::verify_args}},
     };
 
     static const std::map<std::string, std::tuple<create_intrinsic_function,
@@ -2039,6 +2130,7 @@ namespace IntrinsicArrayFunctionRegistry {
         {"shape", {&Shape::create_Shape, &Shape::eval_Shape}},
         {"sum", {&Sum::create_Sum, &Sum::eval_Sum}},
         {"dot_product", {&Dot_Product::create_Dot_Product, &Dot_Product::eval_Dot_Product}},
+        {"transpose", {&Transpose::create_Transpose, &Transpose::eval_Transpose}},
     };
 
     static inline bool is_intrinsic_function(const std::string& name) {
@@ -2076,7 +2168,7 @@ namespace IntrinsicArrayFunctionRegistry {
             id == IntrinsicArrayFunctions::MaxVal ||
             id == IntrinsicArrayFunctions::MinVal ) {
             return 1; // dim argument index
-        } else if( id == IntrinsicArrayFunctions::MatMul ) {
+        } else if( id == IntrinsicArrayFunctions::MatMul || id == IntrinsicArrayFunctions::Transpose ) {
             return 2; // return variable index
         } else {
             LCOMPILERS_ASSERT(false);
