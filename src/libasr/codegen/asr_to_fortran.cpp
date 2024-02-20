@@ -1770,17 +1770,6 @@ public:
                 last_expr_precedence = Precedence::Ext;
                 break;
             }
-            case (ASR::cast_kindType::CharacterToInteger) : {
-                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-                if (dest_kind == 1 || dest_kind == 2 || dest_kind == 4 || dest_kind == 8) {
-                    s = "ichar(" + s + ", " + "kind=" + std::to_string(dest_kind) + ")";
-                } else {
-                    throw CodeGenError("Cast CharacterToInteger: Unsupported Kind " + \
-                            std::to_string(dest_kind));
-                }
-                last_expr_precedence = Precedence::Ext;
-                break;
-            }
             default : {
                 throw CodeGenError("Cast kind " + std::to_string(x.m_kind) + " not implemented",
                     x.base.base.loc);
