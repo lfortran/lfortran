@@ -4486,28 +4486,6 @@ public:
         return ASR::make_StringLen_t(al, x.base.base.loc, v_Var, type, len_compiletime);
     }
 
-    ASR::asr_t* create_ArrayTranspose(const AST::FuncCallOrArray_t& x) {
-        Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names;
-        handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("transpose"));
-        ASR::expr_t *matrix = args[0];
-        ASR::ttype_t *type = ASRUtils::expr_type(matrix);
-        ASR::dimension_t* matrix_dims = nullptr;
-        int matrix_rank = ASRUtils::extract_dimensions_from_ttype(type, matrix_dims);
-        if( matrix_rank != 2 ) {
-            throw SemanticError("transpose accepts arrays "
-                                "of rank 2 only, provided an array "
-                                "with rank, " + std::to_string(matrix_rank),
-                                matrix->base.loc);
-        }
-        Vec<ASR::dimension_t> reversed_dims;
-        reversed_dims.reserve(al, 2);
-        reversed_dims.push_back(al, matrix_dims[1]);
-        reversed_dims.push_back(al, matrix_dims[0]);
-        ASR::ttype_t* ret_type = ASRUtils::duplicate_type(al, type, &reversed_dims);
-        return ASR::make_ArrayTranspose_t(al, x.base.base.loc, matrix, ret_type, nullptr);
-    }
-
     ASR::asr_t* create_ArrayPack(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"array", "mask", "vector"};
@@ -4994,8 +4972,6 @@ public:
                 tmp = create_ArraySize(x);
             } else if( var_name == "lbound" || var_name == "ubound" ) {
                 tmp = create_ArrayBound(x, var_name);
-            } else if( var_name == "transpose" ) {
-                tmp = create_ArrayTranspose(x);
             } else if( var_name == "pack" ) {
                 tmp = create_ArrayPack(x);
             } else if( var_name == "transfer" ) {
