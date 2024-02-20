@@ -4259,13 +4259,13 @@ public:
             }
             if (min_args == max_args) {
                 throw SemanticError("Incorrect number of arguments "
-                                    "passed to the " + intrinsic_name + " intrinsic. "
+                                    "passed to the '" + intrinsic_name + "' intrinsic. "
                                     "It accepts exactly " + std::to_string(min_args) +
                                     " arguments.",
                                     x.base.base.loc);
             } else {
                 throw SemanticError("Incorrect number of arguments "
-                                    "passed to the " + intrinsic_name + " intrinsic. "
+                                    "passed to the '" + intrinsic_name + "' intrinsic. "
                                     "It accepts at least " + std::to_string(min_args) +
                                     " and at most " + std::to_string(max_args) + " arguments.",
                                     x.base.base.loc);
