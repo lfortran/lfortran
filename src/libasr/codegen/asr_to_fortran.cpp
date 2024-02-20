@@ -1759,11 +1759,6 @@ public:
                 // Implicit conversion between integer -> logical
                 break;
             }
-            case (ASR::cast_kindType::CharacterToLogical) : {
-                s = "(bool)(len(" + s + ") > 0)";
-                last_expr_precedence = Precedence::Ext;
-                break;
-            }
             case (ASR::cast_kindType::IntegerToCharacter) : {
                 int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
                 if (dest_kind == 1 || dest_kind == 2 || dest_kind == 4 || dest_kind == 8) {
