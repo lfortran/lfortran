@@ -654,7 +654,7 @@ RUN(NAME intrinsics_142 LABELS gfortran llvm)#dot_product
 RUN(NAME intrinsics_143 LABELS gfortran llvm)#dot_product
 RUN(NAME intrinsics_144 LABELS gfortran llvm)#dot_product
 RUN(NAME intrinsics_145 LABELS gfortran llvm)#dot_product
-RUN(NAME intrinsics_146 LABELS gfortran llvm)#dprod
+RUN(NAME intrinsics_146 LABELS gfortran llvm) # dprod
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
