@@ -4868,6 +4868,54 @@ public:
         return ASR::make_ArrayAll_t(al, x.base.base.loc, mask, dim, type, value);
     }
 
+    ASR::asr_t* create_Complex(const AST::FuncCallOrArray_t& x) {
+        const Location &loc = x.base.base.loc;
+        Vec<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"x", "y"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 2, 2, "complex");
+
+        if (args.size() == 2)  {
+            ASR::ttype_t *arg_type0 = ASRUtils::type_get_past_const(ASRUtils::expr_type(args[0]));
+            ASR::ttype_t *arg_type1 = ASRUtils::type_get_past_const(ASRUtils::expr_type(args[1]));
+            if(!((is_integer(*arg_type0) && is_integer(*arg_type1))
+                || (is_real(*arg_type0) && is_real(*arg_type1))
+                || (is_integer(*arg_type0) && is_real(*arg_type1))
+                || (is_real(*arg_type0) && is_integer(*arg_type1)))) {
+                throw SemanticError("Unexpected args, Complex expects (int, int) or (real, real) "
+                    "or (int, real) or (real, int) as arguments", loc);
+            }
+        } else {
+            throw SemanticError("Unexpected number of args, Complex takes 2 arguments, found "
+                + std::to_string(args.size()), loc);
+        }
+
+        ASR::expr_t* value = nullptr;
+        ASR::ttype_t* ret_type = ASRUtils::TYPE(ASR::make_Complex_t(al, loc, 4));
+        int max_ret_kind = 4;
+        for (size_t i = 0; i < args.size(); i++) {
+            if (ASRUtils::is_real(*ASRUtils::expr_type(args[i]))) {
+                max_ret_kind = std::max(max_ret_kind,
+                    ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[i])));
+            }
+        }
+        ASRUtils::set_kind_to_ttype_t(ret_type, max_ret_kind);
+
+        if (ASRUtils::all_args_evaluated(args)) {
+            double re, im;
+            ASRUtils::extract_value(ASRUtils::expr_value(args[0]), re);
+            ASRUtils::extract_value(ASRUtils::expr_value(args[1]), im);
+            value = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, loc, re, im, ret_type));
+        }
+
+        ASR::ttype_t* expected_arg_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4));
+        ASRUtils::set_kind_to_ttype_t(expected_arg_type, max_ret_kind);
+
+        ASR::expr_t* re = CastingUtil::perform_casting(args[0], ASRUtils::expr_type(args[0]), expected_arg_type, al, loc);
+        ASR::expr_t* im = CastingUtil::perform_casting(args[1], ASRUtils::expr_type(args[1]), expected_arg_type, al, loc);
+
+        return ASR::make_ComplexConstructor_t(al, loc, re, im, ret_type, value);
+    }
+
     std::vector<IntrinsicSignature> get_intrinsic_signature(std::string& var_name) {
         if( name2signature.find(var_name) == name2signature.end() ) {
             return {IntrinsicSignature({}, 1, 1)};
@@ -4981,6 +5029,8 @@ public:
                 tmp = create_Associated(x);
             } else if( var_name == "all" ) {
                 tmp = create_ArrayAll(x);
+            } else if( var_name == "complex" ) {
+                tmp = create_Complex(x);
             } else {
                 throw LCompilersException("create_" + var_name + " not implemented yet.");
             }
