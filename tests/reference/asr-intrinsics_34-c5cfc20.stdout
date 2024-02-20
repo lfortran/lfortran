@@ -90,6 +90,7 @@
                     [(Print
                         [(TypeInquiry
                             Epsilon
+                            (Real 4)
                             (Var 2 x)
                             (Real 4)
                             (RealConstant
@@ -103,6 +104,7 @@
                     (Print
                         [(TypeInquiry
                             Epsilon
+                            (Real 8)
                             (Var 2 y)
                             (Real 8)
                             (RealConstant
@@ -117,6 +119,7 @@
                         [(RealBinOp
                             (TypeInquiry
                                 Epsilon
+                                (Real 8)
                                 (RealConstant
                                     1.000000
                                     (Real 8)
@@ -156,6 +159,7 @@
                                 [(RealBinOp
                                     (TypeInquiry
                                         Epsilon
+                                        (Real 4)
                                         (Var 2 x)
                                         (Real 4)
                                         (RealConstant
@@ -204,6 +208,7 @@
                                 [(RealBinOp
                                     (TypeInquiry
                                         Epsilon
+                                        (Real 8)
                                         (Var 2 y)
                                         (Real 8)
                                         (RealConstant
@@ -253,6 +258,7 @@
                                     (RealBinOp
                                         (TypeInquiry
                                             Epsilon
+                                            (Real 8)
                                             (RealConstant
                                                 1.000000
                                                 (Real 8)
