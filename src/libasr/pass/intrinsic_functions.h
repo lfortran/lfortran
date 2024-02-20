@@ -60,7 +60,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Repeat,
     Hypot,
     Selected_int_kind,
-    Selected_real_kind,
+    SelectedRealKind,
     MinExponent,
     MaxExponent,
     FloorDiv,
@@ -2130,15 +2130,22 @@ namespace Selected_int_kind {
     }
 } // namespace Selected_int_kind
 
-namespace Selected_real_kind {
+namespace SelectedRealKind {
 
     static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
-        if (x.n_args > 3) {
-            append_error(diagnostics, "selected_real_kind takes atmost 3 arguments", x.base.base.loc);
+        ASRUtils::require_impl(x.n_args <= 3, "Call to selected_real_kind must have at most three arguments",
+        x.base.base.loc, diagnostics);
+
+        if (!ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[0])) || !ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[1])) || !ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[2]))) {
+            append_error(diagnostics, "selected_real_kind takes integer arguments only", x.base.base.loc);
         }
+
+        ASRUtils::require_impl(ASR::is_a<ASR::Integer_t>(*x.m_type),
+        "Return type of selected_real_kind must be an integer",
+        x.base.base.loc, diagnostics);
     }
 
-    static inline ASR::expr_t *eval_Selected_real_kind(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_SelectedRealKind(Allocator &al, const Location &loc,
             ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t result = 4;
         int64_t p = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
@@ -2156,7 +2163,7 @@ namespace Selected_real_kind {
         return i32(result);
     }
 
-    static inline ASR::asr_t *create_Selected_real_kind(Allocator &al, const Location &loc,
+    static inline ASR::asr_t *create_SelectedRealKind(Allocator &al, const Location &loc,
             Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         ASRBuilder b(al, loc);
         if (args.size() > 3) {
@@ -2183,14 +2190,14 @@ namespace Selected_real_kind {
             args_values.push_back(al, expr_value(m_args[0]));
             args_values.push_back(al, expr_value(m_args[1]));
             args_values.push_back(al, expr_value(m_args[2]));
-            value = eval_Selected_real_kind(al, loc, nullptr, args_values, diag);
+            value = eval_SelectedRealKind(al, loc, nullptr, args_values, diag);
         }
         return ASR::make_IntrinsicElementalFunction_t(al, loc,
-            static_cast<int64_t>(IntrinsicElementalFunctions::Selected_real_kind),
+            static_cast<int64_t>(IntrinsicElementalFunctions::SelectedRealKind),
             m_args.p, m_args.n, 0, return_type, value);
     }
 
-    static inline ASR::expr_t* instantiate_Selected_real_kind(Allocator &al, const Location &loc,
+    static inline ASR::expr_t* instantiate_SelectedRealKind(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("");
@@ -2222,7 +2229,7 @@ namespace Selected_real_kind {
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
-} // namespace Selected_real_kind
+} // namespace SelectedRealKind
 
 namespace Kind {
 
