@@ -1802,11 +1802,9 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
             if( PassUtils::is_array(x.m_target) ) {
                 replacer.result_var = x.m_target;
                 replacer.result_type = ASRUtils::expr_type(x.m_target);
-                remove_original_statement = true;
             } else if( ASR::is_a<ASR::ArraySection_t>(*x.m_target) ) {
                 ASR::ArraySection_t* array_ref = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
                 replacer.result_var = array_ref->m_v;
-                remove_original_statement = true;
                 result_lbound.reserve(al, array_ref->n_args);
                 result_ubound.reserve(al, array_ref->n_args);
                 result_inc.reserve(al, array_ref->n_args);
@@ -1835,6 +1833,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                 }
                 use_custom_loop_params = true;
             }
+            remove_original_statement = true;
 
             visit_AssignmentUtil(x);
             use_custom_loop_params = false;
