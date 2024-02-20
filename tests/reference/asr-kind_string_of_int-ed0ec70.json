@@ -1,0 +1,13 @@
+{
+    "basename": "asr-kind_string_of_int-ed0ec70",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/kind_string_of_int.f90",
+    "infile_hash": "89b2b88221d506d791bc4b592e7d73c1c2eebad1b47a0bcd8a388ba0",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-kind_string_of_int-ed0ec70.stderr",
+    "stderr_hash": "4467932bb2b4c9666ba17daa9bfcf6f2c268c8b3154a3b4ab5c2d3c3",
+    "returncode": 2
+}

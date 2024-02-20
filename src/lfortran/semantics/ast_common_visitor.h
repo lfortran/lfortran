@@ -2837,7 +2837,7 @@ public:
             sym_type->m_kind->m_value != nullptr) {
             this->visit_expr(*sym_type->m_kind->m_value);
             ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
-            a_kind = ASRUtils::extract_kind<SemanticError>(kind_expr, loc);
+            a_kind = ASRUtils::extract_kind<SemanticError>(kind_expr, sym_type->m_kind->loc);
         }
         if (sym_type->m_type == AST::decl_typeType::TypeReal) {
             if(sym_type->m_kind) {
@@ -2868,6 +2868,15 @@ public:
                     ASRUtils::type_get_past_allocatable(type)));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeInteger) {
+            if (sym_type->m_kind) {
+                this->visit_expr(*sym_type->m_kind->m_value);
+                ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
+                int kind_value = ASRUtils::extract_kind<SemanticError>(kind_expr, loc);
+                if (kind_value != 1 && kind_value != 2 && kind_value != 4 && kind_value != 8) {
+                    throw SemanticError("Kind " + std::to_string(kind_value) + " is not supported for Integer",
+                                    loc);
+                }
+            }
             type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind));
             type = ASRUtils::make_Array_t_util(
                 al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);

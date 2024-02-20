@@ -1,0 +1,5 @@
+semantic error: Only Integer literals or expressions which reduce to constant Integer are accepted as kind parameters.
+ --> a.f90:2:13
+  |
+2 |     integer('a') :: i
+  |             ^^^
