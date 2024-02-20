@@ -122,10 +122,6 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
             func2intrinsicid[call_sym] = (ASRUtils::IntrinsicArrayFunctions) x->m_arr_intrinsic_id;
         }
     }
-
-    void replace_TypeInquiry(ASR::TypeInquiry_t* x) {
-        *current_expr = x->m_value;
-    }
 };
 
 /*
