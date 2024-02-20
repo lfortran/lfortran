@@ -2,6 +2,8 @@
     (SymbolTable
         1
         {
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin),
             matrix_01_tranpose:
                 (Program
                     (SymbolTable
@@ -53,6 +55,98 @@
                                     Required
                                     .false.
                                 ),
+                            c:
+                                (Variable
+                                    2
+                                    c
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Complex 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            d:
+                                (Variable
+                                    2
+                                    d
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 8)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            e:
+                                (Variable
+                                    2
+                                    e
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 8)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            f:
+                                (Variable
+                                    2
+                                    f
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Complex 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
                             i:
                                 (Variable
                                     2
@@ -84,14 +178,187 @@
                                     Public
                                     Required
                                     .false.
+                                ),
+                            l:
+                                (Variable
+                                    2
+                                    l
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 12 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 31 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            m:
+                                (Variable
+                                    2
+                                    m
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 31 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 12 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            real:
+                                (ExternalSymbol
+                                    2
+                                    real
+                                    4 real
+                                    lfortran_intrinsic_builtin
+                                    []
+                                    real
+                                    Private
+                                ),
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            y:
+                                (Variable
+                                    2
+                                    y
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
                                 )
                         })
                     matrix_01_tranpose
                     []
                     [(Assignment
+                        (Var 2 a)
+                        (ArrayReshape
+                            (ArrayConstant
+                                [(IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 3 (Integer 4))
+                                (IntegerConstant 4 (Integer 4))
+                                (IntegerConstant 5 (Integer 4))
+                                (IntegerConstant 6 (Integer 4))
+                                (IntegerConstant 7 (Integer 4))
+                                (IntegerConstant 8 (Integer 4))
+                                (IntegerConstant 9 (Integer 4))
+                                (IntegerConstant 10 (Integer 4))
+                                (IntegerConstant 11 (Integer 4))
+                                (IntegerConstant 12 (Integer 4))]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 12 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
+                            )
+                            (ArrayPhysicalCast
+                                (ArrayConstant
+                                    [(IntegerConstant 3 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4))]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            )
+                            (Array
+                                (Integer 4)
+                                [(()
+                                ())]
+                                FixedSizeArray
+                            )
+                            ()
+                        )
+                        ()
+                    )
+                    (Assignment
                         (Var 2 b)
-                        (ArrayTranspose
-                            (Var 2 a)
+                        (IntrinsicArrayFunction
+                            Transpose
+                            [(ArrayPhysicalCast
+                                (Var 2 a)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4)))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            )]
+                            2
                             (Array
                                 (Integer 4)
                                 [((IntegerConstant 1 (Integer 4))
@@ -107,14 +374,38 @@
                     (DoLoop
                         ()
                         ((Var 2 i)
-                        (IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 3 (Integer 4))
+                        (ArrayBound
+                            (Var 2 a)
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
+                            LBound
+                            (IntegerConstant 1 (Integer 4))
+                        )
+                        (ArrayBound
+                            (Var 2 a)
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
+                            UBound
+                            (IntegerConstant 3 (Integer 4))
+                        )
                         ())
                         [(DoLoop
                             ()
                             ((Var 2 j)
-                            (IntegerConstant 1 (Integer 4))
-                            (IntegerConstant 3 (Integer 4))
+                            (ArrayBound
+                                (Var 2 a)
+                                (IntegerConstant 2 (Integer 4))
+                                (Integer 4)
+                                LBound
+                                (IntegerConstant 1 (Integer 4))
+                            )
+                            (ArrayBound
+                                (Var 2 a)
+                                (IntegerConstant 2 (Integer 4))
+                                (Integer 4)
+                                UBound
+                                (IntegerConstant 4 (Integer 4))
+                            )
                             ())
                             [(If
                                 (IntegerCompare
@@ -140,6 +431,800 @@
                                         (Var 2 i)
                                         ())]
                                         (Integer 4)
+                                        ColMajor
+                                        ()
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                [(ErrorStop
+                                    ()
+                                )]
+                                []
+                            )]
+                        )]
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (Cast
+                            (ArrayReshape
+                                (ArrayConstant
+                                    [(IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4))
+                                    (IntegerConstant 5 (Integer 4))
+                                    (IntegerConstant 6 (Integer 4))
+                                    (IntegerConstant 7 (Integer 4))
+                                    (IntegerConstant 8 (Integer 4))
+                                    (IntegerConstant 9 (Integer 4))
+                                    (IntegerConstant 10 (Integer 4))
+                                    (IntegerConstant 11 (Integer 4))
+                                    (IntegerConstant 12 (Integer 4))
+                                    (IntegerConstant 13 (Integer 4))
+                                    (IntegerConstant 14 (Integer 4))
+                                    (IntegerConstant 15 (Integer 4))
+                                    (IntegerConstant 16 (Integer 4))
+                                    (IntegerConstant 17 (Integer 4))
+                                    (IntegerConstant 18 (Integer 4))
+                                    (IntegerConstant 19 (Integer 4))
+                                    (IntegerConstant 20 (Integer 4))
+                                    (IntegerConstant 21 (Integer 4))
+                                    (IntegerConstant 22 (Integer 4))
+                                    (IntegerConstant 23 (Integer 4))
+                                    (IntegerConstant 24 (Integer 4))
+                                    (IntegerConstant 25 (Integer 4))]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 25 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                (ArrayPhysicalCast
+                                    (ArrayConstant
+                                        [(IntegerConstant 5 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4))]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 2 (Integer 4)))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    FixedSizeArray
+                                    DescriptorArray
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))]
+                                        DescriptorArray
+                                    )
+                                    ()
+                                )
+                                (Array
+                                    (Integer 4)
+                                    [(()
+                                    ())]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            IntegerToReal
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 5 (Integer 4)))
+                                ((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 5 (Integer 4)))]
+                                FixedSizeArray
+                            )
+                            ()
+                        )
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 y)
+                        (IntrinsicArrayFunction
+                            Transpose
+                            [(ArrayPhysicalCast
+                                (Var 2 x)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 5 (Integer 4)))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 5 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            )]
+                            2
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 5 (Integer 4)))
+                                ((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 5 (Integer 4)))]
+                                FixedSizeArray
+                            )
+                            ()
+                        )
+                        ()
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 2 i)
+                        (ArrayBound
+                            (Var 2 x)
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
+                            LBound
+                            (IntegerConstant 1 (Integer 4))
+                        )
+                        (ArrayBound
+                            (Var 2 x)
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
+                            UBound
+                            (IntegerConstant 5 (Integer 4))
+                        )
+                        ())
+                        [(DoLoop
+                            ()
+                            ((Var 2 j)
+                            (ArrayBound
+                                (Var 2 x)
+                                (IntegerConstant 2 (Integer 4))
+                                (Integer 4)
+                                LBound
+                                (IntegerConstant 1 (Integer 4))
+                            )
+                            (ArrayBound
+                                (Var 2 x)
+                                (IntegerConstant 2 (Integer 4))
+                                (Integer 4)
+                                UBound
+                                (IntegerConstant 5 (Integer 4))
+                            )
+                            ())
+                            [(If
+                                (RealCompare
+                                    (IntrinsicElementalFunction
+                                        Abs
+                                        [(RealBinOp
+                                            (ArrayItem
+                                                (Var 2 x)
+                                                [(()
+                                                (Var 2 i)
+                                                ())
+                                                (()
+                                                (Var 2 j)
+                                                ())]
+                                                (Real 4)
+                                                ColMajor
+                                                ()
+                                            )
+                                            Sub
+                                            (ArrayItem
+                                                (Var 2 y)
+                                                [(()
+                                                (Var 2 j)
+                                                ())
+                                                (()
+                                                (Var 2 i)
+                                                ())]
+                                                (Real 4)
+                                                ColMajor
+                                                ()
+                                            )
+                                            (Real 4)
+                                            ()
+                                        )]
+                                        0
+                                        (Real 4)
+                                        ()
+                                    )
+                                    Gt
+                                    (RealConstant
+                                        0.000001
+                                        (Real 4)
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                [(ErrorStop
+                                    ()
+                                )]
+                                []
+                            )]
+                        )]
+                    )
+                    (Assignment
+                        (Var 2 d)
+                        (Cast
+                            (ArrayReshape
+                                (ArrayConstant
+                                    [(IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4))]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                (ArrayPhysicalCast
+                                    (ArrayConstant
+                                        [(IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4))]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 2 (Integer 4)))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    FixedSizeArray
+                                    DescriptorArray
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))]
+                                        DescriptorArray
+                                    )
+                                    ()
+                                )
+                                (Array
+                                    (Integer 4)
+                                    [(()
+                                    ())]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            IntegerToReal
+                            (Array
+                                (Real 8)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4)))
+                                ((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 2 (Integer 4)))]
+                                FixedSizeArray
+                            )
+                            ()
+                        )
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 e)
+                        (IntrinsicArrayFunction
+                            Transpose
+                            [(ArrayPhysicalCast
+                                (Var 2 d)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Real 8)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4)))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            )]
+                            2
+                            (Array
+                                (Real 8)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 2 (Integer 4)))
+                                ((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4)))]
+                                FixedSizeArray
+                            )
+                            ()
+                        )
+                        ()
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 2 i)
+                        (ArrayBound
+                            (Var 2 d)
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
+                            LBound
+                            (IntegerConstant 1 (Integer 4))
+                        )
+                        (ArrayBound
+                            (Var 2 d)
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
+                            UBound
+                            (IntegerConstant 1 (Integer 4))
+                        )
+                        ())
+                        [(DoLoop
+                            ()
+                            ((Var 2 j)
+                            (ArrayBound
+                                (Var 2 d)
+                                (IntegerConstant 2 (Integer 4))
+                                (Integer 4)
+                                LBound
+                                (IntegerConstant 1 (Integer 4))
+                            )
+                            (ArrayBound
+                                (Var 2 d)
+                                (IntegerConstant 2 (Integer 4))
+                                (Integer 4)
+                                UBound
+                                (IntegerConstant 2 (Integer 4))
+                            )
+                            ())
+                            [(If
+                                (RealCompare
+                                    (IntrinsicElementalFunction
+                                        Abs
+                                        [(RealBinOp
+                                            (ArrayItem
+                                                (Var 2 d)
+                                                [(()
+                                                (Var 2 i)
+                                                ())
+                                                (()
+                                                (Var 2 j)
+                                                ())]
+                                                (Real 8)
+                                                ColMajor
+                                                ()
+                                            )
+                                            Sub
+                                            (ArrayItem
+                                                (Var 2 e)
+                                                [(()
+                                                (Var 2 j)
+                                                ())
+                                                (()
+                                                (Var 2 i)
+                                                ())]
+                                                (Real 8)
+                                                ColMajor
+                                                ()
+                                            )
+                                            (Real 8)
+                                            ()
+                                        )]
+                                        0
+                                        (Real 8)
+                                        ()
+                                    )
+                                    Gt
+                                    (Cast
+                                        (RealConstant
+                                            0.000000
+                                            (Real 4)
+                                        )
+                                        RealToReal
+                                        (Real 8)
+                                        (RealConstant
+                                            0.000000
+                                            (Real 8)
+                                        )
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                [(ErrorStop
+                                    ()
+                                )]
+                                []
+                            )]
+                        )]
+                    )
+                    (Assignment
+                        (Var 2 c)
+                        (ArrayReshape
+                            (ArrayConstant
+                                [(ComplexConstructor
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4))
+                                    (Complex 4)
+                                    (ComplexConstant
+                                        1.000000
+                                        2.000000
+                                        (Complex 4)
+                                    )
+                                )
+                                (ComplexConstructor
+                                    (IntegerConstant 3 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4))
+                                    (Complex 4)
+                                    (ComplexConstant
+                                        3.000000
+                                        4.000000
+                                        (Complex 4)
+                                    )
+                                )
+                                (ComplexConstructor
+                                    (IntegerConstant 5 (Integer 4))
+                                    (IntegerConstant 6 (Integer 4))
+                                    (Complex 4)
+                                    (ComplexConstant
+                                        5.000000
+                                        6.000000
+                                        (Complex 4)
+                                    )
+                                )
+                                (ComplexConstructor
+                                    (IntegerConstant 7 (Integer 4))
+                                    (IntegerConstant 8 (Integer 4))
+                                    (Complex 4)
+                                    (ComplexConstant
+                                        7.000000
+                                        8.000000
+                                        (Complex 4)
+                                    )
+                                )]
+                                (Array
+                                    (Complex 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
+                            )
+                            (ArrayPhysicalCast
+                                (ArrayConstant
+                                    [(IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4))]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            )
+                            (Array
+                                (Complex 4)
+                                [(()
+                                ())]
+                                FixedSizeArray
+                            )
+                            ()
+                        )
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 f)
+                        (IntrinsicArrayFunction
+                            Transpose
+                            [(ArrayPhysicalCast
+                                (Var 2 c)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Complex 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4)))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            )]
+                            2
+                            (Array
+                                (Complex 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 2 (Integer 4)))
+                                ((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 2 (Integer 4)))]
+                                FixedSizeArray
+                            )
+                            ()
+                        )
+                        ()
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 2 i)
+                        (ArrayBound
+                            (Var 2 c)
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
+                            LBound
+                            (IntegerConstant 1 (Integer 4))
+                        )
+                        (ArrayBound
+                            (Var 2 c)
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
+                            UBound
+                            (IntegerConstant 2 (Integer 4))
+                        )
+                        ())
+                        [(DoLoop
+                            ()
+                            ((Var 2 j)
+                            (ArrayBound
+                                (Var 2 c)
+                                (IntegerConstant 2 (Integer 4))
+                                (Integer 4)
+                                LBound
+                                (IntegerConstant 1 (Integer 4))
+                            )
+                            (ArrayBound
+                                (Var 2 c)
+                                (IntegerConstant 2 (Integer 4))
+                                (Integer 4)
+                                UBound
+                                (IntegerConstant 2 (Integer 4))
+                            )
+                            ())
+                            [(If
+                                (RealCompare
+                                    (IntrinsicElementalFunction
+                                        Abs
+                                        [(RealBinOp
+                                            (Cast
+                                                (ArrayItem
+                                                    (Var 2 c)
+                                                    [(()
+                                                    (Var 2 i)
+                                                    ())
+                                                    (()
+                                                    (Var 2 j)
+                                                    ())]
+                                                    (Complex 4)
+                                                    ColMajor
+                                                    ()
+                                                )
+                                                ComplexToReal
+                                                (Real 4)
+                                                ()
+                                            )
+                                            Sub
+                                            (Cast
+                                                (ArrayItem
+                                                    (Var 2 f)
+                                                    [(()
+                                                    (Var 2 j)
+                                                    ())
+                                                    (()
+                                                    (Var 2 i)
+                                                    ())]
+                                                    (Complex 4)
+                                                    ColMajor
+                                                    ()
+                                                )
+                                                ComplexToReal
+                                                (Real 4)
+                                                ()
+                                            )
+                                            (Real 4)
+                                            ()
+                                        )]
+                                        0
+                                        (Real 4)
+                                        ()
+                                    )
+                                    Gt
+                                    (RealConstant
+                                        0.000001
+                                        (Real 4)
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                [(ErrorStop
+                                    ()
+                                )]
+                                []
+                            )
+                            (If
+                                (RealCompare
+                                    (IntrinsicElementalFunction
+                                        Abs
+                                        [(RealBinOp
+                                            (IntrinsicElementalFunction
+                                                Aimag
+                                                [(ArrayItem
+                                                    (Var 2 c)
+                                                    [(()
+                                                    (Var 2 i)
+                                                    ())
+                                                    (()
+                                                    (Var 2 j)
+                                                    ())]
+                                                    (Complex 4)
+                                                    ColMajor
+                                                    ()
+                                                )]
+                                                0
+                                                (Real 4)
+                                                ()
+                                            )
+                                            Sub
+                                            (IntrinsicElementalFunction
+                                                Aimag
+                                                [(ArrayItem
+                                                    (Var 2 f)
+                                                    [(()
+                                                    (Var 2 j)
+                                                    ())
+                                                    (()
+                                                    (Var 2 i)
+                                                    ())]
+                                                    (Complex 4)
+                                                    ColMajor
+                                                    ()
+                                                )]
+                                                0
+                                                (Real 4)
+                                                ()
+                                            )
+                                            (Real 4)
+                                            ()
+                                        )]
+                                        0
+                                        (Real 4)
+                                        ()
+                                    )
+                                    Gt
+                                    (RealConstant
+                                        0.000001
+                                        (Real 4)
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                [(ErrorStop
+                                    ()
+                                )]
+                                []
+                            )]
+                        )]
+                    )
+                    (Assignment
+                        (Var 2 l)
+                        (ArrayBroadcast
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            (ArrayConstant
+                                [(IntegerConstant 12 (Integer 4))
+                                (IntegerConstant 31 (Integer 4))]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
+                            )
+                            (Array
+                                (Logical 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 12 (Integer 4)))
+                                ((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 31 (Integer 4)))]
+                                FixedSizeArray
+                            )
+                            ()
+                        )
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 m)
+                        (IntrinsicArrayFunction
+                            Transpose
+                            [(ArrayPhysicalCast
+                                (Var 2 l)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 12 (Integer 4)))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 31 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            )]
+                            2
+                            (Array
+                                (Logical 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 31 (Integer 4)))
+                                ((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 12 (Integer 4)))]
+                                FixedSizeArray
+                            )
+                            ()
+                        )
+                        ()
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 2 i)
+                        (ArrayBound
+                            (Var 2 l)
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
+                            LBound
+                            (IntegerConstant 1 (Integer 4))
+                        )
+                        (ArrayBound
+                            (Var 2 l)
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
+                            UBound
+                            (IntegerConstant 12 (Integer 4))
+                        )
+                        ())
+                        [(DoLoop
+                            ()
+                            ((Var 2 j)
+                            (ArrayBound
+                                (Var 2 l)
+                                (IntegerConstant 2 (Integer 4))
+                                (Integer 4)
+                                LBound
+                                (IntegerConstant 1 (Integer 4))
+                            )
+                            (ArrayBound
+                                (Var 2 l)
+                                (IntegerConstant 2 (Integer 4))
+                                (Integer 4)
+                                UBound
+                                (IntegerConstant 31 (Integer 4))
+                            )
+                            ())
+                            [(If
+                                (LogicalBinOp
+                                    (ArrayItem
+                                        (Var 2 l)
+                                        [(()
+                                        (Var 2 i)
+                                        ())
+                                        (()
+                                        (Var 2 j)
+                                        ())]
+                                        (Logical 4)
+                                        ColMajor
+                                        ()
+                                    )
+                                    NEqv
+                                    (ArrayItem
+                                        (Var 2 m)
+                                        [(()
+                                        (Var 2 j)
+                                        ())
+                                        (()
+                                        (Var 2 i)
+                                        ())]
+                                        (Logical 4)
                                         ColMajor
                                         ()
                                     )
