@@ -254,6 +254,12 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         }
     ],
+    "Dprod": [
+        {
+            "args": [("real", "real")],
+            "return": "real64"
+        }
+    ],
 }
 
 skip_create_func = ["Partition"]
