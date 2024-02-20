@@ -1671,6 +1671,12 @@ public:
         int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         std::string type_str;
 
+        // If the cast is from Integer to Logical, do nothing
+        if (x.m_kind == ASR::cast_kindType::IntegerToLogical) {
+            // Implicit conversion between integer -> logical
+            return;
+        }
+
         // Mapping cast kinds to their corresponding Fortran type names and valid kinds
         std::map<ASR::cast_kindType, std::pair<std::string, std::vector<int>>> cast_map = {
             {ASR::cast_kindType::IntegerToReal, {"real", {1, 2, 4, 8}}},
