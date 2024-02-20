@@ -26,7 +26,7 @@
     (global $15 (mut i32) (i32.const -1))
     (global $16 (mut i32) (i32.const 0))
     (global $17 (mut i32) (i32.const 6))
-    (global $18 (mut i32) (i32.const 8))
+    (global $18 (mut i32) (i32.const -1))
     (global $19 (mut i32) (i32.const 4))
     (global $20 (mut i32) (i32.const 8))
     (global $21 (mut i32) (i32.const 0))
