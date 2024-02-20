@@ -1,4 +1,4 @@
-program intrinsic_142
+program intrinsic_146
     real :: a, b, c
     double precision :: result
     a = 5.2
