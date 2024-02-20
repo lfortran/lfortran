@@ -4874,19 +4874,14 @@ public:
         std::vector<std::string> kwarg_names = {"x", "y"};
         handle_intrinsic_node_args(x, args, kwarg_names, 2, 2, "complex");
 
-        if (args.size() == 2)  {
-            ASR::ttype_t *arg_type0 = ASRUtils::type_get_past_const(ASRUtils::expr_type(args[0]));
-            ASR::ttype_t *arg_type1 = ASRUtils::type_get_past_const(ASRUtils::expr_type(args[1]));
-            if(!((is_integer(*arg_type0) && is_integer(*arg_type1))
-                || (is_real(*arg_type0) && is_real(*arg_type1))
-                || (is_integer(*arg_type0) && is_real(*arg_type1))
-                || (is_real(*arg_type0) && is_integer(*arg_type1)))) {
-                throw SemanticError("Unexpected args, Complex expects (int, int) or (real, real) "
-                    "or (int, real) or (real, int) as arguments", loc);
-            }
-        } else {
-            throw SemanticError("Unexpected number of args, Complex takes 2 arguments, found "
-                + std::to_string(args.size()), loc);
+        ASR::ttype_t *arg_type0 = ASRUtils::type_get_past_const(ASRUtils::expr_type(args[0]));
+        ASR::ttype_t *arg_type1 = ASRUtils::type_get_past_const(ASRUtils::expr_type(args[1]));
+        if(!((is_integer(*arg_type0) && is_integer(*arg_type1))
+            || (is_real(*arg_type0) && is_real(*arg_type1))
+            || (is_integer(*arg_type0) && is_real(*arg_type1))
+            || (is_real(*arg_type0) && is_integer(*arg_type1)))) {
+            throw SemanticError("Unexpected args, Complex expects (int, int) or (real, real) "
+                "or (int, real) or (real, int) as arguments", loc);
         }
 
         ASR::expr_t* value = nullptr;
