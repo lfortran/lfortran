@@ -59,7 +59,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Digits,
     Repeat,
     Hypot,
-    Selected_int_kind,
+    SelectedIntKind,
     SelectedRealKind,
     MinExponent,
     MaxExponent,
@@ -2083,9 +2083,9 @@ namespace Hypot {
 
 } // namespace Hypot
 
-namespace Selected_int_kind {
+namespace SelectedIntKind {
 
-    static ASR::expr_t *eval_Selected_int_kind(Allocator &al, const Location &loc,
+    static ASR::expr_t *eval_SelectedIntKind(Allocator &al, const Location &loc,
             ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t val = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t result;
@@ -2101,7 +2101,7 @@ namespace Selected_int_kind {
         return i32(result);
     }
 
-    static inline ASR::expr_t* instantiate_Selected_int_kind(Allocator &al, const Location &loc,
+    static inline ASR::expr_t* instantiate_SelectedIntKind(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("");
@@ -2128,7 +2128,7 @@ namespace Selected_int_kind {
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
-} // namespace Selected_int_kind
+} // namespace SelectedIntKind
 
 namespace SelectedRealKind {
 
