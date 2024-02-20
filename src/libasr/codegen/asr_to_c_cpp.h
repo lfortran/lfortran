@@ -3057,6 +3057,10 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = out;
     }
 
+    void visit_TypeInquiry(const ASR::TypeInquiry_t &x) {
+        this->visit_expr(*x.m_value);
+    }
+
     void visit_RealSqrt(const ASR::RealSqrt_t &x) {
         std::string out = "sqrt";
         headers.insert("math.h");
