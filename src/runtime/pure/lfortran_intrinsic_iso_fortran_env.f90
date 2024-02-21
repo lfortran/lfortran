@@ -7,14 +7,14 @@ integer, parameter :: int32 = 4
 integer, parameter :: int64 = 8
 integer, parameter :: real32 = 4
 integer, parameter :: real64 = 8
-integer, parameter :: real128 = -1
+integer, parameter :: real128 = 16
 
 integer, parameter :: input_unit = 5
 integer, parameter :: output_unit = 6
 integer, parameter :: error_unit = 0
 
 integer, parameter :: integer_kinds(2) = [4, 8]
-integer, parameter :: real_kinds(2) = [4, 8]
+integer, parameter :: real_kinds(3) = [4, 8, 16]
 integer, parameter :: character_kinds(1) = [1]
 integer, parameter :: logical_kinds(1) = [4]
 
