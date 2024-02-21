@@ -91,6 +91,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Tiny)
         INTRINSIC_NAME_CASE(Conjg)
         INTRINSIC_NAME_CASE(Huge)
+        INTRINSIC_NAME_CASE(Dprod)
         INTRINSIC_NAME_CASE(SymbolicSymbol)
         INTRINSIC_NAME_CASE(SymbolicAdd)
         INTRINSIC_NAME_CASE(SymbolicSub)
@@ -239,6 +240,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {nullptr, &Radix::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Scale),
             {&Scale::instantiate_Scale, &Scale::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Dprod),
+            {&Dprod::instantiate_Dprod, &Dprod::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Range),
             {nullptr, &Range::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Aint),
@@ -434,6 +437,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "radix"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Scale),
             "scale"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Dprod),
+            "dprod"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Range),
             "range"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Sign),
@@ -578,6 +583,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"min", {&Min::create_Min, &Min::eval_Min}},
                 {"radix", {&Radix::create_Radix, &Radix::eval_Radix}},
                 {"scale", {&Scale::create_Scale, &Scale::eval_Scale}},
+                {"dprod", {&Dprod::create_Dprod, &Dprod::eval_Dprod}},
                 {"range", {&Range::create_Range, &Range::eval_Range}},
                 {"sign", {&Sign::create_Sign, &Sign::eval_Sign}},
                 {"aint", {&Aint::create_Aint, &Aint::eval_Aint}},

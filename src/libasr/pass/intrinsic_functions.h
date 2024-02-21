@@ -76,6 +76,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Min,
     Radix,
     Scale,
+    Dprod,
     Range,
     Sign,
     SignFromValue,
@@ -820,12 +821,39 @@ namespace Scale {
         */
 
        //TODO: Radix for most of the device is 2, so we can use the i2r32(2) instead of args[1]. Fix (find a way to get the radix of the device and use it here)
-        body.push_back(al, b.Assignment(result, r_tMul(args[0], i2r32(iPow(i(2, arg_types[1]), args[1], arg_types[1])), arg_types[0])));        
+        body.push_back(al, b.Assignment(result, r_tMul(args[0], i2r32(iPow(i(2, arg_types[1]), args[1], arg_types[1])), arg_types[0])));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 }  // namespace Scale
+
+namespace Dprod {
+    static ASR::expr_t *eval_Dprod(Allocator &al, const Location &loc,
+            ASR::ttype_t* return_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        double value_X = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
+        double value_Y = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[1]))->m_r;
+        double result = value_X * value_Y;
+        return f(result, return_type);
+    }
+
+    static inline ASR::expr_t* instantiate_Dprod(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("");
+        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("y", arg_types[1]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        /*
+        * r = dprod(x, y)
+        * r = x * y
+        */
+        body.push_back(al, b.Assignment(result, r2r64(r32Mul(args[0],args[1]))));
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+}  // namespace Dprod
 
 namespace Range {
 
@@ -3229,7 +3257,11 @@ namespace Huge {
         if (ASR::is_a<ASR::Integer_t>(*arg_type)) {
             int64_t huge_value = -1;
             switch ( kind ) {
-                case 4: {
+                case 1: {
+                    huge_value = std::numeric_limits<int8_t>::max(); break;
+                } case 2: {
+                    huge_value = std::numeric_limits<int16_t>::max(); break;
+                } case 4: {
                     huge_value = std::numeric_limits<int32_t>::max(); break;
                 } case 8: {
                     huge_value = std::numeric_limits<int64_t>::max(); break;

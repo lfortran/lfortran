@@ -1206,6 +1206,27 @@ public:
         s = r;
     }
 
+    void visit_TypeInquiry(const ASR::TypeInquiry_t &x) {
+        std::string out = "";
+        switch (x.m_inquiry_id) {
+            SET_INTRINSIC_NAME(Epsilon,   "epsilon"  );
+            SET_INTRINSIC_NAME(Huge,      "huge"     );
+            SET_INTRINSIC_NAME(Precision, "precision");
+            SET_INTRINSIC_NAME(Radix,     "radix"    );
+            SET_INTRINSIC_NAME(Range,     "range"    );
+            SET_INTRINSIC_NAME(Rank,      "rank"     );
+            SET_INTRINSIC_NAME(Tiny,      "tiny"     );
+            default : {
+                throw LCompilersException("TypeInquiry: `"
+                    + ASRUtils::get_intrinsic_name(x.m_inquiry_id)
+                    + "` is not implemented");
+            }
+        }
+        this->visit_expr(*x.m_arg);
+        out += "(" + s + ")";
+        s = out;
+    }
+
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t &x) {
         std::string out;
         switch (x.m_intrinsic_id) {

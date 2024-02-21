@@ -500,30 +500,6 @@ jobs:
 
             cmake --build . -j16 --target install
 
-      - name: Test stdlib (specialfunctions_gamma)
-        shell: bash -e -x -l {0}
-        run: |
-            git clone https://github.com/Pranavchiku/stdlib-fortran-lang.git
-            cd stdlib-fortran-lang
-            git checkout -t origin/lf-special-function-gamma-3
-            git checkout 95d77d69335d2086034b3509a8d072e918c1809d
-            micromamba activate lf
-            micromamba install -c conda-forge fypp
-            FC=$(pwd)/../src/bin/lfortran cmake .
-            make fortran_stdlib
-            cp ./src/*.mod ./example/specialfunctions_gamma
-            make
-            ./example/specialfunctions_gamma/example_gamma
-            ./example/specialfunctions_gamma/example_gamma_p
-            ./example/specialfunctions_gamma/example_gamma_q
-            ./example/specialfunctions_gamma/example_ligamma
-            ./example/specialfunctions_gamma/example_log_factorial
-            ./example/specialfunctions_gamma/example_log_gamma
-            ./example/specialfunctions_gamma/example_uigamma
-
-            cd ../
-            rm -rf stdlib-fortran-lang
-
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
         run: |
@@ -675,7 +651,7 @@ jobs:
             export PATH="$(pwd)/../src/bin:$PATH"
 
             git checkout lf19
-            git checkout 3d82b8ff79509ec5fea46e4b0c6beaf724f4b779
+            git checkout d82b50d059df8d7d3faf04f49c7149463961baed
             micromamba install -c conda-forge fypp
             ./build_test_lf.sh
             ./build_test_gf.sh
