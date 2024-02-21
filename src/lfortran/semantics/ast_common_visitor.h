@@ -2833,25 +2833,26 @@ public:
 
         int a_kind = compiler_options.po.default_integer_kind;
 
+        // general assignments and checks except when it's a
+        // "Character" declaration
         if (sym_type->m_type != AST::decl_typeType::TypeCharacter &&
-            sym_type->m_kind != nullptr &&
-            sym_type->m_kind->m_value != nullptr) {
-            this->visit_expr(*sym_type->m_kind->m_value);
-            ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
-            a_kind = ASRUtils::extract_kind<SemanticError>(kind_expr, sym_type->m_kind->loc);
+            sym_type->m_kind != nullptr
+        ) {
+            if (sym_type->m_kind->m_value) {
+                this->visit_expr(*sym_type->m_kind->m_value);
+                ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
+                a_kind = ASRUtils::extract_kind<SemanticError>(kind_expr, sym_type->m_kind->loc);
+            }
+            // kind=* only allowed for "Character"
+            else if (sym_type->m_kind->m_type == AST::kind_item_typeType::Star) {
+                throw SemanticError("Expected initialization expression for kind",
+                                sym_type->m_kind->loc);
+            }
         }
         if (sym_type->m_type == AST::decl_typeType::TypeReal) {
-            if(sym_type->m_kind) {
-                if (!sym_type->m_kind->m_value && sym_type->m_kind->m_type == AST::kind_item_typeType::Star) {
-                    throw SemanticError("Expected initialization expression for kind",
-                                    sym_type->m_kind->loc);
-                }
-                ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
-                int kind_value = ASRUtils::extract_kind<SemanticError>(kind_expr, loc);
-                if (kind_value != 4 && kind_value != 8) {
-                    throw SemanticError("Kind " + std::to_string(kind_value) + " is not supported for Real",
-                                    sym_type->m_kind->loc);
-                }
+            if (a_kind != 4 && a_kind != 8) {
+                throw SemanticError("Kind " + std::to_string(a_kind) + " is not supported for Real",
+                                sym_type->m_kind->loc);
             }
             type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, a_kind));
             type = ASRUtils::make_Array_t_util(al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
@@ -2868,17 +2869,9 @@ public:
                     ASRUtils::type_get_past_allocatable(type)));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeInteger) {
-            if (sym_type->m_kind) {
-                if (!sym_type->m_kind->m_value && sym_type->m_kind->m_type == AST::kind_item_typeType::Star) {
-                    throw SemanticError("Expected initialization expression for kind",
-                                    sym_type->m_kind->loc);
-                }
-                ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
-                int kind_value = ASRUtils::extract_kind<SemanticError>(kind_expr, loc);
-                if (kind_value != 1 && kind_value != 2 && kind_value != 4 && kind_value != 8) {
-                    throw SemanticError("Kind " + std::to_string(kind_value) + " is not supported for Integer",
-                                    sym_type->m_kind->loc);
-                }
+            if (a_kind != 1 && a_kind != 2 && a_kind != 4 && a_kind != 8) {
+                throw SemanticError("Kind " + std::to_string(a_kind) + " is not supported for Integer",
+                                sym_type->m_kind->loc);
             }
             type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind));
             type = ASRUtils::make_Array_t_util(
@@ -2888,19 +2881,11 @@ public:
                     ASRUtils::type_get_past_allocatable(type)));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeLogical) {
-            if (sym_type->m_kind) {
-                if (!sym_type->m_kind->m_value && sym_type->m_kind->m_type == AST::kind_item_typeType::Star) {
-                    throw SemanticError("Expected initialization expression for kind",
-                                    sym_type->m_kind->loc);
-                }
-                ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
-                int kind_value = ASRUtils::extract_kind<SemanticError>(kind_expr, loc);
-                if (kind_value != 1 && kind_value != 2 && kind_value != 4 && kind_value != 8) {
-                    throw SemanticError("Kind " + std::to_string(kind_value) + " is not supported for Logical",
-                                    sym_type->m_kind->loc);
-                }
+            if (a_kind != 1 && a_kind != 2 && a_kind != 4 && a_kind != 8) {
+                throw SemanticError("Kind " + std::to_string(a_kind) + " is not supported for Logical",
+                                sym_type->m_kind->loc);
             }
-            type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, compiler_options.po.default_integer_kind));
+            type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, a_kind));
             type = ASRUtils::make_Array_t_util(
                 al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
             if (is_pointer) {
@@ -2908,17 +2893,9 @@ public:
                     ASRUtils::type_get_past_allocatable(type)));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeComplex) {
-            if (sym_type->m_kind) {
-                if (!sym_type->m_kind->m_value && sym_type->m_kind->m_type == AST::kind_item_typeType::Star) {
-                    throw SemanticError("Expected initialization expression for kind",
-                                    sym_type->m_kind->loc);
-                }
-                ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
-                int kind_value = ASRUtils::extract_kind<SemanticError>(kind_expr, loc);
-                if (kind_value != 4 && kind_value != 8) {
-                    throw SemanticError("Kind " + std::to_string(kind_value) + " is not supported for Complex",
-                                    sym_type->m_kind->loc);
-                }
+            if (a_kind != 4 && a_kind != 8) {
+                throw SemanticError("Kind " + std::to_string(a_kind) + " is not supported for Complex",
+                                sym_type->m_kind->loc);
             }
             type = ASRUtils::TYPE(ASR::make_Complex_t(al, loc, a_kind));
             type = ASRUtils::make_Array_t_util(
