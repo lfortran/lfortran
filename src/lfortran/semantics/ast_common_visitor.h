@@ -2832,6 +2832,7 @@ public:
         type_declaration = nullptr;
 
         int a_kind = compiler_options.po.default_integer_kind;
+
         if (sym_type->m_type != AST::decl_typeType::TypeCharacter &&
             sym_type->m_kind != nullptr &&
             sym_type->m_kind->m_value != nullptr) {
@@ -2845,12 +2846,11 @@ public:
                     throw SemanticError("Expected initialization expression for kind",
                                     sym_type->m_kind->loc);
                 }
-                this->visit_expr(*sym_type->m_kind->m_value);
                 ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
                 int kind_value = ASRUtils::extract_kind<SemanticError>(kind_expr, loc);
                 if (kind_value != 4 && kind_value != 8) {
                     throw SemanticError("Kind " + std::to_string(kind_value) + " is not supported for Real",
-                                    loc);
+                                    sym_type->m_kind->loc);
                 }
             }
             type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, a_kind));
@@ -2869,12 +2869,11 @@ public:
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeInteger) {
             if (sym_type->m_kind) {
-                this->visit_expr(*sym_type->m_kind->m_value);
                 ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
                 int kind_value = ASRUtils::extract_kind<SemanticError>(kind_expr, loc);
                 if (kind_value != 1 && kind_value != 2 && kind_value != 4 && kind_value != 8) {
                     throw SemanticError("Kind " + std::to_string(kind_value) + " is not supported for Integer",
-                                    loc);
+                                    sym_type->m_kind->loc);
                 }
             }
             type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind));
@@ -2911,8 +2910,8 @@ public:
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeCharacter) {
             int a_len = -10;
-            int a_kind = 1;
             ASR::expr_t *len_expr = nullptr;
+            a_kind = 1;
             TypeMissingData* char_data = al.make_new<TypeMissingData>();
             char_data->sym_name = sym;
             LCOMPILERS_ASSERT(sym_type->n_kind < 3) // TODO
