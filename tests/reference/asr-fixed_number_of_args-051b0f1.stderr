@@ -1,0 +1,5 @@
+semantic error: Incorrect number of arguments passed to the 'complex' intrinsic. It accepts exactly 2 arguments.
+ --> tests/errors/fixed_number_of_args.f90:3:9
+  |
+3 |     a = complex(1)
+  |         ^^^^^^^^^^ 

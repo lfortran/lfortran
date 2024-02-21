@@ -1,4 +1,4 @@
-semantic error: Incorrect number of arguments passed to the size intrinsic. It accepts at least 1 and at most 3 arguments.
+semantic error: Incorrect number of arguments passed to the 'size' intrinsic. It accepts at least 1 and at most 3 arguments.
  --> tests/errors/array_size_01.f90:5:14
   |
 5 |     size_a = size(a, 1, 4, kind=4)
