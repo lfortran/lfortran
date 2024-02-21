@@ -307,6 +307,20 @@ class ReplaceFunctionCallWithSubroutineCall:
             }
         }
 
+        void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* x) {
+            ASR::BaseExprReplacer<ReplaceFunctionCallWithSubroutineCall>::replace_ArrayPhysicalCast(x);
+            if( (x->m_old == x->m_new &&
+                x->m_old != ASR::array_physical_typeType::DescriptorArray) ||
+                (x->m_old == x->m_new && x->m_old == ASR::array_physical_typeType::DescriptorArray &&
+                (ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(x->m_arg)) ||
+                ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x->m_arg)))) ||
+                x->m_old != ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg)) ) {
+                *current_expr = x->m_arg;
+            } else {
+                x->m_old = ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg));
+            }
+        }
+
 };
 
 class ReplaceFunctionCallWithSubroutineCallVisitor:
