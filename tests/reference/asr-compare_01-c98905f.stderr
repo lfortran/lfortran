@@ -1,0 +1,5 @@
+semantic error: Operands of comparison operator are of different types
+ --> tests/errors/compare_01.f90:6:9
+  |
+6 |     if (i > x) then
+  |         ^^^^^ 
