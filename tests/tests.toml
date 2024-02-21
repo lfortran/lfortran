@@ -3649,6 +3649,34 @@ filename = "char1.f90"
 fortran = true
 
 [[test]]
+filename = "integer_to_real_cast_in_comparison.f90"
+fortran = true
+
+[[test]]
+filename = "real_to_integer_cast_fortran_codegen.f90"
+fortran = true
+
+[[test]]
+filename = "real_to_real_cast_fortran_codegen.f90"
+fortran = true
+
+[[test]]
+filename = "int_to_int_cast_fortran_codegen.f90"
+fortran = true
+
+[[test]]
+filename = "real_to_complex_cast_in_comparison.f90"
+fortran = true
+
+[[test]]
+filename = "complex_to_complex_cast_fortran_codegen.f90"
+fortran = true
+
+[[test]]
+filename = "int_to_complex_cast_in_comparison.f90"
+fortran = true
+
+[[test]]
 filename = "errors/loop_test.f90"
 asr = true
 
