@@ -664,6 +664,7 @@ RUN(NAME intrinsics_151 LABELS gfortran llvm NOFAST) # maskl
 RUN(NAME intrinsics_152 LABELS gfortran llvm) # selected_real_kind
 RUN(NAME intrinsics_153 LABELS gfortran llvm) # dim
 RUN(NAME intrinsics_154 LABELS gfortran llvm) # mod
+RUN(NAME intrinsics_155 LABELS gfortran llvm) # bgt
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
