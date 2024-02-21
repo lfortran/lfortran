@@ -230,6 +230,8 @@ class ASRBuilder {
             ASR::binopType::Pow, right, t, nullptr))
     #define And(x, y) EXPR(ASR::make_LogicalBinOp_t(al, loc, x,                 \
             ASR::logicalbinopType::And, y, logical, nullptr))
+    #define Or(x, y) EXPR(ASR::make_LogicalBinOp_t(al, loc, x,                 \
+            ASR::logicalbinopType::Or, y, logical, nullptr))
     #define Not(x) EXPR(ASR::make_LogicalNot_t(al, loc, x, logical, nullptr))
 
     #define i_BitRshift(n, bits, t) EXPR(ASR::make_IntegerBinOp_t(al, loc,      \
@@ -513,7 +515,7 @@ class ASRBuilder {
             ASRUtils::TYPE(ASR::make_Logical_t( al, loc, 4)), nullptr));
     }
 
-    ASR::expr_t* Or(ASR::expr_t* left, ASR::expr_t* right,
+    ASR::expr_t* LogicalOr(ASR::expr_t* left, ASR::expr_t* right,
         const Location& loc) {
         return ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, loc,
             left, ASR::Or, right, ASRUtils::expr_type(left),

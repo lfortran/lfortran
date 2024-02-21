@@ -187,6 +187,12 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         },
     ],
+    "Bgt": [
+        {
+            "args": [("int", "int")],
+            "return": "logical"
+        },
+    ],
     "Shiftr": [
         {
             "args": [("int", "int")],
