@@ -179,9 +179,11 @@ public:
     }
 
     if( overloaded == nullptr ) {
-        LCOMPILERS_ASSERT(
-            ASRUtils::check_equal_type(ASRUtils::expr_type(left),
-                                    ASRUtils::expr_type(right)));
+        if (!ASRUtils::check_equal_type(ASRUtils::expr_type(left),
+                                    ASRUtils::expr_type(right))) {
+            throw SemanticError("Operands of comparison operator are of different types",
+                                x.base.base.loc);
+        }
     }
     size_t left_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(left));
     size_t right_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(right));
