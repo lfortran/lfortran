@@ -3774,3 +3774,7 @@ asr = true
 [[test]]
 filename = "errors/kind_string_of_int.f90"
 asr = true
+
+[[test]]
+filename = "errors/kind_float_of_int.f90"
+asr = true
