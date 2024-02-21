@@ -1,11 +1,5 @@
-ASR verify pass error: The symbol table was found, but the symbol `sym` is not in it
- --> tests/errors/asr_verify.f90:3:4
+ASR verify pass error: dim argument must be an integer
+ --> tests/errors/asr_verify.f90:3:13
   |
-3 |    type(foo) :: c
-  |    ^^^^^^^^^^^^^^ failed here
-
-ASR verify pass error: Struct::m_derived_type 'foo' cannot point outside of its symbol table, owner: test
- --> tests/errors/asr_verify.f90:3:4
-  |
-3 |    type(foo) :: c
-  |    ^^^^^^^^^^^^^^ failed here
+3 |     print*, sum(x, mask = .true.)
+  |             ^^^^^^^^^^^^^^^^^^^^^ failed here
