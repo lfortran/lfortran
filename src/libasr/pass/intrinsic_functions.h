@@ -2132,19 +2132,6 @@ namespace SelectedIntKind {
 
 namespace SelectedRealKind {
 
-    // static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
-    //     ASRUtils::require_impl(x.n_args <= 3, "Call to selected_real_kind must have at most three arguments",
-    //     x.base.base.loc, diagnostics);
-
-    //     if (!ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[0])) || !ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[1])) || !ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[2]))) {
-    //         append_error(diagnostics, "selected_real_kind takes integer arguments only", x.base.base.loc);
-    //     }
-
-    //     ASRUtils::require_impl(ASR::is_a<ASR::Integer_t>(*x.m_type),
-    //     "Return type of selected_real_kind must be an integer",
-    //     x.base.base.loc, diagnostics);
-    // }
-
     static inline ASR::expr_t *eval_SelectedRealKind(Allocator &al, const Location &loc,
             ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t result = 4;
@@ -2162,40 +2149,6 @@ namespace SelectedRealKind {
         }
         return i32(result);
     }
-
-    // static inline ASR::asr_t *create_SelectedRealKind(Allocator &al, const Location &loc,
-    //         Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
-    //     ASRBuilder b(al, loc);
-    //     if (args.size() > 3) {
-    //         append_error(diag, "selected_real_kind takes atmost 3 arguments", loc);
-    //         return nullptr;
-    //     }
-    //     Vec<ASR::expr_t*> m_args; m_args.reserve(al, 3);
-    //     for (int i=0; i<2; i++) {
-    //         if (args[i]) {
-    //             m_args.push_back(al, args[i]);
-    //         } else {
-    //             m_args.push_back(al, i(0, int32));
-    //         }
-    //     }
-    //     if (args[2]) {
-    //         m_args.push_back(al, args[2]);
-    //     } else {
-    //         m_args.push_back(al, i(2, int32));
-    //     }
-    //     ASR::ttype_t *return_type = int32;
-    //     ASR::expr_t *value = nullptr;
-    //     if (all_args_evaluated(m_args)) {
-    //         Vec<ASR::expr_t*> args_values; args_values.reserve(al, 3);
-    //         args_values.push_back(al, expr_value(m_args[0]));
-    //         args_values.push_back(al, expr_value(m_args[1]));
-    //         args_values.push_back(al, expr_value(m_args[2]));
-    //         value = eval_SelectedRealKind(al, loc, nullptr, args_values, diag);
-    //     }
-    //     return ASR::make_IntrinsicElementalFunction_t(al, loc,
-    //         static_cast<int64_t>(IntrinsicElementalFunctions::SelectedRealKind),
-    //         m_args.p, m_args.n, 0, return_type, value);
-    // }
 
     static inline ASR::expr_t* instantiate_SelectedRealKind(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,

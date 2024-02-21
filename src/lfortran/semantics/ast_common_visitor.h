@@ -4360,25 +4360,7 @@ public:
             this->visit_expr(*x.m_keywords[i].m_value);
             args.p[kwarg_idx] = ASRUtils::EXPR(tmp);
         }
-        if (intrinsic_name == "selected_real_kind") {
-            ASR::ttype_t *int_type = ASRUtils::TYPE(
-                    ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
-            ASR::expr_t* zero = ASRUtils::EXPR(
-                ASR::make_IntegerConstant_t(al, x.base.base.loc, 0,
-                                                int_type));
-            ASR::expr_t* two = ASRUtils::EXPR(
-                ASR::make_IntegerConstant_t(al, x.base.base.loc, 2,
-                                                int_type));
-                if (args[0] == nullptr) {
-                    args.p[0] = zero;
-                }
-                if (args[1] == nullptr) {
-                    args.p[1] = zero;
-                }
-                if (args[2] == nullptr) {
-                    args.p[2] = two;
-                }
-        }
+        fill_optional_args(intrinsic_name, args, x.base.base.loc);
         return true;
     }
 
@@ -4972,6 +4954,28 @@ public:
                 int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
                 ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
                 args.push_back(al, i(kind, type));
+            }
+        }
+    }
+
+    void fill_optional_args(std::string intrinsic_name, Vec<ASR::expr_t*> &args, const Location &loc) {
+        if (intrinsic_name == "selected_real_kind") {
+            ASR::ttype_t *int_type = ASRUtils::TYPE(
+                    ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
+            ASR::expr_t* zero = ASRUtils::EXPR(
+                ASR::make_IntegerConstant_t(al, loc, 0,
+                                                int_type));
+            ASR::expr_t* two = ASRUtils::EXPR(
+                ASR::make_IntegerConstant_t(al, loc, 2,
+                                                int_type));
+            if (args[0] == nullptr) {
+                args.p[0] = zero;
+            }
+            if (args[1] == nullptr) {
+                args.p[1] = zero;
+            }
+            if (args[2] == nullptr) {
+                args.p[2] = two;
             }
         }
     }
