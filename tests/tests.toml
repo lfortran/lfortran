@@ -3778,3 +3778,11 @@ asr = true
 [[test]]
 filename = "errors/kind_float_of_int.f90"
 asr = true
+
+[[test]]
+filename = "errors/kind_var_of_int.f90"
+asr = true
+
+[[test]]
+filename = "errors/kind_invalid_int_of_int.f90"
+asr = true

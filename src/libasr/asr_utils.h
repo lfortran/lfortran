@@ -2760,8 +2760,8 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
                     throw SemanticError(msg, loc);
                 }
             } else {
-                std::string msg = "Parameter " + std::string(kind_variable->m_name) +
-                                " is a variable, which does not reduce to a constant expression";
+                std::string msg = "Parameter '" + std::string(kind_variable->m_name) +
+                                "' is a variable, which does not reduce to a constant expression";
                 throw SemanticError(msg, loc);
             }
         }
@@ -2780,15 +2780,15 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
                     loc);
             }
         }
-        // allow integer kinds (e.g. 4, 8 etc.)
-        case ASR::exprType::IntegerBinOp:
         // allow integer binary operator kinds (e.g. '1 + 7')
+        case ASR::exprType::IntegerBinOp:
+        // allow integer kinds (e.g. 4, 8 etc.)
         case ASR::exprType::IntegerConstant: {
             // we still need to ensure that values are constant
-            // e.g. 'integer :: a = 4; real(1*a) :: x' is an invalid kind, as 'a'
-            // isn't a constant.
-            // ToDo: we should raise a better error, by "locating" just 'a' as well,
-            // instead of the whole '1*a'
+            // e.g. 'integer :: a = 4; real(1*a) :: x' is an invalid kind,
+            // as 'a' // isn't a constant.
+            // ToDo: we should raise a better error, by "locating" just
+            // 'a' as well, instead of the whole '1*a'
             int a_kind {};
             if (!ASRUtils::extract_value(kind_expr, a_kind)) {
                 throw SemanticError("Only Integer literals or expressions which "
@@ -2797,7 +2797,8 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
             }
             return a_kind;
         }
-        // make sure not to allow kind having "RealConstant" in it
+        // make sure not to allow kind having "RealConstant" (e.g. 4.0),
+        // and everything else
         default: {
             throw SemanticError(
                 "Only Integer literals or expressions which "

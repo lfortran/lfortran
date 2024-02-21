@@ -2,7 +2,7 @@
     "basename": "asr-kind_float_of_int-4b9cf53",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/errors/kind_float_of_int.f90",
-    "infile_hash": "f16e798cc2e79bf33bd24650a61f5df8fa91fcb6356f78d19f492d9d",
+    "infile_hash": "1162ce1a917f4ce2b50df7b8f496c081a1570e76122108e2108dc009",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
