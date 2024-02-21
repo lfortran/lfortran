@@ -169,8 +169,7 @@ static inline ASR::ttype_t *type_get_past_allocatable(ASR::ttype_t *f)
 {
     if (ASR::is_a<ASR::Allocatable_t>(*f)) {
         ASR::Allocatable_t *e = ASR::down_cast<ASR::Allocatable_t>(f);
-        LCOMPILERS_ASSERT(!ASR::is_a<ASR::Allocatable_t>(*e->m_type));
-        return e->m_type;
+        return type_get_past_allocatable(e->m_type);
     } else {
         return f;
     }
