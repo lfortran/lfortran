@@ -3786,3 +3786,23 @@ asr = true
 [[test]]
 filename = "errors/kind_invalid_int_of_int.f90"
 asr = true
+
+[[test]]
+filename = "errors/kind_invalid_int_of_logical.f90"
+asr = true
+
+[[test]]
+filename = "errors/kind_invalid_int_of_complex.f90"
+asr = true
+
+[[test]]
+filename = "errors/kind_star_of_int.f90"
+asr = true
+
+[[test]]
+filename = "errors/kind_star_of_complex.f90"
+asr = true
+
+[[test]]
+filename = "errors/kind_star_of_logical.f90"
+asr = true

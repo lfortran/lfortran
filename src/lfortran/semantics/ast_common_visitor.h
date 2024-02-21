@@ -2869,6 +2869,10 @@ public:
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeInteger) {
             if (sym_type->m_kind) {
+                if (!sym_type->m_kind->m_value && sym_type->m_kind->m_type == AST::kind_item_typeType::Star) {
+                    throw SemanticError("Expected initialization expression for kind",
+                                    sym_type->m_kind->loc);
+                }
                 ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
                 int kind_value = ASRUtils::extract_kind<SemanticError>(kind_expr, loc);
                 if (kind_value != 1 && kind_value != 2 && kind_value != 4 && kind_value != 8) {
@@ -2884,6 +2888,18 @@ public:
                     ASRUtils::type_get_past_allocatable(type)));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeLogical) {
+            if (sym_type->m_kind) {
+                if (!sym_type->m_kind->m_value && sym_type->m_kind->m_type == AST::kind_item_typeType::Star) {
+                    throw SemanticError("Expected initialization expression for kind",
+                                    sym_type->m_kind->loc);
+                }
+                ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
+                int kind_value = ASRUtils::extract_kind<SemanticError>(kind_expr, loc);
+                if (kind_value != 1 && kind_value != 2 && kind_value != 4 && kind_value != 8) {
+                    throw SemanticError("Kind " + std::to_string(kind_value) + " is not supported for Logical",
+                                    sym_type->m_kind->loc);
+                }
+            }
             type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, compiler_options.po.default_integer_kind));
             type = ASRUtils::make_Array_t_util(
                 al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
@@ -2892,6 +2908,18 @@ public:
                     ASRUtils::type_get_past_allocatable(type)));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeComplex) {
+            if (sym_type->m_kind) {
+                if (!sym_type->m_kind->m_value && sym_type->m_kind->m_type == AST::kind_item_typeType::Star) {
+                    throw SemanticError("Expected initialization expression for kind",
+                                    sym_type->m_kind->loc);
+                }
+                ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
+                int kind_value = ASRUtils::extract_kind<SemanticError>(kind_expr, loc);
+                if (kind_value != 4 && kind_value != 8) {
+                    throw SemanticError("Kind " + std::to_string(kind_value) + " is not supported for Complex",
+                                    sym_type->m_kind->loc);
+                }
+            }
             type = ASRUtils::TYPE(ASR::make_Complex_t(al, loc, a_kind));
             type = ASRUtils::make_Array_t_util(
                 al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
