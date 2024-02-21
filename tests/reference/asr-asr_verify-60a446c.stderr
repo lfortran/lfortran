@@ -1,0 +1,5 @@
+ASR verify pass error: dim argument must be an integer
+ --> tests/errors/asr_verify.f90:3:13
+  |
+3 |     print*, sum(x, mask = .true.)
+  |             ^^^^^^^^^^^^^^^^^^^^^ failed here

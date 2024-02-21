@@ -1,0 +1,13 @@
+{
+    "basename": "asr-asr_verify-60a446c",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/asr_verify.f90",
+    "infile_hash": "4e19cbc544de4040a03f75a58fe43932fd6b4c86113cf18824f8fe73",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-asr_verify-60a446c.stderr",
+    "stderr_hash": "53b9c4efd43ddef77566677e766c43d6e144b5e7712618d02985b1e6",
+    "returncode": 2
+}
