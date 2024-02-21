@@ -19,9 +19,9 @@
         asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner); \
     } \
     SymbolTable* temp_scope = current_scope; \
-    if (asr_owner_sym && temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(final_sym)->get_counter() && \
+    if ( temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(final_sym)->get_counter() && \
             !ASR::is_a<ASR::ExternalSymbol_t>(*final_sym) && !ASR::is_a<ASR::Variable_t>(*final_sym)) { \
-        if (ASR::is_a<ASR::AssociateBlock_t>(*asr_owner_sym) || ASR::is_a<ASR::Block_t>(*asr_owner_sym)) { \
+        if (asr_owner_sym && (ASR::is_a<ASR::AssociateBlock_t>(*asr_owner_sym) || ASR::is_a<ASR::Block_t>(*asr_owner_sym))) { \
             temp_scope = temp_scope->parent; \
             if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(final_sym)->get_counter()) { \
                 current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym)); \
@@ -36,9 +36,9 @@
         asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner); \
     } \
     SymbolTable* temp_scope = current_scope; \
-    if (asr_owner_sym && temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(final_sym)->get_counter() && \
+    if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(final_sym)->get_counter() && \
             !ASR::is_a<ASR::ExternalSymbol_t>(*final_sym) && !ASR::is_a<ASR::Variable_t>(*final_sym)) { \
-        if (ASR::is_a<ASR::AssociateBlock_t>(*asr_owner_sym) || ASR::is_a<ASR::Block_t>(*asr_owner_sym)) { \
+        if (asr_owner_sym && (ASR::is_a<ASR::AssociateBlock_t>(*asr_owner_sym) || ASR::is_a<ASR::Block_t>(*asr_owner_sym))) { \
             temp_scope = temp_scope->parent; \
             if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(final_sym)->get_counter()) { \
                 current_function_dependencies.push_back(al, dep_name); \
@@ -1008,9 +1008,20 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
         case ASR::exprType::StringConstant: {
             return true;
         }
+        case ASR::exprType::IntegerBinOp: {
+            ASR::IntegerBinOp_t* binop = ASR::down_cast<ASR::IntegerBinOp_t>(a_value);
+            return ((ASRUtils::is_value_constant(binop->m_left) &&
+                    ASRUtils::is_value_constant(binop->m_right)) ||
+                    (ASRUtils::is_value_constant(binop->m_value)));
+        }
+        case ASR::exprType::RealBinOp: {
+            ASR::RealBinOp_t* binop = ASR::down_cast<ASR::RealBinOp_t>(a_value);
+            return ((ASRUtils::is_value_constant(binop->m_left) &&
+                    ASRUtils::is_value_constant(binop->m_right)) ||
+                    (ASRUtils::is_value_constant(binop->m_value)));
+        }
         case ASR::exprType::IntegerUnaryMinus:
         case ASR::exprType::RealUnaryMinus:
-        case ASR::exprType::IntegerBinOp:
         case ASR::exprType::StringLen: {
             return is_value_constant(expr_value(a_value));
         } case ASR::exprType::ArrayConstant: {
@@ -1065,6 +1076,9 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
         } case ASR::exprType::Cast: {
             ASR::Cast_t* cast_t = ASR::down_cast<ASR::Cast_t>(a_value);
             return is_value_constant(cast_t->m_arg);
+        } case ASR::exprType::ArrayBroadcast: {
+            ASR::ArrayBroadcast_t* acast_t = ASR::down_cast<ASR::ArrayBroadcast_t>(a_value);
+            return is_value_constant(acast_t->m_array);
         } case ASR::exprType::ArrayReshape: {
             ASR::ArrayReshape_t*
                 array_reshape = ASR::down_cast<ASR::ArrayReshape_t>(a_value);

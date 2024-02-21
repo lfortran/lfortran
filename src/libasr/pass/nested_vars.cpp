@@ -160,6 +160,7 @@ public:
     void visit_Var(const ASR::Var_t &x) {
         // Only attempt if we are actually in a nested function
         if (nesting_depth > 1) {
+            std::cout<<ASRUtils::symbol_get_past_external(x.m_v)->type<<" "<<ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_v))<<std::endl;
             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
                     ASRUtils::symbol_get_past_external(x.m_v));
             // If the variable is not defined in the current scope, it is a
