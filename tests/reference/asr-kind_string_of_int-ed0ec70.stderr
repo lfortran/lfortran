@@ -1,5 +1,5 @@
 semantic error: Only Integer literals or expressions which reduce to constant Integer are accepted as kind parameters.
- --> a.f90:2:13
+ --> tests/errors/kind_string_of_int.f90:3:13
   |
-2 |     integer('a') :: i
-  |             ^^^
+3 |     integer('a') :: x
+  |             ^^^ 
