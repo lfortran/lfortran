@@ -120,7 +120,6 @@ struct IntrinsicProcedures {
             {"not", {m_bit, &eval_not, true}},
             {"mvbits", {m_bit, &not_implemented, true}},
             {"bge", {m_bit, &not_implemented, true}},
-            {"bgt", {m_bit, &not_implemented, true}},
             {"ble", {m_bit, &not_implemented, true}},
             {"blt", {m_bit, &not_implemented, true}},
             {"ibits", {m_bit, &not_implemented, true}},
