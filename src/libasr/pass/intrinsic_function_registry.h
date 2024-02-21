@@ -55,6 +55,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Rshift)
         INTRINSIC_NAME_CASE(Shiftl)
         INTRINSIC_NAME_CASE(Ishft)
+        INTRINSIC_NAME_CASE(Bgt)
         INTRINSIC_NAME_CASE(Leadz)
         INTRINSIC_NAME_CASE(Digits)
         INTRINSIC_NAME_CASE(Repeat)
@@ -196,6 +197,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Shiftl::instantiate_Shiftl, &Shiftl::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ishft),
             {&Ishft::instantiate_Ishft, &Ishft::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Bgt),
+            {&Bgt::instantiate_Bgt, &Bgt::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Leadz),
             {&Leadz::instantiate_Leadz, &Leadz::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Hypot),
@@ -405,6 +408,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "shiftl"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ishft),
             "ishft"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Bgt),
+            "bgt"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Leadz),
             "leadz"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Hypot),
@@ -580,6 +585,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"shiftl", {&Shiftl::create_Shiftl, &Shiftl::eval_Shiftl}},
                 {"lshift", {&Shiftl::create_Shiftl, &Shiftl::eval_Shiftl}},
                 {"ishft", {&Ishft::create_Ishft, &Ishft::eval_Ishft}},
+                {"bgt", {&Bgt::create_Bgt, &Bgt::eval_Bgt}},
                 {"leadz", {&Leadz::create_Leadz, &Leadz::eval_Leadz}},
                 {"hypot", {&Hypot::create_Hypot, &Hypot::eval_Hypot}},
                 {"selected_int_kind", {&SelectedIntKind::create_SelectedIntKind, &SelectedIntKind::eval_SelectedIntKind}},

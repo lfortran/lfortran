@@ -55,6 +55,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Rshift,
     Shiftl,
     Ishft,
+    Bgt,
     Leadz,
     Digits,
     Repeat,
@@ -1093,6 +1094,54 @@ namespace Ishft {
     }
 
 } // namespace Ishft
+
+namespace Bgt {
+
+    static ASR::expr_t *eval_Bgt(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        bool result = false;
+        if (val1 * val2 > 0 || ((val1 * val2 == 0) && (val1 > 0 || val2 > 0))) {
+            if (val1 > val2) {
+                result = true;
+            }
+        } else {
+            if (val1 < val2) {
+                result = true;
+            }
+        }
+        return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_Bgt(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t */*return_type*/,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_bgt_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("y", arg_types[1]);
+        auto result = declare(fn_name, logical, ReturnVar);
+        body.push_back(al, b.Assignment(result, bool32(0)));
+        ASR::expr_t *zero = i(0, arg_types[0]);
+        ASR::expr_t *val1 = args[0];
+        ASR::expr_t *val2 = args[1];
+        body.push_back(al, b.If(Or(iGt(iMul(val1, val2), zero), And(iEq(iMul(val1, val2), zero), Or(iGt(val1, zero), iGt(val2, zero)))), {
+            b.If(iGt(val1, val2), {
+                b.Assignment(result, bool32(1))
+            }, {})
+        }, {
+            b.If(iLt(val1, val2), {
+                b.Assignment(result, bool32(1))
+            }, {})
+        }));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, logical, nullptr);
+    }
+
+} // namespace Bgt
 
 namespace Aint {
 
