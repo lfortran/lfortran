@@ -1,4 +1,3 @@
-
 {
     "basename": "fortran-integer_to_real_cast_in_comparison-a6f3411",
     "cmd": "lfortran --show-fortran --no-color {infile} -o {outfile}",
