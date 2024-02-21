@@ -2,4 +2,4 @@ semantic error: Incorrect number of arguments passed to the 'size' intrinsic. It
  --> tests/errors/array_size_01.f90:5:14
   |
 5 |     size_a = size(a, 1, 4, kind=4)
-  |              ^^^^^^^^^^^^^^^^^^^^^
+  |              ^^^^^^^^^^^^^^^^^^^^^ 
