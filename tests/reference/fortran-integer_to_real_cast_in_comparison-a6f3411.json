@@ -1,0 +1,14 @@
+
+{
+    "basename": "fortran-integer_to_real_cast_in_comparison-a6f3411",
+    "cmd": "lfortran --show-fortran --no-color {infile} -o {outfile}",
+    "infile": "tests/integer_to_real_cast_in_comparison.f90",
+    "infile_hash": "d37d05e6da1fa8914cd0341fe2b8cd998a8b48328c9b01acd16f7d79",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-integer_to_real_cast_in_comparison-a6f3411.stdout",
+    "stdout_hash": "702b53ad8052a801eb60d9efedbb7b4f27d2ae9dad17a5a23ce33826",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

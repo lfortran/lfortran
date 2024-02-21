@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-int_to_int_cast_fortran_codegen-913a36c",
+    "cmd": "lfortran --show-fortran --no-color {infile} -o {outfile}",
+    "infile": "tests/int_to_int_cast_fortran_codegen.f90",
+    "infile_hash": "4993e4b5ba22668cdfb76bf75a291c41d074af44ea3bd1bd143dbcd0",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-int_to_int_cast_fortran_codegen-913a36c.stdout",
+    "stdout_hash": "1b62de2ca1ecadb88968755fa090fb1bd3bd1233abe3cce6070f669e",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
