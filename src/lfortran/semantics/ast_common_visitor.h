@@ -2885,7 +2885,10 @@ public:
                 throw SemanticError("Kind " + std::to_string(a_kind) + " is not supported for Logical",
                                 sym_type->m_kind->loc);
             }
-            type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, a_kind));
+            // currently we change the kind's of all logical's to
+            // 'default_integer_kind'. GFortran support's logical's of
+            // different kind's, we need to think about this
+            type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, compiler_options.po.default_integer_kind));
             type = ASRUtils::make_Array_t_util(
                 al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
             if (is_pointer) {
