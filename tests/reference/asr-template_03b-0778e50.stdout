@@ -122,40 +122,21 @@
                                                     (Var 8 y)]
                                                     [(Assignment
                                                         (Var 8 y)
-                                                        (ArrayBroadcast
-                                                            (FunctionCall
-                                                                5 plus
+                                                        (FunctionCall
+                                                            5 plus
+                                                            ()
+                                                            [((Var 8 y))
+                                                            ((FunctionCall
+                                                                5 times
                                                                 ()
-                                                                [((Var 8 y))
-                                                                ((FunctionCall
-                                                                    5 times
-                                                                    ()
-                                                                    [((Var 8 a))
-                                                                    ((Var 8 x))]
-                                                                    (TypeParameter
-                                                                        w
-                                                                    )
-                                                                    ()
-                                                                    ()
-                                                                ))]
+                                                                [((Var 8 a))
+                                                                ((Var 8 x))]
                                                                 (TypeParameter
-                                                                    v
+                                                                    w
                                                                 )
                                                                 ()
                                                                 ()
-                                                            )
-                                                            (IntrinsicArrayFunction
-                                                                Shape
-                                                                [(Var 8 y)]
-                                                                0
-                                                                (Array
-                                                                    (Integer 4)
-                                                                    [((IntegerConstant 1 (Integer 4))
-                                                                    (IntegerConstant 1 (Integer 4)))]
-                                                                    FixedSizeArray
-                                                                )
-                                                                ()
-                                                            )
+                                                            ))]
                                                             (Array
                                                                 (TypeParameter
                                                                     v
@@ -164,6 +145,7 @@
                                                                 ())]
                                                                 DescriptorArray
                                                             )
+                                                            ()
                                                             ()
                                                         )
                                                         ()
@@ -571,44 +553,26 @@
                                                     (Var 15 y)]
                                                     [(Assignment
                                                         (Var 15 y)
-                                                        (ArrayBroadcast
-                                                            (FunctionCall
-                                                                12 ~add_intrinsic
+                                                        (FunctionCall
+                                                            12 ~add_intrinsic
+                                                            ()
+                                                            [((Var 15 y))
+                                                            ((FunctionCall
+                                                                12 ~mul_intrinsic
                                                                 ()
-                                                                [((Var 15 y))
-                                                                ((FunctionCall
-                                                                    12 ~mul_intrinsic
-                                                                    ()
-                                                                    [((Var 15 a))
-                                                                    ((Var 15 x))]
-                                                                    (Real 4)
-                                                                    ()
-                                                                    ()
-                                                                ))]
-                                                                (Real 8)
+                                                                [((Var 15 a))
+                                                                ((Var 15 x))]
+                                                                (Real 4)
                                                                 ()
                                                                 ()
-                                                            )
-                                                            (IntrinsicArrayFunction
-                                                                Shape
-                                                                [(Var 15 y)]
-                                                                0
-                                                                (Array
-                                                                    (Integer 4)
-                                                                    [((IntegerConstant 1 (Integer 4))
-                                                                    (IntegerConstant 1 (Integer 4)))]
-                                                                    FixedSizeArray
-                                                                )
-                                                                ()
-                                                            )
+                                                            ))]
                                                             (Array
-                                                                (TypeParameter
-                                                                    v
-                                                                )
+                                                                (Real 8)
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
                                                             )
+                                                            ()
                                                             ()
                                                         )
                                                         ()
@@ -1372,42 +1336,26 @@
                                     (Var 11 y)]
                                     [(Assignment
                                         (Var 11 y)
-                                        (ArrayBroadcast
-                                            (FunctionCall
-                                                2 my_add
+                                        (FunctionCall
+                                            2 my_add
+                                            ()
+                                            [((Var 11 y))
+                                            ((FunctionCall
+                                                2 my_mul
                                                 ()
-                                                [((Var 11 y))
-                                                ((FunctionCall
-                                                    2 my_mul
-                                                    ()
-                                                    [((Var 11 a))
-                                                    ((Var 11 x))]
-                                                    (Real 4)
-                                                    ()
-                                                    ()
-                                                ))]
-                                                (Real 8)
+                                                [((Var 11 a))
+                                                ((Var 11 x))]
+                                                (Real 4)
                                                 ()
                                                 ()
-                                            )
-                                            (IntrinsicArrayFunction
-                                                Shape
-                                                [(Var 11 y)]
-                                                0
-                                                (Array
-                                                    (Integer 4)
-                                                    [((IntegerConstant 1 (Integer 4))
-                                                    (IntegerConstant 1 (Integer 4)))]
-                                                    FixedSizeArray
-                                                )
-                                                ()
-                                            )
+                                            ))]
                                             (Array
                                                 (Real 8)
                                                 [(()
                                                 ())]
                                                 DescriptorArray
                                             )
+                                            ()
                                             ()
                                         )
                                         ()

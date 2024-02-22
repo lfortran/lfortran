@@ -236,74 +236,44 @@
                                             )
                                             ()
                                         )
-                                        (ArrayBroadcast
-                                            (FunctionCall
-                                                11 ~add_intrinsic
-                                                ()
-                                                [((StructInstanceMember
-                                                    (Var 15 a)
-                                                    15 1_int_matrix_elements
-                                                    (Array
-                                                        (Integer 4)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (Var 11 n))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (Var 11 n))]
-                                                        FixedSizeArray
-                                                    )
-                                                    ()
-                                                ))
-                                                ((StructInstanceMember
-                                                    (Var 15 b)
-                                                    15 1_int_matrix_elements
-                                                    (Array
-                                                        (Integer 4)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (Var 11 n))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (Var 11 n))]
-                                                        FixedSizeArray
-                                                    )
-                                                    ()
-                                                ))]
-                                                (Integer 4)
-                                                ()
-                                                ()
-                                            )
-                                            (IntrinsicArrayFunction
-                                                Shape
-                                                [(StructInstanceMember
-                                                    (Var 15 r)
-                                                    15 1_int_matrix_elements
-                                                    (Array
-                                                        (Integer 4)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (Var 11 n))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (Var 11 n))]
-                                                        FixedSizeArray
-                                                    )
-                                                    ()
-                                                )]
-                                                0
+                                        (FunctionCall
+                                            11 ~add_intrinsic
+                                            ()
+                                            [((StructInstanceMember
+                                                (Var 15 a)
+                                                15 1_int_matrix_elements
                                                 (Array
                                                     (Integer 4)
                                                     [((IntegerConstant 1 (Integer 4))
-                                                    (IntegerConstant 2 (Integer 4)))]
+                                                    (Var 11 n))
+                                                    ((IntegerConstant 1 (Integer 4))
+                                                    (Var 11 n))]
                                                     FixedSizeArray
                                                 )
                                                 ()
-                                            )
-                                            (Array
-                                                (TypeParameter
-                                                    t
+                                            ))
+                                            ((StructInstanceMember
+                                                (Var 15 b)
+                                                15 1_int_matrix_elements
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (Var 11 n))
+                                                    ((IntegerConstant 1 (Integer 4))
+                                                    (Var 11 n))]
+                                                    FixedSizeArray
                                                 )
+                                                ()
+                                            ))]
+                                            (Array
+                                                (Integer 4)
                                                 [((IntegerConstant 1 (Integer 4))
                                                 (Var 11 n))
                                                 ((IntegerConstant 1 (Integer 4))
                                                 (Var 11 n))]
-                                                PointerToDataArray
+                                                FixedSizeArray
                                             )
+                                            ()
                                             ()
                                         )
                                         ()
@@ -549,11 +519,27 @@
                                             ())
                                             [(Assignment
                                                 (Var 16 dot)
-                                                (ArrayBroadcast
-                                                    (FunctionCall
-                                                        11 ~mul_intrinsic
-                                                        ()
-                                                        [((ArraySection
+                                                (FunctionCall
+                                                    11 ~mul_intrinsic
+                                                    ()
+                                                    [((ArraySection
+                                                        (StructInstanceMember
+                                                            (Var 16 a)
+                                                            16 1_int_matrix_elements
+                                                            (Array
+                                                                (Integer 4)
+                                                                [((IntegerConstant 1 (Integer 4))
+                                                                (Var 11 n))
+                                                                ((IntegerConstant 1 (Integer 4))
+                                                                (Var 11 n))]
+                                                                FixedSizeArray
+                                                            )
+                                                            ()
+                                                        )
+                                                        [(()
+                                                        (Var 16 i)
+                                                        ())
+                                                        ((ArrayBound
                                                             (StructInstanceMember
                                                                 (Var 16 a)
                                                                 16 1_int_matrix_elements
@@ -567,57 +553,54 @@
                                                                 )
                                                                 ()
                                                             )
-                                                            [(()
-                                                            (Var 16 i)
-                                                            ())
-                                                            ((ArrayBound
-                                                                (StructInstanceMember
-                                                                    (Var 16 a)
-                                                                    16 1_int_matrix_elements
-                                                                    (Array
-                                                                        (Integer 4)
-                                                                        [((IntegerConstant 1 (Integer 4))
-                                                                        (Var 11 n))
-                                                                        ((IntegerConstant 1 (Integer 4))
-                                                                        (Var 11 n))]
-                                                                        FixedSizeArray
-                                                                    )
-                                                                    ()
+                                                            (IntegerConstant 2 (Integer 4))
+                                                            (Integer 4)
+                                                            LBound
+                                                            (IntegerConstant 1 (Integer 4))
+                                                        )
+                                                        (ArrayBound
+                                                            (StructInstanceMember
+                                                                (Var 16 a)
+                                                                16 1_int_matrix_elements
+                                                                (Array
+                                                                    (Integer 4)
+                                                                    [((IntegerConstant 1 (Integer 4))
+                                                                    (Var 11 n))
+                                                                    ((IntegerConstant 1 (Integer 4))
+                                                                    (Var 11 n))]
+                                                                    FixedSizeArray
                                                                 )
-                                                                (IntegerConstant 2 (Integer 4))
-                                                                (Integer 4)
-                                                                LBound
-                                                                (IntegerConstant 1 (Integer 4))
-                                                            )
-                                                            (ArrayBound
-                                                                (StructInstanceMember
-                                                                    (Var 16 a)
-                                                                    16 1_int_matrix_elements
-                                                                    (Array
-                                                                        (Integer 4)
-                                                                        [((IntegerConstant 1 (Integer 4))
-                                                                        (Var 11 n))
-                                                                        ((IntegerConstant 1 (Integer 4))
-                                                                        (Var 11 n))]
-                                                                        FixedSizeArray
-                                                                    )
-                                                                    ()
-                                                                )
-                                                                (IntegerConstant 2 (Integer 4))
-                                                                (Integer 4)
-                                                                UBound
                                                                 ()
                                                             )
-                                                            (IntegerConstant 1 (Integer 4)))]
+                                                            (IntegerConstant 2 (Integer 4))
+                                                            (Integer 4)
+                                                            UBound
+                                                            ()
+                                                        )
+                                                        (IntegerConstant 1 (Integer 4)))]
+                                                        (Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                        ()
+                                                    ))
+                                                    ((ArraySection
+                                                        (StructInstanceMember
+                                                            (Var 16 b)
+                                                            16 1_int_matrix_elements
                                                             (Array
                                                                 (Integer 4)
-                                                                [(()
-                                                                ())]
-                                                                DescriptorArray
+                                                                [((IntegerConstant 1 (Integer 4))
+                                                                (Var 11 n))
+                                                                ((IntegerConstant 1 (Integer 4))
+                                                                (Var 11 n))]
+                                                                FixedSizeArray
                                                             )
                                                             ()
-                                                        ))
-                                                        ((ArraySection
+                                                        )
+                                                        [((ArrayBound
                                                             (StructInstanceMember
                                                                 (Var 16 b)
                                                                 16 1_int_matrix_elements
@@ -631,80 +614,49 @@
                                                                 )
                                                                 ()
                                                             )
-                                                            [((ArrayBound
-                                                                (StructInstanceMember
-                                                                    (Var 16 b)
-                                                                    16 1_int_matrix_elements
-                                                                    (Array
-                                                                        (Integer 4)
-                                                                        [((IntegerConstant 1 (Integer 4))
-                                                                        (Var 11 n))
-                                                                        ((IntegerConstant 1 (Integer 4))
-                                                                        (Var 11 n))]
-                                                                        FixedSizeArray
-                                                                    )
-                                                                    ()
+                                                            (IntegerConstant 1 (Integer 4))
+                                                            (Integer 4)
+                                                            LBound
+                                                            (IntegerConstant 1 (Integer 4))
+                                                        )
+                                                        (ArrayBound
+                                                            (StructInstanceMember
+                                                                (Var 16 b)
+                                                                16 1_int_matrix_elements
+                                                                (Array
+                                                                    (Integer 4)
+                                                                    [((IntegerConstant 1 (Integer 4))
+                                                                    (Var 11 n))
+                                                                    ((IntegerConstant 1 (Integer 4))
+                                                                    (Var 11 n))]
+                                                                    FixedSizeArray
                                                                 )
-                                                                (IntegerConstant 1 (Integer 4))
-                                                                (Integer 4)
-                                                                LBound
-                                                                (IntegerConstant 1 (Integer 4))
-                                                            )
-                                                            (ArrayBound
-                                                                (StructInstanceMember
-                                                                    (Var 16 b)
-                                                                    16 1_int_matrix_elements
-                                                                    (Array
-                                                                        (Integer 4)
-                                                                        [((IntegerConstant 1 (Integer 4))
-                                                                        (Var 11 n))
-                                                                        ((IntegerConstant 1 (Integer 4))
-                                                                        (Var 11 n))]
-                                                                        FixedSizeArray
-                                                                    )
-                                                                    ()
-                                                                )
-                                                                (IntegerConstant 1 (Integer 4))
-                                                                (Integer 4)
-                                                                UBound
                                                                 ()
                                                             )
-                                                            (IntegerConstant 1 (Integer 4)))
-                                                            (()
-                                                            (Var 16 j)
-                                                            ())]
-                                                            (Array
-                                                                (Integer 4)
-                                                                [(()
-                                                                ())]
-                                                                DescriptorArray
-                                                            )
+                                                            (IntegerConstant 1 (Integer 4))
+                                                            (Integer 4)
+                                                            UBound
                                                             ()
-                                                        ))]
-                                                        (Integer 4)
-                                                        ()
-                                                        ()
-                                                    )
-                                                    (IntrinsicArrayFunction
-                                                        Shape
-                                                        [(Var 16 dot)]
-                                                        0
+                                                        )
+                                                        (IntegerConstant 1 (Integer 4)))
+                                                        (()
+                                                        (Var 16 j)
+                                                        ())]
                                                         (Array
                                                             (Integer 4)
-                                                            [((IntegerConstant 1 (Integer 4))
-                                                            (IntegerConstant 1 (Integer 4)))]
-                                                            FixedSizeArray
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
                                                         )
                                                         ()
-                                                    )
+                                                    ))]
                                                     (Array
-                                                        (TypeParameter
-                                                            t
-                                                        )
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (Var 11 n))]
-                                                        PointerToDataArray
+                                                        (Integer 4)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
                                                     )
+                                                    ()
                                                     ()
                                                 )
                                                 ()
@@ -1588,72 +1540,39 @@
                                                             )
                                                             ()
                                                         )
-                                                        (ArrayBroadcast
-                                                            (FunctionCall
-                                                                5 plus
-                                                                ()
-                                                                [((StructInstanceMember
-                                                                    (Var 9 a)
-                                                                    9 1_matrix_elements
-                                                                    (Array
-                                                                        (TypeParameter
-                                                                            t
-                                                                        )
-                                                                        [((IntegerConstant 1 (Integer 4))
-                                                                        (Var 5 n))
-                                                                        ((IntegerConstant 1 (Integer 4))
-                                                                        (Var 5 n))]
-                                                                        PointerToDataArray
-                                                                    )
-                                                                    ()
-                                                                ))
-                                                                ((StructInstanceMember
-                                                                    (Var 9 b)
-                                                                    9 1_matrix_elements
-                                                                    (Array
-                                                                        (TypeParameter
-                                                                            t
-                                                                        )
-                                                                        [((IntegerConstant 1 (Integer 4))
-                                                                        (Var 5 n))
-                                                                        ((IntegerConstant 1 (Integer 4))
-                                                                        (Var 5 n))]
-                                                                        PointerToDataArray
-                                                                    )
-                                                                    ()
-                                                                ))]
-                                                                (TypeParameter
-                                                                    t
-                                                                )
-                                                                ()
-                                                                ()
-                                                            )
-                                                            (IntrinsicArrayFunction
-                                                                Shape
-                                                                [(StructInstanceMember
-                                                                    (Var 9 r)
-                                                                    9 1_matrix_elements
-                                                                    (Array
-                                                                        (TypeParameter
-                                                                            t
-                                                                        )
-                                                                        [((IntegerConstant 1 (Integer 4))
-                                                                        (Var 5 n))
-                                                                        ((IntegerConstant 1 (Integer 4))
-                                                                        (Var 5 n))]
-                                                                        PointerToDataArray
-                                                                    )
-                                                                    ()
-                                                                )]
-                                                                0
+                                                        (FunctionCall
+                                                            5 plus
+                                                            ()
+                                                            [((StructInstanceMember
+                                                                (Var 9 a)
+                                                                9 1_matrix_elements
                                                                 (Array
-                                                                    (Integer 4)
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
                                                                     [((IntegerConstant 1 (Integer 4))
-                                                                    (IntegerConstant 2 (Integer 4)))]
-                                                                    FixedSizeArray
+                                                                    (Var 5 n))
+                                                                    ((IntegerConstant 1 (Integer 4))
+                                                                    (Var 5 n))]
+                                                                    PointerToDataArray
                                                                 )
                                                                 ()
-                                                            )
+                                                            ))
+                                                            ((StructInstanceMember
+                                                                (Var 9 b)
+                                                                9 1_matrix_elements
+                                                                (Array
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    [((IntegerConstant 1 (Integer 4))
+                                                                    (Var 5 n))
+                                                                    ((IntegerConstant 1 (Integer 4))
+                                                                    (Var 5 n))]
+                                                                    PointerToDataArray
+                                                                )
+                                                                ()
+                                                            ))]
                                                             (Array
                                                                 (TypeParameter
                                                                     t
@@ -1664,6 +1583,7 @@
                                                                 (Var 5 n))]
                                                                 PointerToDataArray
                                                             )
+                                                            ()
                                                             ()
                                                         )
                                                         ()
@@ -1915,11 +1835,29 @@
                                                             ())
                                                             [(Assignment
                                                                 (Var 10 dot)
-                                                                (ArrayBroadcast
-                                                                    (FunctionCall
-                                                                        5 times
-                                                                        ()
-                                                                        [((ArraySection
+                                                                (FunctionCall
+                                                                    5 times
+                                                                    ()
+                                                                    [((ArraySection
+                                                                        (StructInstanceMember
+                                                                            (Var 10 a)
+                                                                            10 1_matrix_elements
+                                                                            (Array
+                                                                                (TypeParameter
+                                                                                    t
+                                                                                )
+                                                                                [((IntegerConstant 1 (Integer 4))
+                                                                                (Var 5 n))
+                                                                                ((IntegerConstant 1 (Integer 4))
+                                                                                (Var 5 n))]
+                                                                                PointerToDataArray
+                                                                            )
+                                                                            ()
+                                                                        )
+                                                                        [(()
+                                                                        (Var 10 i)
+                                                                        ())
+                                                                        ((ArrayBound
                                                                             (StructInstanceMember
                                                                                 (Var 10 a)
                                                                                 10 1_matrix_elements
@@ -1935,63 +1873,60 @@
                                                                                 )
                                                                                 ()
                                                                             )
-                                                                            [(()
-                                                                            (Var 10 i)
-                                                                            ())
-                                                                            ((ArrayBound
-                                                                                (StructInstanceMember
-                                                                                    (Var 10 a)
-                                                                                    10 1_matrix_elements
-                                                                                    (Array
-                                                                                        (TypeParameter
-                                                                                            t
-                                                                                        )
-                                                                                        [((IntegerConstant 1 (Integer 4))
-                                                                                        (Var 5 n))
-                                                                                        ((IntegerConstant 1 (Integer 4))
-                                                                                        (Var 5 n))]
-                                                                                        PointerToDataArray
+                                                                            (IntegerConstant 2 (Integer 4))
+                                                                            (Integer 4)
+                                                                            LBound
+                                                                            (IntegerConstant 1 (Integer 4))
+                                                                        )
+                                                                        (ArrayBound
+                                                                            (StructInstanceMember
+                                                                                (Var 10 a)
+                                                                                10 1_matrix_elements
+                                                                                (Array
+                                                                                    (TypeParameter
+                                                                                        t
                                                                                     )
-                                                                                    ()
+                                                                                    [((IntegerConstant 1 (Integer 4))
+                                                                                    (Var 5 n))
+                                                                                    ((IntegerConstant 1 (Integer 4))
+                                                                                    (Var 5 n))]
+                                                                                    PointerToDataArray
                                                                                 )
-                                                                                (IntegerConstant 2 (Integer 4))
-                                                                                (Integer 4)
-                                                                                LBound
-                                                                                (IntegerConstant 1 (Integer 4))
-                                                                            )
-                                                                            (ArrayBound
-                                                                                (StructInstanceMember
-                                                                                    (Var 10 a)
-                                                                                    10 1_matrix_elements
-                                                                                    (Array
-                                                                                        (TypeParameter
-                                                                                            t
-                                                                                        )
-                                                                                        [((IntegerConstant 1 (Integer 4))
-                                                                                        (Var 5 n))
-                                                                                        ((IntegerConstant 1 (Integer 4))
-                                                                                        (Var 5 n))]
-                                                                                        PointerToDataArray
-                                                                                    )
-                                                                                    ()
-                                                                                )
-                                                                                (IntegerConstant 2 (Integer 4))
-                                                                                (Integer 4)
-                                                                                UBound
                                                                                 ()
                                                                             )
-                                                                            (IntegerConstant 1 (Integer 4)))]
+                                                                            (IntegerConstant 2 (Integer 4))
+                                                                            (Integer 4)
+                                                                            UBound
+                                                                            ()
+                                                                        )
+                                                                        (IntegerConstant 1 (Integer 4)))]
+                                                                        (Array
+                                                                            (TypeParameter
+                                                                                t
+                                                                            )
+                                                                            [(()
+                                                                            ())]
+                                                                            DescriptorArray
+                                                                        )
+                                                                        ()
+                                                                    ))
+                                                                    ((ArraySection
+                                                                        (StructInstanceMember
+                                                                            (Var 10 b)
+                                                                            10 1_matrix_elements
                                                                             (Array
                                                                                 (TypeParameter
                                                                                     t
                                                                                 )
-                                                                                [(()
-                                                                                ())]
-                                                                                DescriptorArray
+                                                                                [((IntegerConstant 1 (Integer 4))
+                                                                                (Var 5 n))
+                                                                                ((IntegerConstant 1 (Integer 4))
+                                                                                (Var 5 n))]
+                                                                                PointerToDataArray
                                                                             )
                                                                             ()
-                                                                        ))
-                                                                        ((ArraySection
+                                                                        )
+                                                                        [((ArrayBound
                                                                             (StructInstanceMember
                                                                                 (Var 10 b)
                                                                                 10 1_matrix_elements
@@ -2007,88 +1942,55 @@
                                                                                 )
                                                                                 ()
                                                                             )
-                                                                            [((ArrayBound
-                                                                                (StructInstanceMember
-                                                                                    (Var 10 b)
-                                                                                    10 1_matrix_elements
-                                                                                    (Array
-                                                                                        (TypeParameter
-                                                                                            t
-                                                                                        )
-                                                                                        [((IntegerConstant 1 (Integer 4))
-                                                                                        (Var 5 n))
-                                                                                        ((IntegerConstant 1 (Integer 4))
-                                                                                        (Var 5 n))]
-                                                                                        PointerToDataArray
+                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (Integer 4)
+                                                                            LBound
+                                                                            (IntegerConstant 1 (Integer 4))
+                                                                        )
+                                                                        (ArrayBound
+                                                                            (StructInstanceMember
+                                                                                (Var 10 b)
+                                                                                10 1_matrix_elements
+                                                                                (Array
+                                                                                    (TypeParameter
+                                                                                        t
                                                                                     )
-                                                                                    ()
+                                                                                    [((IntegerConstant 1 (Integer 4))
+                                                                                    (Var 5 n))
+                                                                                    ((IntegerConstant 1 (Integer 4))
+                                                                                    (Var 5 n))]
+                                                                                    PointerToDataArray
                                                                                 )
-                                                                                (IntegerConstant 1 (Integer 4))
-                                                                                (Integer 4)
-                                                                                LBound
-                                                                                (IntegerConstant 1 (Integer 4))
-                                                                            )
-                                                                            (ArrayBound
-                                                                                (StructInstanceMember
-                                                                                    (Var 10 b)
-                                                                                    10 1_matrix_elements
-                                                                                    (Array
-                                                                                        (TypeParameter
-                                                                                            t
-                                                                                        )
-                                                                                        [((IntegerConstant 1 (Integer 4))
-                                                                                        (Var 5 n))
-                                                                                        ((IntegerConstant 1 (Integer 4))
-                                                                                        (Var 5 n))]
-                                                                                        PointerToDataArray
-                                                                                    )
-                                                                                    ()
-                                                                                )
-                                                                                (IntegerConstant 1 (Integer 4))
-                                                                                (Integer 4)
-                                                                                UBound
                                                                                 ()
                                                                             )
-                                                                            (IntegerConstant 1 (Integer 4)))
-                                                                            (()
-                                                                            (Var 10 j)
-                                                                            ())]
-                                                                            (Array
-                                                                                (TypeParameter
-                                                                                    t
-                                                                                )
-                                                                                [(()
-                                                                                ())]
-                                                                                DescriptorArray
-                                                                            )
-                                                                            ()
-                                                                        ))]
-                                                                        (TypeParameter
-                                                                            t
-                                                                        )
-                                                                        ()
-                                                                        ()
-                                                                    )
-                                                                    (IntrinsicArrayFunction
-                                                                        Shape
-                                                                        [(Var 10 dot)]
-                                                                        0
-                                                                        (Array
+                                                                            (IntegerConstant 1 (Integer 4))
                                                                             (Integer 4)
-                                                                            [((IntegerConstant 1 (Integer 4))
-                                                                            (IntegerConstant 1 (Integer 4)))]
-                                                                            FixedSizeArray
+                                                                            UBound
+                                                                            ()
+                                                                        )
+                                                                        (IntegerConstant 1 (Integer 4)))
+                                                                        (()
+                                                                        (Var 10 j)
+                                                                        ())]
+                                                                        (Array
+                                                                            (TypeParameter
+                                                                                t
+                                                                            )
+                                                                            [(()
+                                                                            ())]
+                                                                            DescriptorArray
                                                                         )
                                                                         ()
-                                                                    )
+                                                                    ))]
                                                                     (Array
                                                                         (TypeParameter
                                                                             t
                                                                         )
-                                                                        [((IntegerConstant 1 (Integer 4))
-                                                                        (Var 5 n))]
-                                                                        PointerToDataArray
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
                                                                     )
+                                                                    ()
                                                                     ()
                                                                 )
                                                                 ()
