@@ -4632,6 +4632,11 @@ public:
         std::vector<std::string> kwarg_names = {"x", "y", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 3, "cmplx");
         ASR::expr_t *x_ = args[0], *y_ = args[1], *kind = args[2];
+        if (x_ == nullptr) {
+            throw SemanticError("The first argument of cmplx intrinsic"
+                                " must be present",
+                                x.base.base.loc);
+        }
         if( ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(x_)) ) {
             if( y_ != nullptr ) {
                 throw SemanticError("The first argument of cmplx intrinsic"
