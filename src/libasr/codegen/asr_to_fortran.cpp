@@ -1266,6 +1266,22 @@ public:
             SET_ARR_INTRINSIC_NAME(Shape, "shape");
             SET_ARR_INTRINSIC_NAME(MaxVal, "maxval");
             SET_ARR_INTRINSIC_NAME(MinVal, "minval");
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Pack)) : {
+                out += "pack";
+                visit_expr(*x.m_args[0]);
+                out += "(" + s + ", ";
+                visit_expr(*x.m_args[1]);
+                out += s;
+                if (x.n_args == 3) {
+                    out += ", ";
+                    visit_expr(*x.m_args[2]);
+                    out += s;
+                }
+                out += ")";
+                s = out;
+                out = "";
+                break;
+            }
             default : {
                 throw LCompilersException("IntrinsicArrayFunction: `"
                     + ASRUtils::get_array_intrinsic_name(x.m_arr_intrinsic_id)
@@ -1615,24 +1631,6 @@ public:
     void visit_ArrayTranspose(const ASR::ArrayTranspose_t &x) {
         visit_expr(*x.m_matrix);
         s = "transpose(" + s + ")";
-    }
-
-    void visit_ArrayPack(const ASR::ArrayPack_t &x) {
-        std::string r;
-        r += "pack";
-        r += "(";
-        visit_expr(*x.m_array);
-        r += s;
-        r += ", ";
-        visit_expr(*x.m_mask);
-        r += s;
-        if (x.m_vector) {
-            r += ", ";
-            visit_expr(*x.m_vector);
-            r += s;
-        }
-        r += ")";
-        s = r;
     }
 
     void visit_ArrayReshape(const ASR::ArrayReshape_t &x) {

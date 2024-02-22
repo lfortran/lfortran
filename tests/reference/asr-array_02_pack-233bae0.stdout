@@ -71,44 +71,73 @@
                     )
                     (Assignment
                         (Var 2 p)
-                        (ArrayPack
-                            (Var 2 m)
-                            (IntegerCompare
+                        (IntrinsicArrayFunction
+                            Pack
+                            [(ArrayPhysicalCast
                                 (Var 2 m)
-                                NotEq
-                                (IntegerConstant 0 (Integer 4))
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            )
+                            (ArrayPhysicalCast
+                                (IntegerCompare
+                                    (Var 2 m)
+                                    NotEq
+                                    (IntegerConstant 0 (Integer 4))
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                )
+                                FixedSizeArray
+                                DescriptorArray
                                 (Array
                                     (Logical 4)
                                     [((IntegerConstant 1 (Integer 4))
                                     (IntegerConstant 4 (Integer 4)))]
-                                    FixedSizeArray
+                                    DescriptorArray
                                 )
                                 ()
                             )
-                            (ArrayConstant
-                                [(IntegerConstant 0 (Integer 4))
-                                (IntegerConstant 0 (Integer 4))
-                                (IntegerConstant 3 (Integer 4))
-                                (IntegerConstant 4 (Integer 4))]
+                            (ArrayPhysicalCast
+                                (ArrayConstant
+                                    [(IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4))]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                FixedSizeArray
+                                DescriptorArray
                                 (Array
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4))
                                     (IntegerConstant 4 (Integer 4)))]
-                                    FixedSizeArray
+                                    DescriptorArray
                                 )
-                                ColMajor
-                            )
+                                ()
+                            )]
+                            3
                             (Array
                                 (Integer 4)
                                 [((IntegerConstant 1 (Integer 4))
-                                (IntegerBinOp
-                                    (IntegerConstant 1 (Integer 4))
-                                    Mul
-                                    (IntegerConstant 4 (Integer 4))
-                                    (Integer 4)
-                                    ()
-                                ))]
-                                PointerToDataArray
+                                (IntegerConstant 4 (Integer 4)))]
+                                FixedSizeArray
                             )
                             ()
                         )
