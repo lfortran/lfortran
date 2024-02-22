@@ -695,6 +695,7 @@ public:
                 IntrinsicSignature({"array", "mask"}, 1, 2)}},
         {"matmul", {IntrinsicSignature({"matrix_a", "matrix_b"}, 2, 2)}},
         {"dot_product", {IntrinsicSignature({"vector_a", "vector_b"}, 2, 2)}},
+        {"pack", {IntrinsicSignature({"array", "mask", "vector"}, 2, 3)}},
         {"maxval", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3),
                 IntrinsicSignature({"array", "mask"}, 1, 2)}},
         {"maxloc", {IntrinsicSignature({"array", "dim", "mask", "kind", "back"}, 1, 5),
@@ -4523,26 +4524,6 @@ public:
         return ASR::make_StringLen_t(al, x.base.base.loc, v_Var, type, len_compiletime);
     }
 
-    ASR::asr_t* create_ArrayPack(const AST::FuncCallOrArray_t& x) {
-        Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"array", "mask", "vector"};
-        handle_intrinsic_node_args(x, args, kwarg_names, 2, 3, "pack");
-        ASR::expr_t *array = args[0], *mask = args[1], *vector = args[2];
-        Vec<ASR::dimension_t> new_dims;
-        new_dims.reserve(al, 1);
-        ASR::dimension_t new_dim;
-        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
-        new_dim.loc = x.base.base.loc;
-        new_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int_type));
-        new_dim.m_length = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(al, x.base.base.loc,
-                            vector ? vector : mask, nullptr,
-                            int_type, nullptr));
-        new_dims.push_back(al, new_dim);
-        ASR::ttype_t *type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(array), &new_dims);
-        return ASR::make_ArrayPack_t(al, x.base.base.loc, array, mask,
-                                     vector, type, nullptr);
-    }
-
     ASR::asr_t* create_ArrayReshape(const AST::FuncCallOrArray_t& x) {
         if( x.n_args != 2 ) {
              throw SemanticError("reshape accepts only 2 arguments, got " +
@@ -5009,8 +4990,6 @@ public:
                 tmp = create_ArraySize(x);
             } else if( var_name == "lbound" || var_name == "ubound" ) {
                 tmp = create_ArrayBound(x, var_name);
-            } else if( var_name == "pack" ) {
-                tmp = create_ArrayPack(x);
             } else if( var_name == "transfer" ) {
                 tmp = create_BitCast(x);
             } else if( var_name == "cmplx" ) {
