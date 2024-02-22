@@ -893,6 +893,14 @@ LFORTRAN_API double _lfortran_dlog(double x)
     return log(x);
 }
 
+LFORTRAN_API bool _lfortran_rsp_is_nan(float x) {
+    return isnan(x);
+}
+
+LFORTRAN_API bool _lfortran_rdp_is_nan(double x) {
+    return isnan(x);
+}
+
 LFORTRAN_API float_complex_t _lfortran_clog(float_complex_t x)
 {
     return clogf(x);
