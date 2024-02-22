@@ -1815,13 +1815,11 @@ namespace Maskr {
         declare_basic_variables("");
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
-        int kind = ASRUtils::extract_kind_from_ttype_t(return_type);
         /*
         * r = Maskr(x)
         * r = (1 << x) - 1
         */
         ASR::expr_t *sixty_four = i(64, return_type);
-        ASR::expr_t* IGT64 = iGt(args[0], sixty_four);
         ASR::expr_t* one = i(1, return_type);
         ASR::expr_t* minus_one = i(-1, return_type);
         ASR::expr_t *cast = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::IntegerToInteger, return_type, nullptr));
