@@ -117,6 +117,27 @@
                                                     Required
                                                     .false.
                                                 ),
+                                            __libasr__created__var__0__logicalnot_unary_op_res:
+                                                (Variable
+                                                    4
+                                                    __libasr__created__var__0__logicalnot_unary_op_res
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Logical 4)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 10 (Integer 4)))]
+                                                        FixedSizeArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
                                             dir_sources:
                                                 (Variable
                                                     4
@@ -252,14 +273,14 @@
                                             ()
                                             ((Var 4 __1_t)
                                             (ArrayBound
-                                                (Var 4 sources)
+                                                (Var 4 __libasr__created__var__0__logicalnot_unary_op_res)
                                                 (IntegerConstant 1 (Integer 4))
                                                 (Integer 4)
                                                 LBound
                                                 ()
                                             )
                                             (ArrayBound
-                                                (Var 4 sources)
+                                                (Var 4 __libasr__created__var__0__logicalnot_unary_op_res)
                                                 (IntegerConstant 1 (Integer 4))
                                                 (Integer 4)
                                                 UBound
@@ -268,13 +289,11 @@
                                             ())
                                             [(Assignment
                                                 (ArrayItem
-                                                    (Var 4 sources)
+                                                    (Var 4 __libasr__created__var__0__logicalnot_unary_op_res)
                                                     [(()
                                                     (Var 4 __1_t)
                                                     ())]
-                                                    (Struct
-                                                        2 srcfile_t
-                                                    )
+                                                    (Logical 4)
                                                     RowMajor
                                                     ()
                                                 )
@@ -307,24 +326,32 @@
                                         )
                                         (Assignment
                                             (Var 4 sources)
-                                            (ArrayPack
-                                                (Var 4 dir_sources)
-                                                (Var 4 sources)
-                                                ()
-                                                (Allocatable
+                                            (IntrinsicArrayFunction
+                                                Pack
+                                                [(Var 4 dir_sources)
+                                                (ArrayPhysicalCast
+                                                    (Var 4 __libasr__created__var__0__logicalnot_unary_op_res)
+                                                    FixedSizeArray
+                                                    DescriptorArray
                                                     (Array
-                                                        (Struct
-                                                            2 srcfile_t
-                                                        )
+                                                        (Logical 4)
                                                         [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerBinOp
-                                                            (IntegerConstant 1 (Integer 4))
-                                                            Mul
-                                                            (IntegerConstant 10 (Integer 4))
-                                                            (Integer 4)
-                                                            ()
-                                                        ))]
-                                                        PointerToDataArray
+                                                        (IntegerConstant 10 (Integer 4)))]
+                                                        DescriptorArray
+                                                    )
+                                                    ()
+                                                )]
+                                                2
+                                                (Allocatable
+                                                    (Allocatable
+                                                        (Array
+                                                            (Struct
+                                                                2 srcfile_t
+                                                            )
+                                                            [(()
+                                                            (IntegerConstant -1 (Integer 4)))]
+                                                            FixedSizeArray
+                                                        )
                                                     )
                                                 )
                                                 ()
@@ -335,33 +362,41 @@
                                             (Var 4 sources)
                                             (ArrayConstant
                                                 [(Var 4 sources)
-                                                (ArrayPack
-                                                    (Var 4 dir_sources)
-                                                    (LogicalNot
-                                                        (Var 4 exclude_source)
+                                                (IntrinsicArrayFunction
+                                                    Pack
+                                                    [(Var 4 dir_sources)
+                                                    (ArrayPhysicalCast
+                                                        (LogicalNot
+                                                            (Var 4 exclude_source)
+                                                            (Array
+                                                                (Logical 4)
+                                                                [((IntegerConstant 1 (Integer 4))
+                                                                (IntegerConstant 10 (Integer 4)))]
+                                                                FixedSizeArray
+                                                            )
+                                                            ()
+                                                        )
+                                                        FixedSizeArray
+                                                        DescriptorArray
                                                         (Array
                                                             (Logical 4)
                                                             [((IntegerConstant 1 (Integer 4))
                                                             (IntegerConstant 10 (Integer 4)))]
-                                                            FixedSizeArray
+                                                            DescriptorArray
                                                         )
                                                         ()
-                                                    )
-                                                    ()
+                                                    )]
+                                                    2
                                                     (Allocatable
-                                                        (Array
-                                                            (Struct
-                                                                2 srcfile_t
+                                                        (Allocatable
+                                                            (Array
+                                                                (Struct
+                                                                    2 srcfile_t
+                                                                )
+                                                                [(()
+                                                                (IntegerConstant -1 (Integer 4)))]
+                                                                FixedSizeArray
                                                             )
-                                                            [((IntegerConstant 1 (Integer 4))
-                                                            (IntegerBinOp
-                                                                (IntegerConstant 1 (Integer 4))
-                                                                Mul
-                                                                (IntegerConstant 10 (Integer 4))
-                                                                (Integer 4)
-                                                                ()
-                                                            ))]
-                                                            PointerToDataArray
                                                         )
                                                     )
                                                     ()
