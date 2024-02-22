@@ -1941,11 +1941,12 @@ namespace Pack {
         ASR::dimension_t* vector_dims = nullptr;
         int array_rank = extract_dimensions_from_ttype(type_array, array_dims);
         int mask_rank = extract_dimensions_from_ttype(type_mask, mask_dims);
-        int array_dim = -1, mask_dim = -1;
+        int array_dim = -1, mask_dim = -1, fixed_size_array = -1;
+        fixed_size_array = ASRUtils::get_fixed_size_of_array(type_array);
         extract_value(array_dims[0].m_length, array_dim);
         if (mask_rank == 0) {
-            Vec<ASR::expr_t*> mask_expr; mask_expr.reserve(al, array_dim);
-            for (int i = 0; i < array_dim; i++) {
+            Vec<ASR::expr_t*> mask_expr; mask_expr.reserve(al, fixed_size_array);
+            for (int i = 0; i < fixed_size_array; i++) {
                 mask_expr.push_back(al, mask);
             }
             mask = EXPR(ASR::make_ArrayConstant_t(al, mask->base.loc, mask_expr.p, mask_expr.n,
@@ -1959,14 +1960,9 @@ namespace Pack {
         if (is_vector_present) {
             vector_rank = extract_dimensions_from_ttype(type_vector, vector_dims);
         }
-        if (array_rank != 1) {
-            append_error(diag, "`pack` accepts arrays of rank 1 only, provided an array "
-                "with rank, " + std::to_string(array_rank), array->base.loc);
-            return nullptr;
-        }
-        if (mask_rank != 1) {
-            append_error(diag, "`pack` accepts `mask` of rank 1 only, provided an array "
-                "with rank, " + std::to_string(mask_rank), mask->base.loc);
+        if (array_rank != mask_rank) {
+            append_error(diag, "The argument `mask` must be of rank " + std::to_string(array_rank) +
+                ", provided an array with rank, " + std::to_string(mask_rank), mask->base.loc);
             return nullptr;
         }
         if (!dimension_expr_equal(array_dims[0].m_length,
@@ -1988,7 +1984,8 @@ namespace Pack {
         if (is_vector_present) {
             result_dims.push_back(al, b.set_dim(vector_dims[0].m_start, vector_dims[0].m_length));
         } else {
-            result_dims.push_back(al, b.set_dim(array_dims[0].m_start, array_dims[0].m_length));
+            // TODO: upper bound shall be number of TRUE values in MASK
+            result_dims.push_back(al, b.set_dim(array_dims[0].m_start, i32(fixed_size_array)));
         }
         ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         if (is_type_allocatable) {
@@ -2022,34 +2019,52 @@ namespace Pack {
         ASR::expr_t *result = declare("result", return_type, Out);
         args.push_back(al, result);
         /*
-            j = lbound(mask, 1)
-            do i = lbound(mask, 1), ubound(mask, 1)
-                if (mask(i)) then 
-                    res(j) = array(i)
-                    j = j + 1
-                end if
+            For array of rank 2, the following code is generated:
+            k = lbound(vector, 1)
+            print *, k
+            do i = lbound(array, 2), ubound(array, 2)
+                do j = lbound(array, 1), ubound(array, 1)
+                    ! print *, "mask(", j, ",", i, ") ", mask(j, i)
+                    if (mask(j, i)) then
+                        res(k) = array(j, i)
+                        ! print *, "array(", j, ",", i, ") ", array(j, i)
+                        ! print *, "res(", k, ") ", res(k)
+                        k = k + 1
+                    end if
+                end do
             end do
 
-
-            do i = j, ubound(vector, 1)
-                res(j) = vector(i)
-                j = j + 1
+            do i = k, ubound(vector, 1)
+                res(k) = vector(k)
+                k = k + 1
             end do
-         */
-        ASR::expr_t *i = declare("i", int32, Local);
-        ASR::expr_t *j = declare("j", int32, Local);
-        body.push_back(al, b.Assignment(j, LBound(args[1], 1)));
-        body.push_back(al, b.DoLoop(i, LBound(args[1], 1), UBound(args[1], 1), {
-            b.If(b.ArrayItem_01(args[1], {i}), {
-                b.Assignment(b.ArrayItem_01(result, {j}), b.ArrayItem_01(args[0], {i})),
-                b.Assignment(j, b.Add(j, i32(1)))
-            }, {})
-        }, nullptr));
+        */
+        ASR::dimension_t* array_dims = nullptr;
+        int array_rank = extract_dimensions_from_ttype(arg_types[0], array_dims);
+        std::vector<ASR::expr_t*> do_loop_variables;
+        for (int i = 0; i < array_rank; i++) {
+            do_loop_variables.push_back(declare("i_" + std::to_string(i), int32, Local));
+        }
+        ASR::expr_t *k = declare("k", int32, Local);
+        ASR::ttype_t* type = ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_array(return_type));
+        //To be removed once we have correct dimensions for result ( number of true values in mask )
+        if (is_real(*return_type)) {
+            body.push_back(al, b.Assignment(result, make_ConstantWithType(make_RealConstant_t, 0.0, type, loc)));
+        } else if (is_integer(*return_type)) {
+            body.push_back(al, b.Assignment(result, make_ConstantWithType(make_IntegerConstant_t, 0, type, loc)));
+        } else if (is_logical(*return_type)) {
+            body.push_back(al, b.Assignment(result, make_ConstantWithType(make_LogicalConstant_t, false, type, loc)));
+        } else if (is_complex(*return_type)) {
+            body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexConstant_t(al, loc, 0.0, 0.0, type))));
+        }
+        body.push_back(al, b.Assignment(k, i32(1)));
+        ASR::stmt_t* do_loop = PassUtils::create_do_loop_helper_pack(al, loc, do_loop_variables, args[0], args[1], result, k, array_rank);
+        body.push_back(al, do_loop);
 
         if (overload_id == 3) {
-            body.push_back(al, b.DoLoop(i, j, UBound(args[2], 1), {
-                b.Assignment(b.ArrayItem_01(result, {j}), b.ArrayItem_01(args[2], {i})),
-                b.Assignment(j, b.Add(j, i32(1)))
+            body.push_back(al, b.DoLoop(do_loop_variables[0], k, UBound(args[2], 1), {
+                b.Assignment(b.ArrayItem_01(result, {k}), b.ArrayItem_01(args[2], {k})),
+                b.Assignment(k, b.Add(k, i32(1)))
             }));
         }
         body.push_back(al, Return());
