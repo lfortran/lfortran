@@ -367,9 +367,9 @@ RUN(NAME arrays_02_size LABELS gfortran llvm llvmStackArray wasm fortran)
 RUN(NAME arrays_03_size LABELS gfortran llvm llvmStackArray fortran)
 RUN(NAME matrix_01_transpose LABELS gfortran llvm)
 RUN(NAME matrix_02_matmul LABELS gfortran)
-RUN(NAME array_01_pack LABELS gfortran fortran)
+RUN(NAME array_01_pack LABELS gfortran llvm fortran)
 RUN(NAME array_01_transfer LABELS gfortran)
-RUN(NAME array_02_pack LABELS gfortran fortran)
+RUN(NAME array_02_pack LABELS gfortran llvm fortran)
 RUN(NAME array_02_transfer LABELS gfortran)
 RUN(NAME array_03_transfer LABELS gfortran)
 RUN(NAME array_04_all LABELS gfortran fortran)
@@ -656,6 +656,7 @@ RUN(NAME intrinsics_144 LABELS gfortran llvm) # dot_product
 RUN(NAME intrinsics_145 LABELS gfortran llvm) # dot_product
 RUN(NAME intrinsics_146 LABELS gfortran llvm) # dprod
 RUN(NAME intrinsics_147 LABELS gfortran llvm) # pack
+RUN(NAME intrinsics_148 LABELS gfortran llvm) # pack
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
