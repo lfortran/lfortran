@@ -36,7 +36,7 @@ jobs:
       - name: Install Windows Packages
         if: contains(matrix.os, 'windows')
         shell: bash -e -l {0}
-        run: micromamba install m2-bison=3.0.4 m2-filesystem
+        run: micromamba install m2-bison=3.0.4 m2-filesystem cmake=3.21.1
 
       - name: Install Linux / macOS Packages
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
@@ -651,7 +651,7 @@ jobs:
             export PATH="$(pwd)/../src/bin:$PATH"
 
             git checkout lf19
-            git checkout 2812260a5c6ae02020df37428b364634147c7ceb
+            git checkout 6dddce336109ecbd8b10e177aaa0a9a6d3add4ff
             micromamba install -c conda-forge fypp
             ./build_test_lf.sh
             ./build_test_gf.sh

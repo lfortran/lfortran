@@ -105,6 +105,8 @@ LFORTRAN_API float_complex_t _lfortran_cexp(float_complex_t x);
 LFORTRAN_API double_complex_t _lfortran_zexp(double_complex_t x);
 LFORTRAN_API float _lfortran_slog(float x);
 LFORTRAN_API double _lfortran_dlog(double x);
+LFORTRAN_API bool _lfortran_rsp_is_nan(float x);
+LFORTRAN_API bool _lfortran_rdp_is_nan(double x);
 LFORTRAN_API float_complex_t _lfortran_clog(float_complex_t x);
 LFORTRAN_API double_complex_t _lfortran_zlog(double_complex_t x);
 LFORTRAN_API float _lfortran_serf(float x);
