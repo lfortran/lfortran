@@ -696,6 +696,7 @@ public:
         {"matmul", {IntrinsicSignature({"matrix_a", "matrix_b"}, 2, 2)}},
         {"dot_product", {IntrinsicSignature({"vector_a", "vector_b"}, 2, 2)}},
         {"pack", {IntrinsicSignature({"array", "mask", "vector"}, 2, 3)}},
+        {"unpack", {IntrinsicSignature({"vector", "mask", "field"}, 3, 3)}},
         {"maxval", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3),
                 IntrinsicSignature({"array", "mask"}, 1, 2)}},
         {"maxloc", {IntrinsicSignature({"array", "dim", "mask", "kind", "back"}, 1, 5),
