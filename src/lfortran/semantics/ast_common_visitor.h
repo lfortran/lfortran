@@ -3643,9 +3643,15 @@ public:
         ASR::ttype_t *return_type = nullptr;
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(final_sym);
         if( ASRUtils::get_FunctionType(func)->m_elemental &&
-            func->n_args == 1 &&
+            func->n_args >= 1 &&
             ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
-            return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
+            ASR::dimension_t* array_dims;
+            size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
+            ASRUtils::expr_type(args[0].m_value), array_dims);
+            Vec<ASR::dimension_t> new_dims;
+            new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
+            return_type = ASRUtils::duplicate_type(
+                al, ASRUtils::get_FunctionType(func)->m_return_var_type, &new_dims);
         } else {
             return_type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
             return_type = handle_return_type(return_type, loc, args, func);
@@ -3743,9 +3749,16 @@ public:
         ASR::ttype_t *type = nullptr;
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v_class_proc->m_proc);
         if( ASRUtils::get_FunctionType(func)->m_elemental &&
-            func->n_args == 1 &&
+            func->n_args >= 1 &&
             ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
-            type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
+            ASR::dimension_t* array_dims;
+            size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
+            ASRUtils::expr_type(args[0].m_value), array_dims);
+            Vec<ASR::dimension_t> new_dims;
+            new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
+            type = ASRUtils::duplicate_type(al,
+                            ASRUtils::get_FunctionType(func)->m_return_var_type,
+                            &new_dims);
         } else {
             type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
         }
@@ -3783,9 +3796,16 @@ public:
             ASR::ttype_t *type = nullptr;
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(final_sym);
             if( ASRUtils::get_FunctionType(func)->m_elemental &&
-                func->n_args == 1 &&
+                func->n_args >= 1 &&
                 ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
-                type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
+                ASR::dimension_t* array_dims;
+                size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(args[0].m_value), array_dims);
+                Vec<ASR::dimension_t> new_dims;
+                new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
+                type = ASRUtils::duplicate_type(al,
+                                ASRUtils::get_FunctionType(func)->m_return_var_type,
+                                &new_dims);
             } else {
                 type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
                 type = handle_return_type(type, loc, args, func);
@@ -3832,9 +3852,16 @@ public:
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(final_sym)))
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(final_sym));
             if( ASRUtils::get_FunctionType(func)->m_elemental &&
-                func->n_args == 1 &&
+                func->n_args >= 1 &&
                 ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
-                type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
+                ASR::dimension_t* array_dims;
+                size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(args[0].m_value), array_dims);
+                Vec<ASR::dimension_t> new_dims;
+                new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
+                type = ASRUtils::duplicate_type(al,
+                        ASRUtils::get_FunctionType(func)->m_return_var_type,
+                        &new_dims);
             } else {
                 type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
                 type = handle_return_type(type, loc, args, func);
@@ -3953,7 +3980,7 @@ public:
         ASR::ttype_t *return_type = nullptr;
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(f2);
         if( ASRUtils::get_FunctionType(func)->m_elemental &&
-            func->n_args == 1 &&
+            func->n_args >= 1 &&
             ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
             ASR::dimension_t* array_dims;
             size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
@@ -6397,10 +6424,16 @@ public:
                         }
                         ASR::ttype_t *return_type = nullptr;
                         if( ASRUtils::get_FunctionType(func)->m_elemental &&
-                            func->n_args == 1 && ASRUtils::is_array(
+                            func->n_args >= 1 && ASRUtils::is_array(
                                 ASRUtils::expr_type(a_args[0].m_value)) ) {
+                            ASR::dimension_t* array_dims;
+                            size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                            ASRUtils::expr_type(a_args[0].m_value), array_dims);
+                            Vec<ASR::dimension_t> new_dims;
+                            new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
                             return_type = ASRUtils::duplicate_type(al,
-                                ASRUtils::expr_type(a_args[0].m_value));
+                                            ASRUtils::get_FunctionType(func)->m_return_var_type,
+                                            &new_dims);
                         } else {
                             return_type = ASRUtils::expr_type(func->m_return_var);
                         }
