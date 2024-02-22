@@ -3806,3 +3806,7 @@ asr = true
 [[test]]
 filename = "errors/kind_star_of_logical.f90"
 asr = true
+
+[[test]]
+filename = "errors/cmplx_01.f90"
+asr = true
