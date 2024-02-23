@@ -2784,13 +2784,13 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
         case ASR::exprType::IntegerBinOp:
         // allow integer kinds (e.g. 4, 8 etc.)
         case ASR::exprType::IntegerConstant: {
-            // we still need to ensure that values are constant
-            // e.g. 'integer :: a = 4; real(1*a) :: x' is an invalid kind,
-            // as 'a' // isn't a constant.
-            // ToDo: we should raise a better error, by "locating" just
-            // 'a' as well, instead of the whole '1*a'
-            int a_kind {};
+            int a_kind = -1;
             if (!ASRUtils::extract_value(kind_expr, a_kind)) {
+                // we still need to ensure that values are constant
+                // e.g. "integer :: a = 4; real(1*a) :: x" is an invalid kind,
+                // as 'a' isn't a constant.
+                // ToDo: we should raise a better error, by "locating" just
+                // 'a' as well, instead of the whole '1*a'
                 throw SemanticError("Only Integer literals or expressions which "
                     "reduce to constant Integer are accepted as kind parameters.",
                     loc);
