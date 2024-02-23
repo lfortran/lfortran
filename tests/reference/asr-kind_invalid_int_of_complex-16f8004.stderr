@@ -1,0 +1,5 @@
+semantic error: Kind 6 is not supported for Complex
+ --> tests/errors/kind_invalid_int_of_complex.f90:3:13
+  |
+3 |     complex(6) :: x
+  |             ^ 

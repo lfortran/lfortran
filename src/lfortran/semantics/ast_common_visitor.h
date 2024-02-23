@@ -695,6 +695,8 @@ public:
                 IntrinsicSignature({"array", "mask"}, 1, 2)}},
         {"matmul", {IntrinsicSignature({"matrix_a", "matrix_b"}, 2, 2)}},
         {"dot_product", {IntrinsicSignature({"vector_a", "vector_b"}, 2, 2)}},
+        {"pack", {IntrinsicSignature({"array", "mask", "vector"}, 2, 3)}},
+        {"unpack", {IntrinsicSignature({"vector", "mask", "field"}, 3, 3)}},
         {"maxval", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3),
                 IntrinsicSignature({"array", "mask"}, 1, 2)}},
         {"maxloc", {IntrinsicSignature({"array", "dim", "mask", "kind", "back"}, 1, 5),
@@ -728,6 +730,7 @@ public:
         {"ceiling", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
         {"scale", {IntrinsicSignature({"X", "I"}, 2, 2)}},
         {"dprod", {IntrinsicSignature({"X", "Y"}, 2, 2)}},
+        {"maskl", {IntrinsicSignature({"i", "kind"}, 1, 2)}},
         {"dim", {IntrinsicSignature({"X", "Y"}, 2, 2)}},
     };
 
@@ -2831,26 +2834,27 @@ public:
         type_declaration = nullptr;
 
         int a_kind = compiler_options.po.default_integer_kind;
+
+        // general assignments and checks except when it's a
+        // "Character" declaration
         if (sym_type->m_type != AST::decl_typeType::TypeCharacter &&
-            sym_type->m_kind != nullptr &&
-            sym_type->m_kind->m_value != nullptr) {
-            this->visit_expr(*sym_type->m_kind->m_value);
-            ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
-            a_kind = ASRUtils::extract_kind<SemanticError>(kind_expr, loc);
-        }
-        if (sym_type->m_type == AST::decl_typeType::TypeReal) {
-            if(sym_type->m_kind) {
-                if (!sym_type->m_kind->m_value && sym_type->m_kind->m_type == AST::kind_item_typeType::Star) {
-                    throw SemanticError("Expected initialization expression for kind",
-                                    sym_type->m_kind->loc);
-                }
+            sym_type->m_kind != nullptr
+        ) {
+            if (sym_type->m_kind->m_value) {
                 this->visit_expr(*sym_type->m_kind->m_value);
                 ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
-                int kind_value = ASRUtils::extract_kind<SemanticError>(kind_expr, loc);
-                if (kind_value != 4 && kind_value != 8) {
-                    throw SemanticError("Kind " + std::to_string(kind_value) + " is not supported for Real",
-                                    loc);
-                }
+                a_kind = ASRUtils::extract_kind<SemanticError>(kind_expr, sym_type->m_kind->loc);
+            }
+            // kind=* only allowed for "Character"
+            else if (sym_type->m_kind->m_type == AST::kind_item_typeType::Star) {
+                throw SemanticError("Expected initialization expression for kind",
+                                sym_type->m_kind->loc);
+            }
+        }
+        if (sym_type->m_type == AST::decl_typeType::TypeReal) {
+            if (a_kind != 4 && a_kind != 8) {
+                throw SemanticError("Kind " + std::to_string(a_kind) + " is not supported for Real",
+                                sym_type->m_kind->loc);
             }
             type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, a_kind));
             type = ASRUtils::make_Array_t_util(al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
@@ -2867,6 +2871,10 @@ public:
                     ASRUtils::type_get_past_allocatable(type)));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeInteger) {
+            if (a_kind != 1 && a_kind != 2 && a_kind != 4 && a_kind != 8) {
+                throw SemanticError("Kind " + std::to_string(a_kind) + " is not supported for Integer",
+                                sym_type->m_kind->loc);
+            }
             type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind));
             type = ASRUtils::make_Array_t_util(
                 al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
@@ -2875,6 +2883,13 @@ public:
                     ASRUtils::type_get_past_allocatable(type)));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeLogical) {
+            if (a_kind != 1 && a_kind != 2 && a_kind != 4 && a_kind != 8) {
+                throw SemanticError("Kind " + std::to_string(a_kind) + " is not supported for Logical",
+                                sym_type->m_kind->loc);
+            }
+            // currently we change the kind's of all logical's to
+            // 'default_integer_kind'. GFortran support's logical's of
+            // different kind's, we need to think about this
             type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, compiler_options.po.default_integer_kind));
             type = ASRUtils::make_Array_t_util(
                 al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
@@ -2883,6 +2898,10 @@ public:
                     ASRUtils::type_get_past_allocatable(type)));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeComplex) {
+            if (a_kind != 4 && a_kind != 8) {
+                throw SemanticError("Kind " + std::to_string(a_kind) + " is not supported for Complex",
+                                sym_type->m_kind->loc);
+            }
             type = ASRUtils::TYPE(ASR::make_Complex_t(al, loc, a_kind));
             type = ASRUtils::make_Array_t_util(
                 al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
@@ -2901,8 +2920,8 @@ public:
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeCharacter) {
             int a_len = -10;
-            int a_kind = 1;
             ASR::expr_t *len_expr = nullptr;
+            a_kind = 1;
             TypeMissingData* char_data = al.make_new<TypeMissingData>();
             char_data->sym_name = sym;
             LCOMPILERS_ASSERT(sym_type->n_kind < 3) // TODO
@@ -4524,26 +4543,6 @@ public:
         return ASR::make_StringLen_t(al, x.base.base.loc, v_Var, type, len_compiletime);
     }
 
-    ASR::asr_t* create_ArrayPack(const AST::FuncCallOrArray_t& x) {
-        Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"array", "mask", "vector"};
-        handle_intrinsic_node_args(x, args, kwarg_names, 2, 3, "pack");
-        ASR::expr_t *array = args[0], *mask = args[1], *vector = args[2];
-        Vec<ASR::dimension_t> new_dims;
-        new_dims.reserve(al, 1);
-        ASR::dimension_t new_dim;
-        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
-        new_dim.loc = x.base.base.loc;
-        new_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int_type));
-        new_dim.m_length = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(al, x.base.base.loc,
-                            vector ? vector : mask, nullptr,
-                            int_type, nullptr));
-        new_dims.push_back(al, new_dim);
-        ASR::ttype_t *type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(array), &new_dims);
-        return ASR::make_ArrayPack_t(al, x.base.base.loc, array, mask,
-                                     vector, type, nullptr);
-    }
-
     ASR::asr_t* create_ArrayReshape(const AST::FuncCallOrArray_t& x) {
         if( x.n_args != 2 ) {
              throw SemanticError("reshape accepts only 2 arguments, got " +
@@ -5010,8 +5009,6 @@ public:
                 tmp = create_ArraySize(x);
             } else if( var_name == "lbound" || var_name == "ubound" ) {
                 tmp = create_ArrayBound(x, var_name);
-            } else if( var_name == "pack" ) {
-                tmp = create_ArrayPack(x);
             } else if( var_name == "transfer" ) {
                 tmp = create_BitCast(x);
             } else if( var_name == "cmplx" ) {
