@@ -87,6 +87,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Floor)
         INTRINSIC_NAME_CASE(Ceiling)
         INTRINSIC_NAME_CASE(Maskr)
+        INTRINSIC_NAME_CASE(Maskl)
         INTRINSIC_NAME_CASE(Epsilon)
         INTRINSIC_NAME_CASE(Precision)
         INTRINSIC_NAME_CASE(Tiny)
@@ -257,6 +258,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Ceiling::instantiate_Ceiling, &Ceiling::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Maskr),
             {&Maskr::instantiate_Maskr, &Maskr::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Maskl),
+            {&Maskl::instantiate_Maskl, &Maskl::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Sqrt),
             {&Sqrt::instantiate_Sqrt, &Sqrt::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Sngl),
@@ -458,6 +461,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "ceiling"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Maskr),
             "Maskr"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Maskl),
+            "maskl"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Sqrt),
             "sqrt"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Sngl),
@@ -597,6 +602,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"floor", {&Floor::create_Floor, &Floor::eval_Floor}},
                 {"ceiling", {&Ceiling::create_Ceiling, &Ceiling::eval_Ceiling}},
                 {"maskr", {&Maskr::create_Maskr, &Maskr::eval_Maskr}},
+                {"maskl", {&Maskl::create_Maskl, &Maskl::eval_Maskl}},
                 {"sqrt", {&Sqrt::create_Sqrt, &Sqrt::eval_Sqrt}},
                 {"sngl", {&Sngl::create_Sngl, &Sngl::eval_Sngl}},
                 {"ifix", {&Ifix::create_Ifix, &Ifix::eval_Ifix}},

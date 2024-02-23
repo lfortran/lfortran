@@ -260,6 +260,13 @@ intrinsic_funcs_args = {
             "return": "real64"
         }
     ],
+    "Maskl": [
+        {
+            "args": [("int",)],
+            "return": "int32",
+            "kind_arg": True
+        }
+    ],
     "Maskr": [
         {
             "args": [("int",)],
