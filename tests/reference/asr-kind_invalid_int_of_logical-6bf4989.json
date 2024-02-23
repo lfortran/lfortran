@@ -1,0 +1,13 @@
+{
+    "basename": "asr-kind_invalid_int_of_logical-6bf4989",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/kind_invalid_int_of_logical.f90",
+    "infile_hash": "444c16d3b37a92613ff4136513d5b51910e6f9f2e75fd0347f1aec68",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-kind_invalid_int_of_logical-6bf4989.stderr",
+    "stderr_hash": "0703b2ebce8bb17026ed4528f568db013a8eda1f67d5b461d8e6fb3a",
+    "returncode": 2
+}

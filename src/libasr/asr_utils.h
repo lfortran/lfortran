@@ -2730,9 +2730,11 @@ inline int extract_kind_str(char* m_n, char *&kind_str) {
     return 4;
 }
 
+// this function only extract's the 'kind' and raises an error when it's of
+// inappropriate type (e.g. float), but doesn't ensure 'kind' is appropriate
+// for whose kind it is
 template <typename SemanticError>
 inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
-    int a_kind = 4;
     switch( kind_expr->type ) {
         case ASR::exprType::Var: {
             ASR::Var_t* kind_var =
@@ -2747,22 +2749,21 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
                 is_parent_enum = ASR::is_a<ASR::EnumType_t>(*s);
             }
             if( is_parent_enum ) {
-                a_kind = ASRUtils::extract_kind_from_ttype_t(kind_variable->m_type);
+                return ASRUtils::extract_kind_from_ttype_t(kind_variable->m_type);
             } else if( kind_variable->m_storage == ASR::storage_typeType::Parameter ) {
                 if( kind_variable->m_type->type == ASR::ttypeType::Integer ) {
                     LCOMPILERS_ASSERT( kind_variable->m_value != nullptr );
-                    a_kind = ASR::down_cast<ASR::IntegerConstant_t>(kind_variable->m_value)->m_n;
+                    return ASR::down_cast<ASR::IntegerConstant_t>(kind_variable->m_value)->m_n;
                 } else {
                     std::string msg = "Integer variable required. " + std::string(kind_variable->m_name) +
                                     " is not an Integer variable.";
                     throw SemanticError(msg, loc);
                 }
             } else {
-                std::string msg = "Parameter " + std::string(kind_variable->m_name) +
-                                " is a variable, which does not reduce to a constant expression";
+                std::string msg = "Parameter '" + std::string(kind_variable->m_name) +
+                                "' is a variable, which does not reduce to a constant expression";
                 throw SemanticError(msg, loc);
             }
-            break;
         }
         case ASR::exprType::IntrinsicElementalFunction: {
             ASR::IntrinsicElementalFunction_t* kind_isf =
@@ -2772,23 +2773,40 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
                 LCOMPILERS_ASSERT( ASR::is_a<ASR::IntegerConstant_t>(*kind_isf->m_value) );
                 ASR::IntegerConstant_t* kind_ic =
                     ASR::down_cast<ASR::IntegerConstant_t>(kind_isf->m_value);
-                a_kind = kind_ic->m_n;
+                return kind_ic->m_n;
             } else {
                 throw SemanticError("Only Integer literals or expressions which "
                     "reduce to constant Integer are accepted as kind parameters.",
                     loc);
             }
-            break;
         }
-        default: {
+        // allow integer binary operator kinds (e.g. '1 + 7')
+        case ASR::exprType::IntegerBinOp:
+        // allow integer kinds (e.g. 4, 8 etc.)
+        case ASR::exprType::IntegerConstant: {
+            int a_kind = -1;
             if (!ASRUtils::extract_value(kind_expr, a_kind)) {
+                // we still need to ensure that values are constant
+                // e.g. "integer :: a = 4; real(1*a) :: x" is an invalid kind,
+                // as 'a' isn't a constant.
+                // ToDo: we should raise a better error, by "locating" just
+                // 'a' as well, instead of the whole '1*a'
                 throw SemanticError("Only Integer literals or expressions which "
                     "reduce to constant Integer are accepted as kind parameters.",
                     loc);
             }
+            return a_kind;
+        }
+        // make sure not to allow kind having "RealConstant" (e.g. 4.0),
+        // and everything else
+        default: {
+            throw SemanticError(
+                "Only Integer literals or expressions which "
+                "reduce to constant Integer are accepted as kind parameters.",
+                loc
+            );
         }
     }
-    return a_kind;
 }
 
 template <typename SemanticError>

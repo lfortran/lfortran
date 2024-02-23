@@ -1,0 +1,13 @@
+{
+    "basename": "asr-kind_star_of_logical-8df9344",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/kind_star_of_logical.f90",
+    "infile_hash": "846e56ce5f99321a473bb4424f13b70823958a7ddfca4c59c0e8b621",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-kind_star_of_logical-8df9344.stderr",
+    "stderr_hash": "c1ab6c3a4e54b2e0ea74d0814ff410713ab98d3e41ebdfd4af89ce34",
+    "returncode": 2
+}

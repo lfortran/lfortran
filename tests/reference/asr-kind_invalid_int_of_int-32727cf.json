@@ -1,0 +1,13 @@
+{
+    "basename": "asr-kind_invalid_int_of_int-32727cf",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/kind_invalid_int_of_int.f90",
+    "infile_hash": "88f2a854337ac8e0390be39e5b44c18975e0f856ea3890c6fae450f1",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-kind_invalid_int_of_int-32727cf.stderr",
+    "stderr_hash": "6369be31933d4052db4ff550d8bbcdebb553b26b36f166f0ff7c9f2e",
+    "returncode": 2
+}
