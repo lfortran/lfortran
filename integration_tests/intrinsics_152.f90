@@ -3,6 +3,8 @@ program intrinsic_152
     double precision :: x,y
     integer :: a, b
     integer(8) :: c, d
+    double precision :: res_dp
+    integer, parameter :: dp = kind(0.d0)
     i = 30.0
     j = 20.0
     x = 10.0
@@ -12,11 +14,13 @@ program intrinsic_152
     c = 10
     d = 15
 
-    print *, dim(i, j)
-    if (abs(dim(i, j) - (10.00000_8)) > 1e-7_8) error stop
+    res_dp = dim(i, j)
+    print *, res_dp
+    if (abs(res_dp - (10.0_dp)) > 1e-7_dp) error stop
 
-    print *, dim(x, y)
-    if (abs(dim(x, y) - (0.0_8)) > 1e-7_8) error stop
+    res_dp = dim(x, y)
+    print *, res_dp
+    if (abs(res_dp - (0.0_dp)) > 1e-7_dp) error stop
 
     print *, dim(a, b)
     if (dim(a, b) /= 10) error stop
@@ -24,11 +28,12 @@ program intrinsic_152
     print *, dim(c, d)
     if (dim(c, d) /= 0) error stop
 
-    print *, dim(30.0, 20.0)
-    if (abs(dim(30.0, 20.0) - (10.0_8)) > 1e-7_8) error stop
+    res_dp = dim(30.0, 20.0)
+    print *, res_dp
+    if (abs(res_dp - (10.0_dp)) > 1e-7_dp) error stop
 
     print *, dim(10.0, 15.0)
-    if (abs(dim(10.0, 15.0) - (0.0_8)) > 1e-7_8) error stop
+    if (abs(dim(10.0, 15.0) - (0.0_dp)) > 1e-7_dp) error stop
 
     print *, dim(30, 20)
     if (dim(30, 20) /= 10) error stop
