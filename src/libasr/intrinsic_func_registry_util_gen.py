@@ -267,6 +267,13 @@ intrinsic_funcs_args = {
             "kind_arg": True
         }
     ],
+    "Maskr": [
+        {
+            "args": [("int",)],
+            "return": "int32",
+            "kind_arg": True
+        }
+    ],
 }
 
 skip_create_func = ["Partition"]
