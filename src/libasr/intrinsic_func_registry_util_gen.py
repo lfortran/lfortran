@@ -68,6 +68,12 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         }
     ],
+    "Verify": [
+        {
+            "args": [("char", "char", "bool", "int")],
+            "return": "int32"
+        }
+    ],
     "MinExponent": [
         {
             "args": [("real",)],

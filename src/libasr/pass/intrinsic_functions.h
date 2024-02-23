@@ -58,6 +58,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Leadz,
     Digits,
     Repeat,
+    Verify,
     Hypot,
     Selected_int_kind,
     MinExponent,
@@ -2205,6 +2206,110 @@ namespace Repeat {
     }
 
 } // namespace Repeat
+
+namespace Verify {
+
+    static ASR::expr_t *eval_Verify(Allocator &al, const Location &loc,
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        char* string = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
+        char* set = ASR::down_cast<ASR::StringConstant_t>(args[1])->m_s;
+        bool back = ASR::down_cast<ASR::LogicalConstant_t>(args[2])->m_value;
+        int64_t kind = ASR::down_cast<ASR::IntegerConstant_t>(args[3])->m_n;
+        size_t len = std::strlen(string);
+        int64_t result = 0;
+        if (back) {
+            char* reversed_string = new char[len+1];
+            for (size_t i=0; i<len; i++) {
+                reversed_string[i] = string[len-i-1];
+            }
+            for (size_t i=0; i<len; i++) {
+                if (std::strchr(set, reversed_string[i]) == nullptr) {
+                    result = len-i;
+                    break;
+                }
+            }
+        } else {
+            for (size_t i=0; i<len; i++) {
+                if (std::strchr(set, string[i]) == nullptr) {
+                    result = i+1;
+                    break;
+                }
+            }
+        }
+        
+        ASR::ttype_t* return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
+        return make_ConstantWithType(make_IntegerConstant_t, result, return_type, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_Verify(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_optimization_verify_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("y", arg_types[1]);
+        fill_func_arg("z", arg_types[2]);
+        auto result = declare(fn_name, int32, ReturnVar);
+        auto string = declare("string", arg_types[0], Local);
+        auto set = declare("set", arg_types[1], Local);
+        auto back = declare("back", arg_types[2], Local);
+        /*
+            function verify_(string, set, back, kind) result(r)
+                character(len=*) :: string
+                character(len=*) :: set
+                logical, optional :: back
+                integer(kind) :: r
+                integer :: i, j
+                logical :: back_val, matched
+
+                back_val = .false.
+                r = 0
+
+                if( present(back) ) then
+                    back_val = back
+                end if
+
+                if( back_val ) then
+                    do i = len(string), 1, -1
+                        matched = .false.
+                        do j = 1, len(set)
+                            if( string(i:i) == set(j:j) ) then
+                                matched = .true.
+                            end if
+                        end do
+                        if (.not. matched) then
+                            r = i
+                            return
+                        end if
+                    end do
+                else
+                    do i = 1, len(string), 1
+                        matched = .false.
+                        do j = 1, len(set)
+                            if( string(i:i) == set(j:j) ) then
+                                matched = .true.
+                            end if
+                        end do
+                        if (.not. matched) then
+                            r = i
+                            return
+                        end if
+                    end do
+                end if
+            end function
+        */
+        body.push_back(al, b.Assignment(string, args[0]));
+        body.push_back(al, b.Assignment(set, args[1]));
+        body.push_back(al, b.Assignment(back, args[2]));
+        body.push_back(al, b.Assignment(result, i32(0)));
+
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace Verify
 
 namespace MinExponent {
 

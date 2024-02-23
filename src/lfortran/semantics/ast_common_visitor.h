@@ -720,6 +720,7 @@ public:
         {"shape", {IntrinsicSignature({"source", "kind"}, 1, 2)}},
         {"mod", {IntrinsicSignature({"a", "p"}, 2, 2)}},
         {"repeat", {IntrinsicSignature({"string", "ncopies"}, 2, 2)}},
+        {"verify", {IntrinsicSignature({"string", "set", "back", "kind"}, 2, 4)}},
         {"hypot", {IntrinsicSignature({"x", "y"}, 2, 2)}},
         {"shiftr", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
         {"rshift", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
@@ -4358,6 +4359,7 @@ public:
             this->visit_expr(*x.m_keywords[i].m_value);
             args.p[kwarg_idx] = ASRUtils::EXPR(tmp);
         }
+        fill_optional_args(intrinsic_name, args, x.base.base.loc);
         return true;
     }
 
@@ -4951,6 +4953,25 @@ public:
                 int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
                 ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
                 args.push_back(al, i(kind, type));
+            }
+        }
+    }
+
+    void fill_optional_args(std::string intrinsic_name, Vec<ASR::expr_t*> &args, const Location &loc) {
+        if (intrinsic_name == "verify") {
+            ASR::ttype_t *bool_type = ASRUtils::TYPE(
+                    ASR::make_Logical_t(al, loc, 4));
+            ASR::ttype_t *int_type = ASRUtils::TYPE(
+                    ASR::make_Integer_t(al, loc, 4));
+            ASR::expr_t* f = ASRUtils::EXPR(
+                ASR::make_LogicalConstant_t(al, loc, false, bool_type));
+            ASR::expr_t* four = ASRUtils::EXPR(
+                ASR::make_IntegerConstant_t(al, loc, 4, int_type));
+            if (args[2] == nullptr) {
+                args.p[2] = f;
+            }
+            if (args[3] == nullptr) {
+                args.p[3] = four;
             }
         }
     }

@@ -58,6 +58,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Leadz)
         INTRINSIC_NAME_CASE(Digits)
         INTRINSIC_NAME_CASE(Repeat)
+        INTRINSIC_NAME_CASE(Verify)
         INTRINSIC_NAME_CASE(Range)
         INTRINSIC_NAME_CASE(Hypot)
         INTRINSIC_NAME_CASE(Selected_int_kind)
@@ -204,6 +205,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Digits::instantiate_Digits, &Digits::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Repeat),
             {&Repeat::instantiate_Repeat, &Repeat::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Verify),
+            {&Verify::instantiate_Verify, &Verify::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::MinExponent),
             {&MinExponent::instantiate_MinExponent, &MinExponent::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::MaxExponent),
@@ -407,6 +410,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "Digits"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Repeat),
             "Repeat"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Verify),
+            "Verify"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::MinExponent),
             "minexponent"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::MaxExponent),
@@ -567,6 +572,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"rank", {&Rank::create_Rank, &Rank::eval_Rank}},
                 {"digits", {&Digits::create_Digits, &Digits::eval_Digits}},
                 {"repeat", {&Repeat::create_Repeat, &Repeat::eval_Repeat}},
+                {"verify", {&Verify::create_Verify, &Verify::eval_Verify}},
                 {"minexponent", {&MinExponent::create_MinExponent, &MinExponent::eval_MinExponent}},
                 {"maxexponent", {&MaxExponent::create_MaxExponent, &MaxExponent::eval_MaxExponent}},
                 {"list.index", {&ListIndex::create_ListIndex, &ListIndex::eval_list_index}},
