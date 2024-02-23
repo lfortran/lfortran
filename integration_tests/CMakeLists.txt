@@ -658,6 +658,7 @@ RUN(NAME intrinsics_146 LABELS gfortran llvm) # dprod
 RUN(NAME intrinsics_147 LABELS gfortran llvm) # pack
 RUN(NAME intrinsics_148 LABELS gfortran llvm) # pack
 RUN(NAME intrinsics_149 LABELS gfortran llvm NOFAST) # unpack
+RUN(NAME intrinsics_150 LABELS gfortran llvm) # maskr
 RUN(NAME intrinsics_151 LABELS gfortran llvm NOFAST) # maskl
 RUN(NAME intrinsics_152 LABELS gfortran llvm) # dim
 
