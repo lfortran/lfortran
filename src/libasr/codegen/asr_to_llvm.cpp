@@ -4512,6 +4512,11 @@ public:
         strings_to_be_deallocated.push_back(al, tmp);
     }
 
+    void visit_OverloadedStringConcat(const ASR::OverloadedStringConcat_t &x) {
+        LCOMPILERS_ASSERT(x.m_overloaded != nullptr)
+        this->visit_expr(*x.m_overloaded);
+    }
+
     void visit_Assignment(const ASR::Assignment_t &x) {
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         if( x.m_overloaded ) {
