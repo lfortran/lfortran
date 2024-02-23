@@ -6527,10 +6527,16 @@ public:
             ASR::ttype_t* return_type = ASRUtils::get_FunctionType(func)->m_return_var_type;
             return_type = handle_return_type(return_type, x.base.base.loc, args, func);
             ASR::symbol_t* v = custom_op->m_procs[i];
-            v = current_scope->resolve_symbol(ASRUtils::symbol_name(v));
+            std::string func_name = ASRUtils::symbol_name(v);
+            v = current_scope->resolve_symbol(func_name);
+            if (v == nullptr) {
+                std::string mangled_name = func_name + "@~concat";
+                func_name = mangled_name;
+            }
+            v = current_scope->resolve_symbol(func_name);
             if( v == nullptr ) {
-                throw SemanticError(std::string(ASRUtils::symbol_name(v)) +
-                    " not found in current scope", v->base.loc);
+                throw SemanticError("'" + func_name +
+                    "' not found in current scope", v->base.loc);
             }
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
             ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
