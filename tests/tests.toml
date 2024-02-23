@@ -3770,3 +3770,39 @@ asr = true
 [[test]]
 filename = "errors/compare_01.f90"
 asr = true
+
+[[test]]
+filename = "errors/kind_string_of_int.f90"
+asr = true
+
+[[test]]
+filename = "errors/kind_float_of_int.f90"
+asr = true
+
+[[test]]
+filename = "errors/kind_var_of_int.f90"
+asr = true
+
+[[test]]
+filename = "errors/kind_invalid_int_of_int.f90"
+asr = true
+
+[[test]]
+filename = "errors/kind_invalid_int_of_logical.f90"
+asr = true
+
+[[test]]
+filename = "errors/kind_invalid_int_of_complex.f90"
+asr = true
+
+[[test]]
+filename = "errors/kind_star_of_int.f90"
+asr = true
+
+[[test]]
+filename = "errors/kind_star_of_complex.f90"
+asr = true
+
+[[test]]
+filename = "errors/kind_star_of_logical.f90"
+asr = true

@@ -523,6 +523,25 @@ namespace LCompilers {
             }, nullptr);
         }
 
+        ASR::stmt_t* create_do_loop_helper_unpack(Allocator &al, const Location &loc, std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* vector, ASR::expr_t* mask, ASR::expr_t* res, ASR::expr_t* idx, int curr_idx) {
+            ASRUtils::ASRBuilder b(al, loc);
+            if (curr_idx == 1) {
+                std::vector<ASR::expr_t*> vars;
+                for (size_t i = 0; i < do_loop_variables.size(); i++) {
+                    vars.push_back(do_loop_variables[i]);
+                }
+                return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(mask, 1), UBound(mask, 1), {
+                    b.If(b.ArrayItem_01(mask, vars), {
+                        b.Assignment(b.ArrayItem_01(res, vars), b.ArrayItem_01(vector, {idx})),
+                        b.Assignment(idx, b.Add(idx, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))))))
+                    }, {}),
+                }, nullptr);
+            }
+            return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(mask, curr_idx), UBound(mask, curr_idx), {
+                create_do_loop_helper_unpack(al, loc, do_loop_variables, vector, mask, res, idx, curr_idx - 1)
+            }, nullptr);
+        }
+
         // Imports the function from an already loaded ASR module
         ASR::symbol_t* import_function2(std::string func_name, std::string module_name,
                                        Allocator& al, ASR::TranslationUnit_t& unit,
