@@ -1348,7 +1348,7 @@ namespace Dim {
             double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
             double result;
             double zero = 0.0;
-            if(a > b){
+            if (a > b) {
                 result = a - b;
             } else {
                 result = zero;
@@ -1358,7 +1358,7 @@ namespace Dim {
         int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         int64_t result;
-        if(a > b){
+        if (a > b) {
             result = a - b;
         } else {
             result = 0;
@@ -1375,7 +1375,7 @@ namespace Dim {
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
         * r = Dim(x)
-        * if(x > y){
+        * if (x > y) {
         *   r = x - y
         * } else {
         *   r = 0

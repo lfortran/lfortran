@@ -1,6 +1,6 @@
 program intrinsic_152
     real :: i,j
-    real(8) :: x,y
+    double precision :: x,y
     integer :: a, b
     integer(8) :: c, d
     i = 30.0
@@ -13,10 +13,10 @@ program intrinsic_152
     d = 15
 
     print *, dim(i, j)
-    if (abs(dim(i, j) - (10.00000)) > 1e-5) error stop
+    if (abs(dim(i, j) - (10.00000_8)) > 1e-7_8) error stop
 
     print *, dim(x, y)
-    if (abs(dim(x, y) - (0.00000)) > 1e-5) error stop
+    if (abs(dim(x, y) - (0.0_8)) > 1e-7_8) error stop
 
     print *, dim(a, b)
     if (dim(a, b) /= 10) error stop
@@ -25,10 +25,10 @@ program intrinsic_152
     if (dim(c, d) /= 0) error stop
 
     print *, dim(30.0, 20.0)
-    if (abs(dim(30.0, 20.0) - (10.00000)) > 1e-5) error stop
+    if (abs(dim(30.0, 20.0) - (10.0_8)) > 1e-7_8) error stop
 
     print *, dim(10.0, 15.0)
-    if (abs(dim(10.0, 15.0) - (0.00000)) > 1e-5) error stop
+    if (abs(dim(10.0, 15.0) - (0.0_8)) > 1e-7_8) error stop
 
     print *, dim(30, 20)
     if (dim(30, 20) /= 10) error stop
