@@ -1,4 +1,4 @@
-program intrinsic_147
+program intrinsic_150
     integer :: a,b
     integer(8) :: c, d
     integer(8) :: result
@@ -40,19 +40,19 @@ program intrinsic_147
 
     result = maskr(10,8)
     print *, kind(result)
-    if(kind(result) /= 8) error stop
+    if (kind(result) /= 8) error stop
 
     print *, kind(maskr(10,8))
-    if(kind(maskr(10,8)) /= 8) error stop
+    if (kind(maskr(10,8)) /= 8) error stop
 
     print *, kind(maskr(10))
-    if(kind(maskr(10)) /= 4) error stop
+    if (kind(maskr(10)) /= 4) error stop
 
     print *, kind(maskr(a,4))
-    if(kind(maskr(a,4)) /= 4) error stop
+    if (kind(maskr(a,4)) /= 4) error stop
 
     print *, kind(maskr(a,8))
-    if(kind(maskr(a,8)) /= 8) error stop
+    if (kind(maskr(a,8)) /= 8) error stop
 
 
 end program

@@ -1798,10 +1798,10 @@ namespace Maskr {
             ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         int32_t kind = ASRUtils::extract_kind_from_ttype_t(t1);
         int64_t i = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        if(((kind==4) && i>32) || (kind==8 && i>64) || i<0) {
+        if (((kind == 4) && i > 32) || (kind == 8 && i > 64) || i < 0) {
                 return nullptr;
         }
-        if(i==64){
+        if(i == 64){
             return make_ConstantWithType(make_IntegerConstant_t, -1, t1, loc);
         }
         int64_t one = 1;
@@ -1824,7 +1824,7 @@ namespace Maskr {
         ASR::expr_t* minus_one = i(-1, return_type);
         ASR::expr_t *cast = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::IntegerToInteger, return_type, nullptr));
         body.push_back(al, b.If((iEq(cast, sixty_four)), {b.Assignment(result,minus_one)}, 
-        {b.Assignment(result, i_tSub(i_BitLshift(one, cast, return_type), one, return_type))}));
+            {b.Assignment(result, i_tSub(i_BitLshift(one, cast, return_type), one, return_type))}));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
