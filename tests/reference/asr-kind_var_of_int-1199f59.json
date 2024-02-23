@@ -1,0 +1,13 @@
+{
+    "basename": "asr-kind_var_of_int-1199f59",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/kind_var_of_int.f90",
+    "infile_hash": "c331e081883c4bb4f2213b9796727af46dfc4feb20a04ab7b4a87881",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-kind_var_of_int-1199f59.stderr",
+    "stderr_hash": "3f3a6b545dd15d259068cc59f9c6cd48f042c7a99cebbf83d6f74e15",
+    "returncode": 2
+}

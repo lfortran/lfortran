@@ -1,0 +1,13 @@
+{
+    "basename": "asr-kind_float_of_int-4b9cf53",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/kind_float_of_int.f90",
+    "infile_hash": "1162ce1a917f4ce2b50df7b8f496c081a1570e76122108e2108dc009",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-kind_float_of_int-4b9cf53.stderr",
+    "stderr_hash": "c1ad024cf2d249b3ba61aedc5efd83f1ef48165b33a491a871068198",
+    "returncode": 2
+}

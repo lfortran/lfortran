@@ -1,0 +1,5 @@
+semantic error: Expected initialization expression for kind
+ --> tests/errors/kind_star_of_complex.f90:3:13
+  |
+3 |     complex(*) a
+  |             ^ 
