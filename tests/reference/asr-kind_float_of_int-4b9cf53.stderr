@@ -1,0 +1,5 @@
+semantic error: Only Integer literals or expressions which reduce to constant Integer are accepted as kind parameters.
+ --> tests/errors/kind_float_of_int.f90:3:13
+  |
+3 |     integer(4.2) :: x
+  |             ^^^ 
