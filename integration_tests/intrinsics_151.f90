@@ -1,4 +1,4 @@
-program main
+program intrinsics_151
     integer :: a,b
     integer(8) :: c, d
     integer(8) :: result
@@ -40,18 +40,18 @@ program main
 
     result = maskl(10,8)
     print *, kind(result)
-    if(kind(result) /= 8) error stop
+    if (kind(result) /= 8) error stop
 
     print *, kind(maskl(10,8))
-    if(kind(maskl(10,8)) /= 8) error stop
+    if (kind(maskl(10,8)) /= 8) error stop
 
     print *, kind(maskl(10))
-    if(kind(maskl(10)) /= 4) error stop
+    if (kind(maskl(10)) /= 4) error stop
 
     print *, kind(maskl(a,4))
-    if(kind(maskl(a,4)) /= 4) error stop
+    if (kind(maskl(a,4)) /= 4) error stop
 
     print *, kind(maskl(a,8))
-    if(kind(maskl(a,8)) /= 8) error stop
+    if (kind(maskl(a,8)) /= 8) error stop
 
 end program

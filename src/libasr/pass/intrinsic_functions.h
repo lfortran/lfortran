@@ -1798,7 +1798,7 @@ namespace Maskl {
             ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         int32_t kind = ASRUtils::extract_kind_from_ttype_t(t1);
         int64_t i = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        if(((kind==4) && i>32) || (kind==8 && i>64) || i<0) {
+        if (((kind == 4) && i > 32) || (kind == 8 && i > 64) || i < 0) {
                 return nullptr;
         } else {
             int64_t one = 1;
@@ -1830,7 +1830,7 @@ namespace Maskl {
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
-}
+    }
 
 }  // namespace Maskl
 
