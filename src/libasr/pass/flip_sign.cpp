@@ -184,10 +184,9 @@ public:
         } else if( x.m_name ) {
             func_name = x.m_name;
         }
-        if( func_name && func_name->type == ASR::symbolType::ExternalSymbol ) {
-            ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(func_name);
-            if( std::string(ext_sym->m_original_name) == "modulo" &&
-                std::string(ext_sym->m_module_name) == "lfortran_intrinsic_math2" ) {
+        if( func_name && func_name-> type == ASR::symbolType::Function ) {
+            ASR::Function_t* func_sym = ASR::down_cast<ASR::Function_t>(func_name);
+            if (std::string(func_sym->m_name).find("modulo") != std::string::npos) {
                 is_function_modulo = true;
             }
         }
