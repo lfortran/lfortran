@@ -59,7 +59,8 @@ enum class IntrinsicElementalFunctions : int64_t {
     Digits,
     Repeat,
     Hypot,
-    Selected_int_kind,
+    SelectedIntKind,
+    SelectedRealKind,
     MinExponent,
     MaxExponent,
     FloorDiv,
@@ -2082,9 +2083,9 @@ namespace Hypot {
 
 } // namespace Hypot
 
-namespace Selected_int_kind {
+namespace SelectedIntKind {
 
-    static ASR::expr_t *eval_Selected_int_kind(Allocator &al, const Location &loc,
+    static ASR::expr_t *eval_SelectedIntKind(Allocator &al, const Location &loc,
             ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t val = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t result;
@@ -2100,7 +2101,7 @@ namespace Selected_int_kind {
         return i32(result);
     }
 
-    static inline ASR::expr_t* instantiate_Selected_int_kind(Allocator &al, const Location &loc,
+    static inline ASR::expr_t* instantiate_SelectedIntKind(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("");
@@ -2127,7 +2128,70 @@ namespace Selected_int_kind {
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
-} // namespace Selected_int_kind
+} // namespace SelectedIntKind
+
+namespace SelectedRealKind {
+
+    static inline ASR::expr_t *eval_SelectedRealKind(Allocator &al, const Location &loc,
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        int64_t kind;
+        int64_t p = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        int64_t r = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        int64_t radix = ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n;
+        
+        if (p < 7 && r < 38 && radix == 2) {
+            kind = 4;
+        } else if (p < 16 && r < 308 && radix == 2) {
+            kind = 8;
+        } else if (radix != 2) {
+            kind = -5;
+        } else {
+            kind = -1;
+        }
+        return i32(kind);
+    }
+
+    static inline ASR::expr_t* instantiate_SelectedRealKind(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("");
+        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("y", arg_types[1]);
+        fill_func_arg("z", arg_types[2]);
+        auto result = declare(fn_name, int32, ReturnVar);
+        auto p = declare("p", arg_types[0], Local);
+        auto r = declare("r", arg_types[1], Local);
+        auto radix = declare("radix", arg_types[2], Local);
+        
+        body.push_back(al, b.Assignment(p, args[0]));
+        body.push_back(al, b.Assignment(r, args[1]));
+        body.push_back(al, b.Assignment(radix, args[2]));
+        
+        ASR::expr_t *cond1 = And(And(iLt(p, i(7, arg_types[0])), iLt(r, i(38, arg_types[1]))), iEq(radix, i(2, arg_types[2])));
+        ASR::expr_t *cond2 = And(And(iLt(p, i(15, arg_types[0])), iLt(r, i(308, arg_types[1]))), iEq(radix, i(2, arg_types[2])));
+        ASR::expr_t *cond3 = iNotEq(radix, i(2, arg_types[2]));
+
+        body.push_back(al, b.If(cond1, {
+            b.Assignment(result, i(4, int32))
+        }, {
+            b.If(cond2, {
+                b.Assignment(result, i(8, int32))
+            }, {
+                b.If(cond3, {
+                    b.Assignment(result, i(-5, int32))
+                }, {
+                    b.Assignment(result, i(-1, int32))
+                })
+            })
+        }));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace SelectedRealKind
 
 namespace Kind {
 

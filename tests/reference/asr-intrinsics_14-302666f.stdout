@@ -30,7 +30,7 @@
                                     []
                                     Local
                                     (IntrinsicElementalFunction
-                                        Selected_int_kind
+                                        SelectedIntKind
                                         [(IntegerConstant 5 (Integer 4))]
                                         0
                                         (Integer 4)
@@ -77,13 +77,14 @@
                                     k11
                                     []
                                     Local
-                                    (FunctionCall
-                                        2 selected_real_kind
-                                        ()
-                                        [((IntegerConstant 5 (Integer 4)))]
+                                    (IntrinsicElementalFunction
+                                        SelectedRealKind
+                                        [(IntegerConstant 5 (Integer 4))
+                                        (IntegerConstant 0 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4))]
+                                        0
                                         (Integer 4)
                                         (IntegerConstant 4 (Integer 4))
-                                        ()
                                     )
                                     (IntegerConstant 4 (Integer 4))
                                     Parameter
@@ -100,13 +101,14 @@
                                     k12
                                     []
                                     Local
-                                    (FunctionCall
-                                        2 selected_real_kind
-                                        ()
-                                        [((IntegerConstant 10 (Integer 4)))]
+                                    (IntrinsicElementalFunction
+                                        SelectedRealKind
+                                        [(IntegerConstant 10 (Integer 4))
+                                        (IntegerConstant 0 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4))]
+                                        0
                                         (Integer 4)
                                         (IntegerConstant 8 (Integer 4))
-                                        ()
                                     )
                                     (IntegerConstant 8 (Integer 4))
                                     Parameter
@@ -124,7 +126,7 @@
                                     []
                                     Local
                                     (IntrinsicElementalFunction
-                                        Selected_int_kind
+                                        SelectedIntKind
                                         [(IntegerConstant 5 (Integer 4))]
                                         0
                                         (Integer 4)
@@ -146,7 +148,7 @@
                                     []
                                     Local
                                     (IntrinsicElementalFunction
-                                        Selected_int_kind
+                                        SelectedIntKind
                                         [(IntegerConstant 5 (Integer 8))]
                                         0
                                         (Integer 4)
@@ -168,7 +170,7 @@
                                     []
                                     Local
                                     (IntrinsicElementalFunction
-                                        Selected_int_kind
+                                        SelectedIntKind
                                         [(IntegerConstant 8 (Integer 4))]
                                         0
                                         (Integer 4)
@@ -190,7 +192,7 @@
                                     []
                                     Local
                                     (IntrinsicElementalFunction
-                                        Selected_int_kind
+                                        SelectedIntKind
                                         [(IntegerConstant 10 (Integer 4))]
                                         0
                                         (Integer 4)
@@ -211,13 +213,14 @@
                                     k6
                                     []
                                     Local
-                                    (FunctionCall
-                                        2 selected_real_kind
-                                        ()
-                                        [((IntegerConstant 5 (Integer 4)))]
+                                    (IntrinsicElementalFunction
+                                        SelectedRealKind
+                                        [(IntegerConstant 5 (Integer 4))
+                                        (IntegerConstant 0 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4))]
+                                        0
                                         (Integer 4)
                                         (IntegerConstant 4 (Integer 4))
-                                        ()
                                     )
                                     (IntegerConstant 4 (Integer 4))
                                     Parameter
@@ -234,13 +237,14 @@
                                     k7
                                     []
                                     Local
-                                    (FunctionCall
-                                        2 selected_real_kind
-                                        ()
-                                        [((IntegerConstant 5 (Integer 4)))]
+                                    (IntrinsicElementalFunction
+                                        SelectedRealKind
+                                        [(IntegerConstant 5 (Integer 4))
+                                        (IntegerConstant 0 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4))]
+                                        0
                                         (Integer 4)
                                         (IntegerConstant 4 (Integer 4))
-                                        ()
                                     )
                                     (IntegerConstant 4 (Integer 4))
                                     Parameter
@@ -257,13 +261,14 @@
                                     k8
                                     []
                                     Local
-                                    (FunctionCall
-                                        2 selected_real_kind
-                                        ()
-                                        [((IntegerConstant 5 (Integer 8)))]
+                                    (IntrinsicElementalFunction
+                                        SelectedRealKind
+                                        [(IntegerConstant 5 (Integer 8))
+                                        (IntegerConstant 0 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4))]
+                                        0
                                         (Integer 4)
                                         (IntegerConstant 4 (Integer 4))
-                                        ()
                                     )
                                     (IntegerConstant 4 (Integer 4))
                                     Parameter
@@ -280,13 +285,14 @@
                                     k9
                                     []
                                     Local
-                                    (FunctionCall
-                                        2 selected_real_kind
-                                        ()
-                                        [((IntegerConstant 8 (Integer 4)))]
+                                    (IntrinsicElementalFunction
+                                        SelectedRealKind
+                                        [(IntegerConstant 8 (Integer 4))
+                                        (IntegerConstant 0 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4))]
+                                        0
                                         (Integer 4)
                                         (IntegerConstant 8 (Integer 4))
-                                        ()
                                     )
                                     (IntegerConstant 8 (Integer 4))
                                     Parameter
@@ -322,16 +328,6 @@
                                     []
                                     selected_char_kind
                                     Private
-                                ),
-                            selected_real_kind:
-                                (ExternalSymbol
-                                    2
-                                    selected_real_kind
-                                    4 selected_real_kind
-                                    lfortran_intrinsic_kind
-                                    []
-                                    selected_real_kind
-                                    Private
                                 )
                         })
                     intrinsics_14
@@ -351,7 +347,7 @@
                     )
                     (Print
                         [(IntrinsicElementalFunction
-                            Selected_int_kind
+                            SelectedIntKind
                             [(IntegerConstant 5 (Integer 4))]
                             0
                             (Integer 4)
@@ -363,7 +359,7 @@
                     )
                     (Print
                         [(IntrinsicElementalFunction
-                            Selected_int_kind
+                            SelectedIntKind
                             [(IntegerConstant 5 (Integer 4))]
                             0
                             (Integer 4)
@@ -375,7 +371,7 @@
                     )
                     (Print
                         [(IntrinsicElementalFunction
-                            Selected_int_kind
+                            SelectedIntKind
                             [(IntegerConstant 5 (Integer 8))]
                             0
                             (Integer 4)
@@ -387,7 +383,7 @@
                     )
                     (Print
                         [(IntrinsicElementalFunction
-                            Selected_int_kind
+                            SelectedIntKind
                             [(IntegerConstant 8 (Integer 4))]
                             0
                             (Integer 4)
@@ -399,7 +395,7 @@
                     )
                     (Print
                         [(IntrinsicElementalFunction
-                            Selected_int_kind
+                            SelectedIntKind
                             [(IntegerConstant 10 (Integer 4))]
                             0
                             (Integer 4)
@@ -410,52 +406,56 @@
                         ()
                     )
                     (Print
-                        [(FunctionCall
-                            2 selected_real_kind
-                            ()
-                            [((IntegerConstant 5 (Integer 4)))]
+                        [(IntrinsicElementalFunction
+                            SelectedRealKind
+                            [(IntegerConstant 5 (Integer 4))
+                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))]
+                            0
                             (Integer 4)
                             (IntegerConstant 4 (Integer 4))
-                            ()
                         )
                         (Var 2 k6)]
                         ()
                         ()
                     )
                     (Print
-                        [(FunctionCall
-                            2 selected_real_kind
-                            ()
-                            [((IntegerConstant 5 (Integer 4)))]
+                        [(IntrinsicElementalFunction
+                            SelectedRealKind
+                            [(IntegerConstant 5 (Integer 4))
+                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))]
+                            0
                             (Integer 4)
                             (IntegerConstant 4 (Integer 4))
-                            ()
                         )
                         (Var 2 k7)]
                         ()
                         ()
                     )
                     (Print
-                        [(FunctionCall
-                            2 selected_real_kind
-                            ()
-                            [((IntegerConstant 5 (Integer 8)))]
+                        [(IntrinsicElementalFunction
+                            SelectedRealKind
+                            [(IntegerConstant 5 (Integer 8))
+                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))]
+                            0
                             (Integer 4)
                             (IntegerConstant 4 (Integer 4))
-                            ()
                         )
                         (Var 2 k8)]
                         ()
                         ()
                     )
                     (Print
-                        [(FunctionCall
-                            2 selected_real_kind
-                            ()
-                            [((IntegerConstant 8 (Integer 4)))]
+                        [(IntrinsicElementalFunction
+                            SelectedRealKind
+                            [(IntegerConstant 8 (Integer 4))
+                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))]
+                            0
                             (Integer 4)
                             (IntegerConstant 8 (Integer 4))
-                            ()
                         )
                         (Var 2 k9)]
                         ()
@@ -479,7 +479,7 @@
                     )
                     (Print
                         [(IntrinsicElementalFunction
-                            Selected_int_kind
+                            SelectedIntKind
                             [(Var 2 i1)]
                             0
                             (Integer 4)
@@ -489,12 +489,13 @@
                         ()
                     )
                     (Print
-                        [(FunctionCall
-                            2 selected_real_kind
-                            ()
-                            [((Var 2 i1))]
+                        [(IntrinsicElementalFunction
+                            SelectedRealKind
+                            [(Var 2 i1)
+                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))]
+                            0
                             (Integer 4)
-                            ()
                             ()
                         )]
                         ()
@@ -513,26 +514,28 @@
                         ()
                     )
                     (Print
-                        [(FunctionCall
-                            2 selected_real_kind
-                            ()
-                            [((IntegerConstant 5 (Integer 4)))]
+                        [(IntrinsicElementalFunction
+                            SelectedRealKind
+                            [(IntegerConstant 5 (Integer 4))
+                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))]
+                            0
                             (Integer 4)
                             (IntegerConstant 4 (Integer 4))
-                            ()
                         )
                         (Var 2 k11)]
                         ()
                         ()
                     )
                     (Print
-                        [(FunctionCall
-                            2 selected_real_kind
-                            ()
-                            [((IntegerConstant 10 (Integer 4)))]
+                        [(IntrinsicElementalFunction
+                            SelectedRealKind
+                            [(IntegerConstant 10 (Integer 4))
+                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))]
+                            0
                             (Integer 4)
                             (IntegerConstant 8 (Integer 4))
-                            ()
                         )
                         (Var 2 k12)]
                         ()
