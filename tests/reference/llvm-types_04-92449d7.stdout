@@ -68,7 +68,7 @@ define i32 @main(i32 %0, i8** %1) {
   store float %46, float* %x, align 4
   %47 = load i32, i32* %i, align 4
   %48 = load i32, i32* %i, align 4
-  %49 = udiv i32 %47, %48
+  %49 = sdiv i32 %47, %48
   %50 = sitofp i32 %49 to float
   store float %50, float* %x, align 4
   %51 = load float, float* %r, align 4

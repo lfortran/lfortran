@@ -263,6 +263,7 @@ RUN(NAME expr_16 LABELS gfortran llvm wasm c)
 RUN(NAME expr_17 LABELS gfortran llvm)
 RUN(NAME expr_18 LABELS gfortran llvm wasm c)
 RUN(NAME expr_19 LABELS gfortran llvm wasm c)
+RUN(NAME expr_20 LABELS gfortran llvm wasm c)
 
 RUN(NAME data_01 LABELS gfortran llvm c fortran)
 RUN(NAME data_02 LABELS gfortran)
