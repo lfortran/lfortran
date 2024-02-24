@@ -93,6 +93,11 @@ private:
 public:
     diag::Diagnostics &diag;
     Platform platform;
+    // `src` acts as a buffer that accumulates the generated C/C++ source code
+    // as the visitor traverses all the ASR nodes of a program. Each visitor method
+    // uses `src` to return the result, and the caller visitor uses `src` as the
+    // value of the callee visitors it calls. The C/C++ complete source code
+    // is then recursively constructed using `src`.
     std::string src;
     std::string current_body;
     CompilerOptions &compiler_options;
