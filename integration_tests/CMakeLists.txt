@@ -988,6 +988,7 @@ RUN(NAME string_29 LABELS gfortran llvm)
 COMPILE(NAME string_30 COMPILERS gfortran lfortran)
 RUN(NAME string_31 LABELS gfortran llvm)
 RUN(NAME string_32 LABELS gfortran llvm)
+RUN(NAME string_33 LABELS gfortran llvm)
 
 RUN(NAME nested_01 LABELS gfortran llvm)
 RUN(NAME nested_02 LABELS gfortran llvm)
