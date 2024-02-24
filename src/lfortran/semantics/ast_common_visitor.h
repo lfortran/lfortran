@@ -733,6 +733,7 @@ public:
         {"maskr", {IntrinsicSignature({"i", "kind"}, 1, 2)}},
         {"maskl", {IntrinsicSignature({"i", "kind"}, 1, 2)}},
         {"dim", {IntrinsicSignature({"X", "Y"}, 2, 2)}},
+        {"selected_real_kind", {IntrinsicSignature({"p", "r", "radix"}, 0, 3)}},
     };
 
     std::map<std::string, std::string> intrinsic_mapping = {
@@ -4330,7 +4331,6 @@ public:
             this->visit_expr(*x.m_args[i].m_end);
             args.p[i] = ASRUtils::EXPR(tmp);
         }
-
         for( size_t i = 0; i < x.n_keywords; i++ ) {
             std::string curr_kwarg_name = to_lower(x.m_keywords[i].m_arg);
             if( std::find(kwarg_names.begin(), kwarg_names.end(),
@@ -4361,6 +4361,7 @@ public:
             this->visit_expr(*x.m_keywords[i].m_value);
             args.p[kwarg_idx] = ASRUtils::EXPR(tmp);
         }
+        fill_optional_args(intrinsic_name, args, x.base.base.loc);
         return true;
     }
 
@@ -4588,7 +4589,7 @@ public:
         handle_intrinsic_node_args(x, args, kwarg_names, 2, 3, "transfer");
         ASR::expr_t *source = args[0], *mold = args[1], *size = args[2];
         if( size && !ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(size)) ) {
-            throw SemanticError("size argument to transfer intrinsic must "
+            throw SemanticError("size argument to `transfer` intrinsic must "
                                 "be of Integer type.",
                                 size->base.loc);
         }
@@ -4633,9 +4634,14 @@ public:
         std::vector<std::string> kwarg_names = {"x", "y", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 3, "cmplx");
         ASR::expr_t *x_ = args[0], *y_ = args[1], *kind = args[2];
+        if (x_ == nullptr) {
+            throw SemanticError("The first argument of `cmplx` intrinsic"
+                                " must be present",
+                                x.base.base.loc);
+        }
         if( ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(x_)) ) {
             if( y_ != nullptr ) {
-                throw SemanticError("The first argument of cmplx intrinsic"
+                throw SemanticError("The first argument of `cmplx` intrinsic"
                                     " is of complex type, the second argument "
                                     "in this case must be absent",
                                     x.base.base.loc);
@@ -4700,7 +4706,7 @@ public:
         ASR::expr_t *x_ = args[0], *y_ = args[1];
         if( ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(x_)) ) {
             if( y_ != nullptr ) {
-                throw SemanticError("The first argument of dcmplx intrinsic"
+                throw SemanticError("The first argument of `dcmplx` intrinsic"
                                     " is of complex type, the second argument "
                                     "in this case must be absent",
                                     x.base.base.loc);
@@ -4958,6 +4964,28 @@ public:
         }
     }
 
+    void fill_optional_args(std::string intrinsic_name, Vec<ASR::expr_t*> &args, const Location &loc) {
+        if (intrinsic_name == "selected_real_kind") {
+            ASR::ttype_t *int_type = ASRUtils::TYPE(
+                    ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
+            ASR::expr_t* zero = ASRUtils::EXPR(
+                ASR::make_IntegerConstant_t(al, loc, 0,
+                                                int_type));
+            ASR::expr_t* two = ASRUtils::EXPR(
+                ASR::make_IntegerConstant_t(al, loc, 2,
+                                                int_type));
+            if (args[0] == nullptr) {
+                args.p[0] = zero;
+            }
+            if (args[1] == nullptr) {
+                args.p[1] = zero;
+            }
+            if (args[2] == nullptr) {
+                args.p[2] = two;
+            }
+        }
+    }
+
     ASR::symbol_t* intrinsic_as_node(const AST::FuncCallOrArray_t &x,
                                      bool& is_function) {
         std::string var_name = to_lower(x.m_func);
@@ -4988,6 +5016,7 @@ public:
                 }
                 if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ){
                     fill_optional_kind_arg(var_name, args);
+                    
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
                     tmp = create_func(al, x.base.base.loc, args, diag);
@@ -6528,10 +6557,16 @@ public:
             ASR::ttype_t* return_type = ASRUtils::get_FunctionType(func)->m_return_var_type;
             return_type = handle_return_type(return_type, x.base.base.loc, args, func);
             ASR::symbol_t* v = custom_op->m_procs[i];
-            v = current_scope->resolve_symbol(ASRUtils::symbol_name(v));
+            std::string func_name = ASRUtils::symbol_name(v);
+            v = current_scope->resolve_symbol(func_name);
+            if (v == nullptr) {
+                std::string mangled_name = func_name + "@~concat";
+                func_name = mangled_name;
+            }
+            v = current_scope->resolve_symbol(func_name);
             if( v == nullptr ) {
-                throw SemanticError(std::string(ASRUtils::symbol_name(v)) +
-                    " not found in current scope", v->base.loc);
+                throw SemanticError("'" + func_name +
+                    "' not found in current scope", v->base.loc);
             }
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
             ASRUtils::insert_module_dependency(v, al, current_module_dependencies);

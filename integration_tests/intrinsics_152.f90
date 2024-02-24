@@ -1,62 +1,59 @@
-program intrinsic_152
-    real :: i,j
-    double precision :: x,y
-    integer :: a, b
-    integer(8) :: c, d
-    double precision :: res_dp
-    integer, parameter :: dp = kind(0.d0)
-    i = 30.0
-    j = 20.0
-    x = 10.0
-    y = 15.0
-    a = 30
-    b = 20
-    c = 10
-    d = 15
+program intrinsics_152
+    integer :: k1= 5
+    integer :: k2= 5_4
+    integer :: k3= 58_8
+    integer :: k4= 8
+    integer :: k5 = 9
+    integer :: k6 = 2
 
-    res_dp = dim(i, j)
-    print *, res_dp
-    if (abs(res_dp - (10.0_dp)) > 1e-7_dp) error stop
+    integer, parameter :: sp = selected_real_kind(6,37)
+    integer, parameter :: dp = selected_real_kind(15,307)
+    
+    print*, sp
+    if (sp /= 4) error stop
+    print*, dp
+    if (dp /= 8) error stop
 
-    res_dp = dim(x, y)
-    print *, res_dp
-    if (abs(res_dp - (0.0_dp)) > 1e-7_dp) error stop
+    print*, selected_real_kind()
+    if (selected_real_kind() /= 4) error stop
+    print*, selected_real_kind(1, 5)
+    if (selected_real_kind(1, 5) /= 4) error stop
+    print*, selected_real_kind(3, 32)
+    if (selected_real_kind(3, 32) /= 4) error stop
+    print*, selected_real_kind(5, 39)
+    if (selected_real_kind(5, 39) /= 8) error stop
+    print*, selected_real_kind(6, 51)
+    if (selected_real_kind(6, 51) /= 8) error stop
+    print*, selected_real_kind(7, 2)
+    if (selected_real_kind(7, 2) /= 8) error stop
+    print*, selected_real_kind(9, 1)
+    if (selected_real_kind(9, 1) /= 8) error stop
+    print*, selected_real_kind(12, 33)
+    if (selected_real_kind(12, 33) /= 8) error stop
+    print*, selected_real_kind(14, 32)
+    if (selected_real_kind(14, 32) /= 8) error stop
+    print*, selected_real_kind(7, 38, 2)
+    if (selected_real_kind(7, 38, 2) /= 8) error stop
+    print*, selected_real_kind(8, 38, 3)
+    if (selected_real_kind(8, 38, 3) /= -5) error stop
+    print*, selected_real_kind(9, 38, 2)
+    if (selected_real_kind(9, 39, 2) /= 8) error stop
+    print*, selected_real_kind(16, 37) ! output form lfortran is 8 whereas gfortran is 10
+    print*, selected_real_kind(17, 37) ! output form lfortran is 8 whereas gfortran is 10
 
-    print *, dim(a, b)
-    if (dim(a, b) /= 10) error stop
+    print*, selected_real_kind(k1)
+    if (selected_real_kind(k1) /= 4) error stop
+    print*, selected_real_kind(k2)
+    if (selected_real_kind(k2) /= 4) error stop
+    print*, selected_real_kind(k1, k3)
+    if (selected_real_kind(k1, k3) /= 8) error stop
+    print*, selected_real_kind(k5, k4)
+    if (selected_real_kind(k5, k4) /= 8) error stop
+    print*, selected_real_kind(k1, k5)
+    if (selected_real_kind(k1, k5) /= 4) error stop
+    print*, selected_real_kind(k5, k2, k6)
+    if (selected_real_kind(k5, k2, k6) /= 8) error stop
+    print*, selected_real_kind(k5, k2, 3)
+    if (selected_real_kind(k5, k2, 3) /= -5) error stop
 
-    print *, dim(c, d)
-    if (dim(c, d) /= 0) error stop
-
-    res_dp = dim(30.0, 20.0)
-    print *, res_dp
-    if (abs(res_dp - (10.0_dp)) > 1e-7_dp) error stop
-
-    print *, dim(10.0, 15.0)
-    if (abs(dim(10.0, 15.0) - (0.0_dp)) > 1e-7_dp) error stop
-
-    print *, dim(30, 20)
-    if (dim(30, 20) /= 10) error stop
-
-    print *, dim(10, 15)
-    if (dim(10, 15) /= 0) error stop
-
-    print *, kind(dim(30, 20))
-    if (kind(dim(30, 20)) /= 4) error stop
-
-    print *, kind(dim(10_8, 15_8))
-    if (kind(dim(10_8, 15_8)) /= 8) error stop
-
-    print *, kind(dim(i, j))
-    if (kind(dim(i, j)) /= 4) error stop
-
-    print *, kind(dim(a, b))
-    if (kind(dim(a, b)) /= 4) error stop
-
-    print *, kind(dim(c, d))
-    if (kind(dim(c, d)) /= 8) error stop
-
-    print *, kind(dim(x, y))
-    if (kind(dim(x, y)) /= 8) error stop
-
-end program
+end    

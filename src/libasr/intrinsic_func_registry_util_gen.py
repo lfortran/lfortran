@@ -50,9 +50,15 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         }
     ],
-    "Selected_int_kind": [
+    "SelectedIntKind": [
         {
             "args": [("int",)],
+            "return": "int32"
+        }
+    ],
+    "SelectedRealKind": [
+        {
+            "args": [("int", "int", "int")],
             "return": "int32"
         }
     ],

@@ -660,7 +660,8 @@ RUN(NAME intrinsics_148 LABELS gfortran llvm) # pack
 RUN(NAME intrinsics_149 LABELS gfortran llvm NOFAST) # unpack
 RUN(NAME intrinsics_150 LABELS gfortran llvm) # maskr
 RUN(NAME intrinsics_151 LABELS gfortran llvm NOFAST) # maskl
-RUN(NAME intrinsics_152 LABELS gfortran llvm) # dim
+RUN(NAME intrinsics_152 LABELS gfortran llvm) # selected_real_kind
+RUN(NAME intrinsics_153 LABELS gfortran llvm) # dim
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
@@ -988,6 +989,7 @@ RUN(NAME string_28 LABELS gfortran llvm)
 RUN(NAME string_29 LABELS gfortran llvm)
 COMPILE(NAME string_30 COMPILERS gfortran lfortran)
 RUN(NAME string_31 LABELS gfortran llvm)
+RUN(NAME string_32 LABELS gfortran llvm)
 
 RUN(NAME nested_01 LABELS gfortran llvm)
 RUN(NAME nested_02 LABELS gfortran llvm)
