@@ -8,7 +8,7 @@ program intrinsics_152
 
     integer, parameter :: sp = selected_real_kind(6,37)
     integer, parameter :: dp = selected_real_kind(15,307)
-    
+
     print*, sp
     if (sp /= 4) error stop
     print*, dp
@@ -56,4 +56,4 @@ program intrinsics_152
     print*, selected_real_kind(k5, k2, 3)
     if (selected_real_kind(k5, k2, 3) /= -5) error stop
 
-end    
+end
