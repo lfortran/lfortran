@@ -1357,6 +1357,7 @@ namespace Dim {
             }
             return make_ConstantWithType(make_RealConstant_t, result, t1, loc);
         }
+        LCOMPILERS_ASSERT(is_integer(*t1));
         int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         int64_t result;
@@ -1391,6 +1392,7 @@ namespace Dim {
                 b.Assignment(result, zero)
             }));
         } else {
+            LCOMPILERS_ASSERT(is_integer(*arg_types[0]));
             ASR::expr_t *zero = i(0, arg_types[0]);
             body.push_back(al, b.If(iGt(args[0], args[1]), {
                 b.Assignment(result, i_tSub(args[0], args[1], arg_types[0]))
