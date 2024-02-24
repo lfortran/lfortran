@@ -6046,7 +6046,7 @@ public:
     }
 
     template <typename T>
-    void handle_SU_IntegerBinOp(const T &x) {
+    void handle_SU_IntegerBinOp(const T &x, bool signed_int) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -6071,7 +6071,11 @@ public:
                 break;
             };
             case ASR::binopType::Div: {
-                tmp = builder->CreateUDiv(left_val, right_val);
+                if (signed_int) {
+                    tmp = builder->CreateSDiv(left_val, right_val);
+                } else {
+                    tmp = builder->CreateUDiv(left_val, right_val);
+                }
                 break;
             };
             case ASR::binopType::Pow: {
@@ -6125,11 +6129,11 @@ public:
     }
 
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
-        handle_SU_IntegerBinOp(x);
+        handle_SU_IntegerBinOp(x, true);
     }
 
     void visit_UnsignedIntegerBinOp(const ASR::UnsignedIntegerBinOp_t &x) {
-        handle_SU_IntegerBinOp(x);
+        handle_SU_IntegerBinOp(x, false);
     }
 
     void visit_RealBinOp(const ASR::RealBinOp_t &x) {
