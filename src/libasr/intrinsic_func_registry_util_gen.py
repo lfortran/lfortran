@@ -266,6 +266,12 @@ intrinsic_funcs_args = {
             "return": "real64"
         }
     ],
+    "Dim": [
+        {
+            "args": [("int", "int"), ("real", "real")],
+            "ret_type_arg_idx": 0
+        },
+    ],
     "Maskl": [
         {
             "args": [("int",)],

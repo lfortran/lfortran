@@ -191,6 +191,8 @@ class ASRBuilder {
             ASR::binopType::Sub, right, real64, nullptr))
     #define i_tSub(left, right, t) EXPR(ASR::make_IntegerBinOp_t(al, loc, left, \
             ASR::binopType::Sub, right, t, nullptr))
+    #define r_tSub(left, right, t) EXPR(ASR::make_RealBinOp_t(al, loc, left, \
+            ASR::binopType::Sub, right, t, nullptr))
 
     #define iDiv(left, right) r2i32(EXPR(ASR::make_RealBinOp_t(al, loc,         \
             i2r32(left), ASR::binopType::Div, i2r32(right), real32, nullptr)))

@@ -84,6 +84,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Nint,
     Aint,
     Anint,
+    Dim,
     Sqrt,
     Sngl,
     Ifix,
@@ -1339,6 +1340,74 @@ namespace Ceiling {
     }
 
 } // namespace Ceiling
+
+namespace Dim {
+
+    static ASR::expr_t *eval_Dim(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        if (is_real(*t1)) {
+            double a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+            double result;
+            double zero = 0.0;
+            if (a > b) {
+                result = a - b;
+            } else {
+                result = zero;
+            }
+            return make_ConstantWithType(make_RealConstant_t, result, t1, loc);
+        }
+        LCOMPILERS_ASSERT(is_integer(*t1));
+        int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        int64_t b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        int64_t result;
+        if (a > b) {
+            result = a - b;
+        } else {
+            result = 0;
+        }
+        return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_Dim(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_Dim_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("y", arg_types[1]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        /*
+        * r = Dim(x)
+        * if (x > y) {
+        *   r = x - y
+        * } else {
+        *   r = 0
+        * }
+        */
+        if (is_real(*arg_types[0])) {
+            ASR::expr_t *zero = f(0.0, arg_types[0]);
+            body.push_back(al, b.If(fGt(args[0], args[1]), {
+                b.Assignment(result, r_tSub(args[0], args[1], arg_types[0]))
+            }, {
+                b.Assignment(result, zero)
+            }));
+        } else {
+            LCOMPILERS_ASSERT(is_integer(*arg_types[0]));
+            ASR::expr_t *zero = i(0, arg_types[0]);
+            body.push_back(al, b.If(iGt(args[0], args[1]), {
+                b.Assignment(result, i_tSub(args[0], args[1], arg_types[0]))
+            }, {
+                b.Assignment(result, zero)
+            }));
+        }
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+
+    }
+
+} // namespace Dim
 
 namespace Sqrt {
 
