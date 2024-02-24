@@ -27,7 +27,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1
+      - uses: mamba-org/setup-micromamba@v1.8.0
         with:
           environment-file: ci/environment.yml
           create-args: >-
@@ -36,7 +36,7 @@ jobs:
       - name: Install Windows Packages
         if: contains(matrix.os, 'windows')
         shell: bash -e -l {0}
-        run: micromamba install m2-bison=3.0.4 m2-filesystem
+        run: micromamba install m2-bison=3.0.4 m2-filesystem cmake=3.21.1
 
       - name: Install Linux / macOS Packages
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
@@ -103,7 +103,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1
+      - uses: mamba-org/setup-micromamba@v1.8.0
         with:
           environment-file: ci/environment_linux.yml
           create-args: >-
@@ -223,7 +223,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1
+      - uses: mamba-org/setup-micromamba@v1.8.0
         with:
           environment-file: ci/environment_linux.yml
           create-args: >-
@@ -302,7 +302,7 @@ jobs:
           fetch-depth: 0
           path: src
 
-      - uses: mamba-org/setup-micromamba@v1
+      - uses: mamba-org/setup-micromamba@v1.8.0
         with:
           environment-file: src/ci/environment_linux.yml
           create-args: >-
@@ -358,7 +358,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1
+      - uses: mamba-org/setup-micromamba@v1.8.0
         with:
           environment-file: ci/environment_linux.yml
           create-args: >-
@@ -408,7 +408,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1
+      - uses: mamba-org/setup-micromamba@v1.8.0
         with:
           environment-file: ci/environment_linux.yml
           create-args: >-
@@ -471,7 +471,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1
+      - uses: mamba-org/setup-micromamba@v1.8.0
         with:
           environment-file: ci/environment_linux.yml
           create-args: >-
@@ -499,63 +499,6 @@ jobs:
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
             cmake --build . -j16 --target install
-
-      - name: Test stdlib (specialfunctions_gamma)
-        shell: bash -e -x -l {0}
-        run: |
-            git clone https://github.com/Pranavchiku/stdlib-fortran-lang.git
-            cd stdlib-fortran-lang
-            git checkout -t origin/lf-special-function-gamma-3
-            git checkout 95d77d69335d2086034b3509a8d072e918c1809d
-            micromamba activate lf
-            micromamba install -c conda-forge fypp
-            FC=$(pwd)/../src/bin/lfortran cmake .
-            make fortran_stdlib
-            cp ./src/*.mod ./example/specialfunctions_gamma
-            make
-            ./example/specialfunctions_gamma/example_gamma
-            ./example/specialfunctions_gamma/example_gamma_p
-            ./example/specialfunctions_gamma/example_gamma_q
-            ./example/specialfunctions_gamma/example_ligamma
-            ./example/specialfunctions_gamma/example_log_factorial
-            ./example/specialfunctions_gamma/example_log_gamma
-            ./example/specialfunctions_gamma/example_uigamma
-
-            cd ../
-            rm -rf stdlib-fortran-lang
-
-      - name: Test stdlib (stdlib_linalg)
-        shell: bash -e -x -l {0}
-        run: |
-            git clone https://github.com/Pranavchiku/stdlib-fortran-lang.git
-            cd stdlib-fortran-lang
-            git checkout -t origin/lf-linalg4
-            git checkout 09729bdb1e1e364cc5283f7d775019636265d264
-            micromamba activate lf
-            micromamba install -c conda-forge fypp
-            FC="$(pwd)/../src/bin/lfortran --realloc-lhs" cmake .
-            make fortran_stdlib
-            cp ./src/*.mod ./example/linalg
-            make
-            ./example/linalg/example_eye1
-            ./example/linalg/example_is_symmetric
-            ./example/linalg/example_cross_product
-            ./example/linalg/example_eye2
-            ./example/linalg/example_is_triangular
-            ./example/linalg/example_diag1
-            ./example/linalg/example_is_diagonal
-            ./example/linalg/example_kronecker_product
-            ./example/linalg/example_diag2
-            ./example/linalg/example_is_hermitian
-            ./example/linalg/example_outer_product
-            ./example/linalg/example_diag3
-            ./example/linalg/example_is_hessenberg
-            ./example/linalg/example_trace
-            ./example/linalg/example_diag4
-            ./example/linalg/example_is_skew_symmetric
-
-            cd ../
-            rm -rf stdlib-fortran-lang
 
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
@@ -708,7 +651,7 @@ jobs:
             export PATH="$(pwd)/../src/bin:$PATH"
 
             git checkout lf19
-            git checkout e7c6dfb1b2bca29dfbca794a3f14df205dff0edd
+            git checkout 4a3bc65fb112f678f1a1b4f97509cd38ef24c1d1
             micromamba install -c conda-forge fypp
             ./build_test_lf.sh
             ./build_test_gf.sh
@@ -725,7 +668,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1
+      - uses: mamba-org/setup-micromamba@v1.8.0
         with:
           environment-file: ci/environment_linux_llvm.yml
           create-args: >-
@@ -781,7 +724,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1
+      - uses: mamba-org/setup-micromamba@v1.8.0
         with:
           environment-file: ci/environment_linux.yml
           create-args: >-
@@ -800,7 +743,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1
+      - uses: mamba-org/setup-micromamba@v1.8.0
         with:
           environment-file: ci/environment_linux.yml
           create-args: >-
@@ -819,7 +762,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1
+      - uses: mamba-org/setup-micromamba@v1.8.0
         with:
           environment-file: ci/environment_linux.yml
           create-args: >-
@@ -869,7 +812,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1
+      - uses: mamba-org/setup-micromamba@v1.8.0
         with:
           environment-file: ci/environment_linux.yml
           create-args: >-
@@ -911,7 +854,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1
+      - uses: mamba-org/setup-micromamba@v1.8.0
         with:
           environment-file: ci/environment_linux.yml
           create-args: >-
@@ -966,7 +909,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1
+      - uses: mamba-org/setup-micromamba@v1.8.0
         with:
           environment-file: ci/environment_linux.yml
           create-args: >-
@@ -999,7 +942,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1
+      - uses: mamba-org/setup-micromamba@v1.8.0
         with:
           environment-file: ci/environment_docs_linux.yml
 

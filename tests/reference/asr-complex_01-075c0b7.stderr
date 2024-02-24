@@ -1,4 +1,4 @@
-semantic error: The first argument of cmplx intrinsic is of complex type, the second argument in this case must be absent
+semantic error: The first argument of `cmplx` intrinsic is of complex type, the second argument in this case must be absent
  --> tests/errors/complex_01.f90:4:14
   |
 4 |     print *, cmplx(z, 1)

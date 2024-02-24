@@ -52,14 +52,28 @@ module lfortran_intrinsic_ieee_arithmetic
         real(dp) :: y
     end function
 
-    elemental function spieee_is_nan(x) result(y)
+    elemental function spieee_is_nan(x) result(r)
         real(sp), intent(in) :: x
-        logical :: y
+        logical :: r
+        interface
+        pure logical function c_rsp_is_nan(x) bind(c, name="_lfortran_rsp_is_nan")
+            import :: sp
+            real(sp), intent(in), value :: x
+            end function
+        end interface
+        r = c_rsp_is_nan(x)
     end function
 
-    elemental function dpieee_is_nan(x) result(y)
+    elemental function dpieee_is_nan(x) result(r)
         real(dp), intent(in) :: x
-        logical :: y
+        logical :: r
+        interface
+        pure logical function c_rdp_is_nan(x) bind(c, name="_lfortran_rdp_is_nan")
+            import :: dp
+            real(dp), intent(in), value :: x
+            end function
+        end interface
+        r = c_rdp_is_nan(x)
     end function
 
 end module

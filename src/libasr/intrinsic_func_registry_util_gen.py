@@ -248,10 +248,36 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         },
     ],
+    "Scale": [
+        {
+            "args": [("real", "int")],
+            "ret_type_arg_idx": 0
+        }
+    ],
     "Huge": [
         {
             "args": [("int",), ("real",)],
             "ret_type_arg_idx": 0
+        }
+    ],
+    "Dprod": [
+        {
+            "args": [("real", "real")],
+            "return": "real64"
+        }
+    ],
+    "Maskl": [
+        {
+            "args": [("int",)],
+            "return": "int32",
+            "kind_arg": True
+        }
+    ],
+    "Maskr": [
+        {
+            "args": [("int",)],
+            "return": "int32",
+            "kind_arg": True
         }
     ],
 }
@@ -406,7 +432,7 @@ def add_create_func_return_src(func_name):
         src += indent * 2 + f"m_value = eval_{func_name}(al, loc, return_type, args, diag);\n"
         src += indent * 2 + "return ASR::make_TypeInquiry_t(al, loc, "\
             f"static_cast<int64_t>(IntrinsicElementalFunctions::{func_name}), "\
-            "m_args[0], return_type, m_value);\n"
+            "ASRUtils::expr_type(m_args[0]), m_args[0], return_type, m_value);\n"
 
     else:
         src += indent * 2 + "if (all_args_evaluated(m_args)) {\n"

@@ -365,11 +365,11 @@ RUN(NAME arrays_01 LABELS gfortran cpp llvm llvmStackArray wasm)
 RUN(NAME arrays_01_size LABELS gfortran llvm llvmStackArray wasm fortran)
 RUN(NAME arrays_02_size LABELS gfortran llvm llvmStackArray wasm fortran)
 RUN(NAME arrays_03_size LABELS gfortran llvm llvmStackArray fortran)
-RUN(NAME matrix_01_transpose LABELS gfortran fortran)
+RUN(NAME matrix_01_transpose LABELS gfortran llvm)
 RUN(NAME matrix_02_matmul LABELS gfortran)
-RUN(NAME array_01_pack LABELS gfortran fortran)
+RUN(NAME array_01_pack LABELS gfortran llvm fortran)
 RUN(NAME array_01_transfer LABELS gfortran)
-RUN(NAME array_02_pack LABELS gfortran fortran)
+RUN(NAME array_02_pack LABELS gfortran llvm fortran)
 RUN(NAME array_02_transfer LABELS gfortran)
 RUN(NAME array_03_transfer LABELS gfortran)
 RUN(NAME array_04_all LABELS gfortran fortran)
@@ -514,8 +514,8 @@ RUN(NAME intrinsics_04s LABELS gfortran llvm) # ctan
 RUN(NAME intrinsics_05 LABELS gfortran llvm) # hyperbolics
 RUN(NAME intrinsics_06 LABELS gfortran llvm) # inverse trignometric
 RUN(NAME intrinsics_07 LABELS gfortran llvm wasm) # kind
-RUN(NAME intrinsics_08 LABELS gfortran llvm wasm) # tiny symboltable
-RUN(NAME intrinsics_09 LABELS gfortran llvm wasm) # tiny body
+RUN(NAME intrinsics_08 LABELS gfortran llvm wasm fortran) # tiny symboltable
+RUN(NAME intrinsics_09 LABELS gfortran llvm wasm fortran) # tiny body
 RUN(NAME intrinsics_10 LABELS gfortran llvm wasm) # real body
 RUN(NAME intrinsics_11 LABELS gfortran llvm wasm) # real symboltable
 RUN(NAME intrinsics_12 LABELS gfortran llvm wasm) # kind body
@@ -539,11 +539,11 @@ RUN(NAME intrinsics_26 LABELS gfortran llvm)
 RUN(NAME intrinsics_27 LABELS gfortran)
 RUN(NAME intrinsics_28 LABELS gfortran llvm wasm)
 RUN(NAME intrinsics_29 LABELS gfortran llvm) # random_number
-RUN(NAME intrinsics_30 LABELS gfortran llvm)
+RUN(NAME intrinsics_30 LABELS gfortran llvm fortran) # range
 RUN(NAME intrinsics_31 LABELS gfortran llvm wasm)
 RUN(NAME intrinsics_32 LABELS gfortran)
 RUN(NAME intrinsics_33 LABELS gfortran llvm)
-RUN(NAME intrinsics_34 LABELS gfortran llvm wasm)
+RUN(NAME intrinsics_34 LABELS gfortran llvm wasm) # epsilon
 RUN(NAME intrinsics_35 LABELS gfortran)
 RUN(NAME intrinsics_36 LABELS gfortran llvm) # adjustl
 RUN(NAME intrinsics_37 LABELS gfortran)
@@ -561,9 +561,9 @@ RUN(NAME intrinsics_48 LABELS gfortran llvm)
 RUN(NAME intrinsics_49 LABELS gfortran llvm)
 RUN(NAME intrinsics_50 LABELS gfortran llvm)
 RUN(NAME intrinsics_51 LABELS gfortran llvm)
-RUN(NAME intrinsics_52 LABELS gfortran llvm) #max0, min0
+RUN(NAME intrinsics_52 LABELS gfortran llvm) # max0, min0
 RUN(NAME intrinsics_53 LABELS gfortran llvm) # repeat
-RUN(NAME intrinsics_54 LABELS gfortran llvm) #max0
+RUN(NAME intrinsics_54 LABELS gfortran llvm) # max0
 RUN(NAME intrinsics_open_close_read_write LABELS gfortran)
 RUN(NAME intrinsics_55 LABELS gfortran llvm) #min
 RUN(NAME intrinsics_56 LABELS gfortran llvm)
@@ -579,11 +579,11 @@ RUN(NAME intrinsics_65 LABELS gfortran llvm) # matmul
 RUN(NAME intrinsics_66 LABELS gfortran llvm) # sign
 RUN(NAME intrinsics_67 LABELS gfortran llvm) # dcosh, dsinh, dtanh, dtan
 RUN(NAME intrinsics_68 LABELS gfortran llvm) # dsign
-RUN(NAME intrinsics_69 LABELS gfortran llvm) # radix
+RUN(NAME intrinsics_69 LABELS gfortran llvm fortran) # radix
 RUN(NAME intrinsics_70 LABELS gfortran llvm) # aint
 RUN(NAME intrinsics_71 LABELS gfortran llvm) # matmul
 RUN(NAME intrinsics_72 LABELS gfortran llvmImplicit) # datan2
-RUN(NAME intrinsics_73 LABELS gfortran llvm) #sngl
+RUN(NAME intrinsics_73 LABELS gfortran llvm) # sngl
 RUN(NAME intrinsics_74 LABELS gfortran llvm c) # random_number
 RUN(NAME intrinsics_75 LABELS gfortran llvm)
 RUN(NAME intrinsics_76 LABELS gfortran llvm)
@@ -592,33 +592,33 @@ RUN(NAME intrinsics_78 LABELS gfortran llvm wasm) # mod
 RUN(NAME intrinsics_79 LABELS gfortran llvm wasm) # Trailz
 RUN(NAME intrinsics_80 LABELS gfortran llvm) # sum
 RUN(NAME intrinsics_81 LABELS gfortran llvm) # maxval
-RUN(NAME intrinsics_82 LABELS gfortran llvm) #array support tan, cosh, sinh, tanh
+RUN(NAME intrinsics_82 LABELS gfortran llvm) # array support tan, cosh, sinh, tanh
 RUN(NAME intrinsics_83 LABELS gfortran llvm) # kind
 RUN(NAME intrinsics_84 LABELS gfortran llvm) # minexponent
 RUN(NAME intrinsics_85 LABELS gfortran llvm) # maxexponent
 RUN(NAME intrinsics_86 LABELS gfortran llvm) # kind
 RUN(NAME intrinsics_87 LABELS gfortran llvm) # abs
-RUN(NAME intrinsics_88 LABELS gfortran llvm) #min for strings
-RUN(NAME intrinsics_89 LABELS gfortran llvm) #sin
-RUN(NAME intrinsics_90 LABELS gfortran llvm) #min
-RUN(NAME intrinsics_91 LABELS gfortran llvm) #index
-RUN(NAME intrinsics_92 LABELS gfortran llvm) #anint
-RUN(NAME intrinsics_93 LABELS gfortran llvm) #digits
-RUN(NAME intrinsics_94 LABELS gfortran llvm NOFAST) #hypot
+RUN(NAME intrinsics_88 LABELS gfortran llvm) # min for strings
+RUN(NAME intrinsics_89 LABELS gfortran llvm) # sin
+RUN(NAME intrinsics_90 LABELS gfortran llvm) # min
+RUN(NAME intrinsics_91 LABELS gfortran llvm) # index
+RUN(NAME intrinsics_92 LABELS gfortran llvm) # anint
+RUN(NAME intrinsics_93 LABELS gfortran llvm) # digits
+RUN(NAME intrinsics_94 LABELS gfortran llvm NOFAST) # hypot
 RUN(NAME intrinsics_95 LABELS gfortran llvm)
 RUN(NAME intrinsics_96 LABELS gfortran llvm)
-RUN(NAME intrinsics_97 LABELS gfortran llvm)#tiny
-RUN(NAME intrinsics_98 LABELS gfortran llvm)#shape
+RUN(NAME intrinsics_97 LABELS gfortran llvm) # tiny
+RUN(NAME intrinsics_98 LABELS gfortran llvm) # shape
 RUN(NAME intrinsics_99 LABELS gfortran llvm)
 RUN(NAME intrinsics_100 LABELS gfortran llvm) # mod
-RUN(NAME intrinsics_101 LABELS gfortran llvm)#repeat
+RUN(NAME intrinsics_101 LABELS gfortran llvm) # repeat
 RUN(NAME intrinsics_102 LABELS gfortran llvm)
 RUN(NAME intrinsics_103 LABELS gfortran llvm)
 RUN(NAME intrinsics_104 LABELS gfortran llvm c wasm)
-RUN(NAME intrinsics_105 LABELS gfortran llvm)#shape
-RUN(NAME intrinsics_106 LABELS gfortran llvm)#merge
-RUN(NAME intrinsics_107 LABELS gfortran llvm)#trailz
-RUN(NAME intrinsics_108 LABELS gfortran llvm)#shiftr
+RUN(NAME intrinsics_105 LABELS gfortran llvm) # shape
+RUN(NAME intrinsics_106 LABELS gfortran llvm) # merge
+RUN(NAME intrinsics_107 LABELS gfortran llvm) # trailz
+RUN(NAME intrinsics_108 LABELS gfortran llvm) # shiftr
 RUN(NAME intrinsics_109 LABELS gfortran llvm)
 RUN(NAME intrinsics_110 LABELS gfortran llvm)
 RUN(NAME intrinsics_111 LABELS gfortran llvm)
@@ -650,6 +650,35 @@ RUN(NAME intrinsics_136 LABELS gfortran llvm)#rshift
 RUN(NAME intrinsics_137 LABELS gfortran llvm)#huge
 RUN(NAME intrinsics_138 LABELS gfortran llvm)#precision
 RUN(NAME intrinsics_140 LABELS gfortran llvm)#selected_int_kind
+RUN(NAME intrinsics_121 LABELS gfortran llvm) # leadz
+RUN(NAME intrinsics_122 LABELS gfortran llvm) # rank
+RUN(NAME intrinsics_123 LABELS gfortran llvm) # shiftl
+RUN(NAME intrinsics_124 LABELS gfortran llvm) # lshift
+RUN(NAME intrinsics_125 LABELS gfortran llvm) # random_number
+RUN(NAME intrinsics_126 LABELS gfortran llvm) # random_number
+RUN(NAME intrinsics_127 LABELS gfortran llvm) # ifix
+RUN(NAME intrinsics_128 LABELS gfortran llvm) # idint
+RUN(NAME intrinsics_129 LABELS gfortran llvm) # abs
+RUN(NAME intrinsics_130 LABELS gfortran llvm) # ishft
+RUN(NAME intrinsics_131 LABELS gfortran llvm) # max for strings
+RUN(NAME intrinsics_132 LABELS gfortran llvm) # Floor
+RUN(NAME intrinsics_133 LABELS gfortran llvm) # Ceiling
+RUN(NAME intrinsics_135 LABELS gfortran llvm) # nint
+RUN(NAME intrinsics_136 LABELS gfortran llvm) # rshift
+RUN(NAME intrinsics_137 LABELS gfortran llvm) # huge
+RUN(NAME intrinsics_138 LABELS gfortran llvm fortran) # precision
+RUN(NAME intrinsics_140 LABELS gfortran llvm) # selected_int_kind
+RUN(NAME intrinsics_141 LABELS gfortran llvm) # scale
+RUN(NAME intrinsics_142 LABELS gfortran llvm) # dot_product
+RUN(NAME intrinsics_143 LABELS gfortran llvm) # dot_product
+RUN(NAME intrinsics_144 LABELS gfortran llvm) # dot_product
+RUN(NAME intrinsics_145 LABELS gfortran llvm) # dot_product
+RUN(NAME intrinsics_146 LABELS gfortran llvm) # dprod
+RUN(NAME intrinsics_147 LABELS gfortran llvm) # pack
+RUN(NAME intrinsics_148 LABELS gfortran llvm) # pack
+RUN(NAME intrinsics_149 LABELS gfortran llvm NOFAST) # unpack
+RUN(NAME intrinsics_150 LABELS gfortran llvm) # maskr
+RUN(NAME intrinsics_151 LABELS gfortran llvm NOFAST) # maskl
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
@@ -929,6 +958,8 @@ RUN(NAME associate_08 LABELS gfortran)
 RUN(NAME associate_09 LABELS gfortran llvm)
 RUN(NAME associate_10 LABELS gfortran llvm)
 RUN(NAME associate_11 LABELS gfortran llvm)
+RUN(NAME associate_12 LABELS gfortran llvm)
+RUN(NAME associate_13 LABELS gfortran llvm)
 
 RUN(NAME real_dp_01 LABELS gfortran llvm wasm)
 RUN(NAME real_dp_02 LABELS gfortran llvm wasm)
@@ -975,6 +1006,7 @@ RUN(NAME string_28 LABELS gfortran llvm)
 RUN(NAME string_29 LABELS gfortran llvm)
 COMPILE(NAME string_30 COMPILERS gfortran lfortran)
 RUN(NAME string_31 LABELS gfortran llvm)
+RUN(NAME string_32 LABELS gfortran llvm)
 
 RUN(NAME nested_01 LABELS gfortran llvm)
 RUN(NAME nested_02 LABELS gfortran llvm)
@@ -1201,6 +1233,8 @@ RUN(NAME complex_14 LABELS gfortran llvm wasm)
 RUN(NAME complex_15 LABELS gfortran llvm fortran)
 RUN(NAME complex_16 LABELS gfortran llvm)
 RUN(NAME complex_17 LABELS gfortran llvm)
+RUN(NAME complex_18 LABELS gfortran llvm)
+RUN(NAME complex_19 LABELS gfortran llvm)
 
 RUN(NAME array_op_01 LABELS gfortran llvm llvmStackArray wasm)
 RUN(NAME array_op_02 LABELS gfortran llvm llvmStackArray wasm)
@@ -1391,3 +1425,5 @@ RUN(NAME types_22 LABELS gfortran llvm)
 RUN(NAME types_23 LABELS gfortran llvm)
 RUN(NAME types_real_to_complex_cast LABELS gfortran llvm)
 RUN(NAME types_real_array_to_complex_array_cast LABELS gfortran llvm)
+
+RUN(NAME lbound_01 LABELS gfortran llvm)

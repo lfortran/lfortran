@@ -81,16 +81,20 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Aint)
         INTRINSIC_NAME_CASE(Anint)
         INTRINSIC_NAME_CASE(Sqrt)
+        INTRINSIC_NAME_CASE(Scale)
         INTRINSIC_NAME_CASE(Sngl)
         INTRINSIC_NAME_CASE(Ifix)
         INTRINSIC_NAME_CASE(Idint)
         INTRINSIC_NAME_CASE(Floor)
         INTRINSIC_NAME_CASE(Ceiling)
+        INTRINSIC_NAME_CASE(Maskr)
+        INTRINSIC_NAME_CASE(Maskl)
         INTRINSIC_NAME_CASE(Epsilon)
         INTRINSIC_NAME_CASE(Precision)
         INTRINSIC_NAME_CASE(Tiny)
         INTRINSIC_NAME_CASE(Conjg)
         INTRINSIC_NAME_CASE(Huge)
+        INTRINSIC_NAME_CASE(Dprod)
         INTRINSIC_NAME_CASE(SymbolicSymbol)
         INTRINSIC_NAME_CASE(SymbolicAdd)
         INTRINSIC_NAME_CASE(SymbolicSub)
@@ -239,6 +243,10 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Sign::instantiate_Sign, &Sign::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Radix),
             {nullptr, &Radix::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Scale),
+            {&Scale::instantiate_Scale, &Scale::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Dprod),
+            {&Dprod::instantiate_Dprod, &Dprod::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Range),
             {nullptr, &Range::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Aint),
@@ -251,6 +259,10 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Floor::instantiate_Floor, &Floor::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ceiling),
             {&Ceiling::instantiate_Ceiling, &Ceiling::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Maskr),
+            {&Maskr::instantiate_Maskr, &Maskr::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Maskl),
+            {&Maskl::instantiate_Maskl, &Maskl::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Sqrt),
             {&Sqrt::instantiate_Sqrt, &Sqrt::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Sngl),
@@ -434,6 +446,10 @@ namespace IntrinsicElementalFunctionRegistry {
             "min"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Radix),
             "radix"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Scale),
+            "scale"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Dprod),
+            "dprod"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Range),
             "range"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Sign),
@@ -448,6 +464,10 @@ namespace IntrinsicElementalFunctionRegistry {
             "floor"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ceiling),
             "ceiling"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Maskr),
+            "Maskr"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Maskl),
+            "maskl"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Sqrt),
             "sqrt"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Sngl),
@@ -578,6 +598,8 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"max", {&Max::create_Max, &Max::eval_Max}},
                 {"min", {&Min::create_Min, &Min::eval_Min}},
                 {"radix", {&Radix::create_Radix, &Radix::eval_Radix}},
+                {"scale", {&Scale::create_Scale, &Scale::eval_Scale}},
+                {"dprod", {&Dprod::create_Dprod, &Dprod::eval_Dprod}},
                 {"range", {&Range::create_Range, &Range::eval_Range}},
                 {"sign", {&Sign::create_Sign, &Sign::eval_Sign}},
                 {"aint", {&Aint::create_Aint, &Aint::eval_Aint}},
@@ -585,6 +607,8 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"anint", {&Anint::create_Anint, &Anint::eval_Anint}},
                 {"floor", {&Floor::create_Floor, &Floor::eval_Floor}},
                 {"ceiling", {&Ceiling::create_Ceiling, &Ceiling::eval_Ceiling}},
+                {"maskr", {&Maskr::create_Maskr, &Maskr::eval_Maskr}},
+                {"maskl", {&Maskl::create_Maskl, &Maskl::eval_Maskl}},
                 {"sqrt", {&Sqrt::create_Sqrt, &Sqrt::eval_Sqrt}},
                 {"sngl", {&Sngl::create_Sngl, &Sngl::eval_Sngl}},
                 {"ifix", {&Ifix::create_Ifix, &Ifix::eval_Ifix}},

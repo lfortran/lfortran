@@ -75,6 +75,12 @@ namespace LCompilers {
             } else if (ASR::is_a<ASR::ComplexConstructor_t>(*x)) {
                 ASR::ComplexConstructor_t* cc = ASR::down_cast<ASR::ComplexConstructor_t>(x);
                 return get_rank(cc->m_re);
+            } else if (ASR::is_a<ASR::ComplexIm_t>(*x)) {
+                ASR::ComplexIm_t* cc = ASR::down_cast<ASR::ComplexIm_t>(x);
+                return get_rank(cc->m_arg);
+            } else if (ASR::is_a<ASR::ComplexRe_t>(*x)) {
+                ASR::ComplexRe_t* cc = ASR::down_cast<ASR::ComplexRe_t>(x);
+                return get_rank(cc->m_arg);
             }
             return n_dims;
         }
@@ -497,6 +503,45 @@ namespace LCompilers {
             return v;
         }
 
+        ASR::stmt_t* create_do_loop_helper_pack(Allocator &al, const Location &loc, std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* array, ASR::expr_t* mask, ASR::expr_t* res, ASR::expr_t* idx, int curr_idx) {
+            ASRUtils::ASRBuilder b(al, loc);
+
+            if (curr_idx == 1) {
+                std::vector<ASR::expr_t*> vars;
+                for (size_t i = 0; i < do_loop_variables.size(); i++) {
+                    vars.push_back(do_loop_variables[i]);
+                }
+                return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(array, curr_idx), UBound(array, curr_idx), {
+                    b.If(b.ArrayItem_01(mask, vars), {
+                        b.Assignment(b.ArrayItem_01(res, {idx}), b.ArrayItem_01(array, vars)),
+                        b.Assignment(idx, b.Add(idx, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))))))
+                    }, {}),
+                }, nullptr);
+            }
+            return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(array, curr_idx), UBound(array, curr_idx), {
+                create_do_loop_helper_pack(al, loc, do_loop_variables, array, mask, res, idx, curr_idx - 1)
+            }, nullptr);
+        }
+
+        ASR::stmt_t* create_do_loop_helper_unpack(Allocator &al, const Location &loc, std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* vector, ASR::expr_t* mask, ASR::expr_t* res, ASR::expr_t* idx, int curr_idx) {
+            ASRUtils::ASRBuilder b(al, loc);
+            if (curr_idx == 1) {
+                std::vector<ASR::expr_t*> vars;
+                for (size_t i = 0; i < do_loop_variables.size(); i++) {
+                    vars.push_back(do_loop_variables[i]);
+                }
+                return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(mask, 1), UBound(mask, 1), {
+                    b.If(b.ArrayItem_01(mask, vars), {
+                        b.Assignment(b.ArrayItem_01(res, vars), b.ArrayItem_01(vector, {idx})),
+                        b.Assignment(idx, b.Add(idx, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))))))
+                    }, {}),
+                }, nullptr);
+            }
+            return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(mask, curr_idx), UBound(mask, curr_idx), {
+                create_do_loop_helper_unpack(al, loc, do_loop_variables, vector, mask, res, idx, curr_idx - 1)
+            }, nullptr);
+        }
+
         // Imports the function from an already loaded ASR module
         ASR::symbol_t* import_function2(std::string func_name, std::string module_name,
                                        Allocator& al, ASR::TranslationUnit_t& unit,
@@ -572,8 +617,7 @@ namespace LCompilers {
             }
         }
 
-        ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim, std::string bound,
-                                Allocator& al) {
+        ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim, std::string bound, Allocator& al) {
             ASR::ttype_t* x_mv_type = ASRUtils::expr_type(arr_expr);
             ASR::dimension_t* m_dims;
             int n_dims = ASRUtils::extract_dimensions_from_ttype(x_mv_type, m_dims);
@@ -1055,13 +1099,19 @@ namespace LCompilers {
             ASRUtils::ASRBuilder builder(al, loc);
             for( size_t k = 0; k < x->n_args; k++ ) {
                 ASR::expr_t* curr_init = x->m_args[k];
+                if( ASR::is_a<ASR::Cast_t>(*curr_init) ) {
+                    perform_cast = true;
+                    cast_kind = ASR::down_cast<ASR::Cast_t>(curr_init)->m_kind;
+                    casted_type = ASR::down_cast<ASR::Cast_t>(curr_init)->m_type;
+                    curr_init = ASR::down_cast<ASR::Cast_t>(curr_init)->m_arg;
+                }
                 if( ASR::is_a<ASR::ImpliedDoLoop_t>(*curr_init) ) {
                     ASR::ImpliedDoLoop_t* idoloop = ASR::down_cast<ASR::ImpliedDoLoop_t>(curr_init);
-                    create_do_loop(al, idoloop, arr_var, result_vec, idx_var, perform_cast, cast_kind);
+                    create_do_loop(al, idoloop, arr_var, result_vec, idx_var, perform_cast, cast_kind, casted_type);
                 } else if( ASR::is_a<ASR::ArrayConstant_t>(*curr_init) ) {
                     ASR::ArrayConstant_t* array_constant_t = ASR::down_cast<ASR::ArrayConstant_t>(curr_init);
                     visit_ArrayConstant(array_constant_t, al, arr_var, result_vec,
-                                        idx_var, current_scope, perform_cast, cast_kind);
+                                        idx_var, current_scope, perform_cast, cast_kind, casted_type);
                 } else if( ASR::is_a<ASR::Var_t>(*curr_init) ) {
                     ASR::ttype_t* element_type = ASRUtils::expr_type(curr_init);
                     if( ASRUtils::is_array(element_type) ) {

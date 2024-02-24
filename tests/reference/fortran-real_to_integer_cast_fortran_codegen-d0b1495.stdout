@@ -1,0 +1,9 @@
+program implicitrealtointcastexample
+implicit none
+integer(4) :: integervalue
+real(4) :: realnumber
+realnumber = 3.140000
+integervalue = int(realnumber, kind=4)
+print *, "Real Number:", realnumber
+print *, "Integer Value:", integervalue
+end program implicitrealtointcastexample

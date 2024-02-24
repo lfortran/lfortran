@@ -650,9 +650,16 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             }
                             ASR::ttype_t *return_type = nullptr;
                             if( ASRUtils::get_FunctionType(func)->m_elemental &&
-                                func->n_args == 1 &&
+                                func->n_args >= 1 &&
                                 ASRUtils::is_array(ASRUtils::expr_type(a_args[0].m_value)) ) {
-                                return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(a_args[0].m_value));
+                                ASR::dimension_t* array_dims;
+                                size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                                ASRUtils::expr_type(a_args[0].m_value), array_dims);
+                                Vec<ASR::dimension_t> new_dims;
+                                new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
+                                return_type = ASRUtils::duplicate_type(al,
+                                                ASRUtils::get_FunctionType(func)->m_return_var_type,
+                                                &new_dims);
                             } else {
                                 return_type = ASRUtils::expr_type(func->m_return_var);
                                 bool is_array = ASRUtils::is_array(return_type);
@@ -734,9 +741,16 @@ void process_overloaded_unary_minus_function(ASR::symbol_t* proc, ASR::expr_t* o
             }
             ASR::ttype_t *return_type = nullptr;
             if( ASRUtils::get_FunctionType(func)->m_elemental &&
-                func->n_args == 1 &&
+                func->n_args >= 1 &&
                 ASRUtils::is_array(ASRUtils::expr_type(a_args[0].m_value)) ) {
-                return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(a_args[0].m_value));
+                ASR::dimension_t* array_dims;
+                size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(a_args[0].m_value), array_dims);
+                Vec<ASR::dimension_t> new_dims;
+                new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
+                return_type = ASRUtils::duplicate_type(al,
+                                ASRUtils::get_FunctionType(func)->m_return_var_type,
+                                &new_dims);
             } else {
                 return_type = ASRUtils::expr_type(func->m_return_var);
                 bool is_array = ASRUtils::is_array(return_type);
@@ -1071,9 +1085,16 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             }
                             ASR::ttype_t *return_type = nullptr;
                             if( ASRUtils::get_FunctionType(func)->m_elemental &&
-                                func->n_args == 1 &&
+                                func->n_args >= 1 &&
                                 ASRUtils::is_array(ASRUtils::expr_type(a_args[0].m_value)) ) {
-                                return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(a_args[0].m_value));
+                                ASR::dimension_t* array_dims;
+                                size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                                ASRUtils::expr_type(a_args[0].m_value), array_dims);
+                                Vec<ASR::dimension_t> new_dims;
+                                new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
+                                return_type = ASRUtils::duplicate_type(al,
+                                                ASRUtils::get_FunctionType(func)->m_return_var_type,
+                                                &new_dims);
                             } else {
                                 return_type = ASRUtils::expr_type(func->m_return_var);
                             }
@@ -1220,9 +1241,16 @@ ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
         func = ASR::down_cast<ASR::Function_t>(final_sym);
         if (func->m_return_var) {
             if( ASRUtils::get_FunctionType(func)->m_elemental &&
-                func->n_args == 1 &&
+                func->n_args >= 1 &&
                 ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
-                return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
+                ASR::dimension_t* array_dims;
+                size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(args[0].m_value), array_dims);
+                Vec<ASR::dimension_t> new_dims;
+                new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
+                return_type = ASRUtils::duplicate_type(al,
+                                ASRUtils::get_FunctionType(func)->m_return_var_type,
+                                &new_dims);
             } else {
                 return_type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
             }

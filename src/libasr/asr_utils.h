@@ -10,6 +10,7 @@
 #include <libasr/asr.h>
 #include <libasr/string_utils.h>
 #include <libasr/utils.h>
+#include <libasr/casting_utils.h>
 
 #include <complex>
 
@@ -168,8 +169,7 @@ static inline ASR::ttype_t *type_get_past_allocatable(ASR::ttype_t *f)
 {
     if (ASR::is_a<ASR::Allocatable_t>(*f)) {
         ASR::Allocatable_t *e = ASR::down_cast<ASR::Allocatable_t>(f);
-        LCOMPILERS_ASSERT(!ASR::is_a<ASR::Allocatable_t>(*e->m_type));
-        return e->m_type;
+        return type_get_past_allocatable(e->m_type);
     } else {
         return f;
     }
@@ -423,6 +423,15 @@ static inline ASR::abiType expr_abi(ASR::expr_t* e) {
         }
         case ASR::exprType::GetPointer: {
             return ASRUtils::expr_abi(ASR::down_cast<ASR::GetPointer_t>(e)->m_arg);
+        }
+        case ASR::exprType::ComplexIm: {
+            return ASRUtils::expr_abi(ASR::down_cast<ASR::ComplexIm_t>(e)->m_arg);
+        }
+        case ASR::exprType::ComplexRe: {
+            return ASRUtils::expr_abi(ASR::down_cast<ASR::ComplexRe_t>(e)->m_arg);
+        }
+        case ASR::exprType::ArrayPhysicalCast: {
+            return ASRUtils::expr_abi(ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg);
         }
         default:
             throw LCompilersException("Cannot extract the ABI of " +
@@ -986,111 +995,102 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
     if( a_value == nullptr ) {
         return false;
     }
-    if (ASR::is_a<ASR::IntegerConstant_t>(*a_value)) {
-        // OK
-    } else if (ASR::is_a<ASR::IntegerBOZ_t>(*a_value)) {
-        // OK
-    } else if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*a_value)) {
-        ASR::expr_t *val = ASR::down_cast<ASR::IntegerUnaryMinus_t>(
-            a_value)->m_value;
-        return is_value_constant(val);
-    } else if (ASR::is_a<ASR::UnsignedIntegerConstant_t>(*a_value)) {
-        // OK
-    } else if (ASR::is_a<ASR::RealConstant_t>(*a_value)) {
-        // OK
-    } else if (ASR::is_a<ASR::RealUnaryMinus_t>(*a_value)) {
-        ASR::expr_t *val = ASR::down_cast<ASR::RealUnaryMinus_t>(
-            a_value)->m_value;
-        return is_value_constant(val);
-    } else if (ASR::is_a<ASR::ComplexConstant_t>(*a_value)) {
-        // OK
-    } else if (ASR::is_a<ASR::LogicalConstant_t>(*a_value)) {
-        // OK
-    } else if (ASR::is_a<ASR::StringConstant_t>(*a_value)) {
-        // OK
-    } else if(ASR::is_a<ASR::ArrayConstant_t>(*a_value)) {
-        ASR::ArrayConstant_t* array_constant = ASR::down_cast<ASR::ArrayConstant_t>(a_value);
-        for( size_t i = 0; i < array_constant->n_args; i++ ) {
-            if( !ASRUtils::is_value_constant(array_constant->m_args[i]) &&
-                !ASRUtils::is_value_constant(ASRUtils::expr_value(array_constant->m_args[i])) ) {
+    switch ( a_value->type ) {
+        case ASR::exprType::IntegerConstant:
+        case ASR::exprType::IntegerBOZ:
+        case ASR::exprType::UnsignedIntegerConstant:
+        case ASR::exprType::RealConstant:
+        case ASR::exprType::ComplexConstant:
+        case ASR::exprType::LogicalConstant:
+        case ASR::exprType::ImpliedDoLoop:
+        case ASR::exprType::PointerNullConstant:
+        case ASR::exprType::StringConstant: {
+            return true;
+        }
+        case ASR::exprType::IntegerUnaryMinus:
+        case ASR::exprType::RealUnaryMinus:
+        case ASR::exprType::IntegerBinOp:
+        case ASR::exprType::StringLen: {
+            return is_value_constant(expr_value(a_value));
+        } case ASR::exprType::ArrayConstant: {
+            ASR::ArrayConstant_t* array_constant = ASR::down_cast<ASR::ArrayConstant_t>(a_value);
+            for( size_t i = 0; i < array_constant->n_args; i++ ) {
+                if( !ASRUtils::is_value_constant(array_constant->m_args[i]) &&
+                    !ASRUtils::is_value_constant(ASRUtils::expr_value(array_constant->m_args[i])) ) {
+                    return false;
+                }
+            }
+            return true;
+        } case ASR::exprType::ListConstant: {
+            ASR::ListConstant_t* list_constant = ASR::down_cast<ASR::ListConstant_t>(a_value);
+            for( size_t i = 0; i < list_constant->n_args; i++ ) {
+                if( !ASRUtils::is_value_constant(list_constant->m_args[i]) &&
+                    !ASRUtils::is_value_constant(ASRUtils::expr_value(list_constant->m_args[i])) ) {
+                    return false;
+                }
+            }
+            return true;
+        } case ASR::exprType::FunctionCall: {
+            ASR::FunctionCall_t* func_call_t = ASR::down_cast<ASR::FunctionCall_t>(a_value);
+            if( !ASRUtils::is_intrinsic_symbol(ASRUtils::symbol_get_past_external(func_call_t->m_name)) ) {
                 return false;
             }
-        }
-        return true;
-    } else if(ASR::is_a<ASR::ListConstant_t>(*a_value)) {
-        ASR::ListConstant_t* list_constant = ASR::down_cast<ASR::ListConstant_t>(a_value);
-        for( size_t i = 0; i < list_constant->n_args; i++ ) {
-            if( !ASRUtils::is_value_constant(list_constant->m_args[i]) &&
-                !ASRUtils::is_value_constant(ASRUtils::expr_value(list_constant->m_args[i])) ) {
-                return false;
-            }
-        }
-        return true;
-    } else if(ASR::is_a<ASR::FunctionCall_t>(*a_value)) {
-        ASR::FunctionCall_t* func_call_t = ASR::down_cast<ASR::FunctionCall_t>(a_value);
-        if( !ASRUtils::is_intrinsic_symbol(ASRUtils::symbol_get_past_external(func_call_t->m_name)) ) {
-            return false;
-        }
 
-        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
-            ASRUtils::symbol_get_past_external(func_call_t->m_name));
-        for( size_t i = 0; i < func_call_t->n_args; i++ ) {
-            if (func_call_t->m_args[i].m_value == nullptr &&
-                ASRUtils::EXPR2VAR(func->m_args[i])->m_presence == ASR::presenceType::Optional) {
-                continue;
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
+                ASRUtils::symbol_get_past_external(func_call_t->m_name));
+            for( size_t i = 0; i < func_call_t->n_args; i++ ) {
+                if (func_call_t->m_args[i].m_value == nullptr &&
+                    ASRUtils::EXPR2VAR(func->m_args[i])->m_presence == ASR::presenceType::Optional) {
+                    continue;
+                }
+                if( !ASRUtils::is_value_constant(func_call_t->m_args[i].m_value) ) {
+                    return false;
+                }
             }
-            if( !ASRUtils::is_value_constant(func_call_t->m_args[i].m_value) ) {
+            return true;
+        } case ASR::exprType::StructInstanceMember: {
+            ASR::StructInstanceMember_t*
+                struct_member_t = ASR::down_cast<ASR::StructInstanceMember_t>(a_value);
+            return is_value_constant(struct_member_t->m_v);
+        } case ASR::exprType::Var: {
+            ASR::Var_t* var_t = ASR::down_cast<ASR::Var_t>(a_value);
+            if( ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(var_t->m_v)) ) {
+                ASR::Variable_t* variable_t = ASR::down_cast<ASR::Variable_t>(
+                    ASRUtils::symbol_get_past_external(var_t->m_v));
+                return variable_t->m_storage == ASR::storage_typeType::Parameter;
+            } else {
                 return false;
             }
-        }
-        return true;
-    } else if( ASR::is_a<ASR::StructInstanceMember_t>(*a_value) ) {
-        ASR::StructInstanceMember_t* struct_member_t = ASR::down_cast<ASR::StructInstanceMember_t>(a_value);
-        return is_value_constant(struct_member_t->m_v);
-    } else if( ASR::is_a<ASR::Var_t>(*a_value) ) {
-        ASR::Var_t* var_t = ASR::down_cast<ASR::Var_t>(a_value);
-        if( ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(var_t->m_v)) ) {
-            ASR::Variable_t* variable_t = ASR::down_cast<ASR::Variable_t>(
-                ASRUtils::symbol_get_past_external(var_t->m_v));
-            return variable_t->m_storage == ASR::storage_typeType::Parameter;
-        } else {
+        } case ASR::exprType::Cast: {
+            ASR::Cast_t* cast_t = ASR::down_cast<ASR::Cast_t>(a_value);
+            return is_value_constant(cast_t->m_arg);
+        } case ASR::exprType::ArrayReshape: {
+            ASR::ArrayReshape_t*
+                array_reshape = ASR::down_cast<ASR::ArrayReshape_t>(a_value);
+            return is_value_constant(array_reshape->m_array) && is_value_constant(array_reshape->m_shape);
+        } case ASR::exprType::ArrayPhysicalCast: {
+            ASR::ArrayPhysicalCast_t*
+                array_physical_t = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_value);
+            return is_value_constant(array_physical_t->m_arg);
+        } case ASR::exprType::StructTypeConstructor: {
+            ASR::StructTypeConstructor_t* struct_type_constructor =
+                ASR::down_cast<ASR::StructTypeConstructor_t>(a_value);
+            bool is_constant = true;
+            for( size_t i = 0; i < struct_type_constructor->n_args; i++ ) {
+                if( struct_type_constructor->m_args[i].m_value ) {
+                    is_constant = is_constant &&
+                                (is_value_constant(
+                                    struct_type_constructor->m_args[i].m_value) ||
+                                is_value_constant(
+                                    ASRUtils::expr_value(
+                                        struct_type_constructor->m_args[i].m_value)));
+                }
+            }
+            return is_constant;
+        } default: {
             return false;
         }
-    } else if(ASR::is_a<ASR::ImpliedDoLoop_t>(*a_value)) {
-        // OK
-    } else if(ASR::is_a<ASR::Cast_t>(*a_value)) {
-        ASR::Cast_t* cast_t = ASR::down_cast<ASR::Cast_t>(a_value);
-        return is_value_constant(cast_t->m_arg);
-    } else if(ASR::is_a<ASR::PointerNullConstant_t>(*a_value)) {
-        // OK
-    } else if(ASR::is_a<ASR::ArrayReshape_t>(*a_value)) {
-        ASR::ArrayReshape_t* array_reshape = ASR::down_cast<ASR::ArrayReshape_t>(a_value);
-        return is_value_constant(array_reshape->m_array) && is_value_constant(array_reshape->m_shape);
-    } else if(ASR::is_a<ASR::ArrayPhysicalCast_t>(*a_value)) {
-        ASR::ArrayPhysicalCast_t* array_physical_t = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_value);
-        return is_value_constant(array_physical_t->m_arg);
-    } else if( ASR::is_a<ASR::StructTypeConstructor_t>(*a_value) ) {
-        ASR::StructTypeConstructor_t* struct_type_constructor =
-            ASR::down_cast<ASR::StructTypeConstructor_t>(a_value);
-        bool is_constant = true;
-        for( size_t i = 0; i < struct_type_constructor->n_args; i++ ) {
-            if( struct_type_constructor->m_args[i].m_value ) {
-                is_constant = is_constant &&
-                              (is_value_constant(
-                                struct_type_constructor->m_args[i].m_value) ||
-                              is_value_constant(
-                                ASRUtils::expr_value(
-                                    struct_type_constructor->m_args[i].m_value)));
-            }
-        }
-        return is_constant;
-    } else if( ASR::is_a<ASR::IntegerBinOp_t>(*a_value) ) {
-        ASR::IntegerBinOp_t* int_binop = ASR::down_cast<ASR::IntegerBinOp_t>(a_value);
-        return is_value_constant(int_binop->m_value);
-    } else {
-        return false;
     }
-    return true;
 }
 
 static inline bool is_value_constant(ASR::expr_t *a_value, int64_t& const_value) {
@@ -1318,14 +1318,6 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
             value = (T) int_boz->m_v;
             break;
         }
-        case ASR::exprType::IntegerUnaryMinus: {
-            ASR::IntegerUnaryMinus_t*
-                const_int = ASR::down_cast<ASR::IntegerUnaryMinus_t>(value_expr);
-            if (!extract_value(const_int->m_value, value)) {
-                return false;
-            }
-            break;
-        }
         case ASR::exprType::UnsignedIntegerConstant: {
             ASR::UnsignedIntegerConstant_t* const_int = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(value_expr);
             value = (T) const_int->m_n;
@@ -1334,14 +1326,6 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
         case ASR::exprType::RealConstant: {
             ASR::RealConstant_t* const_real = ASR::down_cast<ASR::RealConstant_t>(value_expr);
             value = (T) const_real->m_r;
-            break;
-        }
-        case ASR::exprType::RealUnaryMinus: {
-            ASR::RealUnaryMinus_t*
-                const_int = ASR::down_cast<ASR::RealUnaryMinus_t>(value_expr);
-            if (!extract_value(const_int->m_value, value)) {
-                return false;
-            }
             break;
         }
         case ASR::exprType::LogicalConstant: {
@@ -1357,16 +1341,12 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
             }
             break;
         }
-        case ASR::exprType::FunctionCall: {
-            ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(value_expr);
-            if (!extract_value(func_call->m_value, value)) {
-                return false;
-            }
-            break;
-        }
-        case ASR::exprType::IntegerBinOp: {
-            ASR::IntegerBinOp_t* int_binop = ASR::down_cast<ASR::IntegerBinOp_t>(value_expr);
-            if (!extract_value(int_binop->m_value, value)) {
+        case ASR::exprType::IntegerUnaryMinus:
+        case ASR::exprType::RealUnaryMinus:
+        case ASR::exprType::FunctionCall:
+        case ASR::exprType::IntegerBinOp:
+        case ASR::exprType::StringLen: {
+            if (!extract_value(expr_value(value_expr), value)) {
                 return false;
             }
             break;
@@ -2310,6 +2290,12 @@ static inline ASR::asr_t* make_ArraySize_t_util(
                 ASR::expr_t* start = array_section_t->m_args[i].m_left;
                 ASR::expr_t* end = array_section_t->m_args[i].m_right;
                 ASR::expr_t* d = array_section_t->m_args[i].m_step;
+                start = CastingUtil::perform_casting(start, ASRUtils::expr_type(start),
+                    a_type, al, a_loc);
+                end = CastingUtil::perform_casting(end, ASRUtils::expr_type(end),
+                    a_type, al, a_loc);
+                d = CastingUtil::perform_casting(d, ASRUtils::expr_type(d),
+                    a_type, al, a_loc);
                 ASR::expr_t* endminusstart = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
                     al, a_loc, end, ASR::binopType::Sub, start, a_type, nullptr));
                 ASR::expr_t* byd = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
@@ -2325,6 +2311,12 @@ static inline ASR::asr_t* make_ArraySize_t_util(
             ASR::expr_t* start = array_section_t->m_args[dim - 1].m_left;
             ASR::expr_t* end = array_section_t->m_args[dim - 1].m_right;
             ASR::expr_t* d = array_section_t->m_args[dim - 1].m_step;
+            start = CastingUtil::perform_casting(start, ASRUtils::expr_type(start),
+                    a_type, al, a_loc);
+            end = CastingUtil::perform_casting(end, ASRUtils::expr_type(end),
+                a_type, al, a_loc);
+            d = CastingUtil::perform_casting(d, ASRUtils::expr_type(d),
+                a_type, al, a_loc);
             ASR::expr_t* endminusstart = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
                 al, a_loc, end, ASR::binopType::Sub, start, a_type, nullptr));
             ASR::expr_t* byd = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
@@ -2738,9 +2730,11 @@ inline int extract_kind_str(char* m_n, char *&kind_str) {
     return 4;
 }
 
+// this function only extract's the 'kind' and raises an error when it's of
+// inappropriate type (e.g. float), but doesn't ensure 'kind' is appropriate
+// for whose kind it is
 template <typename SemanticError>
 inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
-    int a_kind = 4;
     switch( kind_expr->type ) {
         case ASR::exprType::Var: {
             ASR::Var_t* kind_var =
@@ -2755,22 +2749,21 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
                 is_parent_enum = ASR::is_a<ASR::EnumType_t>(*s);
             }
             if( is_parent_enum ) {
-                a_kind = ASRUtils::extract_kind_from_ttype_t(kind_variable->m_type);
+                return ASRUtils::extract_kind_from_ttype_t(kind_variable->m_type);
             } else if( kind_variable->m_storage == ASR::storage_typeType::Parameter ) {
                 if( kind_variable->m_type->type == ASR::ttypeType::Integer ) {
                     LCOMPILERS_ASSERT( kind_variable->m_value != nullptr );
-                    a_kind = ASR::down_cast<ASR::IntegerConstant_t>(kind_variable->m_value)->m_n;
+                    return ASR::down_cast<ASR::IntegerConstant_t>(kind_variable->m_value)->m_n;
                 } else {
                     std::string msg = "Integer variable required. " + std::string(kind_variable->m_name) +
                                     " is not an Integer variable.";
                     throw SemanticError(msg, loc);
                 }
             } else {
-                std::string msg = "Parameter " + std::string(kind_variable->m_name) +
-                                " is a variable, which does not reduce to a constant expression";
+                std::string msg = "Parameter '" + std::string(kind_variable->m_name) +
+                                "' is a variable, which does not reduce to a constant expression";
                 throw SemanticError(msg, loc);
             }
-            break;
         }
         case ASR::exprType::IntrinsicElementalFunction: {
             ASR::IntrinsicElementalFunction_t* kind_isf =
@@ -2780,23 +2773,40 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
                 LCOMPILERS_ASSERT( ASR::is_a<ASR::IntegerConstant_t>(*kind_isf->m_value) );
                 ASR::IntegerConstant_t* kind_ic =
                     ASR::down_cast<ASR::IntegerConstant_t>(kind_isf->m_value);
-                a_kind = kind_ic->m_n;
+                return kind_ic->m_n;
             } else {
                 throw SemanticError("Only Integer literals or expressions which "
                     "reduce to constant Integer are accepted as kind parameters.",
                     loc);
             }
-            break;
         }
-        default: {
+        // allow integer binary operator kinds (e.g. '1 + 7')
+        case ASR::exprType::IntegerBinOp:
+        // allow integer kinds (e.g. 4, 8 etc.)
+        case ASR::exprType::IntegerConstant: {
+            int a_kind = -1;
             if (!ASRUtils::extract_value(kind_expr, a_kind)) {
+                // we still need to ensure that values are constant
+                // e.g. "integer :: a = 4; real(1*a) :: x" is an invalid kind,
+                // as 'a' isn't a constant.
+                // ToDo: we should raise a better error, by "locating" just
+                // 'a' as well, instead of the whole '1*a'
                 throw SemanticError("Only Integer literals or expressions which "
                     "reduce to constant Integer are accepted as kind parameters.",
                     loc);
             }
+            return a_kind;
+        }
+        // make sure not to allow kind having "RealConstant" (e.g. 4.0),
+        // and everything else
+        default: {
+            throw SemanticError(
+                "Only Integer literals or expressions which "
+                "reduce to constant Integer are accepted as kind parameters.",
+                loc
+            );
         }
     }
-    return a_kind;
 }
 
 template <typename SemanticError>

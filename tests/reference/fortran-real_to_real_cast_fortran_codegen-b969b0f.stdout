@@ -1,0 +1,7 @@
+program implicitrealtorealdifferentkindexample
+implicit none
+real(4) :: realnumber1
+real(8) :: realnumber2
+realnumber1 = 3.140000
+realnumber2 = real(realnumber1, kind=8)
+end program implicitrealtorealdifferentkindexample
