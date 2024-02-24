@@ -7632,17 +7632,8 @@ public:
             end = builder->CreateGlobalStringPtr("\n");
         }
         size_t n_values = x.n_values; ASR::expr_t **m_values = x.m_values;
-        // TODO: Handle String Formatting
-        if (n_values > 0 && is_a<ASR::StringFormat_t>(*m_values[0]) && is_string) {
-            n_values = down_cast<ASR::StringFormat_t>(m_values[0])->n_args;
-            m_values = down_cast<ASR::StringFormat_t>(m_values[0])->m_args;
-        }
         for (size_t i=0; i<n_values; i++) {
-            if ( is_string && !ASRUtils::is_integer(*expr_type(m_values[i])) ) {
-                fmt.push_back("%s");
-                args.push_back(sep);
-            }
-            else if (i != 0 && !is_string) {
+            if (i != 0 && !is_string) {
                 fmt.push_back("%s");
                 args.push_back(sep);
             }
