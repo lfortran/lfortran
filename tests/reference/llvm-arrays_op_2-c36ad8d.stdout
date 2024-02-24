@@ -2073,7 +2073,7 @@ loop.body455:                                     ; preds = %ifcont454
   %445 = add i32 %442, %444
   %446 = getelementptr [4 x i32], [4 x i32]* %a, i32 0, i32 %445
   %447 = load i32, i32* %446, align 4
-  %448 = udiv i32 %433, %447
+  %448 = sdiv i32 %433, %447
   store i32 %448, i32* %419, align 4
   %449 = load i32, i32* %__3_v, align 4
   %450 = add i32 %449, 1
