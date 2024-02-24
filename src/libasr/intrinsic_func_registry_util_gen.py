@@ -116,6 +116,12 @@ intrinsic_funcs_args = {
             "return": "int32"
         },
     ],
+    "Adjustl": [
+        {
+            "args": [("char",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
     "Aint": [
         {
             "args": [("real",)],
