@@ -732,6 +732,7 @@ public:
         {"dprod", {IntrinsicSignature({"X", "Y"}, 2, 2)}},
         {"maskr", {IntrinsicSignature({"i", "kind"}, 1, 2)}},
         {"maskl", {IntrinsicSignature({"i", "kind"}, 1, 2)}},
+        {"dim", {IntrinsicSignature({"X", "Y"}, 2, 2)}},
         {"selected_real_kind", {IntrinsicSignature({"p", "r", "radix"}, 0, 3)}},
     };
 

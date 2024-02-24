@@ -79,6 +79,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(SignFromValue)
         INTRINSIC_NAME_CASE(Nint)
         INTRINSIC_NAME_CASE(Aint)
+        INTRINSIC_NAME_CASE(Dim)
         INTRINSIC_NAME_CASE(Anint)
         INTRINSIC_NAME_CASE(Sqrt)
         INTRINSIC_NAME_CASE(Scale)
@@ -253,6 +254,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Nint::instantiate_Nint, &Nint::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Anint),
             {&Anint::instantiate_Anint, &Anint::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Dim),
+            {&Dim::instantiate_Dim, &Dim::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Floor),
             {&Floor::instantiate_Floor, &Floor::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ceiling),
@@ -460,6 +463,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "nint"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Anint),
             "anint"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Dim),
+            "dim"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Floor),
             "floor"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ceiling),
@@ -605,6 +610,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"aint", {&Aint::create_Aint, &Aint::eval_Aint}},
                 {"nint", {&Nint::create_Nint, &Nint::eval_Nint}},
                 {"anint", {&Anint::create_Anint, &Anint::eval_Anint}},
+                {"dim", {&Dim::create_Dim, &Dim::eval_Dim}},
                 {"floor", {&Floor::create_Floor, &Floor::eval_Floor}},
                 {"ceiling", {&Ceiling::create_Ceiling, &Ceiling::eval_Ceiling}},
                 {"maskr", {&Maskr::create_Maskr, &Maskr::eval_Maskr}},
