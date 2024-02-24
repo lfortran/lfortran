@@ -2,8 +2,6 @@
     (SymbolTable
         1
         {
-            lfortran_intrinsic_kind:
-                (IntrinsicModule lfortran_intrinsic_kind),
             parameter_04:
                 (Program
                     (SymbolTable
@@ -15,13 +13,14 @@
                                     dp
                                     []
                                     Local
-                                    (FunctionCall
-                                        2 selected_real_kind
-                                        ()
-                                        [((IntegerConstant 14 (Integer 4)))]
+                                    (IntrinsicElementalFunction
+                                        SelectedRealKind
+                                        [(IntegerConstant 14 (Integer 4))
+                                        (IntegerConstant 0 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4))]
+                                        0
                                         (Integer 4)
                                         (IntegerConstant 8 (Integer 4))
-                                        ()
                                     )
                                     (IntegerConstant 8 (Integer 4))
                                     Parameter
@@ -71,7 +70,7 @@
                                     []
                                     Local
                                     (IntrinsicElementalFunction
-                                        Selected_int_kind
+                                        SelectedIntKind
                                         [(IntegerConstant 6 (Integer 4))]
                                         0
                                         (Integer 4)
@@ -93,7 +92,7 @@
                                     []
                                     Local
                                     (IntrinsicElementalFunction
-                                        Selected_int_kind
+                                        SelectedIntKind
                                         [(IntegerConstant 12 (Integer 4))]
                                         0
                                         (Integer 4)
@@ -181,29 +180,20 @@
                                     Required
                                     .false.
                                 ),
-                            selected_real_kind:
-                                (ExternalSymbol
-                                    2
-                                    selected_real_kind
-                                    4 selected_real_kind
-                                    lfortran_intrinsic_kind
-                                    []
-                                    selected_real_kind
-                                    Private
-                                ),
                             sp:
                                 (Variable
                                     2
                                     sp
                                     []
                                     Local
-                                    (FunctionCall
-                                        2 selected_real_kind
-                                        ()
-                                        [((IntegerConstant 6 (Integer 4)))]
+                                    (IntrinsicElementalFunction
+                                        SelectedRealKind
+                                        [(IntegerConstant 6 (Integer 4))
+                                        (IntegerConstant 0 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4))]
+                                        0
                                         (Integer 4)
                                         (IntegerConstant 4 (Integer 4))
-                                        ()
                                     )
                                     (IntegerConstant 4 (Integer 4))
                                     Parameter
@@ -216,7 +206,7 @@
                                 )
                         })
                     parameter_04
-                    [lfortran_intrinsic_kind]
+                    []
                     [(Assignment
                         (Var 2 l)
                         (LogicalConstant

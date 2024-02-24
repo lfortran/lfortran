@@ -28,10 +28,10 @@ enum class IntrinsicArrayFunctions : int64_t {
     Product,
     Shape,
     Sum,
-    Dot_Product,
     Transpose,
     Pack,
     Unpack,
+    DotProduct,
     // ...
 };
 
@@ -52,10 +52,10 @@ inline std::string get_array_intrinsic_name(int x) {
         ARRAY_INTRINSIC_NAME_CASE(Product)
         ARRAY_INTRINSIC_NAME_CASE(Shape)
         ARRAY_INTRINSIC_NAME_CASE(Sum)
-        ARRAY_INTRINSIC_NAME_CASE(Dot_Product)
         ARRAY_INTRINSIC_NAME_CASE(Transpose)
         ARRAY_INTRINSIC_NAME_CASE(Pack)
         ARRAY_INTRINSIC_NAME_CASE(Unpack)
+        ARRAY_INTRINSIC_NAME_CASE(DotProduct)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
@@ -2390,7 +2390,7 @@ namespace Unpack {
 
 } // namespace Unpack
 
-namespace Dot_Product {
+namespace DotProduct {
 
     static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
             diag::Diagnostics& diagnostics) {
@@ -2467,7 +2467,7 @@ namespace Dot_Product {
         }
     }
 
-    static inline ASR::expr_t *eval_Dot_Product(Allocator & al,
+    static inline ASR::expr_t *eval_DotProduct(Allocator & al,
         const Location & loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         ASR::expr_t *vector_a = args[0], *vector_b = args[1];
         ASR::ttype_t *type_vector_a = ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(expr_type(vector_a)));
@@ -2544,7 +2544,7 @@ namespace Dot_Product {
         return nullptr;
     }
 
-    static inline ASR::asr_t* create_Dot_Product(Allocator& al, const Location& loc,
+    static inline ASR::asr_t* create_DotProduct(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
             diag::Diagnostics& diag) {
         ASR::expr_t *matrix_a = args[0], *matrix_b = args[1];
@@ -2604,14 +2604,14 @@ namespace Dot_Product {
 
         ASR::expr_t *value = nullptr;
         if (all_args_evaluated(args)) {
-            value = eval_Dot_Product(al, loc, ret_type, args, diag);
+            value = eval_DotProduct(al, loc, ret_type, args, diag);
         }
         return make_IntrinsicArrayFunction_t_util(al, loc,
-            static_cast<int64_t>(IntrinsicArrayFunctions::Dot_Product),
+            static_cast<int64_t>(IntrinsicArrayFunctions::DotProduct),
             args.p, args.n, overload_id, ret_type, value);
     }
 
-    static inline ASR::expr_t *instantiate_Dot_Product(Allocator &al,
+    static inline ASR::expr_t *instantiate_DotProduct(Allocator &al,
             const Location &loc, SymbolTable *scope,
             Vec<ASR::ttype_t*> &arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t> &m_args, int64_t /*overload_id*/) {
@@ -2663,7 +2663,7 @@ namespace Dot_Product {
         return b.Call(fn_sym, m_args, return_type, nullptr);
     }
 
-} // namespace Dot_Product
+} // namespace DotProduct
 
 namespace Transpose {
 
@@ -2776,14 +2776,14 @@ namespace IntrinsicArrayFunctionRegistry {
             {&Shape::instantiate_Shape, &Shape::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::Sum),
             {&Sum::instantiate_Sum, &Sum::verify_args}},
-        {static_cast<int64_t>(IntrinsicArrayFunctions::Dot_Product),
-            {&Dot_Product::instantiate_Dot_Product, &Dot_Product::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::Transpose),
             {&Transpose::instantiate_Transpose, &Transpose::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::Pack),
             {&Pack::instantiate_Pack, &Pack::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::Unpack),
             {&Unpack::instantiate_Unpack, &Unpack::verify_args}},
+        {static_cast<int64_t>(IntrinsicArrayFunctions::DotProduct),
+            {&DotProduct::instantiate_DotProduct, &DotProduct::verify_args}},
     };
 
     static const std::map<std::string, std::tuple<create_intrinsic_function,
@@ -2798,10 +2798,10 @@ namespace IntrinsicArrayFunctionRegistry {
         {"product", {&Product::create_Product, &Product::eval_Product}},
         {"shape", {&Shape::create_Shape, &Shape::eval_Shape}},
         {"sum", {&Sum::create_Sum, &Sum::eval_Sum}},
-        {"dot_product", {&Dot_Product::create_Dot_Product, &Dot_Product::eval_Dot_Product}},
         {"transpose", {&Transpose::create_Transpose, &Transpose::eval_Transpose}},
         {"pack", {&Pack::create_Pack, &Pack::eval_Pack}},
         {"unpack", {&Unpack::create_Unpack, &Unpack::eval_Unpack}},
+        {"dot_product", {&DotProduct::create_DotProduct, &DotProduct::eval_DotProduct}},
     };
 
     static inline bool is_intrinsic_function(const std::string& name) {
