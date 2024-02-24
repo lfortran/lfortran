@@ -1,4 +1,4 @@
-semantic error: size argument to transfer intrinsic must be of Integer type.
+semantic error: size argument to `transfer` intrinsic must be of Integer type.
  --> tests/errors/array_transfer_01.f90:5:29
   |
 5 |     print *, transfer(a, 1, size_a)
