@@ -1,7 +1,6 @@
 module lfortran_intrinsic_sin
 ! Implicit dependencies
 ! abs impure/math
-! modulo pure/math2
 ! min builtin/array
 ! max builtin/array
 use iso_c_binding, only: c_double, c_int
