@@ -11,7 +11,7 @@
                                 (ExternalSymbol
                                     2
                                     1_enum_escape_newline
-                                    6 newline
+                                    3 newline
                                     enum_escape
                                     []
                                     newline
@@ -20,13 +20,13 @@
                             enum_escape:
                                 (StructType
                                     (SymbolTable
-                                        6
+                                        3
                                         {
                                             achar:
                                                 (ExternalSymbol
-                                                    6
+                                                    3
                                                     achar
-                                                    8 achar
+                                                    5 achar
                                                     lfortran_intrinsic_builtin
                                                     []
                                                     achar
@@ -34,12 +34,12 @@
                                                 ),
                                             newline:
                                                 (Variable
-                                                    6
+                                                    3
                                                     newline
                                                     [tfc]
                                                     Local
                                                     (FunctionCall
-                                                        6 achar
+                                                        3 achar
                                                         ()
                                                         [((IntegerConstant 10 (Integer 4)))
                                                         ((Var 2 tfc))]
@@ -112,32 +112,21 @@
                                     Required
                                     .false.
                                 ),
-                            selected_char_kind:
-                                (ExternalSymbol
-                                    2
-                                    selected_char_kind
-                                    4 selected_char_kind
-                                    lfortran_intrinsic_kind
-                                    []
-                                    selected_char_kind
-                                    Private
-                                ),
                             tfc:
                                 (Variable
                                     2
                                     tfc
                                     []
                                     Local
-                                    (FunctionCall
-                                        2 selected_char_kind
-                                        ()
-                                        [((StringConstant
+                                    (IntrinsicElementalFunction
+                                        SelectedCharKind
+                                        [(StringConstant
                                             "DEFAULT"
                                             (Character 1 7 ())
-                                        ))]
+                                        )]
+                                        0
                                         (Integer 4)
                                         (IntegerConstant 1 (Integer 4))
-                                        ()
                                     )
                                     (IntegerConstant 1 (Integer 4))
                                     Parameter
@@ -175,15 +164,12 @@
                                 )
                         })
                     derived_type1
-                    [lfortran_intrinsic_kind
-                    lfortran_intrinsic_builtin]
+                    [lfortran_intrinsic_builtin]
                     .false.
                     .false.
                 ),
             lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_kind:
-                (IntrinsicModule lfortran_intrinsic_kind)
+                (IntrinsicModule lfortran_intrinsic_builtin)
         })
     []
 )
