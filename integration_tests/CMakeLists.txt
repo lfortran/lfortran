@@ -613,7 +613,7 @@ RUN(NAME intrinsics_98 LABELS gfortran llvm) # shape
 RUN(NAME intrinsics_99 LABELS gfortran llvm)
 RUN(NAME intrinsics_100 LABELS gfortran llvm) # mod
 RUN(NAME intrinsics_101 LABELS gfortran llvm) # repeat
-RUN(NAME intrinsics_102 LABELS gfortran llvm)
+RUN(NAME intrinsics_102 LABELS gfortran llvm fortran)
 RUN(NAME intrinsics_103 LABELS gfortran llvm)
 RUN(NAME intrinsics_104 LABELS gfortran llvm c wasm)
 RUN(NAME intrinsics_105 LABELS gfortran llvm) # shape
@@ -1080,10 +1080,10 @@ RUN(NAME abs_02 LABELS gfortran llvm wasm fortran)
 RUN(NAME abs_03 LABELS gfortran llvm wasm c fortran)
 RUN(NAME sqrt_01 LABELS gfortran llvm)
 RUN(NAME sqrt_02 LABELS gfortran llvm)
-RUN(NAME sin_01 LABELS gfortran llvm)
+RUN(NAME sin_01 LABELS gfortran llvm fortran)
 RUN(NAME sin_02 LABELS gfortran llvm)
-RUN(NAME sin_03 LABELS gfortran llvm)
-RUN(NAME sin_04 LABELS gfortran llvm)
+RUN(NAME sin_03 LABELS gfortran llvm fortran)
+RUN(NAME sin_04 LABELS gfortran llvm fortran)
 RUN(NAME bits_01 LABELS gfortran llvm)
 RUN(NAME bits_02 LABELS gfortran llvm fortran)
 RUN(NAME bits_03 LABELS gfortran llvm)
