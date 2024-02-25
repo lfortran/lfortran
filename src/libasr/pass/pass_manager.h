@@ -28,7 +28,7 @@
 #include <libasr/pass/replace_arr_slice.h>
 #include <libasr/pass/replace_flip_sign.h>
 #include <libasr/pass/replace_div_to_mul.h>
-#include <libasr/pass/replace_symbolic.h>
+// #include <libasr/pass/replace_symbolic.h>
 #include <libasr/pass/replace_intrinsic_function.h>
 #include <libasr/pass/replace_fma.h>
 #include <libasr/pass/loop_unroll.h>
@@ -78,7 +78,7 @@ namespace LCompilers {
             {"global_stmts", &pass_wrap_global_stmts},
             {"implied_do_loops", &pass_replace_implied_do_loops},
             {"array_op", &pass_replace_array_op},
-            {"symbolic", &pass_replace_symbolic},
+            // {"symbolic", &pass_replace_symbolic},
             {"intrinsic_function", &pass_replace_intrinsic_function},
             {"arr_slice", &pass_replace_arr_slice},
             {"print_arr", &pass_replace_print_arr},
@@ -214,7 +214,7 @@ namespace LCompilers {
                 "function_call_in_declaration",
                 "subroutine_from_function",
                 "array_op",
-                "symbolic",
+                // "symbolic",
                 "intrinsic_function",
                 "subroutine_from_function",
                 "array_op",
@@ -245,7 +245,7 @@ namespace LCompilers {
                 "function_call_in_declaration",
                 "subroutine_from_function",
                 "array_op",
-                "symbolic",
+                // "symbolic",
                 "intrinsic_function",
                 "subroutine_from_function",
                 "array_op",
