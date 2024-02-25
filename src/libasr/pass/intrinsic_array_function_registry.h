@@ -1014,7 +1014,7 @@ namespace Any {
             },
             [=, &al, &idx_vars, &doloop_body, &builder] () {
                 ASR::expr_t* array_ref = PassUtils::create_array_ref(array, idx_vars, al);
-                ASR::expr_t* logical_or = builder.Or(return_var, array_ref, loc);
+                ASR::expr_t* logical_or = builder.LogicalOr(return_var, array_ref, loc);
                 ASR::stmt_t* loop_invariant = builder.Assignment(return_var, logical_or);
                 doloop_body.push_back(al, loop_invariant);
             }
@@ -2629,7 +2629,7 @@ namespace DotProduct {
         if (is_logical(*return_type)) {
             body.push_back(al, b.Assignment(result, ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, false, return_type))));
             body.push_back(al, b.DoLoop(i, LBound(args[0], 1), UBound(args[0], 1), {
-                b.Assignment(result, b.Or(result, And(b.ArrayItem_01(args[0], {i}), b.ArrayItem_01(args[1], {i})), loc))
+                b.Assignment(result, b.LogicalOr(result, And(b.ArrayItem_01(args[0], {i}), b.ArrayItem_01(args[1], {i})), loc))
             }));
         } else if (is_complex(*return_type)) {
             body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexConstant_t(al, loc, 0.0, 0.0, return_type))));

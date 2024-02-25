@@ -726,6 +726,7 @@ public:
         {"shiftl", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
         {"lshift", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
         {"ishft", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
+        {"bgt", {IntrinsicSignature({"i", "j"}, 2, 2)}},
         {"floor", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
         {"ceiling", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
         {"scale", {IntrinsicSignature({"X", "I"}, 2, 2)}},

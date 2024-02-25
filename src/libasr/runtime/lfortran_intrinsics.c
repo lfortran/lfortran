@@ -1778,26 +1778,6 @@ LFORTRAN_API int64_t _lfortran_btest64(int64_t i, int pos) {
     return i & (1LL << pos);
 }
 
-LFORTRAN_API int32_t _lfortran_ishft32(int32_t i, int32_t shift) {
-    if(shift > 0) {
-        return i << shift;
-    } else if(shift < 0) {
-        return i >> abs(shift);
-    } else {
-        return i;
-    }
-}
-
-LFORTRAN_API int64_t _lfortran_ishft64(int64_t i, int64_t shift) {
-    if(shift > 0) {
-        return i << shift;
-    } else if(shift < 0) {
-        return i >> llabs(shift);
-    } else {
-        return i;
-    }
-}
-
 LFORTRAN_API int32_t _lfortran_mvbits32(int32_t from, int32_t frompos,
                                         int32_t len, int32_t to, int32_t topos) {
     uint32_t all_ones = ~0;
@@ -1824,16 +1804,6 @@ LFORTRAN_API int64_t _lfortran_mvbits64(int64_t from, int32_t frompos,
     ufrom >>= (BITS_64 - len);
     ufrom <<= topos;
     return (~all_ones & uto) | ufrom;
-}
-
-LFORTRAN_API int32_t _lfortran_bgt32(int32_t i, int32_t j) {
-    uint32_t ui = i, uj = j;
-    return ui > uj;
-}
-
-LFORTRAN_API int32_t _lfortran_bgt64(int64_t i, int64_t j) {
-    uint64_t ui = i, uj = j;
-    return ui > uj;
 }
 
 LFORTRAN_API int32_t _lfortran_bge32(int32_t i, int32_t j) {

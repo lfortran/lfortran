@@ -30,20 +30,12 @@ interface btest
     module procedure btest32, btest64
 end interface
 
-interface ishft
-    module procedure ishft32, ishft64
-end interface
-
 interface mvbits
     module procedure mvbits32, mvbits64
 end interface
 
 interface bge
     module procedure bge32, bge64
-end interface
-
-interface bgt
-    module procedure bgt32, bgt64
 end interface
 
 interface ble
@@ -295,41 +287,6 @@ else
 end if
 end function
 
-! ishft ------------------------------------------------------------------------
-
-elemental integer(int32) function ishft32(i, shift) result(r)
-integer(int32), intent(in) :: i, shift
-interface
-    pure integer(int32) function c_ishft32(i, shift) bind(c, name="_lfortran_ishft32")
-        import :: int32
-        integer(int32), intent(in), value :: i, shift
-    end function
-end interface
-
-if (shift < 32) then
-    r = c_ishft32(i, shift)
-else
-    error stop "shift must be less than 32"
-end if
-end function
-
-elemental integer(int64) function ishft64(i, shift) result(r)
-integer(int64), intent(in) :: i, shift
-interface
-    pure integer(int64) function c_ishft64(i, shift) bind(c, name="_lfortran_ishft64")
-        import :: int64
-        integer(int64), intent(in), value :: i, shift
-    end function
-end interface
-
-if (shift < 64) then
-    r = c_ishft64(i, shift)
-else
-    error stop "shift must be less than 64"
-end if
-end function
-
-
 ! mvbits ------------------------------------------------------------------------
 
 elemental subroutine mvbits32(from, frompos, len, to, topos)
@@ -380,30 +337,6 @@ interface
     end function
 end interface
 r = c_bge64(i, j)
-end function
-
-! bgt ------------------------------------------------------------------------
-
-elemental logical function bgt32(i, j) result(r)
-integer(int32), intent(in) :: i, j
-interface
-    pure logical function c_bgt32(i, j) bind(c, name="_lfortran_bgt32")
-    import :: int32
-    integer(int32), intent(in), value :: i, j
-    end function
-end interface
-r = c_bgt32(i, j)
-end function
-
-elemental logical function bgt64(i, j) result(r)
-integer(int64), intent(in) :: i, j
-interface
-    pure logical function c_bgt64(i, j) bind(c, name="_lfortran_bgt64")
-    import :: int64
-    integer(int64), intent(in), value :: i, j
-    end function
-end interface
-r = c_bgt64(i, j)
 end function
 
 ! ble ------------------------------------------------------------------------
