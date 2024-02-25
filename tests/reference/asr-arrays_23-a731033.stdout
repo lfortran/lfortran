@@ -158,10 +158,15 @@
                                                     "(\"line\",1x,i0,\":\")"
                                                     (Character 1 18 ())
                                                 )
-                                                [(StructInstanceMember
-                                                    (Var 4 context)
-                                                    4 1_toml_context_num
-                                                    (Integer 4)
+                                                [(Cast
+                                                    (StructInstanceMember
+                                                        (Var 4 context)
+                                                        4 1_toml_context_num
+                                                        (Integer 4)
+                                                        ()
+                                                    )
+                                                    IntegerToInteger
+                                                    (Integer 8)
                                                     ()
                                                 )]
                                                 FormatFortran
