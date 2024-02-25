@@ -492,6 +492,7 @@ RUN(NAME format_09 LABELS gfortran llvm)
 RUN(NAME format_10 LABELS gfortran llvm)
 RUN(NAME format_11 LABELS gfortran llvm)
 RUN(NAME format_12 LABELS gfortran llvm)
+RUN(NAME format_13 LABELS gfortran llvm)
 
 RUN(NAME submodule_01 LABELS gfortran)
 RUN(NAME submodule_02 LABELS gfortran)
