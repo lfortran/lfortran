@@ -1,5 +1,4 @@
 program test_kind
-use lfortran_intrinsic_kind, only: kind
 implicit none
 !real :: r4d
 !real(4) :: r4
