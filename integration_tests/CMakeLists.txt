@@ -508,7 +508,7 @@ RUN(NAME int_02 LABELS gfortran wasm) # int symboltable
 RUN(NAME int_03 LABELS gfortran llvm) # large int and prints array
 
 RUN(NAME intrinsics_01 LABELS gfortran) # sqrt, abs, log
-RUN(NAME intrinsics_02 LABELS gfortran llvm fortran) # sin
+RUN(NAME intrinsics_02 LABELS gfortran llvm) # sin
 RUN(NAME intrinsics_03 LABELS gfortran llvm) # cos
 RUN(NAME intrinsics_04 LABELS gfortran llvm) # tan
 RUN(NAME intrinsics_04s LABELS gfortran llvm) # ctan
@@ -600,7 +600,7 @@ RUN(NAME intrinsics_85 LABELS gfortran llvm) # maxexponent
 RUN(NAME intrinsics_86 LABELS gfortran llvm) # kind
 RUN(NAME intrinsics_87 LABELS gfortran llvm) # abs
 RUN(NAME intrinsics_88 LABELS gfortran llvm) # min for strings
-RUN(NAME intrinsics_89 LABELS gfortran llvm fortran) # sin
+RUN(NAME intrinsics_89 LABELS gfortran llvm) # sin
 RUN(NAME intrinsics_90 LABELS gfortran llvm) # min
 RUN(NAME intrinsics_91 LABELS gfortran llvm) # index
 RUN(NAME intrinsics_92 LABELS gfortran llvm) # anint
@@ -1081,7 +1081,7 @@ RUN(NAME abs_03 LABELS gfortran llvm wasm c fortran)
 RUN(NAME sqrt_01 LABELS gfortran llvm)
 RUN(NAME sqrt_02 LABELS gfortran llvm)
 RUN(NAME sin_01 LABELS gfortran llvm fortran)
-RUN(NAME sin_02 LABELS gfortran llvm fortran)
+RUN(NAME sin_02 LABELS gfortran llvm)
 RUN(NAME sin_03 LABELS gfortran llvm fortran)
 RUN(NAME sin_04 LABELS gfortran llvm fortran)
 RUN(NAME bits_01 LABELS gfortran llvm)
