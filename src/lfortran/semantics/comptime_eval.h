@@ -43,7 +43,6 @@ struct IntrinsicProceduresAsASRNodes {
 };
 
 struct IntrinsicProcedures {
-    const std::string m_kind = "lfortran_intrinsic_kind";
     const std::string m_builtin = "lfortran_intrinsic_builtin";
     const std::string m_math = "lfortran_intrinsic_math";
     const std::string m_math2 = "lfortran_intrinsic_math2";
@@ -88,7 +87,6 @@ struct IntrinsicProcedures {
 
             // Require evaluated arguments
             {"modulo", {m_math2, &eval_modulo, true}},
-            {"selected_char_kind", {m_kind, &eval_selected_char_kind, true}},
 
             {"iand", {m_bit, &not_implemented, false}},
             {"ior", {m_bit, &not_implemented, false}},
