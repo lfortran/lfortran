@@ -34,18 +34,6 @@ interface mvbits
     module procedure mvbits32, mvbits64
 end interface
 
-interface bge
-    module procedure bge32, bge64
-end interface
-
-interface ble
-    module procedure ble32, ble64
-end interface
-
-interface blt
-    module procedure blt32, blt64
-end interface
-
 interface ibits
     module procedure ibits32, ibits64
 end interface
@@ -314,78 +302,6 @@ interface
 end interface
 to = c_mvbits64(from, frompos, len, to, topos)
 end subroutine
-
-! bge ------------------------------------------------------------------------
-
-elemental logical function bge32(i, j) result(r)
-integer(int32), intent(in) :: i, j
-interface
-    pure logical function c_bge32(i, j) bind(c, name="_lfortran_bge32")
-    import :: int32
-    integer(int32), intent(in), value :: i, j
-    end function
-end interface
-r = c_bge32(i, j)
-end function
-
-elemental logical function bge64(i, j) result(r)
-integer(int64), intent(in) :: i, j
-interface
-    pure logical function c_bge64(i, j) bind(c, name="_lfortran_bge64")
-    import :: int64
-    integer(int64), intent(in), value :: i, j
-    end function
-end interface
-r = c_bge64(i, j)
-end function
-
-! ble ------------------------------------------------------------------------
-
-elemental logical function ble32(i, j) result(r)
-integer(int32), intent(in) :: i, j
-interface
-    pure logical function c_ble32(i, j) bind(c, name="_lfortran_ble32")
-    import :: int32
-    integer(int32), intent(in), value :: i, j
-    end function
-end interface
-r = c_ble32(i, j)
-end function
-
-elemental logical function ble64(i, j) result(r)
-integer(int64), intent(in) :: i, j
-interface
-    pure logical function c_ble64(i, j) bind(c, name="_lfortran_ble64")
-    import :: int64
-    integer(int64), intent(in), value :: i, j
-    end function
-end interface
-r = c_ble64(i, j)
-end function
-
-! blt ------------------------------------------------------------------------
-
-elemental logical function blt32(i, j) result(r)
-integer(int32), intent(in) :: i, j
-interface
-    pure logical function c_blt32(i, j) bind(c, name="_lfortran_blt32")
-    import :: int32
-    integer(int32), intent(in), value :: i, j
-    end function
-end interface
-r = c_blt32(i, j)
-end function
-
-elemental logical function blt64(i, j) result(r)
-integer(int64), intent(in) :: i, j
-interface
-    pure logical function c_blt64(i, j) bind(c, name="_lfortran_blt64")
-    import :: int64
-    integer(int64), intent(in), value :: i, j
-    end function
-end interface
-r = c_blt64(i, j)
-end function
 
 ! ibits ------------------------------------------------------------------------
 

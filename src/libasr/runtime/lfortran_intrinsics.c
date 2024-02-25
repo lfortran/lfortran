@@ -1806,36 +1806,6 @@ LFORTRAN_API int64_t _lfortran_mvbits64(int64_t from, int32_t frompos,
     return (~all_ones & uto) | ufrom;
 }
 
-LFORTRAN_API int32_t _lfortran_bge32(int32_t i, int32_t j) {
-    uint32_t ui = i, uj = j;
-    return ui >= uj;
-}
-
-LFORTRAN_API int32_t _lfortran_bge64(int64_t i, int64_t j) {
-    uint64_t ui = i, uj = j;
-    return ui >= uj;
-}
-
-LFORTRAN_API int32_t _lfortran_ble32(int32_t i, int32_t j) {
-    uint32_t ui = i, uj = j;
-    return ui <= uj;
-}
-
-LFORTRAN_API int32_t _lfortran_ble64(int64_t i, int64_t j) {
-    uint64_t ui = i, uj = j;
-    return ui <= uj;
-}
-
-LFORTRAN_API int32_t _lfortran_blt32(int32_t i, int32_t j) {
-    uint32_t ui = i, uj = j;
-    return ui < uj;
-}
-
-LFORTRAN_API int32_t _lfortran_blt64(int64_t i, int64_t j) {
-    uint64_t ui = i, uj = j;
-    return ui < uj;
-}
-
 LFORTRAN_API int32_t _lfortran_ibits32(int32_t i, int32_t pos, int32_t len) {
     uint32_t ui = i;
     return ((ui << (BITS_32 - pos - len)) >> (BITS_32 - len));
