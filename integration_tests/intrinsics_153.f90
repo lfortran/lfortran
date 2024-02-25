@@ -1,4 +1,4 @@
-program intrinsic_153
+program intrinsics_153
     integer, parameter :: dp = kind(0.d0)
     real :: i,j
     real(dp) :: x,y
