@@ -61,6 +61,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Hypot,
     SelectedIntKind,
     SelectedRealKind,
+    SelectedCharKind,
     MinExponent,
     MaxExponent,
     FloorDiv,
@@ -2261,6 +2262,54 @@ namespace SelectedRealKind {
     }
 
 } // namespace SelectedRealKind
+
+namespace SelectedCharKind {
+
+    static inline ASR::expr_t *eval_SelectedCharKind(Allocator &al, const Location &loc,
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        int64_t kind;
+        char* name = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
+
+        if (strcasecmp(name, "ASCII") == 0 || strcasecmp(name, "DEFAULT") == 0) {
+            kind = 1;
+        } else if (strcasecmp(name, "ISO_10646") == 0) {
+            kind = 4;
+        } else {
+            kind = -1;
+        }
+        return i32(kind);
+    }
+
+    static inline ASR::expr_t* instantiate_SelectedCharKind(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("");
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(fn_name, int32, ReturnVar);
+        auto name = declare("name", arg_types[0], Local);
+        
+        body.push_back(al, b.Assignment(name, args[0]));
+
+        ASR::expr_t *cond1 = Or(sEq(name, StringConstant("ASCII", arg_types[0])), sEq(name, StringConstant("DEFAULT", arg_types[0])));
+        ASR::expr_t *cond2 = sEq(name, StringConstant("ISO_10646", arg_types[0]));
+
+        body.push_back(al, b.If(cond1, {
+            b.Assignment(result, i(1, int32))
+        }, {
+            b.If(cond2, {
+                b.Assignment(result, i(4, int32))
+            }, {
+                b.Assignment(result, i(-1, int32))
+            })
+        }));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace SelectedCharKind
 
 namespace Kind {
 

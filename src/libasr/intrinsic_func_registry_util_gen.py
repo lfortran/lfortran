@@ -62,6 +62,12 @@ intrinsic_funcs_args = {
             "return": "int32"
         }
     ],
+    "SelectedCharKind": [
+        {
+            "args": [("char",)],
+            "return": "int32"
+        }
+    ],
     "Digits": [
         {
             "args": [("int",), ("real",)],
