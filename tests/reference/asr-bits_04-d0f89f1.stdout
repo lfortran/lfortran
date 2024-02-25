@@ -7,96 +7,7 @@
                     (SymbolTable
                         2
                         {
-                            bge:
-                                (ExternalSymbol
-                                    2
-                                    bge
-                                    4 bge
-                                    lfortran_intrinsic_bit
-                                    []
-                                    bge
-                                    Private
-                                ),
-                            bge@bge32:
-                                (ExternalSymbol
-                                    2
-                                    bge@bge32
-                                    4 bge32
-                                    lfortran_intrinsic_bit
-                                    []
-                                    bge32
-                                    Private
-                                ),
-                            bge@bge64:
-                                (ExternalSymbol
-                                    2
-                                    bge@bge64
-                                    4 bge64
-                                    lfortran_intrinsic_bit
-                                    []
-                                    bge64
-                                    Private
-                                ),
-                            ble:
-                                (ExternalSymbol
-                                    2
-                                    ble
-                                    4 ble
-                                    lfortran_intrinsic_bit
-                                    []
-                                    ble
-                                    Private
-                                ),
-                            ble@ble32:
-                                (ExternalSymbol
-                                    2
-                                    ble@ble32
-                                    4 ble32
-                                    lfortran_intrinsic_bit
-                                    []
-                                    ble32
-                                    Private
-                                ),
-                            ble@ble64:
-                                (ExternalSymbol
-                                    2
-                                    ble@ble64
-                                    4 ble64
-                                    lfortran_intrinsic_bit
-                                    []
-                                    ble64
-                                    Private
-                                ),
-                            blt:
-                                (ExternalSymbol
-                                    2
-                                    blt
-                                    4 blt
-                                    lfortran_intrinsic_bit
-                                    []
-                                    blt
-                                    Private
-                                ),
-                            blt@blt32:
-                                (ExternalSymbol
-                                    2
-                                    blt@blt32
-                                    4 blt32
-                                    lfortran_intrinsic_bit
-                                    []
-                                    blt32
-                                    Private
-                                ),
-                            blt@blt64:
-                                (ExternalSymbol
-                                    2
-                                    blt@blt64
-                                    4 blt64
-                                    lfortran_intrinsic_bit
-                                    []
-                                    blt64
-                                    Private
-                                )
+                            
                         })
                     bits_04
                     []
@@ -490,14 +401,16 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 bge@bge32
-                                2 bge
-                                [((IntegerConstant 10 (Integer 4)))
-                                ((IntegerConstant 4 (Integer 4)))]
+                            (IntrinsicElementalFunction
+                                Bge
+                                [(IntegerConstant 10 (Integer 4))
+                                (IntegerConstant 4 (Integer 4))]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -505,7 +418,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -514,18 +430,20 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 bge@bge32
-                                2 bge
-                                [((IntegerConstant 10 (Integer 4)))
-                                ((IntegerUnaryMinus
+                            (IntrinsicElementalFunction
+                                Bge
+                                [(IntegerConstant 10 (Integer 4))
+                                (IntegerUnaryMinus
                                     (IntegerConstant 4 (Integer 4))
                                     (Integer 4)
                                     (IntegerConstant -4 (Integer 4))
-                                ))]
+                                )]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -533,7 +451,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -542,18 +463,20 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 bge@bge32
-                                2 bge
-                                [((IntegerUnaryMinus
+                            (IntrinsicElementalFunction
+                                Bge
+                                [(IntegerUnaryMinus
                                     (IntegerConstant 10 (Integer 4))
                                     (Integer 4)
                                     (IntegerConstant -10 (Integer 4))
-                                ))
-                                ((IntegerConstant 4 (Integer 4)))]
+                                )
+                                (IntegerConstant 4 (Integer 4))]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -561,7 +484,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -570,22 +496,24 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 bge@bge32
-                                2 bge
-                                [((IntegerUnaryMinus
+                            (IntrinsicElementalFunction
+                                Bge
+                                [(IntegerUnaryMinus
                                     (IntegerConstant 10 (Integer 4))
                                     (Integer 4)
                                     (IntegerConstant -10 (Integer 4))
-                                ))
-                                ((IntegerUnaryMinus
+                                )
+                                (IntegerUnaryMinus
                                     (IntegerConstant 4 (Integer 4))
                                     (Integer 4)
                                     (IntegerConstant -4 (Integer 4))
-                                ))]
+                                )]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -593,7 +521,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -602,14 +533,16 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 bge@bge32
-                                2 bge
-                                [((IntegerConstant 10 (Integer 4)))
-                                ((IntegerConstant 0 (Integer 4)))]
+                            (IntrinsicElementalFunction
+                                Bge
+                                [(IntegerConstant 10 (Integer 4))
+                                (IntegerConstant 0 (Integer 4))]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -617,7 +550,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -626,18 +562,20 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 bge@bge32
-                                2 bge
-                                [((IntegerUnaryMinus
+                            (IntrinsicElementalFunction
+                                Bge
+                                [(IntegerUnaryMinus
                                     (IntegerConstant 10 (Integer 4))
                                     (Integer 4)
                                     (IntegerConstant -10 (Integer 4))
-                                ))
-                                ((IntegerConstant 0 (Integer 4)))]
+                                )
+                                (IntegerConstant 0 (Integer 4))]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -645,7 +583,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -654,22 +595,24 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 bge@bge32
-                                2 bge
-                                [((IntegerUnaryMinus
+                            (IntrinsicElementalFunction
+                                Bge
+                                [(IntegerUnaryMinus
                                     (IntegerConstant 10 (Integer 4))
                                     (Integer 4)
                                     (IntegerConstant -10 (Integer 4))
-                                ))
-                                ((IntegerUnaryMinus
+                                )
+                                (IntegerUnaryMinus
                                     (IntegerConstant 10 (Integer 4))
                                     (Integer 4)
                                     (IntegerConstant -10 (Integer 4))
-                                ))]
+                                )]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -677,7 +620,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -686,14 +632,16 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 bge@bge64
-                                2 bge
-                                [((IntegerConstant 10 (Integer 8)))
-                                ((IntegerConstant 4 (Integer 8)))]
+                            (IntrinsicElementalFunction
+                                Bge
+                                [(IntegerConstant 10 (Integer 8))
+                                (IntegerConstant 4 (Integer 8))]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -701,7 +649,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -710,18 +661,20 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 bge@bge64
-                                2 bge
-                                [((IntegerConstant 10 (Integer 8)))
-                                ((IntegerUnaryMinus
+                            (IntrinsicElementalFunction
+                                Bge
+                                [(IntegerConstant 10 (Integer 8))
+                                (IntegerUnaryMinus
                                     (IntegerConstant 4 (Integer 8))
                                     (Integer 8)
                                     (IntegerConstant -4 (Integer 8))
-                                ))]
+                                )]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -729,7 +682,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -738,18 +694,20 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 bge@bge64
-                                2 bge
-                                [((IntegerUnaryMinus
+                            (IntrinsicElementalFunction
+                                Bge
+                                [(IntegerUnaryMinus
                                     (IntegerConstant 10 (Integer 8))
                                     (Integer 8)
                                     (IntegerConstant -10 (Integer 8))
-                                ))
-                                ((IntegerConstant 4 (Integer 8)))]
+                                )
+                                (IntegerConstant 4 (Integer 8))]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -757,7 +715,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -766,22 +727,24 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 bge@bge64
-                                2 bge
-                                [((IntegerUnaryMinus
+                            (IntrinsicElementalFunction
+                                Bge
+                                [(IntegerUnaryMinus
                                     (IntegerConstant 10 (Integer 8))
                                     (Integer 8)
                                     (IntegerConstant -10 (Integer 8))
-                                ))
-                                ((IntegerUnaryMinus
+                                )
+                                (IntegerUnaryMinus
                                     (IntegerConstant 4 (Integer 8))
                                     (Integer 8)
                                     (IntegerConstant -4 (Integer 8))
-                                ))]
+                                )]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -789,7 +752,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -798,14 +764,16 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 bge@bge64
-                                2 bge
-                                [((IntegerConstant 10 (Integer 8)))
-                                ((IntegerConstant 0 (Integer 8)))]
+                            (IntrinsicElementalFunction
+                                Bge
+                                [(IntegerConstant 10 (Integer 8))
+                                (IntegerConstant 0 (Integer 8))]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -813,7 +781,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -822,18 +793,20 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 bge@bge64
-                                2 bge
-                                [((IntegerUnaryMinus
+                            (IntrinsicElementalFunction
+                                Bge
+                                [(IntegerUnaryMinus
                                     (IntegerConstant 10 (Integer 8))
                                     (Integer 8)
                                     (IntegerConstant -10 (Integer 8))
-                                ))
-                                ((IntegerConstant 0 (Integer 8)))]
+                                )
+                                (IntegerConstant 0 (Integer 8))]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -841,7 +814,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -850,22 +826,24 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 bge@bge64
-                                2 bge
-                                [((IntegerUnaryMinus
+                            (IntrinsicElementalFunction
+                                Bge
+                                [(IntegerUnaryMinus
                                     (IntegerConstant 10 (Integer 8))
                                     (Integer 8)
                                     (IntegerConstant -10 (Integer 8))
-                                ))
-                                ((IntegerUnaryMinus
+                                )
+                                (IntegerUnaryMinus
                                     (IntegerConstant 10 (Integer 8))
                                     (Integer 8)
                                     (IntegerConstant -10 (Integer 8))
-                                ))]
+                                )]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -873,7 +851,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -882,14 +863,16 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 ble@ble32
-                                2 ble
-                                [((IntegerConstant 10 (Integer 4)))
-                                ((IntegerConstant 4 (Integer 4)))]
+                            (IntrinsicElementalFunction
+                                Ble
+                                [(IntegerConstant 10 (Integer 4))
+                                (IntegerConstant 4 (Integer 4))]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -897,7 +880,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -906,18 +892,20 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 ble@ble32
-                                2 ble
-                                [((IntegerConstant 10 (Integer 4)))
-                                ((IntegerUnaryMinus
+                            (IntrinsicElementalFunction
+                                Ble
+                                [(IntegerConstant 10 (Integer 4))
+                                (IntegerUnaryMinus
                                     (IntegerConstant 4 (Integer 4))
                                     (Integer 4)
                                     (IntegerConstant -4 (Integer 4))
-                                ))]
+                                )]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -925,7 +913,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -934,18 +925,20 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 ble@ble32
-                                2 ble
-                                [((IntegerUnaryMinus
+                            (IntrinsicElementalFunction
+                                Ble
+                                [(IntegerUnaryMinus
                                     (IntegerConstant 10 (Integer 4))
                                     (Integer 4)
                                     (IntegerConstant -10 (Integer 4))
-                                ))
-                                ((IntegerConstant 4 (Integer 4)))]
+                                )
+                                (IntegerConstant 4 (Integer 4))]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -953,7 +946,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -962,22 +958,24 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 ble@ble32
-                                2 ble
-                                [((IntegerUnaryMinus
+                            (IntrinsicElementalFunction
+                                Ble
+                                [(IntegerUnaryMinus
                                     (IntegerConstant 10 (Integer 4))
                                     (Integer 4)
                                     (IntegerConstant -10 (Integer 4))
-                                ))
-                                ((IntegerUnaryMinus
+                                )
+                                (IntegerUnaryMinus
                                     (IntegerConstant 4 (Integer 4))
                                     (Integer 4)
                                     (IntegerConstant -4 (Integer 4))
-                                ))]
+                                )]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -985,7 +983,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -994,14 +995,16 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 ble@ble32
-                                2 ble
-                                [((IntegerConstant 10 (Integer 4)))
-                                ((IntegerConstant 0 (Integer 4)))]
+                            (IntrinsicElementalFunction
+                                Ble
+                                [(IntegerConstant 10 (Integer 4))
+                                (IntegerConstant 0 (Integer 4))]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -1009,7 +1012,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -1018,18 +1024,20 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 ble@ble32
-                                2 ble
-                                [((IntegerUnaryMinus
+                            (IntrinsicElementalFunction
+                                Ble
+                                [(IntegerUnaryMinus
                                     (IntegerConstant 10 (Integer 4))
                                     (Integer 4)
                                     (IntegerConstant -10 (Integer 4))
-                                ))
-                                ((IntegerConstant 0 (Integer 4)))]
+                                )
+                                (IntegerConstant 0 (Integer 4))]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -1037,7 +1045,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -1046,22 +1057,24 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 ble@ble32
-                                2 ble
-                                [((IntegerUnaryMinus
+                            (IntrinsicElementalFunction
+                                Ble
+                                [(IntegerUnaryMinus
                                     (IntegerConstant 10 (Integer 4))
                                     (Integer 4)
                                     (IntegerConstant -10 (Integer 4))
-                                ))
-                                ((IntegerUnaryMinus
+                                )
+                                (IntegerUnaryMinus
                                     (IntegerConstant 10 (Integer 4))
                                     (Integer 4)
                                     (IntegerConstant -10 (Integer 4))
-                                ))]
+                                )]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -1069,7 +1082,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -1078,14 +1094,16 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 ble@ble64
-                                2 ble
-                                [((IntegerConstant 10 (Integer 8)))
-                                ((IntegerConstant 4 (Integer 8)))]
+                            (IntrinsicElementalFunction
+                                Ble
+                                [(IntegerConstant 10 (Integer 8))
+                                (IntegerConstant 4 (Integer 8))]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -1093,7 +1111,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -1102,18 +1123,20 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 ble@ble64
-                                2 ble
-                                [((IntegerConstant 10 (Integer 8)))
-                                ((IntegerUnaryMinus
+                            (IntrinsicElementalFunction
+                                Ble
+                                [(IntegerConstant 10 (Integer 8))
+                                (IntegerUnaryMinus
                                     (IntegerConstant 4 (Integer 8))
                                     (Integer 8)
                                     (IntegerConstant -4 (Integer 8))
-                                ))]
+                                )]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -1121,7 +1144,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -1130,18 +1156,20 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 ble@ble64
-                                2 ble
-                                [((IntegerUnaryMinus
+                            (IntrinsicElementalFunction
+                                Ble
+                                [(IntegerUnaryMinus
                                     (IntegerConstant 10 (Integer 8))
                                     (Integer 8)
                                     (IntegerConstant -10 (Integer 8))
-                                ))
-                                ((IntegerConstant 4 (Integer 8)))]
+                                )
+                                (IntegerConstant 4 (Integer 8))]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -1149,7 +1177,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -1158,22 +1189,24 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 ble@ble64
-                                2 ble
-                                [((IntegerUnaryMinus
+                            (IntrinsicElementalFunction
+                                Ble
+                                [(IntegerUnaryMinus
                                     (IntegerConstant 10 (Integer 8))
                                     (Integer 8)
                                     (IntegerConstant -10 (Integer 8))
-                                ))
-                                ((IntegerUnaryMinus
+                                )
+                                (IntegerUnaryMinus
                                     (IntegerConstant 4 (Integer 8))
                                     (Integer 8)
                                     (IntegerConstant -4 (Integer 8))
-                                ))]
+                                )]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -1181,7 +1214,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -1190,14 +1226,16 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 ble@ble64
-                                2 ble
-                                [((IntegerConstant 10 (Integer 8)))
-                                ((IntegerConstant 0 (Integer 8)))]
+                            (IntrinsicElementalFunction
+                                Ble
+                                [(IntegerConstant 10 (Integer 8))
+                                (IntegerConstant 0 (Integer 8))]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -1205,7 +1243,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -1214,18 +1255,20 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 ble@ble64
-                                2 ble
-                                [((IntegerUnaryMinus
+                            (IntrinsicElementalFunction
+                                Ble
+                                [(IntegerUnaryMinus
                                     (IntegerConstant 10 (Integer 8))
                                     (Integer 8)
                                     (IntegerConstant -10 (Integer 8))
-                                ))
-                                ((IntegerConstant 0 (Integer 8)))]
+                                )
+                                (IntegerConstant 0 (Integer 8))]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -1233,7 +1276,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -1242,22 +1288,24 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 ble@ble64
-                                2 ble
-                                [((IntegerUnaryMinus
+                            (IntrinsicElementalFunction
+                                Ble
+                                [(IntegerUnaryMinus
                                     (IntegerConstant 10 (Integer 8))
                                     (Integer 8)
                                     (IntegerConstant -10 (Integer 8))
-                                ))
-                                ((IntegerUnaryMinus
+                                )
+                                (IntegerUnaryMinus
                                     (IntegerConstant 10 (Integer 8))
                                     (Integer 8)
                                     (IntegerConstant -10 (Integer 8))
-                                ))]
+                                )]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -1265,7 +1313,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -1274,14 +1325,16 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 blt@blt32
-                                2 blt
-                                [((IntegerConstant 10 (Integer 4)))
-                                ((IntegerConstant 4 (Integer 4)))]
+                            (IntrinsicElementalFunction
+                                Blt
+                                [(IntegerConstant 10 (Integer 4))
+                                (IntegerConstant 4 (Integer 4))]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -1289,7 +1342,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -1298,18 +1354,20 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 blt@blt32
-                                2 blt
-                                [((IntegerConstant 10 (Integer 4)))
-                                ((IntegerUnaryMinus
+                            (IntrinsicElementalFunction
+                                Blt
+                                [(IntegerConstant 10 (Integer 4))
+                                (IntegerUnaryMinus
                                     (IntegerConstant 4 (Integer 4))
                                     (Integer 4)
                                     (IntegerConstant -4 (Integer 4))
-                                ))]
+                                )]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -1317,7 +1375,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -1326,18 +1387,20 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 blt@blt32
-                                2 blt
-                                [((IntegerUnaryMinus
+                            (IntrinsicElementalFunction
+                                Blt
+                                [(IntegerUnaryMinus
                                     (IntegerConstant 10 (Integer 4))
                                     (Integer 4)
                                     (IntegerConstant -10 (Integer 4))
-                                ))
-                                ((IntegerConstant 4 (Integer 4)))]
+                                )
+                                (IntegerConstant 4 (Integer 4))]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -1345,7 +1408,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -1354,22 +1420,24 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 blt@blt32
-                                2 blt
-                                [((IntegerUnaryMinus
+                            (IntrinsicElementalFunction
+                                Blt
+                                [(IntegerUnaryMinus
                                     (IntegerConstant 10 (Integer 4))
                                     (Integer 4)
                                     (IntegerConstant -10 (Integer 4))
-                                ))
-                                ((IntegerUnaryMinus
+                                )
+                                (IntegerUnaryMinus
                                     (IntegerConstant 4 (Integer 4))
                                     (Integer 4)
                                     (IntegerConstant -4 (Integer 4))
-                                ))]
+                                )]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -1377,7 +1445,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -1386,14 +1457,16 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 blt@blt32
-                                2 blt
-                                [((IntegerConstant 10 (Integer 4)))
-                                ((IntegerConstant 0 (Integer 4)))]
+                            (IntrinsicElementalFunction
+                                Blt
+                                [(IntegerConstant 10 (Integer 4))
+                                (IntegerConstant 0 (Integer 4))]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -1401,7 +1474,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -1410,18 +1486,20 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 blt@blt32
-                                2 blt
-                                [((IntegerUnaryMinus
+                            (IntrinsicElementalFunction
+                                Blt
+                                [(IntegerUnaryMinus
                                     (IntegerConstant 10 (Integer 4))
                                     (Integer 4)
                                     (IntegerConstant -10 (Integer 4))
-                                ))
-                                ((IntegerConstant 0 (Integer 4)))]
+                                )
+                                (IntegerConstant 0 (Integer 4))]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -1429,7 +1507,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -1438,14 +1519,16 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 blt@blt64
-                                2 blt
-                                [((IntegerConstant 10 (Integer 8)))
-                                ((IntegerConstant 4 (Integer 8)))]
+                            (IntrinsicElementalFunction
+                                Blt
+                                [(IntegerConstant 10 (Integer 8))
+                                (IntegerConstant 4 (Integer 8))]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -1453,7 +1536,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -1462,18 +1548,20 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 blt@blt64
-                                2 blt
-                                [((IntegerConstant 10 (Integer 8)))
-                                ((IntegerUnaryMinus
+                            (IntrinsicElementalFunction
+                                Blt
+                                [(IntegerConstant 10 (Integer 8))
+                                (IntegerUnaryMinus
                                     (IntegerConstant 4 (Integer 8))
                                     (Integer 8)
                                     (IntegerConstant -4 (Integer 8))
-                                ))]
+                                )]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -1481,7 +1569,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -1490,18 +1581,20 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 blt@blt64
-                                2 blt
-                                [((IntegerUnaryMinus
+                            (IntrinsicElementalFunction
+                                Blt
+                                [(IntegerUnaryMinus
                                     (IntegerConstant 10 (Integer 8))
                                     (Integer 8)
                                     (IntegerConstant -10 (Integer 8))
-                                ))
-                                ((IntegerConstant 4 (Integer 8)))]
+                                )
+                                (IntegerConstant 4 (Integer 8))]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -1509,7 +1602,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -1518,22 +1614,24 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 blt@blt64
-                                2 blt
-                                [((IntegerUnaryMinus
+                            (IntrinsicElementalFunction
+                                Blt
+                                [(IntegerUnaryMinus
                                     (IntegerConstant 10 (Integer 8))
                                     (Integer 8)
                                     (IntegerConstant -10 (Integer 8))
-                                ))
-                                ((IntegerUnaryMinus
+                                )
+                                (IntegerUnaryMinus
                                     (IntegerConstant 4 (Integer 8))
                                     (Integer 8)
                                     (IntegerConstant -4 (Integer 8))
-                                ))]
+                                )]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -1541,7 +1639,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -1550,14 +1651,16 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 blt@blt64
-                                2 blt
-                                [((IntegerConstant 10 (Integer 8)))
-                                ((IntegerConstant 0 (Integer 8)))]
+                            (IntrinsicElementalFunction
+                                Blt
+                                [(IntegerConstant 10 (Integer 8))
+                                (IntegerConstant 0 (Integer 8))]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -1565,7 +1668,10 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -1574,18 +1680,20 @@
                     )
                     (If
                         (LogicalBinOp
-                            (FunctionCall
-                                2 blt@blt64
-                                2 blt
-                                [((IntegerUnaryMinus
+                            (IntrinsicElementalFunction
+                                Blt
+                                [(IntegerUnaryMinus
                                     (IntegerConstant 10 (Integer 8))
                                     (Integer 8)
                                     (IntegerConstant -10 (Integer 8))
-                                ))
-                                ((IntegerConstant 0 (Integer 8)))]
+                                )
+                                (IntegerConstant 0 (Integer 8))]
+                                0
                                 (Logical 4)
-                                ()
-                                ()
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
                             )
                             NEqv
                             (LogicalConstant
@@ -1593,18 +1701,17 @@
                                 (Logical 4)
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
                         )]
                         []
                     )]
-                ),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_bit:
-                (IntrinsicModule lfortran_intrinsic_bit)
+                )
         })
     []
 )

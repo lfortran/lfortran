@@ -56,6 +56,9 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Shiftl)
         INTRINSIC_NAME_CASE(Ishft)
         INTRINSIC_NAME_CASE(Bgt)
+        INTRINSIC_NAME_CASE(Blt)
+        INTRINSIC_NAME_CASE(Bge)
+        INTRINSIC_NAME_CASE(Ble)
         INTRINSIC_NAME_CASE(Leadz)
         INTRINSIC_NAME_CASE(Digits)
         INTRINSIC_NAME_CASE(Repeat)
@@ -199,6 +202,12 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Ishft::instantiate_Ishft, &Ishft::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Bgt),
             {&Bgt::instantiate_Bgt, &Bgt::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Blt),
+            {&Blt::instantiate_Blt, &Blt::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Bge),
+            {&Bge::instantiate_Bge, &Bge::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Ble),
+            {&Ble::instantiate_Ble, &Ble::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Leadz),
             {&Leadz::instantiate_Leadz, &Leadz::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Hypot),
@@ -410,6 +419,12 @@ namespace IntrinsicElementalFunctionRegistry {
             "ishft"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Bgt),
             "bgt"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Blt),
+            "blt"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Bge),
+            "bge"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Ble),
+            "ble"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Leadz),
             "leadz"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Hypot),
@@ -586,6 +601,9 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"lshift", {&Shiftl::create_Shiftl, &Shiftl::eval_Shiftl}},
                 {"ishft", {&Ishft::create_Ishft, &Ishft::eval_Ishft}},
                 {"bgt", {&Bgt::create_Bgt, &Bgt::eval_Bgt}},
+                {"blt", {&Blt::create_Blt, &Blt::eval_Blt}},
+                {"bge", {&Bge::create_Bge, &Bge::eval_Bge}},
+                {"ble", {&Ble::create_Ble, &Ble::eval_Ble}},
                 {"leadz", {&Leadz::create_Leadz, &Leadz::eval_Leadz}},
                 {"hypot", {&Hypot::create_Hypot, &Hypot::eval_Hypot}},
                 {"selected_int_kind", {&SelectedIntKind::create_SelectedIntKind, &SelectedIntKind::eval_SelectedIntKind}},

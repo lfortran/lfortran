@@ -193,6 +193,24 @@ intrinsic_funcs_args = {
             "return": "logical"
         },
     ],
+    "Blt": [
+        {
+            "args": [("int", "int")],
+            "return": "logical"
+        },
+    ],
+    "Bge": [
+        {
+            "args": [("int", "int")],
+            "return": "logical"
+        },
+    ],
+    "Ble": [
+        {
+            "args": [("int", "int")],
+            "return": "logical"
+        },
+    ],
     "Shiftr": [
         {
             "args": [("int", "int")],
