@@ -316,6 +316,12 @@ intrinsic_funcs_args = {
             "kind_arg": True
         }
     ],
+    "Ishftc": [
+        {
+            "args": [("int", "int")],
+            "ret_type_arg_idx": 0
+        },
+    ],
 }
 
 skip_create_func = ["Partition"]
