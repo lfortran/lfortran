@@ -271,6 +271,7 @@ namespace LCompilers {
                 bool fill_function_dependencies;
                 bool fill_module_dependencies;
                 bool fill_variable_dependencies;
+                bool _return_var_or_intent_out = false;
                 SymbolTable* current_scope;
 
             public:
@@ -331,7 +332,11 @@ namespace LCompilers {
                     variable_dependencies.reserve(al, 1);
                     bool fill_variable_dependencies_copy = fill_variable_dependencies;
                     fill_variable_dependencies = true;
+                    _return_var_or_intent_out = (x.m_intent == ASR::intentType::Out ||
+                                                x.m_intent == ASR::intentType::ReturnVar ||
+                                                x.m_intent == ASR::intentType::InOut);
                     BaseWalkVisitor<UpdateDependenciesVisitor>::visit_Variable(x);
+                    _return_var_or_intent_out = false;
                     xx.n_dependencies = variable_dependencies.size();
                     xx.m_dependencies = variable_dependencies.p;
                     fill_variable_dependencies = fill_variable_dependencies_copy;
@@ -362,6 +367,11 @@ namespace LCompilers {
                             } else {
                                 function_dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
                             }
+                        }
+
+                        if (_return_var_or_intent_out && temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(x.m_name)->get_counter() &&
+                            !ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name)) {
+                            function_dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
                         }
                     }
                     if( ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) &&
