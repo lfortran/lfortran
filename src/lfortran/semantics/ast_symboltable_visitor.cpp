@@ -2629,6 +2629,11 @@ public:
                             x.m_symbols[i])->m_id;
                         break;
                     }
+                    case AST::use_symbolType::UseRead: {
+                        remote_sym = AST::down_cast<AST::UseRead_t>(
+                            x.m_symbols[i])->m_id;
+                        break;
+                    }
                     default:
                         throw SemanticError("Symbol with use not supported yet " + std::to_string(x.m_symbols[i]->type), x.base.base.loc);
                 }
