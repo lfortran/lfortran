@@ -128,22 +128,37 @@
                                                 "(i4.4,\"-\",i2.2,\"-\",i2.2)"
                                                 (Character 1 24 ())
                                             )
-                                            [(StructInstanceMember
-                                                (Var 6 rhs)
-                                                6 1_toml_date_year
-                                                (Integer 4)
+                                            [(Cast
+                                                (StructInstanceMember
+                                                    (Var 6 rhs)
+                                                    6 1_toml_date_year
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                IntegerToInteger
+                                                (Integer 8)
                                                 ()
                                             )
-                                            (StructInstanceMember
-                                                (Var 6 rhs)
-                                                6 1_toml_date_month
-                                                (Integer 4)
+                                            (Cast
+                                                (StructInstanceMember
+                                                    (Var 6 rhs)
+                                                    6 1_toml_date_month
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                IntegerToInteger
+                                                (Integer 8)
                                                 ()
                                             )
-                                            (StructInstanceMember
-                                                (Var 6 rhs)
-                                                6 1_toml_date_day
-                                                (Integer 4)
+                                            (Cast
+                                                (StructInstanceMember
+                                                    (Var 6 rhs)
+                                                    6 1_toml_date_day
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                IntegerToInteger
+                                                (Integer 8)
                                                 ()
                                             )]
                                             FormatFortran
@@ -882,22 +897,37 @@
                                                     "(i2.2,\":\",i2.2,\":\",i2.2,\".\",i3.3)"
                                                     (Character 1 33 ())
                                                 )
-                                                [(StructInstanceMember
-                                                    (Var 7 rhs)
-                                                    7 1_toml_time_hour
-                                                    (Integer 4)
+                                                [(Cast
+                                                    (StructInstanceMember
+                                                        (Var 7 rhs)
+                                                        7 1_toml_time_hour
+                                                        (Integer 4)
+                                                        ()
+                                                    )
+                                                    IntegerToInteger
+                                                    (Integer 8)
                                                     ()
                                                 )
-                                                (StructInstanceMember
-                                                    (Var 7 rhs)
-                                                    7 1_toml_time_minute
-                                                    (Integer 4)
+                                                (Cast
+                                                    (StructInstanceMember
+                                                        (Var 7 rhs)
+                                                        7 1_toml_time_minute
+                                                        (Integer 4)
+                                                        ()
+                                                    )
+                                                    IntegerToInteger
+                                                    (Integer 8)
                                                     ()
                                                 )
-                                                (StructInstanceMember
-                                                    (Var 7 rhs)
-                                                    7 1_toml_time_second
-                                                    (Integer 4)
+                                                (Cast
+                                                    (StructInstanceMember
+                                                        (Var 7 rhs)
+                                                        7 1_toml_time_second
+                                                        (Integer 4)
+                                                        ()
+                                                    )
+                                                    IntegerToInteger
+                                                    (Integer 8)
                                                     ()
                                                 )
                                                 (StructInstanceMember
@@ -935,22 +965,37 @@
                                                     "(i2.2,\":\",i2.2,\":\",i2.2)"
                                                     (Character 1 24 ())
                                                 )
-                                                [(StructInstanceMember
-                                                    (Var 7 rhs)
-                                                    7 1_toml_time_hour
-                                                    (Integer 4)
+                                                [(Cast
+                                                    (StructInstanceMember
+                                                        (Var 7 rhs)
+                                                        7 1_toml_time_hour
+                                                        (Integer 4)
+                                                        ()
+                                                    )
+                                                    IntegerToInteger
+                                                    (Integer 8)
                                                     ()
                                                 )
-                                                (StructInstanceMember
-                                                    (Var 7 rhs)
-                                                    7 1_toml_time_minute
-                                                    (Integer 4)
+                                                (Cast
+                                                    (StructInstanceMember
+                                                        (Var 7 rhs)
+                                                        7 1_toml_time_minute
+                                                        (Integer 4)
+                                                        ()
+                                                    )
+                                                    IntegerToInteger
+                                                    (Integer 8)
                                                     ()
                                                 )
-                                                (StructInstanceMember
-                                                    (Var 7 rhs)
-                                                    7 1_toml_time_second
-                                                    (Integer 4)
+                                                (Cast
+                                                    (StructInstanceMember
+                                                        (Var 7 rhs)
+                                                        7 1_toml_time_second
+                                                        (Integer 4)
+                                                        ()
+                                                    )
+                                                    IntegerToInteger
+                                                    (Integer 8)
                                                     ()
                                                 )]
                                                 FormatFortran

@@ -5090,6 +5090,28 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
     return ASR::make_SubroutineCall_t(al, a_loc, a_name, a_original_name, a_args, n_args, a_dt);
 }
 
+static inline void promote_ints_to_kind_8(ASR::expr_t** m_args, size_t n_args,
+    Allocator& al, const Location& loc) {
+    for (size_t i = 0; i < n_args; i++) {
+        if (ASRUtils::is_integer(*ASRUtils::expr_type(m_args[i]))) {
+            ASR::ttype_t* arg_type = ASRUtils::expr_type(m_args[i]);
+            ASR::ttype_t* dest_type = ASRUtils::duplicate_type(al, arg_type);
+            ASRUtils::set_kind_to_ttype_t(dest_type, 8);
+            m_args[i] = CastingUtil::perform_casting(m_args[i], arg_type,
+                dest_type, al, loc);
+        }
+    }
+}
+
+static inline ASR::asr_t* make_StringFormat_t_util(Allocator &al, const Location &a_loc,
+        ASR::expr_t* a_fmt, ASR::expr_t** a_args, size_t n_args, ASR::string_format_kindType a_kind,
+        ASR::ttype_t* a_type, ASR::expr_t* a_value) {
+
+    promote_ints_to_kind_8(a_args, n_args, al, a_loc);
+
+    return ASR::make_StringFormat_t(al, a_loc, a_fmt, a_args, n_args, a_kind, a_type, a_value);
+}
+
 static inline ASR::expr_t* cast_to_descriptor(Allocator& al, ASR::expr_t* arg) {
     ASR::ttype_t* arg_type = ASRUtils::expr_type(arg);
     ASR::Array_t* arg_array_t = ASR::down_cast<ASR::Array_t>(

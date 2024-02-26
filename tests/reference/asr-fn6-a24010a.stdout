@@ -600,7 +600,12 @@
                                                                                 "(i0)"
                                                                                 (Character 1 4 ())
                                                                             )
-                                                                            [(Var 5 generic)]
+                                                                            [(Cast
+                                                                                (Var 5 generic)
+                                                                                IntegerToInteger
+                                                                                (Integer 8)
+                                                                                ()
+                                                                            )]
                                                                             FormatFortran
                                                                             (Character -1 0 ())
                                                                             ()
@@ -641,7 +646,12 @@
                                                                                 "(i0)"
                                                                                 (Character 1 4 ())
                                                                             )
-                                                                            [(Var 5 generic)]
+                                                                            [(Cast
+                                                                                (Var 5 generic)
+                                                                                IntegerToInteger
+                                                                                (Integer 8)
+                                                                                ()
+                                                                            )]
                                                                             FormatFortran
                                                                             (Character -1 0 ())
                                                                             ()
@@ -682,7 +692,12 @@
                                                                                 "(i0)"
                                                                                 (Character 1 4 ())
                                                                             )
-                                                                            [(Var 5 generic)]
+                                                                            [(Cast
+                                                                                (Var 5 generic)
+                                                                                IntegerToInteger
+                                                                                (Integer 8)
+                                                                                ()
+                                                                            )]
                                                                             FormatFortran
                                                                             (Character -1 0 ())
                                                                             ()
