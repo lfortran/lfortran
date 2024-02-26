@@ -69,6 +69,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(SelectedRealKind)
         INTRINSIC_NAME_CASE(MinExponent)
         INTRINSIC_NAME_CASE(MaxExponent)
+        INTRINSIC_NAME_CASE(Ishftc)
         INTRINSIC_NAME_CASE(ListIndex)
         INTRINSIC_NAME_CASE(Partition)
         INTRINSIC_NAME_CASE(ListReverse)
@@ -287,6 +288,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Ifix::instantiate_Ifix, &Ifix::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Idint),
             {&Idint::instantiate_Idint, &Idint::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Ishftc),
+            {&Ishftc::instantiate_Ishftc, &Ishftc::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Conjg),
             {&Conjg::instantiate_Conjg, &Conjg::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SignFromValue),
@@ -472,6 +475,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "max"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Min),
             "min"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Ishftc),
+            "ishftc"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Radix),
             "radix"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Scale),
@@ -632,6 +637,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"min0", {&Min::create_Min, &Min::eval_Min}},
                 {"max", {&Max::create_Max, &Max::eval_Max}},
                 {"min", {&Min::create_Min, &Min::eval_Min}},
+                {"ishftc", {&Ishftc::create_Ishftc, &Ishftc::eval_Ishftc}},
                 {"radix", {&Radix::create_Radix, &Radix::eval_Radix}},
                 {"scale", {&Scale::create_Scale, &Scale::eval_Scale}},
                 {"dprod", {&Dprod::create_Dprod, &Dprod::eval_Dprod}},
