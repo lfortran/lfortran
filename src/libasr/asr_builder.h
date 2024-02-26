@@ -240,6 +240,7 @@ class ASRBuilder {
             n, ASR::binopType::BitRShift, bits, t, nullptr))
     #define i_BitLshift(n, bits, t) EXPR(ASR::make_IntegerBinOp_t(al, loc,      \
             n, ASR::binopType::BitLShift, bits, t, nullptr))
+    #define i_BitNot(x, t) EXPR(ASR::make_IntegerBitNot_t(al, loc, x, t, nullptr))
 
     ASR::expr_t *Add(ASR::expr_t *left, ASR::expr_t *right) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));

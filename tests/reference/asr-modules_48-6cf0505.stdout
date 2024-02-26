@@ -1075,7 +1075,7 @@
                                                 (ExternalSymbol
                                                     6
                                                     len_trim
-                                                    77 len_trim
+                                                    73 len_trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     len_trim
@@ -1157,7 +1157,7 @@
                                                 (ExternalSymbol
                                                     6
                                                     trim
-                                                    77 trim
+                                                    73 trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     trim
@@ -1189,7 +1189,7 @@
                                                 (ExternalSymbol
                                                     6
                                                     verify_kind4
-                                                    77 verify_kind4
+                                                    73 verify_kind4
                                                     lfortran_intrinsic_string
                                                     []
                                                     verify_kind4
