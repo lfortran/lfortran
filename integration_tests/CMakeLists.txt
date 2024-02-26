@@ -669,6 +669,7 @@ RUN(NAME intrinsics_155 LABELS gfortran llvm) # bgt
 RUN(NAME intrinsics_156 LABELS gfortran llvm) # blt
 RUN(NAME intrinsics_157 LABELS gfortran llvm) # ble
 RUN(NAME intrinsics_158 LABELS gfortran llvm) # bge
+RUN(NAME intrinsics_159 LABELS gfortran llvm) # matmul
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)

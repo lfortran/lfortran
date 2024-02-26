@@ -117,6 +117,8 @@ class ASRBuilder {
     #define f32_neg(x, t) ASRUtils::EXPR(ASR::make_RealUnaryMinus_t(al, loc, x, t, nullptr))
 
     #define bool32(x)  ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, x, logical))
+
+    #define complex(x, y, t) ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, loc, x, y, t))
     #define c32(x, y) ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, loc, x, y, complex32))
 
     #define ListItem(x, pos, type) EXPR(ASR::make_ListItem_t(al, loc, x, pos,   \
@@ -594,6 +596,9 @@ class ASRBuilder {
             }
             case ASR::ttypeType::Real : {
                 return Assignment(lhs, f(init_value, type));
+            }
+            case ASR::ttypeType::Complex : {
+                return Assignment(lhs, complex(init_value, init_value, type));
             }
             default : {
                 LCOMPILERS_ASSERT(false);
