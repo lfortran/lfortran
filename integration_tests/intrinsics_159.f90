@@ -1,22 +1,23 @@
 program intrinsics_159
-    complex(4) :: x(2, 3)
-    complex(4) :: y(3, 2)
-    complex(4) :: res(2, 2)
+    use iso_fortran_env, only: dp=>real64, sp=>real32
+    complex(sp) :: x(2, 3)
+    complex(sp) :: y(3, 2)
+    complex(sp) :: res(2, 2)
 
-    complex(8) :: x_8(2, 3)
-    complex(8) :: y_8(3, 2)
-    complex(8) :: res_8(2, 2)
+    complex(dp) :: x_dp(2, 3)
+    complex(dp) :: y_dp(3, 2)
+    complex(dp) :: res_dp(2, 2)
 
-    complex(4) :: x_(5)
-    complex(4) :: y_(5, 1)
-    complex(4) :: res_(1)
+    complex(sp) :: x_(5)
+    complex(sp) :: y_(5, 1)
+    complex(sp) :: res_(1)
 
-    complex(4) :: a(1, 5)
-    complex(4) :: b(5, 1)
-    complex(4) :: c(1, 1)
+    complex(sp) :: a(1, 5)
+    complex(sp) :: b(5, 1)
+    complex(sp) :: c(1, 1)
 
-    complex(4) :: e(4, 4)
-    complex(4) :: f(4, 4)
+    complex(sp) :: e(4, 4)
+    complex(sp) :: f(4, 4)
 
     real :: g(2, 3)
     real :: h(3, 2)
@@ -25,7 +26,7 @@ program intrinsics_159
     integer :: m(3, 2)
     integer :: i
 
-    complex(4) :: num
+    complex(sp) :: num
 
     num = (1.0, 2.0)
     x = reshape([num, num, num, num, num, num], [2, 3])
@@ -35,11 +36,11 @@ program intrinsics_159
     if (abs(abs(sum(res)) - 60.0) > 1e-8) error stop
     
 
-    x_8 = reshape([ (i, i = 1, 6) ], [2, 3])
-    y_8 = transpose(x_8)
-    res_8 = matmul( x_8, y_8 )
-    print *, abs(sum(res_8))
-    if (abs(abs(sum(res_8)) - 179.0D0) > 1e-12) error stop
+    x_dp = reshape([ (i, i = 1, 6) ], [2, 3])
+    y_dp = transpose(x_dp)
+    res_dp = matmul( x_dp, y_dp )
+    print *, abs(sum(res_dp))
+    if (abs(abs(sum(res_dp)) - 179.0_dp) > 1e-12_dp) error stop
 
 
     x_ = [(i, i = 1, 5)]
