@@ -59,6 +59,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Blt)
         INTRINSIC_NAME_CASE(Bge)
         INTRINSIC_NAME_CASE(Ble)
+        INTRINSIC_NAME_CASE(Not)
         INTRINSIC_NAME_CASE(Leadz)
         INTRINSIC_NAME_CASE(Digits)
         INTRINSIC_NAME_CASE(Repeat)
@@ -208,6 +209,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Bge::instantiate_Bge, &Bge::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ble),
             {&Ble::instantiate_Ble, &Ble::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Not),
+            {&Not::instantiate_Not, &Not::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Leadz),
             {&Leadz::instantiate_Leadz, &Leadz::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Hypot),
@@ -425,6 +428,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "bge"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ble),
             "ble"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Not),
+            "not"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Leadz),
             "leadz"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Hypot),
@@ -604,6 +609,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"blt", {&Blt::create_Blt, &Blt::eval_Blt}},
                 {"bge", {&Bge::create_Bge, &Bge::eval_Bge}},
                 {"ble", {&Ble::create_Ble, &Ble::eval_Ble}},
+                {"not", {&Not::create_Not, &Not::eval_Not}},
                 {"leadz", {&Leadz::create_Leadz, &Leadz::eval_Leadz}},
                 {"hypot", {&Hypot::create_Hypot, &Hypot::eval_Hypot}},
                 {"selected_int_kind", {&SelectedIntKind::create_SelectedIntKind, &SelectedIntKind::eval_SelectedIntKind}},
