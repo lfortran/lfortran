@@ -4,8 +4,6 @@
         {
             iso_fortran_env:
                 (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_bit:
-                (IntrinsicModule lfortran_intrinsic_bit),
             lfortran_intrinsic_builtin:
                 (IntrinsicModule lfortran_intrinsic_builtin),
             lfortran_intrinsic_string:
@@ -658,26 +656,6 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            ieor:
-                                                (ExternalSymbol
-                                                    4
-                                                    ieor
-                                                    34 ieor
-                                                    lfortran_intrinsic_bit
-                                                    []
-                                                    ieor
-                                                    Private
-                                                ),
-                                            ieor@ieor64:
-                                                (ExternalSymbol
-                                                    4
-                                                    ieor@ieor64
-                                                    34 ieor64
-                                                    lfortran_intrinsic_bit
-                                                    []
-                                                    ieor64
-                                                    Private
-                                                ),
                                             input:
                                                 (Variable
                                                     4
@@ -773,11 +751,10 @@
                                         [(Assignment
                                             (Var 4 hash)
                                             (IntegerBinOp
-                                                (FunctionCall
-                                                    4 ieor@ieor64
-                                                    4 ieor
-                                                    [((Var 4 hash))
-                                                    ((Iachar
+                                                (IntrinsicElementalFunction
+                                                    Ieor
+                                                    [(Var 4 hash)
+                                                    (Iachar
                                                         (StringItem
                                                             (Var 4 input)
                                                             (Var 4 i)
@@ -786,9 +763,9 @@
                                                         )
                                                         (Integer 8)
                                                         ()
-                                                    ))]
+                                                    )]
+                                                    0
                                                     (Integer 8)
-                                                    ()
                                                     ()
                                                 )
                                                 Mul
@@ -1654,7 +1631,6 @@
                         })
                     modules_48_fpm_strings
                     [lfortran_intrinsic_builtin
-                    lfortran_intrinsic_bit
                     lfortran_intrinsic_string]
                     .false.
                     .false.
