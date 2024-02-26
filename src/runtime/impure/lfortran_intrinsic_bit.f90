@@ -6,10 +6,6 @@ interface iand
     module procedure iand16, iand32, iand64
 end interface
 
-interface not
-    module procedure not32, not64
-end interface
-
 interface ior
     module procedure ior32, ior64
 end interface
@@ -79,30 +75,6 @@ interface
     end function
 end interface
 r = c_iand64(x, y)
-end function
-
-! not --------------------------------------------------------------------------
-
-elemental integer(int32) function not32(x) result(r)
-integer(int32), intent(in) :: x
-interface
-    pure integer(int32) function c_not32(x) bind(c, name="_lfortran_not32")
-    import :: int32
-    integer(int32), intent(in), value :: x
-    end function
-end interface
-r = c_not32(x)
-end function
-
-elemental integer(int64) function not64(x) result(r)
-integer(int64), intent(in) :: x
-interface
-    pure integer(int64) function c_not64(x) bind(c, name="_lfortran_not64")
-    import :: int64
-    integer(int64), intent(in), value :: x
-    end function
-end interface
-r = c_not64(x)
 end function
 
 ! ior --------------------------------------------------------------------------
