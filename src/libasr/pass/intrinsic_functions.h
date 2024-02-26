@@ -96,6 +96,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Idint,
     Floor,
     Ceiling,
+    Ishftc,
     Maskr,
     Maskl,
     Epsilon,
@@ -2323,6 +2324,47 @@ namespace Leadz {
     }
 
 } // namespace Leadz
+
+ namespace Ishftc {
+ 
+    static uint64_t cutoff_extra_bits(uint64_t num, uint32_t bits_size, uint32_t max_bits_size) {
+        if (bits_size == max_bits_size) {
+            return num;
+        }
+        return (num & ((1lu << bits_size) - 1lu));
+    }
+
+    static ASR::expr_t *eval_Ishftc(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        uint64_t val = (uint64_t)ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        int64_t shift_signed = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
+        bool negative_shift = (shift_signed < 0);
+        uint32_t shift = abs(shift_signed);
+        uint32_t bits_size = 8u * (uint32_t)kind;
+        uint32_t max_bits_size = 64;
+        if (bits_size < shift) {
+            append_error(diag, "The absolute value of SHIFT argument must be less than or equal to BIT_SIZE('I')", loc);
+            return nullptr;
+        }
+        val = cutoff_extra_bits(val, bits_size, max_bits_size);
+        uint64_t result;
+        if (negative_shift) {
+            result = (val >> shift) | cutoff_extra_bits(val << (bits_size - shift), bits_size, max_bits_size);
+        } else {
+            result = cutoff_extra_bits(val << shift, bits_size, max_bits_size) | ((val >> (bits_size - shift)));
+        }
+        return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_Ishftc(Allocator & /*al*/, const Location & /*loc*/,
+            SymbolTable */*scope*/, Vec<ASR::ttype_t*>& /*arg_types*/, ASR::ttype_t */*return_type*/,
+            Vec<ASR::call_arg_t>& /*new_args*/, int64_t /*overload_id*/) {
+        // TO DO: Implement the runtime function for ISHFTC
+        throw LCompilersException("Runtime implementation for ISHFTC is not yet implemented.");
+    }
+
+} // namespace Ishftc
 
 namespace Hypot {
 
