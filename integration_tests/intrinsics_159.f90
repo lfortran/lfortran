@@ -1,11 +1,12 @@
 program intrinsics_159
+    use iso_fortran_env, only: dp=>real64
     complex(4) :: x(2, 3)
     complex(4) :: y(3, 2)
     complex(4) :: res(2, 2)
 
-    complex(8) :: x_8(2, 3)
-    complex(8) :: y_8(3, 2)
-    complex(8) :: res_8(2, 2)
+    complex(8) :: x_dp(2, 3)
+    complex(8) :: y_dp(3, 2)
+    complex(8) :: res_dp(2, 2)
 
     complex(4) :: x_(5)
     complex(4) :: y_(5, 1)
@@ -35,11 +36,11 @@ program intrinsics_159
     if (abs(abs(sum(res)) - 60.0) > 1e-8) error stop
     
 
-    x_8 = reshape([ (i, i = 1, 6) ], [2, 3])
-    y_8 = transpose(x_8)
-    res_8 = matmul( x_8, y_8 )
-    print *, abs(sum(res_8))
-    if (abs(abs(sum(res_8)) - 179.0D0) > 1e-12) error stop
+    x_dp = reshape([ (i, i = 1, 6) ], [2, 3])
+    y_dp = transpose(x_dp)
+    res_dp = matmul( x_dp, y_dp )
+    print *, abs(sum(res_dp))
+    if (abs(abs(sum(res_dp)) - 179.0_dp) > 1e-12_dp) error stop
 
 
     x_ = [(i, i = 1, 5)]
