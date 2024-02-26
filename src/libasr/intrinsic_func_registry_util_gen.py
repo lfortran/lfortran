@@ -211,6 +211,12 @@ intrinsic_funcs_args = {
             "return": "logical"
         },
     ],
+    "Not": [
+        {
+            "args": [("int",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
     "Shiftr": [
         {
             "args": [("int", "int")],

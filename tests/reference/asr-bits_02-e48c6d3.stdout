@@ -13,8 +13,10 @@
                                     all_ones
                                     [all_zeros]
                                     Local
-                                    (IntegerBitNot
-                                        (Var 2 all_zeros)
+                                    (IntrinsicElementalFunction
+                                        Not
+                                        [(Var 2 all_zeros)]
+                                        0
                                         (Integer 8)
                                         (IntegerConstant -1 (Integer 8))
                                     )
@@ -95,22 +97,11 @@
                                     Public
                                     Required
                                     .false.
-                                ),
-                            not:
-                                (ExternalSymbol
-                                    2
-                                    not
-                                    30 not
-                                    lfortran_intrinsic_bit
-                                    []
-                                    not
-                                    Private
                                 )
                         })
                     bits_02
                     [iso_fortran_env
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_bit]
+                    lfortran_intrinsic_builtin]
                     [(Print
                         [(Var 2 block_size)]
                         ()
@@ -129,8 +120,6 @@
                 ),
             iso_fortran_env:
                 (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_bit:
-                (IntrinsicModule lfortran_intrinsic_bit),
             lfortran_intrinsic_builtin:
                 (IntrinsicModule lfortran_intrinsic_builtin)
         })

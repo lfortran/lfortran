@@ -217,8 +217,6 @@ LFORTRAN_API char* _lfortran_str_slice_assign(char* s, char *r, int32_t idx1, in
 LFORTRAN_API int16_t _lfortran_iand16(int16_t x, int16_t y);
 LFORTRAN_API int32_t _lfortran_iand32(int32_t x, int32_t y);
 LFORTRAN_API int64_t _lfortran_iand64(int64_t x, int64_t y);
-LFORTRAN_API int32_t _lfortran_not32(int32_t x);
-LFORTRAN_API int64_t _lfortran_not64(int64_t x);
 LFORTRAN_API int32_t _lfortran_ior32(int32_t x, int32_t y);
 LFORTRAN_API int64_t _lfortran_ior64(int64_t x, int64_t y);
 LFORTRAN_API int32_t _lfortran_ieor32(int32_t x, int32_t y);
