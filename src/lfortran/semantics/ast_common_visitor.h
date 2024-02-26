@@ -813,6 +813,7 @@ public:
     bool in_Subroutine = false;
     bool is_common_variable = false;
     bool _processing_dimensions = false;
+    bool _declaring_variable = false;
     bool is_implicit_interface = false;
     Vec<ASR::stmt_t*> *current_body = nullptr;
 
@@ -1760,6 +1761,7 @@ public:
     }
 
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
+        _declaring_variable = true;
         if (x.m_vartype == nullptr &&
                 x.n_attributes == 1 &&
                 AST::is_a<AST::AttrNamelist_t>(*x.m_attributes[0])) {
@@ -2818,6 +2820,7 @@ public:
                 }
             } // for m_syms
         }
+        _declaring_variable = false;
     }
 
     void visit_Interface(const AST::Interface_t &/*x*/) {
@@ -4051,6 +4054,11 @@ public:
         }
         if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter()) {
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
+        }
+        if (_processing_dimensions && _declaring_variable &&
+            ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter() &&
+            !ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
+            current_function_dependencies.push_back(al, ASRUtils::symbol_name(v));
         }
         ASR::Module_t* v_module = ASRUtils::get_sym_module0(f2);
         if( v_module ) {
