@@ -1,4 +1,4 @@
-semantic error: The `matmul` intrinsic doesn't handle logical or complex type yet
+semantic error: The `matmul` intrinsic doesn't handle logical type yet
  --> tests/errors/matrix_matmul_03.f90:5:14
   |
 5 |     print *, matmul(a, b)
