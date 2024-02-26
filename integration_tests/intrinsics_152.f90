@@ -55,5 +55,11 @@ program intrinsics_152
     if (selected_real_kind(k5, k2, k6) /= 8) error stop
     print*, selected_real_kind(k5, k2, 3)
     if (selected_real_kind(k5, k2, 3) /= -5) error stop
+    print*, selected_real_kind(34)
+    if (selected_real_kind(34) /= -1) error stop
+    print*, selected_real_kind(50,10,2)
+    if (selected_real_kind(50,10,2) /= -1) error stop
+    print*, selected_real_kind(45,16)
+    if (selected_real_kind(50,10,2) /= -1) error stop
 
 end
