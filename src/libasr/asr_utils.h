@@ -3701,57 +3701,75 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
                 f = ASR::down_cast<ASR::Function_t>(f_sym);
             }
         }
-        ASR::Module_t *m = ASR::down_cast2<ASR::Module_t>(f->m_symtab->parent->asr_owner);
-        char *modname = m->m_name;
-        ASR::symbol_t *maybe_f = current_scope->resolve_symbol(std::string(f->m_name));
-        ASR::symbol_t* maybe_f_actual = nullptr;
-        std::string maybe_modname = "";
-        if( maybe_f && ASR::is_a<ASR::ExternalSymbol_t>(*maybe_f) ) {
-            maybe_modname = ASR::down_cast<ASR::ExternalSymbol_t>(maybe_f)->m_module_name;
-            maybe_f_actual = ASRUtils::symbol_get_past_external(maybe_f);
+        ASR::Module_t *m = nullptr;
+        if (ASR::is_a<ASR::symbol_t>(*f->m_symtab->parent->asr_owner)) {
+            ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(f->m_symtab->parent->asr_owner);
+            if (ASR::is_a<ASR::Module_t>(*sym)) {
+                m = ASR::down_cast<ASR::Module_t>(sym);
+                char *modname = m->m_name;
+                ASR::symbol_t *maybe_f = current_scope->resolve_symbol(std::string(f->m_name));
+                ASR::symbol_t* maybe_f_actual = nullptr;
+                std::string maybe_modname = "";
+                if( maybe_f && ASR::is_a<ASR::ExternalSymbol_t>(*maybe_f) ) {
+                    maybe_modname = ASR::down_cast<ASR::ExternalSymbol_t>(maybe_f)->m_module_name;
+                    maybe_f_actual = ASRUtils::symbol_get_past_external(maybe_f);
+                }
+                // If the Function to be imported is already present
+                // then do not import.
+                if( maybe_modname == std::string(modname) &&
+                    f_sym == maybe_f_actual ) {
+                    new_es = maybe_f;
+                } else {
+                    // Import while assigning a new name to avoid conflicts
+                    // For example, if someone is using `len` from a user
+                    // define module then `get_unique_name` will avoid conflict
+                    std::string unique_name = current_scope->get_unique_name(f->m_name, false);
+                    Str s; s.from_str_view(unique_name);
+                    char *unique_name_c = s.c_str(al);
+                    LCOMPILERS_ASSERT(current_scope->get_symbol(unique_name) == nullptr);
+                    new_es = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                        al, f->base.base.loc,
+                        /* a_symtab */ current_scope,
+                        /* a_name */ unique_name_c,
+                        (ASR::symbol_t*)f,
+                        modname, nullptr, 0,
+                        f->m_name,
+                        ASR::accessType::Private
+                        ));
+                    current_scope->add_symbol(unique_name, new_es);
+                }
+                // The following substitutes args from the current scope
+                for (size_t i = 0; i < x->n_args; i++) {
+                    ASR::expr_t** current_expr_copy_ = current_expr;
+                    current_expr = &(x->m_args[i].m_value);
+                    replace_expr(x->m_args[i].m_value);
+                    current_expr = current_expr_copy_;
+                }
+                replace_ttype(x->m_type);
+                if (ASRUtils::symbol_parent_symtab(new_es)->get_counter() != current_scope->get_counter()) {
+                    ADD_ASR_DEPENDENCIES(current_scope, new_es, current_function_dependencies);
+                }
+                ASRUtils::insert_module_dependency(new_es, al, current_module_dependencies);
+                x->m_name = new_es;
+                if( x->m_original_name ) {
+                    ASR::symbol_t* x_original_name = current_scope->resolve_symbol(ASRUtils::symbol_name(x->m_original_name));
+                    if( x_original_name ) {
+                        x->m_original_name = x_original_name;
+                    }
+                }
+                return;
+            } else {
+                return;
+            }
         }
-        // If the Function to be imported is already present
-        // then do not import.
-        if( maybe_modname == std::string(modname) &&
-            f_sym == maybe_f_actual ) {
-            new_es = maybe_f;
-        } else {
-            // Import while assigning a new name to avoid conflicts
-            // For example, if someone is using `len` from a user
-            // define module then `get_unique_name` will avoid conflict
-            std::string unique_name = current_scope->get_unique_name(f->m_name, false);
-            Str s; s.from_str_view(unique_name);
-            char *unique_name_c = s.c_str(al);
-            LCOMPILERS_ASSERT(current_scope->get_symbol(unique_name) == nullptr);
-            new_es = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-                al, f->base.base.loc,
-                /* a_symtab */ current_scope,
-                /* a_name */ unique_name_c,
-                (ASR::symbol_t*)f,
-                modname, nullptr, 0,
-                f->m_name,
-                ASR::accessType::Private
-                ));
-            current_scope->add_symbol(unique_name, new_es);
-        }
-        // The following substitutes args from the current scope
+        // iterate over the arguments and replace them
         for (size_t i = 0; i < x->n_args; i++) {
             ASR::expr_t** current_expr_copy_ = current_expr;
             current_expr = &(x->m_args[i].m_value);
-            replace_expr(x->m_args[i].m_value);
-            current_expr = current_expr_copy_;
-        }
-        replace_ttype(x->m_type);
-        if (ASRUtils::symbol_parent_symtab(new_es)->get_counter() != current_scope->get_counter()) {
-            ADD_ASR_DEPENDENCIES(current_scope, new_es, current_function_dependencies);
-        }
-        ASRUtils::insert_module_dependency(new_es, al, current_module_dependencies);
-        x->m_name = new_es;
-        if( x->m_original_name ) {
-            ASR::symbol_t* x_original_name = current_scope->resolve_symbol(ASRUtils::symbol_name(x->m_original_name));
-            if( x_original_name ) {
-                x->m_original_name = x_original_name;
+            if (x->m_args[i].m_value) {
+                replace_expr(x->m_args[i].m_value);
             }
+            current_expr = current_expr_copy_;
         }
     }
 
