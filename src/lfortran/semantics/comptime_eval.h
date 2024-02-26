@@ -117,7 +117,6 @@ struct IntrinsicProcedures {
             // Subroutines
             {"cpu_time", {m_math, &not_implemented, false}},
             {"bit_size", {m_builtin, &eval_bit_size, false}},
-            {"not", {m_bit, &eval_not, true}},
             {"mvbits", {m_bit, &not_implemented, true}},
             {"ibits", {m_bit, &not_implemented, true}},
             {"count", {m_bit, &not_implemented, false}},
@@ -209,66 +208,6 @@ struct IntrinsicProcedures {
         }
         ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
         return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, bit_size_val, int_type));
-    }
-
-    static ASR::expr_t *eval_not(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &) {
-        LCOMPILERS_ASSERT(args.size() >= 1);
-        ASR::expr_t* arg = ASRUtils::expr_value(args[0]);
-        LCOMPILERS_ASSERT(arg);
-        ASR::ttype_t* arg_type = ASRUtils::expr_type(arg);
-        LCOMPILERS_ASSERT(arg_type->type == ASR::ttypeType::Integer);
-        ASR::Integer_t* arg_int_type = ASR::down_cast<ASR::Integer_t>(arg_type);
-        ASR::IntegerConstant_t* arg_int = ASR::down_cast<ASR::IntegerConstant_t>(arg);
-        int64_t not_arg = ~(arg_int->m_n);
-        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, arg_int_type->m_kind));
-        return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, not_arg, int_type));
-    }
-
-    static ASR::expr_t *eval_floor(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
-        // TODO: Implement optional kind; J3/18-007r1 --> FLOOR(A, [KIND])
-        ASR::expr_t* func_expr = args[0];
-        ASR::ttype_t* func_type = ASRUtils::expr_type(func_expr);
-        if (ASR::is_a<ASR::Real_t>(*func_type)) {
-            double rv = ASR::down_cast<ASR::RealConstant_t>(func_expr)->m_r;
-            int64_t ival = floor(rv);
-            ASR::ttype_t *type = ASRUtils::TYPE(
-                    ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
-            return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, ival, type));
-        } else {
-            throw SemanticError("floor must have one real argument", loc);
-        }
-    }
-
-    static ASR::expr_t *eval_ceiling(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
-        // TODO: Implement optional kind; J3/18-007r1 --> CEILING(A, [KIND])
-        ASR::expr_t* func_expr = args[0];
-        ASR::ttype_t* func_type = ASRUtils::expr_type(func_expr);
-        if (ASR::is_a<ASR::Real_t>(*func_type)) {
-            double rv = ASR::down_cast<ASR::RealConstant_t>(func_expr)->m_r;
-            int64_t ival = ceil(rv);
-            ASR::ttype_t *type = ASRUtils::TYPE(
-                    ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
-            return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, ival, type));
-        } else {
-            throw SemanticError("floor must have one real argument", loc);
-        }
-    }
-
-    static ASR::expr_t *eval_nint(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
-        ASR::expr_t* func_expr = args[0];
-        ASR::ttype_t* func_type = ASRUtils::expr_type(func_expr);
-        if (ASR::is_a<ASR::Real_t>(*func_type)) {
-            double rv = ASR::down_cast<ASR::RealConstant_t>(func_expr)->m_r;
-            int64_t ival = round(rv);
-            ASR::ttype_t *type = ASRUtils::TYPE(
-                    ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
-            return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, ival, type));
-        } else {
-            throw SemanticError("nint must have one real argument", loc);
-        }
     }
 
     typedef double (*trig_eval_callback_double)(double);
