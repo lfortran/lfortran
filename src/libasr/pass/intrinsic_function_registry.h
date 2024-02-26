@@ -60,6 +60,9 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Bge)
         INTRINSIC_NAME_CASE(Ble)
         INTRINSIC_NAME_CASE(Not)
+        INTRINSIC_NAME_CASE(Iand)
+        INTRINSIC_NAME_CASE(Ior)
+        INTRINSIC_NAME_CASE(Ieor)
         INTRINSIC_NAME_CASE(Leadz)
         INTRINSIC_NAME_CASE(Digits)
         INTRINSIC_NAME_CASE(Repeat)
@@ -212,6 +215,12 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Ble::instantiate_Ble, &Ble::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Not),
             {&Not::instantiate_Not, &Not::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Iand),
+            {&Iand::instantiate_Iand, &Iand::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Ior),
+            {&Ior::instantiate_Ior, &Ior::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Ieor),
+            {&Ieor::instantiate_Ieor, &Ieor::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Leadz),
             {&Leadz::instantiate_Leadz, &Leadz::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Hypot),
@@ -433,6 +442,12 @@ namespace IntrinsicElementalFunctionRegistry {
             "ble"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Not),
             "not"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Iand),
+            "iand"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Ior),
+            "ior"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Ieor),
+            "ieor"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Leadz),
             "leadz"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Hypot),
@@ -615,6 +630,9 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"bge", {&Bge::create_Bge, &Bge::eval_Bge}},
                 {"ble", {&Ble::create_Ble, &Ble::eval_Ble}},
                 {"not", {&Not::create_Not, &Not::eval_Not}},
+                {"iand", {&Iand::create_Iand, &Iand::eval_Iand}},
+                {"ior", {&Ior::create_Ior, &Ior::eval_Ior}},
+                {"ieor", {&Ieor::create_Ieor, &Ieor::eval_Ieor}},
                 {"leadz", {&Leadz::create_Leadz, &Leadz::eval_Leadz}},
                 {"hypot", {&Hypot::create_Hypot, &Hypot::eval_Hypot}},
                 {"selected_int_kind", {&SelectedIntKind::create_SelectedIntKind, &SelectedIntKind::eval_SelectedIntKind}},

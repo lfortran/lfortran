@@ -225,14 +225,14 @@ class ASRBuilder {
             ASR::binopType::Mul, right, real64, nullptr))
     #define i_tMul(left, right, t) EXPR(ASR::make_IntegerBinOp_t(al, loc, left, \
             ASR::binopType::Mul, right, t, nullptr))
-    #define r_tMul(left, right, t) EXPR(ASR::make_RealBinOp_t(al, loc, left, \
+    #define r_tMul(left, right, t) EXPR(ASR::make_RealBinOp_t(al, loc, left,    \
         ASR::binopType::Mul, right, t, nullptr))
 
     #define iPow(left, right, t) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,   \
             ASR::binopType::Pow, right, t, nullptr))
     #define And(x, y) EXPR(ASR::make_LogicalBinOp_t(al, loc, x,                 \
             ASR::logicalbinopType::And, y, logical, nullptr))
-    #define Or(x, y) EXPR(ASR::make_LogicalBinOp_t(al, loc, x,                 \
+    #define Or(x, y) EXPR(ASR::make_LogicalBinOp_t(al, loc, x,                  \
             ASR::logicalbinopType::Or, y, logical, nullptr))
     #define Not(x) EXPR(ASR::make_LogicalNot_t(al, loc, x, logical, nullptr))
 
@@ -241,6 +241,12 @@ class ASRBuilder {
     #define i_BitLshift(n, bits, t) EXPR(ASR::make_IntegerBinOp_t(al, loc,      \
             n, ASR::binopType::BitLShift, bits, t, nullptr))
     #define i_BitNot(x, t) EXPR(ASR::make_IntegerBitNot_t(al, loc, x, t, nullptr))
+    #define i_BitAnd(i, j, t) EXPR(ASR::make_IntegerBinOp_t(al, loc,            \
+            i, ASR::binopType::BitAnd, j, t, nullptr))
+    #define i_BitOr(i, j, t) EXPR(ASR::make_IntegerBinOp_t(al, loc,             \
+            i, ASR::binopType::BitOr, j, t, nullptr))
+    #define i_BitXor(i, j, t) EXPR(ASR::make_IntegerBinOp_t(al, loc,            \
+            i, ASR::binopType::BitXor, j, t, nullptr))
 
     ASR::expr_t *Add(ASR::expr_t *left, ASR::expr_t *right) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
