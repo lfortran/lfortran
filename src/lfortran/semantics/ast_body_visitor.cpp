@@ -163,7 +163,7 @@ public:
             al, old_stmt->base.base.loc, s2c(al, format_statements[label]), fmt_type));
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(
             al, old_stmt->base.base.loc, -1, 0, nullptr));
-        ASR::expr_t *string_format = ASRUtils::EXPR(ASR::make_StringFormat_t(al, old_stmt->base.base.loc,
+        ASR::expr_t *string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, old_stmt->base.base.loc,
             fmt_constant, old_stmt->m_values, old_stmt->n_values, ASR::string_format_kindType::FormatFortran,
             type, nullptr));
         Vec<ASR::expr_t *> print_args;
@@ -639,7 +639,7 @@ public:
         if (a_fmt_constant) {
             ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(
                         al, loc, -1, 0, nullptr));
-            ASR::expr_t* string_format = ASRUtils::EXPR(ASR::make_StringFormat_t(al, a_fmt->base.loc,
+            ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, a_fmt->base.loc,
                 a_fmt_constant, a_values_vec.p, a_values_vec.size(), ASR::string_format_kindType::FormatFortran,
                 type, nullptr));
             Vec<ASR::expr_t*> write_args;
@@ -2864,7 +2864,7 @@ public:
         if (fmt && ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(fmt))) {
             ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(
                         al, x.base.base.loc, -1, 0, nullptr));
-            ASR::expr_t* string_format = ASRUtils::EXPR(ASR::make_StringFormat_t(al, fmt->base.loc,
+            ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, fmt->base.loc,
                 fmt, body.p, body.size(), ASR::string_format_kindType::FormatFortran,
                 type, nullptr));
 
@@ -2889,7 +2889,7 @@ public:
                 al, fmt->base.loc, s2c(al, format_statements[label]), fmt_type));
             ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(
                         al, x.base.base.loc, -1, 0, nullptr));
-            ASR::expr_t* string_format = ASRUtils::EXPR(ASR::make_StringFormat_t(al, fmt->base.loc,
+            ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, fmt->base.loc,
                 fmt_constant, body.p, body.size(), ASR::string_format_kindType::FormatFortran,
                 type, nullptr));
 
