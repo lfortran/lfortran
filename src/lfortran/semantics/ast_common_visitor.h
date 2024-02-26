@@ -3423,13 +3423,6 @@ public:
                 if (dims == 0) {
                     // this is the case of String Section (or slicing)
                     LCOMPILERS_ASSERT(n_args == 1);
-                    ASR::ttype_t *char_type = nullptr;
-                    if (arr_ref_val) {
-                        char_type = ASRUtils::expr_type(arr_ref_val);
-                    } else {
-                        char_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc,
-                                        1, -1, nullptr));
-                    }
                     ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
                     ASR::expr_t *l = nullptr, *r = nullptr;
 
@@ -3452,6 +3445,21 @@ public:
                         r = CastingUtil::perform_casting(r, int_type, al, loc);
                     }
                     ASR::expr_t* casted_step = CastingUtil::perform_casting(args[0].m_step, int_type, al, loc);
+                    ASR::ttype_t *char_type = nullptr;
+                    if (arr_ref_val) {
+                        char_type = ASRUtils::expr_type(arr_ref_val);
+                    } else {
+                        int a_len = -1;
+                        ASR::expr_t *a_len_expr = nullptr;
+                        if (l && r) {
+                            // TODO: Handle `args[0].m_step`
+                            a_len_expr = ASRUtils::iSub(r, l);
+                            a_len = -3;
+                        }
+                        char_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc,
+                                        1, a_len, a_len_expr));
+                    }
+
                     return ASR::make_StringSection_t(al, loc, v_Var, l,
                             r, casted_step, char_type, arr_ref_val);
                 }
