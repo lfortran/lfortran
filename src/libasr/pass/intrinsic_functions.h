@@ -2335,7 +2335,7 @@ namespace Leadz {
     }
 
     static ASR::expr_t *eval_Ishftc(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         uint64_t val = (uint64_t)ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t shift_signed = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
@@ -2344,7 +2344,8 @@ namespace Leadz {
         uint32_t bits_size = 8u * (uint32_t)kind;
         uint32_t max_bits_size = 64;
         if (bits_size < shift) {
-             throw LCompilersException("The absolute value of SHIFT argument must be less than or equal to BIT_SIZE('I')");
+            append_error(diag, "The absolute value of SHIFT argument must be less than or equal to BIT_SIZE('I')", loc);
+            return nullptr;
         }
         val = cutoff_extra_bits(val, bits_size, max_bits_size);
         uint64_t result;
