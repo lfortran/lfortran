@@ -171,10 +171,10 @@ char* append_to_string(char* str, const char* append) {
     return str;
 }
 
-void handle_integer(char* format, int val, char** result) {
+void handle_integer(char* format, int64_t val, char** result) {
     int width = 0, min_width = 0;
     char* dot_pos = strchr(format, '.');
-    int len = (val == 0) ? 1 : (int)log10(abs(val)) + 1;
+    int len = (val == 0) ? 1 : (int)log10(llabs(val)) + 1;
     int sign_width = (val < 0) ? 1 : 0;
     if (dot_pos != NULL) {
         dot_pos++;
@@ -216,7 +216,7 @@ void handle_integer(char* format, int val, char** result) {
             }
         }
         char str[20];
-        sprintf(str, "%d", abs(val));
+        sprintf(str, "%lld", llabs(val));
         *result = append_to_string(*result, str);
     } else {
         for (int i = 0; i < width; i++) {
@@ -661,7 +661,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 // Integer Editing ( I[w[.m]] )
                 if ( count == 0 ) break;
                 count--;
-                int val = va_arg(args, int);
+                int64_t val = va_arg(args, int64_t);
                 handle_integer(value, val, &result);
             } else if (tolower(value[0]) == 'd') {
                 // D Editing (D[w[.d]])

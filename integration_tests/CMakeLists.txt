@@ -492,6 +492,7 @@ RUN(NAME format_09 LABELS gfortran llvm)
 RUN(NAME format_10 LABELS gfortran llvm)
 RUN(NAME format_11 LABELS gfortran llvm)
 RUN(NAME format_12 LABELS gfortran llvm)
+RUN(NAME format_13 LABELS gfortran llvm)
 
 RUN(NAME submodule_01 LABELS gfortran)
 RUN(NAME submodule_02 LABELS gfortran)
@@ -668,6 +669,7 @@ RUN(NAME intrinsics_155 LABELS gfortran llvm) # bgt
 RUN(NAME intrinsics_156 LABELS gfortran llvm) # blt
 RUN(NAME intrinsics_157 LABELS gfortran llvm) # ble
 RUN(NAME intrinsics_158 LABELS gfortran llvm) # bge
+RUN(NAME intrinsics_159 LABELS gfortran llvm) # matmul
 RUN(NAME intrinsics_162 LABELS gfortran llvm) # Not
 
 RUN(NAME parameter_01 LABELS gfortran)

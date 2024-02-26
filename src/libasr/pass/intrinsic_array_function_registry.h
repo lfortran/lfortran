@@ -1533,11 +1533,9 @@ namespace MatMul {
                                 is_real(*type_b) ||
                                 is_complex(*type_b);
         bool matrix_b_logical = is_logical(*type_b);
-        if (is_complex(*type_a) || is_complex(*type_b) ||
-            matrix_a_logical || matrix_b_logical) {
+        if (matrix_a_logical || matrix_b_logical) {
             // TODO
-            append_error(diag, "The `matmul` intrinsic doesn't handle logical or "
-                "complex type yet", loc);
+            append_error(diag, "The `matmul` intrinsic doesn't handle logical type yet", loc);
             return nullptr;
         }
         if ( !matrix_a_numeric && !matrix_a_logical ) {
@@ -1559,15 +1557,17 @@ namespace MatMul {
             }
         }
         if ( matrix_a_numeric || matrix_b_numeric ) {
-            if ( is_real(*type_a) ) {
+            if ( is_complex(*type_a) ) {
+                ret_type = extract_type(type_a);
+            } else if ( is_complex(*type_b) ) {
+                ret_type = extract_type(type_b);
+            } else if ( is_real(*type_a) ) {
                 ret_type = extract_type(type_a);
             } else if ( is_real(*type_b) ) {
                 ret_type = extract_type(type_b);
             } else {
                 ret_type = extract_type(type_a);
             }
-            // TODO: Handle return_type for following types
-            LCOMPILERS_ASSERT(!is_complex(*type_a) && !is_complex(*type_b))
         }
         LCOMPILERS_ASSERT(!matrix_a_logical && !matrix_b_logical)
         ASR::dimension_t* matrix_a_dims = nullptr;
@@ -1709,6 +1709,18 @@ namespace MatMul {
             mul_value = b.Mul(a_ref, i2r(b_ref, expr_type(a_ref)));
         } else if (is_real(*expr_type(b_ref)) && is_integer(*expr_type(a_ref))) {
             mul_value = b.Mul(i2r(a_ref, expr_type(b_ref)), b_ref);
+        } else if (is_real(*expr_type(a_ref)) && is_complex(*expr_type(b_ref))){
+            mul_value = b.Mul(EXPR(ASR::make_ComplexConstructor_t(al, loc, a_ref, f(0, expr_type(a_ref)), expr_type(b_ref), nullptr)), b_ref);
+        } else if (is_complex(*expr_type(a_ref)) && is_real(*expr_type(b_ref))){
+            mul_value = b.Mul(a_ref, EXPR(ASR::make_ComplexConstructor_t(al, loc, b_ref, f(0, expr_type(b_ref)), expr_type(a_ref), nullptr)));
+        } else if (is_integer(*expr_type(a_ref)) && is_complex(*expr_type(b_ref))) {
+            int kind = ASRUtils::extract_kind_from_ttype_t(expr_type(b_ref));
+            ASR::ttype_t* real_type = TYPE(ASR::make_Real_t(al, loc, kind));
+            mul_value = b.Mul(EXPR(ASR::make_ComplexConstructor_t(al, loc, i2r(a_ref, real_type), f(0, real_type), expr_type(b_ref), nullptr)), b_ref);
+        } else if (is_complex(*expr_type(a_ref)) && is_integer(*expr_type(b_ref))) {
+            int kind = ASRUtils::extract_kind_from_ttype_t(expr_type(a_ref));
+            ASR::ttype_t* real_type = TYPE(ASR::make_Real_t(al, loc, kind));
+            mul_value = b.Mul(a_ref, EXPR(ASR::make_ComplexConstructor_t(al, loc, i2r(b_ref, real_type), f(0, real_type), expr_type(a_ref), nullptr)));
         } else {
             mul_value = b.Mul(a_ref, b_ref);
         }
