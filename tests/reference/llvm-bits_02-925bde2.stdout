@@ -14,10 +14,10 @@ source_filename = "LFortran"
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   call void @_lpython_set_argv(i32 %0, i8** %1)
-  %all_zeros = alloca i64, align 8
-  store i64 0, i64* %all_zeros, align 4
   %all_ones = alloca i64, align 8
   store i64 -1, i64* %all_ones, align 4
+  %all_zeros = alloca i64, align 8
+  store i64 0, i64* %all_zeros, align 4
   %block_size = alloca i32, align 4
   store i32 64, i32* %block_size, align 4
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i32 64, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
