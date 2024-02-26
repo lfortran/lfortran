@@ -4978,6 +4978,33 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
     }
 }
 
+inline ASR::asr_t* make_ArrayConstant_t_util(Allocator &al, const Location &a_loc,
+    ASR::expr_t** a_args, size_t n_args, ASR::ttype_t* a_type, ASR::arraystorageType a_storage_format) {
+    if( !ASRUtils::is_array(a_type) ) {
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, 1);
+        ASR::dimension_t dim;
+        dim.loc = a_loc;
+        dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+            al, a_loc, n_args, ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4))));
+        dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+            al, a_loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4))));
+        dims.push_back(al, dim);
+        a_type = ASRUtils::make_Array_t_util(al, dim.loc,
+            a_type, dims.p, dims.size(), ASR::abiType::Source,
+            false, ASR::array_physical_typeType::PointerToDataArray, true);
+    } else if( ASR::is_a<ASR::Allocatable_t>(*a_type) ) {
+        ASR::dimension_t* m_dims = nullptr;
+        int n_dims = ASRUtils::extract_dimensions_from_ttype(a_type, m_dims);
+        if( !ASRUtils::is_dimension_empty(m_dims, n_dims) ) {
+            a_type = ASRUtils::duplicate_type_with_empty_dims(al, a_type);
+        }
+    }
+
+    LCOMPILERS_ASSERT(ASRUtils::is_array(a_type));
+    return ASR::make_ArrayConstant_t(al, a_loc, a_args, n_args, a_type, a_storage_format);
+}
+
 void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
     ASR::expr_t*& expr1, ASR::expr_t*& expr2);
 
