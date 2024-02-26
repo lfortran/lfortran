@@ -3374,8 +3374,10 @@ public:
             }
             if( ASRUtils::is_character(*root_v_type) &&
                 !ASRUtils::is_array(root_v_type) ) {
+                ASR::ttype_t  *char_type = ASRUtils::TYPE(ASR::make_Character_t(
+                    al, type->base.loc, 1, 1, nullptr));
                 return ASR::make_StringItem_t(al, loc,
-                    v_Var, args.p[0].m_right, type, arr_ref_val);
+                    v_Var, args.p[0].m_right, char_type, arr_ref_val);
             } else if ( ASRUtils::is_character(*root_v_type) &&
                         ASRUtils::is_array(root_v_type) &&
                         n_subargs > 0) {
