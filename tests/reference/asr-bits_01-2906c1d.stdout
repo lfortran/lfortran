@@ -67,36 +67,6 @@
                                     ibset64
                                     Private
                                 ),
-                            ieor:
-                                (ExternalSymbol
-                                    2
-                                    ieor
-                                    6 ieor
-                                    lfortran_intrinsic_bit
-                                    []
-                                    ieor
-                                    Private
-                                ),
-                            ieor@ieor32:
-                                (ExternalSymbol
-                                    2
-                                    ieor@ieor32
-                                    6 ieor32
-                                    lfortran_intrinsic_bit
-                                    []
-                                    ieor32
-                                    Private
-                                ),
-                            ieor@ieor64:
-                                (ExternalSymbol
-                                    2
-                                    ieor@ieor64
-                                    6 ieor64
-                                    lfortran_intrinsic_bit
-                                    []
-                                    ieor64
-                                    Private
-                                ),
                             int32:
                                 (ExternalSymbol
                                     2
@@ -218,14 +188,13 @@
                     )
                     (If
                         (IntegerCompare
-                            (FunctionCall
-                                2 ieor@ieor32
-                                2 ieor
-                                [((IntegerConstant 16 (Integer 4)))
-                                ((IntegerConstant 2 (Integer 4)))]
+                            (IntrinsicElementalFunction
+                                Ieor
+                                [(IntegerConstant 16 (Integer 4))
+                                (IntegerConstant 2 (Integer 4))]
+                                0
                                 (Integer 4)
                                 (IntegerConstant 18 (Integer 4))
-                                ()
                             )
                             NotEq
                             (IntegerConstant 18 (Integer 4))
@@ -242,14 +211,13 @@
                     )
                     (If
                         (IntegerCompare
-                            (FunctionCall
-                                2 ieor@ieor64
-                                2 ieor
-                                [((IntegerConstant 31 (Integer 8)))
-                                ((IntegerConstant 3 (Integer 8)))]
+                            (IntrinsicElementalFunction
+                                Ieor
+                                [(IntegerConstant 31 (Integer 8))
+                                (IntegerConstant 3 (Integer 8))]
+                                0
                                 (Integer 8)
                                 (IntegerConstant 28 (Integer 8))
-                                ()
                             )
                             NotEq
                             (IntegerConstant 28 (Integer 8))
