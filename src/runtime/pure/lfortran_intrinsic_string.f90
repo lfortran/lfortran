@@ -37,6 +37,12 @@ integer elemental function index(string_, substring_, back) result(idx)
     i = 1
     len_str = len(string_)
     len_sub = len(substring_)
+
+    if (len_str < len_sub) then
+        found = .false.
+        return
+    end if
+
     do while (i < len_str .and. found)
         k = 0
         j = 1

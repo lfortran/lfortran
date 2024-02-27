@@ -35,103 +35,119 @@ define i32 @__module_lfortran_intrinsic_string_index(i8** %string_, i8** %substr
   store i8* %3, i8** %4, align 8
   %5 = call i32 @_lfortran_str_len(i8** %4)
   store i32 %5, i32* %len_sub, align 4
+  %6 = load i32, i32* %len_str, align 4
+  %7 = load i32, i32* %len_sub, align 4
+  %8 = icmp slt i32 %6, %7
+  br i1 %8, label %then, label %else
+
+then:                                             ; preds = %.entry
+  store i1 false, i1* %found, align 1
+  br label %return
+
+unreachable_after_return:                         ; No predecessors!
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %unreachable_after_return
   br label %loop.head
 
-loop.head:                                        ; preds = %ifcont8, %.entry
-  %6 = load i32, i32* %i, align 4
-  %7 = load i32, i32* %len_str, align 4
-  %8 = icmp slt i32 %6, %7
-  %9 = load i1, i1* %found, align 1
-  %10 = icmp eq i1 %8, false
-  %11 = select i1 %10, i1 %8, i1 %9
-  br i1 %11, label %loop.body, label %loop.end9
+loop.head:                                        ; preds = %ifcont11, %ifcont
+  %9 = load i32, i32* %i, align 4
+  %10 = load i32, i32* %len_str, align 4
+  %11 = icmp slt i32 %9, %10
+  %12 = load i1, i1* %found, align 1
+  %13 = icmp eq i1 %11, false
+  %14 = select i1 %13, i1 %11, i1 %12
+  br i1 %14, label %loop.body, label %loop.end12
 
 loop.body:                                        ; preds = %loop.head
   store i32 0, i32* %k, align 4
   store i32 1, i32* %j, align 4
   br label %loop.head1
 
-loop.head1:                                       ; preds = %ifcont, %loop.body
-  %12 = load i32, i32* %j, align 4
-  %13 = load i32, i32* %len_sub, align 4
-  %14 = icmp sle i32 %12, %13
-  %15 = load i1, i1* %found, align 1
-  %16 = icmp eq i1 %14, false
-  %17 = select i1 %16, i1 %14, i1 %15
-  br i1 %17, label %loop.body2, label %loop.end
+loop.head1:                                       ; preds = %ifcont5, %loop.body
+  %15 = load i32, i32* %j, align 4
+  %16 = load i32, i32* %len_sub, align 4
+  %17 = icmp sle i32 %15, %16
+  %18 = load i1, i1* %found, align 1
+  %19 = icmp eq i1 %17, false
+  %20 = select i1 %19, i1 %17, i1 %18
+  br i1 %20, label %loop.body2, label %loop.end
 
 loop.body2:                                       ; preds = %loop.head1
-  %18 = load i32, i32* %i, align 4
-  %19 = load i32, i32* %k, align 4
-  %20 = add i32 %18, %19
-  store i32 %20, i32* %pos, align 4
-  %21 = load i32, i32* %pos, align 4
-  %22 = load i8*, i8** %string_, align 8
-  %23 = call i8* @_lfortran_str_item(i8* %22, i32 %21)
-  %24 = load i32, i32* %j, align 4
-  %25 = load i8*, i8** %substring_, align 8
+  %21 = load i32, i32* %i, align 4
+  %22 = load i32, i32* %k, align 4
+  %23 = add i32 %21, %22
+  store i32 %23, i32* %pos, align 4
+  %24 = load i32, i32* %pos, align 4
+  %25 = load i8*, i8** %string_, align 8
   %26 = call i8* @_lfortran_str_item(i8* %25, i32 %24)
-  %27 = load i8, i8* %23, align 1
-  %28 = load i8, i8* %26, align 1
-  %29 = icmp ne i8 %27, %28
-  br i1 %29, label %then, label %else
+  %27 = load i32, i32* %j, align 4
+  %28 = load i8*, i8** %substring_, align 8
+  %29 = call i8* @_lfortran_str_item(i8* %28, i32 %27)
+  %30 = load i8, i8* %26, align 1
+  %31 = load i8, i8* %29, align 1
+  %32 = icmp ne i8 %30, %31
+  br i1 %32, label %then3, label %else4
 
-then:                                             ; preds = %loop.body2
+then3:                                            ; preds = %loop.body2
   store i1 false, i1* %found, align 1
-  br label %ifcont
+  br label %ifcont5
 
-else:                                             ; preds = %loop.body2
-  br label %ifcont
+else4:                                            ; preds = %loop.body2
+  br label %ifcont5
 
-ifcont:                                           ; preds = %else, %then
-  %30 = load i32, i32* %k, align 4
-  %31 = add i32 %30, 1
-  store i32 %31, i32* %k, align 4
-  %32 = load i32, i32* %j, align 4
-  %33 = add i32 %32, 1
-  store i32 %33, i32* %j, align 4
+ifcont5:                                          ; preds = %else4, %then3
+  %33 = load i32, i32* %k, align 4
+  %34 = add i32 %33, 1
+  store i32 %34, i32* %k, align 4
+  %35 = load i32, i32* %j, align 4
+  %36 = add i32 %35, 1
+  store i32 %36, i32* %j, align 4
   br label %loop.head1
 
 loop.end:                                         ; preds = %loop.head1
-  %34 = load i1, i1* %found, align 1
-  br i1 %34, label %then3, label %else7
+  %37 = load i1, i1* %found, align 1
+  br i1 %37, label %then6, label %else10
 
-then3:                                            ; preds = %loop.end
-  %35 = load i32, i32* %i, align 4
-  store i32 %35, i32* %idx, align 4
-  %36 = load i1, i1* %back, align 1
-  %37 = icmp eq i1 %36, false
-  %38 = xor i1 %36, true
-  %39 = xor i1 %38, true
-  br i1 %39, label %then4, label %else5
+then6:                                            ; preds = %loop.end
+  %38 = load i32, i32* %i, align 4
+  store i32 %38, i32* %idx, align 4
+  %39 = load i1, i1* %back, align 1
+  %40 = icmp eq i1 %39, false
+  %41 = xor i1 %39, true
+  %42 = xor i1 %41, true
+  br i1 %42, label %then7, label %else8
 
-then4:                                            ; preds = %then3
+then7:                                            ; preds = %then6
   store i1 true, i1* %found, align 1
-  br label %ifcont6
+  br label %ifcont9
 
-else5:                                            ; preds = %then3
+else8:                                            ; preds = %then6
   store i1 false, i1* %found, align 1
-  br label %ifcont6
+  br label %ifcont9
 
-ifcont6:                                          ; preds = %else5, %then4
-  br label %ifcont8
+ifcont9:                                          ; preds = %else8, %then7
+  br label %ifcont11
 
-else7:                                            ; preds = %loop.end
+else10:                                           ; preds = %loop.end
   store i1 true, i1* %found, align 1
-  br label %ifcont8
+  br label %ifcont11
 
-ifcont8:                                          ; preds = %else7, %ifcont6
-  %40 = load i32, i32* %i, align 4
-  %41 = add i32 %40, 1
-  store i32 %41, i32* %i, align 4
+ifcont11:                                         ; preds = %else10, %ifcont9
+  %43 = load i32, i32* %i, align 4
+  %44 = add i32 %43, 1
+  store i32 %44, i32* %i, align 4
   br label %loop.head
 
-loop.end9:                                        ; preds = %loop.head
+loop.end12:                                       ; preds = %loop.head
   br label %return
 
-return:                                           ; preds = %loop.end9
-  %42 = load i32, i32* %idx, align 4
-  ret i32 %42
+return:                                           ; preds = %loop.end12, %then
+  %45 = load i32, i32* %idx, align 4
+  ret i32 %45
 }
 
 declare i32 @_lfortran_str_len(i8**)
