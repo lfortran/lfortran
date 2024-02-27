@@ -217,6 +217,24 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         },
     ],
+    "Iand": [
+        {
+            "args": [("int", "int")],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Ior": [
+        {
+            "args": [("int", "int")],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Ieor": [
+        {
+            "args": [("int", "int")],
+            "ret_type_arg_idx": 0
+        },
+    ],
     "Shiftr": [
         {
             "args": [("int", "int")],
