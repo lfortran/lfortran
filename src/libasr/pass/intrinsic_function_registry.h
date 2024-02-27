@@ -65,6 +65,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Ieor)
         INTRINSIC_NAME_CASE(Ibclr)
         INTRINSIC_NAME_CASE(Ibset)
+        INTRINSIC_NAME_CASE(Btest)
         INTRINSIC_NAME_CASE(Leadz)
         INTRINSIC_NAME_CASE(Digits)
         INTRINSIC_NAME_CASE(Repeat)
@@ -228,6 +229,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Ieor::instantiate_Ieor, &Ieor::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ibclr),
             {&Ibclr::instantiate_Ibclr, &Ibclr::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Btest),
+            {&Btest::instantiate_Btest, &Btest::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ibset),
             {&Ibset::instantiate_Ibset, &Ibset::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Leadz),
@@ -462,7 +465,9 @@ namespace IntrinsicElementalFunctionRegistry {
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ibclr),
             "ibclr"},    
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ibset),
-            "ibset"},        
+            "ibset"},     
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Btest),
+            "btest"},    
         {static_cast<int64_t>(IntrinsicElementalFunctions::Leadz),
             "leadz"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Hypot),
@@ -650,6 +655,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"ieor", {&Ieor::create_Ieor, &Ieor::eval_Ieor}},
                 {"ibclr", {&Ibclr::create_Ibclr, &Ibclr::eval_Ibclr}},
                 {"ibset", {&Ibset::create_Ibset, &Ibset::eval_Ibset}},
+                {"btest", {&Btest::create_Btest, &Btest::eval_Btest}},
                 {"leadz", {&Leadz::create_Leadz, &Leadz::eval_Leadz}},
                 {"hypot", {&Hypot::create_Hypot, &Hypot::eval_Hypot}},
                 {"selected_int_kind", {&SelectedIntKind::create_SelectedIntKind, &SelectedIntKind::eval_SelectedIntKind}},

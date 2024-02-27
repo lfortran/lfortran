@@ -65,6 +65,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Ieor,
     Ibclr,
     Ibset,
+    Btest,
     Leadz,
     Digits,
     Repeat,
@@ -1485,6 +1486,45 @@ namespace Ibset {
     }
 
 } // namespace Ibset
+
+namespace Btest {
+
+    static ASR::expr_t *eval_Btest(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        bool result;
+        if ((val1 & (1 << val2)) == 0) result = false;
+        else result = true;
+        return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_Btest(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_btest_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("y", arg_types[1]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        
+        ASR::expr_t *val1 = args[0];
+        ASR::expr_t *val2 = args[1];
+        ASR::expr_t *zero = i(0, arg_types[0]);
+        ASR::expr_t *one = i(1, arg_types[0]);
+
+        body.push_back(al, b.If(iEq(i_BitAnd(val1, i_BitLshift(one, val2, arg_types[0]), arg_types[0]), zero), {
+            b.Assignment(result, bool32(0))
+        }, {
+            b.Assignment(result, bool32(1))
+        }));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace Btest
 
 namespace Aint {
 
