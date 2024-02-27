@@ -24,5 +24,5 @@ program intrinsics_161
     print*, ieor(a5, a6)
     if (ieor(a5, a6) /= 5) error stop
   
-  end program
+  end program 
   
