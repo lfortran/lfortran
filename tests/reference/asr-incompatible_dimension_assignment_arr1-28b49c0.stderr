@@ -1,4 +1,4 @@
-semantic error: Dimensions not equal
+semantic error: Different shape (1 and 3) for array assignment on dimension 1
  --> tests/errors/incompatible_dimension_assignment_arr1.f90:7:5
   |
 7 |     arr1 = (/1, 2, 3/)

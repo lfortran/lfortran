@@ -2967,9 +2967,8 @@ inline bool expr_equal(ASR::expr_t* x, ASR::expr_t* y) {
 // Compares two dimension expressions for equality.
 // Optionally allows skipping determination in certain cases.
 inline bool dimension_expr_equal(
-    ASR::expr_t* dim_a,  // First dimension expression to compare
-    ASR::expr_t* dim_b,  // Second dimension expression to compare
-    bool allow_cant_determine = false  // Flag to allow indeterminate cases
+    ASR::expr_t* dim_a,
+    ASR::expr_t* dim_b
 ) {
     // If either dimension is null, consider them equal by default.
     if (!(dim_a && dim_b)) {
@@ -2979,25 +2978,20 @@ inline bool dimension_expr_equal(
     int dim_a_int {-1};
     int dim_b_int {-1};
 
-    // Attempt to extract integer values from both dimension expressions.
     if (ASRUtils::extract_value(ASRUtils::expr_value(dim_a), dim_a_int) &&
         ASRUtils::extract_value(ASRUtils::expr_value(dim_b), dim_b_int)) {
-        // If both values are successfully extracted, compare them directly.
         return dim_a_int == dim_b_int;
     }
 
-    // If direct comparison is not possible and indeterminate cases are not allowed,
-    // use a more comprehensive expression equality check.
-    if (!allow_cant_determine && !ASRUtils::expr_equal(dim_a, dim_b)) {
-        return false;  // Expressions are not equal.
+    if (!ASRUtils::expr_equal(dim_a, dim_b)) {
+        return false;
     }
 
     return true;
 }
 
 inline bool dimensions_equal(ASR::dimension_t* dims_a, size_t n_dims_a,
-    ASR::dimension_t* dims_b, size_t n_dims_b,
-    bool allow_cant_determine=false
+    ASR::dimension_t* dims_b, size_t n_dims_b
 ) {
     // unequal ranks means dimensions aren't equal
     if (n_dims_a != n_dims_b) {
@@ -3007,8 +3001,8 @@ inline bool dimensions_equal(ASR::dimension_t* dims_a, size_t n_dims_a,
     for( size_t i = 0; i < n_dims_a; i++ ) {
         ASR::dimension_t dim_a = dims_a[i];
         ASR::dimension_t dim_b = dims_b[i];
-        if( !dimension_expr_equal(dim_a.m_length, dim_b.m_length, allow_cant_determine) ||
-            !dimension_expr_equal(dim_a.m_start, dim_b.m_start, allow_cant_determine) ) {
+        if( !dimension_expr_equal(dim_a.m_length, dim_b.m_length) ||
+            !dimension_expr_equal(dim_a.m_start, dim_b.m_start) ) {
             return false;
         }
     }

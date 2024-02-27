@@ -2336,10 +2336,26 @@ public:
                    " and " + std::to_string(value_rank) + " in assignment",
                   x.base.base.loc
                 );
-            } else if (ASRUtils::expr_type(target)->type == ASR::ttypeType::Array && !ASRUtils::dimensions_equal(target_dims, target_rank,
-                                                value_dims, value_rank, true) &&
-                    !ASR::is_a<ASR::ArraySize_t>(*target_dims->m_length)) {
-                throw SemanticError("Dimensions not equal", x.base.base.loc);
+            } else if (ASRUtils::expr_type(target)->type == ASR::ttypeType::Array &&
+                       target_dims->m_length != nullptr &&
+                       !ASR::is_a<ASR::ArraySize_t>(*target_dims->m_length))
+            {
+                for (size_t i = 0; i < target_rank; i++) {
+                    ASR::dimension_t dim_a = target_dims[i];
+                    ASR::dimension_t dim_b = value_dims[i];
+                    int dim_a_int {-1};
+                    int dim_b_int {-1};
+                    if (!(dim_a.m_length && dim_b.m_length)) {
+                        continue;
+                    }
+                    ASRUtils::extract_value(ASRUtils::expr_value(dim_a.m_length), dim_a_int);
+                    ASRUtils::extract_value(ASRUtils::expr_value(dim_b.m_length), dim_b_int);
+                    if (dim_a_int > 0 and dim_b_int > 0 && dim_a_int != dim_b_int) {
+                        throw SemanticError("Different shape (" + std::to_string(dim_a_int) +
+                            " and " + std::to_string(dim_b_int) + ") for array assignment on "
+                            "dimension " + std::to_string(i+ 1), x.base.base.loc);
+                    }
+                }
             }
         }
 

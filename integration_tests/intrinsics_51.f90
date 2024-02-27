@@ -3,9 +3,7 @@ implicit none
 
 real :: x = 1.0
 real, allocatable :: a(:, :), dr(:), er(:)
-! size of 'cr' should eventually be changed 5
-! currently it's incorrect
-real :: b(2, 2, 2), cr(2)
+real :: b(2, 2, 2), cr(5)
 integer :: i, j, k
 allocate(a(3, 2), dr(10), er(13))
 
