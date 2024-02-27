@@ -136,6 +136,9 @@ namespace LCompilers {
         ASR::expr_t* create_array_ref(ASR::expr_t* arr_expr,
             Vec<ASR::expr_t*>& idx_vars, Allocator& al, SymbolTable* current_scope,
             bool perform_cast, ASR::cast_kindType cast_kind, ASR::ttype_t* casted_type) {
+            if (idx_vars.size() == 0) {
+                return arr_expr;
+            }
             Vec<ASR::array_index_t> args;
             args.reserve(al, 1);
             for( size_t i = 0; i < idx_vars.size(); i++ ) {
