@@ -119,7 +119,7 @@ intrinsic_funcs_args = {
     "Adjustl": [
         {
             "args": [("char",)],
-            "ret_type_arg_idx": 0
+            "return": "character(-1)"
         }
     ],
     "Aint": [
