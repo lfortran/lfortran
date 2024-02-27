@@ -7604,6 +7604,7 @@ public:
         llvm::Value *sep = nullptr;
         llvm::Value *end = nullptr;
         llvm::Value *unit = nullptr;
+        llvm::Value *iostat = nullptr;
         std::string runtime_func_name;
         bool is_string = ASRUtils::is_character(*expr_type(x.m_unit));
 
@@ -7622,6 +7623,17 @@ public:
         this->visit_expr_wrapper(x.m_unit);
         ptr_loads = ptr_loads_copy;
         unit = tmp;
+
+        if (x.m_iostat) {
+            int ptr_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(x.m_iostat, false);
+            ptr_loads = ptr_copy;
+            iostat = tmp;
+        } else {
+            iostat = builder->CreateAlloca(
+                        llvm::Type::getInt32Ty(context), nullptr);
+        }
 
         if (x.m_separator) {
             this->visit_expr_wrapper(x.m_separator, true);
@@ -7656,10 +7668,12 @@ public:
 
         std::vector<llvm::Value *> printf_args;
         printf_args.push_back(unit);
+        printf_args.push_back(iostat);
         printf_args.push_back(fmt_ptr);
         printf_args.insert(printf_args.end(), args.begin(), args.end());
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
+            args_type.push_back(llvm::Type::getInt32PtrTy(context));
             args_type.push_back(llvm::Type::getInt8PtrTy(context));
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     llvm::Type::getVoidTy(context), args_type, true);
