@@ -3625,6 +3625,10 @@ filename = "../integration_tests/implicit_argument_casting_01.f90"
 asr_implicit_argument_casting = true
 
 [[test]]
+filename = "../integration_tests/valid_array_assignment_same_length_different_start.f90"
+obj = true
+
+[[test]]
 filename = "errors/end_sub_name.f90"
 asr = true
 
@@ -3837,4 +3841,8 @@ asr = true
 
 [[test]]
 filename = "errors/incompatible_dimension_assignment_arr1.f90"
+asr = true
+
+[[test]]
+filename = "errors/incompatible_dimension_assignment_arr2.f90"
 asr = true

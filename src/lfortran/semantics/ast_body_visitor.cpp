@@ -2330,7 +2330,8 @@ public:
             ASR::dimension_t* value_dims = nullptr;
             size_t target_rank = ASRUtils::extract_dimensions_from_ttype(target_type, target_dims);
             size_t value_rank = ASRUtils::extract_dimensions_from_ttype(value_type, value_dims);
-            // rank of array on LHS and RHS should be same
+            // ranks of LHS and RHS for an array assignment should
+            // be same (including allocatable arrays)
             if (target_rank != value_rank) {
                 throw SemanticError("Incompatible ranks " + std::to_string(target_rank) +
                    " and " + std::to_string(value_rank) + " in assignment",
@@ -2340,20 +2341,25 @@ public:
                        target_dims->m_length != nullptr &&
                        !ASR::is_a<ASR::ArraySize_t>(*target_dims->m_length))
             {
+                // if in any of the dimension, arrays have different size
+                // raise an error
                 for (size_t i = 0; i < target_rank; i++) {
                     ASR::dimension_t dim_a = target_dims[i];
                     ASR::dimension_t dim_b = value_dims[i];
                     int dim_a_int {-1};
                     int dim_b_int {-1};
+                    // 'm_length' isn't assigned for allocatable arrays
+                    // let them be valid for now atleast
                     if (!(dim_a.m_length && dim_b.m_length)) {
                         continue;
                     }
                     ASRUtils::extract_value(ASRUtils::expr_value(dim_a.m_length), dim_a_int);
                     ASRUtils::extract_value(ASRUtils::expr_value(dim_b.m_length), dim_b_int);
                     if (dim_a_int > 0 and dim_b_int > 0 && dim_a_int != dim_b_int) {
-                        throw SemanticError("Different shape (" + std::to_string(dim_a_int) +
-                            " and " + std::to_string(dim_b_int) + ") for array assignment on "
-                            "dimension " + std::to_string(i+ 1), x.base.base.loc);
+                        throw SemanticError("Different shape for array assignment on "
+                            "dimension " + std::to_string(i + 1) + "(" +
+                            std::to_string(dim_a_int) + " and " +
+                            std::to_string(dim_b_int) + ")", x.base.base.loc);
                     }
                 }
             }

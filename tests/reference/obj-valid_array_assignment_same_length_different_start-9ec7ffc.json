@@ -1,0 +1,13 @@
+{
+    "basename": "obj-valid_array_assignment_same_length_different_start-9ec7ffc",
+    "cmd": "lfortran --no-color -c {infile} -o output.o",
+    "infile": "tests/../integration_tests/valid_array_assignment_same_length_different_start.f90",
+    "infile_hash": "23f39828ee1f9811e1ec360a99394ba96b3cdbef437d843b8e830900",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
