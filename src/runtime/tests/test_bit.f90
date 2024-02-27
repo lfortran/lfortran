@@ -1,5 +1,5 @@
 program test_bit
-use lfortran_intrinsic_bit, only: ibclr, ibset, btest
+use lfortran_intrinsic_bit, only: btest
 implicit none
 
 integer(kind=4) :: a
