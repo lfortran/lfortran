@@ -13,10 +13,11 @@ define i32 @main(i32 %0, i8** %1) {
   store i32 6, i32* %nwrite, align 4
   store i32 6, i32* %nwrite, align 4
   %2 = load i32, i32* %nwrite, align 4
-  call void (i32, i8*, ...) @_lfortran_file_write(i32 %2, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([12 x i8], [12 x i8]* @2, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  %3 = alloca i32, align 4
+  call void (i32, i32*, i8*, ...) @_lfortran_file_write(i32 %2, i32* %3, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([12 x i8], [12 x i8]* @2, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
   ret i32 0
 }
 
 declare void @_lpython_set_argv(i32, i8**)
 
-declare void @_lfortran_file_write(i32, i8*, ...)
+declare void @_lfortran_file_write(i32, i32*, i8*, ...)
