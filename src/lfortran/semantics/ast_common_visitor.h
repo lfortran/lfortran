@@ -734,6 +734,8 @@ public:
         {"iand", {IntrinsicSignature({"i", "j"}, 2, 2)}},
         {"ior", {IntrinsicSignature({"i", "j"}, 2, 2)}},
         {"ieor", {IntrinsicSignature({"i", "j"}, 2, 2)}},
+        {"ibclr", {IntrinsicSignature({"i", "pos"}, 2, 2)}},
+        {"ibset", {IntrinsicSignature({"i", "pos"}, 2, 2)}},
         {"floor", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
         {"ceiling", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
         {"scale", {IntrinsicSignature({"X", "I"}, 2, 2)}},
