@@ -90,8 +90,6 @@ struct IntrinsicProcedures {
             {"modulo", {m_math2, &eval_modulo, true}},
             {"selected_char_kind", {m_kind, &eval_selected_char_kind, true}},
 
-            {"btest", {m_bit, &not_implemented, false}},
-
             // These will fail if used in symbol table visitor, but will be
             // left unevaluated in body visitor
             {"trim", {m_string, &not_implemented, false}},
