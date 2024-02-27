@@ -70,6 +70,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Hypot)
         INTRINSIC_NAME_CASE(SelectedIntKind)
         INTRINSIC_NAME_CASE(SelectedRealKind)
+        INTRINSIC_NAME_CASE(Adjustl)
         INTRINSIC_NAME_CASE(MinExponent)
         INTRINSIC_NAME_CASE(MaxExponent)
         INTRINSIC_NAME_CASE(Ishftc)
@@ -199,6 +200,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Trailz::instantiate_Trailz, &Trailz::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Shiftr),
             {&Shiftr::instantiate_Shiftr, &Shiftr::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Adjustl),
+            {&Adjustl::instantiate_Adjustl, &Adjustl::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Rshift),
             {&Rshift::instantiate_Rshift, &Rshift::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Shiftl),
@@ -428,6 +431,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "shiftr"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Rshift),
             "rshift"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Adjustl),
+            "adjustl"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Shiftl),
             "shiftl"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ishft),
@@ -652,6 +657,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"set.add", {&SetAdd::create_SetAdd, &SetAdd::eval_set_add}},
                 {"set.remove", {&SetRemove::create_SetRemove, &SetRemove::eval_set_remove}},
                 {"max0", {&Max::create_Max, &Max::eval_Max}},
+                {"adjustl", {&Adjustl::create_Adjustl, &Adjustl::eval_Adjustl}},
                 {"min0", {&Min::create_Min, &Min::eval_Min}},
                 {"max", {&Max::create_Max, &Max::eval_Max}},
                 {"min", {&Min::create_Min, &Min::eval_Min}},

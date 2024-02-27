@@ -646,6 +646,7 @@ RUN(NAME intrinsics_130 LABELS gfortran llvm) # ishft
 RUN(NAME intrinsics_131 LABELS gfortran llvm) # max for strings
 RUN(NAME intrinsics_132 LABELS gfortran llvm) # Floor
 RUN(NAME intrinsics_133 LABELS gfortran llvm) # Ceiling
+RUN(NAME intrinsics_134 LABELS gfortran llvm) # Adjustl
 RUN(NAME intrinsics_135 LABELS gfortran llvm) # nint
 RUN(NAME intrinsics_136 LABELS gfortran llvm) # rshift
 RUN(NAME intrinsics_137 LABELS gfortran llvm) # huge
