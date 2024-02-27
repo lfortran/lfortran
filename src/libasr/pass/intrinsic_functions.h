@@ -2679,7 +2679,8 @@ namespace Adjustl {
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_optimization_adjustl_" + type_to_str_python(arg_types[0]));
-        fill_func_arg("str", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -10, nullptr)));
+        fill_func_arg("str", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
+        return_type = TYPE(ASR::make_Character_t(al, loc, 1, -3, EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr))));
         auto result = declare("result", return_type, ReturnVar);
         auto itr = declare("i", ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), Local);
 
@@ -2699,7 +2700,7 @@ namespace Adjustl {
         body.push_back(al, b.Assignment(itr, i32(1)));
         char* whileloop_name = nullptr;
         ASR::expr_t* whileloop_test = nullptr;
-        ASR::expr_t* str_len = ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, args[0], arg_types[0], nullptr));
+        ASR::expr_t* str_len = ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr));
         ASR::expr_t* integercompare_left = iLtE(itr, str_len);
 
         ASR::expr_t* ichar_left = nullptr;
@@ -2735,10 +2736,11 @@ namespace Adjustl {
                     ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)),
                     nullptr));
         body.push_back(al, b.Assignment(result, string_section));
-    ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-        body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
-    scope->add_symbol(fn_name, f_sym);
-    return b.Call(f_sym, new_args, return_type, nullptr);
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return_type = TYPE(ASR::make_Character_t(al, loc, 1, -3, EXPR(ASR::make_StringLen_t(al, loc, new_args[0].m_value, int32, nullptr))));
+        return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
 } // namespace AdjustL
