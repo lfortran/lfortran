@@ -8,4 +8,4 @@ program main
     write(warn2, '(i1,1x,a)') 7, 'SHORT'
     print*, "!", warn2, "!"
     if ( warn2 /= '7 SHORT' ) error stop
-end program 
+end program

@@ -1213,6 +1213,7 @@ RUN(NAME write_03 LABELS gfortran llvm)
 RUN(NAME write_04 LABELS gfortran llvm)
 RUN(NAME write_05 LABELS gfortran llvm)
 RUN(NAME write_06 LABELS gfortran llvm)
+RUN(NAME write_07 LABELS gfortran llvm)
 
 RUN(NAME do_loop_01 LABELS gfortran llvm)
 
