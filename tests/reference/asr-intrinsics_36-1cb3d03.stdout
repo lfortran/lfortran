@@ -20,15 +20,15 @@
                                             (Character 1 4 ())
                                         )]
                                         0
-                                        (Character 1 4 ())
+                                        (Character 1 -1 ())
                                         (StringConstant
                                             ""
-                                            (Character 1 4 ())
+                                            (Character 1 -1 ())
                                         )
                                     )
                                     (StringConstant
                                         ""
-                                        (Character 1 4 ())
+                                        (Character 1 -1 ())
                                     )
                                     Save
                                     (Character 1 25 ())
@@ -51,15 +51,15 @@
                                             (Character 1 0 ())
                                         )]
                                         0
-                                        (Character 1 0 ())
+                                        (Character 1 -1 ())
                                         (StringConstant
                                             ""
-                                            (Character 1 0 ())
+                                            (Character 1 -1 ())
                                         )
                                     )
                                     (StringConstant
                                         ""
-                                        (Character 1 0 ())
+                                        (Character 1 -1 ())
                                     )
                                     Save
                                     (Character 1 25 ())
@@ -82,15 +82,15 @@
                                             (Character 1 8 ())
                                         )]
                                         0
-                                        (Character 1 8 ())
+                                        (Character 1 -1 ())
                                         (StringConstant
                                             "gfortran"
-                                            (Character 1 8 ())
+                                            (Character 1 -1 ())
                                         )
                                     )
                                     (StringConstant
                                         "gfortran"
-                                        (Character 1 8 ())
+                                        (Character 1 -1 ())
                                     )
                                     Save
                                     (Character 1 25 ())
@@ -113,15 +113,15 @@
                                             (Character 1 11 ())
                                         )]
                                         0
-                                        (Character 1 11 ())
+                                        (Character 1 -1 ())
                                         (StringConstant
                                             "gfortran   "
-                                            (Character 1 11 ())
+                                            (Character 1 -1 ())
                                         )
                                     )
                                     (StringConstant
                                         "gfortran   "
-                                        (Character 1 11 ())
+                                        (Character 1 -1 ())
                                     )
                                     Save
                                     (Character 1 25 ())
@@ -144,15 +144,15 @@
                                             (Character 1 11 ())
                                         )]
                                         0
-                                        (Character 1 11 ())
+                                        (Character 1 -1 ())
                                         (StringConstant
                                             "gfortran"
-                                            (Character 1 11 ())
+                                            (Character 1 -1 ())
                                         )
                                     )
                                     (StringConstant
                                         "gfortran"
-                                        (Character 1 11 ())
+                                        (Character 1 -1 ())
                                     )
                                     Save
                                     (Character 1 25 ())
@@ -175,15 +175,15 @@
                                             (Character 1 16 ())
                                         )]
                                         0
-                                        (Character 1 16 ())
+                                        (Character 1 -1 ())
                                         (StringConstant
                                             "g for tran   "
-                                            (Character 1 16 ())
+                                            (Character 1 -1 ())
                                         )
                                     )
                                     (StringConstant
                                         "g for tran   "
-                                        (Character 1 16 ())
+                                        (Character 1 -1 ())
                                     )
                                     Save
                                     (Character 1 25 ())
@@ -206,15 +206,15 @@
                                             (Character 1 23 ())
                                         )]
                                         0
-                                        (Character 1 23 ())
+                                        (Character 1 -1 ())
                                         (StringConstant
                                             "# gfor* t $ ran &    "
-                                            (Character 1 23 ())
+                                            (Character 1 -1 ())
                                         )
                                     )
                                     (StringConstant
                                         "# gfor* t $ ran &    "
-                                        (Character 1 23 ())
+                                        (Character 1 -1 ())
                                     )
                                     Save
                                     (Character 1 25 ())
