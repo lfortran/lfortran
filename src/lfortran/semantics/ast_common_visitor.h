@@ -3378,17 +3378,22 @@ public:
                 ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
                 ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
                                             1, int_type));
-                ASR::expr_t *l = nullptr, *r = nullptr;
+                ASR::expr_t *l = nullptr, *r = nullptr, *step = nullptr;
                 if (m_subargs[0].m_start) {
                     this->visit_expr(*(m_subargs[0].m_start));
-                    l = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-                        ASRUtils::EXPR(tmp), ASR::binopType::Sub, const_1, int_type, nullptr));
+                    l = ASRUtils::EXPR(tmp);
+                    l = CastingUtil::perform_casting(l, ASRUtils::expr_type(l), int_type, al, loc);
+                    l = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, l,
+                            ASR::binopType::Sub, const_1, int_type, nullptr));
                 }
                 if (m_subargs[0].m_end) {
                     this->visit_expr(*(m_subargs[0].m_end));
                     r = ASRUtils::EXPR(tmp);
+                    r = CastingUtil::perform_casting(r, ASRUtils::expr_type(r), int_type, al, loc);
                 }
                 this->visit_expr(*(m_subargs[0].m_step));
+                step = ASRUtils::EXPR(tmp);
+                step = CastingUtil::perform_casting(step, ASRUtils::expr_type(step), int_type, al, loc);
                 return ASR::make_StringSection_t(al, loc, array_item, l,
                         r, ASRUtils::EXPR(tmp), char_type, arr_ref_val);
             } else {
@@ -3429,13 +3434,16 @@ public:
                             a_value = ASRUtils::EXPR((ASR::make_IntegerConstant_t(al, loc,
                                                     a, int_type)));
                         }
-                        l = i_vSub(args[0].m_left, const_1, a_value);
+                        ASR::expr_t* casted_left = CastingUtil::perform_casting(args[0].m_left, ASRUtils::expr_type(args[0].m_left), int_type, al, loc);
+                        l = i_vSub(casted_left, const_1, a_value);
                     }
                     if (m_args[0].m_end) {
                         r = args[0].m_right;
+                        r = CastingUtil::perform_casting(r, ASRUtils::expr_type(r), int_type, al, loc);
                     }
+                    ASR::expr_t* casted_step = CastingUtil::perform_casting(args[0].m_step, ASRUtils::expr_type(args[0].m_step), int_type, al, loc);
                     return ASR::make_StringSection_t(al, loc, v_Var, l,
-                            r, args[0].m_step, char_type, arr_ref_val);
+                            r, casted_step, char_type, arr_ref_val);
                 }
             }
 
