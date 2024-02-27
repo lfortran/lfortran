@@ -2437,7 +2437,7 @@ LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n)
     return c;
 }
 
-LFORTRAN_API void _lfortran_file_write(int32_t unit_num, const char *format, ...)
+LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const char *format, ...)
 {
     bool unit_file_bin;
     FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
@@ -2454,9 +2454,10 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, const char *format, ...
     va_end(args);
 
     (void)!ftruncate(fileno(filep), ftell(filep));
+    *iostat = 0;
 }
 
-LFORTRAN_API void _lfortran_string_write(char **str, const char *format, ...) {
+LFORTRAN_API void _lfortran_string_write(char **str, int32_t* iostat, const char *format, ...) {
     va_list args;
     va_start(args, format);
     char *s = (char *) malloc(strlen(*str)*sizeof(char));
@@ -2464,6 +2465,7 @@ LFORTRAN_API void _lfortran_string_write(char **str, const char *format, ...) {
     _lfortran_strcpy(str, s, 0);
     free(s);
     va_end(args);
+    *iostat = 0;
 }
 
 LFORTRAN_API void _lpython_close(int64_t fd)
