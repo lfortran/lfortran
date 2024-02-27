@@ -241,6 +241,18 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         },
     ],
+    "Ibclr": [
+        {
+            "args": [("int", "int")],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Ibset": [
+        {
+            "args": [("int", "int")],
+            "ret_type_arg_idx": 0
+        },
+    ],
     "Shiftr": [
         {
             "args": [("int", "int")],
