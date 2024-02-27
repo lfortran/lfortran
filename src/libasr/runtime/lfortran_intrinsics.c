@@ -1718,22 +1718,6 @@ LFORTRAN_API void _lfortran_string_init(int size_plus_one, char *s) {
 
 // bit  ------------------------------------------------------------------------
 
-LFORTRAN_API int32_t _lfortran_ibclr32(int32_t i, int pos) {
-    return i & ~(1 << pos);
-}
-
-LFORTRAN_API int64_t _lfortran_ibclr64(int64_t i, int pos) {
-    return i & ~(1LL << pos);
-}
-
-LFORTRAN_API int32_t _lfortran_ibset32(int32_t i, int pos) {
-    return i | (1 << pos);
-}
-
-LFORTRAN_API int64_t _lfortran_ibset64(int64_t i, int pos) {
-    return i | (1LL << pos);
-}
-
 LFORTRAN_API int32_t _lfortran_btest32(int32_t i, int pos) {
     return i & (1 << pos);
 }

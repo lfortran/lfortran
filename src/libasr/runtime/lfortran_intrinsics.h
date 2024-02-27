@@ -214,10 +214,6 @@ LFORTRAN_API char* _lfortran_str_slice(char* s, int32_t idx1, int32_t idx2, int3
                         bool idx1_present, bool idx2_present);
 LFORTRAN_API char* _lfortran_str_slice_assign(char* s, char *r, int32_t idx1, int32_t idx2, int32_t step,
                         bool idx1_present, bool idx2_present);
-LFORTRAN_API int32_t _lfortran_ibclr32(int32_t i, int pos);
-LFORTRAN_API int64_t _lfortran_ibclr64(int64_t i, int pos);
-LFORTRAN_API int32_t _lfortran_ibset32(int32_t i, int pos);
-LFORTRAN_API int64_t _lfortran_ibset64(int64_t i, int pos);
 LFORTRAN_API int32_t _lfortran_btest32(int32_t i, int pos);
 LFORTRAN_API int64_t _lfortran_btest64(int64_t i, int pos);
 LFORTRAN_API int32_t _lfortran_mvbits32(int32_t from, int32_t frompos,
