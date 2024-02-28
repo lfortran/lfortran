@@ -113,9 +113,10 @@ namespace LCompilers::CastingUtil {
         return casted_expr_signal;
     }
 
-    ASR::expr_t* perform_casting(ASR::expr_t* expr, ASR::ttype_t* src,
+    ASR::expr_t* perform_casting(ASR::expr_t* expr,
                                  ASR::ttype_t* dest, Allocator& al,
                                  const Location& loc) {
+        ASR::ttype_t* src = ASRUtils::expr_type(expr);
         ASR::ttypeType src_type = src->type;
         ASR::ttypeType dest_type = dest->type;
         ASR::cast_kindType cast_kind;

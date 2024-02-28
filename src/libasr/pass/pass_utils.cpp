@@ -921,7 +921,7 @@ namespace LCompilers {
                 left, right, src_expr, dest_expr, src_type, dest_type, is_assign);
             if( casted_expression_signal != 2 ) {
                 src_expr = CastingUtil::perform_casting(
-                src_expr, src_type, dest_type, al, src_expr->base.loc);
+                src_expr, dest_type, al, src_expr->base.loc);
                 if( casted_expression_signal == 0 ) {
                     left = src_expr;
                     right = dest_expr;
