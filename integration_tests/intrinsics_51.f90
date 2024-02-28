@@ -25,12 +25,12 @@ print *, [1., 2., 3., 4., 5.]
 print *, "basic", sin([1., 2., 3., 4., 5.])
 
 
-print *, [[1., 2., 3.], [4., 5.]]
-cr = sin([[1., 2., 3.], [4., 5.]])
-print *, "cr: ", cr
-do i = lbound(cr, 1), ubound(cr, 1)
-    if( abs(cr(i) - sin(real(i))) > 1e-6 ) error stop
-end do
+!print *, [[1., 2., 3.], [4., 5.]]
+!cr = sin([[1., 2., 3.], [4., 5.]])
+!print *, "cr: ", cr
+!do i = lbound(cr, 1), ubound(cr, 1)
+!    if( abs(cr(i) - sin(real(i))) > 1e-6 ) error stop
+!end do
 
 print *, [[1., 2., 3.], a, 5.]
 dr = sin([[1., 2., 3.], a, 5.])

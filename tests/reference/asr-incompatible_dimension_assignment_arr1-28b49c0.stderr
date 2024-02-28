@@ -1,5 +1,5 @@
 semantic error: Different shape for array assignment on dimension 1(1 and 3)
  --> tests/errors/incompatible_dimension_assignment_arr1.f90:7:5
   |
-7 |     arr1 = (/1, 2, 3/)
-  |     ^^^^^^^^^^^^^^^^^^ 
+7 |     arr1 = [1, 2, 3]
+  |     ^^^^^^^^^^^^^^^^ 

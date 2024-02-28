@@ -2,7 +2,7 @@
     "basename": "obj-valid_array_assignment_same_length_different_start-9ec7ffc",
     "cmd": "lfortran --no-color -c {infile} -o output.o",
     "infile": "tests/../integration_tests/valid_array_assignment_same_length_different_start.f90",
-    "infile_hash": "23f39828ee1f9811e1ec360a99394ba96b3cdbef437d843b8e830900",
+    "infile_hash": "21b0a7101b9336ee2eded7884da2046247ffa00ddacad8003ce71fef",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
