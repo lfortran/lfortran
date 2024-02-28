@@ -1,0 +1,13 @@
+{
+    "basename": "asr-index_non_integer_substring2-53eb0d0",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/index_non_integer_substring2.f90",
+    "infile_hash": "f3e7d1037d97128d05c3731e87693331ad4cbf6e030084f2a2190c70",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-index_non_integer_substring2-53eb0d0.stderr",
+    "stderr_hash": "15ea4dc1b98a6339bc70bf25edc50b87ad31694a3c5785db33b5bb2b",
+    "returncode": 2
+}

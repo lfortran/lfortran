@@ -1,0 +1,13 @@
+{
+    "basename": "asr-index_non_integer_subarray4-fc707d1",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/index_non_integer_subarray4.f90",
+    "infile_hash": "86950f169b6e6531d705d39b03959f278d2f14ff8c7f13658e4e1ef0",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-index_non_integer_subarray4-fc707d1.stderr",
+    "stderr_hash": "6cf02633aa45394267561ef8cc8f20a8b5bccb255ccd5a25d993f9e8",
+    "returncode": 2
+}

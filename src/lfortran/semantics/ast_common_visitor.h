@@ -3345,6 +3345,14 @@ public:
                     ASR::IntegerConstant_t *m_right = ASR::down_cast<ASR::IntegerConstant_t>(m_right_expr);
                     end = m_right->m_n;
                 }
+                if (a.m_step) {
+                    ASR::expr_t* m_step_expr = ASRUtils::expr_value(a.m_step);
+                    if(!ASR::is_a<ASR::IntegerConstant_t>(*m_step_expr)) {
+                        throw SemanticError(data_structure + " stride must be of type integer", m_step_expr->base.loc);
+                    }
+                    ASR::IntegerConstant_t *m_step = ASR::down_cast<ASR::IntegerConstant_t>(m_step_expr);
+                    step = m_step->m_n;
+                }
             }
 
             // int dim_start_int {-1};
@@ -3355,12 +3363,6 @@ public:
 
             if( a.m_step ) {
                 if( all_args_eval ) {
-                    ASR::expr_t* m_step_expr = ASRUtils::expr_value(a.m_step);
-                    if(!ASR::is_a<ASR::IntegerConstant_t>(*m_step_expr)) {
-                        throw SemanticError("Substring stride must be of type integer", m_step_expr->base.loc);
-                    }
-                    ASR::IntegerConstant_t *m_step = ASR::down_cast<ASR::IntegerConstant_t>(m_step_expr);
-                    step = m_step->m_n;
                 }
             }
             if( v->type == ASR::symbolType::Variable ) {
