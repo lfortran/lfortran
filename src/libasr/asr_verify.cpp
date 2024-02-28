@@ -51,6 +51,8 @@ private:
     std::set<std::pair<uint64_t, std::string>> const_assigned;
 
     bool symbol_visited;
+    bool _return_var_or_intent_out = false;
+    bool _processing_dims = false;
 
 public:
     VerifyVisitor(bool check_external, diag::Diagnostics &diagnostics) : check_external{check_external},
@@ -657,7 +659,11 @@ public:
             visit_expr(*x.m_symbolic_value);
         if (x.m_value)
              visit_expr(*x.m_value);
+        _return_var_or_intent_out = x.m_intent == ASR::intentType::Out ||
+                                    x.m_intent == ASR::intentType::InOut ||
+                                    x.m_intent == ASR::intentType::ReturnVar;
         visit_ttype(*x.m_type);
+        _return_var_or_intent_out = false;
 
         verify_unique_dependencies(x.m_dependencies, x.n_dependencies,
                                    x.m_name, x.base.base.loc);
@@ -1059,6 +1065,11 @@ public:
                 function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
             }
         }
+        if (_return_var_or_intent_out  && _processing_dims &&
+            temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(x.m_name)->get_counter() &&
+            !ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name)) {
+            function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
+        }
 
         if( ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) ) {
             ASR::ExternalSymbol_t* x_m_name = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
@@ -1132,9 +1143,11 @@ public:
         visit_ttype(*x.m_type);
         require(x.n_dims != 0, "Array type cannot have 0 dimensions.")
         require(!ASR::is_a<ASR::Array_t>(*x.m_type), "Array type cannot be nested.")
+        _processing_dims = true;
         for (size_t i = 0; i < x.n_dims; i++) {
             visit_dimension(x.m_dims[i]);
         }
+        _processing_dims = false;
     }
 
     void visit_Pointer(const Pointer_t &x) {
