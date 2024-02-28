@@ -676,6 +676,7 @@ RUN(NAME intrinsics_161 LABELS gfortran llvm) # ieor
 RUN(NAME intrinsics_162 LABELS gfortran llvm) # Not
 RUN(NAME intrinsics_163 LABELS gfortran llvm) # ishftc
 RUN(NAME intrinsics_164 LABELS gfortran llvm) # iand
+RUN(NAME intrinsics_165 LABELS gfortran llvm) # sum
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
