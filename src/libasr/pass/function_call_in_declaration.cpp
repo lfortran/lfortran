@@ -60,6 +60,14 @@ public:
 
     ReplaceFunctionCall(Allocator &al_) : al(al_) {}
 
+    void replace_FunctionParam_(ASR::expr_t** expr_to_replace, Vec<ASR::expr_t*> new_args) {
+        if (is_a<ASR::FunctionParam_t>(**expr_to_replace)) {
+            ASR::FunctionParam_t* param = ASR::down_cast<ASR::FunctionParam_t>(*expr_to_replace);
+            ASR::expr_t* new_arg = new_args[param->m_param_number];
+            *expr_to_replace = new_arg;
+        }
+    }
+
     void replace_FunctionParam_with_FunctionArgs(ASR::expr_t* value, Vec<ASR::expr_t*> new_args) {
         if (ASR::is_a<ASR::IntrinsicArrayFunction_t>(*value)) {
             ASR::IntrinsicArrayFunction_t* x = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(value);
@@ -74,9 +82,15 @@ public:
                 } else if (is_a<ASR::IntrinsicArrayFunction_t>(*arg)) {
                     replace_FunctionParam_with_FunctionArgs(arg, new_args);
                 } else if (is_a<ASR::FunctionParam_t>(*arg)) {
-                    ASR::FunctionParam_t* param = ASR::down_cast<ASR::FunctionParam_t>(arg);
-                    ASR::expr_t* new_arg = new_args[param->m_param_number];
-                    x->m_args[i] = new_arg;
+                    replace_FunctionParam_(&arg, new_args);
+                    x->m_args[i] = arg;
+                } else if (is_a<ASR::ArraySize_t>(*arg)) {
+                    ASR::ArraySize_t* size = ASR::down_cast<ASR::ArraySize_t>(arg);
+                    replace_FunctionParam_(&size->m_v, new_args);
+                } else if (is_a<ASR::IntegerCompare_t>(*arg)) {
+                    ASR::IntegerCompare_t* comp = ASR::down_cast<ASR::IntegerCompare_t>(arg);
+                    replace_FunctionParam_(&comp->m_left, new_args);
+                    replace_FunctionParam_(&comp->m_right, new_args);
                 }
             }
         } else if (ASR::is_a<ASR::FunctionCall_t>(*value)) {
@@ -92,9 +106,15 @@ public:
                 } else if (is_a<ASR::IntrinsicArrayFunction_t>(*arg)) {
                     replace_FunctionParam_with_FunctionArgs(arg, new_args);
                 } else if (is_a<ASR::FunctionParam_t>(*arg)) {
-                    ASR::FunctionParam_t* param = ASR::down_cast<ASR::FunctionParam_t>(arg);
-                    ASR::expr_t* new_arg = new_args[param->m_param_number];
-                    x->m_args[i].m_value = new_arg;
+                    replace_FunctionParam_(&arg, new_args);
+                    x->m_args[i].m_value = arg;
+                } else if (is_a<ASR::ArraySize_t>(*arg)) {
+                    ASR::ArraySize_t* size = ASR::down_cast<ASR::ArraySize_t>(arg);
+                    replace_FunctionParam_(&size->m_v, new_args);
+                } else if (is_a<ASR::IntegerCompare_t>(*arg)) {
+                    ASR::IntegerCompare_t* comp = ASR::down_cast<ASR::IntegerCompare_t>(arg);
+                    replace_FunctionParam_(&comp->m_left, new_args);
+                    replace_FunctionParam_(&comp->m_right, new_args);
                 }
             }
         } else if (ASR::is_a<ASR::IntegerBinOp_t>(*value)) {
@@ -114,9 +134,14 @@ public:
                 } else if (is_a<ASR::IntrinsicArrayFunction_t>(*arg)) {
                     replace_FunctionParam_with_FunctionArgs(arg, new_args);
                 } else if (is_a<ASR::FunctionParam_t>(*arg)) {
-                    ASR::FunctionParam_t* param = ASR::down_cast<ASR::FunctionParam_t>(arg);
-                    ASR::expr_t* new_arg = new_args[param->m_param_number];
-                    x->m_args[i] = new_arg;
+                    replace_FunctionParam_(&x->m_args[i], new_args);
+                } else if (is_a<ASR::ArraySize_t>(*arg)) {
+                    ASR::ArraySize_t* size = ASR::down_cast<ASR::ArraySize_t>(arg);
+                    replace_FunctionParam_(&size->m_v, new_args);
+                } else if (is_a<ASR::IntegerCompare_t>(*arg)) {
+                    ASR::IntegerCompare_t* comp = ASR::down_cast<ASR::IntegerCompare_t>(arg);
+                    replace_FunctionParam_(&comp->m_left, new_args);
+                    replace_FunctionParam_(&comp->m_right, new_args);
                 }
             }
         } else {
@@ -137,6 +162,13 @@ public:
             ASR::FunctionParam_t* param = ASR::down_cast<ASR::FunctionParam_t>(arg);
             ArgInfo info = {static_cast<int>(param->m_param_number), param->m_type, current_function->m_args[param->m_param_number], arg};
             indicies.push_back(info);
+        } else if (is_a<ASR::ArraySize_t>(*arg)) {
+            ASR::ArraySize_t* size = ASR::down_cast<ASR::ArraySize_t>(arg);
+            helper_get_arg_indices_used(size->m_v, indicies);
+        } else if (is_a<ASR::IntegerCompare_t>(*arg)) {
+            ASR::IntegerCompare_t* comp = ASR::down_cast<ASR::IntegerCompare_t>(arg);
+            helper_get_arg_indices_used(comp->m_left, indicies);
+            helper_get_arg_indices_used(comp->m_right, indicies);
         }
     }
 
