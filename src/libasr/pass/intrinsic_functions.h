@@ -1301,7 +1301,7 @@ namespace Not {
     static ASR::expr_t *eval_Not(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t val = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t result = ~val;     
+        int64_t result = ~val;
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
     }
 
@@ -1340,7 +1340,7 @@ namespace Iand {
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
-        
+
         ASR::expr_t *val1 = args[0];
         ASR::expr_t *val2 = args[1];
 
@@ -1372,7 +1372,7 @@ namespace Ior {
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
-        
+
         ASR::expr_t *val1 = args[0];
         ASR::expr_t *val2 = args[1];
 
@@ -1404,7 +1404,7 @@ namespace Ieor {
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
-        
+
         ASR::expr_t *val1 = args[0];
         ASR::expr_t *val2 = args[1];
 
@@ -2092,14 +2092,14 @@ namespace FloorDiv {
         */
 
 
-        ASR::expr_t *op1 = r64Div(CastingUtil::perform_casting(args[0], arg_types[0], real64, al, loc),
-            CastingUtil::perform_casting(args[1], arg_types[1], real64, al, loc));
+        ASR::expr_t *op1 = r64Div(CastingUtil::perform_casting(args[0], real64, al, loc),
+            CastingUtil::perform_casting(args[1], real64, al, loc));
         body.push_back(al, b.Assignment(r, op1));
         body.push_back(al, b.Assignment(tmp, r2i64(r)));
         body.push_back(al, b.If(And(fLt(r, f(0.0, real64)), fNotEq(i2r64(tmp), r)), {
                 b.Assignment(tmp, i64Sub(tmp, i(1, int64)))
             }, {}));
-        body.push_back(al, b.Assignment(result, CastingUtil::perform_casting(tmp, int64, return_type, al, loc)));
+        body.push_back(al, b.Assignment(result, CastingUtil::perform_casting(tmp, return_type, al, loc)));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
@@ -2259,7 +2259,7 @@ namespace Maskr {
         ASR::expr_t* one = i(1, return_type);
         ASR::expr_t* minus_one = i(-1, return_type);
         ASR::expr_t *cast = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::IntegerToInteger, return_type, nullptr));
-        body.push_back(al, b.If((iEq(cast, sixty_four)), {b.Assignment(result,minus_one)}, 
+        body.push_back(al, b.If((iEq(cast, sixty_four)), {b.Assignment(result,minus_one)},
             {b.Assignment(result, i_tSub(i_BitLshift(one, cast, return_type), one, return_type))}));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
@@ -2426,7 +2426,7 @@ namespace Leadz {
 } // namespace Leadz
 
  namespace Ishftc {
- 
+
     static uint64_t cutoff_extra_bits(uint64_t num, uint32_t bits_size, uint32_t max_bits_size) {
         if (bits_size == max_bits_size) {
             return num;
@@ -2572,7 +2572,7 @@ namespace SelectedRealKind {
         int64_t p = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t r = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         int64_t radix = ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n;
-        
+
         if (p < 7 && r < 38 && radix == 2) {
             kind = 4;
         } else if (p < 16 && r < 308 && radix == 2) {
@@ -2596,11 +2596,11 @@ namespace SelectedRealKind {
         auto p = declare("p", arg_types[0], Local);
         auto r = declare("r", arg_types[1], Local);
         auto radix = declare("radix", arg_types[2], Local);
-        
+
         body.push_back(al, b.Assignment(p, args[0]));
         body.push_back(al, b.Assignment(r, args[1]));
         body.push_back(al, b.Assignment(radix, args[2]));
-        
+
         ASR::expr_t *cond1 = And(And(iLt(p, i(7, arg_types[0])), iLt(r, i(38, arg_types[1]))), iEq(radix, i(2, arg_types[2])));
         ASR::expr_t *cond2 = And(And(iLt(p, i(15, arg_types[0])), iLt(r, i(308, arg_types[1]))), iEq(radix, i(2, arg_types[2])));
         ASR::expr_t *cond3 = iNotEq(radix, i(2, arg_types[2]));

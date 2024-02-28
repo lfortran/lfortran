@@ -2290,12 +2290,9 @@ static inline ASR::asr_t* make_ArraySize_t_util(
                 ASR::expr_t* start = array_section_t->m_args[i].m_left;
                 ASR::expr_t* end = array_section_t->m_args[i].m_right;
                 ASR::expr_t* d = array_section_t->m_args[i].m_step;
-                start = CastingUtil::perform_casting(start, ASRUtils::expr_type(start),
-                    a_type, al, a_loc);
-                end = CastingUtil::perform_casting(end, ASRUtils::expr_type(end),
-                    a_type, al, a_loc);
-                d = CastingUtil::perform_casting(d, ASRUtils::expr_type(d),
-                    a_type, al, a_loc);
+                start = CastingUtil::perform_casting(start, a_type, al, a_loc);
+                end = CastingUtil::perform_casting(end, a_type, al, a_loc);
+                d = CastingUtil::perform_casting(d, a_type, al, a_loc);
                 ASR::expr_t* endminusstart = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
                     al, a_loc, end, ASR::binopType::Sub, start, a_type, nullptr));
                 ASR::expr_t* byd = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
@@ -2311,12 +2308,9 @@ static inline ASR::asr_t* make_ArraySize_t_util(
             ASR::expr_t* start = array_section_t->m_args[dim - 1].m_left;
             ASR::expr_t* end = array_section_t->m_args[dim - 1].m_right;
             ASR::expr_t* d = array_section_t->m_args[dim - 1].m_step;
-            start = CastingUtil::perform_casting(start, ASRUtils::expr_type(start),
-                    a_type, al, a_loc);
-            end = CastingUtil::perform_casting(end, ASRUtils::expr_type(end),
-                a_type, al, a_loc);
-            d = CastingUtil::perform_casting(d, ASRUtils::expr_type(d),
-                a_type, al, a_loc);
+            start = CastingUtil::perform_casting(start, a_type, al, a_loc);
+            end = CastingUtil::perform_casting(end, a_type, al, a_loc);
+            d = CastingUtil::perform_casting(d, a_type, al, a_loc);
             ASR::expr_t* endminusstart = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
                 al, a_loc, end, ASR::binopType::Sub, start, a_type, nullptr));
             ASR::expr_t* byd = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
@@ -5097,8 +5091,7 @@ static inline void promote_ints_to_kind_8(ASR::expr_t** m_args, size_t n_args,
             ASR::ttype_t* arg_type = ASRUtils::expr_type(m_args[i]);
             ASR::ttype_t* dest_type = ASRUtils::duplicate_type(al, arg_type);
             ASRUtils::set_kind_to_ttype_t(dest_type, 8);
-            m_args[i] = CastingUtil::perform_casting(m_args[i], arg_type,
-                dest_type, al, loc);
+            m_args[i] = CastingUtil::perform_casting(m_args[i], dest_type, al, loc);
         }
     }
 }
