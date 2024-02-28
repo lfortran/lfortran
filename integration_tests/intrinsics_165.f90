@@ -6,7 +6,7 @@ function temp(x, dim) result(res)
     res = sum(x, 1)
 end function
 
-program intrinsics_164
+program intrinsics_165
     real :: a(4)
     interface
         function temp(x, dim) result(res)
