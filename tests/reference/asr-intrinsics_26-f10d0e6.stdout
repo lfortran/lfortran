@@ -50,10 +50,6 @@
                         ()
                     )]
                 ),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_bit:
-                (IntrinsicModule lfortran_intrinsic_bit),
             stdlib_bitsets_64:
                 (Module
                     (SymbolTable
@@ -64,26 +60,6 @@
                                     (SymbolTable
                                         3
                                         {
-                                            btest:
-                                                (ExternalSymbol
-                                                    3
-                                                    btest
-                                                    6 btest
-                                                    lfortran_intrinsic_bit
-                                                    []
-                                                    btest
-                                                    Private
-                                                ),
-                                            btest@btest32:
-                                                (ExternalSymbol
-                                                    3
-                                                    btest@btest32
-                                                    6 btest32
-                                                    lfortran_intrinsic_bit
-                                                    []
-                                                    btest32
-                                                    Private
-                                                ),
                                             num_bits:
                                                 (Variable
                                                     3
@@ -190,13 +166,12 @@
                                         ())
                                         [(If
                                             (LogicalNot
-                                                (FunctionCall
-                                                    3 btest@btest32
-                                                    3 btest
-                                                    [((Var 3 x))
-                                                    ((Var 3 pos))]
+                                                (IntrinsicElementalFunction
+                                                    Btest
+                                                    [(Var 3 x)
+                                                    (Var 3 pos)]
+                                                    0
                                                     (Logical 4)
-                                                    ()
                                                     ()
                                                 )
                                                 (Logical 4)
@@ -221,7 +196,7 @@
                                 )
                         })
                     stdlib_bitsets_64
-                    [lfortran_intrinsic_bit]
+                    []
                     .false.
                     .false.
                 )
