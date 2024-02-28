@@ -683,6 +683,7 @@ RUN(NAME intrinsics_165 LABELS gfortran llvm) # sum
 RUN(NAME intrinsics_166 LABELS gfortran llvm NOFAST) # ibset
 RUN(NAME intrinsics_167 LABELS gfortran llvm NOFAST) # btest
 RUN(NAME intrinsics_168 LABELS gfortran llvm NOFAST) # ibclr
+RUN(NAME intrinsics_169 LABELS gfortran llvm) # mod
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
