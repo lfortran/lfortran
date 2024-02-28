@@ -334,14 +334,12 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 } else { \
                     alloc_dim.m_start = PassUtils::get_bound(op_arg, i + 1, "lbound", al); \
                     alloc_dim.m_start = CastingUtil::perform_casting(alloc_dim.m_start, \
-                        ASRUtils::expr_type(alloc_dim.m_start), int32_type, al, loc); \
+                        int32_type, al, loc); \
                 } \
                 ASR::expr_t* lbound = PassUtils::get_bound(op_arg, i + 1, "lbound", al); \
-                lbound = CastingUtil::perform_casting(lbound, \
-                    ASRUtils::expr_type(lbound), int32_type, al, loc); \
+                lbound = CastingUtil::perform_casting(lbound, int32_type, al, loc); \
                 ASR::expr_t* ubound = PassUtils::get_bound(op_arg, i + 1, "ubound", al); \
-                ubound = CastingUtil::perform_casting(ubound, \
-                    ASRUtils::expr_type(ubound), int32_type, al, loc); \
+                ubound = CastingUtil::perform_casting(ubound, int32_type, al, loc); \
                 alloc_dim.m_length = ASRUtils::compute_length_from_start_end(al, lbound, ubound); \
                 alloc_dims.push_back(al, alloc_dim); \
             } \
@@ -740,12 +738,9 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 ASR::expr_t* m_right = x->m_args[i].m_right;
                 ASR::expr_t* m_left = x->m_args[i].m_left;
                 ASR::expr_t* m_step = x->m_args[i].m_step;
-                m_right = CastingUtil::perform_casting(m_right,
-                    ASRUtils::expr_type(m_right), int32_type, al, loc);
-                m_left = CastingUtil::perform_casting(m_left,
-                    ASRUtils::expr_type(m_left), int32_type, al, loc);
-                m_step = CastingUtil::perform_casting(m_step,
-                    ASRUtils::expr_type(m_step), int32_type, al, loc);
+                m_right = CastingUtil::perform_casting(m_right, int32_type, al, loc);
+                m_left = CastingUtil::perform_casting(m_left, int32_type, al, loc);
+                m_step = CastingUtil::perform_casting(m_step, int32_type, al, loc);
                 x_dim.m_length = builder.ElementalAdd(builder.ElementalDiv(
                     builder.ElementalSub(m_right, m_left, loc),
                     m_step, loc), i32_one, loc, length_value);
@@ -1776,10 +1771,8 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                         dim.loc = x.m_value->base.loc;
                         dim.m_start = PassUtils::get_bound(x.m_value, i + 1, "lbound", al);
                         dim.m_length = ASRUtils::get_size(x.m_value, i + 1, al);
-                        dim.m_start = CastingUtil::perform_casting(dim.m_start,
-                            ASRUtils::expr_type(dim.m_start), int32_type, al, loc);
-                        dim.m_length = CastingUtil::perform_casting(dim.m_length,
-                            ASRUtils::expr_type(dim.m_length), int32_type, al, loc);
+                        dim.m_start = CastingUtil::perform_casting(dim.m_start, int32_type, al, loc);
+                        dim.m_length = CastingUtil::perform_casting(dim.m_length, int32_type, al, loc);
                         vec_dims.push_back(al, dim);
                     }
 

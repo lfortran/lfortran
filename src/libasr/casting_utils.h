@@ -15,9 +15,8 @@ namespace LCompilers::CastingUtil {
                       ASR::ttype_t*& src_type, ASR::ttype_t*& dest_type,
                       bool is_assign);
 
-    ASR::expr_t* perform_casting(ASR::expr_t* expr, ASR::ttype_t* src,
-                                 ASR::ttype_t* dest, Allocator& al,
-                                 const Location& loc);
+    ASR::expr_t* perform_casting(ASR::expr_t* expr, ASR::ttype_t* dest,
+                                Allocator& al, const Location& loc);
 }
 
 #endif // LFORTRAN_CASTING_UTILS_H
