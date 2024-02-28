@@ -1640,8 +1640,10 @@ LFORTRAN_API char* _lfortran_str_slice_assign(char* s, char *r, int32_t idx1, in
     }
     if (idx1 == idx2 ||
         (step > 0 && (idx1 > idx2 || idx1 >= s_len)) ||
-        (step < 0 && (idx1 < idx2 || idx2 >= s_len-1)))
-        return "";
+        (step < 0 && (idx1 < idx2 || idx2 >= s_len-1))) {
+        return s;
+    }
+
     char* dest_char = (char*)malloc(s_len);
     strcpy(dest_char, s);
     int s_i = idx1, d_i = 0;
