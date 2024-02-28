@@ -3203,7 +3203,7 @@ public:
         ASR::ttype_t* root_v_type = ASRUtils::type_get_past_pointer(
             ASRUtils::symbol_type(v));
         size_t n_dims = ASRUtils::extract_n_dims_from_ttype(root_v_type);
-        if (ASRUtils::is_array(root_v_type) && n_dims != n_args) {
+        if (n_dims > 0 && n_dims != n_args) {
             std::string var_name = ASRUtils::symbol_name(v);
             throw SemanticError("Rank mismatch in array reference: the array `"
                 + var_name + "` has rank `" + std::to_string(n_dims) +
@@ -3305,32 +3305,54 @@ public:
         ASR::ttype_t *type;
         type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(f2));
         ASR::expr_t *arr_ref_val = nullptr;
+        ASR::dimension_t* m_dims { nullptr };
+        ASRUtils::extract_dimensions_from_ttype(root_v_type, m_dims);
+        std::string data_structure = (n_dims > 0) ? "Array" : "Substring";
         bool all_args_eval = ASRUtils::all_args_evaluated(args);
-        for( auto& a : args ) {
+        for (size_t i = 0; i < n_args; i++) {
+            auto& a = args[i];
+            // ASR::dimension_t dim = m_dims[i];
+            // ASR::expr_t* dim_length { dim.m_length };
+            // ASR::expr_t* dim_start { dim.m_start };
             // Assume that indices are constant integers
             int64_t start = 1, end = -1, step = 1;
             bool flag = false;
-            if( a.m_left ) {
-                if( all_args_eval ) {
+            if (all_args_eval) {
+                if (a.m_left) {
                     ASR::expr_t* m_left_expr = ASRUtils::expr_value(a.m_left);
                     if (!ASR::is_a<ASR::IntegerConstant_t>(*m_left_expr)) {
-                        throw SemanticError("Substring start index at must be of type integer", m_left_expr->base.loc);
+                        throw SemanticError(data_structure + " start index must be of type integer", m_left_expr->base.loc);
                     }
                     ASR::IntegerConstant_t *m_left = ASR::down_cast<ASR::IntegerConstant_t>(m_left_expr);
                     start = m_left->m_n;
-                }
-            }
-            if( a.m_right ) {
-                if( all_args_eval ) {
+
+                    // when accessing slice (e.g. X(1:2) )
+                    if (a.m_right) {
+                        flag = true;
+                        ASR::expr_t* m_right_expr = ASRUtils::expr_value(a.m_right);
+                        if(!ASR::is_a<ASR::IntegerConstant_t>(*m_right_expr)) {
+                            throw SemanticError(data_structure + " end index must be of type integer", m_right_expr->base.loc);
+                        }
+                        ASR::IntegerConstant_t *m_right = ASR::down_cast<ASR::IntegerConstant_t>(m_right_expr);
+                        end = m_right->m_n;
+                    }
+                } else if (a.m_right) { // this is when accessing single element (e.g. X(2) )
                     flag = true;
                     ASR::expr_t* m_right_expr = ASRUtils::expr_value(a.m_right);
                     if(!ASR::is_a<ASR::IntegerConstant_t>(*m_right_expr)) {
-                        throw SemanticError("Substring end index at must be of type integer", m_right_expr->base.loc);
+                        throw SemanticError(data_structure + " index must be of type integer", m_right_expr->base.loc);
                     }
                     ASR::IntegerConstant_t *m_right = ASR::down_cast<ASR::IntegerConstant_t>(m_right_expr);
                     end = m_right->m_n;
                 }
             }
+
+            // int dim_start_int {-1};
+            // ASRUtils::extract_value(ASRUtils::expr_value(dim_start), dim_start_int);
+            // if (start < dim_start_int) {
+            //     throw SemanticError("Array reference is out of bounds dimension " + std::to_string(i + 1), m_left_expr->base.loc);
+            // }
+
             if( a.m_step ) {
                 if( all_args_eval ) {
                     ASR::expr_t* m_step_expr = ASRUtils::expr_value(a.m_step);

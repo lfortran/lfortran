@@ -1,0 +1,5 @@
+semantic error: Array index must be of type integer
+ --> tests/errors/index_non_integer_subarray3.f90:4:16
+  |
+4 |     print *, x(1.1)
+  |                ^^^ 
