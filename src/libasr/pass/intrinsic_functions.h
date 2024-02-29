@@ -73,6 +73,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     SelectedIntKind,
     SelectedRealKind,
     Adjustl,
+    Ichar,
     MinExponent,
     MaxExponent,
     FloorDiv,
@@ -2852,6 +2853,38 @@ namespace Adjustl {
     }
 
 } // namespace AdjustL
+
+namespace Ichar {
+
+    static ASR::expr_t *eval_Ichar(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        char* str = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
+        char first_char = str[0];
+        int result = (int)first_char;
+        return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_Ichar(Allocator &al, const Location &loc,
+        SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+        Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_optimization_Ichar_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("str", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
+        auto result = declare("result", return_type, ReturnVar);
+        auto itr = declare("i", ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), Local);
+        body.push_back(al, b.Assignment(itr, i32(1)));
+        ASR::expr_t* ichar_node = nullptr;
+        ASR::ttype_t* ichar_node_arg_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr));
+        ASR::expr_t* ichar_node_arg = ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, ichar_node_arg_type, nullptr));
+        ichar_node = ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ichar_node_arg, int32, nullptr));
+        ASR::expr_t *cast = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, ichar_node, ASR::cast_kindType::IntegerToInteger, return_type, nullptr));
+        body.push_back(al, b.Assignment(result, cast));
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace Ichar
 
 namespace Digits {
 

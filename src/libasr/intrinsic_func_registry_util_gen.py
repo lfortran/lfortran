@@ -364,6 +364,13 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         },
     ],
+    "Ichar": [
+        {
+            "args": [("char",)],
+            "return": "int32",
+            "kind_arg": True
+        }
+    ],
 }
 
 skip_create_func = ["Partition"]
