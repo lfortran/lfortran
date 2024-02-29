@@ -1363,7 +1363,7 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        this->visit_expr(*x.m_arg);
+        this->visit_expr_wrapper(x.m_arg, true);
         llvm::Value *c = tmp;
         std::string runtime_func_name = "_lfortran_ichar";
         llvm::Function *fn = module->getFunction(runtime_func_name);
