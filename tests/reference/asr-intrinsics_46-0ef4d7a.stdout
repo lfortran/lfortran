@@ -158,11 +158,13 @@
                     []
                     [(Assignment
                         (Var 2 i)
-                        (Ichar
-                            (StringConstant
+                        (IntrinsicElementalFunction
+                            Ichar
+                            [(StringConstant
                                 " "
                                 (Character 1 1 ())
-                            )
+                            )]
+                            0
                             (Integer 4)
                             (IntegerConstant 32 (Integer 4))
                         )
@@ -182,11 +184,13 @@
                     )
                     (Assignment
                         (Var 2 li_1)
-                        (Ichar
-                            (StringConstant
+                        (IntrinsicElementalFunction
+                            Ichar
+                            [(StringConstant
                                 "A"
                                 (Character 1 1 ())
-                            )
+                            )]
+                            0
                             (Integer 8)
                             (IntegerConstant 65 (Integer 8))
                         )
@@ -206,11 +210,13 @@
                     )
                     (Assignment
                         (Var 2 li_2)
-                        (Ichar
-                            (StringConstant
+                        (IntrinsicElementalFunction
+                            Ichar
+                            [(StringConstant
                                 "Z"
                                 (Character 1 1 ())
-                            )
+                            )]
+                            0
                             (Integer 8)
                             (IntegerConstant 90 (Integer 8))
                         )
@@ -340,8 +346,10 @@
                     )
                     (Assignment
                         (Var 2 c)
-                        (Ichar
-                            (Var 2 c_1)
+                        (IntrinsicElementalFunction
+                            Ichar
+                            [(Var 2 c_1)]
+                            0
                             (Integer 4)
                             ()
                         )
@@ -556,11 +564,13 @@
                     )
                     (Assignment
                         (Var 2 c)
-                        (Ichar
-                            (StringConstant
+                        (IntrinsicElementalFunction
+                            Ichar
+                            [(StringConstant
                                 "e"
                                 (Character 1 1 ())
-                            )
+                            )]
+                            0
                             (Integer 4)
                             (IntegerConstant 101 (Integer 4))
                         )
@@ -581,8 +591,10 @@
                     )
                     (Assignment
                         (Var 2 c)
-                        (Ichar
-                            (Var 2 c_1)
+                        (IntrinsicElementalFunction
+                            Ichar
+                            [(Var 2 c_1)]
+                            0
                             (Integer 4)
                             ()
                         )
