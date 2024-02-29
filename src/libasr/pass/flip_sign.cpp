@@ -176,23 +176,14 @@ public:
         }
     }
 
-    void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+    void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
         is_function_call_present = true;
-        ASR::symbol_t* func_name = nullptr;
-        if( x.m_original_name ) {
-            func_name = x.m_original_name;
-        } else if( x.m_name ) {
-            func_name = x.m_name;
-        }
-        if( func_name && func_name-> type == ASR::symbolType::Function ) {
-            ASR::Function_t* func_sym = ASR::down_cast<ASR::Function_t>(func_name);
-            if (std::string(func_sym->m_name).find("modulo") != std::string::npos) {
-                is_function_modulo = true;
-            }
+        if (x.m_intrinsic_id == 31) {
+            is_function_modulo = true;
         }
         if( is_function_modulo && x.n_args == 2) {
-            ASR::expr_t* arg0 = x.m_args[0].m_value;
-            ASR::expr_t* arg1 = x.m_args[1].m_value;
+            ASR::expr_t* arg0 = x.m_args[0];
+            ASR::expr_t* arg1 = x.m_args[1];
             bool cond_for_arg0 = false, cond_for_arg1 = false;
             ASR::ttype_t* arg0_ttype = ASRUtils::expr_type(arg0);
             cond_for_arg0 = arg0_ttype->type == ASR::ttypeType::Integer;
