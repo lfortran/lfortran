@@ -2753,6 +2753,9 @@ public:
                             value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al,
                                 a->base.base.loc, body.p, body.size(),
                                 a->m_type, a->m_storage_format));
+                            if (ASRUtils::is_dimension_empty(dims.p, dims.n)) {
+                                type = a->m_type;
+                            }
                         }
                         if (sym_type->m_type == AST::decl_typeType::TypeCharacter) {
                             ASR::Character_t *lhs_type = ASR::down_cast<ASR::Character_t>(
@@ -5015,6 +5018,27 @@ public:
         }
     }
 
+    void compiletime_broadcast_elemental_intrinsic(ASR::ArrayConstant_t* array, ASRUtils::create_intrinsic_function create_func,
+                                                  const Location& loc, Allocator& al) {
+        for (size_t i = 0; i < array->n_args; i++) {
+            ASR::expr_t* arg = array->m_args[i];
+            if (ASR::is_a<ASR::ArrayConstant_t>(*arg)) {
+                compiletime_broadcast_elemental_intrinsic(
+                    ASR::down_cast<ASR::ArrayConstant_t>(arg), create_func, loc, al);
+            } else {
+                Vec<ASR::expr_t*> args; args.reserve(al, 1);
+                args.push_back(al, arg);
+                array->m_args[i] = ASRUtils::EXPR(create_func(al, loc, args, diag));
+            }
+        }
+    }
+
+    ASR::expr_t* fetch_arrayconstant(ASR::expr_t* var_value) {
+        if (!var_value) return nullptr;
+        return ASR::is_a<ASR::ArrayConstant_t>(*var_value) ? var_value : ASR::is_a<ASR::Var_t>(*var_value) ?
+                fetch_arrayconstant(ASRUtils::EXPR2VAR(var_value)->m_value) : nullptr;
+    }
+
     ASR::symbol_t* intrinsic_as_node(const AST::FuncCallOrArray_t &x,
                                      bool& is_function) {
         std::string var_name = to_lower(x.m_func);
@@ -5043,12 +5067,34 @@ public:
                     throw SemanticError("No matching signature found for intrinsic " + var_name,
                                         x.base.base.loc);
                 }
-                if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ){
+                if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ) {
                     fill_optional_kind_arg(var_name, args);
 
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
-                    tmp = create_func(al, x.base.base.loc, args, diag);
+                    if (args.size() == 1 &&
+                        var_name != "tiny" && var_name != "rank") {
+                        if (ASRUtils::all_args_evaluated(args)) {
+                            ASR::expr_t* arg = args[0];
+                            if (ASR::is_a<ASR::Var_t>(*arg)) {
+                                ASR::Variable_t* var = ASRUtils::EXPR2VAR(arg);
+                                LCOMPILERS_ASSERT(var->m_value != nullptr); // parameter
+                                ASR::expr_t* array_arg = fetch_arrayconstant(var->m_value);
+                                if (array_arg) arg = array_arg;
+                            }
+                            if (ASR::is_a<ASR::ArrayConstant_t>(*arg)) {
+                                ASR::ArrayConstant_t *array = ASR::down_cast<ASR::ArrayConstant_t>(arg);
+                                compiletime_broadcast_elemental_intrinsic(array, create_func, x.base.base.loc, al);
+                                tmp = (ASR::asr_t*) array;
+                            } else {
+                                tmp = create_func(al, x.base.base.loc, args, diag);
+                            }
+                        } else {
+                            tmp = create_func(al, x.base.base.loc, args, diag);
+                        }
+                    } else {
+                        tmp = create_func(al, x.base.base.loc, args, diag);
+                    }
                 } else if ( ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ) {
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicArrayFunctionRegistry::get_create_function(var_name);
