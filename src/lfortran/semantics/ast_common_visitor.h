@@ -6595,9 +6595,12 @@ public:
             ASR::Character_t *right_type2 = ASR::down_cast<ASR::Character_t>(right_type);
             LCOMPILERS_ASSERT(ASRUtils::extract_n_dims_from_ttype(left_type_) == 0);
             LCOMPILERS_ASSERT(ASRUtils::extract_n_dims_from_ttype(right_type_) == 0);
+            int a_len = -1;
+            if (left_type2->m_len > -1 && right_type2->m_len > -1) {
+                a_len = left_type2->m_len + right_type2->m_len;
+            }
             ASR::ttype_t *dest_type = ASR::down_cast<ASR::ttype_t>(ASR::make_Character_t(
-                al, x.base.base.loc, left_type2->m_kind,
-                left_type2->m_len + right_type2->m_len, nullptr));
+                al, x.base.base.loc, left_type2->m_kind, a_len, nullptr));
 
             ASR::expr_t *value = nullptr;
             // Assign evaluation to `value` if possible, otherwise leave nullptr
