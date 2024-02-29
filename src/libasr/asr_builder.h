@@ -193,17 +193,17 @@ class ASRBuilder {
             ASR::binopType::Sub, right, real64, nullptr))
     #define i_tSub(left, right, t) EXPR(ASR::make_IntegerBinOp_t(al, loc, left, \
             ASR::binopType::Sub, right, t, nullptr))
-    #define r_tSub(left, right, t) EXPR(ASR::make_RealBinOp_t(al, loc, left, \
+    #define r_tSub(left, right, t) EXPR(ASR::make_RealBinOp_t(al, loc, left,    \
             ASR::binopType::Sub, right, t, nullptr))
 
-    #define iDiv(left, right) r2i32(EXPR(ASR::make_RealBinOp_t(al, loc,         \
-            i2r32(left), ASR::binopType::Div, i2r32(right), real32, nullptr)))
-    #define i8Div(left, right) r2i8(EXPR(ASR::make_RealBinOp_t(al, loc,         \
-            i2r32(left), ASR::binopType::Div, i2r32(right), real32, nullptr)))
-    #define i16Div(left, right) r2i16(EXPR(ASR::make_RealBinOp_t(al, loc,       \
-            i2r32(left), ASR::binopType::Div, i2r32(right), real32, nullptr)))
-    #define i64Div(left, right) r2i64(EXPR(ASR::make_RealBinOp_t(al, loc,       \
-            i2r64(left), ASR::binopType::Div, i2r64(right), real32, nullptr)))
+    #define iDiv(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc,            \
+            left, ASR::binopType::Div, right, int32, nullptr))
+    #define i8Div(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc,           \
+            left, ASR::binopType::Div, right, int8, nullptr))
+    #define i16Div(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc,          \
+            left, ASR::binopType::Div, right, int16, nullptr))
+    #define i64Div(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc,          \
+            left, ASR::binopType::Div, right, int64, nullptr))
     #define r32Div(left, right) EXPR(ASR::make_RealBinOp_t(al, loc,             \
             left, ASR::binopType::Div, right, real32, nullptr))
     #define r64Div(left, right) EXPR(ASR::make_RealBinOp_t(al, loc,             \

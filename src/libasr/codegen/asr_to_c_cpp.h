@@ -2528,14 +2528,8 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src += ASRUtils::binop_to_str_python(x.m_op);
         if (right_precedence == 3) {
             src += "(" + right + ")";
-        } else if (x.m_op == ASR::binopType::Sub || x.m_op == ASR::binopType::Div) {
-            if (right_precedence < last_expr_precedence) {
-                src += right;
-            } else {
-                src += "(" + right + ")";
-            }
         } else {
-            if (right_precedence <= last_expr_precedence) {
+            if (right_precedence < last_expr_precedence) {
                 src += right;
             } else {
                 src += "(" + right + ")";

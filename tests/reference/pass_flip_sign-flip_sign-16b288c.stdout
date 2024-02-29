@@ -83,25 +83,10 @@
                                 (IntegerBinOp
                                     (IntegerConstant 2 (Integer 4))
                                     Mul
-                                    (Cast
-                                        (RealBinOp
-                                            (Cast
-                                                (Var 36 signal)
-                                                IntegerToReal
-                                                (Real 4)
-                                                ()
-                                            )
-                                            Div
-                                            (Cast
-                                                (IntegerConstant 2 (Integer 4))
-                                                IntegerToReal
-                                                (Real 4)
-                                                ()
-                                            )
-                                            (Real 4)
-                                            ()
-                                        )
-                                        RealToInteger
+                                    (IntegerBinOp
+                                        (Var 36 signal)
+                                        Div
+                                        (IntegerConstant 2 (Integer 4))
                                         (Integer 4)
                                         ()
                                     )
@@ -218,25 +203,10 @@
                                 (IntegerBinOp
                                     (IntegerConstant 2 (Integer 4))
                                     Mul
-                                    (Cast
-                                        (RealBinOp
-                                            (Cast
-                                                (Var 37 signal)
-                                                IntegerToReal
-                                                (Real 4)
-                                                ()
-                                            )
-                                            Div
-                                            (Cast
-                                                (IntegerConstant 2 (Integer 4))
-                                                IntegerToReal
-                                                (Real 4)
-                                                ()
-                                            )
-                                            (Real 4)
-                                            ()
-                                        )
-                                        RealToInteger
+                                    (IntegerBinOp
+                                        (Var 37 signal)
+                                        Div
+                                        (IntegerConstant 2 (Integer 4))
                                         (Integer 4)
                                         ()
                                     )
