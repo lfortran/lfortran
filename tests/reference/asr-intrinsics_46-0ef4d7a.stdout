@@ -9,6 +9,28 @@
                     (SymbolTable
                         2
                         {
+                            a:
+                                (Variable
+                                    2
+                                    a
+                                    []
+                                    Local
+                                    (StringConstant
+                                        "a"
+                                        (Character 1 1 ())
+                                    )
+                                    (StringConstant
+                                        "a"
+                                        (Character 1 1 ())
+                                    )
+                                    Save
+                                    (Character 1 1 ())
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
                             achar:
                                 (ExternalSymbol
                                     2
@@ -18,6 +40,28 @@
                                     []
                                     achar
                                     Private
+                                ),
+                            b:
+                                (Variable
+                                    2
+                                    b
+                                    []
+                                    Local
+                                    (StringConstant
+                                        "b"
+                                        (Character 1 1 ())
+                                    )
+                                    (StringConstant
+                                        "b"
+                                        (Character 1 1 ())
+                                    )
+                                    Save
+                                    (Character 1 1 ())
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
                                 ),
                             c:
                                 (Variable
@@ -51,6 +95,49 @@
                                     )
                                     Save
                                     (Character 1 1 ())
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            d:
+                                (Variable
+                                    2
+                                    d
+                                    []
+                                    Local
+                                    (StringConstant
+                                        "#"
+                                        (Character 1 1 ())
+                                    )
+                                    (StringConstant
+                                        "#"
+                                        (Character 1 1 ())
+                                    )
+                                    Save
+                                    (Character 1 1 ())
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            e:
+                                (Variable
+                                    2
+                                    e
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Character 1 1 ())
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4)))]
+                                        CharacterArraySinglePointer
+                                    )
                                     ()
                                     Source
                                     Public
@@ -152,6 +239,27 @@
                                     Public
                                     Required
                                     .false.
+                                ),
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
                                 )
                         })
                     test_ichar
@@ -243,6 +351,47 @@
                                 "d"
                                 (Character 1 1 ())
                             )
+                        )
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 e)
+                        (ArrayConstant
+                            [(StringConstant
+                                "a"
+                                (Character 1 1 ())
+                            )
+                            (StringConstant
+                                "b"
+                                (Character 1 1 ())
+                            )
+                            (StringConstant
+                                "c"
+                                (Character 1 1 ())
+                            )]
+                            (Array
+                                (Character 1 1 ())
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 3 (Integer 4)))]
+                                FixedSizeArray
+                            )
+                            ColMajor
+                        )
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (ArrayConstant
+                            [(IntegerConstant 97 (Integer 4))
+                            (IntegerConstant 98 (Integer 4))
+                            (IntegerConstant 99 (Integer 4))]
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 3 (Integer 4)))]
+                                FixedSizeArray
+                            )
+                            ColMajor
                         )
                         ()
                     )
@@ -605,6 +754,490 @@
                             (Var 2 c)
                             NotEq
                             (IntegerConstant 101 (Integer 4))
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        [(IntrinsicElementalFunction
+                            Ichar
+                            [(Var 2 a)]
+                            0
+                            (Integer 4)
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (IntrinsicElementalFunction
+                                Ichar
+                                [(Var 2 a)]
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 97 (Integer 4))
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        [(IntrinsicElementalFunction
+                            Ichar
+                            [(Var 2 b)]
+                            0
+                            (Integer 4)
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (IntrinsicElementalFunction
+                                Ichar
+                                [(Var 2 b)]
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 98 (Integer 4))
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        [(IntrinsicElementalFunction
+                            Ichar
+                            [(Var 2 d)]
+                            0
+                            (Integer 4)
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (IntrinsicElementalFunction
+                                Ichar
+                                [(Var 2 d)]
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 35 (Integer 4))
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        [(IntrinsicElementalFunction
+                            Ichar
+                            [(StringConstant
+                                "a"
+                                (Character 1 1 ())
+                            )]
+                            0
+                            (Integer 4)
+                            (IntegerConstant 97 (Integer 4))
+                        )]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (IntrinsicElementalFunction
+                                Ichar
+                                [(StringConstant
+                                    "a"
+                                    (Character 1 1 ())
+                                )]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 97 (Integer 4))
+                            )
+                            NotEq
+                            (IntegerConstant 97 (Integer 4))
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        [(IntrinsicElementalFunction
+                            Ichar
+                            [(StringConstant
+                                "b"
+                                (Character 1 1 ())
+                            )]
+                            0
+                            (Integer 4)
+                            (IntegerConstant 98 (Integer 4))
+                        )]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (IntrinsicElementalFunction
+                                Ichar
+                                [(StringConstant
+                                    "b"
+                                    (Character 1 1 ())
+                                )]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 98 (Integer 4))
+                            )
+                            NotEq
+                            (IntegerConstant 98 (Integer 4))
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        [(IntrinsicElementalFunction
+                            Ichar
+                            [(StringConstant
+                                "C"
+                                (Character 1 1 ())
+                            )]
+                            0
+                            (Integer 4)
+                            (IntegerConstant 67 (Integer 4))
+                        )]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (IntrinsicElementalFunction
+                                Ichar
+                                [(StringConstant
+                                    "C"
+                                    (Character 1 1 ())
+                                )]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 67 (Integer 4))
+                            )
+                            NotEq
+                            (IntegerConstant 67 (Integer 4))
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        [(IntrinsicElementalFunction
+                            Ichar
+                            [(StringConstant
+                                "#"
+                                (Character 1 1 ())
+                            )]
+                            0
+                            (Integer 4)
+                            (IntegerConstant 35 (Integer 4))
+                        )]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (IntrinsicElementalFunction
+                                Ichar
+                                [(StringConstant
+                                    "#"
+                                    (Character 1 1 ())
+                                )]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 35 (Integer 4))
+                            )
+                            NotEq
+                            (IntegerConstant 35 (Integer 4))
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        [(IntrinsicElementalFunction
+                            Kind
+                            [(IntrinsicElementalFunction
+                                Ichar
+                                [(Var 2 a)]
+                                0
+                                (Integer 4)
+                                ()
+                            )]
+                            0
+                            (Integer 4)
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (IntrinsicElementalFunction
+                                Kind
+                                [(IntrinsicElementalFunction
+                                    Ichar
+                                    [(Var 2 a)]
+                                    0
+                                    (Integer 4)
+                                    ()
+                                )]
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 4 (Integer 4))
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        [(IntrinsicElementalFunction
+                            Kind
+                            [(IntrinsicElementalFunction
+                                Ichar
+                                [(Var 2 a)]
+                                0
+                                (Integer 8)
+                                ()
+                            )]
+                            0
+                            (Integer 4)
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (IntrinsicElementalFunction
+                                Kind
+                                [(IntrinsicElementalFunction
+                                    Ichar
+                                    [(Var 2 a)]
+                                    0
+                                    (Integer 8)
+                                    ()
+                                )]
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 8 (Integer 4))
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        [(IntrinsicElementalFunction
+                            Kind
+                            [(IntrinsicElementalFunction
+                                Ichar
+                                [(StringConstant
+                                    "a"
+                                    (Character 1 1 ())
+                                )]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 97 (Integer 4))
+                            )]
+                            0
+                            (Integer 4)
+                            (IntegerConstant 4 (Integer 4))
+                        )]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (IntrinsicElementalFunction
+                                Kind
+                                [(IntrinsicElementalFunction
+                                    Ichar
+                                    [(StringConstant
+                                        "a"
+                                        (Character 1 1 ())
+                                    )]
+                                    0
+                                    (Integer 4)
+                                    (IntegerConstant 97 (Integer 4))
+                                )]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4))
+                            )
+                            NotEq
+                            (IntegerConstant 4 (Integer 4))
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        [(IntrinsicElementalFunction
+                            Kind
+                            [(IntrinsicElementalFunction
+                                Ichar
+                                [(StringConstant
+                                    "a"
+                                    (Character 1 1 ())
+                                )]
+                                0
+                                (Integer 8)
+                                (IntegerConstant 97 (Integer 8))
+                            )]
+                            0
+                            (Integer 4)
+                            (IntegerConstant 8 (Integer 4))
+                        )]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (IntrinsicElementalFunction
+                                Kind
+                                [(IntrinsicElementalFunction
+                                    Ichar
+                                    [(StringConstant
+                                        "a"
+                                        (Character 1 1 ())
+                                    )]
+                                    0
+                                    (Integer 8)
+                                    (IntegerConstant 97 (Integer 8))
+                                )]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 8 (Integer 4))
+                            )
+                            NotEq
+                            (IntegerConstant 8 (Integer 4))
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        [(IntrinsicElementalFunction
+                            Ichar
+                            [(Var 2 e)]
+                            0
+                            (Integer 4)
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntrinsicArrayFunction
+                            Any
+                            [(ArrayPhysicalCast
+                                (IntegerCompare
+                                    (IntrinsicElementalFunction
+                                        Ichar
+                                        [(Var 2 e)]
+                                        0
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    NotEq
+                                    (Var 2 x)
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                )
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            )]
+                            0
                             (Logical 4)
                             ()
                         )
