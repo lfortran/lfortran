@@ -119,30 +119,6 @@ function adjustr(x) result(r)
     character(len=len(x)) :: r
 end function
 
-function lgt(x, y) result(r)
-    character(len=*),intent(in) :: x
-    character(len=*),intent(in) :: y
-    logical :: r
-end function
-
-function llt(x, y) result(r)
-    character(len=*),intent(in) :: x
-    character(len=*),intent(in) :: y
-    logical :: r
-end function
-
-function lge(x, y) result(r)
-    character(len=*),intent(in) :: x
-    character(len=*),intent(in) :: y
-    logical :: r
-end function
-
-function lle(x, y) result(r)
-    character(len=*),intent(in) :: x
-    character(len=*),intent(in) :: y
-    logical :: r
-end function
-
 subroutine date_and_time(date, time, zone, values)
     character(len=*), intent(out), optional :: date, time, zone
     integer, intent(out), optional :: values(8)
