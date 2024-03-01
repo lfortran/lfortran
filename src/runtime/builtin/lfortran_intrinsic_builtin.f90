@@ -64,12 +64,7 @@ interface
     integer function bit_size(x)
     integer, intent(in) :: x
     end function
-
-    character(len=1) function achar(i, kind)
-    integer, intent(in) :: i
-    integer, optional :: kind
-    end function
-
+    
     logical function any(mask, dim) result(r)
     logical, intent(in) :: mask(:)
     integer(4), optional :: dim
