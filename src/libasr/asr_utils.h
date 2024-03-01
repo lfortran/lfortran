@@ -1007,6 +1007,7 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
         case ASR::exprType::StringConstant: {
             return true;
         }
+        case ASR::exprType::RealBinOp:
         case ASR::exprType::IntegerUnaryMinus:
         case ASR::exprType::RealUnaryMinus:
         case ASR::exprType::IntegerBinOp:
@@ -1030,6 +1031,21 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
                 }
             }
             return true;
+        } case ASR::exprType::IntrinsicElementalFunction: {
+            ASR::IntrinsicElementalFunction_t* intrinsic_elemental_function =
+                ASR::down_cast<ASR::IntrinsicElementalFunction_t>(a_value);
+
+            if (ASRUtils::is_value_constant(intrinsic_elemental_function->m_value)) {
+                return true;
+            }
+
+            for( size_t i = 0; i < intrinsic_elemental_function->n_args; i++ ) {
+                if( !ASRUtils::is_value_constant(intrinsic_elemental_function->m_args[i]) ) {
+                    return false;
+                }
+            }
+
+            return true;
         } case ASR::exprType::FunctionCall: {
             ASR::FunctionCall_t* func_call_t = ASR::down_cast<ASR::FunctionCall_t>(a_value);
             if( !ASRUtils::is_intrinsic_symbol(ASRUtils::symbol_get_past_external(func_call_t->m_name)) ) {
@@ -1048,6 +1064,9 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
                 }
             }
             return true;
+        } case ASR::exprType::ArrayBroadcast: {
+            ASR::ArrayBroadcast_t* array_broadcast = ASR::down_cast<ASR::ArrayBroadcast_t>(a_value);
+            return is_value_constant(array_broadcast->m_value);
         } case ASR::exprType::StructInstanceMember: {
             ASR::StructInstanceMember_t*
                 struct_member_t = ASR::down_cast<ASR::StructInstanceMember_t>(a_value);
