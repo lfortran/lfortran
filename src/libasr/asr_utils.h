@@ -1007,6 +1007,7 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
         case ASR::exprType::StringConstant: {
             return true;
         }
+        case ASR::exprType::RealBinOp:
         case ASR::exprType::IntegerUnaryMinus:
         case ASR::exprType::RealUnaryMinus:
         case ASR::exprType::IntegerBinOp:
@@ -1063,6 +1064,9 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
                 }
             }
             return true;
+        } case ASR::exprType::ArrayBroadcast: {
+            ASR::ArrayBroadcast_t* array_broadcast = ASR::down_cast<ASR::ArrayBroadcast_t>(a_value);
+            return is_value_constant(array_broadcast->m_value);
         } case ASR::exprType::StructInstanceMember: {
             ASR::StructInstanceMember_t*
                 struct_member_t = ASR::down_cast<ASR::StructInstanceMember_t>(a_value);
