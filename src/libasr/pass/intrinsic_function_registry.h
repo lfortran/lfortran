@@ -59,6 +59,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Blt)
         INTRINSIC_NAME_CASE(Bge)
         INTRINSIC_NAME_CASE(Ble)
+        INTRINSIC_NAME_CASE(Exponent)
         INTRINSIC_NAME_CASE(Not)
         INTRINSIC_NAME_CASE(Iand)
         INTRINSIC_NAME_CASE(Ior)
@@ -220,6 +221,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Blt::instantiate_Blt, &Blt::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Bge),
             {&Bge::instantiate_Bge, &Bge::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Exponent),
+            {&Exponent::instantiate_Exponent, &Exponent::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ble),
             {&Ble::instantiate_Ble, &Ble::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Not),
@@ -459,6 +462,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "bge"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ble),
             "ble"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Exponent),
+            "exponent"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Not),
             "not"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Iand),
@@ -654,6 +659,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"blt", {&Blt::create_Blt, &Blt::eval_Blt}},
                 {"bge", {&Bge::create_Bge, &Bge::eval_Bge}},
                 {"ble", {&Ble::create_Ble, &Ble::eval_Ble}},
+                {"exponent", {&Exponent::create_Exponent, &Exponent::eval_Exponent}},
                 {"not", {&Not::create_Not, &Not::eval_Not}},
                 {"iand", {&Iand::create_Iand, &Iand::eval_Iand}},
                 {"ior", {&Ior::create_Ior, &Ior::eval_Ior}},
