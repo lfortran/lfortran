@@ -375,6 +375,12 @@ intrinsic_funcs_args = {
         {
             "args": [("real",)],
             "return": "int32",
+        }
+    ],    
+    "Dshiftl": [
+        {
+            "args": [("int", "int", "int",)],
+            "ret_type_arg_idx": 0
         },
     ],
 }
