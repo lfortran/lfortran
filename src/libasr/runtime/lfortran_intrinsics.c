@@ -2373,6 +2373,9 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, ch
     }
 
     *iostat = !(fgets(*arg, n+1, filep) == *arg);
+    if (streql(*arg, "\n")) {
+        *iostat = -2;
+    }
     (*arg)[strcspn(*arg, "\n")] = 0;
     va_end(args);
 }

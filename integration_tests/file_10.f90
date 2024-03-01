@@ -5,7 +5,8 @@ program file_10
     character(:), allocatable :: sentence2
     character(:), allocatable :: sentence3
     character(:), allocatable :: sentence4
-    integer :: u = 11
+    character :: c
+    integer :: u = 11, iostat, i
 
     open(u, file="file_10_data.txt", form="formatted", access="stream", status="old")
 
@@ -24,6 +25,13 @@ program file_10
     sentence4 = get_prompt(u)
     print *, sentence4
     if (sentence4 /= "dsfjlkf\r\tjkdlfas\n\r\t\n") error stop
+
+    rewind(u)
+    do i = 1, 14
+        read(u, "(a)", advance="no", iostat=iostat) c
+    end do
+    print*, iostat
+    if (iostat /= -2) error stop
 
     contains
 
