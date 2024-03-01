@@ -318,7 +318,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     while(!isdigit(*num_pos)) num_pos++;
     width = atoi(num_pos);
 
-    char val_str[64];
+    char val_str[128];
     // TODO: This will work for up to `E65.60` but will fail for:
     // print "(E67.62)", 1.23456789101112e-62_8
     sprintf(val_str, "%.*lf", (60-integer_length), val);
