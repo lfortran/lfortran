@@ -1419,6 +1419,7 @@ RUN(NAME arrayprint_01 LABELS gfortran llvm)
 RUN(NAME print_arr_05 LABELS gfortran llvm)
 
 RUN(NAME binop_01 LABELS gfortran llvm)
+RUN(NAME binop_02 LABELS gfortran llvm)
 
 RUN(NAME dfloat_01 LABELS gfortran llvm)
 
