@@ -5963,7 +5963,9 @@ public:
 
         if (ASRUtils::is_integer(*dest_type)) {
 
-            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
+            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr &&
+                ASR::is_a<ASR::IntegerConstant_t>(*ASRUtils::expr_value(left)) &&
+                ASR::is_a<ASR::IntegerConstant_t>(*ASRUtils::expr_value(right))) {
                 int64_t left_value = ASR::down_cast<ASR::IntegerConstant_t>(
                                         ASRUtils::expr_value(left))
                                         ->m_n;
@@ -6001,7 +6003,9 @@ public:
 
         } else if (ASRUtils::is_real(*dest_type)) {
 
-            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
+            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr &&
+                ASR::is_a<ASR::RealConstant_t>(*ASRUtils::expr_value(left)) &&
+                ASR::is_a<ASR::RealConstant_t>(*ASRUtils::expr_value(right))) {
                 double left_value = ASR::down_cast<ASR::RealConstant_t>(
                                         ASRUtils::expr_value(left))
                                         ->m_r;
@@ -6039,7 +6043,9 @@ public:
 
         } else if (ASRUtils::is_complex(*dest_type)) {
 
-            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
+            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr &&
+                ASR::is_a<ASR::ComplexConstant_t>(*ASRUtils::expr_value(left)) &&
+                ASR::is_a<ASR::ComplexConstant_t>(*ASRUtils::expr_value(right))) {
                 ASR::ComplexConstant_t *left0
                     = ASR::down_cast<ASR::ComplexConstant_t>(
                             ASRUtils::expr_value(left));
