@@ -5,6 +5,11 @@ program test_ichar
     integer :: i, j, c
     integer(8) :: li_1, lj_1, li_2, lj_2
     character(len=1) :: c_1 = 'b'
+    character(len = 1) :: a = 'a'
+    character(len = 1) :: b = 'b'
+    character(len = 1) :: d = '#'
+    character(len=1) :: e(3)
+    integer :: x(3)
 
     i = ichar(' ')
     j = iachar(' ')
@@ -13,6 +18,8 @@ program test_ichar
     li_2 = ichar('Z', kind=8)
     lj_2 = iachar('z', kind=8)
     c_1 = char(100);
+    e = ["a", "b", "c"]
+    x = [97, 98, 99]
 
     if (i /= 32) error stop
     if (j /= 32) error stop
@@ -45,5 +52,42 @@ program test_ichar
     if (c /= 101) error stop
     c = ichar(c_1)
     if (c /= 101) error stop
+
+    print *, ichar(a)
+    if(ichar(a) /= 97) error stop
+
+    print *, ichar(b)
+    if(ichar(b) /= 98) error stop
+
+    print *, ichar(d)
+    if(ichar(d) /= 35) error stop
+
+    print *, ichar('a')
+    if(ichar('a') /= 97) error stop
+
+    print *, ichar('b')
+    if(ichar('b') /= 98) error stop
+
+    print *, ichar('C')
+    if(ichar('C') /= 67) error stop
+
+    print *, ichar('#')
+    if(ichar('#') /= 35) error stop
+
+    print *, kind(ichar(a))
+    if(kind(ichar(a)) /= 4) error stop
+
+    print *, kind(ichar(a, 8))
+    if(kind(ichar(a, 8)) /= 8) error stop
+
+    print *, kind(ichar('a'))
+    if(kind(ichar('a')) /= 4) error stop
+
+    print *, kind(ichar('a', 8))
+    if(kind(ichar('a', 8)) /= 8) error stop
+
+    print *, ichar(e)
+    if (any(ichar(e) /= x)) error stop
+
 
 end program test_ichar
