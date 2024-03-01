@@ -692,6 +692,7 @@ RUN(NAME parameter_04 LABELS gfortran llvm wasm) # selected_real,int_kind symbol
 RUN(NAME parameter_05 LABELS gfortran llvm wasm) # Implicit IntegerToReal
 RUN(NAME parameter_06 LABELS gfortran llvm)
 RUN(NAME parameter_07 LABELS gfortran llvm)
+RUN(NAME parameter_08 LABELS gfortran llvm)
 
 RUN(NAME modules_01 LABELS gfortran llvm wasm fortran)
 RUN(NAME modules_02 LABELS gfortran llvm wasm)
