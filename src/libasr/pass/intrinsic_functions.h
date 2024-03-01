@@ -60,6 +60,10 @@ enum class IntrinsicElementalFunctions : int64_t {
     Bge,
     Ble,
     Exponent,
+    Lgt,
+    Llt,
+    Lge,
+    Lle,
     Not,
     Iand,
     Ior,
@@ -1300,6 +1304,158 @@ namespace Ble {
     }
 
 } // namespace Ble
+
+namespace Lgt {
+
+    static ASR::expr_t *eval_Lgt(Allocator &al, const Location &loc,
+        ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        char* string_A = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
+        char* string_B = ASR::down_cast<ASR::StringConstant_t>(args[1])->m_s;
+        bool result = false;
+        if (strcmp(string_A, string_B) > 0) {
+            result = true;
+        }
+        return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_Lgt(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t */*return_type*/,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_lgt_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("y", arg_types[1]);
+        auto result = declare(fn_name, logical, ReturnVar);
+        body.push_back(al, b.Assignment(result, bool32(0)));
+        ASR::expr_t *val1 = args[0];
+        ASR::expr_t *val2 = args[1];
+
+        ASR::expr_t* test = make_Compare(make_StringCompare_t, val1, Gt, val2);
+        Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
+        if_body.push_back(al, b.Assignment(result, bool32(1)));
+        body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
+            if_body.p, if_body.n, nullptr, 0)));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, logical, nullptr);
+    }
+
+} // namespace Lgt
+
+namespace Llt {
+
+    static ASR::expr_t *eval_Llt(Allocator &al, const Location &loc,
+        ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        char* string_A = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
+        char* string_B = ASR::down_cast<ASR::StringConstant_t>(args[1])->m_s;
+        bool result = false;
+        if (strcmp(string_A, string_B) < 0) {
+            result = true;
+        }
+        return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_Llt(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t */*return_type*/,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_llt_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("y", arg_types[1]);
+        auto result = declare(fn_name, logical, ReturnVar);
+        body.push_back(al, b.Assignment(result, bool32(0)));
+        ASR::expr_t *val1 = args[0];
+        ASR::expr_t *val2 = args[1];
+
+        ASR::expr_t* test = make_Compare(make_StringCompare_t, val1, Lt, val2);
+        Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
+        if_body.push_back(al, b.Assignment(result, bool32(1)));
+        body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
+            if_body.p, if_body.n, nullptr, 0)));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, logical, nullptr);
+    }
+
+} // namespace Llt
+
+namespace Lge {
+
+    static ASR::expr_t *eval_Lge(Allocator &al, const Location &loc,
+        ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        char* string_A = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
+        char* string_B = ASR::down_cast<ASR::StringConstant_t>(args[1])->m_s;
+        bool result = false;
+        if (strcmp(string_A, string_B) >= 0) {
+            result = true;
+        }
+        return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_Lge(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t */*return_type*/,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_lge_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("y", arg_types[1]);
+        auto result = declare(fn_name, logical, ReturnVar);
+        body.push_back(al, b.Assignment(result, bool32(0)));
+        ASR::expr_t *val1 = args[0];
+        ASR::expr_t *val2 = args[1];
+
+        ASR::expr_t* test = make_Compare(make_StringCompare_t, val1, GtE, val2);
+        Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
+        if_body.push_back(al, b.Assignment(result, bool32(1)));
+        body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
+            if_body.p, if_body.n, nullptr, 0)));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, logical, nullptr);
+    }
+
+} // namespace Lge
+
+namespace Lle {
+
+    static ASR::expr_t *eval_Lle(Allocator &al, const Location &loc,
+        ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        char* string_A = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
+        char* string_B = ASR::down_cast<ASR::StringConstant_t>(args[1])->m_s;
+        bool result = false;
+        if (strcmp(string_A, string_B) <= 0) {
+            result = true;
+        }
+        return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_Lle(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t */*return_type*/,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_lle_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("y", arg_types[1]);
+        auto result = declare(fn_name, logical, ReturnVar);
+        body.push_back(al, b.Assignment(result, bool32(0)));
+        ASR::expr_t *val1 = args[0];
+        ASR::expr_t *val2 = args[1];
+
+        ASR::expr_t* test = make_Compare(make_StringCompare_t, val1, LtE, val2);
+        Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
+        if_body.push_back(al, b.Assignment(result, bool32(1)));
+        body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
+            if_body.p, if_body.n, nullptr, 0)));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, logical, nullptr);
+    }
+
+} // namespace Lle
 
 namespace Not {
 
