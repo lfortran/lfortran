@@ -5083,7 +5083,9 @@ public:
                                 if (array_arg) arg = array_arg;
                             }
                             if (ASR::is_a<ASR::ArrayConstant_t>(*arg)) {
-                                ASR::ArrayConstant_t *array = ASR::down_cast<ASR::ArrayConstant_t>(arg);
+                                ASRUtils::ExprStmtDuplicator expr_duplicator(al);
+                                ASR::expr_t* arg_ = expr_duplicator.duplicate_expr(arg);
+                                ASR::ArrayConstant_t *array = ASR::down_cast<ASR::ArrayConstant_t>(arg_);
                                 compiletime_broadcast_elemental_intrinsic(array, create_func, x.base.base.loc, al);
                                 tmp = (ASR::asr_t*) array;
                             } else {
@@ -5920,6 +5922,80 @@ public:
         return false;
     }
 
+    template<typename T>
+    T perform_binop(T left_value, T right_value, ASR::binopType op) {
+        T result;
+        switch (op) {
+            case ASR::Add:
+                result = left_value + right_value;
+                break;
+            case ASR::Sub:
+                result = left_value - right_value;
+                break;
+            case ASR::Mul:
+                result = left_value * right_value;
+                break;
+            case ASR::Div:
+                result = left_value / right_value;
+                break;
+            case ASR::Pow:
+                result = std::pow(left_value, right_value);
+                break;
+            default:
+                LCOMPILERS_ASSERT(false);
+        }
+        return result;
+    }
+
+    ASR::expr_t* visit_BinOp_helper(ASR::expr_t* left, ASR::expr_t* right, ASR::binopType op, const Location& loc, ASR::ttype_t* dest_type) {
+        if (ASR::is_a<ASR::RealConstant_t>(*left) && ASR::is_a<ASR::RealConstant_t>(*right)) {
+            double left_value = ASR::down_cast<ASR::RealConstant_t>(left)->m_r;
+            double right_value = ASR::down_cast<ASR::RealConstant_t>(right)->m_r;
+            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, left->base.loc,
+            perform_binop(left_value, right_value, op), dest_type));
+        } else if (ASR::is_a<ASR::IntegerConstant_t>(*left) && ASR::is_a<ASR::IntegerConstant_t>(*right)) {
+            int64_t left_value = ASR::down_cast<ASR::IntegerConstant_t>(left)->m_n;
+            int64_t right_value = ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n;
+            return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, left->base.loc,
+                    perform_binop(left_value, right_value, op), dest_type));
+        } else if (ASR::is_a<ASR::ComplexConstant_t>(*left) && ASR::is_a<ASR::ComplexConstant_t>(*right)) {
+            ASR::ComplexConstant_t *left_value
+                = ASR::down_cast<ASR::ComplexConstant_t>(
+                        ASRUtils::expr_value(left));
+            ASR::ComplexConstant_t *right_value
+                = ASR::down_cast<ASR::ComplexConstant_t>(
+                        ASRUtils::expr_value(right));
+            std::complex<double> left_value_(left_value->m_re, left_value->m_im);
+            std::complex<double> right_value_(right_value->m_re, right_value->m_im);
+            std::complex<double> result = perform_binop(left_value_, right_value_, op);
+            return ASRUtils::EXPR( ASR::make_ComplexConstant_t(al, loc,
+                    std::real(result), std::imag(result), dest_type));
+        } else {
+            throw SemanticError("Binary operation for type is not supported yet", loc);
+        }
+    }
+
+    ASR::expr_t* extract_value(ASR::expr_t* left_value, ASR::expr_t* right_value, ASR::binopType op, ASR::ttype_t* dest_type, const Location& loc) {
+        if (left_value && right_value &&
+            ASR::is_a<ASR::ArrayConstant_t>(*left_value) &&
+            ASR::is_a<ASR::ArrayConstant_t>(*right_value)) {
+            ASR::ArrayConstant_t* left_array = ASR::down_cast<ASR::ArrayConstant_t>(left_value);
+            ASR::ArrayConstant_t* right_array = ASR::down_cast<ASR::ArrayConstant_t>(right_value);
+
+            Vec<ASR::expr_t*> values; values.reserve(al, left_array->n_args);
+
+            for (size_t i = 0; i < left_array->n_args; i++) {
+                values.push_back(al, visit_BinOp_helper(ASRUtils::expr_value(left_array->m_args[i]),
+                                ASRUtils::expr_value(right_array->m_args[i]), op, loc, ASRUtils::expr_type(left_array->m_args[i])));
+            }
+
+            return ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc,
+                                    values.p, values.size(), dest_type,
+                                    ASR::arraystorageType::ColMajor));
+        }
+        return nullptr;
+    }
+
     void visit_BinOp2(Allocator &al, const AST::BinOp_t &x,
                     ASR::expr_t *&left, ASR::expr_t *&right,
                     ASR::asr_t *&asr, std::string& intrinsic_op_name,
@@ -6009,120 +6085,38 @@ public:
 
         if (ASRUtils::is_integer(*dest_type)) {
 
-            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
-                int64_t left_value = ASR::down_cast<ASR::IntegerConstant_t>(
-                                        ASRUtils::expr_value(left))
-                                        ->m_n;
-                int64_t right_value = ASR::down_cast<ASR::IntegerConstant_t>(
-                                        ASRUtils::expr_value(right))
-                                        ->m_n;
-                int64_t result;
-                switch (op) {
-                    case (ASR::Add):
-                        result = left_value + right_value;
-                        break;
-                    case (ASR::Sub):
-                        result = left_value - right_value;
-                        break;
-                    case (ASR::Mul):
-                        result = left_value * right_value;
-                        break;
-                    case (ASR::Div):
-                        result = left_value / right_value;
-                        break;
-                    case (ASR::Pow):
-                        result = std::pow(left_value, right_value);
-                        break;
-                    default: {
-                        LCOMPILERS_ASSERT(false);
-                        result = left_value; // silence a warning
-                    }
-                }
-                value = ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(
-                    al, x.base.base.loc, result, dest_type));
+            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr &&
+                ASR::is_a<ASR::IntegerConstant_t>(*ASRUtils::expr_value(left)) &&
+                ASR::is_a<ASR::IntegerConstant_t>(*ASRUtils::expr_value(right))) {
+                value = visit_BinOp_helper(ASRUtils::expr_value(left), ASRUtils::expr_value(right), op, x.base.base.loc, dest_type);
             }
 
             ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, left, right);
+            value = value ? value : extract_value(ASRUtils::expr_value(left), ASRUtils::expr_value(right), op, dest_type, x.base.base.loc);
             asr = ASR::make_IntegerBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
 
         } else if (ASRUtils::is_real(*dest_type)) {
 
-            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
-                double left_value = ASR::down_cast<ASR::RealConstant_t>(
-                                        ASRUtils::expr_value(left))
-                                        ->m_r;
-                double right_value = ASR::down_cast<ASR::RealConstant_t>(
-                                        ASRUtils::expr_value(right))
-                                        ->m_r;
-                double result;
-                switch (op) {
-                    case (ASR::Add):
-                        result = left_value + right_value;
-                        break;
-                    case (ASR::Sub):
-                        result = left_value - right_value;
-                        break;
-                    case (ASR::Mul):
-                        result = left_value * right_value;
-                        break;
-                    case (ASR::Div):
-                        result = left_value / right_value;
-                        break;
-                    case (ASR::Pow):
-                        result = std::pow(left_value, right_value);
-                        break;
-                    default: {
-                        LCOMPILERS_ASSERT(false);
-                        result = left_value; // silence a warning
-                    }
-                }
-                value = ASR::down_cast<ASR::expr_t>(
-                    ASR::make_RealConstant_t(al, x.base.base.loc, result, dest_type));
+            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr &&
+                ASR::is_a<ASR::RealConstant_t>(*ASRUtils::expr_value(left)) &&
+                ASR::is_a<ASR::RealConstant_t>(*ASRUtils::expr_value(right))) {
+                value = visit_BinOp_helper(ASRUtils::expr_value(left), ASRUtils::expr_value(right), op, x.base.base.loc, dest_type);
             }
 
             ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, left, right);
+            value = value ? value : extract_value(ASRUtils::expr_value(left), ASRUtils::expr_value(right), op, dest_type, x.base.base.loc);
             asr = ASR::make_RealBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
 
         } else if (ASRUtils::is_complex(*dest_type)) {
 
-            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
-                ASR::ComplexConstant_t *left0
-                    = ASR::down_cast<ASR::ComplexConstant_t>(
-                            ASRUtils::expr_value(left));
-                ASR::ComplexConstant_t *right0
-                    = ASR::down_cast<ASR::ComplexConstant_t>(
-                            ASRUtils::expr_value(right));
-                std::complex<double> left_value(left0->m_re, left0->m_im);
-                std::complex<double> right_value(right0->m_re, right0->m_im);
-                std::complex<double> result;
-                switch (op) {
-                    case (ASR::Add):
-                        result = left_value + right_value;
-                        break;
-                    case (ASR::Sub):
-                        result = left_value - right_value;
-                        break;
-                    case (ASR::Mul):
-                        result = left_value * right_value;
-                        break;
-                    case (ASR::Div):
-                        result = left_value / right_value;
-                        break;
-                    case (ASR::Pow):
-                        result = std::pow(left_value, right_value);
-                        break;
-                    // Reconsider
-                    default: {
-                        LCOMPILERS_ASSERT(false);
-                        op = ASR::binopType::Pow;
-                    }
-                }
-                value = ASR::down_cast<ASR::expr_t>(
-                    ASR::make_ComplexConstant_t(al, x.base.base.loc,
-                        std::real(result), std::imag(result), dest_type));
+            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr &&
+                ASR::is_a<ASR::ComplexConstant_t>(*ASRUtils::expr_value(left)) &&
+                ASR::is_a<ASR::ComplexConstant_t>(*ASRUtils::expr_value(right))) {
+                value = visit_BinOp_helper(ASRUtils::expr_value(left), ASRUtils::expr_value(right), op, x.base.base.loc, dest_type);
             }
 
             ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, left, right);
+            value = value ? value : extract_value(ASRUtils::expr_value(left), ASRUtils::expr_value(right), op, dest_type, x.base.base.loc);
             asr = ASR::make_ComplexBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
 
         } else if (ASRUtils::is_character(*dest_type)) {
