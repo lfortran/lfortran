@@ -77,6 +77,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Adjustl)
         INTRINSIC_NAME_CASE(Ichar)
         INTRINSIC_NAME_CASE(Char)
+        INTRINSIC_NAME_CASE(Achar)
         INTRINSIC_NAME_CASE(MinExponent)
         INTRINSIC_NAME_CASE(MaxExponent)
         INTRINSIC_NAME_CASE(Ishftc)
@@ -212,6 +213,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Ichar::instantiate_Ichar, &Ichar::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Char),
             {&Char::instantiate_Char, &Char::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Achar),
+            {&Achar::instantiate_Achar, &Achar::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Rshift),
             {&Rshift::instantiate_Rshift, &Rshift::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Shiftl),
@@ -455,6 +458,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "ichar"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Char),
             "char"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Achar),
+            "achar"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Shiftl),
             "shiftl"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ishft),
@@ -694,6 +699,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"adjustl", {&Adjustl::create_Adjustl, &Adjustl::eval_Adjustl}},
                 {"ichar", {&Ichar::create_Ichar, &Ichar::eval_Ichar}},
                 {"char", {&Char::create_Char, &Char::eval_Char}},
+                {"achar", {&Achar::create_Achar, &Achar::eval_Achar}},
                 {"min0", {&Min::create_Min, &Min::eval_Min}},
                 {"max", {&Max::create_Max, &Max::eval_Max}},
                 {"min", {&Min::create_Min, &Min::eval_Min}},
