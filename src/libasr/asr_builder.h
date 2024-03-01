@@ -108,6 +108,7 @@ class ASRBuilder {
     // Expressions -------------------------------------------------------------
     #define i(x, t)   ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, x, t))
     #define i32(x)   ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, x, int32))
+    #define i64(x)   ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, x, int64))
     #define i32_n(x) ASRUtils::EXPR(ASR::make_IntegerUnaryMinus_t(al, loc, i32(abs(x)),   \
         int32, i32(x)))
     #define i32_neg(x, t) ASRUtils::EXPR(ASR::make_IntegerUnaryMinus_t(al, loc, x, t, nullptr))
@@ -225,7 +226,9 @@ class ASRBuilder {
             ASR::binopType::Mul, right, real64, nullptr))
     #define i_tMul(left, right, t) EXPR(ASR::make_IntegerBinOp_t(al, loc, left, \
             ASR::binopType::Mul, right, t, nullptr))
-    #define r_tMul(left, right, t) EXPR(ASR::make_RealBinOp_t(al, loc, left,    \
+    #define i_tAnd(left, right, t) EXPR(ASR::make_IntegerBinOp_t(al, loc, left, \
+            ASR::binopType::BitAnd, right, t, nullptr))
+    #define r_tMul(left, right, t) EXPR(ASR::make_RealBinOp_t(al, loc, left, \
         ASR::binopType::Mul, right, t, nullptr))
 
     #define iPow(left, right, t) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,   \

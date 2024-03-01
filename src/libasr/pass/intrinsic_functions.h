@@ -59,6 +59,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Blt,
     Bge,
     Ble,
+    Exponent,
     Not,
     Iand,
     Ior,
@@ -1875,6 +1876,70 @@ namespace Sqrt {
     }
 
 }  // namespace Sqrt
+
+namespace Exponent {
+
+    static ASR::expr_t* eval_Exponent(Allocator& al, const Location& loc,
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        ASR::ttype_t* arguement_type = expr_type(args[0]);
+        int32_t kind = extract_kind_from_ttype_t(arguement_type);
+        
+        if (kind == 4) { 
+            float x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            if (x == 0.0) {
+                return make_ConstantWithType(make_IntegerConstant_t, 0, arg_type, loc);
+            }
+            int32_t ix = *(int32_t*)(&x);
+            int32_t exponent = ((ix >> 23) & 0xff) - 126;
+            return make_ConstantWithType(make_IntegerConstant_t, exponent, arg_type, loc);
+        } 
+        else if (kind == 8) { 
+            double x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            if (x == 0.0) {
+                return make_ConstantWithType(make_IntegerConstant_t, 0, arg_type, loc);
+            }
+            int64_t ix = *(int64_t*)(&x);
+            int64_t exponent = ((ix >> 52) & 0x7ff) - 1022;
+            return make_ConstantWithType(make_IntegerConstant_t, exponent, arg_type, loc);
+        }
+        return nullptr;
+    }
+
+
+    static inline ASR::expr_t* instantiate_Exponent(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompiler_optimization_exponent_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        int32_t kind = extract_kind_from_ttype_t(arg_types[0]);
+        /*
+            if (x == 0.0) then
+                result = 0
+            else
+                result = iand(shiftr(transfer(x, 0), 23), int(Z'0FF', kind=4)) - 126 ! for real kind = 4
+                result = iand(shiftr(transfer(x, 0), 52), int(Z'7FF', kind=8)) - 1022 ! for real kind = 8
+            end if
+        */
+        ASR::expr_t* value = nullptr;
+        ASR::expr_t* transfer = ASRUtils::EXPR(ASR::make_BitCast_t(al, loc, args[0], i32(0), nullptr, int32, nullptr));
+        if (kind == 8) {
+            transfer = ASRUtils::EXPR(ASR::make_BitCast_t(al, loc, args[0], i64(0), nullptr, int64, nullptr));
+            value = i2i32(i_tSub(i_tAnd(i_BitRshift(transfer, i64(52), int64), i64(0x7FF), int64), i64(1022), int64));
+        } else {
+            value = i_tSub(i_tAnd(i_BitRshift(transfer, i32(23), int32), i32(0x0FF), int32), i32(126), int32);
+        }
+        body.push_back(al, b.If(fEq(args[0], f(0.0, arg_types[0])), {
+            b.Assignment(result, i32(0))
+        }, {
+            b.Assignment(result, value)
+        }));
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+}  // namespace Exponent
 
 namespace Sngl {
 

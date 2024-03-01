@@ -371,6 +371,12 @@ intrinsic_funcs_args = {
             "kind_arg": True
         }
     ],
+    "Exponent": [
+        {
+            "args": [("real",)],
+            "return": "int32",
+        },
+    ],
 }
 
 skip_create_func = ["Partition"]
