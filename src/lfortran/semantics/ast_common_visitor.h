@@ -5943,6 +5943,7 @@ public:
                 break;
             default:
                 LCOMPILERS_ASSERT(false);
+                result = 0;
         }
         return result;
     }
