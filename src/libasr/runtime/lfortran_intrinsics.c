@@ -309,9 +309,9 @@ void handle_float(char* format, double val, char** result) {
 
 void handle_decimal(char* format, double val, int scale, char** result, char* c) {
     int width = 0, decimal_digits = 0;
-    int64_t integer_part = (int64_t)val;
     int sign_width = (val < 0) ? 1 : 0;
-    int integer_length = (integer_part == 0) ? 1 : (int)log10(llabs(integer_part)) + 1;
+    double integer_part = trunc(val);
+    int integer_length = (integer_part == 0) ? 1 : (int)log10(fabs(integer_part)) + 1;
 
     char *num_pos = format ,*dot_pos = strchr(format, '.');
     decimal_digits = atoi(++dot_pos);
