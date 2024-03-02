@@ -85,4 +85,20 @@ program intrinsics_170
 
     print *, exponent(1e-6)
     if (exponent(1e-6) /= -19) error stop
+
+    x = 0.0
+    y = 0.0_dp
+
+    print *, exponent(x)
+    if (exponent(x) /= 0) error stop
+
+    print *, exponent(0.0_dp)
+    if (exponent(0.0_dp) /= 0) error stop
+
+    print *, exponent(y)
+    if (exponent(y) /= 0) error stop
+
+    print *, exponent(0.0)
+    if (exponent(0.0) /= 0) error stop
+
 end program
