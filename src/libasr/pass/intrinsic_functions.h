@@ -1329,11 +1329,9 @@ namespace Lgt {
         ASR::expr_t *val1 = args[0];
         ASR::expr_t *val2 = args[1];
 
-        ASR::expr_t* test = make_Compare(make_StringCompare_t, val1, Gt, val2);
-        Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
-        if_body.push_back(al, b.Assignment(result, bool32(1)));
-        body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
-            if_body.p, if_body.n, nullptr, 0)));
+        body.push_back(al, b.If(sGt(val1, val2), {
+            b.Assignment(result, bool32(1))
+        }, {}));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1367,11 +1365,9 @@ namespace Llt {
         ASR::expr_t *val1 = args[0];
         ASR::expr_t *val2 = args[1];
 
-        ASR::expr_t* test = make_Compare(make_StringCompare_t, val1, Lt, val2);
-        Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
-        if_body.push_back(al, b.Assignment(result, bool32(1)));
-        body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
-            if_body.p, if_body.n, nullptr, 0)));
+        body.push_back(al, b.If(sLt(val1, val2), {
+            b.Assignment(result, bool32(1))
+        }, {}));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1405,11 +1401,9 @@ namespace Lge {
         ASR::expr_t *val1 = args[0];
         ASR::expr_t *val2 = args[1];
 
-        ASR::expr_t* test = make_Compare(make_StringCompare_t, val1, GtE, val2);
-        Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
-        if_body.push_back(al, b.Assignment(result, bool32(1)));
-        body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
-            if_body.p, if_body.n, nullptr, 0)));
+        body.push_back(al, b.If(sGtE(val1, val2), {
+            b.Assignment(result, bool32(1))
+        }, {}));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1443,11 +1437,9 @@ namespace Lle {
         ASR::expr_t *val1 = args[0];
         ASR::expr_t *val2 = args[1];
 
-        ASR::expr_t* test = make_Compare(make_StringCompare_t, val1, LtE, val2);
-        Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
-        if_body.push_back(al, b.Assignment(result, bool32(1)));
-        body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
-            if_body.p, if_body.n, nullptr, 0)));
+        body.push_back(al, b.If(sLtE(val1, val2), {
+            b.Assignment(result, bool32(1))
+        }, {}));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);

@@ -327,25 +327,31 @@ class ASRBuilder {
     #define ArraySize_2(x, dim, t) EXPR(make_ArraySize_t_util(al, loc, x, dim,  \
         t, nullptr))
 
-    #define fEq(x, y) EXPR(ASR::make_RealCompare_t(al, loc, x,               \
+    #define fEq(x, y) EXPR(ASR::make_RealCompare_t(al, loc, x,                  \
         ASR::cmpopType::Eq, y, logical, nullptr))
     #define fGtE(x, y) EXPR(ASR::make_RealCompare_t(al, loc, x,                 \
         ASR::cmpopType::GtE, y, logical, nullptr))
-    #define fLtE(x, y) EXPR(ASR::make_RealCompare_t(al, loc, x,                  \
+    #define fLtE(x, y) EXPR(ASR::make_RealCompare_t(al, loc, x,                 \
         ASR::cmpopType::LtE, y, logical, nullptr))
     #define fLt(x, y) EXPR(ASR::make_RealCompare_t(al, loc, x,                  \
         ASR::cmpopType::Lt, y, logical, nullptr))
     #define fGt(x, y) EXPR(ASR::make_RealCompare_t(al, loc, x,                  \
         ASR::cmpopType::Gt, y, logical, nullptr))
-    #define fNotEq(x, y) EXPR(ASR::make_RealCompare_t(al, loc, x,                 \
+    #define fNotEq(x, y) EXPR(ASR::make_RealCompare_t(al, loc, x,               \
         ASR::cmpopType::NotEq, y, logical, nullptr))
 
     #define sEq(x, y) EXPR(ASR::make_StringCompare_t(al, loc, x,                \
         ASR::cmpopType::Eq, y, logical, nullptr))
     #define sNotEq(x, y) EXPR(ASR::make_StringCompare_t(al, loc, x,             \
         ASR::cmpopType::NotEq, y, logical, nullptr))
-    #define sLt(x, y) EXPR(ASR::make_StringCompare_t(al, loc, x,             \
+    #define sLt(x, y) EXPR(ASR::make_StringCompare_t(al, loc, x,                \
         ASR::cmpopType::Lt, y, logical, nullptr))
+    #define sLtE(x, y) EXPR(ASR::make_StringCompare_t(al, loc, x,               \
+        ASR::cmpopType::LtE, y, logical, nullptr))
+    #define sGt(x, y) EXPR(ASR::make_StringCompare_t(al, loc, x,                \
+        ASR::cmpopType::Gt, y, logical, nullptr))
+    #define sGtE(x, y) EXPR(ASR::make_StringCompare_t(al, loc, x,               \
+        ASR::cmpopType::GtE, y, logical, nullptr))
 
     ASR::expr_t *Gt(ASR::expr_t *left, ASR::expr_t *right) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
