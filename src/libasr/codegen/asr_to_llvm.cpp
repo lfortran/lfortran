@@ -1363,7 +1363,7 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        this->visit_expr(*x.m_arg);
+        this->visit_expr_wrapper(x.m_arg, true);
         llvm::Value *c = tmp;
         std::string runtime_func_name = "_lfortran_ichar";
         llvm::Function *fn = module->getFunction(runtime_func_name);
@@ -7328,11 +7328,13 @@ public:
 
     void visit_FileRead(const ASR::FileRead_t &x) {
         llvm::Value *unit_val, *iostat;
+        bool is_string = false;
         if (x.m_unit == nullptr) {
             // Read from stdin
             unit_val = llvm::ConstantInt::get(
                     llvm::Type::getInt32Ty(context), llvm::APInt(32, -1));
         } else {
+            is_string = ASRUtils::is_character(*expr_type(x.m_unit));
             this->visit_expr_wrapper(x.m_unit, true);
             unit_val = tmp;
         }
@@ -7383,7 +7385,26 @@ public:
                 this->visit_expr(*x.m_values[i]);
                 ptr_loads = ptr_copy;
                 ASR::ttype_t* type = ASRUtils::expr_type(x.m_values[i]);
-                llvm::Function *fn = get_read_function(type);
+                llvm::Function *fn;
+                if (is_string) {
+                    // TODO: Support multiple arguments and fmt
+                    std::string runtime_func_name = "_lfortran_string_read";
+                    llvm::Function *fn = module->getFunction(runtime_func_name);
+                    if (!fn) {
+                        llvm::FunctionType *function_type = llvm::FunctionType::get(
+                                llvm::Type::getVoidTy(context), {
+                                    character_type, character_type,
+                                    llvm::Type::getInt32Ty(context)->getPointerTo()
+                                }, false);
+                        fn = llvm::Function::Create(function_type,
+                                llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                    }
+                    llvm::Value *fmt = builder->CreateGlobalStringPtr("%d");
+                    builder->CreateCall(fn, {unit_val, fmt, tmp});
+                    return;
+                } else {
+                    fn = get_read_function(type);
+                }
                 if (ASRUtils::is_array(type)) {
                     if (ASR::is_a<ASR::Allocatable_t>(*type)
                         || ASR::is_a<ASR::Pointer_t>(*type)) {

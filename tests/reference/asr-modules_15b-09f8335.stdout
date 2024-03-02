@@ -2348,7 +2348,7 @@
                                             [((StringConcat
                                                 (Var 51 s)
                                                 (Var 2 c_null_char)
-                                                (Character 1 0 ())
+                                                (Character 1 -1 ())
                                                 ()
                                             ))]
                                             (Integer 4)

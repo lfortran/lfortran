@@ -506,13 +506,13 @@ public:
                             std::string sym_name = ASRUtils::symbol_name(sym_);
                             sym_ = current_scope->get_symbol(sym_name);
                             if( !sym_ ) {
+                                ASR::symbol_t *s = ASRUtils::symbol_get_past_external(sym);
                                 ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
                                     al, t->base.loc,
                                     /* a_symtab */ current_scope,
                                     /* a_name */ s2c(al, current_scope->get_unique_name(sym_name, false)),
-                                    ASRUtils::symbol_get_past_external(sym),
-                                    ASRUtils::symbol_name(ASRUtils::get_asr_owner(ASRUtils::symbol_get_past_external(sym))),
-                                    nullptr, 0, s2c(al, sym_name), ASR::accessType::Public
+                                    s, ASRUtils::symbol_name(ASRUtils::get_asr_owner(s)),
+                                    nullptr, 0, ASRUtils::symbol_name(s), ASR::accessType::Public
                                 );
                                 sym_ = ASR::down_cast<ASR::symbol_t>(fn);
                                 current_scope->add_symbol(sym_name, sym_);

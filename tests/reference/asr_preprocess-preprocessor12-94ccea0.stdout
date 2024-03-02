@@ -72,14 +72,14 @@
                                                     (Character 1 20 ())
                                                 )
                                                 (Var 4 file)
-                                                (Character 1 19 ())
+                                                (Character 1 -1 ())
                                                 ()
                                             )
                                             (StringConstant
                                                 ":"
                                                 (Character 1 1 ())
                                             )
-                                            (Character 1 20 ())
+                                            (Character 1 -1 ())
                                             ()
                                         )
                                         (Var 4 line)]
