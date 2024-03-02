@@ -308,50 +308,64 @@ void handle_float(char* format, double val, char** result) {
 }
 
 void handle_decimal(char* format, double val, int scale, char** result, char* c) {
+    // Consider an example: write(*, "(es10.2)") 1.123e+10
+    // format = "es10.2", val = 11230000128.00, scale = 0, c = "E"
     int width = 0, decimal_digits = 0;
     int sign_width = (val < 0) ? 1 : 0;
+    // sign_width = 0
     double integer_part = trunc(val);
     int integer_length = (integer_part == 0) ? 1 : (int)log10(fabs(integer_part)) + 1;
+    // integer_part = 11230000128, integer_length = 11
 
     char *num_pos = format ,*dot_pos = strchr(format, '.');
     decimal_digits = atoi(++dot_pos);
     while(!isdigit(*num_pos)) num_pos++;
     width = atoi(num_pos);
+    // width = 10, decimal_digits = 2
 
     char val_str[128];
     // TODO: This will work for up to `E65.60` but will fail for:
     // print "(E67.62)", 1.23456789101112e-62_8
     sprintf(val_str, "%.*lf", (60-integer_length), val);
+    // val_str = "11230000128.00..."
 
     int i = strlen(val_str) - 1;
     while (val_str[i] == '0') {
         val_str[i] = '\0';
         i--;
     }
+    // val_str = "11230000128."
 
     int exp = 2;
     char* exp_loc = strchr(num_pos, 'e');
     if (exp_loc != NULL) {
         exp = atoi(++exp_loc);
     }
+    // exp = 2;
 
     char* ptr = strchr(val_str, '.');
     if (ptr != NULL) {
         memmove(ptr, ptr + 1, strlen(ptr));
     }
+    // val_str = "11230000128"
 
     if (val < 0) {
+        // removes `-` (negative) sign
         memmove(val_str, val_str + 1, strlen(val_str));
     }
 
     int decimal = 1;
     while (val_str[0] == '0') {
+        // Used for the case: 1.123e-10
         memmove(val_str, val_str + 1, strlen(val_str));
         decimal--;
+        // loop end: decimal = -9
     }
     if (tolower(format[1]) == 's') {
         scale = 1;
         decimal--;
+        // decimal = 0,   case:  1.123e+10
+        // decimal = -10, case:  1.123e-10
     }
 
     if (dot_pos != NULL) {
@@ -378,6 +392,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
 
     char formatted_value[64] = "";
     int spaces = width - sign_width - decimal_digits - 6;
+    // spaces = 2
     if (scale > 1) {
         decimal_digits -= scale - 1;
     }
@@ -386,6 +401,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     }
 
     if (sign_width == 1) {
+        // adds `-` (negative) sign
         strcat(formatted_value, "-");
     }
     if (scale <= 0) {
@@ -408,13 +424,16 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
         char* temp = substring(val_str, 0, scale);
         strcat(formatted_value, temp);
         strcat(formatted_value, ".");
+        // formatted_value = "  1."
         char* new_str = substring(val_str, scale, strlen(val_str));
+        // new_str = "1230000128" case:  1.123e+10
         int zeros = 0;
         if (decimal_digits < strlen(new_str) && decimal_digits + scale <= 15) {
             new_str[15] = '\0';
             zeros = strspn(new_str, "0");
             long long t = (long long)round((long double)atoll(new_str) / (long long) pow(10, (strlen(new_str) - decimal_digits)));
             sprintf(new_str, "%lld", t);
+            // new_str = 12
             int index = zeros;
             while(index--) {
                 memmove(new_str + 1, new_str, strlen(new_str)+1);
@@ -423,20 +442,24 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
         }
         new_str[decimal_digits] = '\0';
         strcat(formatted_value, new_str);
+        // formatted_value = "  1.12"
         free(new_str);
         free(temp);
     }
 
     strcat(formatted_value, c);
+    // formatted_value = "  1.12E"
 
     char exponent[12];
     if (atoi(num_pos) == 0) {
         sprintf(exponent, "%+02d", (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
     } else {
         sprintf(exponent, "%+0*d", exp+1, (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
+        // exponent = "+10"
     }
 
     strcat(formatted_value, exponent);
+    // formatted_value = "  1.12E+10"
 
     if (strlen(formatted_value) == width + 1 && scale <= 0) {
         char* ptr = strchr(formatted_value, '0');
@@ -451,6 +474,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
         }
     } else {
         *result = append_to_string(*result, formatted_value);
+        // result = "  1.12E+10"
     }
 }
 
