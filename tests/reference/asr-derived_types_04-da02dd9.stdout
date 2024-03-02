@@ -356,7 +356,7 @@
                                                 (StringConcat
                                                     (Var 8 lhs)
                                                     (Var 8 temporary)
-                                                    (Character 1 -4 ())
+                                                    (Character 1 -1 ())
                                                     ()
                                                 )
                                                 ()
@@ -1054,7 +1054,7 @@
                                                     ()
                                                     ()
                                                 )
-                                                (Character 1 -5 ())
+                                                (Character 1 -1 ())
                                                 ()
                                             )
                                             ()

@@ -2446,6 +2446,10 @@ LFORTRAN_API void _lfortran_string_write(char **str, int32_t* iostat, const char
     *iostat = 0;
 }
 
+LFORTRAN_API void _lfortran_string_read(char *str, char *format, int *i) {
+    sscanf(str, format, i);
+}
+
 LFORTRAN_API void _lpython_close(int64_t fd)
 {
     if (fclose((FILE*)fd) != 0)
