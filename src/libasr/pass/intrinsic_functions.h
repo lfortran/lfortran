@@ -1889,7 +1889,8 @@ namespace Exponent {
             if (x == 0.0) {
                 return make_ConstantWithType(make_IntegerConstant_t, 0, arg_type, loc);
             }
-            int32_t ix = *(int32_t*)(&x);
+            int32_t ix;
+            std::memcpy(&ix, &x, sizeof(ix));
             int32_t exponent = ((ix >> 23) & 0xff) - 126;
             return make_ConstantWithType(make_IntegerConstant_t, exponent, arg_type, loc);
         } 
@@ -1898,7 +1899,8 @@ namespace Exponent {
             if (x == 0.0) {
                 return make_ConstantWithType(make_IntegerConstant_t, 0, arg_type, loc);
             }
-            int64_t ix = *(int64_t*)(&x);
+            int64_t ix;
+            std::memcpy(&ix, &x, sizeof(ix));
             int64_t exponent = ((ix >> 52) & 0x7ff) - 1022;
             return make_ConstantWithType(make_IntegerConstant_t, exponent, arg_type, loc);
         }
