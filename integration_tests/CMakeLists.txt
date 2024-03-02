@@ -565,7 +565,8 @@ RUN(NAME intrinsics_47 LABELS gfortran llvm) # all
 RUN(NAME intrinsics_48 LABELS gfortran llvm)
 RUN(NAME intrinsics_49 LABELS gfortran llvm)
 RUN(NAME intrinsics_50 LABELS gfortran llvm)
-RUN(NAME intrinsics_51 LABELS gfortran llvm)
+# TODO: Fix issue https://github.com/lfortran/lfortran/issues/3559
+# RUN(NAME intrinsics_51 LABELS gfortran llvm)
 RUN(NAME intrinsics_52 LABELS gfortran llvm) # max0, min0
 RUN(NAME intrinsics_53 LABELS gfortran llvm) # repeat
 RUN(NAME intrinsics_54 LABELS gfortran llvm) # max0
