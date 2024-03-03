@@ -1074,11 +1074,11 @@ namespace Dshiftl {
         int kind1 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
         int kind2 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_type);
         if(kind1 != kind2) {
-            append_error(diag, "'j' argument of 'dshiftl' intrinsic at (1) must be the same type and kind as 'i'", loc);
+            append_error(diag, "The kind of first argument of 'dshiftl' intrinsic must be the same as second arguement", loc);
             return nullptr;
         }
         if(shift < 0){
-            append_error(diag, "The shift argument of 'dshiftl' intrinsic at (1) must be non-negative", loc);
+            append_error(diag, "The shift argument of 'dshiftl' intrinsic must be non-negative integer", loc);
             return nullptr;
         }
         int64_t val = (val1 << shift) | (val2 >> (32 - shift));
