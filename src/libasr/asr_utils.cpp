@@ -1491,8 +1491,8 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
         for( size_t i = 0; i < expr1_ndims; i++ ) {
             lengths.push_back(al, ASRUtils::expr_value(expr1_mdims[i].m_length));
         }
-        dest_shape = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc,
-            lengths.p, lengths.size(), dest_shape_type, ASR::arraystorageType::ColMajor));
+        dest_shape = EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, lengths.p,
+            lengths.size(), dest_shape_type, ASR::arraystorageType::ColMajor));
         Vec<ASR::dimension_t> dims;
         dims.reserve(al, 1);
         ASR::dimension_t dim;
@@ -1514,8 +1514,8 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
             for( int64_t i = 0; i < ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims); i++ ) {
                 values.push_back(al, expr2);
             }
-            value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc,
-                values.p, values.size(), value_type, ASR::arraystorageType::ColMajor));
+            value = EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, values.p,
+                values.size(), value_type, ASR::arraystorageType::ColMajor));
             ret_type = value_type;
         }
     } else {
