@@ -6392,6 +6392,54 @@ public:
 
     }
 
+    void visit_ArrayConstructor(const ASR::ArrayConstructor_t &x) {
+        llvm::Type* el_type = nullptr;
+        ASR::ttype_t* x_m_type = ASRUtils::type_get_past_array(x.m_type);
+        if (ASR::is_a<ASR::Integer_t>(*x_m_type)) {
+            el_type = llvm_utils->getIntType(ASR::down_cast<ASR::Integer_t>(x_m_type)->m_kind);
+        } else if (ASR::is_a<ASR::Real_t>(*x_m_type)) {
+            switch (ASR::down_cast<ASR::Real_t>(x_m_type)->m_kind) {
+                case (4) :
+                    el_type = llvm::Type::getFloatTy(context); break;
+                case (8) :
+                    el_type = llvm::Type::getDoubleTy(context); break;
+                default :
+                    throw CodeGenError("ConstArray real kind not supported yet");
+            }
+        } else if (ASR::is_a<ASR::Logical_t>(*x_m_type)) {
+            el_type = llvm::Type::getInt1Ty(context);
+        } else if (ASR::is_a<ASR::Character_t>(*x_m_type)) {
+            el_type = character_type;
+        } else if (ASR::is_a<ASR::Complex_t>(*x_m_type)) {
+            int complex_kind = ASR::down_cast<ASR::Complex_t>(x_m_type)->m_kind;
+            if( complex_kind == 4 ) {
+                el_type = llvm_utils->complex_type_4;
+            } else if( complex_kind == 8 ) {
+                el_type = llvm_utils->complex_type_8;
+            } else {
+                LCOMPILERS_ASSERT(false);
+            }
+        } else {
+            throw CodeGenError("ConstArray type not supported yet");
+        }
+        // Create <n x float> type, where `n` is the length of the `x` constant array
+        llvm::Type* type_fxn = FIXED_VECTOR_TYPE::get(el_type, x.n_args);
+        // Create a pointer <n x float>* to a stack allocated <n x float>
+        llvm::AllocaInst *p_fxn = builder->CreateAlloca(type_fxn, nullptr);
+        // Assign the array elements to `p_fxn`.
+        for (size_t i=0; i < x.n_args; i++) {
+            llvm::Value *llvm_el = llvm_utils->create_gep(p_fxn, i);
+            ASR::expr_t *el = x.m_args[i];
+            int64_t ptr_loads_copy = ptr_loads;
+            ptr_loads = 2;
+            this->visit_expr_wrapper(el, true);
+            ptr_loads = ptr_loads_copy;
+            builder->CreateStore(tmp, llvm_el);
+        }
+        // Return the vector as float* type:
+        tmp = llvm_utils->create_gep(p_fxn, 0);
+    }
+
     void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
         llvm::Type* el_type = nullptr;
         ASR::ttype_t* x_m_type = ASRUtils::type_get_past_array(x.m_type);
