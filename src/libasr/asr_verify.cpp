@@ -1115,10 +1115,24 @@ public:
             symbol_owner);
     }
 
+    void visit_ArrayConstructor(const ArrayConstructor_t& x) {
+        require(ASRUtils::is_array(x.m_type),
+            "Type of ArrayConstructor must be an array");
+        BaseWalkVisitor<VerifyVisitor>::visit_ArrayConstructor(x);
+    }
+
     void visit_ArrayConstant(const ArrayConstant_t& x) {
         require(ASRUtils::is_array(x.m_type),
             "Type of ArrayConstant must be an array");
-        BaseWalkVisitor<VerifyVisitor>::visit_ArrayConstant(x);
+        
+        for (size_t i = 0; i < x.n_args; i++) {
+            require(!ASR::is_a<ASR::ArrayConstant_t>(*x.m_args[i]),
+                "ArrayConstant cannot have ArrayConstant as its elements");
+            require(ASRUtils::is_value_constant(x.m_args[i]),
+                "ArrayConstant must have constant values");
+        }
+
+        visit_ttype(*x.m_type);
     }
 
     void visit_dimension(const dimension_t &x) {
