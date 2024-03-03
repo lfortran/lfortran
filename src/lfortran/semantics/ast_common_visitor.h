@@ -2728,6 +2728,10 @@ public:
                                 } else {
                                     value = nullptr;
                                 }
+                            } else if ( ASR::is_a<ASR::ArrayConstructor_t>(*init_expr) ||
+                                ( ASR::is_a<ASR::Cast_t>(*init_expr) &&
+                                ASR::is_a<ASR::ArrayConstructor_t>(*ASR::down_cast<ASR::Cast_t>(init_expr)->m_arg) ) ) {
+                                value = init_expr;
                             } else {
                                 throw SemanticError("Initialization of `" + std::string(x.m_syms[i].m_name) +
                                                     "` must reduce to a compile time constant.",
@@ -2751,6 +2755,26 @@ public:
                                 body.push_back(al, a_m_args);
                             }
                             value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al,
+                                a->base.base.loc, body.p, body.size(),
+                                a->m_type, a->m_storage_format));
+                            if (ASRUtils::is_dimension_empty(dims.p, dims.n)) {
+                                type = a->m_type;
+                            }
+                        }
+                        if (ASR::is_a<ASR::ArrayConstructor_t>(*value)) {
+                            // For constant arrays we iterate over each element
+                            // and copy over the value
+                            ASR::ArrayConstructor_t *a = ASR::down_cast<ASR::ArrayConstructor_t>(value);
+                            Vec<ASR::expr_t*> body;
+                            body.reserve(al, a->n_args);
+                            for (size_t i=0; i < a->n_args; i++) {
+                                ASR::expr_t* a_m_args = ASRUtils::expr_value(a->m_args[i]);
+                                if( a_m_args == nullptr ) {
+                                    a_m_args = a->m_args[i];
+                                }
+                                body.push_back(al, a_m_args);
+                            }
+                            value = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al,
                                 a->base.base.loc, body.p, body.size(),
                                 a->m_type, a->m_storage_format));
                             if (ASRUtils::is_dimension_empty(dims.p, dims.n)) {
@@ -3534,7 +3558,7 @@ public:
         }
         dims.push_back(al, dim);
         type = ASRUtils::duplicate_type(al, type, &dims);
-        tmp = ASRUtils::make_ArrayConstant_t_util(al, x.base.base.loc, body.p,
+        tmp = ASRUtils::make_ArrayConstructor_t_util(al, x.base.base.loc, body.p,
             body.size(), type, ASR::arraystorageType::ColMajor);
     }
 
@@ -4446,8 +4470,9 @@ public:
                 arr_args.push_back(al, ASRUtils::EXPR(ASR::make_ArrayBound_t(al, x.base.base.loc, v_Var, dim_, type,
                                       bound, bound_value)));
             }
-            return ASRUtils::make_ArrayConstant_t_util(al, x.base.base.loc, arr_args.p,
-                                arr_args.size(), type, ASR::arraystorageType::ColMajor);
+            return ASRUtils::make_ArrayConstructor_t_util(al, x.base.base.loc, arr_args.p,
+                arr_args.size(), type, ASR::arraystorageType::ColMajor);
+
         }
 
         ASR::expr_t* dim_value = ASRUtils::expr_value(dim);
