@@ -801,9 +801,15 @@ namespace Shape {
             }
         }
         ASR::expr_t *value = nullptr;
+        bool all_args_evaluated_ = all_args_evaluated(m_shapes);
         if (m_shapes.n > 0) {
-            value = EXPR(ASR::make_ArrayConstant_t(al, loc, m_shapes.p, m_shapes.n,
-                type, ASR::arraystorageType::ColMajor));
+            if (all_args_evaluated_) {
+                value = EXPR(ASR::make_ArrayConstant_t(al, loc, m_shapes.p, m_shapes.n,
+                    type, ASR::arraystorageType::ColMajor));
+            } else {
+                value = EXPR(ASR::make_ArrayConstructor_t(al, loc, m_shapes.p, m_shapes.n,
+                    type, nullptr, ASR::arraystorageType::ColMajor));
+            }
         }
         return value;
     }
@@ -1963,10 +1969,15 @@ namespace Pack {
             for (int i = 0; i < fixed_size_array; i++) {
                 mask_expr.push_back(al, mask);
             }
-            mask = EXPR(ASR::make_ArrayConstant_t(al, mask->base.loc, mask_expr.p, mask_expr.n,
+            if (all_args_evaluated(mask_expr)) {
+                mask = EXPR(ASR::make_ArrayConstant_t(al, mask->base.loc, mask_expr.p, mask_expr.n,
+                        TYPE(ASR::make_Array_t(al, mask->base.loc, logical, array_dims, array_rank, ASR::array_physical_typeType::FixedSizeArray)),
+                        ASR::arraystorageType::ColMajor));
+            } else {
+                mask = EXPR(ASR::make_ArrayConstructor_t(al, mask->base.loc, mask_expr.p, mask_expr.n,
                     TYPE(ASR::make_Array_t(al, mask->base.loc, logical, array_dims, array_rank, ASR::array_physical_typeType::FixedSizeArray)),
-                    ASR::arraystorageType::ColMajor));
-            
+                    nullptr, ASR::arraystorageType::ColMajor));
+            }
             type_mask = expr_type(mask);
             mask_rank = extract_dimensions_from_ttype(type_mask, mask_dims);
         }

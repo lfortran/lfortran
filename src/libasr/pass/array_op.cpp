@@ -1749,7 +1749,8 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
             }
             if( (ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_target)) &&
                 ASR::is_a<ASR::GetPointer_t>(*x.m_value)) ||
-                (ASR::is_a<ASR::ArrayConstant_t>(*x.m_value)) ) {
+                (ASR::is_a<ASR::ArrayConstant_t>(*x.m_value) ||
+                ASR::is_a<ASR::ArrayConstructor_t>(*x.m_value)) ) {
                 if( realloc_lhs && ASRUtils::is_allocatable(x.m_target)) { // Add realloc-lhs later
                     Vec<ASR::alloc_arg_t> vec_alloc;
                     vec_alloc.reserve(al, 1);
