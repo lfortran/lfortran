@@ -13,7 +13,7 @@
                                     a
                                     [j]
                                     Local
-                                    (ArrayConstant
+                                    (ArrayConstructor
                                         [(ImpliedDoLoop
                                             [(Var 2 j)]
                                             (Var 2 j)
@@ -29,9 +29,10 @@
                                             ())]
                                             DescriptorArray
                                         )
+                                        ()
                                         ColMajor
                                     )
-                                    (ArrayConstant
+                                    (ArrayConstructor
                                         [(ImpliedDoLoop
                                             [(Var 2 j)]
                                             (Var 2 j)
@@ -47,6 +48,7 @@
                                             ())]
                                             DescriptorArray
                                         )
+                                        ()
                                         ColMajor
                                     )
                                     Save

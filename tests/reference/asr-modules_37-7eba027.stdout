@@ -132,7 +132,7 @@
                                                     )
                                                     (Assignment
                                                         (Var 9 build_dirs)
-                                                        (ArrayConstant
+                                                        (ArrayConstructor
                                                             [(Var 9 build_dirs)
                                                             (Var 9 temp)]
                                                             (Allocatable
@@ -145,6 +145,7 @@
                                                                     DescriptorArray
                                                                 )
                                                             )
+                                                            ()
                                                             ColMajor
                                                         )
                                                         ()

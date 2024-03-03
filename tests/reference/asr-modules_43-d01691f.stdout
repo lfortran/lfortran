@@ -250,7 +250,7 @@
                                         )]
                                         [(Assignment
                                             (Var 4 sources)
-                                            (ArrayConstant
+                                            (ArrayConstructor
                                                 [(Var 4 sources)
                                                 (IntrinsicArrayFunction
                                                     Pack
@@ -301,6 +301,7 @@
                                                         DescriptorArray
                                                     )
                                                 )
+                                                ()
                                                 ColMajor
                                             )
                                             ()

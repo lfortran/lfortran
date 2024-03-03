@@ -741,77 +741,29 @@
                                             FixedSizeArray
                                         )
                                         (ArrayConstant
-                                            [(Cast
-                                                (RealConstant
-                                                    1.000000
-                                                    (Real 4)
-                                                )
-                                                RealToReal
+                                            [(RealConstant
+                                                1.000000
                                                 (Real 8)
-                                                (RealConstant
-                                                    1.000000
-                                                    (Real 8)
-                                                )
                                             )
-                                            (Cast
-                                                (RealConstant
-                                                    1.000000
-                                                    (Real 4)
-                                                )
-                                                RealToReal
+                                            (RealConstant
+                                                1.000000
                                                 (Real 8)
-                                                (RealConstant
-                                                    1.000000
-                                                    (Real 8)
-                                                )
                                             )
-                                            (Cast
-                                                (RealConstant
-                                                    1.000000
-                                                    (Real 4)
-                                                )
-                                                RealToReal
+                                            (RealConstant
+                                                1.000000
                                                 (Real 8)
-                                                (RealConstant
-                                                    1.000000
-                                                    (Real 8)
-                                                )
                                             )
-                                            (Cast
-                                                (RealConstant
-                                                    1.000000
-                                                    (Real 4)
-                                                )
-                                                RealToReal
+                                            (RealConstant
+                                                1.000000
                                                 (Real 8)
-                                                (RealConstant
-                                                    1.000000
-                                                    (Real 8)
-                                                )
                                             )
-                                            (Cast
-                                                (RealConstant
-                                                    1.000000
-                                                    (Real 4)
-                                                )
-                                                RealToReal
+                                            (RealConstant
+                                                1.000000
                                                 (Real 8)
-                                                (RealConstant
-                                                    1.000000
-                                                    (Real 8)
-                                                )
                                             )
-                                            (Cast
-                                                (RealConstant
-                                                    1.000000
-                                                    (Real 4)
-                                                )
-                                                RealToReal
+                                            (RealConstant
+                                                1.000000
                                                 (Real 8)
-                                                (RealConstant
-                                                    1.000000
-                                                    (Real 8)
-                                                )
                                             )]
                                             (Array
                                                 (Real 8)

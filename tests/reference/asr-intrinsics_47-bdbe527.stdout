@@ -207,25 +207,13 @@
                         (Var 2 l)
                         (ArrayAll
                             (ArrayConstant
-                                [(IntegerCompare
-                                    (IntegerConstant 1 (Integer 4))
-                                    Eq
-                                    (IntegerConstant 2 (Integer 4))
+                                [(LogicalConstant
+                                    .false.
                                     (Logical 4)
-                                    (LogicalConstant
-                                        .false.
-                                        (Logical 4)
-                                    )
                                 )
-                                (IntegerCompare
-                                    (IntegerConstant 0 (Integer 4))
-                                    Eq
-                                    (IntegerConstant 0 (Integer 4))
+                                (LogicalConstant
+                                    .true.
                                     (Logical 4)
-                                    (LogicalConstant
-                                        .true.
-                                        (Logical 4)
-                                    )
                                 )]
                                 (Array
                                     (Logical 4)

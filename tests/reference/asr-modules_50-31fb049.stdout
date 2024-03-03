@@ -166,7 +166,7 @@
                                                     )
                                                     (Assignment
                                                         (Var 5 modules_used)
-                                                        (ArrayConstant
+                                                        (ArrayConstructor
                                                             [(Var 5 modules_used)]
                                                             (Allocatable
                                                                 (Array
@@ -178,6 +178,7 @@
                                                                     DescriptorArray
                                                                 )
                                                             )
+                                                            ()
                                                             ColMajor
                                                         )
                                                         ()
