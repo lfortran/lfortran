@@ -750,51 +750,46 @@ namespace LCompilers {
                                                 target_section->base.base.loc, idx_var, lb, nullptr));
                 result_vec->push_back(replacer->al, assign_stmt);
                 for( size_t k = 0; k < x->n_args; k++ ) {
-                    ASR::expr_t* curr_init = x->m_args[k];
-                    if( ASR::is_a<ASR::ImpliedDoLoop_t>(*curr_init) ) {
-                        throw LCompilersException("Do loops in array initialiser expressions not supported yet.");
-                    } else {
-                        Vec<ASR::array_index_t> args;
-                        args.reserve(replacer->al, target_section->n_args);
-                        for( size_t i = 0; i < target_section->n_args; i++ ) {
-                            if( i + 1 == sliced_dim_index ) {
-                                ASR::array_index_t ai;
-                                ai.loc = target_section->base.base.loc;
-                                ai.m_left = nullptr;
-                                ai.m_step = nullptr;
-                                ai.m_right = idx_var;
-                                args.push_back(replacer->al, ai);
-                            } else {
-                                args.push_back(replacer->al, target_section->m_args[i]);
-                            }
+                    Vec<ASR::array_index_t> args;
+                    args.reserve(replacer->al, target_section->n_args);
+                    for( size_t i = 0; i < target_section->n_args; i++ ) {
+                        if( i + 1 == sliced_dim_index ) {
+                            ASR::array_index_t ai;
+                            ai.loc = target_section->base.base.loc;
+                            ai.m_left = nullptr;
+                            ai.m_step = nullptr;
+                            ai.m_right = idx_var;
+                            args.push_back(replacer->al, ai);
+                        } else {
+                            args.push_back(replacer->al, target_section->m_args[i]);
                         }
-
-                        ASR::ttype_t* array_ref_type = ASRUtils::expr_type(replacer->result_var);
-                        Vec<ASR::dimension_t> empty_dims;
-                        empty_dims.reserve(replacer->al, 1);
-                        array_ref_type = ASRUtils::duplicate_type(replacer->al, array_ref_type, &empty_dims);
-
-                        ASR::expr_t* array_ref = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(replacer->al,
-                                                        target_section->base.base.loc,
-                                                        target_section->m_v,
-                                                        args.p, args.size(),
-                                                        ASRUtils::type_get_past_pointer(
-                                                            ASRUtils::type_get_past_allocatable(array_ref_type)),
-                                                        ASR::arraystorageType::RowMajor, nullptr));
-                        ASR::expr_t* x_m_args_k = x->m_args[k];
-                        if( perform_cast ) {
-                            LCOMPILERS_ASSERT(casted_type != nullptr);
-                            x_m_args_k = ASRUtils::EXPR(ASR::make_Cast_t(replacer->al, array_ref->base.loc,
-                                x_m_args_k, cast_kind, casted_type, nullptr));
-                        }
-                        ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(replacer->al, target_section->base.base.loc,
-                                                        array_ref, x_m_args_k, nullptr));
-                        result_vec->push_back(replacer->al, assign_stmt);
-                        ASR::expr_t* increment = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(replacer->al, target_section->base.base.loc,
-                                                    idx_var, ASR::binopType::Add, const_1, ASRUtils::expr_type(idx_var), nullptr));
-                        assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(replacer->al, target_section->base.base.loc, idx_var, increment, nullptr));
-                        result_vec->push_back(replacer->al, assign_stmt);
                     }
+
+                    ASR::ttype_t* array_ref_type = ASRUtils::expr_type(replacer->result_var);
+                    Vec<ASR::dimension_t> empty_dims;
+                    empty_dims.reserve(replacer->al, 1);
+                    array_ref_type = ASRUtils::duplicate_type(replacer->al, array_ref_type, &empty_dims);
+
+                    ASR::expr_t* array_ref = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(replacer->al,
+                                                    target_section->base.base.loc,
+                                                    target_section->m_v,
+                                                    args.p, args.size(),
+                                                    ASRUtils::type_get_past_pointer(
+                                                        ASRUtils::type_get_past_allocatable(array_ref_type)),
+                                                    ASR::arraystorageType::RowMajor, nullptr));
+                    ASR::expr_t* x_m_args_k = x->m_args[k];
+                    if( perform_cast ) {
+                        LCOMPILERS_ASSERT(casted_type != nullptr);
+                        x_m_args_k = ASRUtils::EXPR(ASR::make_Cast_t(replacer->al, array_ref->base.loc,
+                            x_m_args_k, cast_kind, casted_type, nullptr));
+                    }
+                    ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(replacer->al, target_section->base.base.loc,
+                                                    array_ref, x_m_args_k, nullptr));
+                    result_vec->push_back(replacer->al, assign_stmt);
+                    ASR::expr_t* increment = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(replacer->al, target_section->base.base.loc,
+                                                idx_var, ASR::binopType::Add, const_1, ASRUtils::expr_type(idx_var), nullptr));
+                    assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(replacer->al, target_section->base.base.loc, idx_var, increment, nullptr));
+                    result_vec->push_back(replacer->al, assign_stmt);
                 }
             }
         }
