@@ -1128,7 +1128,13 @@ public:
         for (size_t i = 0; i < x.n_args; i++) {
             require(!ASR::is_a<ASR::ArrayConstant_t>(*x.m_args[i]),
                 "ArrayConstant cannot have ArrayConstant as its elements");
-            require(ASRUtils::is_value_constant(x.m_args[i]),
+            require(
+                ASR::is_a<ASR::IntegerConstant_t>(*x.m_args[i]) ||
+                ASR::is_a<ASR::RealConstant_t>(*x.m_args[i]) ||
+                ASR::is_a<ASR::ComplexConstant_t>(*x.m_args[i]) ||
+                ASR::is_a<ASR::LogicalConstant_t>(*x.m_args[i]) ||
+                ASR::is_a<ASR::StringConstant_t>(*x.m_args[i]) ||
+                ASR::is_a<ASR::UnsignedIntegerConstant_t>(*x.m_args[i]),
                 "ArrayConstant must have constant values");
         }
 
