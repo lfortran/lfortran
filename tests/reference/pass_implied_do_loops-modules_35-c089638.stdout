@@ -21,13 +21,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Allocatable
-                                                        (Array
-                                                            (Character 1 1 ())
-                                                            [(()
-                                                            ())]
-                                                            DescriptorArray
-                                                        )
+                                                    (Array
+                                                        (Character 1 1 ())
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 0 (Integer 4)))]
+                                                        FixedSizeArray
                                                     )
                                                     ()
                                                     Source
@@ -44,13 +42,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Allocatable
-                                                        (Array
-                                                            (Character 1 1 ())
-                                                            [(()
-                                                            ())]
-                                                            DescriptorArray
-                                                        )
+                                                    (Array
+                                                        (Character 1 1 ())
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 0 (Integer 4)))]
+                                                        FixedSizeArray
                                                     )
                                                     ()
                                                     Source
@@ -212,19 +208,7 @@
                                                 (Var 3 strings_a)
                                                 ()
                                             )]
-                                            [(ExplicitDeallocate
-                                                [(Var 3 __libasr__created__var__0__array_constant_)]
-                                            )
-                                            (Allocate
-                                                [((Var 3 __libasr__created__var__0__array_constant_)
-                                                [((IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 0 (Integer 4)))]
-                                                ()
-                                                ())]
-                                                ()
-                                                ()
-                                                ()
-                                            )]
+                                            []
                                         )]
                                         []
                                     )
@@ -236,19 +220,7 @@
                                             (Logical 4)
                                             ()
                                         )
-                                        [(ExplicitDeallocate
-                                            [(Var 3 __libasr__created__var__1__array_constant_)]
-                                        )
-                                        (Allocate
-                                            [((Var 3 __libasr__created__var__1__array_constant_)
-                                            [((IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 0 (Integer 4)))]
-                                            ()
-                                            ())]
-                                            ()
-                                            ()
-                                            ()
-                                        )]
+                                        []
                                         []
                                     )
                                     (ImplicitDeallocate
