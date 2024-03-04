@@ -344,8 +344,10 @@
                     )
                     (Assignment
                         (Var 2 c_1)
-                        (StringChr
-                            (IntegerConstant 100 (Integer 4))
+                        (IntrinsicElementalFunction
+                            Char
+                            [(IntegerConstant 100 (Integer 4))]
+                            0
                             (Character 1 1 ())
                             (StringConstant
                                 "d"
@@ -519,8 +521,10 @@
                     )
                     (If
                         (StringCompare
-                            (StringChr
-                                (Var 2 c)
+                            (IntrinsicElementalFunction
+                                Char
+                                [(Var 2 c)]
+                                0
                                 (Character 1 1 ())
                                 ()
                             )
@@ -605,8 +609,10 @@
                     )
                     (Assignment
                         (Var 2 c_1)
-                        (StringChr
-                            (IntegerConstant 100 (Integer 4))
+                        (IntrinsicElementalFunction
+                            Char
+                            [(IntegerConstant 100 (Integer 4))]
+                            0
                             (Character 1 1 ())
                             (StringConstant
                                 "d"
@@ -633,8 +639,10 @@
                     )
                     (Assignment
                         (Var 2 c_1)
-                        (StringChr
-                            (Var 2 c)
+                        (IntrinsicElementalFunction
+                            Char
+                            [(Var 2 c)]
+                            0
                             (Character 1 1 ())
                             ()
                         )
