@@ -14,7 +14,7 @@
                                     [j]
                                     Local
                                     (Cast
-                                        (ArrayConstant
+                                        (ArrayConstructor
                                             [(ImpliedDoLoop
                                                 [(IntegerBinOp
                                                     (Var 2 j)
@@ -36,6 +36,7 @@
                                                 ())]
                                                 DescriptorArray
                                             )
+                                            ()
                                             ColMajor
                                         )
                                         IntegerToReal
@@ -47,7 +48,41 @@
                                         )
                                         ()
                                     )
-                                    ()
+                                    (Cast
+                                        (ArrayConstructor
+                                            [(ImpliedDoLoop
+                                                [(IntegerBinOp
+                                                    (Var 2 j)
+                                                    Mul
+                                                    (IntegerConstant 3 (Integer 4))
+                                                    (Integer 4)
+                                                    ()
+                                                )]
+                                                (Var 2 j)
+                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 3 (Integer 4))
+                                                ()
+                                                (Integer 4)
+                                                ()
+                                            )]
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                ())]
+                                                DescriptorArray
+                                            )
+                                            ()
+                                            ColMajor
+                                        )
+                                        IntegerToReal
+                                        (Array
+                                            (Real 4)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 3 (Integer 4)))]
+                                            FixedSizeArray
+                                        )
+                                        ()
+                                    )
                                     Save
                                     (Array
                                         (Real 4)
@@ -68,7 +103,7 @@
                                     [j]
                                     Local
                                     (Cast
-                                        (ArrayConstant
+                                        (ArrayConstructor
                                             [(ImpliedDoLoop
                                                 [(IntegerBinOp
                                                     (Var 2 j)
@@ -90,6 +125,7 @@
                                                 ())]
                                                 DescriptorArray
                                             )
+                                            ()
                                             ColMajor
                                         )
                                         IntegerToReal
@@ -101,7 +137,41 @@
                                         )
                                         ()
                                     )
-                                    ()
+                                    (Cast
+                                        (ArrayConstructor
+                                            [(ImpliedDoLoop
+                                                [(IntegerBinOp
+                                                    (Var 2 j)
+                                                    Mul
+                                                    (IntegerConstant 2 (Integer 4))
+                                                    (Integer 4)
+                                                    ()
+                                                )]
+                                                (Var 2 j)
+                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 3 (Integer 4))
+                                                ()
+                                                (Integer 4)
+                                                ()
+                                            )]
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                ())]
+                                                DescriptorArray
+                                            )
+                                            ()
+                                            ColMajor
+                                        )
+                                        IntegerToReal
+                                        (Array
+                                            (Real 4)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 3 (Integer 4)))]
+                                            FixedSizeArray
+                                        )
+                                        ()
+                                    )
                                     Save
                                     (Array
                                         (Real 4)

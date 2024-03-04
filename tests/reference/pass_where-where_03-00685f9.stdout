@@ -131,27 +131,13 @@
                     (Assignment
                         (Var 2 b)
                         (ArrayConstant
-                            [(RealUnaryMinus
-                                (RealConstant
-                                    1.000000
-                                    (Real 4)
-                                )
+                            [(RealConstant
+                                -1.000000
                                 (Real 4)
-                                (RealConstant
-                                    -1.000000
-                                    (Real 4)
-                                )
                             )
-                            (RealUnaryMinus
-                                (RealConstant
-                                    2.000000
-                                    (Real 4)
-                                )
+                            (RealConstant
+                                -2.000000
                                 (Real 4)
-                                (RealConstant
-                                    -2.000000
-                                    (Real 4)
-                                )
                             )
                             (RealConstant
                                 5.000000

@@ -688,6 +688,12 @@ namespace LCompilers {
             bool perform_cast=false, ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
             ASR::ttype_t* casted_type=nullptr);
 
+        void visit_ArrayConstructor(ASR::ArrayConstructor_t* x, Allocator& al,
+            ASR::expr_t* arr_var, Vec<ASR::stmt_t*>* result_vec,
+            ASR::expr_t* idx_var, SymbolTable* current_scope,
+            bool perform_cast=false, ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
+            ASR::ttype_t* casted_type=nullptr);
+
         template <typename T>
         static inline void replace_ArrayConstant(ASR::ArrayConstant_t* x, T* replacer,
             bool& remove_original_statement, Vec<ASR::stmt_t*>* result_vec,
@@ -715,6 +721,111 @@ namespace LCompilers {
                                                 loc, idx_var, lb, nullptr));
                 result_vec->push_back(replacer->al, assign_stmt);
                 visit_ArrayConstant(x, replacer->al, replacer->result_var, result_vec,
+                                    idx_var, replacer->current_scope,
+                                    perform_cast, cast_kind, casted_type);
+            } else if( ASR::is_a<ASR::ArraySection_t>(*replacer->result_var) ) {
+                ASR::ArraySection_t* target_section = ASR::down_cast<ASR::ArraySection_t>(replacer->result_var);
+                int sliced_dims_count = 0;
+                size_t sliced_dim_index = 0;
+                for( size_t i = 0; i < target_section->n_args; i++ ) {
+                    if( !(target_section->m_args[i].m_left == nullptr &&
+                            target_section->m_args[i].m_right != nullptr &&
+                            target_section->m_args[i].m_step == nullptr) ) {
+                        sliced_dims_count += 1;
+                        sliced_dim_index = i + 1;
+                    }
+                }
+                if( sliced_dims_count != 1 ) {
+                    throw LCompilersException("Target expressions only having one "
+                                            "dimension sliced are supported for now.");
+                }
+
+                Vec<ASR::expr_t*> idx_vars;
+                PassUtils::create_idx_vars(idx_vars, 1, loc, replacer->al, replacer->current_scope);
+                ASR::expr_t* idx_var = idx_vars[0];
+                ASR::expr_t* lb = PassUtils::get_bound(target_section->m_v, sliced_dim_index, "lbound", replacer->al);
+                ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(replacer->al, loc, 1,
+                                            ASRUtils::expr_type(idx_var)));
+                ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(replacer->al,
+                                                target_section->base.base.loc, idx_var, lb, nullptr));
+                result_vec->push_back(replacer->al, assign_stmt);
+                for( size_t k = 0; k < x->n_args; k++ ) {
+                    ASR::expr_t* curr_init = x->m_args[k];
+                    if( ASR::is_a<ASR::ImpliedDoLoop_t>(*curr_init) ) {
+                        throw LCompilersException("Do loops in array initialiser expressions not supported yet.");
+                    } else {
+                        Vec<ASR::array_index_t> args;
+                        args.reserve(replacer->al, target_section->n_args);
+                        for( size_t i = 0; i < target_section->n_args; i++ ) {
+                            if( i + 1 == sliced_dim_index ) {
+                                ASR::array_index_t ai;
+                                ai.loc = target_section->base.base.loc;
+                                ai.m_left = nullptr;
+                                ai.m_step = nullptr;
+                                ai.m_right = idx_var;
+                                args.push_back(replacer->al, ai);
+                            } else {
+                                args.push_back(replacer->al, target_section->m_args[i]);
+                            }
+                        }
+
+                        ASR::ttype_t* array_ref_type = ASRUtils::expr_type(replacer->result_var);
+                        Vec<ASR::dimension_t> empty_dims;
+                        empty_dims.reserve(replacer->al, 1);
+                        array_ref_type = ASRUtils::duplicate_type(replacer->al, array_ref_type, &empty_dims);
+
+                        ASR::expr_t* array_ref = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(replacer->al,
+                                                        target_section->base.base.loc,
+                                                        target_section->m_v,
+                                                        args.p, args.size(),
+                                                        ASRUtils::type_get_past_pointer(
+                                                            ASRUtils::type_get_past_allocatable(array_ref_type)),
+                                                        ASR::arraystorageType::RowMajor, nullptr));
+                        ASR::expr_t* x_m_args_k = x->m_args[k];
+                        if( perform_cast ) {
+                            LCOMPILERS_ASSERT(casted_type != nullptr);
+                            x_m_args_k = ASRUtils::EXPR(ASR::make_Cast_t(replacer->al, array_ref->base.loc,
+                                x_m_args_k, cast_kind, casted_type, nullptr));
+                        }
+                        ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(replacer->al, target_section->base.base.loc,
+                                                        array_ref, x_m_args_k, nullptr));
+                        result_vec->push_back(replacer->al, assign_stmt);
+                        ASR::expr_t* increment = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(replacer->al, target_section->base.base.loc,
+                                                    idx_var, ASR::binopType::Add, const_1, ASRUtils::expr_type(idx_var), nullptr));
+                        assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(replacer->al, target_section->base.base.loc, idx_var, increment, nullptr));
+                        result_vec->push_back(replacer->al, assign_stmt);
+                    }
+                }
+            }
+        }
+
+        template <typename T>
+        static inline void replace_ArrayConstructor(ASR::ArrayConstructor_t* x, T* replacer,
+            bool& remove_original_statement, Vec<ASR::stmt_t*>* result_vec,
+            bool perform_cast=false,
+            ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
+            ASR::ttype_t* casted_type=nullptr) {
+            LCOMPILERS_ASSERT(replacer->result_var != nullptr);
+            if( x->n_args == 0 ) {
+                remove_original_statement = true;
+                return ;
+            }
+
+            const Location& loc = x->base.base.loc;
+            if( ASR::is_a<ASR::Var_t>(*replacer->result_var) ) {
+                [[maybe_unused]] ASR::ttype_t* result_var_type = ASRUtils::expr_type(replacer->result_var);
+                LCOMPILERS_ASSERT_MSG(ASRUtils::extract_n_dims_from_ttype(result_var_type) == 1,
+                                    "Initialisation using ArrayConstructor is "
+                                    "supported only for single dimensional arrays, found: " +
+                                    std::to_string(ASRUtils::extract_n_dims_from_ttype(result_var_type)))
+                Vec<ASR::expr_t*> idx_vars;
+                PassUtils::create_idx_vars(idx_vars, 1, loc, replacer->al, replacer->current_scope);
+                ASR::expr_t* idx_var = idx_vars[0];
+                ASR::expr_t* lb = PassUtils::get_bound(replacer->result_var, 1, "lbound", replacer->al);
+                ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(replacer->al,
+                                                loc, idx_var, lb, nullptr));
+                result_vec->push_back(replacer->al, assign_stmt);
+                visit_ArrayConstructor(x, replacer->al, replacer->result_var, result_vec,
                                     idx_var, replacer->current_scope,
                                     perform_cast, cast_kind, casted_type);
             } else if( ASR::is_a<ASR::ArraySection_t>(*replacer->result_var) ) {

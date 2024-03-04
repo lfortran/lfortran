@@ -833,45 +833,25 @@
                         (Var 2 c)
                         (ArrayReshape
                             (ArrayConstant
-                                [(ComplexConstructor
-                                    (IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 2 (Integer 4))
+                                [(ComplexConstant
+                                    1.000000
+                                    2.000000
                                     (Complex 4)
-                                    (ComplexConstant
-                                        1.000000
-                                        2.000000
-                                        (Complex 4)
-                                    )
                                 )
-                                (ComplexConstructor
-                                    (IntegerConstant 3 (Integer 4))
-                                    (IntegerConstant 4 (Integer 4))
+                                (ComplexConstant
+                                    3.000000
+                                    4.000000
                                     (Complex 4)
-                                    (ComplexConstant
-                                        3.000000
-                                        4.000000
-                                        (Complex 4)
-                                    )
                                 )
-                                (ComplexConstructor
-                                    (IntegerConstant 5 (Integer 4))
-                                    (IntegerConstant 6 (Integer 4))
+                                (ComplexConstant
+                                    5.000000
+                                    6.000000
                                     (Complex 4)
-                                    (ComplexConstant
-                                        5.000000
-                                        6.000000
-                                        (Complex 4)
-                                    )
                                 )
-                                (ComplexConstructor
-                                    (IntegerConstant 7 (Integer 4))
-                                    (IntegerConstant 8 (Integer 4))
+                                (ComplexConstant
+                                    7.000000
+                                    8.000000
                                     (Complex 4)
-                                    (ComplexConstant
-                                        7.000000
-                                        8.000000
-                                        (Complex 4)
-                                    )
                                 )]
                                 (Array
                                     (Complex 4)

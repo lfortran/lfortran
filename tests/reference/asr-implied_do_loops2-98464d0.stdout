@@ -68,7 +68,7 @@
                     [(Assignment
                         (Var 2 array)
                         (ArrayReshape
-                            (ArrayConstant
+                            (ArrayConstructor
                                 [(ImpliedDoLoop
                                     [(Var 2 i)
                                     (ImpliedDoLoop
@@ -99,6 +99,7 @@
                                     ())]
                                     DescriptorArray
                                 )
+                                ()
                                 ColMajor
                             )
                             (ArrayPhysicalCast
