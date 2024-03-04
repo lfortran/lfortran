@@ -4802,7 +4802,6 @@ public:
     }
 
     ASR::asr_t* create_Ichar(const AST::FuncCallOrArray_t& x) {
-        std::cout<<"here?"<<'\n';
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"C", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "ichar");
