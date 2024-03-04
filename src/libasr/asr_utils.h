@@ -1004,6 +1004,7 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
         case ASR::exprType::LogicalConstant:
         case ASR::exprType::ImpliedDoLoop:
         case ASR::exprType::PointerNullConstant:
+        case ASR::exprType::ArrayConstant:
         case ASR::exprType::StringConstant: {
             return true;
         }
@@ -1013,15 +1014,6 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
         case ASR::exprType::IntegerBinOp:
         case ASR::exprType::StringLen: {
             return is_value_constant(expr_value(a_value));
-        } case ASR::exprType::ArrayConstant: {
-            ASR::ArrayConstant_t* array_constant = ASR::down_cast<ASR::ArrayConstant_t>(a_value);
-            for( size_t i = 0; i < array_constant->n_args; i++ ) {
-                if( !ASRUtils::is_value_constant(array_constant->m_args[i]) &&
-                    !ASRUtils::is_value_constant(ASRUtils::expr_value(array_constant->m_args[i])) ) {
-                    return false;
-                }
-            }
-            return true;
         } case ASR::exprType::ListConstant: {
             ASR::ListConstant_t* list_constant = ASR::down_cast<ASR::ListConstant_t>(a_value);
             for( size_t i = 0; i < list_constant->n_args; i++ ) {
