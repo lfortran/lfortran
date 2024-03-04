@@ -1544,6 +1544,18 @@ public:
 
     // void visit_FunctionParam(const ASR::FunctionParam_t &x) {}
 
+    void visit_ArrayConstructor(const ASR::ArrayConstructor_t &x) {
+        std::string r = "[";
+        for(size_t i = 0; i < x.n_args; i++) {
+            visit_expr(*x.m_args[i]);
+            r += src;
+            if (i < x.n_args-1) r += ", ";
+        }
+        r += "]";
+        src = r;
+        last_expr_precedence = Precedence::Ext;
+    }
+
     void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
         std::string r = "[";
         for(size_t i = 0; i < x.n_args; i++) {

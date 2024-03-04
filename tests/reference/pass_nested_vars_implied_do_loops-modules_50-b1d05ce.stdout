@@ -224,10 +224,10 @@
                                                                     __lcompilers_created__nested_context__prune_build_targets_modules_used
                                                                     Public
                                                                 ),
-                                                            __libasr__created__var__0__array_constant_:
+                                                            __libasr__created__var__0__array_constructor_:
                                                                 (Variable
                                                                     6
-                                                                    __libasr__created__var__0__array_constant_
+                                                                    __libasr__created__var__0__array_constructor_
                                                                     []
                                                                     Local
                                                                     ()
@@ -288,10 +288,10 @@
                                                         ()
                                                     )
                                                     (ExplicitDeallocate
-                                                        [(Var 6 __libasr__created__var__0__array_constant_)]
+                                                        [(Var 6 __libasr__created__var__0__array_constructor_)]
                                                     )
                                                     (Allocate
-                                                        [((Var 6 __libasr__created__var__0__array_constant_)
+                                                        [((Var 6 __libasr__created__var__0__array_constructor_)
                                                         [((IntegerConstant 1 (Integer 4))
                                                         (ArraySize
                                                             (Var 6 __lcompilers_created__nested_context__prune_build_targets_modules_used)
@@ -308,7 +308,7 @@
                                                     (Assignment
                                                         (Var 6 __1_k)
                                                         (ArrayBound
-                                                            (Var 6 __libasr__created__var__0__array_constant_)
+                                                            (Var 6 __libasr__created__var__0__array_constructor_)
                                                             (IntegerConstant 1 (Integer 4))
                                                             (Integer 4)
                                                             LBound
@@ -336,7 +336,7 @@
                                                         ())
                                                         [(Assignment
                                                             (ArrayItem
-                                                                (Var 6 __libasr__created__var__0__array_constant_)
+                                                                (Var 6 __libasr__created__var__0__array_constructor_)
                                                                 [(()
                                                                 (Var 6 __1_k)
                                                                 ())]
@@ -373,7 +373,7 @@
                                                     )
                                                     (Assignment
                                                         (Var 6 __lcompilers_created__nested_context__prune_build_targets_modules_used)
-                                                        (Var 6 __libasr__created__var__0__array_constant_)
+                                                        (Var 6 __libasr__created__var__0__array_constructor_)
                                                         ()
                                                     )]
                                                     ()

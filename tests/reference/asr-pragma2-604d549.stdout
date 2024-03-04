@@ -61,77 +61,37 @@
                                     FixedSizeArray
                                 )
                                 (ArrayConstant
-                                    [(Cast
-                                        (IntegerConstant 1 (Integer 4))
-                                        IntegerToReal
+                                    [(RealConstant
+                                        1.000000
                                         (Real 4)
-                                        (RealConstant
-                                            1.000000
-                                            (Real 4)
-                                        )
                                     )
-                                    (Cast
-                                        (IntegerConstant 1 (Integer 4))
-                                        IntegerToReal
+                                    (RealConstant
+                                        1.000000
                                         (Real 4)
-                                        (RealConstant
-                                            1.000000
-                                            (Real 4)
-                                        )
                                     )
-                                    (Cast
-                                        (IntegerConstant 1 (Integer 4))
-                                        IntegerToReal
+                                    (RealConstant
+                                        1.000000
                                         (Real 4)
-                                        (RealConstant
-                                            1.000000
-                                            (Real 4)
-                                        )
                                     )
-                                    (Cast
-                                        (IntegerConstant 1 (Integer 4))
-                                        IntegerToReal
+                                    (RealConstant
+                                        1.000000
                                         (Real 4)
-                                        (RealConstant
-                                            1.000000
-                                            (Real 4)
-                                        )
                                     )
-                                    (Cast
-                                        (IntegerConstant 1 (Integer 4))
-                                        IntegerToReal
+                                    (RealConstant
+                                        1.000000
                                         (Real 4)
-                                        (RealConstant
-                                            1.000000
-                                            (Real 4)
-                                        )
                                     )
-                                    (Cast
-                                        (IntegerConstant 1 (Integer 4))
-                                        IntegerToReal
+                                    (RealConstant
+                                        1.000000
                                         (Real 4)
-                                        (RealConstant
-                                            1.000000
-                                            (Real 4)
-                                        )
                                     )
-                                    (Cast
-                                        (IntegerConstant 1 (Integer 4))
-                                        IntegerToReal
+                                    (RealConstant
+                                        1.000000
                                         (Real 4)
-                                        (RealConstant
-                                            1.000000
-                                            (Real 4)
-                                        )
                                     )
-                                    (Cast
-                                        (IntegerConstant 1 (Integer 4))
-                                        IntegerToReal
+                                    (RealConstant
+                                        1.000000
                                         (Real 4)
-                                        (RealConstant
-                                            1.000000
-                                            (Real 4)
-                                        )
                                     )]
                                     (Array
                                         (Real 4)

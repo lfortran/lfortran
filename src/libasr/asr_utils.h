@@ -1004,6 +1004,7 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
         case ASR::exprType::LogicalConstant:
         case ASR::exprType::ImpliedDoLoop:
         case ASR::exprType::PointerNullConstant:
+        case ASR::exprType::ArrayConstant:
         case ASR::exprType::StringConstant: {
             return true;
         }
@@ -1013,15 +1014,6 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
         case ASR::exprType::IntegerBinOp:
         case ASR::exprType::StringLen: {
             return is_value_constant(expr_value(a_value));
-        } case ASR::exprType::ArrayConstant: {
-            ASR::ArrayConstant_t* array_constant = ASR::down_cast<ASR::ArrayConstant_t>(a_value);
-            for( size_t i = 0; i < array_constant->n_args; i++ ) {
-                if( !ASRUtils::is_value_constant(array_constant->m_args[i]) &&
-                    !ASRUtils::is_value_constant(ASRUtils::expr_value(array_constant->m_args[i])) ) {
-                    return false;
-                }
-            }
-            return true;
         } case ASR::exprType::ListConstant: {
             ASR::ListConstant_t* list_constant = ASR::down_cast<ASR::ListConstant_t>(a_value);
             for( size_t i = 0; i < list_constant->n_args; i++ ) {
@@ -4897,6 +4889,69 @@ static inline ASR::asr_t* make_ArrayPhysicalCast_t_util(Allocator &al, const Loc
             ASR::intentType::Unspecified, current_scope);
     }
     return ASR::make_ArrayPhysicalCast_t(al, a_loc, a_arg, a_old, a_new, a_type, a_value);
+}
+
+inline void flatten_ArrayConstant(Allocator& al, ASR::expr_t** a_args, size_t n_args, Vec<ASR::expr_t*> &new_args) {
+    for (size_t i = 0; i < n_args; i++) {
+        if (ASR::is_a<ASR::ArrayConstant_t>(*a_args[i])) {
+            ASR::ArrayConstant_t* a_arg = ASR::down_cast<ASR::ArrayConstant_t>(a_args[i]);
+            flatten_ArrayConstant(al, a_arg->m_args, a_arg->n_args, new_args);
+        } else if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(a_args[i]))) { 
+            ASR::ArrayConstant_t* a_arg = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(a_args[i]));
+            flatten_ArrayConstant(al, a_arg->m_args, a_arg->n_args, new_args);
+        } else {
+            new_args.push_back(al, ASRUtils::expr_value(a_args[i]));
+        }
+    }
+}
+
+inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a_loc,
+    ASR::expr_t** a_args, size_t n_args, ASR::ttype_t* a_type, ASR::arraystorageType a_storage_format) {
+    if( !ASRUtils::is_array(a_type) ) {
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, 1);
+        ASR::dimension_t dim;
+        dim.loc = a_loc;
+        dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+            al, a_loc, n_args, ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4))));
+        dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+            al, a_loc, 0, ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4))));
+        dims.push_back(al, dim);
+        a_type = ASRUtils::make_Array_t_util(al, dim.loc,
+            a_type, dims.p, dims.size(), ASR::abiType::Source,
+            false, ASR::array_physical_typeType::PointerToDataArray, true);
+    } else if( ASR::is_a<ASR::Allocatable_t>(*a_type) ) {
+        ASR::dimension_t* m_dims = nullptr;
+        int n_dims = ASRUtils::extract_dimensions_from_ttype(a_type, m_dims);
+        if( !ASRUtils::is_dimension_empty(m_dims, n_dims) ) {
+            a_type = ASRUtils::duplicate_type_with_empty_dims(al, a_type);
+        }
+    }
+
+    LCOMPILERS_ASSERT(ASRUtils::is_array(a_type));
+    bool all_expr_evaluated = true;
+    for (size_t i = 0; i < n_args; i++) {
+        ASR::expr_t* a_value = ASRUtils::expr_value(a_args[i]);
+        if (!is_value_constant(a_value)) {
+            all_expr_evaluated = false;
+        }
+    }
+    if (all_expr_evaluated) {
+        Vec<ASR::expr_t*> a_args_values; a_args_values.reserve(al, n_args);
+        flatten_ArrayConstant(al, a_args, n_args, a_args_values);
+        ASR::Array_t* a_type_ = ASR::down_cast<ASR::Array_t>(a_type);
+        Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
+        ASR::dimension_t dim; dim.loc = a_type_->m_dims[0].loc; dim.m_start = a_type_->m_dims[0].m_start;
+        dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, a_type_->m_dims[0].m_length->base.loc,
+                        a_args_values.n,
+                        ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4))));
+        dims.push_back(al, dim);
+        ASR::ttype_t* new_type = ASRUtils::TYPE(ASR::make_Array_t(al, a_type->base.loc, a_type_->m_type,
+            dims.p, dims.n, a_type_->m_physical_type));
+        return ASR::make_ArrayConstant_t(al, a_loc, a_args_values.p, a_args_values.n, new_type, a_storage_format);
+    } else {
+        return ASR::make_ArrayConstructor_t(al, a_loc, a_args, n_args, a_type, nullptr, a_storage_format);
+    }
 }
 
 inline ASR::asr_t* make_ArrayConstant_t_util(Allocator &al, const Location &a_loc,

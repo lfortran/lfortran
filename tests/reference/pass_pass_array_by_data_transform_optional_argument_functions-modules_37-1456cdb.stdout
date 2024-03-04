@@ -132,7 +132,7 @@
                                                     )
                                                     (Assignment
                                                         (Var 9 build_dirs)
-                                                        (ArrayConstant
+                                                        (ArrayConstructor
                                                             [(Var 9 build_dirs)
                                                             (Var 9 temp)]
                                                             (Allocatable
@@ -145,6 +145,7 @@
                                                                     DescriptorArray
                                                                 )
                                                             )
+                                                            ()
                                                             ColMajor
                                                         )
                                                         ()
@@ -486,7 +487,7 @@
                                                     )
                                                     (Assignment
                                                         (Var 13 build_dirs)
-                                                        (ArrayConstant
+                                                        (ArrayConstructor
                                                             [(Var 13 build_dirs)
                                                             (Var 13 temp)]
                                                             (Allocatable
@@ -499,6 +500,7 @@
                                                                     DescriptorArray
                                                                 )
                                                             )
+                                                            ()
                                                             ColMajor
                                                         )
                                                         ()

@@ -379,7 +379,8 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
         void visit_Assignment(const ASR::Assignment_t &x) {
             if( (ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_target)) &&
                 ASR::is_a<ASR::GetPointer_t>(*x.m_value)) ||
-                (ASR::is_a<ASR::ArrayConstant_t>(*x.m_value))) {
+                (ASR::is_a<ASR::ArrayConstant_t>(*x.m_value) ||
+                ASR::is_a<ASR::ArrayConstructor_t>(*x.m_value)) ) {
                 return ;
             }
 

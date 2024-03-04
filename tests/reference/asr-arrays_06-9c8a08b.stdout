@@ -111,7 +111,7 @@
                     )
                     (Assignment
                         (Var 2 x)
-                        (ArrayConstant
+                        (ArrayConstructor
                             [(ImpliedDoLoop
                                 [(IntegerBinOp
                                     (Var 2 i)
@@ -133,6 +133,7 @@
                                 ())]
                                 DescriptorArray
                             )
+                            ()
                             ColMajor
                         )
                         ()
@@ -144,7 +145,7 @@
                     )
                     (Assignment
                         (Var 2 x)
-                        (ArrayConstant
+                        (ArrayConstructor
                             [(ImpliedDoLoop
                                 [(IntegerBinOp
                                     (Var 2 i)
@@ -173,6 +174,7 @@
                                 ())]
                                 DescriptorArray
                             )
+                            ()
                             ColMajor
                         )
                         ()
@@ -184,7 +186,7 @@
                     )
                     (Assignment
                         (Var 2 x)
-                        (ArrayConstant
+                        (ArrayConstructor
                             [(ImpliedDoLoop
                                 [(IntegerBinOp
                                     (Var 2 i)
@@ -220,6 +222,7 @@
                                 ())]
                                 DescriptorArray
                             )
+                            ()
                             ColMajor
                         )
                         ()
@@ -231,7 +234,7 @@
                     )
                     (Assignment
                         (Var 2 x)
-                        (ArrayConstant
+                        (ArrayConstructor
                             [(ImpliedDoLoop
                                 [(IntegerBinOp
                                     (IntegerConstant 2 (Integer 4))
@@ -288,6 +291,7 @@
                                 ())]
                                 DescriptorArray
                             )
+                            ()
                             ColMajor
                         )
                         ()
@@ -345,708 +349,33 @@
                                 FixedSizeArray
                             )
                             (ArrayConstant
-                                [(Cast
-                                    (RealBinOp
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 4 (Integer 4))
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                4.000000
-                                                (Real 4)
-                                            )
-                                        )
-                                        (Real 4)
-                                        (RealConstant
-                                            7.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    RealToInteger
-                                    (Integer 4)
-                                    (IntegerConstant 7 (Integer 4))
-                                )
-                                (Cast
-                                    (RealBinOp
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 4 (Integer 4))
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                4.000000
-                                                (Real 4)
-                                            )
-                                        )
-                                        (Real 4)
-                                        (RealConstant
-                                            7.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    RealToInteger
-                                    (Integer 4)
-                                    (IntegerConstant 7 (Integer 4))
-                                )
-                                (Cast
-                                    (RealBinOp
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 4 (Integer 4))
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                4.000000
-                                                (Real 4)
-                                            )
-                                        )
-                                        (Real 4)
-                                        (RealConstant
-                                            7.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    RealToInteger
-                                    (Integer 4)
-                                    (IntegerConstant 7 (Integer 4))
-                                )
-                                (Cast
-                                    (RealBinOp
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 4 (Integer 4))
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                4.000000
-                                                (Real 4)
-                                            )
-                                        )
-                                        (Real 4)
-                                        (RealConstant
-                                            7.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    RealToInteger
-                                    (Integer 4)
-                                    (IntegerConstant 7 (Integer 4))
-                                )
-                                (Cast
-                                    (RealBinOp
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 4 (Integer 4))
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                4.000000
-                                                (Real 4)
-                                            )
-                                        )
-                                        (Real 4)
-                                        (RealConstant
-                                            7.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    RealToInteger
-                                    (Integer 4)
-                                    (IntegerConstant 7 (Integer 4))
-                                )
-                                (Cast
-                                    (RealBinOp
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 4 (Integer 4))
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                4.000000
-                                                (Real 4)
-                                            )
-                                        )
-                                        (Real 4)
-                                        (RealConstant
-                                            7.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    RealToInteger
-                                    (Integer 4)
-                                    (IntegerConstant 7 (Integer 4))
-                                )
-                                (Cast
-                                    (RealBinOp
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 4 (Integer 4))
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                4.000000
-                                                (Real 4)
-                                            )
-                                        )
-                                        (Real 4)
-                                        (RealConstant
-                                            7.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    RealToInteger
-                                    (Integer 4)
-                                    (IntegerConstant 7 (Integer 4))
-                                )
-                                (Cast
-                                    (RealBinOp
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 4 (Integer 4))
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                4.000000
-                                                (Real 4)
-                                            )
-                                        )
-                                        (Real 4)
-                                        (RealConstant
-                                            7.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    RealToInteger
-                                    (Integer 4)
-                                    (IntegerConstant 7 (Integer 4))
-                                )
-                                (Cast
-                                    (RealBinOp
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 4 (Integer 4))
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                4.000000
-                                                (Real 4)
-                                            )
-                                        )
-                                        (Real 4)
-                                        (RealConstant
-                                            7.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    RealToInteger
-                                    (Integer 4)
-                                    (IntegerConstant 7 (Integer 4))
-                                )
-                                (Cast
-                                    (RealBinOp
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 4 (Integer 4))
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                4.000000
-                                                (Real 4)
-                                            )
-                                        )
-                                        (Real 4)
-                                        (RealConstant
-                                            7.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    RealToInteger
-                                    (Integer 4)
-                                    (IntegerConstant 7 (Integer 4))
-                                )
-                                (Cast
-                                    (RealBinOp
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 4 (Integer 4))
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                4.000000
-                                                (Real 4)
-                                            )
-                                        )
-                                        (Real 4)
-                                        (RealConstant
-                                            7.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    RealToInteger
-                                    (Integer 4)
-                                    (IntegerConstant 7 (Integer 4))
-                                )
-                                (Cast
-                                    (RealBinOp
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 4 (Integer 4))
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                4.000000
-                                                (Real 4)
-                                            )
-                                        )
-                                        (Real 4)
-                                        (RealConstant
-                                            7.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    RealToInteger
-                                    (Integer 4)
-                                    (IntegerConstant 7 (Integer 4))
-                                )
-                                (Cast
-                                    (RealBinOp
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 4 (Integer 4))
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                4.000000
-                                                (Real 4)
-                                            )
-                                        )
-                                        (Real 4)
-                                        (RealConstant
-                                            7.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    RealToInteger
-                                    (Integer 4)
-                                    (IntegerConstant 7 (Integer 4))
-                                )
-                                (Cast
-                                    (RealBinOp
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 4 (Integer 4))
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                4.000000
-                                                (Real 4)
-                                            )
-                                        )
-                                        (Real 4)
-                                        (RealConstant
-                                            7.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    RealToInteger
-                                    (Integer 4)
-                                    (IntegerConstant 7 (Integer 4))
-                                )
-                                (Cast
-                                    (RealBinOp
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 4 (Integer 4))
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                4.000000
-                                                (Real 4)
-                                            )
-                                        )
-                                        (Real 4)
-                                        (RealConstant
-                                            7.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    RealToInteger
-                                    (Integer 4)
-                                    (IntegerConstant 7 (Integer 4))
-                                )
-                                (Cast
-                                    (RealBinOp
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 4 (Integer 4))
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                4.000000
-                                                (Real 4)
-                                            )
-                                        )
-                                        (Real 4)
-                                        (RealConstant
-                                            7.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    RealToInteger
-                                    (Integer 4)
-                                    (IntegerConstant 7 (Integer 4))
-                                )
-                                (Cast
-                                    (RealBinOp
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 4 (Integer 4))
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                4.000000
-                                                (Real 4)
-                                            )
-                                        )
-                                        (Real 4)
-                                        (RealConstant
-                                            7.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    RealToInteger
-                                    (Integer 4)
-                                    (IntegerConstant 7 (Integer 4))
-                                )
-                                (Cast
-                                    (RealBinOp
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 4 (Integer 4))
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                4.000000
-                                                (Real 4)
-                                            )
-                                        )
-                                        (Real 4)
-                                        (RealConstant
-                                            7.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    RealToInteger
-                                    (Integer 4)
-                                    (IntegerConstant 7 (Integer 4))
-                                )
-                                (Cast
-                                    (RealBinOp
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 4 (Integer 4))
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                4.000000
-                                                (Real 4)
-                                            )
-                                        )
-                                        (Real 4)
-                                        (RealConstant
-                                            7.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    RealToInteger
-                                    (Integer 4)
-                                    (IntegerConstant 7 (Integer 4))
-                                )
-                                (Cast
-                                    (RealBinOp
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 4 (Integer 4))
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                4.000000
-                                                (Real 4)
-                                            )
-                                        )
-                                        (Real 4)
-                                        (RealConstant
-                                            7.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    RealToInteger
-                                    (Integer 4)
-                                    (IntegerConstant 7 (Integer 4))
-                                )
-                                (Cast
-                                    (RealBinOp
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 4 (Integer 4))
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                4.000000
-                                                (Real 4)
-                                            )
-                                        )
-                                        (Real 4)
-                                        (RealConstant
-                                            7.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    RealToInteger
-                                    (Integer 4)
-                                    (IntegerConstant 7 (Integer 4))
-                                )
-                                (Cast
-                                    (RealBinOp
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 4 (Integer 4))
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                4.000000
-                                                (Real 4)
-                                            )
-                                        )
-                                        (Real 4)
-                                        (RealConstant
-                                            7.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    RealToInteger
-                                    (Integer 4)
-                                    (IntegerConstant 7 (Integer 4))
-                                )
-                                (Cast
-                                    (RealBinOp
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 4 (Integer 4))
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                4.000000
-                                                (Real 4)
-                                            )
-                                        )
-                                        (Real 4)
-                                        (RealConstant
-                                            7.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    RealToInteger
-                                    (Integer 4)
-                                    (IntegerConstant 7 (Integer 4))
-                                )
-                                (Cast
-                                    (RealBinOp
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 4 (Integer 4))
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                4.000000
-                                                (Real 4)
-                                            )
-                                        )
-                                        (Real 4)
-                                        (RealConstant
-                                            7.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    RealToInteger
-                                    (Integer 4)
-                                    (IntegerConstant 7 (Integer 4))
-                                )
-                                (Cast
-                                    (RealBinOp
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 4 (Integer 4))
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                4.000000
-                                                (Real 4)
-                                            )
-                                        )
-                                        (Real 4)
-                                        (RealConstant
-                                            7.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    RealToInteger
-                                    (Integer 4)
-                                    (IntegerConstant 7 (Integer 4))
-                                )
-                                (Cast
-                                    (RealBinOp
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 4 (Integer 4))
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                4.000000
-                                                (Real 4)
-                                            )
-                                        )
-                                        (Real 4)
-                                        (RealConstant
-                                            7.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    RealToInteger
-                                    (Integer 4)
-                                    (IntegerConstant 7 (Integer 4))
-                                )
-                                (Cast
-                                    (RealBinOp
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 4 (Integer 4))
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                4.000000
-                                                (Real 4)
-                                            )
-                                        )
-                                        (Real 4)
-                                        (RealConstant
-                                            7.000000
-                                            (Real 4)
-                                        )
-                                    )
-                                    RealToInteger
-                                    (Integer 4)
-                                    (IntegerConstant 7 (Integer 4))
-                                )]
+                                [(IntegerConstant 7 (Integer 4))
+                                (IntegerConstant 7 (Integer 4))
+                                (IntegerConstant 7 (Integer 4))
+                                (IntegerConstant 7 (Integer 4))
+                                (IntegerConstant 7 (Integer 4))
+                                (IntegerConstant 7 (Integer 4))
+                                (IntegerConstant 7 (Integer 4))
+                                (IntegerConstant 7 (Integer 4))
+                                (IntegerConstant 7 (Integer 4))
+                                (IntegerConstant 7 (Integer 4))
+                                (IntegerConstant 7 (Integer 4))
+                                (IntegerConstant 7 (Integer 4))
+                                (IntegerConstant 7 (Integer 4))
+                                (IntegerConstant 7 (Integer 4))
+                                (IntegerConstant 7 (Integer 4))
+                                (IntegerConstant 7 (Integer 4))
+                                (IntegerConstant 7 (Integer 4))
+                                (IntegerConstant 7 (Integer 4))
+                                (IntegerConstant 7 (Integer 4))
+                                (IntegerConstant 7 (Integer 4))
+                                (IntegerConstant 7 (Integer 4))
+                                (IntegerConstant 7 (Integer 4))
+                                (IntegerConstant 7 (Integer 4))
+                                (IntegerConstant 7 (Integer 4))
+                                (IntegerConstant 7 (Integer 4))
+                                (IntegerConstant 7 (Integer 4))
+                                (IntegerConstant 7 (Integer 4))]
                                 (Array
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4))
