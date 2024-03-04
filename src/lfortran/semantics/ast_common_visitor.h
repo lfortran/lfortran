@@ -1259,7 +1259,7 @@ public:
             dim.m_length = x_n_args;
             dims.push_back(al, dim);
             obj_type = ASRUtils::duplicate_type(al, obj_type, &dims);
-            tmp = ASRUtils::make_ArrayConstant_t_util(al, x.base.base.loc, body.p,
+            tmp = ASRUtils::make_ArrayConstructor_t_util(al, x.base.base.loc, body.p,
                 body.size(), obj_type, ASR::arraystorageType::ColMajor);
             ASR::Variable_t* v2 = nullptr;
             if (ASR::is_a<ASR::StructInstanceMember_t>(*object)) {
@@ -2131,7 +2131,7 @@ public:
                                 args.push_back(al, size);
 
                                 ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, asr_eq1->base.loc, int_type, dim.p, dim.size(), ASR::array_physical_typeType::PointerToDataArray));
-                                ASR::asr_t* array_constant = ASRUtils::make_ArrayConstant_t_util(al, asr_eq1->base.loc, args.p, args.size(), array_type, ASR::arraystorageType::ColMajor);
+                                ASR::asr_t* array_constant = ASRUtils::make_ArrayConstructor_t_util(al, asr_eq1->base.loc, args.p, args.size(), array_type, ASR::arraystorageType::ColMajor);
                                 ASR::asr_t* c_f_pointer = ASR::make_CPtrToPointer_t(al, asr_eq1->base.loc, ASRUtils::EXPR(pointer_to_cptr), ASR::down_cast<ASR::ArrayItem_t>(asr_eq2)->m_v, ASRUtils::EXPR(array_constant), nullptr);
 
                                 ASR::stmt_t *stmt = ASRUtils::STMT(c_f_pointer);
@@ -2497,8 +2497,8 @@ public:
                         for (int64_t i = 0; i < size; i++) {
                             args.push_back(al, init_expr);
                         }
-                        init_expr = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, init_expr->base.loc, args.p, args.n,
-                                    type, ASR::arraystorageType::ColMajor));
+                        init_expr = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, init_expr->base.loc,
+                                    args.p, args.n, type, ASR::arraystorageType::ColMajor));
                     }
                     ASR::ttype_t *init_type = ASRUtils::expr_type(init_expr);
                     if (init_type->type == ASR::ttypeType::Integer
@@ -2566,7 +2566,7 @@ public:
                                                 }
                                             }
                                             if (is_int) {
-                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, a->base.base.loc, body.p, body.size(), real_type, a->m_storage_format));
+                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, a->base.base.loc, body.p, body.size(), real_type, a->m_storage_format));
                                                 cast->m_value = ASRUtils::expr_value(array_const);
                                                 value = cast->m_value;
                                             }
@@ -2591,7 +2591,7 @@ public:
                                                 }
                                             }
                                             if (is_real) {
-                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, a->base.base.loc, body.p, body.size(), int_type, a->m_storage_format));
+                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, a->base.base.loc, body.p, body.size(), int_type, a->m_storage_format));
                                                 cast->m_value = ASRUtils::expr_value(array_const);
                                                 value = cast->m_value;
                                             }
@@ -2615,7 +2615,7 @@ public:
                                                 }
                                             }
                                             if (is_real1) {
-                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, a->base.base.loc, body.p, body.size(), real_type, a->m_storage_format));
+                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, a->base.base.loc, body.p, body.size(), real_type, a->m_storage_format));
                                                 cast->m_value = ASRUtils::expr_value(array_const);
                                                 value = cast->m_value;
                                             }
@@ -2640,7 +2640,7 @@ public:
                                                 }
                                             }
                                             if (is_integer) {
-                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, a->base.base.loc, body.p, body.size(), integer_type, a->m_storage_format));
+                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, a->base.base.loc, body.p, body.size(), integer_type, a->m_storage_format));
                                                 cast->m_value = ASRUtils::expr_value(array_const);
                                                 value = cast->m_value;
                                             }
@@ -2666,7 +2666,7 @@ public:
                                                 }
                                             }
                                             if (is_complex) {
-                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, a->base.base.loc, body.p, body.size(), complex_type, a->m_storage_format));
+                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, a->base.base.loc, body.p, body.size(), complex_type, a->m_storage_format));
                                                 cast->m_value = ASRUtils::expr_value(array_const);
                                                 value = cast->m_value;
                                             }
@@ -2691,7 +2691,7 @@ public:
                                                 }
                                             }
                                             if (is_real) {
-                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, a->base.base.loc, body.p, body.size(), real_type, a->m_storage_format));
+                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, a->base.base.loc, body.p, body.size(), real_type, a->m_storage_format));
                                                 cast->m_value = ASRUtils::expr_value(array_const);
                                                 value = cast->m_value;
                                             }
@@ -2717,7 +2717,7 @@ public:
                                                 }
                                             }
                                             if (is_complex) {
-                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, a->base.base.loc, body.p, body.size(), complex_type, a->m_storage_format));
+                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, a->base.base.loc, body.p, body.size(), complex_type, a->m_storage_format));
                                                 cast->m_value = ASRUtils::expr_value(array_const);
                                                 value = cast->m_value;
                                             }
@@ -2755,7 +2755,7 @@ public:
                                 }
                                 body.push_back(al, a_m_args);
                             }
-                            value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al,
+                            value = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al,
                                 a->base.base.loc, body.p, body.size(),
                                 a->m_type, a->m_storage_format));
                             if (ASRUtils::is_dimension_empty(dims.p, dims.n)) {
@@ -4938,11 +4938,10 @@ public:
             value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al,
                 array->base.base.loc, result, type));
             for (size_t i = 0; i < array->n_args; i++) {
-                ASR::expr_t *args_value = ASRUtils::expr_value(array->m_args[i]);
-                if (args_value && ASR::is_a<ASR::LogicalConstant_t>(*args_value)) {
+                if (ASR::is_a<ASR::LogicalConstant_t>(*array->m_args[i])) {
                     if (result) {
                         result = ASR::down_cast<ASR::LogicalConstant_t>(
-                            args_value)->m_value;
+                            array->m_args[i])->m_value;
                     }
                 } else {
                     // TODO: Handle other expressions
@@ -5064,7 +5063,7 @@ public:
             } else {
                 Vec<ASR::expr_t*> args; args.reserve(al, 1);
                 args.push_back(al, arg);
-                array->m_args[i] = ASRUtils::EXPR(create_func(al, loc, args, diag));
+                array->m_args[i] = ASRUtils::expr_value(ASRUtils::EXPR(create_func(al, loc, args, diag)));
             }
         }
     }
@@ -5109,27 +5108,17 @@ public:
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
                     if (args.size() == 1 &&
-                        var_name != "tiny" && var_name != "rank") {
-                        if (ASRUtils::all_args_evaluated(args)) {
-                            ASR::expr_t* arg = args[0];
-                            if (ASR::is_a<ASR::Var_t>(*arg)) {
-                                ASR::Variable_t* var = ASRUtils::EXPR2VAR(arg);
-                                LCOMPILERS_ASSERT(var->m_value != nullptr); // parameter
-                                ASR::expr_t* array_arg = fetch_arrayconstant(var->m_value);
-                                if (array_arg) arg = array_arg;
-                            }
-                            if (ASR::is_a<ASR::ArrayConstant_t>(*arg)) {
-                                ASRUtils::ExprStmtDuplicator expr_duplicator(al);
-                                ASR::expr_t* arg_ = expr_duplicator.duplicate_expr(arg);
-                                ASR::ArrayConstant_t *array = ASR::down_cast<ASR::ArrayConstant_t>(arg_);
-                                compiletime_broadcast_elemental_intrinsic(array, create_func, x.base.base.loc, al);
-                                tmp = (ASR::asr_t*) array;
-                            } else {
-                                tmp = create_func(al, x.base.base.loc, args, diag);
-                            }
-                        } else {
-                            tmp = create_func(al, x.base.base.loc, args, diag);
-                        }
+                        var_name != "tiny" && var_name != "rank" &&
+                        ASRUtils::all_args_evaluated(args) &&
+                        ( ASR::is_a<ASR::ArrayConstant_t>(*args[0]) ||
+                            (ASRUtils::expr_value(args[0]) && ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(args[0])))
+                        )) {
+                        ASR::expr_t* arg = ASRUtils::expr_value(args[0]);
+                        ASRUtils::ExprStmtDuplicator expr_duplicator(al);
+                        ASR::expr_t* arg_ = expr_duplicator.duplicate_expr(arg);
+                        ASR::ArrayConstant_t *array = ASR::down_cast<ASR::ArrayConstant_t>(arg_);
+                        compiletime_broadcast_elemental_intrinsic(array, create_func, x.base.base.loc, al);
+                        tmp = (ASR::asr_t*) array;
                     } else {
                         tmp = create_func(al, x.base.base.loc, args, diag);
                     }
