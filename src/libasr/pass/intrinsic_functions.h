@@ -54,7 +54,6 @@ enum class IntrinsicElementalFunctions : int64_t {
     Shiftr,
     Rshift,
     Shiftl,
-    Dshiftl,
     Ishft,
     Bgt,
     Blt,
@@ -1066,52 +1065,6 @@ namespace Shiftl {
     }
 
 } // namespace Shiftl
-
-namespace Dshiftl {
-
-        static ASR::expr_t *eval_Dshiftl(Allocator &al, const Location &loc,
-                ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
-        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        int64_t shift = ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n;
-        int kind1 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
-        int kind2 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_type);
-        if(kind1 != kind2) {
-            append_error(diag, "'j' argument of 'dshiftl' intrinsic at (1) must be the same type and kind as 'i'", loc);
-            return nullptr;
-        }
-        if(shift < 0){
-            append_error(diag, "The shift argument of 'dshiftl' intrinsic at (1) must be non-negative", loc);
-            return nullptr;
-        }
-        int64_t val = (val1 << shift) | (val2 >> (32 - shift));
-        return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
-    }
-
-
-    static inline ASR::expr_t* instantiate_Dshiftl(Allocator &al, const Location &loc,
-            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_dshiftl_" + type_to_str_python(arg_types[0]));
-        fill_func_arg("i", arg_types[0]);
-        fill_func_arg("j", arg_types[1]);
-        fill_func_arg("shift", arg_types[2]);
-        auto result = declare(fn_name, return_type, ReturnVar);
-        /*
-        * r = Dshiftl(x, y, shift)
-        * r = x << shift | y >> (32 - shift)
-        */
-        ASR::expr_t *cast = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[2], ASR::cast_kindType::IntegerToInteger, return_type, nullptr));
-        body.push_back(al, b.Assignment(result, i_BitLshift(args[0], cast, return_type)));
-        body.push_back(al, b.Assignment(result, i_BitOr(result, i_BitRshift(args[1], i_tSub(i(32, return_type), args[2], return_type), return_type), return_type)));
-        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
-        scope->add_symbol(fn_name, f_sym);
-        return b.Call(f_sym, new_args, return_type, nullptr);
-
-    }
-
-} // namespace Dshiftl
 
 namespace Ishft {
 
