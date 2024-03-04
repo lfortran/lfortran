@@ -75,6 +75,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     SelectedRealKind,
     Adjustl,
     Ichar,
+    Char,
     MinExponent,
     MaxExponent,
     FloorDiv,
@@ -2952,6 +2953,38 @@ namespace Ichar {
     }
 
 } // namespace Ichar
+
+namespace Char {
+
+    static ASR::expr_t *eval_Char(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        int64_t i = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        char str = i;
+        std::string svalue;
+        svalue += str;
+        Str s;
+        s.from_str_view(svalue);
+        char *result = s.c_str(al);
+        return make_ConstantWithType(make_StringConstant_t, result, t1, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_Char(Allocator &al, const Location &loc,
+        SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+        Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("");
+        fill_func_arg("i", arg_types[0]);
+        auto result = declare("result", return_type, ReturnVar);
+        ASR::expr_t *cast = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::IntegerToInteger, int32, nullptr));
+        ASR::expr_t* char_node = ASRUtils::EXPR(ASR::make_StringChr_t(al, loc, cast, return_type, nullptr));
+        
+        body.push_back(al, b.Assignment(result, char_node));
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace Char
 
 namespace Digits {
 

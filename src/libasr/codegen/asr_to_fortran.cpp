@@ -1242,6 +1242,7 @@ public:
             SET_INTRINSIC_NAME(Sqrt, "sqrt");
             SET_INTRINSIC_NAME(Mod, "mod");
             SET_INTRINSIC_NAME(Sin, "sin");
+            SET_INTRINSIC_NAME(Char, "char");
             default : {
                 throw LCompilersException("IntrinsicElementalFunction: `"
                     + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)

@@ -219,12 +219,14 @@
                                     string
                                     [letters]
                                     Local
-                                    (StringChr
-                                        (StringLen
+                                    (IntrinsicElementalFunction
+                                        Char
+                                        [(StringLen
                                             (Var 2 letters)
                                             (Integer 4)
                                             (IntegerConstant 52 (Integer 4))
-                                        )
+                                        )]
+                                        0
                                         (Character 1 1 ())
                                         (StringConstant
                                             "4"
