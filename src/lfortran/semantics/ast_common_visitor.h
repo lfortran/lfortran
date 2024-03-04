@@ -747,6 +747,7 @@ public:
         {"selected_real_kind", {IntrinsicSignature({"p", "r", "radix"}, 0, 3)}},
         {"ishftc", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
         {"ichar", {IntrinsicSignature({"C", "kind"}, 1, 2)}},
+        {"char", {IntrinsicSignature({"I", "kind"}, 1, 2)}},
     };
 
     std::map<std::string, std::string> intrinsic_mapping = {
