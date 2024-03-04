@@ -2337,6 +2337,7 @@ public:
                         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &ac->m_args[i],
                                                 ASRUtils::expr_type(ac->m_args[i]),
                                                 ASRUtils::type_get_past_allocatable(target_type));
+                        ac->m_args[i] = ASRUtils::expr_value(ac->m_args[i]);
                     }
                     LCOMPILERS_ASSERT(ASRUtils::is_array(ac->m_type));
                     if( ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_pointer(
