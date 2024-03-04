@@ -747,6 +747,7 @@ public:
         {"selected_real_kind", {IntrinsicSignature({"p", "r", "radix"}, 0, 3)}},
         {"ishftc", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
         {"ichar", {IntrinsicSignature({"C", "kind"}, 1, 2)}},
+        {"char", {IntrinsicSignature({"I", "kind"}, 1, 2)}},
     };
 
     std::map<std::string, std::string> intrinsic_mapping = {
@@ -4801,6 +4802,7 @@ public:
     }
 
     ASR::asr_t* create_Ichar(const AST::FuncCallOrArray_t& x) {
+        std::cout<<"here?"<<'\n';
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"C", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "ichar");

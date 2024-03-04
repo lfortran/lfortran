@@ -371,6 +371,13 @@ intrinsic_funcs_args = {
             "kind_arg": True
         }
     ],
+    "Char": [
+        {
+            "args": [("int",)],
+            "return": "character(1)",
+            "kind_arg": True
+        }
+    ],
     "Exponent": [
         {
             "args": [("real",)],
