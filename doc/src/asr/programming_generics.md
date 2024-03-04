@@ -4,7 +4,7 @@ In this page we will explore how to write generics in LFortran.
 
 ## Prerequisite
 
-Variables inside of a generic function are typed with a *deferred types*. For example, we may want to define a function that calculate the sum of a generic array which can take any number type. Using a deferred type `T`, we may want to declare the function as follows:
+Variables inside of a generic function are typed with a *deferred types*. For example, we may want to define a function that calculate the sum of a generic array which can take any number type. Using a deferred type `T`, we may want to declare the following generic function:
 
 ```fortran
 function array_sum(arr) result(r)
@@ -19,9 +19,9 @@ function array_sum(arr) result(r)
 end function
 ```
 
-As we can see here, we need to define the functions associated with the deferred type `T`. To do so in LFortran, we use *requirements* to define deferred types and their associated functions.
+As we can see here, we need to define the functions associated with the deferred type `T`. To do so in LFortran, we use *requirements* to define both deferred types and their associated functions.
 
-```
+```fortran
 requirement number_type(T, add_element, set_to_zero)
   type, deferred :: T
   function add_element(x, y) result(z)
@@ -156,11 +156,14 @@ integer :: arr(10), sum
 sum = array_sum_integer(arr)
 ```
 
-The main benefit of generics is reuse. This means that we can have different instantiations for different types using the same template. For example we can instantiate both integer and real `array_sum`:
+The main benefit of generics is reuse. We can have different instantiations for different types using the same template. For example we can instantiate both integer and real `array_sum`:
 
 ```fortran
+! instantiation with integer type
 instantiate array_t(integer, add_element_integer, set_to_zero_integer), &
   only: array_sum_integer => array_sum
+
+! instantiation with real type
 instantiate array_t(real, add_element_real, set_to_zero_real), &
   only: array_sum_real => array_sum
 ```
@@ -170,13 +173,14 @@ Also, because a template may contain multiple generic functions, a single instan
 ```fortran
 instantiate array_t(integer, add_element_integer, set_to_zero_integer), &
   only: array_sum_integer => array_sum, array_avg_integer => array_avg
+
 instantiate array_t(real, add_element_real, set_to_zero_real), &
   only: array_sum_real => array_sum, array_avg_real => array_avg
 ```
 
 ### Without Template
 
-The template notation can be cumbersome for defining a single generic function. To help, LFortran also supports a simpler syntax for declaring generic functions without having to declare an enclosing template. For example, our running `array_sum` example can be written as follows in the simpler syntax:
+The template notation can be cumbersome for defining a single generic function. To alleviate this, LFortran also supports a simpler syntax for declaring generic functions without having to declare an enclosing template. For example, our running `array_sum` example can be written as follows in the simpler syntax:
 
 ```fortran
 function generic_sum {T, add_element, set_to_zero} (arr) result(r)
@@ -229,7 +233,7 @@ sum = array_sum{integer, add_element_integer, set_to_zero_integer}(arr)
 
 ### Further Simplifying Instantiations
 
-1. Passing operator instead of functions
+**Passing operator instead of functions**
 
 So far to replace the generic addition `add_element` we have used a concrete function `add_element_integer`. To simplify this, it is possible to just pass `operator(+)` without having to define a function separately:
 
@@ -238,7 +242,7 @@ instantiate array_t(integer, operator(+), set_to_zero_integer), &
   only: array_sum_integer => array_sum
 ```
 
-2. Skipping instantiated function names
+**Skipping function instantiation names**
 
 Generic functions can also be instantiated without having to rename each function one-by-one. Suppose we want to instantiate every generic functions inside the template `array_t`, we can shorten the instantiation into:
 
@@ -250,7 +254,7 @@ Doing so would generate the function `array_sum` and `array_avg` without any ren
 
 ## Generic Derived Types
 
-LFortran also supports generic derived types. Let's say we want a generic tuple. We can define a derived type as usual inside a template:
+LFortran also supports generic derived types. Let's say we want a generic tuple. We can define a derived type for tuples as usual inside a template:
 
 ```fortran
 template derived_type_t(T)
@@ -298,3 +302,7 @@ The instantiation for derived types are also similar to generic functions. If we
 instantiate derived_type_t(integer), only: &
   tuple_int => tuple, get_fst_int => get_fst, get_snd_int => get_snd
 ```
+
+## See Also
+
+* [Generics](generics.md), for details about the generics implementation and its related ASR.
