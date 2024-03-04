@@ -54,12 +54,14 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Shiftr)
         INTRINSIC_NAME_CASE(Rshift)
         INTRINSIC_NAME_CASE(Shiftl)
+        INTRINSIC_NAME_CASE(Dshiftl)
         INTRINSIC_NAME_CASE(Ishft)
         INTRINSIC_NAME_CASE(Bgt)
         INTRINSIC_NAME_CASE(Blt)
         INTRINSIC_NAME_CASE(Bge)
         INTRINSIC_NAME_CASE(Ble)
         INTRINSIC_NAME_CASE(Exponent)
+        INTRINSIC_NAME_CASE(Fraction)
         INTRINSIC_NAME_CASE(Not)
         INTRINSIC_NAME_CASE(Iand)
         INTRINSIC_NAME_CASE(Ior)
@@ -217,6 +219,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Rshift::instantiate_Rshift, &Rshift::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Shiftl),
             {&Shiftl::instantiate_Shiftl, &Shiftl::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Dshiftl),
+            {&Dshiftl::instantiate_Dshiftl, &Dshiftl::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ishft),
             {&Ishft::instantiate_Ishft, &Ishft::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Bgt),
@@ -227,6 +231,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Bge::instantiate_Bge, &Bge::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Exponent),
             {&Exponent::instantiate_Exponent, &Exponent::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Fraction),
+            {&Fraction::instantiate_Fraction, &Fraction::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ble),
             {&Ble::instantiate_Ble, &Ble::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Not),
@@ -460,6 +466,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "char"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Shiftl),
             "shiftl"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Dshiftl),
+            "dshiftl"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ishft),
             "ishft"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Bgt),
@@ -472,6 +480,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "ble"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Exponent),
             "exponent"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Fraction),
+            "fraction"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Not),
             "not"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Iand),
@@ -663,6 +673,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"shiftr", {&Shiftr::create_Shiftr, &Shiftr::eval_Shiftr}},
                 {"rshift", {&Rshift::create_Rshift, &Rshift::eval_Rshift}},
                 {"shiftl", {&Shiftl::create_Shiftl, &Shiftl::eval_Shiftl}},
+                {"dshiftl", {&Dshiftl::create_Dshiftl, &Dshiftl::eval_Dshiftl}},
                 {"lshift", {&Shiftl::create_Shiftl, &Shiftl::eval_Shiftl}},
                 {"ishft", {&Ishft::create_Ishft, &Ishft::eval_Ishft}},
                 {"bgt", {&Bgt::create_Bgt, &Bgt::eval_Bgt}},
@@ -670,6 +681,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"bge", {&Bge::create_Bge, &Bge::eval_Bge}},
                 {"ble", {&Ble::create_Ble, &Ble::eval_Ble}},
                 {"exponent", {&Exponent::create_Exponent, &Exponent::eval_Exponent}},
+                {"fraction", {&Fraction::create_Fraction, &Fraction::eval_Fraction}},
                 {"not", {&Not::create_Not, &Not::eval_Not}},
                 {"iand", {&Iand::create_Iand, &Iand::eval_Iand}},
                 {"ior", {&Ior::create_Ior, &Ior::eval_Ior}},
