@@ -3010,8 +3010,12 @@ namespace Achar {
         auto result = declare("result", return_type, ReturnVar);
 
         ASR::expr_t* achar_node = ASRUtils::EXPR(ASR::make_StringChr_t(al, loc, args[0], return_type, nullptr));
-
-        body.push_back(al, b.Assignment(result, achar_node));
+        // ASR::expr_t* zero = ASRUtils::EXPR(ASR::make_Character_t(al, loc, 0, 0, nullptr));
+        body.push_back(al, b.If(iEq(args[0], i(0, arg_types[0])), {
+            b.Assignment(result, StringConstant("\0", character(0)))
+        }, {
+            b.Assignment(result, achar_node)
+        }));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
