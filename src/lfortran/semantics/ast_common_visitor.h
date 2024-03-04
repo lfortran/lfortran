@@ -5063,7 +5063,7 @@ public:
             } else {
                 Vec<ASR::expr_t*> args; args.reserve(al, 1);
                 args.push_back(al, arg);
-                array->m_args[i] = ASRUtils::EXPR(create_func(al, loc, args, diag));
+                array->m_args[i] = ASRUtils::expr_value(ASRUtils::EXPR(create_func(al, loc, args, diag)));
             }
         }
     }
