@@ -44,6 +44,12 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         },
     ],
+    "ToLowerCase": [
+        {
+            "args": [("char",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
     "Hypot": [
         {
             "args": [("real", "real")],
