@@ -68,6 +68,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Ibset)
         INTRINSIC_NAME_CASE(Btest)
         INTRINSIC_NAME_CASE(Leadz)
+        INTRINSIC_NAME_CASE(ToLowerCase)
         INTRINSIC_NAME_CASE(Digits)
         INTRINSIC_NAME_CASE(Repeat)
         INTRINSIC_NAME_CASE(Range)
@@ -244,6 +245,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Ibset::instantiate_Ibset, &Ibset::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Leadz),
             {&Leadz::instantiate_Leadz, &Leadz::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::ToLowerCase),
+            {&ToLowerCase::instantiate_ToLowerCase, &ToLowerCase::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Hypot),
             {&Hypot::instantiate_Hypot, &Hypot::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Kind),
@@ -485,6 +488,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "btest"},    
         {static_cast<int64_t>(IntrinsicElementalFunctions::Leadz),
             "leadz"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::ToLowerCase),
+            "_lfortran_tolowercase"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Hypot),
             "hypot"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedIntKind),
@@ -673,6 +678,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"ibset", {&Ibset::create_Ibset, &Ibset::eval_Ibset}},
                 {"btest", {&Btest::create_Btest, &Btest::eval_Btest}},
                 {"leadz", {&Leadz::create_Leadz, &Leadz::eval_Leadz}},
+                {"_lfortran_tolowercase", {&ToLowerCase::create_ToLowerCase, &ToLowerCase::eval_ToLowerCase}},
                 {"hypot", {&Hypot::create_Hypot, &Hypot::eval_Hypot}},
                 {"selected_int_kind", {&SelectedIntKind::create_SelectedIntKind, &SelectedIntKind::eval_SelectedIntKind}},
                 {"selected_real_kind", {&SelectedRealKind::create_SelectedRealKind, &SelectedRealKind::eval_SelectedRealKind}},
