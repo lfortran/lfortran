@@ -738,6 +738,7 @@ public:
         {"ibclr", {IntrinsicSignature({"i", "pos"}, 2, 2)}},
         {"ibset", {IntrinsicSignature({"i", "pos"}, 2, 2)}},
         {"btest", {IntrinsicSignature({"i", "pos"}, 2, 2)}},
+        {"ibits", {IntrinsicSignature({"i", "pos", "len"}, 3, 3)}},
         {"floor", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
         {"ceiling", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
         {"scale", {IntrinsicSignature({"X", "I"}, 2, 2)}},

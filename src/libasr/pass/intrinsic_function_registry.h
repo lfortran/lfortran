@@ -70,6 +70,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Ibclr)
         INTRINSIC_NAME_CASE(Ibset)
         INTRINSIC_NAME_CASE(Btest)
+        INTRINSIC_NAME_CASE(Ibits)
         INTRINSIC_NAME_CASE(Leadz)
         INTRINSIC_NAME_CASE(ToLowerCase)
         INTRINSIC_NAME_CASE(Digits)
@@ -256,6 +257,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Btest::instantiate_Btest, &Btest::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ibset),
             {&Ibset::instantiate_Ibset, &Ibset::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Ibits),
+            {&Ibits::instantiate_Ibits, &Ibits::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Leadz),
             {&Leadz::instantiate_Leadz, &Leadz::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::ToLowerCase),
@@ -509,6 +512,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "ibset"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Btest),
             "btest"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Ibits),
+            "ibits"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Leadz),
             "leadz"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::ToLowerCase),
@@ -705,6 +710,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"ibclr", {&Ibclr::create_Ibclr, &Ibclr::eval_Ibclr}},
                 {"ibset", {&Ibset::create_Ibset, &Ibset::eval_Ibset}},
                 {"btest", {&Btest::create_Btest, &Btest::eval_Btest}},
+                {"ibits", {&Ibits::create_Ibits, &Ibits::eval_Ibits}},
                 {"leadz", {&Leadz::create_Leadz, &Leadz::eval_Leadz}},
                 {"_lfortran_tolowercase", {&ToLowerCase::create_ToLowerCase, &ToLowerCase::eval_ToLowerCase}},
                 {"hypot", {&Hypot::create_Hypot, &Hypot::eval_Hypot}},
