@@ -125,7 +125,7 @@ namespace LCompilers {
         ASR::stmt_t* create_do_loop_helper_count_dim(Allocator &al, const Location &loc,
             std::vector<ASR::expr_t*> do_loop_variables, std::vector<ASR::expr_t*> res_idx,
             ASR::stmt_t* inner_most_do_loop, ASR::expr_t* c, ASR::expr_t* mask, ASR::expr_t* res,
-            int curr_idx, int dim, int size);
+            int curr_idx, int dim);
 
         static inline bool is_aggregate_type(ASR::expr_t* var) {
             return ASR::is_a<ASR::Struct_t>(*ASRUtils::expr_type(var));
