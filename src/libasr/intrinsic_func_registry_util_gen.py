@@ -375,7 +375,7 @@ intrinsic_funcs_args = {
             "args": [("char",)],
             "return": "int32",
             "kind_arg": True
-        }
+        },
     ],
     "Char": [
         {
@@ -388,6 +388,12 @@ intrinsic_funcs_args = {
         {
             "args": [("real",)],
             "return": "int32",
+        },
+    ],    
+    "Fraction": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
         },
     ],
 }

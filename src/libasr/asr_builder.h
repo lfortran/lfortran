@@ -235,6 +235,8 @@ class ASRBuilder {
 
     #define iPow(left, right, t) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,   \
             ASR::binopType::Pow, right, t, nullptr))
+    #define rPow(left, right, t) EXPR(ASR::make_RealBinOp_t(al, loc, left,   \
+            ASR::binopType::Pow, right, t, nullptr))
     #define And(x, y) EXPR(ASR::make_LogicalBinOp_t(al, loc, x,                 \
             ASR::logicalbinopType::And, y, logical, nullptr))
     #define Or(x, y) EXPR(ASR::make_LogicalBinOp_t(al, loc, x,                  \

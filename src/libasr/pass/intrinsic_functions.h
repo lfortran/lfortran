@@ -60,6 +60,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Bge,
     Ble,
     Exponent,
+    Fraction,
     Not,
     Iand,
     Ior,
@@ -1944,6 +1945,72 @@ namespace Exponent {
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 }  // namespace Exponent
+
+namespace Fraction {
+    static ASR::expr_t *eval_Fraction(Allocator &al, const Location &loc,
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        ASR::ttype_t* arguement_type = expr_type(args[0]);
+        int32_t kind = extract_kind_from_ttype_t(arguement_type);
+        if (kind == 4) { 
+            float x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            int32_t exponent;
+            if (x == 0.0) {
+                exponent = 0;
+                float result =  x * std::pow((2), (-1*(exponent)));
+                return make_ConstantWithType(make_RealConstant_t, result, arg_type, loc);
+            }
+            else{
+                int32_t ix;
+                std::memcpy(&ix, &x, sizeof(ix));
+                exponent = ((ix >> 23) & 0xff) - 126;
+                float result =  x * std::pow((2), (-1*(exponent)));
+                return make_ConstantWithType(make_RealConstant_t, result, arg_type, loc);
+            }
+        } 
+        else if (kind == 8) { 
+            double x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            int64_t exponent;
+            if (x == 0.0) {
+                exponent = 0;
+                double result =  x * std::pow((2), (-1*(exponent)));
+                return make_ConstantWithType(make_RealConstant_t, result, arg_type, loc);
+            }
+            else{
+                int64_t ix;
+                std::memcpy(&ix, &x, sizeof(ix));
+                exponent = ((ix >> 52) & 0x7ff) - 1022;
+                double result =  x * std::pow((2), (-1*(exponent)));
+                return make_ConstantWithType(make_RealConstant_t, result, arg_type, loc);
+            }
+        }
+        return nullptr;
+    }
+
+    static inline ASR::expr_t* instantiate_Fraction(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_fraction_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        /*
+        * r = fraction(x, y)
+        * r = x * radix(x)**(-exp(x))
+        */
+        ASR::ttype_t* return_type_int = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+
+        Vec<ASR::ttype_t*> arg_types_exp; arg_types_exp.reserve(al, 1);
+        arg_types_exp.push_back(al, arg_types[0]);
+
+        Vec<ASR::call_arg_t> new_args_exp; new_args_exp.reserve(al, 1);
+        ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = args[0];
+        new_args_exp.push_back(al, arg1);
+        ASR::expr_t* func_call_exponent = Exponent::instantiate_Exponent(al, loc, scope, arg_types_exp, return_type_int, new_args_exp, 0);
+        body.push_back(al, b.Assignment(result, r_tMul(args[0], rPow(i2r(i(2, int32),return_type), r_tMul(i2r(i(-1,int32), return_type),i2r(func_call_exponent, return_type), return_type), return_type), return_type)));        
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+}  // namespace Fraction
 
 namespace Sngl {
 
