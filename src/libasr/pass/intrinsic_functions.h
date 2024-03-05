@@ -3002,7 +3002,8 @@ namespace ToLowerCase {
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("");
         fill_func_arg("s", arg_types[0]);
-        auto result = declare(fn_name, arg_types[0], ReturnVar);
+        ASR::ttype_t* char_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, 0, nullptr));
+        auto result = declare(fn_name, char_type, ReturnVar);
         auto itr = declare("i", ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), Local);
 
         /*
@@ -3024,11 +3025,10 @@ namespace ToLowerCase {
         */
         
         ASR::expr_t* ln = ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr));
-        ASR::ttype_t* arg_type0 = ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, 0, nullptr));
         body.push_back(al, b.Assignment(itr, i32(1)));
 
         ASR::expr_t* cond = iLtE(itr, ln);
-        ASR::expr_t* sliced_res = ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, arg_type0, nullptr));
+        ASR::expr_t* sliced_res = ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr));
         ASR::expr_t* ichar_res = ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, sliced_res, int32, nullptr));
         ASR::expr_t* ichar_A = ASRUtils::EXPR(ASR::make_Ichar_t(al, loc,
                                     ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc,
@@ -3042,13 +3042,14 @@ namespace ToLowerCase {
         ASR::expr_t* char_node = ASRUtils::EXPR(ASR::make_StringChr_t(al, loc, iSub(iAdd(ichar_res, ichar_a), ichar_A), return_type, nullptr));
         Vec<ASR::stmt_t*> while_loop_body; while_loop_body.reserve(al, 2);
         while_loop_body.push_back(al, b.If(And(iGtE(ichar_res, ichar_A), iLtE(ichar_res, ichar_Z)), {
-            b.Assignment(result, StringConcat(result, char_node, arg_type0))
+            b.Assignment(result, StringConcat(result, char_node, char_type))
         }, {
-            b.Assignment(result, StringConcat(result, sliced_res, arg_type0))
+            b.Assignment(result, StringConcat(result, sliced_res, char_type))
         }));
         while_loop_body.push_back(al, b.Assignment(itr, i_tAdd(itr, i32(1), int32)));
         ASR::stmt_t* whileloop = ASRUtils::STMT(ASR::make_WhileLoop_t(al, loc, nullptr, cond, while_loop_body.p, while_loop_body.n));
         body.push_back(al, whileloop);
+        body.push_back(al, b.Assignment(result, result));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
