@@ -688,7 +688,6 @@ RUN(NAME intrinsics_170 LABELS gfortran llvm) # exponent
 RUN(NAME intrinsics_171 LABELS llvm) # tolowercase-
 RUN(NAME intrinsics_172 LABELS gfortran llvm NOFAST) # ibits
 
-
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
 RUN(NAME parameter_03 LABELS gfortran llvm wasm)
