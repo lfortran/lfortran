@@ -133,6 +133,8 @@ class ASRBuilder {
     #define StringConstant(s, type) EXPR(ASR::make_StringConstant_t(al, loc,    \
         s2c(al, s), type))
     #define StringLen(s) EXPR(ASR::make_StringLen_t(al, loc, s, int32, nullptr))
+    #define StringConcat(s1, s2, type) EXPR(ASR::make_StringConcat_t(al, loc, s1, s2, \
+        type, nullptr))
 
     // Cast --------------------------------------------------------------------
     #define r2i8(x) EXPR(ASR::make_Cast_t(al, loc, x,                           \
