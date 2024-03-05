@@ -2586,7 +2586,7 @@ namespace Count {
                 }, {})
             });
             ASR::stmt_t* do_loop = PassUtils::create_do_loop_helper_count_dim(al, loc,
-                                    idx, res_idx, inner_most_do_loop, c, args[0], result, 0, dim);
+                                    idx, res_idx, inner_most_do_loop, c, args[0], result, 0, dim, array_rank);
             body.push_back(al, do_loop);
             body.push_back(al, Return());
             ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
