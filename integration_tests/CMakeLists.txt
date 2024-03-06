@@ -1003,7 +1003,7 @@ RUN(NAME string_11 LABELS gfortran llvm)
 RUN(NAME string_12 LABELS gfortran fortran)
 RUN(NAME string_13 LABELS gfortran llvm fortran)
 RUN(NAME string_14 LABELS gfortran)
-RUN(NAME string_15 LABELS gfortran) # lge, lgt lle, llt
+RUN(NAME string_15 LABELS gfortran llvm) # lge, lgt lle, llt
 RUN(NAME string_16 LABELS gfortran fortran) # achar
 RUN(NAME string_18 LABELS gfortran llvm)
 RUN(NAME string_19 LABELS gfortran) # achar
