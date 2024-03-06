@@ -3540,9 +3540,12 @@ public:
             if (type == nullptr) {
                 type = ASRUtils::expr_type(expr);
             } else {
-                if (!ASRUtils::check_equal_type(ASRUtils::expr_type(expr), type)) {
-                    ImplicitCastRules::set_converted_value(al, expr->base.loc,
-                        &expr, ASRUtils::expr_type(expr), type);
+                ASR::ttype_t* extracted_type = ASRUtils::extract_type(type);
+                ASR::ttype_t* extracted_new_type = ASRUtils::extract_type(ASRUtils::expr_type(expr));
+                if (!ASRUtils::check_equal_type(extracted_new_type, extracted_type)) {
+                    throw SemanticError("Element in " + ASRUtils::type_to_str(extracted_type) +
+                        " array constructor is " + ASRUtils::type_to_str(extracted_new_type),
+                        expr->base.loc);
                 }
             }
             body.push_back(al, expr);

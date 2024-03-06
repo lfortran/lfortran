@@ -1,0 +1,5 @@
+semantic error: Element in integer array constructor is real
+ --> tests/errors/array_constructor_with_different_types.f90:2:18
+  |
+2 |     print *, [1, 2.]
+  |                  ^^ 

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-array_constructor_with_different_types-bffc811",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/array_constructor_with_different_types.f90",
+    "infile_hash": "0e407db91aa33a696329aa0e1867057fce840c163fe57885fd109654",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-array_constructor_with_different_types-bffc811.stderr",
+    "stderr_hash": "8463f07ae4b0d948ef5e10696d96add4d5c5450df10777bceffe8d00",
+    "returncode": 2
+}
