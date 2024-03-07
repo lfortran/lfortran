@@ -32,13 +32,6 @@ std::string to_lower(const std::string &s) {
     return res;
 }
 
-std::string to_upper(const std::string &s) {
-    std::string res = s;
-    std::transform(res.begin(), res.end(), res.begin(),
-        [](unsigned char c){ return std::toupper(c); });
-    return res;
-}
-
 char *s2c(Allocator &al, const std::string &s) {
     Str x; x.from_str_view(s);
     return x.c_str(al);

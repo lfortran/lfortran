@@ -624,7 +624,7 @@ static inline std::string type_to_str(const ASR::ttype_t *t)
 }
 
 static inline std::string type_to_str_with_type(const ASR::ttype_t *t) {
-    std::string type = to_upper(type_to_str(t));
+    std::string type = type_to_str(t);
     std::string kind = std::to_string(extract_kind_from_ttype_t(t));
     return type + "(" + kind + ")";
 }
