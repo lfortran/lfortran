@@ -3530,16 +3530,25 @@ public:
                 throw SemanticError("Empty array constructor is not allowed", x.base.base.loc);
             }
         }
+
+        // if "type-spec" is omitted (for e.g. in "[1, 2, 3, 4.5]"), each element in
+        // the array-constructor shall have the same type and kind type parameters,
+        // otherwise each element in the array-constructor is cast using "ImplicitCastRules"
+        // (e.g. "[real :: 1, 2, 3, 4]")
+        bool is_type_spec_ommitted { type == nullptr };
         bool implied_do_loops_present = false;
         for (size_t i=0; i<x.n_args; i++) {
             this->visit_expr(*x.m_args[i]);
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
+
             if( ASR::is_a<ASR::ImpliedDoLoop_t>(*expr) ) {
                 implied_do_loops_present = true;
             }
+
             if (type == nullptr) {
                 type = ASRUtils::expr_type(expr);
-            } else {
+            } else if (is_type_spec_ommitted) {
+                // as the "type-spec" is omitted, each element type should be same
                 ASR::ttype_t* extracted_type = ASRUtils::extract_type(type);
                 ASR::ttype_t* extracted_new_type = ASRUtils::extract_type(ASRUtils::expr_type(expr));
                 if (!ASRUtils::check_equal_type(extracted_new_type, extracted_type)) {
@@ -3547,9 +3556,13 @@ public:
                         " array constructor is " + ASRUtils::type_to_str(extracted_new_type),
                         expr->base.loc);
                 }
+            } else {
+                ImplicitCastRules::set_converted_value(al, expr->base.loc,
+                    &expr, ASRUtils::expr_type(expr), type);
             }
             body.push_back(al, expr);
         }
+
         ASR::dimension_t dim;
         dim.loc = x.base.base.loc;
         ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
