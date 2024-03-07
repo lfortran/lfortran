@@ -3546,20 +3546,21 @@ public:
                 implied_do_loops_present = true;
             }
 
+            ASR::ttype_t* expr_type { ASRUtils::expr_type(expr) };
             if (type == nullptr) {
-                type = ASRUtils::expr_type(expr);
+                type = expr_type;
                 extracted_type = ASRUtils::extract_type(type);
             } else if (is_type_spec_ommitted) {
                 // as the "type-spec" is omitted, each element type should be same
-                ASR::ttype_t* extracted_new_type = ASRUtils::extract_type(ASRUtils::expr_type(expr));
+                ASR::ttype_t* extracted_new_type = ASRUtils::extract_type(expr_type);
                 if (!ASRUtils::check_equal_type(extracted_new_type, extracted_type)) {
                     throw SemanticError("Element in " + ASRUtils::type_to_str(extracted_type) +
                         " array constructor is " + ASRUtils::type_to_str(extracted_new_type),
                         expr->base.loc);
                 }
-            } else if (!ASRUtils::check_equal_type(ASRUtils::expr_type(expr), type)) {
+            } else if (!ASRUtils::check_equal_type(expr_type, type)) {
                 ImplicitCastRules::set_converted_value(al, expr->base.loc,
-                    &expr, ASRUtils::expr_type(expr), type);
+                    &expr, expr_type, type);
             }
             body.push_back(al, expr);
         }
