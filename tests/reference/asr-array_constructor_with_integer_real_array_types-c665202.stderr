@@ -1,4 +1,4 @@
-semantic error: Element in integer array constructor is real
+semantic error: Element in INTEGER(4) array constructor is REAL(4)
  --> tests/errors/array_constructor_with_integer_real_array_types.f90:2:18
   |
 2 |     print *, [1, [1., 2.]]

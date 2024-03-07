@@ -3554,8 +3554,8 @@ public:
                 // as the "type-spec" is omitted, each element type should be same
                 ASR::ttype_t* extracted_new_type = ASRUtils::extract_type(expr_type);
                 if (!ASRUtils::check_equal_type(extracted_new_type, extracted_type)) {
-                    throw SemanticError("Element in " + ASRUtils::type_to_str(extracted_type) +
-                        " array constructor is " + ASRUtils::type_to_str(extracted_new_type),
+                    throw SemanticError("Element in " + ASRUtils::type_to_str_with_type(extracted_type) +
+                        " array constructor is " + ASRUtils::type_to_str_with_type(extracted_new_type),
                         expr->base.loc);
                 }
             } else if (!ASRUtils::check_equal_type(expr_type, type)) {
