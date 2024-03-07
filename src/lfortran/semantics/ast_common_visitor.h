@@ -3530,23 +3530,41 @@ public:
                 throw SemanticError("Empty array constructor is not allowed", x.base.base.loc);
             }
         }
+
+        // if "type-spec" is omitted (for e.g. in "[1, 2, 3, 4.5]"), each element in
+        // the array-constructor shall have the same type and kind type parameters,
+        // otherwise each element in the array-constructor is cast using "ImplicitCastRules"
+        // (e.g. "[real :: 1, 2, 3, 4]")
+        bool is_type_spec_ommitted { type == nullptr };
         bool implied_do_loops_present = false;
+        ASR::ttype_t* extracted_type { type ? ASRUtils::extract_type(type) : nullptr };
         for (size_t i=0; i<x.n_args; i++) {
             this->visit_expr(*x.m_args[i]);
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
+
             if( ASR::is_a<ASR::ImpliedDoLoop_t>(*expr) ) {
                 implied_do_loops_present = true;
             }
+
+            ASR::ttype_t* expr_type { ASRUtils::expr_type(expr) };
             if (type == nullptr) {
-                type = ASRUtils::expr_type(expr);
-            } else {
-                if (!ASRUtils::check_equal_type(ASRUtils::expr_type(expr), type)) {
-                    ImplicitCastRules::set_converted_value(al, expr->base.loc,
-                        &expr, ASRUtils::expr_type(expr), type);
+                type = expr_type;
+                extracted_type = ASRUtils::extract_type(type);
+            } else if (is_type_spec_ommitted) {
+                // as the "type-spec" is omitted, each element should be the same type
+                ASR::ttype_t* extracted_new_type = ASRUtils::extract_type(expr_type);
+                if (!ASRUtils::check_equal_type(extracted_new_type, extracted_type)) {
+                    throw SemanticError("Element in `" + ASRUtils::type_to_str_with_type(extracted_type) +
+                        "` array constructor is `" + ASRUtils::type_to_str_with_type(extracted_new_type) + "`",
+                        expr->base.loc);
                 }
+            } else if (!ASRUtils::check_equal_type(expr_type, type)) {
+                ImplicitCastRules::set_converted_value(al, expr->base.loc,
+                    &expr, expr_type, type);
             }
             body.push_back(al, expr);
         }
+
         ASR::dimension_t dim;
         dim.loc = x.base.base.loc;
         ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));

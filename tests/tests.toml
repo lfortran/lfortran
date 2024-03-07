@@ -3810,3 +3810,15 @@ asr = true
 [[test]]
 filename = "errors/cmplx_01.f90"
 asr = true
+
+[[test]]
+filename = "errors/array_constructor_with_different_types.f90"
+asr = true
+
+[[test]]
+filename = "errors/array_constructor_with_integer_real_array_types.f90"
+asr = true
+
+[[test]]
+filename = "errors/array_constructor_with_different_kind.f90"
+asr = true
