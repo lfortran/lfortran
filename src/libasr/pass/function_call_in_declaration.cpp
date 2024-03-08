@@ -68,31 +68,36 @@ public:
         }
     }
 
+    template<typename T>
+    void helper_replace_FunctionParam(T* x, Vec<ASR::expr_t*> new_args) {
+        for (size_t i = 0; i < x->n_args; i++) {
+            ASR::expr_t* arg = x->m_args[i];
+            if (is_a<ASR::ArrayPhysicalCast_t>(*arg)) {
+                ASR::ArrayPhysicalCast_t* cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg);
+                arg = cast->m_arg;
+            }
+            if (is_a<ASR::FunctionCall_t>(*arg)) {
+                replace_FunctionParam_with_FunctionArgs(arg, new_args);
+            } else if (is_a<ASR::IntrinsicArrayFunction_t>(*arg)) {
+                replace_FunctionParam_with_FunctionArgs(arg, new_args);
+            } else if (is_a<ASR::FunctionParam_t>(*arg)) {
+                replace_FunctionParam_(&arg, new_args);
+                x->m_args[i] = arg;
+            } else if (is_a<ASR::ArraySize_t>(*arg)) {
+                ASR::ArraySize_t* size = ASR::down_cast<ASR::ArraySize_t>(arg);
+                replace_FunctionParam_(&size->m_v, new_args);
+            } else if (is_a<ASR::IntegerCompare_t>(*arg)) {
+                ASR::IntegerCompare_t* comp = ASR::down_cast<ASR::IntegerCompare_t>(arg);
+                replace_FunctionParam_(&comp->m_left, new_args);
+                replace_FunctionParam_(&comp->m_right, new_args);
+            }
+        }
+    }
+
     void replace_FunctionParam_with_FunctionArgs(ASR::expr_t* value, Vec<ASR::expr_t*> new_args) {
         if (ASR::is_a<ASR::IntrinsicArrayFunction_t>(*value)) {
             ASR::IntrinsicArrayFunction_t* x = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(value);
-            for (size_t i = 0; i < x->n_args; i++) {
-                ASR::expr_t* arg = x->m_args[i];
-                if (is_a<ASR::ArrayPhysicalCast_t>(*arg)) {
-                    ASR::ArrayPhysicalCast_t* cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg);
-                    arg = cast->m_arg;
-                }
-                if (is_a<ASR::FunctionCall_t>(*arg)) {
-                    replace_FunctionParam_with_FunctionArgs(arg, new_args);
-                } else if (is_a<ASR::IntrinsicArrayFunction_t>(*arg)) {
-                    replace_FunctionParam_with_FunctionArgs(arg, new_args);
-                } else if (is_a<ASR::FunctionParam_t>(*arg)) {
-                    replace_FunctionParam_(&arg, new_args);
-                    x->m_args[i] = arg;
-                } else if (is_a<ASR::ArraySize_t>(*arg)) {
-                    ASR::ArraySize_t* size = ASR::down_cast<ASR::ArraySize_t>(arg);
-                    replace_FunctionParam_(&size->m_v, new_args);
-                } else if (is_a<ASR::IntegerCompare_t>(*arg)) {
-                    ASR::IntegerCompare_t* comp = ASR::down_cast<ASR::IntegerCompare_t>(arg);
-                    replace_FunctionParam_(&comp->m_left, new_args);
-                    replace_FunctionParam_(&comp->m_right, new_args);
-                }
-            }
+            helper_replace_FunctionParam(x, new_args);
         } else if (ASR::is_a<ASR::FunctionCall_t>(*value)) {
             ASR::FunctionCall_t* x = ASR::down_cast<ASR::FunctionCall_t>(value);
             for (size_t i = 0; i < x->n_args; i++) {
@@ -123,30 +128,17 @@ public:
             replace_FunctionParam_with_FunctionArgs(x->m_right, new_args);
         } else if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*value)) {
             ASR::IntrinsicElementalFunction_t* x = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value);
-            for (size_t i = 0; i < x->n_args; i++) {
-                ASR::expr_t* arg = x->m_args[i];
-                if (is_a<ASR::ArrayPhysicalCast_t>(*arg)) {
-                    ASR::ArrayPhysicalCast_t* cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg);
-                    arg = cast->m_arg;
-                }
-                if (is_a<ASR::FunctionCall_t>(*arg)) {
-                    replace_FunctionParam_with_FunctionArgs(arg, new_args);
-                } else if (is_a<ASR::IntrinsicArrayFunction_t>(*arg)) {
-                    replace_FunctionParam_with_FunctionArgs(arg, new_args);
-                } else if (is_a<ASR::FunctionParam_t>(*arg)) {
-                    replace_FunctionParam_(&x->m_args[i], new_args);
-                } else if (is_a<ASR::ArraySize_t>(*arg)) {
-                    ASR::ArraySize_t* size = ASR::down_cast<ASR::ArraySize_t>(arg);
-                    replace_FunctionParam_(&size->m_v, new_args);
-                } else if (is_a<ASR::IntegerCompare_t>(*arg)) {
-                    ASR::IntegerCompare_t* comp = ASR::down_cast<ASR::IntegerCompare_t>(arg);
-                    replace_FunctionParam_(&comp->m_left, new_args);
-                    replace_FunctionParam_(&comp->m_right, new_args);
-                }
-            }
+            helper_replace_FunctionParam(x, new_args);
         } else {
             return;
         }
+    }
+
+    bool exists_in_arginfo(int arg_number, std::vector<ArgInfo>& indicies) {
+        for (auto info: indicies) {
+            if (info.arg_number == arg_number) return true;
+        }
+        return false;
     }
 
     void helper_get_arg_indices_used(ASR::expr_t* arg, std::vector<ArgInfo>& indicies) {
@@ -161,7 +153,9 @@ public:
         } else if (is_a<ASR::FunctionParam_t>(*arg)) {
             ASR::FunctionParam_t* param = ASR::down_cast<ASR::FunctionParam_t>(arg);
             ArgInfo info = {static_cast<int>(param->m_param_number), param->m_type, current_function->m_args[param->m_param_number], arg};
-            indicies.push_back(info);
+            if (!exists_in_arginfo(param->m_param_number, indicies)) {
+                indicies.push_back(info);
+            }
         } else if (is_a<ASR::ArraySize_t>(*arg)) {
             ASR::ArraySize_t* size = ASR::down_cast<ASR::ArraySize_t>(arg);
             helper_get_arg_indices_used(size->m_v, indicies);
@@ -313,6 +307,25 @@ public:
         ASRUtils::EXPR2VAR(func->m_return_var)->m_type = return_type_copy;
     }
 
+    void replace_function_call_or_intrinsic_array_function(ASR::expr_t** actual_expr,
+            ASR::Function_t* func, size_t i, const ASR::FunctionType_t &x, bool start=true) {
+        bool replaced = false;
+        if (*actual_expr == nullptr) return;
+        if (is_a<ASR::IntegerBinOp_t>(**actual_expr)) {
+            ASR::IntegerBinOp_t* binop = ASR::down_cast<ASR::IntegerBinOp_t>(*actual_expr);
+            replace_function_call_or_intrinsic_array_function(&binop->m_left, func, i, x, start);
+            replace_function_call_or_intrinsic_array_function(&binop->m_right, func, i, x, start);
+        }
+        if (is_function_call_or_intrinsic_array_function(*actual_expr)) {
+            ASR::expr_t** current_expr_copy = current_expr;
+            current_expr = const_cast<ASR::expr_t**>(actual_expr);
+            this->call_replacer_(*actual_expr);
+            current_expr = current_expr_copy;
+            replaced = true;
+        }
+        if (replaced) set_type_of_result_var(x, func, i, start);
+    }
+
     void visit_FunctionType(const ASR::FunctionType_t &x) {
         if (!current_scope) return;
 
@@ -330,62 +343,8 @@ public:
             if (!func) return;
             ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(return_var_type)));
             for (size_t i = 0; i < arr->n_dims; i++) {
-                ASR::dimension_t dim = arr->m_dims[i];
-                ASR::expr_t* start = dim.m_start;
-                ASR::expr_t* end = dim.m_length;
-                bool replaced = false;
-                if (start && is_a<ASR::IntegerBinOp_t>(*start)) {
-                    ASR::IntegerBinOp_t* binop = ASR::down_cast<ASR::IntegerBinOp_t>(start);
-                    if (is_function_call_or_intrinsic_array_function(binop->m_left)) {
-                        ASR::expr_t** current_expr_copy = current_expr;
-                        current_expr = const_cast<ASR::expr_t**>(&(binop->m_left));
-                        this->call_replacer_(binop->m_left);
-                        current_expr = current_expr_copy;
-                        replaced = true;
-                    }
-                    if (is_function_call_or_intrinsic_array_function(binop->m_right)) {
-                        ASR::expr_t** current_expr_copy = current_expr;
-                        current_expr = const_cast<ASR::expr_t**>(&(binop->m_right));
-                        this->call_replacer_(binop->m_right);
-                        current_expr = current_expr_copy;
-                        replaced = true;
-                    }
-                    if ( replaced ) set_type_of_result_var(x, func, i, true);
-
-                }
-                if (end && is_a<ASR::IntegerBinOp_t>(*end)) {
-                    ASR::IntegerBinOp_t* binop = ASR::down_cast<ASR::IntegerBinOp_t>(end);
-                    if (is_function_call_or_intrinsic_array_function(binop->m_left)) {
-                        ASR::expr_t** current_expr_copy = current_expr;
-                        current_expr = const_cast<ASR::expr_t**>(&(binop->m_left));
-                        this->call_replacer_(binop->m_left);
-                        current_expr = current_expr_copy;
-                        replaced = true;
-                    }
-                    if (is_function_call_or_intrinsic_array_function(binop->m_right)) {
-                        ASR::expr_t** current_expr_copy = current_expr;
-                        current_expr = const_cast<ASR::expr_t**>(&(binop->m_right));
-                        this->call_replacer_(binop->m_right);
-                        current_expr = current_expr_copy;
-                        replaced = true;
-                    }
-                    if ( replaced ) set_type_of_result_var(x, func, i, false);
-
-                }
-                if (is_function_call_or_intrinsic_array_function(start)) {
-                    ASR::expr_t** current_expr_copy = current_expr;
-                    current_expr = const_cast<ASR::expr_t**>(&(ASR::down_cast<ASR::Array_t>(x.m_return_var_type)->m_dims[i].m_start));
-                    this->call_replacer_(start);
-                    current_expr = current_expr_copy;
-                    set_type_of_result_var(x, func, i, true);
-                }
-                if (is_function_call_or_intrinsic_array_function(end)) {
-                    ASR::expr_t** current_expr_copy = current_expr;
-                    current_expr = const_cast<ASR::expr_t**>(&(ASR::down_cast<ASR::Array_t>(x.m_return_var_type)->m_dims[i].m_length));
-                    this->call_replacer_(end);
-                    current_expr = current_expr_copy;
-                    set_type_of_result_var(x, func, i, false);
-                }
+                replace_function_call_or_intrinsic_array_function(&arr->m_dims[i].m_start, func, i, x, true);
+                replace_function_call_or_intrinsic_array_function(&arr->m_dims[i].m_length, func, i, x, false);
             }
 
         }
