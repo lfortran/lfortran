@@ -8,12 +8,12 @@ semantic error: Number of arguments mismatch, restriction expects a function wit
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-32 |    
-   | ...^ func_arg_real has 3 parameters
+31 |        end function
+   | ...^^^^^^^^^^^^^^^^ func_arg_real has 3 parameters
    |
  8 |            function F(x, y) result(z)
    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
 11 |            end function
-   | ...^^^^^^^^^^^^^^^^^^^^^ f has 2 parameters
+   | ...^^^^^^^^^^^^^^^^^^^^ f has 2 parameters

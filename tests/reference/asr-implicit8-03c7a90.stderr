@@ -1,9 +1,9 @@
 semantic error: m, n is/are used as dimensions but not declared
- --> tests/implicit8.f90:1:1 - 6:13
+ --> tests/implicit8.f90:1:1 - 6:12
   |
 1 |    integer function a(n,m)
   |    ^^^^^^^^^^^^^^^^^^^^^^^...
 ...
   |
 6 |    end function
-  | ...^^^^^^^^^^^^^ 
+  | ...^^^^^^^^^^^^ 
