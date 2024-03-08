@@ -2307,7 +2307,6 @@ public:
                 loc, re, y, ASRUtils::expr_type(target), nullptr));
             value = cmplx;
         }
-        ASR::ttype_t *target_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(target));
         if( target->type != ASR::exprType::Var &&
             target->type != ASR::exprType::ArrayItem &&
             target->type != ASR::exprType::ArraySection &&
@@ -2320,11 +2319,35 @@ public:
                 x.base.base.loc
             );
         }
+
+        ASR::ttype_t *target_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(target));
         ASR::ttype_t *value_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(value));
-        if( target->type == ASR::exprType::Var && !ASRUtils::is_array(target_type) &&
+        // we don't want to check by "check_equal_type" because we want to allow
+        // real :: x(4); x = [1, 2, 3, 4] to be a valid assignment (as RHS is "integer array")
+        if (target_type->type == ASR::ttypeType::Array && value_type->type == ASR::ttypeType::Array
+            && value->type != ASR::exprType::ArrayReshape) {
+            ASR::dimension_t* target_dims = nullptr;
+            ASR::dimension_t* value_dims = nullptr;
+            size_t target_rank = ASRUtils::extract_dimensions_from_ttype(target_type, target_dims);
+            size_t value_rank = ASRUtils::extract_dimensions_from_ttype(value_type, value_dims);
+            // rank of array on LHS and RHS should be same
+            if (target_rank != value_rank) {
+                throw SemanticError("Incompatible ranks " + std::to_string(target_rank) +
+                   " and " + std::to_string(value_rank) + " in assignment",
+                  x.base.base.loc
+                );
+            } else if (ASRUtils::expr_type(target)->type == ASR::ttypeType::Array && !ASRUtils::dimensions_equal(target_dims, target_rank,
+                                                value_dims, value_rank, true) &&
+                    !ASR::is_a<ASR::ArraySize_t>(*target_dims->m_length)) {
+                throw SemanticError("Dimensions not equal", x.base.base.loc);
+            }
+        }
+
+        if (target->type == ASR::exprType::Var && !ASRUtils::is_array(target_type) &&
             value->type == ASR::exprType::ArrayConstant ) {
             throw SemanticError("ArrayInitalizer expressions can only be assigned array references", x.base.base.loc);
         }
+
         if( overloaded_stmt == nullptr ) {
             if ((target->type == ASR::exprType::Var ||
                 target->type == ASR::exprType::ArrayItem ||

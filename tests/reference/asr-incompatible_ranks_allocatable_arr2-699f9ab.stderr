@@ -1,0 +1,5 @@
+semantic error: Incompatible ranks 1 and 3 in assignment
+  --> tests/errors/incompatible_ranks_allocatable_arr2.f90:10:5
+   |
+10 |     arr3 = arr1
+   |     ^^^^^^^^^^^ 

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-incompatible_ranks_allocatable_arr1-5e5233d",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/incompatible_ranks_allocatable_arr1.f90",
+    "infile_hash": "24004c66840b02d8320a1bb077a286badba8756a4fa71e7785927f9b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-incompatible_ranks_allocatable_arr1-5e5233d.stderr",
+    "stderr_hash": "a7cebcc56a646857903e2c7059d96961bae649464da869fe3d38e23b",
+    "returncode": 2
+}
