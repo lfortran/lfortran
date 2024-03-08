@@ -2027,8 +2027,7 @@ namespace SetExponent {
                 float result1 =  x * std::pow((2), (-1*(exponent)));
                 float result = result1 * std::pow((2), I);
                 return make_ConstantWithType(make_RealConstant_t, result, arg_type, loc);
-            }
-            else{
+            } else {
                 int32_t ix;
                 std::memcpy(&ix, &x, sizeof(ix));
                 exponent = ((ix >> 23) & 0xff) - 126;
@@ -2046,8 +2045,7 @@ namespace SetExponent {
                 double result1 =  x * std::pow((2), (-1*(exponent)));
                 double result = result1 * std::pow((2), I);
                 return make_ConstantWithType(make_RealConstant_t, result, arg_type, loc);
-            }
-            else{
+            } else {
                 int64_t ix;
                 std::memcpy(&ix, &x, sizeof(ix));
                 exponent = ((ix >> 52) & 0x7ff) - 1022;
