@@ -2239,6 +2239,8 @@ public:
         ASR::ttype_t *value_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(value));
         // we don't want to check by "check_equal_type" because we want to allow
         // real :: x(4); x = [1, 2, 3, 4] to be a valid assignment (as RHS is "integer array")
+        // TODO: the only reason to not do this check for "reshape" is because
+        // incorrect 'n_dims' and 'shape' returned for "reshape" currently
         if (target_type->type == ASR::ttypeType::Array && value_type->type == ASR::ttypeType::Array
             && value->type != ASR::exprType::ArrayReshape) {
             ASR::dimension_t* target_dims = nullptr;
