@@ -61,6 +61,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Ble,
     Exponent,
     Fraction,
+    SetExponent,
     Not,
     Iand,
     Ior,
@@ -2011,6 +2012,79 @@ namespace Fraction {
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 }  // namespace Fraction
+
+namespace SetExponent {
+    static ASR::expr_t *eval_SetExponent(Allocator &al, const Location &loc,
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        ASR::ttype_t* arguement_type = expr_type(args[0]);
+        int32_t kind = extract_kind_from_ttype_t(arguement_type);
+        if (kind == 4) { 
+            float x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            int32_t I = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+            int32_t exponent;
+            if (x == 0.0) {
+                exponent = 0;
+                float result1 =  x * std::pow((2), (-1*(exponent)));
+                float result = result1 * std::pow((2), I);
+                return make_ConstantWithType(make_RealConstant_t, result, arg_type, loc);
+            } else {
+                int32_t ix;
+                std::memcpy(&ix, &x, sizeof(ix));
+                exponent = ((ix >> 23) & 0xff) - 126;
+                float result1 =  x * std::pow((2), (-1*(exponent)));
+                float result = result1 * std::pow((2), I);
+                return make_ConstantWithType(make_RealConstant_t, result, arg_type, loc);
+            }
+        } 
+        else if (kind == 8) { 
+            double x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            int64_t I = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+            int64_t exponent;
+            if (x == 0.0) {
+                exponent = 0;
+                double result1 =  x * std::pow((2), (-1*(exponent)));
+                double result = result1 * std::pow((2), I);
+                return make_ConstantWithType(make_RealConstant_t, result, arg_type, loc);
+            } else {
+                int64_t ix;
+                std::memcpy(&ix, &x, sizeof(ix));
+                exponent = ((ix >> 52) & 0x7ff) - 1022;
+                double result1 =  x * std::pow((2), (-1*(exponent)));
+                double result = result1 * std::pow((2), I);
+                return make_ConstantWithType(make_RealConstant_t, result, arg_type, loc);
+            }
+        }
+        return nullptr;
+    }
+
+    static inline ASR::expr_t* instantiate_SetExponent(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+                declare_basic_variables("_lcompilers_setexponent_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("i", arg_types[1]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+
+        /*
+        * r = setexponent(x, I)
+        * r = fraction(x) * radix(x)**(I)
+        */
+
+        Vec<ASR::ttype_t*> arg_types_exp; arg_types_exp.reserve(al, 1);
+        arg_types_exp.push_back(al, arg_types[0]);
+
+        Vec<ASR::call_arg_t> new_args_exp; new_args_exp.reserve(al, 1);
+        ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = args[0];
+        new_args_exp.push_back(al, arg1);
+
+        ASR::expr_t* func_call_fraction = Fraction::instantiate_Fraction(al, loc, scope, arg_types_exp, return_type, new_args_exp, 0);
+        body.push_back(al, b.Assignment(result, r_tMul(func_call_fraction, rPow(i2r(i32(2),return_type),i2r(args[1], return_type), return_type), return_type))); 
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+}  // namespace SetExponent
+
 
 namespace Sngl {
 
