@@ -2130,9 +2130,9 @@ static inline int get_body_size(ASR::symbol_t* s) {
     return n_body;
 }
 
-inline int extract_dimensions_from_ttype(ASR::ttype_t *x,
+inline size_t extract_dimensions_from_ttype(ASR::ttype_t *x,
                                          ASR::dimension_t*& m_dims) {
-    int n_dims = 0;
+    size_t n_dims {};
     switch (x->type) {
         case ASR::ttypeType::Array: {
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(x);
@@ -2964,25 +2964,37 @@ inline bool expr_equal(ASR::expr_t* x, ASR::expr_t* y) {
     return true;
 }
 
-inline bool dimension_expr_equal(ASR::expr_t* dim_a, ASR::expr_t* dim_b) {
-    if( !(dim_a && dim_b) ) {
+// Compares two dimension expressions for equality.
+// Optionally allows skipping determination in certain cases.
+inline bool dimension_expr_equal(
+    ASR::expr_t* dim_a,
+    ASR::expr_t* dim_b
+) {
+    // If either dimension is null, consider them equal by default.
+    if (!(dim_a && dim_b)) {
         return true;
     }
-    int dim_a_int = -1, dim_b_int = -1;
-    if (ASRUtils::extract_value(ASRUtils::expr_value(dim_a), dim_a_int)
-        && ASRUtils::extract_value(ASRUtils::expr_value(dim_b), dim_b_int)) {
+
+    int dim_a_int {-1};
+    int dim_b_int {-1};
+
+    if (ASRUtils::extract_value(ASRUtils::expr_value(dim_a), dim_a_int) &&
+        ASRUtils::extract_value(ASRUtils::expr_value(dim_b), dim_b_int)) {
         return dim_a_int == dim_b_int;
     }
 
-    if( !ASRUtils::expr_equal(dim_a, dim_b) ) {
+    if (!ASRUtils::expr_equal(dim_a, dim_b)) {
         return false;
     }
+
     return true;
 }
 
 inline bool dimensions_equal(ASR::dimension_t* dims_a, size_t n_dims_a,
-    ASR::dimension_t* dims_b, size_t n_dims_b) {
-    if( n_dims_a != n_dims_b ) {
+    ASR::dimension_t* dims_b, size_t n_dims_b
+) {
+    // unequal ranks means dimensions aren't equal
+    if (n_dims_a != n_dims_b) {
         return false;
     }
 

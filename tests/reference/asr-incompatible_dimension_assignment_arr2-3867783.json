@@ -1,0 +1,13 @@
+{
+    "basename": "asr-incompatible_dimension_assignment_arr2-3867783",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/incompatible_dimension_assignment_arr2.f90",
+    "infile_hash": "f3f2370b6a0b01d3cea561679f559769fc74d0a3e5100a33c249e0c7",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-incompatible_dimension_assignment_arr2-3867783.stderr",
+    "stderr_hash": "b774158a1115ef8b895a06920255e024b47c4d489e57b3642a65baf9",
+    "returncode": 2
+}
