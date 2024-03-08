@@ -61,7 +61,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Ble)
         INTRINSIC_NAME_CASE(Exponent)
         INTRINSIC_NAME_CASE(Fraction)
-        INTRINSIC_NAME_CASE(Set_Exponent)
+        INTRINSIC_NAME_CASE(SetExponent)
         INTRINSIC_NAME_CASE(Not)
         INTRINSIC_NAME_CASE(Iand)
         INTRINSIC_NAME_CASE(Ior)
@@ -231,8 +231,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Exponent::instantiate_Exponent, &Exponent::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Fraction),
             {&Fraction::instantiate_Fraction, &Fraction::verify_args}},
-        {static_cast<int64_t>(IntrinsicElementalFunctions::Set_Exponent),
-            {&Set_Exponent::instantiate_Set_Exponent, &Set_Exponent::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SetExponent),
+            {&SetExponent::instantiate_SetExponent, &SetExponent::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ble),
             {&Ble::instantiate_Ble, &Ble::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Not),
@@ -480,8 +480,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "exponent"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Fraction),
             "fraction"},
-        {static_cast<int64_t>(IntrinsicElementalFunctions::Set_Exponent),
-            "set_exponent"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SetExponent),
+            "setexponent"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Not),
             "not"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Iand),
@@ -681,7 +681,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"ble", {&Ble::create_Ble, &Ble::eval_Ble}},
                 {"exponent", {&Exponent::create_Exponent, &Exponent::eval_Exponent}},
                 {"fraction", {&Fraction::create_Fraction, &Fraction::eval_Fraction}},
-                {"set_exponent", {&Set_Exponent::create_Set_Exponent, &Set_Exponent::eval_Set_Exponent}},
+                {"setexponent", {&SetExponent::create_SetExponent, &SetExponent::eval_SetExponent}},
                 {"not", {&Not::create_Not, &Not::eval_Not}},
                 {"iand", {&Iand::create_Iand, &Iand::eval_Iand}},
                 {"ior", {&Ior::create_Ior, &Ior::eval_Ior}},

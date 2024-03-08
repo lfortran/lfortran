@@ -61,7 +61,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Ble,
     Exponent,
     Fraction,
-    Set_Exponent,
+    SetExponent,
     Not,
     Iand,
     Ior,
@@ -2013,8 +2013,8 @@ namespace Fraction {
     }
 }  // namespace Fraction
 
-namespace Set_Exponent {
-    static ASR::expr_t *eval_Set_Exponent(Allocator &al, const Location &loc,
+namespace SetExponent {
+    static ASR::expr_t *eval_SetExponent(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASR::ttype_t* arguement_type = expr_type(args[0]);
         int32_t kind = extract_kind_from_ttype_t(arguement_type);
@@ -2059,16 +2059,16 @@ namespace Set_Exponent {
         return nullptr;
     }
 
-    static inline ASR::expr_t* instantiate_Set_Exponent(Allocator &al, const Location &loc,
+    static inline ASR::expr_t* instantiate_SetExponent(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-                declare_basic_variables("_lcompilers_set_exponent_" + type_to_str_python(arg_types[0]));
+                declare_basic_variables("_lcompilers_setexponent_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("i", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
 
         /*
-        * r = set_exponent(x, I)
+        * r = setexponent(x, I)
         * r = fraction(x) * radix(x)**(I)
         */
 
@@ -2079,15 +2079,13 @@ namespace Set_Exponent {
         ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = args[0];
         new_args_exp.push_back(al, arg1);
 
-        ASR::expr_t *cast = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[1], ASR::cast_kindType::IntegerToReal, return_type, nullptr));
-
         ASR::expr_t* func_call_fraction = Fraction::instantiate_Fraction(al, loc, scope, arg_types_exp, return_type, new_args_exp, 0);
-        body.push_back(al, b.Assignment(result, r_tMul(func_call_fraction, rPow(i2r(i(2, int32),return_type),cast, return_type), return_type)));       
+        body.push_back(al, b.Assignment(result, r_tMul(func_call_fraction, rPow(i2r(i32(2),return_type),i2r(args[1], return_type), return_type), return_type))); 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
-}  // namespace Set_Exponent
+}  // namespace SetExponent
 
 
 namespace Sngl {

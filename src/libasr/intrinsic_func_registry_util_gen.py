@@ -396,7 +396,7 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         },
     ],
-    "Set_Exponent": [
+    "SetExponent": [
         {
             "args": [("real", "int")],
             "ret_type_arg_idx": 0
