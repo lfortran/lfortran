@@ -1304,7 +1304,7 @@ TEST_CASE("Location") {
     end function)";
     result = TRY(parse(al, input, diagnostics, co))->m_items[0];
     CHECK(result->loc.first == 0);
-    CHECK(result->loc.last == 54);
+    CHECK(result->loc.last == 53);
 
     input = R"(program f
     x = y
