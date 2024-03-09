@@ -74,11 +74,6 @@ function new_line(c) result(r)
     r = '\n'
 end function
 
-function adjustr(x) result(r)
-    character(len=*),intent(in) :: x
-    character(len=len(x)) :: r
-end function
-
 function lgt(x, y) result(r)
     character(len=*), intent(in) :: x
     character(len=*), intent(in) :: y
