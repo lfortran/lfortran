@@ -1445,7 +1445,7 @@ namespace Ibclr {
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
-        
+
         ASR::expr_t *val1 = args[0];
         ASR::expr_t *val2 = args[1];
         ASR::expr_t *one = i(1, arg_types[0]);
@@ -1478,7 +1478,7 @@ namespace Ibset {
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
-        
+
         ASR::expr_t *val1 = args[0];
         ASR::expr_t *val2 = args[1];
         ASR::expr_t *one = i(1, arg_types[0]);
@@ -1512,7 +1512,7 @@ namespace Btest {
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
-        
+
         ASR::expr_t *val1 = args[0];
         ASR::expr_t *val2 = args[1];
         ASR::expr_t *zero = i(0, arg_types[0]);
@@ -1887,8 +1887,8 @@ namespace Exponent {
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         ASR::ttype_t* arguement_type = expr_type(args[0]);
         int32_t kind = extract_kind_from_ttype_t(arguement_type);
-        
-        if (kind == 4) { 
+
+        if (kind == 4) {
             float x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             if (x == 0.0) {
                 return make_ConstantWithType(make_IntegerConstant_t, 0, arg_type, loc);
@@ -1897,8 +1897,8 @@ namespace Exponent {
             std::memcpy(&ix, &x, sizeof(ix));
             int32_t exponent = ((ix >> 23) & 0xff) - 126;
             return make_ConstantWithType(make_IntegerConstant_t, exponent, arg_type, loc);
-        } 
-        else if (kind == 8) { 
+        }
+        else if (kind == 8) {
             double x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             if (x == 0.0) {
                 return make_ConstantWithType(make_IntegerConstant_t, 0, arg_type, loc);
@@ -1952,7 +1952,7 @@ namespace Fraction {
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASR::ttype_t* arguement_type = expr_type(args[0]);
         int32_t kind = extract_kind_from_ttype_t(arguement_type);
-        if (kind == 4) { 
+        if (kind == 4) {
             float x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             int32_t exponent;
             if (x == 0.0) {
@@ -1967,8 +1967,8 @@ namespace Fraction {
                 float result =  x * std::pow((2), (-1*(exponent)));
                 return make_ConstantWithType(make_RealConstant_t, result, arg_type, loc);
             }
-        } 
-        else if (kind == 8) { 
+        }
+        else if (kind == 8) {
             double x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             int64_t exponent;
             if (x == 0.0) {
@@ -2006,7 +2006,7 @@ namespace Fraction {
         ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = args[0];
         new_args_exp.push_back(al, arg1);
         ASR::expr_t* func_call_exponent = Exponent::instantiate_Exponent(al, loc, scope, arg_types_exp, return_type_int, new_args_exp, 0);
-        body.push_back(al, b.Assignment(result, r_tMul(args[0], rPow(i2r(i(2, int32),return_type), r_tMul(i2r(i(-1,int32), return_type),i2r(func_call_exponent, return_type), return_type), return_type), return_type)));        
+        body.push_back(al, b.Assignment(result, r_tMul(args[0], rPow(i2r(i(2, int32),return_type), r_tMul(i2r(i(-1,int32), return_type),i2r(func_call_exponent, return_type), return_type), return_type), return_type)));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
@@ -2018,7 +2018,7 @@ namespace SetExponent {
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASR::ttype_t* arguement_type = expr_type(args[0]);
         int32_t kind = extract_kind_from_ttype_t(arguement_type);
-        if (kind == 4) { 
+        if (kind == 4) {
             float x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             int32_t I = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
             int32_t exponent;
@@ -2035,8 +2035,8 @@ namespace SetExponent {
                 float result = result1 * std::pow((2), I);
                 return make_ConstantWithType(make_RealConstant_t, result, arg_type, loc);
             }
-        } 
-        else if (kind == 8) { 
+        }
+        else if (kind == 8) {
             double x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             int64_t I = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
             int64_t exponent;
@@ -2078,7 +2078,7 @@ namespace SetExponent {
         new_args_exp.push_back(al, arg1);
 
         ASR::expr_t* func_call_fraction = Fraction::instantiate_Fraction(al, loc, scope, arg_types_exp, return_type, new_args_exp, 0);
-        body.push_back(al, b.Assignment(result, r_tMul(func_call_fraction, rPow(i2r(i32(2),return_type),i2r(args[1], return_type), return_type), return_type))); 
+        body.push_back(al, b.Assignment(result, r_tMul(func_call_fraction, rPow(i2r(i32(2),return_type),i2r(args[1], return_type), return_type), return_type)));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
@@ -3118,7 +3118,7 @@ namespace Char {
         auto result = declare("result", return_type, ReturnVar);
         ASR::expr_t *cast = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::IntegerToInteger, int32, nullptr));
         ASR::expr_t* char_node = ASRUtils::EXPR(ASR::make_StringChr_t(al, loc, cast, return_type, nullptr));
-        
+
         body.push_back(al, b.Assignment(result, char_node));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -3132,7 +3132,7 @@ namespace ToLowerCase {
 
     static ASR::expr_t *eval_ToLowerCase(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        
+
         char* str = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
         std::transform(str, str + std::strlen(str), str, [](unsigned char c) { return std::tolower(c); });
         return make_ConstantWithType(make_StringConstant_t, str, t1, loc);
@@ -3164,7 +3164,7 @@ namespace ToLowerCase {
             print*, result
         end function
         */
-        
+
         ASR::expr_t* ln = ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr));
         body.push_back(al, b.Assignment(itr, i32(1)));
 
