@@ -2989,8 +2989,9 @@ namespace Adjustl {
         while (first_non_space < len && std::isspace(str[first_non_space])) {
             first_non_space++;
         }
-        char* result = new char[len - first_non_space + 1];
-        std::strcpy(result, str + first_non_space);
+        std::string res(len, ' ');
+        char* result = s2c(al, res);
+        std::strncpy(result, str + first_non_space, len - first_non_space);
         return make_ConstantWithType(make_StringConstant_t, result, t1, loc);
     }
 
