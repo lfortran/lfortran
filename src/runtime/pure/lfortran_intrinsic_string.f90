@@ -74,46 +74,6 @@ function new_line(c) result(r)
     r = '\n'
 end function
 
-integer elemental function cnt_initial_spaces(string) result(r)
-    character(len=*), intent(in) :: string
-    logical :: is_all_spaces
-    integer :: i
-
-    r = len(string)
-    if (r == 0) return
-
-    is_all_spaces = .true.
-    do i=1, len(string)
-        if(string(i:i) /= " ") then
-            is_all_spaces = .false.
-            exit
-        end if
-    end do
-
-    ! if string is all spaces, then no need to update r as it is already equal to len(string)
-    if (.not. is_all_spaces) then
-        r = i - 1
-    end if
-end function
-
-function adjustl(x) result(r)
-    character(len=*),intent(in) :: x
-    character(len=len(x)) :: r
-    integer :: i, j, initial_spaces_cnt
-    j = 1
-    initial_spaces_cnt = cnt_initial_spaces(x)
-
-    do i = initial_spaces_cnt + 1, len(x)
-        r(j:j) = x(i:i)
-        j = j + 1
-    end do
-
-    do i = 1, initial_spaces_cnt
-        r(j:j) = ' '
-        j = j + 1
-    end do
-end function
-
 function adjustr(x) result(r)
     character(len=*),intent(in) :: x
     character(len=len(x)) :: r
