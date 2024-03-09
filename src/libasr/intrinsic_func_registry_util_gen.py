@@ -389,7 +389,7 @@ intrinsic_funcs_args = {
             "args": [("real",)],
             "return": "int32",
         },
-    ],    
+    ],
     "Fraction": [
         {
             "args": [("real",)],
