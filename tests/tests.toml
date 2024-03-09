@@ -3846,3 +3846,7 @@ asr = true
 [[test]]
 filename = "errors/incompatible_dimension_assignment_arr2.f90"
 asr = true
+
+[[test]]
+filename = "errors/end_function_name_not_match.f90"
+ast = true

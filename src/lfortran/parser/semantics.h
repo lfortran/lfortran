@@ -1324,8 +1324,8 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
     }
 }
 
-#define FUNCTION(fn_type, name, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, l) make_Function_t(p.m_a, l, \
-        /*name*/ name2char(name), \
+#define FUNCTION(fn_type, name, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) make_Function_t(p.m_a, l, \
+        /*name*/ name2char_with_check(name, name_opt, l, "function"), \
         /*args*/ ARGS(p.m_a, l, args), \
         /*n_args*/ args.size(), \
         /*m_attributes*/ VEC_CAST(fn_type, decl_attribute), \
@@ -1347,8 +1347,8 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
         /*n_contains*/ contains.size(), \
         /*temp_args*/ nullptr, \
         /*n_temp_args*/ 0)
-#define FUNCTION0(name, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, l) make_Function_t(p.m_a, l, \
-        /*name*/ name2char(name), \
+#define FUNCTION0(name, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) make_Function_t(p.m_a, l, \
+        /*name*/ name2char_with_check(name, name_opt, l, "function"), \
         /*args*/ ARGS(p.m_a, l, args), \
         /*n_args*/ args.size(), \
         /*return_type*/ nullptr, \
@@ -1371,9 +1371,9 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
         /*temp_args*/ nullptr, \
         /*n_temp_args*/ 0)
 
-#define TEMPLATED_FUNCTION(fn_type, name, temp_args, fn_args, return_var, bind, trivia, decl, stmts, l) \
+#define TEMPLATED_FUNCTION(fn_type, name, temp_args, fn_args, return_var, bind, trivia, decl, stmts, name_opt, l) \
         make_Function_t(p.m_a, l, \
-        /*name*/ name2char(name), \
+        /*name*/ name2char_with_check(name, name_opt, l, "function"), \
         /*args*/ ARGS(p.m_a, l, fn_args), \
         /*n_args*/ fn_args.size(), \
         /*m_attributes*/ VEC_CAST(fn_type, decl_attribute), \
@@ -1395,9 +1395,9 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
         /*n_contains*/ 0, \
         /*temp_args*/ REDUCE_ARGS(p.m_a, temp_args), \
         /*n_temp_args*/ temp_args.size())
-#define TEMPLATED_FUNCTION0(name, temp_args, fn_args, return_var, bind, trivia, decl, stmts, l) \
+#define TEMPLATED_FUNCTION0(name, temp_args, fn_args, return_var, bind, trivia, decl, stmts, name_opt, l) \
         make_Function_t(p.m_a, l, \
-        /*name*/ name2char(name), \
+        /*name*/ name2char_with_check(name, name_opt, l, "function"), \
         /*args*/ ARGS(p.m_a, l, fn_args), \
         /*n_args*/ fn_args.size(), \
         /*m_attributes*/ nullptr, \

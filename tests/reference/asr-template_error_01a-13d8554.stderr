@@ -8,5 +8,5 @@ semantic error: Type mismatch in function call, the function expects 't' but 's'
    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-50 |    
-   | ...^ function definition has parameter type 't'
+49 |            end function
+   | ...^^^^^^^^^^^^^^^^^^^^ function definition has parameter type 't'
