@@ -3846,3 +3846,35 @@ asr = true
 [[test]]
 filename = "errors/incompatible_dimension_assignment_arr2.f90"
 asr = true
+
+[[test]]
+filename = "errors/index_non_integer_subarray1.f90"
+asr = true
+
+[[test]]
+filename = "errors/index_non_integer_subarray2.f90"
+asr = true
+
+[[test]]
+filename = "errors/index_non_integer_subarray3.f90"
+asr = true
+
+[[test]]
+filename = "errors/index_non_integer_subarray4.f90"
+asr = true
+
+[[test]]
+filename = "errors/index_non_integer_substring1.f90"
+asr = true
+
+[[test]]
+filename = "errors/index_non_integer_substring2.f90"
+asr = true
+
+[[test]]
+filename = "errors/index_non_integer_substring3.f90"
+asr = true
+
+[[test]]
+filename = "errors/index_non_integer_substring4.f90"
+asr = true

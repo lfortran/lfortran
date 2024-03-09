@@ -1,0 +1,5 @@
+semantic error: Array stride must be of type integer
+ --> tests/errors/index_non_integer_subarray4.f90:4:20
+  |
+4 |     print *, x(1:7:1.2)
+  |                    ^^^ 
