@@ -22,12 +22,12 @@
                                         0
                                         (Character 1 -1 ())
                                         (StringConstant
-                                            ""
+                                            "    "
                                             (Character 1 -1 ())
                                         )
                                     )
                                     (StringConstant
-                                        ""
+                                        "    "
                                         (Character 1 -1 ())
                                     )
                                     Save
@@ -146,12 +146,12 @@
                                         0
                                         (Character 1 -1 ())
                                         (StringConstant
-                                            "gfortran"
+                                            "gfortran   "
                                             (Character 1 -1 ())
                                         )
                                     )
                                     (StringConstant
-                                        "gfortran"
+                                        "gfortran   "
                                         (Character 1 -1 ())
                                     )
                                     Save
@@ -177,12 +177,12 @@
                                         0
                                         (Character 1 -1 ())
                                         (StringConstant
-                                            "g for tran   "
+                                            "g for tran      "
                                             (Character 1 -1 ())
                                         )
                                     )
                                     (StringConstant
-                                        "g for tran   "
+                                        "g for tran      "
                                         (Character 1 -1 ())
                                     )
                                     Save
@@ -208,12 +208,12 @@
                                         0
                                         (Character 1 -1 ())
                                         (StringConstant
-                                            "# gfor* t $ ran &    "
+                                            "# gfor* t $ ran &      "
                                             (Character 1 -1 ())
                                         )
                                     )
                                     (StringConstant
-                                        "# gfor* t $ ran &    "
+                                        "# gfor* t $ ran &      "
                                         (Character 1 -1 ())
                                     )
                                     Save
