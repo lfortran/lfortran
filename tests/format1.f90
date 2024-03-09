@@ -1,6 +1,6 @@
 program format_04
 
-real :: a,b,c,d
+real :: a,b,c,d,e(6)
 double precision :: r,s,t
 integer :: f
 real(8) :: p,q
@@ -14,6 +14,8 @@ s = 23.5678
 t = 0.345678
 p = 2.0d0
 q = 0.0d0
+e = [-1.70138506e+38, -1.25381181e+38, 8.69779800e+37, &
+     -1.40706263e+37, 1.11501114e+37, -9.56332244e+37]
 
 print *, "ok", "b"
 print '(a,a)', "ok", "b"
@@ -37,5 +39,6 @@ print '(F30.25)', 12345e-25
 print '("x:", F4.2, " y:", ES7.1)', 1.123, 4.456
 print '("x:", ES10.2)', 0.999, 0.1
 print '("x:", ES15.5)', 0.102212
+print "(*(es15.5e2,1x))", e
 
 end program
