@@ -77,6 +77,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     SelectedIntKind,
     SelectedRealKind,
     Adjustl,
+    Adjustr,
     Ichar,
     Char,
     MinExponent,
@@ -3085,6 +3086,118 @@ namespace Adjustl {
     }
 
 } // namespace AdjustL
+
+namespace Adjustr {
+
+    static ASR::expr_t *eval_Adjustr(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        char* str = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
+        size_t len = std::strlen(str);
+        int last_non_space = len - 1;
+        while (last_non_space >= 0 && std::isspace(str[last_non_space])) {
+            last_non_space--;
+        }
+        std::string res(len, ' ');
+        char* result = s2c(al, res);
+        if (last_non_space != -1) {
+            int tmp = len - 1 - last_non_space;
+            for (int i = 0; i <= last_non_space; i++) {
+                result[i + tmp] = str[i];
+            }
+        }
+        return make_ConstantWithType(make_StringConstant_t, result, t1, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_Adjustr(Allocator &al, const Location &loc,
+        SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+        Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_optimization_adjustr_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("str", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
+        return_type = TYPE(ASR::make_Character_t(al, loc, 1, -3, EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr))));
+        auto result = declare("result", return_type, ReturnVar);
+        auto itr = declare("i", ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), Local);
+        auto tmp = declare("tmp", ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), Local);
+
+        /*
+            function adjustr_(s) result(r)
+                character(len=*), intent(in) :: s
+                character(len=len(s)) :: r
+                integer :: i, tmp
+                i = len(s)
+                do while (i >= 1)
+                    if isspace(s(i:i)) then
+                        i = i - 1
+                    else
+                        exit
+                    end if
+                end do
+                if i /= 0 then
+                    tmp = len(s) - i + 1
+                    r(tmp:len(s)) = s(1:i)
+                end if
+            end function
+        */
+
+        char* whileloop_name = nullptr;
+        ASR::expr_t* str_len = ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr));
+        body.push_back(al, b.Assignment(itr, str_len));
+        ASR::expr_t* whileloop_test = iGtE(itr, i32(1));
+
+        ASR::expr_t* ichar_left = nullptr;
+        ASR::ttype_t* ichar_left_arg_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr));
+        ASR::expr_t* ichar_left_arg = ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, ichar_left_arg_type, nullptr));
+        ichar_left = ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ichar_left_arg, int32, nullptr));
+
+        ASR::expr_t* ichar_right = ASRUtils::EXPR(ASR::make_Ichar_t(al, loc,
+                                    ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc,
+                                                s2c(al, " "), ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, 1, nullptr)))),
+                                    int32,
+                                    nullptr));
+
+        ASR::expr_t* comp_with_isspace = iEq(ichar_left, ichar_right);
+
+        // creating while loop body
+        Vec<ASR::stmt_t*> whileloop_body; whileloop_body.reserve(al, 1);
+        whileloop_body.push_back(al,
+            b.If(comp_with_isspace, {
+                b.Assignment(itr, i_tSub(itr, i32(1), int32))
+            }, {
+                b.Exit(whileloop_name)
+            })
+        );
+
+        ASR::stmt_t* whileloop = ASRUtils::STMT(ASR::make_WhileLoop_t(al, loc, whileloop_name, whileloop_test, whileloop_body.p, whileloop_body.n));
+
+        body.push_back(al, whileloop);
+
+       ASR::expr_t* string_section = ASRUtils::EXPR(ASR::make_StringSection_t(al, loc,
+                    args[0],
+                    i32(0),
+                    itr,
+                    i32(1),
+                    ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)),
+                    nullptr));
+        ASR::expr_t* result_string_section = ASRUtils::EXPR(ASR::make_StringSection_t(al, loc,
+                    result,
+                    iSub(tmp, i32(1)),
+                    str_len,
+                    i32(1),
+                    ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)),
+                    nullptr));
+
+        body.push_back(al, b.If(iNotEq(itr, i32(0)), {
+            b.Assignment(tmp, iAdd(iSub(str_len, itr), i32(1))),
+            b.Assignment(result_string_section, string_section)
+        }, {}));
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return_type = TYPE(ASR::make_Character_t(al, loc, 1, -3, EXPR(ASR::make_StringLen_t(al, loc, new_args[0].m_value, int32, nullptr))));
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace Adjustr
+
 
 namespace Ichar {
 
