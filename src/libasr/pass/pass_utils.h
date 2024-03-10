@@ -137,6 +137,133 @@ namespace LCompilers {
                     ASR::is_a<ASR::SymbolicExpression_t>(*ASRUtils::expr_type(var)));
         }
 
+        static inline void allocate_res_var(Allocator& al, ASR::FunctionCall_t* x, Vec<ASR::call_arg_t> &new_args,
+                            ASR::expr_t* result_var_, Vec<ASR::stmt_t*>& pass_result, std::vector<int> map) {
+            ASR::expr_t* func_call_merge = nullptr;
+            ASR::Function_t* sum = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x->m_name));
+            ASR::symbol_t* res = sum->m_symtab->resolve_symbol("result");
+            if (res) {
+                ASR::Variable_t* res_var = ASR::down_cast<ASR::Variable_t>(res);
+                ASR::ttype_t* type = ASRUtils::duplicate_type(al, res_var->m_type);
+                ASR::Array_t* res_arr = ASR::down_cast<ASR::Array_t>(type);
+                for (size_t i = 0; i < res_arr->n_dims; i++) {
+                    if (ASR::is_a<ASR::FunctionCall_t>(*res_arr->m_dims[i].m_length)) {
+                        func_call_merge = res_arr->m_dims[i].m_length;
+                        ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(func_call_merge);
+                        if (ASR::is_a<ASR::ArraySize_t>(*func_call->m_args[0].m_value)) {
+                            ASR::ArraySize_t *array_size = ASR::down_cast<ASR::ArraySize_t>(func_call->m_args[0].m_value);
+                            array_size->m_v = ASR::down_cast<ASR::ArrayPhysicalCast_t>(new_args[map[0]].m_value)->m_arg;
+                            func_call->m_args[0].m_value = ASRUtils::EXPR((ASR::asr_t*) array_size);
+                        }
+                        if (ASR::is_a<ASR::ArraySize_t>(*func_call->m_args[1].m_value)) {
+                            ASR::ArraySize_t *array_size = ASR::down_cast<ASR::ArraySize_t>(func_call->m_args[1].m_value);
+                            array_size->m_v = ASR::down_cast<ASR::ArrayPhysicalCast_t>(new_args[map[1]].m_value)->m_arg;
+
+                            func_call->m_args[1].m_value = ASRUtils::EXPR((ASR::asr_t*) array_size);
+                        }
+                        if (ASR::is_a<ASR::IntegerCompare_t>(*func_call->m_args[2].m_value)) {
+                            ASR::IntegerCompare_t *integer_compare = ASR::down_cast<ASR::IntegerCompare_t>(func_call->m_args[2].m_value);
+                            integer_compare->m_right = new_args[map[2]].m_value;
+
+                            func_call->m_args[2].m_value = ASRUtils::EXPR((ASR::asr_t*) integer_compare);
+                        }
+                        res_arr->m_dims[i].m_length = func_call_merge;
+                    }
+                }
+                if (func_call_merge) {
+                    // allocate result array
+                    Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
+                    ASR::alloc_arg_t alloc_arg; alloc_arg.loc = x->base.base.loc;
+                    alloc_arg.m_a = result_var_; alloc_arg.m_len_expr = nullptr;
+                    alloc_arg.m_type = nullptr; alloc_arg.m_dims = res_arr->m_dims;
+                    alloc_arg.n_dims = res_arr->n_dims;
+                    alloc_args.push_back(al, alloc_arg);
+
+                    ASR::stmt_t* allocate_stmt = ASRUtils::STMT(ASR::make_Allocate_t(al, 
+                                            x->base.base.loc, alloc_args.p, alloc_args.n, nullptr, nullptr, nullptr));
+                    pass_result.push_back(al, allocate_stmt);
+                }
+            }
+        }
+
+        static inline ASR::expr_t* get_actual_arg_(ASR::expr_t* arg, Vec<ASR::call_arg_t>& func_call_args, Vec<ASR::expr_t*> actual_args) {
+            if (!ASR::is_a<ASR::Var_t>(*arg)) return arg;
+            std::string arg_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(arg)->m_v);
+            for (size_t i = 0; i < func_call_args.size(); i++) {
+                ASR::expr_t* func_arg = func_call_args[i].m_value;
+                if (func_arg == nullptr) {
+                    continue;
+                }
+                if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*func_arg)) {
+                    func_arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(func_arg)->m_arg;
+                }
+                if (ASR::is_a<ASR::Var_t>(*func_arg)) {
+                    std::string func_arg_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(func_arg)->m_v);
+                    if (arg_name == func_arg_name) {
+                        return actual_args[i];
+                    }
+                }
+            }
+            return arg;
+        }
+
+        static inline ASR::ttype_t* replace_Args_(Allocator& al_, ASR::ttype_t* return_type, Vec<ASR::call_arg_t>& func_call_args, Vec<ASR::expr_t*> actual_args) {
+            bool is_allocatable = ASR::is_a<ASR::Allocatable_t>(*return_type);
+            ASR::ttype_t* ret_type = ASRUtils::type_get_past_allocatable(return_type);
+            if (ASR::is_a<ASR::Array_t>(*return_type)) {
+                ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(ret_type);
+                Vec<ASR::dimension_t> dims; dims.reserve(al_, arr->n_dims);
+                for (size_t i = 0; i < arr->n_dims; i++) {
+                    ASR::expr_t* len = arr->m_dims[i].m_length;
+                    ASR::dimension_t dim; dim.loc = return_type->base.loc;
+                    dim.m_length = nullptr; dim.m_start = nullptr;
+                    if (len == nullptr) {
+                        dims.push_back(al_, dim);
+                        break;
+                    }
+                    ASRUtils::ExprStmtDuplicator expr_duplicator(al_);
+                    len = expr_duplicator.duplicate_expr(len);
+                    if (ASR::is_a<ASR::IntrinsicArrayFunction_t>(*len)) {
+                        ASR::IntrinsicArrayFunction_t* fc = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(len);
+                        for (size_t j = 0; j < fc->n_args; j++) {
+                            if (ASR::is_a<ASR::ArraySize_t>(*fc->m_args[j])) {
+                                ASR::ArraySize_t* as = ASR::down_cast<ASR::ArraySize_t>(fc->m_args[j]);
+                                as->m_v = get_actual_arg_(as->m_v, func_call_args, actual_args);
+                            } else if (ASR::is_a<ASR::IntegerCompare_t>(*fc->m_args[j])) {
+                                ASR::IntegerCompare_t* ic = ASR::down_cast<ASR::IntegerCompare_t>(fc->m_args[j]);
+                                ic->m_left = get_actual_arg_(ic->m_left, func_call_args, actual_args);
+                                ic->m_right = get_actual_arg_(ic->m_right, func_call_args, actual_args);
+                            }
+                        }
+                        dim.m_start = arr->m_dims[i].m_start;
+                        dim.m_length = ASRUtils::EXPR((ASR::asr_t*) fc);
+                    } else if (ASR::is_a<ASR::FunctionCall_t>(*len)) {
+                        ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(len);
+                        for (size_t j = 0; j < fc->n_args; j++) {
+                            if (fc->m_args[j].m_value == nullptr) continue;
+                            if (ASR::is_a<ASR::ArraySize_t>(*fc->m_args[j].m_value)) {
+                                ASR::ArraySize_t* as = ASR::down_cast<ASR::ArraySize_t>(fc->m_args[j].m_value);
+                                as->m_v = get_actual_arg_(as->m_v, func_call_args, actual_args);
+                            } else if (ASR::is_a<ASR::IntegerCompare_t>(*fc->m_args[j].m_value)) {
+                                ASR::IntegerCompare_t* ic = ASR::down_cast<ASR::IntegerCompare_t>(fc->m_args[j].m_value);
+                                ic->m_left = get_actual_arg_(ic->m_left, func_call_args, actual_args);
+                                ic->m_right = get_actual_arg_(ic->m_right, func_call_args, actual_args);
+                            }
+                        }
+                        dim.m_start = arr->m_dims[i].m_start;
+                        dim.m_length = ASRUtils::EXPR((ASR::asr_t*) fc);
+                    }
+                    dims.push_back(al_, dim);
+                }
+                ret_type = ASRUtils::TYPE(ASR::make_Array_t(al_, arr->base.base.loc, arr->m_type,
+                            dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray));
+                if (is_allocatable) {
+                    ret_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al_, arr->base.base.loc, ret_type));
+                }
+            }
+            return ret_type;
+        }
+
         template <class Struct>
         class PassVisitor: public ASR::ASRPassBaseWalkVisitor<Struct> {
 

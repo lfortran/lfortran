@@ -135,6 +135,7 @@ class ASRBuilder {
     #define StringLen(s) EXPR(ASR::make_StringLen_t(al, loc, s, int32, nullptr))
     #define StringConcat(s1, s2, type) EXPR(ASR::make_StringConcat_t(al, loc, s1, s2, \
         type, nullptr))
+    #define ArraySize(x, dim, t) EXPR(ASR::make_ArraySize_t(al, loc, x, dim, t, nullptr))
 
     // Cast --------------------------------------------------------------------
     #define r2i8(x) EXPR(ASR::make_Cast_t(al, loc, x,                           \
