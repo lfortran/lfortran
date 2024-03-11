@@ -1087,11 +1087,8 @@ namespace Dshiftl {
             append_error(diag, "The shift argument of 'dshiftl' intrinsic must be non-negative integer", loc);
             return nullptr;
         }
-        if(kind1 == 8){
-            int64_t val = (val1 << shift) | (val2 >> (64 - shift));
-            return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
-        }
-        int64_t val = (val1 << shift) | (val2 >> (32 - shift));
+        int k_val = (kind1 == 8) ? 64: 32;
+        int64_t val = (val1 << shift) | (val2 >> (k_val - shift));
         return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
     }
 
@@ -1104,13 +1101,23 @@ namespace Dshiftl {
         fill_func_arg("j", arg_types[1]);
         fill_func_arg("shift", arg_types[2]);
         auto result = declare(fn_name, return_type, ReturnVar);
+        int32_t kind_arg = extract_kind_from_ttype_t(arg_types[0]);
         /*
         * r = Dshiftl(x, y, shift)
-        * r = x << shift | y >> (32 - shift)
+        * r = x << shift | y >> (32 - shift) ! kind = 4
+        * r = x << shift | y >> (64 - shift) ! kind = 8
         */
+        ASR::expr_t *thirty_two = i(32, return_type);
+        ASR::expr_t *sixty_four = i(64, return_type);
+        ASR::expr_t *four = i(4, int32);
+        ASR::expr_t *kind = i(kind_arg, int32);
         ASR::expr_t *cast = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[2], ASR::cast_kindType::IntegerToInteger, return_type, nullptr));
         body.push_back(al, b.Assignment(result, i_BitLshift(args[0], cast, return_type)));
-        body.push_back(al, b.Assignment(result, i_BitOr(result, i_BitRshift(args[1], i_tSub(i(32, return_type), args[2], return_type), return_type), return_type)));
+        body.push_back(al, b.If(iEq(kind, four), 
+            {b.Assignment(result, i_BitOr(result, i_BitRshift(args[1], i_tSub(thirty_two, args[2], return_type), return_type), return_type))}, 
+            {b.Assignment(result, i_BitOr(result, i_BitRshift(args[1], i_tSub(sixty_four, args[2], return_type), return_type), return_type))}
+            ));
+
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
