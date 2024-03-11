@@ -693,6 +693,7 @@ RUN(NAME intrinsics_174 LABELS gfortran llvm) # shape
 RUN(NAME intrinsics_175 LABELS gfortran llvm) # pack
 RUN(NAME intrinsics_176 LABELS gfortran llvm) # setexponent
 RUN(NAME intrinsics_177 LABELS gfortran llvm) # adjustr
+RUN(NAME intrinsics_178 LABELS gfortran llvm) # rrspacing
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
