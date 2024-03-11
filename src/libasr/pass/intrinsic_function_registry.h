@@ -72,6 +72,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Leadz)
         INTRINSIC_NAME_CASE(ToLowerCase)
         INTRINSIC_NAME_CASE(Digits)
+        INTRINSIC_NAME_CASE(Rrspacing)
         INTRINSIC_NAME_CASE(Repeat)
         INTRINSIC_NAME_CASE(Range)
         INTRINSIC_NAME_CASE(Hypot)
@@ -264,6 +265,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {nullptr, &Rank::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Digits),
             {&Digits::instantiate_Digits, &Digits::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Rrspacing),
+            {&Rrspacing::instantiate_Rrspacing, &Rrspacing::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Repeat),
             {&Repeat::instantiate_Repeat, &Repeat::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::MinExponent),
@@ -517,6 +520,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "rank"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Digits),
             "Digits"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Rrspacing),
+            "rrspacing"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Repeat),
             "Repeat"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::MinExponent),
@@ -702,6 +707,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"kind", {&Kind::create_Kind, &Kind::eval_Kind}},
                 {"rank", {&Rank::create_Rank, &Rank::eval_Rank}},
                 {"digits", {&Digits::create_Digits, &Digits::eval_Digits}},
+                {"rrspacing", {&Rrspacing::create_Rrspacing, &Rrspacing::eval_Rrspacing}},
                 {"repeat", {&Repeat::create_Repeat, &Repeat::eval_Repeat}},
                 {"minexponent", {&MinExponent::create_MinExponent, &MinExponent::eval_MinExponent}},
                 {"maxexponent", {&MaxExponent::create_MaxExponent, &MaxExponent::eval_MaxExponent}},

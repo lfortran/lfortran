@@ -750,6 +750,7 @@ public:
         {"ichar", {IntrinsicSignature({"C", "kind"}, 1, 2)}},
         {"char", {IntrinsicSignature({"I", "kind"}, 1, 2)}},
         {"set_exponent", {IntrinsicSignature({"X", "I"}, 2, 2)}},
+        {"rrspacing", {IntrinsicSignature({"X"}, 1, 1)}},
     };
 
     std::map<std::string, std::string> intrinsic_mapping = {
