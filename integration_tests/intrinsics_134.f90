@@ -1,4 +1,5 @@
 program intrinsics_134
+    character(len=5) :: x
     character(len=20) :: str = '   gfortran'
     str = adjustl(str)
     print *, str
@@ -6,4 +7,13 @@ program intrinsics_134
     str = adjustl('   gfortran')
     print *, str
     if (str /= 'gfortran') error stop
+
+    print *, "|"//adjustl("       abc")//"|"
+    if ("|"//adjustl("       abc")//"|" /= '|abc       |') error stop
+
+    x = "     "
+    print *, adjustl(x)
+    print *, adjustl("     ")
+    if (adjustl("     ") /= "     ") error stop
+    if (adjustl(x) /= "     ") error stop
 end program

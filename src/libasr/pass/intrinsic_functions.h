@@ -2989,8 +2989,9 @@ namespace Adjustl {
         while (first_non_space < len && std::isspace(str[first_non_space])) {
             first_non_space++;
         }
-        char* result = new char[len - first_non_space + 1];
-        std::strcpy(result, str + first_non_space);
+        std::string res(len, ' ');
+        char* result = s2c(al, res);
+        std::strncpy(result, str + first_non_space, len - first_non_space);
         return make_ConstantWithType(make_StringConstant_t, result, t1, loc);
     }
 
@@ -3002,25 +3003,32 @@ namespace Adjustl {
         return_type = TYPE(ASR::make_Character_t(al, loc, 1, -3, EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr))));
         auto result = declare("result", return_type, ReturnVar);
         auto itr = declare("i", ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), Local);
+        auto tmp = declare("tmp", ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), Local);
 
         /*
             function adjustl_(s) result(r)
                 character(len=*), intent(in) :: s
                 character(len=len(s)) :: r
-                integer :: i
+                integer :: i, tmp
                 i = 1
-                do while (i <= len(s) .and. isspace(s(i:i)))
-                    i = i + 1
+                do while (i <= len(s))
+                    if (isspace(s(i:i))) then
+                        i = i + 1
+                    else
+                        exit
+                    end if
                 end do
-                r = s(i:len(s))
+                if i <= len(s) then
+                    tmp = len(s) - i + 1
+                    r(1:tmp) = s(i:len(s))
+                end if
             end function
         */
 
         body.push_back(al, b.Assignment(itr, i32(1)));
         char* whileloop_name = nullptr;
-        ASR::expr_t* whileloop_test = nullptr;
         ASR::expr_t* str_len = ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr));
-        ASR::expr_t* integercompare_left = iLtE(itr, str_len);
+        ASR::expr_t* whileloop_test = iLtE(itr, str_len);
 
         ASR::expr_t* ichar_left = nullptr;
         ASR::ttype_t* ichar_left_arg_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr));
@@ -3033,19 +3041,21 @@ namespace Adjustl {
                                     int32,
                                     nullptr));
 
-        // creating integercompare_right
-        ASR::expr_t* integercompare_right = iEq(ichar_left, ichar_right);
-
-        whileloop_test = And(integercompare_left, integercompare_right);
+        ASR::expr_t* comp_with_isspace = iEq(ichar_left, ichar_right);
 
         // creating while loop body
         Vec<ASR::stmt_t*> whileloop_body; whileloop_body.reserve(al, 1);
-        whileloop_body.push_back(al, b.Assignment(itr, i_tAdd(itr, i32(1), int32)));
+        whileloop_body.push_back(al,
+            b.If(comp_with_isspace, {
+                b.Assignment(itr, i_tAdd(itr, i32(1), int32))
+            }, {
+                b.Exit(whileloop_name)
+            })
+        );
 
         ASR::stmt_t* whileloop = ASRUtils::STMT(ASR::make_WhileLoop_t(al, loc, whileloop_name, whileloop_test, whileloop_body.p, whileloop_body.n));
 
         body.push_back(al, whileloop);
-
 
        ASR::expr_t* string_section = ASRUtils::EXPR(ASR::make_StringSection_t(al, loc,
                     args[0],
@@ -3054,7 +3064,19 @@ namespace Adjustl {
                     i32(1),
                     ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)),
                     nullptr));
-        body.push_back(al, b.Assignment(result, string_section));
+        ASR::expr_t* result_string_section = ASRUtils::EXPR(ASR::make_StringSection_t(al, loc,
+                    result,
+                    i32(0),
+                    tmp,
+                    i32(1),
+                    ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)),
+                    nullptr));
+
+        body.push_back(al, b.If(iLtE(itr, str_len), {
+            b.Assignment(tmp, iAdd(iSub(str_len, itr), i32(1))),
+            b.Assignment(result_string_section, string_section)
+        }, {}));
+
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
