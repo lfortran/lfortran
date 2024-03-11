@@ -78,6 +78,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(SelectedIntKind)
         INTRINSIC_NAME_CASE(SelectedRealKind)
         INTRINSIC_NAME_CASE(Adjustl)
+        INTRINSIC_NAME_CASE(Adjustr)
         INTRINSIC_NAME_CASE(Ichar)
         INTRINSIC_NAME_CASE(Char)
         INTRINSIC_NAME_CASE(MinExponent)
@@ -211,6 +212,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Shiftr::instantiate_Shiftr, &Shiftr::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Adjustl),
             {&Adjustl::instantiate_Adjustl, &Adjustl::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Adjustr),
+            {&Adjustr::instantiate_Adjustr, &Adjustr::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ichar),
             {&Ichar::instantiate_Ichar, &Ichar::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Char),
@@ -460,6 +463,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "rshift"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Adjustl),
             "adjustl"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Adjustr),
+            "adjustr"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ichar),
             "ichar"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Char),
@@ -710,6 +715,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"set.remove", {&SetRemove::create_SetRemove, &SetRemove::eval_set_remove}},
                 {"max0", {&Max::create_Max, &Max::eval_Max}},
                 {"adjustl", {&Adjustl::create_Adjustl, &Adjustl::eval_Adjustl}},
+                {"adjustr", {&Adjustr::create_Adjustr, &Adjustr::eval_Adjustr}},
                 {"ichar", {&Ichar::create_Ichar, &Ichar::eval_Ichar}},
                 {"char", {&Char::create_Char, &Char::eval_Char}},
                 {"min0", {&Min::create_Min, &Min::eval_Min}},

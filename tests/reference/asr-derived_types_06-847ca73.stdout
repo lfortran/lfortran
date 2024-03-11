@@ -528,7 +528,7 @@
                                                 (ExternalSymbol
                                                     13
                                                     present
-                                                    32 present
+                                                    31 present
                                                     lfortran_intrinsic_builtin
                                                     []
                                                     present

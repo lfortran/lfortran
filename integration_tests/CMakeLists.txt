@@ -553,7 +553,7 @@ RUN(NAME intrinsics_34 LABELS gfortran llvm wasm) # epsilon
 RUN(NAME intrinsics_35 LABELS gfortran)
 RUN(NAME intrinsics_36 LABELS gfortran llvm) # adjustl
 RUN(NAME intrinsics_37 LABELS gfortran)
-RUN(NAME intrinsics_38 LABELS gfortran) # adjustr
+RUN(NAME intrinsics_38 LABELS gfortran llvm) # adjustr
 RUN(NAME intrinsics_39 LABELS gfortran)
 RUN(NAME intrinsics_40 LABELS gfortran)
 RUN(NAME intrinsics_41 LABELS gfortran) # command_argument_count
@@ -692,6 +692,7 @@ RUN(NAME intrinsics_173 LABELS gfortran llvm) # fraction
 RUN(NAME intrinsics_174 LABELS gfortran llvm) # shape
 RUN(NAME intrinsics_175 LABELS gfortran llvm) # pack
 RUN(NAME intrinsics_176 LABELS gfortran llvm) # setexponent
+RUN(NAME intrinsics_177 LABELS gfortran llvm) # adjustr
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)

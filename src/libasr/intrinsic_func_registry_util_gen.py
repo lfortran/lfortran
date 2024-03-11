@@ -128,6 +128,12 @@ intrinsic_funcs_args = {
             "return": "character(-1)"
         }
     ],
+    "Adjustr": [
+        {
+            "args": [("char",)],
+            "return": "character(-1)"
+        }
+    ],
     "Aint": [
         {
             "args": [("real",)],

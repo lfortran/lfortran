@@ -94,7 +94,6 @@ struct IntrinsicProcedures {
             // left unevaluated in body visitor
             {"trim", {m_string, &not_implemented, false}},
             {"len_trim", {m_string, &not_implemented, false}},
-            {"adjustr", {m_string, &not_implemented, false}},
             {"lgt", {m_string, &not_implemented, false}},
             {"llt", {m_string, &not_implemented, false}},
             {"lge", {m_string, &not_implemented, false}},
