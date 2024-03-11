@@ -395,6 +395,10 @@ class ASRBuilder {
             m_body.p, m_body.n));
     }
 
+    ASR::stmt_t *Exit(char* loop_name) {
+        return STMT(ASR::make_Exit_t(al, loc, loop_name));
+    }
+
     ASR::expr_t *TupleConstant(std::vector<ASR::expr_t*> ele, ASR::ttype_t *type) {
         Vec<ASR::expr_t*> m_ele; m_ele.reserve(al, 3);
         for (auto &x: ele) m_ele.push_back(al, x);
