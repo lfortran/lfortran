@@ -772,12 +772,10 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
 namespace Shape {
     static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
             diag::Diagnostics &diagnostics) {
-        ASRUtils::require_impl(x.n_args == 1 || x.n_args == 2,
-            "`shape` intrinsic accepts either 1 or 2 arguments",
+        ASRUtils::require_impl(x.n_args == 1,
+            "`shape` intrinsic accepts 1 argument",
             x.base.base.loc, diagnostics);
         ASRUtils::require_impl(x.m_args[0], "`source` argument of `shape` "
-            "cannot be nullptr", x.base.base.loc, diagnostics);
-        ASRUtils::require_impl(x.m_args[1], "`kind` argument of `shape` "
             "cannot be nullptr", x.base.base.loc, diagnostics);
     }
 
