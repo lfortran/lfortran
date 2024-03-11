@@ -72,6 +72,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Leadz,
     ToLowerCase,
     Digits,
+    Rrspacing,
     Repeat,
     Hypot,
     SelectedIntKind,
@@ -3389,6 +3390,96 @@ namespace Digits {
     }
 
 } // namespace Digits
+
+namespace Rrspacing {
+
+    static ASR::expr_t *eval_Rrspacing(Allocator &al, const Location &loc,
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
+        int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
+        double digits;
+        double fraction;
+        digits = (kind == 4) ? 24.00 : 53.00;
+        if (kind == 4) {
+            float x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            int32_t exponent;
+            if (x == 0.0) {
+                exponent = 0;
+                fraction =  x * std::pow((2), (-1*(exponent)));
+            }
+            else{
+                int32_t ix;
+                std::memcpy(&ix, &x, sizeof(ix));
+                exponent = ((ix >> 23) & 0xff) - 126;
+                fraction =  x * std::pow((2), (-1*(exponent)));
+            }
+        }
+        else if (kind == 8) {
+            double x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            int64_t exponent;
+            if (x == 0.0) {
+                exponent = 0;
+                fraction =  x * std::pow((2), (-1*(exponent)));
+            }
+            else{
+                int64_t ix;
+                std::memcpy(&ix, &x, sizeof(ix));
+                exponent = ((ix >> 52) & 0x7ff) - 1022;
+                fraction =  x * std::pow((2), (-1*(exponent)));
+            }
+        }
+        fraction = std::abs(fraction);
+        double radix = 2.00;
+        double result = fraction * std::pow(radix, digits);
+        return make_ConstantWithType(make_RealConstant_t, result, arg_type, loc);
+        
+        
+    }
+
+    static inline ASR::expr_t* instantiate_Rrspacing(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_optimization_rrspacing_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+
+
+        Vec<ASR::ttype_t*> arg_types_exp; arg_types_exp.reserve(al, 1);
+        arg_types_exp.push_back(al, arg_types[0]);
+        Vec<ASR::call_arg_t> new_args_exp; new_args_exp.reserve(al, 1);
+        ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = args[0];
+        new_args_exp.push_back(al, arg1);
+        ASR::expr_t* func_call_fraction = Fraction::instantiate_Fraction(al, loc, scope, arg_types_exp, return_type, new_args_exp, 0);
+        
+        
+        
+        ASR::expr_t* func_call_digits = Digits::instantiate_Digits(al, loc, scope, arg_types_exp, int32, new_args_exp, 0);
+        ASR::expr_t *cast = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, func_call_digits, ASR::cast_kindType::IntegerToReal, return_type, nullptr));
+
+
+
+
+        Vec<ASR::call_arg_t> new_args_frac; new_args_frac.reserve(al, 1);
+        ASR::call_arg_t arg_frac_1; arg_frac_1.loc = loc; arg_frac_1.m_value = func_call_fraction;
+        new_args_frac.push_back(al, arg_frac_1);
+        ASR::expr_t* func_call_abs = Abs::instantiate_Abs(al, loc, scope, arg_types_exp, return_type, new_args_frac, 0);
+
+
+        //result = fraction * (2.00 ** digits)
+
+
+        body.push_back(al, b.Assignment(result, r_tMul(func_call_abs, rPow(i2r(i32(2),return_type), cast, return_type), return_type)));
+
+
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+        
+    }
+
+} // namespace Rrspacing
 
 namespace Repeat {
 
