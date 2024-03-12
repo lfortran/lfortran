@@ -749,6 +749,7 @@ public:
         {"ishftc", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
         {"ichar", {IntrinsicSignature({"C", "kind"}, 1, 2)}},
         {"char", {IntrinsicSignature({"I", "kind"}, 1, 2)}},
+        {"achar", {IntrinsicSignature({"I", "kind"}, 1, 2)}},
         {"set_exponent", {IntrinsicSignature({"X", "I"}, 2, 2)}},
         {"rrspacing", {IntrinsicSignature({"X"}, 1, 1)}},
     };
@@ -4864,35 +4865,6 @@ public:
         return ASR::make_Iachar_t(al, x.base.base.loc, arg, type, iachar_value);
     }
 
-    ASR::asr_t* create_StringChr(const AST::FuncCallOrArray_t& x) {
-        Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"I", "kind"};
-        handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "char");
-        ASR::expr_t *arg = args[0];
-        if (!is_integer(*ASRUtils::expr_type(arg))) {
-            throw SemanticError("`x` argument of `char()` must be an integer",
-                x.base.base.loc);
-        }
-        ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Character_t(al,
-            x.base.base.loc, 1, 1, nullptr));
-        ASR::expr_t* char_value = nullptr; int64_t ascii_code;
-        if( ASRUtils::extract_value(arg, ascii_code) ) {
-            ascii_code = (uint8_t) ascii_code;
-            if (! (ascii_code >= 0 && ascii_code <= 255) ) {
-                throw SemanticError("'x' argument of char(x) must be in the "
-                    "range 0 <= x <= 255", x.base.base.loc);
-            }
-            std::string cvalue;
-            cvalue += char(ascii_code);
-             char_value = ASRUtils::EXPR(ASR::make_StringConstant_t(al,
-                x.base.base.loc, s2c(al, cvalue), type));
-        }
-        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
-            x.base.base.loc, compiler_options.po.default_integer_kind));
-        ImplicitCastRules::set_converted_value(al, x.base.base.loc, &arg, ASRUtils::expr_type(arg), int_type);
-        return ASR::make_StringChr_t(al, x.base.base.loc, arg, type, char_value);
-    }
-
     ASR::asr_t* create_ScanVerify_util(const AST::FuncCallOrArray_t& x, std::string func_name) {
         ASR::expr_t *string, *set, *back, *kind;
         ASR::ttype_t *type;
@@ -5174,8 +5146,6 @@ public:
                 tmp = create_Ichar(x);
             } else if( var_name == "iachar" ) {
                 tmp = create_Iachar(x);
-            } else if( var_name == "char" ) {
-                tmp = create_StringChr(x);
             } else if( var_name == "scan" ) {
                 tmp = create_ScanVerify_util(x, var_name);
             } else if( var_name == "verify" ) {
