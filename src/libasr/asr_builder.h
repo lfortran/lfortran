@@ -318,7 +318,7 @@ class ASRBuilder {
         }
     }
 
-    ASR::expr_t* CallIntrinsic(const Location& loc, SymbolTable* scope, std::vector<ASR::ttype_t*> types,
+    ASR::expr_t* CallIntrinsic(SymbolTable* scope, std::vector<ASR::ttype_t*> types,
                                 std::vector<ASR::expr_t*> args,  ASR::ttype_t* return_type, int64_t overload_id,
                                 ASR::expr_t* (*intrinsic_func)(Allocator &, const Location &, SymbolTable *,
                                 Vec<ASR::ttype_t*>&, ASR::ttype_t *, Vec<ASR::call_arg_t>&, int64_t)) {
