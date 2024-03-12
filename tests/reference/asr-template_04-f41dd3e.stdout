@@ -2,8 +2,6 @@
     (SymbolTable
         1
         {
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
             template_04:
                 (Program
                     (SymbolTable
@@ -190,10 +188,10 @@
                                         []
                                         .false.
                                     )
-                                    [~add_intrinsic
-                                    ~mul_intrinsic
-                                    ~div_intrinsic
-                                    ~sub_intrinsic]
+                                    [~mul_intrinsic
+                                    ~add_intrinsic
+                                    ~sub_intrinsic
+                                    ~div_intrinsic]
                                     [(Var 198 x)
                                     (Var 198 y)]
                                     [(Assignment
@@ -719,10 +717,10 @@
                                         []
                                         .false.
                                     )
-                                    [~add_intrinsic1
-                                    ~mul_intrinsic1
-                                    ~div_intrinsic1
-                                    ~sub_intrinsic1]
+                                    [~mul_intrinsic1
+                                    ~add_intrinsic1
+                                    ~sub_intrinsic1
+                                    ~div_intrinsic1]
                                     [(Var 200 x)
                                     (Var 200 y)]
                                     [(Assignment
@@ -1239,8 +1237,8 @@
                                         .false.
                                     )
                                     [~div_intrinsic
-                                    ~sub_intrinsic
-                                    ~mul_intrinsic]
+                                    ~mul_intrinsic
+                                    ~sub_intrinsic]
                                     [(Var 197 x)]
                                     [(Assignment
                                         (Var 197 reduced)
@@ -1622,8 +1620,8 @@
                                         .false.
                                     )
                                     [~div_intrinsic1
-                                    ~sub_intrinsic1
-                                    ~mul_intrinsic1]
+                                    ~mul_intrinsic1
+                                    ~sub_intrinsic1]
                                     [(Var 199 x)]
                                     [(Assignment
                                         (Var 199 reduced)
@@ -1853,16 +1851,6 @@
                                     .false.
                                     ()
                                 ),
-                            achar:
-                                (ExternalSymbol
-                                    146
-                                    achar
-                                    202 achar
-                                    lfortran_intrinsic_builtin
-                                    []
-                                    achar
-                                    Private
-                                ),
                             derive_extended_monoid:
                                 (ExternalSymbol
                                     146
@@ -1975,8 +1963,8 @@
                                         []
                                         .false.
                                     )
-                                    [__asr_back_substitute
-                                    __asr_row_eschelon]
+                                    [__asr_row_eschelon
+                                    __asr_back_substitute]
                                     [(Var 171 x)
                                     (Var 171 y)]
                                     [(Assignment
@@ -2175,10 +2163,10 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [~add_intrinsic
-                                                    ~mul_intrinsic
-                                                    div_t
-                                                    ~sub_intrinsic]
+                                                    [~mul_intrinsic
+                                                    ~add_intrinsic
+                                                    ~sub_intrinsic
+                                                    div_t]
                                                     [(Var 165 x)
                                                     (Var 165 y)]
                                                     [(Assignment
@@ -2625,8 +2613,8 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [back_substitute
-                                                    row_eschelon]
+                                                    [row_eschelon
+                                                    back_substitute]
                                                     [(Var 166 x)
                                                     (Var 166 y)]
                                                     [(Assignment
@@ -2972,8 +2960,8 @@
                                                         .false.
                                                     )
                                                     [div_t
-                                                    ~sub_intrinsic
-                                                    ~mul_intrinsic]
+                                                    ~mul_intrinsic
+                                                    ~sub_intrinsic]
                                                     [(Var 169 x)]
                                                     [(Assignment
                                                         (Var 169 reduced)
@@ -3429,10 +3417,10 @@
                                                                         []
                                                                         .false.
                                                                     )
-                                                                    [~add_intrinsic
-                                                                    ~mul_intrinsic
-                                                                    div_t
-                                                                    minus_t]
+                                                                    [~mul_intrinsic
+                                                                    ~add_intrinsic
+                                                                    minus_t
+                                                                    div_t]
                                                                     [(Var 154 x)
                                                                     (Var 154 y)]
                                                                     [(Assignment
@@ -3879,8 +3867,8 @@
                                                                         []
                                                                         .false.
                                                                     )
-                                                                    [back_substitute
-                                                                    row_eschelon]
+                                                                    [row_eschelon
+                                                                    back_substitute]
                                                                     [(Var 155 x)
                                                                     (Var 155 y)]
                                                                     [(Assignment
@@ -4290,8 +4278,8 @@
                                                                         .false.
                                                                     )
                                                                     [div_t
-                                                                    minus_t
-                                                                    ~mul_intrinsic]
+                                                                    ~mul_intrinsic
+                                                                    minus_t]
                                                                     [(Var 159 x)]
                                                                     [(Assignment
                                                                         (Var 159 reduced)
@@ -5376,8 +5364,8 @@
                                         []
                                         .false.
                                     )
-                                    [~add_intrinsic
-                                    ~mul_intrinsic]
+                                    [~mul_intrinsic
+                                    ~add_intrinsic]
                                     [(Var 151 x)
                                     (Var 151 y)]
                                     [(DoLoop
@@ -5786,8 +5774,8 @@
                                         []
                                         .false.
                                     )
-                                    [__asr_back_substitute1
-                                    __asr_row_eschelon1]
+                                    [__asr_row_eschelon1
+                                    __asr_back_substitute1]
                                     [(Var 196 x)
                                     (Var 196 y)]
                                     [(Assignment
@@ -5986,10 +5974,10 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [~add_intrinsic1
-                                                    ~mul_intrinsic1
-                                                    div_t
-                                                    ~sub_intrinsic1]
+                                                    [~mul_intrinsic1
+                                                    ~add_intrinsic1
+                                                    ~sub_intrinsic1
+                                                    div_t]
                                                     [(Var 190 x)
                                                     (Var 190 y)]
                                                     [(Assignment
@@ -6436,8 +6424,8 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [back_substitute
-                                                    row_eschelon]
+                                                    [row_eschelon
+                                                    back_substitute]
                                                     [(Var 191 x)
                                                     (Var 191 y)]
                                                     [(Assignment
@@ -6783,8 +6771,8 @@
                                                         .false.
                                                     )
                                                     [div_t
-                                                    ~sub_intrinsic1
-                                                    ~mul_intrinsic1]
+                                                    ~mul_intrinsic1
+                                                    ~sub_intrinsic1]
                                                     [(Var 194 x)]
                                                     [(Assignment
                                                         (Var 194 reduced)
@@ -7240,10 +7228,10 @@
                                                                         []
                                                                         .false.
                                                                     )
-                                                                    [~add_intrinsic1
-                                                                    ~mul_intrinsic1
-                                                                    div_t
-                                                                    minus_t]
+                                                                    [~mul_intrinsic1
+                                                                    ~add_intrinsic1
+                                                                    minus_t
+                                                                    div_t]
                                                                     [(Var 179 x)
                                                                     (Var 179 y)]
                                                                     [(Assignment
@@ -7690,8 +7678,8 @@
                                                                         []
                                                                         .false.
                                                                     )
-                                                                    [back_substitute
-                                                                    row_eschelon]
+                                                                    [row_eschelon
+                                                                    back_substitute]
                                                                     [(Var 180 x)
                                                                     (Var 180 y)]
                                                                     [(Assignment
@@ -8101,8 +8089,8 @@
                                                                         .false.
                                                                     )
                                                                     [div_t
-                                                                    minus_t
-                                                                    ~mul_intrinsic1]
+                                                                    ~mul_intrinsic1
+                                                                    minus_t]
                                                                     [(Var 184 x)]
                                                                     [(Assignment
                                                                         (Var 184 reduced)
@@ -9187,8 +9175,8 @@
                                         []
                                         .false.
                                     )
-                                    [~add_intrinsic1
-                                    ~mul_intrinsic1]
+                                    [~mul_intrinsic1
+                                    ~add_intrinsic1]
                                     [(Var 176 x)
                                     (Var 176 y)]
                                     [(DoLoop
@@ -10461,17 +10449,15 @@
                             ColMajor
                             ()
                         )
-                        (FunctionCall
-                            146 achar
-                            ()
-                            [((IntegerConstant 10 (Integer 4)))
-                            (())]
+                        (IntrinsicElementalFunction
+                            Achar
+                            [(IntegerConstant 10 (Integer 4))]
+                            0
                             (Character 1 1 ())
                             (StringConstant
                                 "\n"
                                 (Character 1 1 ())
                             )
-                            ()
                         )]
                         ()
                         ()
@@ -10592,17 +10578,15 @@
                             ColMajor
                             ()
                         )
-                        (FunctionCall
-                            146 achar
-                            ()
-                            [((IntegerConstant 10 (Integer 4)))
-                            (())]
+                        (IntrinsicElementalFunction
+                            Achar
+                            [(IntegerConstant 10 (Integer 4))]
+                            0
                             (Character 1 1 ())
                             (StringConstant
                                 "\n"
                                 (Character 1 1 ())
                             )
-                            ()
                         )]
                         ()
                         ()
@@ -11001,17 +10985,15 @@
                             ColMajor
                             ()
                         )
-                        (FunctionCall
-                            146 achar
-                            ()
-                            [((IntegerConstant 10 (Integer 4)))
-                            (())]
+                        (IntrinsicElementalFunction
+                            Achar
+                            [(IntegerConstant 10 (Integer 4))]
+                            0
                             (Character 1 1 ())
                             (StringConstant
                                 "\n"
                                 (Character 1 1 ())
                             )
-                            ()
                         )]
                         ()
                         ()
@@ -11132,17 +11114,15 @@
                             ColMajor
                             ()
                         )
-                        (FunctionCall
-                            146 achar
-                            ()
-                            [((IntegerConstant 10 (Integer 4)))
-                            (())]
+                        (IntrinsicElementalFunction
+                            Achar
+                            [(IntegerConstant 10 (Integer 4))]
+                            0
                             (Character 1 1 ())
                             (StringConstant
                                 "\n"
                                 (Character 1 1 ())
                             )
-                            ()
                         )]
                         ()
                         ()
@@ -11311,8 +11291,8 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [divide
-                                                    one]
+                                                    [one
+                                                    divide]
                                                     [(Var 102 x)]
                                                     [(Assignment
                                                         (Var 102 inverse)
@@ -11917,8 +11897,8 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [mult
-                                                    invert]
+                                                    [invert
+                                                    mult]
                                                     [(Var 111 x)
                                                     (Var 111 y)]
                                                     [(Assignment
@@ -14798,10 +14778,10 @@
                                                                                         .false.
                                                                                     )
                                                                                     [zero_t
-                                                                                    plus_t
                                                                                     times_t
-                                                                                    div_t
-                                                                                    minus_t]
+                                                                                    plus_t
+                                                                                    minus_t
+                                                                                    div_t]
                                                                                     [(Var 134 x)
                                                                                     (Var 134 y)]
                                                                                     [(Assignment
@@ -15290,8 +15270,8 @@
                                                                                         []
                                                                                         .false.
                                                                                     )
-                                                                                    [back_substitute
-                                                                                    row_eschelon]
+                                                                                    [row_eschelon
+                                                                                    back_substitute]
                                                                                     [(Var 135 x)
                                                                                     (Var 135 y)]
                                                                                     [(Assignment
@@ -15569,8 +15549,8 @@
                                                                                         []
                                                                                         .false.
                                                                                     )
-                                                                                    [minus_t
-                                                                                    zero_t]
+                                                                                    [zero_t
+                                                                                    minus_t]
                                                                                     [(Var 126 x)]
                                                                                     [(Assignment
                                                                                         (Var 126 negated)
@@ -15883,8 +15863,8 @@
                                                                                     )
                                                                                     [div_t
                                                                                     zero_t
-                                                                                    minus_t
-                                                                                    times_t]
+                                                                                    times_t
+                                                                                    minus_t]
                                                                                     [(Var 133 x)]
                                                                                     [(Assignment
                                                                                         (Var 133 reduced)
@@ -17668,8 +17648,8 @@
                                                         .false.
                                                     )
                                                     [zero_t
-                                                    plus_t
-                                                    times_t]
+                                                    times_t
+                                                    plus_t]
                                                     [(Var 139 x)
                                                     (Var 139 y)]
                                                     [(DoLoop
@@ -20773,8 +20753,8 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [minus
-                                                    zero]
+                                                    [zero
+                                                    minus]
                                                     [(Var 60 x)]
                                                     [(Assignment
                                                         (Var 60 negated)
@@ -21121,8 +21101,8 @@
                                                         []
                                                         .false.
                                                     )
-                                                    [plus
-                                                    negate]
+                                                    [negate
+                                                    plus]
                                                     [(Var 67 x)
                                                     (Var 67 y)]
                                                     [(Assignment

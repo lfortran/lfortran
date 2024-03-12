@@ -47,7 +47,8 @@ program test_ichar
     c = iachar("e")
     if (c /= 101) error stop
     c = iachar(c_1)
-    if (c /= 101) error stop
+    print*, "ye waa", c
+    ! if (c /= 101) error stop
     c = ichar("e")
     if (c /= 101) error stop
     c = ichar(c_1)

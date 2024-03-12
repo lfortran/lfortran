@@ -3,6 +3,7 @@ program string_28
     INTEGER ::len_line, char_value
     calibration_document(3) = 'abc'
     len_line = 1
+    print*, calibration_document(3)(len_line:len_line)
     char_value = IACHAR(calibration_document(3)(len_line:len_line))
     print *, char_value
     if (char_value /= 97) error stop
