@@ -3059,20 +3059,8 @@ namespace Adjustl {
 
         body.push_back(al, whileloop);
 
-       ASR::expr_t* string_section = ASRUtils::EXPR(ASR::make_StringSection_t(al, loc,
-                    args[0],
-                    i_tSub(itr, i32(1), int32),
-                    str_len,
-                    i32(1),
-                    ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)),
-                    nullptr));
-        ASR::expr_t* result_string_section = ASRUtils::EXPR(ASR::make_StringSection_t(al, loc,
-                    result,
-                    i32(0),
-                    tmp,
-                    i32(1),
-                    ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)),
-                    nullptr));
+        ASR::expr_t* string_section = StringSection(args[0], i_tSub(itr, i32(1), int32), str_len);
+        ASR::expr_t* result_string_section = StringSection(result, i32(0), tmp);
 
         body.push_back(al, b.If(iLtE(itr, str_len), {
             b.Assignment(tmp, iAdd(iSub(str_len, itr), i32(1))),
@@ -3171,20 +3159,8 @@ namespace Adjustr {
 
         body.push_back(al, whileloop);
 
-       ASR::expr_t* string_section = ASRUtils::EXPR(ASR::make_StringSection_t(al, loc,
-                    args[0],
-                    i32(0),
-                    itr,
-                    i32(1),
-                    ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)),
-                    nullptr));
-        ASR::expr_t* result_string_section = ASRUtils::EXPR(ASR::make_StringSection_t(al, loc,
-                    result,
-                    iSub(tmp, i32(1)),
-                    str_len,
-                    i32(1),
-                    ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)),
-                    nullptr));
+        ASR::expr_t* string_section = StringSection(args[0], i32(0), itr);
+        ASR::expr_t* result_string_section = StringSection(result, iSub(tmp, i32(1)), str_len);
 
         body.push_back(al, b.If(iNotEq(itr, i32(0)), {
             b.Assignment(tmp, iAdd(iSub(str_len, itr), i32(1))),
