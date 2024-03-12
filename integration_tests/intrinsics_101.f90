@@ -9,4 +9,5 @@ program intrinsics_101
     print *, repeat("hello", 2)
     if (repeat("hello", 2) /= "hellohello") error stop
     print *, '-', s2, '-'
+    if (s2 /= "242  242  ") error stop
 end program

@@ -3464,46 +3464,56 @@ namespace Repeat {
     static inline ASR::expr_t* instantiate_Repeat(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_optimization_repeat_" + type_to_str_python(arg_types[0]));
+        auto func_name = "_lcompilers_optimization_repeat_" + type_to_str_python(arg_types[0])
+             + type_to_str_python(arg_types[1]);
+        declare_basic_variables(func_name);
+        if (scope->get_symbol(func_name)) {
+            ASR::symbol_t *s = scope->get_symbol(func_name);
+            return b.Call(s, new_args, return_type, nullptr);
+        }
         fill_func_arg("x", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -10, nullptr)));
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -3,
             ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
                 ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, args[0], ASRUtils::expr_type(args[1]), nullptr)),
                 ASR::binopType::Mul, args[1], ASRUtils::expr_type(args[1]), nullptr)))), ReturnVar);
-        auto itr = declare("r", arg_types[1], Local);
+        auto i = declare("i", int32, Local);
+        auto j = declare("j", int32, Local);
+        auto m = declare("m", int32, Local);
+        auto cnt = declare("cnt", int32, Local);
         /*
             function repeat_(s, n) result(r)
                 character(len=*), intent(in) :: s
                 integer, intent(in) :: n
                 character(len=n*len(s)) :: r
-                integer :: i
-                i = n
-                do while (i > 0)
-                    r = s // r
-                    i = i - 1
+                integer :: i, j, m, cnt
+                m = len(s)
+                i = 1
+                j = m
+                cnt = 0
+                do while (cnt < n)
+                    r(i:j) = s(1:len(s))
+                    i = j + 1
+                    j = i + m - 1
+                    cnt = cnt + 1
                 end do
             end function
         */
 
-        ASR::expr_t* empty_str =  StringConstant("", ASRUtils::TYPE(
-            ASR::make_Character_t(al, loc, 1, 0, nullptr)));
-        body.push_back(al, b.Assignment(result, empty_str));
-        body.push_back(al, b.Assignment(itr, args[1]));
-        int arg_1_kind = ASRUtils::extract_kind_from_ttype_t(arg_types[1]);
-        ASR::expr_t *cond = iGt(itr, i(0, arg_types[1]));
+        body.push_back(al, b.Assignment(m, StringLen(args[0])));
+        body.push_back(al, b.Assignment(i, i32(1)));
+        body.push_back(al, b.Assignment(j, m));
+        body.push_back(al, b.Assignment(cnt, i32(0)));
+
+        ASR::expr_t *cond = iLt(cnt, CastingUtil::perform_casting(args[1], int32, al, loc));
         std::vector<ASR::stmt_t*> while_loop_body;
-        if (arg_1_kind == 4) {
-            while_loop_body.push_back(b.Assignment(ASRUtils::EXPR(ASR::make_StringItem_t(
-                al, loc, result, itr, ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, 1, nullptr)),
-                nullptr)), args[0]));
-            while_loop_body.push_back(b.Assignment(itr, iSub(itr, i(1, arg_types[1]))));
-        } else {
-            while_loop_body.push_back(b.Assignment(ASRUtils::EXPR(ASR::make_StringItem_t(
-                al, loc, result, itr, ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, 1, nullptr)),
-                nullptr)), args[0]));
-            while_loop_body.push_back(b.Assignment(itr, i64Sub(itr, i(1, arg_types[1]))));
-        }
+
+        while_loop_body.push_back(b.Assignment(StringSection(result, iSub(i, i32(1)), j),
+            StringSection(args[0], 0, StringLen(args[0]))));
+        while_loop_body.push_back(b.Assignment(i, iAdd(j, i32(1))));
+        while_loop_body.push_back(b.Assignment(j, iSub(iAdd(i, m), i32(1))));
+        while_loop_body.push_back(b.Assignment(cnt, iAdd(cnt, i32(1))));
+
         body.push_back(al, b.While(cond, while_loop_body));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
