@@ -1609,20 +1609,18 @@ namespace Ibits {
     static inline ASR::expr_t* instantiate_Ibits(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("");
+        declare_basic_variables("_lcompilers_ibits_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         fill_func_arg("z", arg_types[2]);
         auto result = declare(fn_name, return_type, ReturnVar);
+        /*
+        * r = ibits(x, y, z)
+        * r = ( x >> y ) & ( ( 1 << z ) - 1 )
+        */
         
-        ASR::expr_t *val1 = args[0];
-        ASR::expr_t *val2 = args[1];
-        ASR::expr_t *val3 = args[2];
         ASR::expr_t *one = i(1, arg_types[0]);
-
-        ASR::expr_t *cast_val2 = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, val2, ASR::cast_kindType::IntegerToInteger, arg_types[0], nullptr));
-        ASR::expr_t *cast_val3 = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, val3, ASR::cast_kindType::IntegerToInteger, arg_types[0], nullptr));
-        body.push_back(al, b.Assignment(result, i_BitAnd(i_BitRshift(val1, cast_val2, return_type), iSub(i_BitLshift(one, cast_val3, return_type), one), return_type)));
+        body.push_back(al, b.Assignment(result, i_BitAnd(i_BitRshift(args[0], i2i(args[1], arg_types[0]), return_type), iSub(i_BitLshift(one, i2i(args[2], arg_types[0]), return_type), one), return_type)));
         
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
