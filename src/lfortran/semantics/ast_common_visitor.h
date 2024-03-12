@@ -4901,7 +4901,14 @@ public:
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"string", "set", "back", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 2, 4, func_name);
-        string = args[0], set = args[1], back = args[2], kind = args[3];
+        string = args[0], set = args[1];
+        back = kind = nullptr;
+        if (args.size() >= 3) {
+            back = args[2];
+            if (args.size() == 4) {
+                kind = args[3];
+            }
+        }
         int64_t kind_value = handle_kind(kind);
         type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_value));
         std::string function_name = func_name + "_kind" + std::to_string(kind_value);
@@ -4909,16 +4916,11 @@ public:
         ASR::call_arg_t string_arg, set_arg, back_arg;
         string_arg.loc = string->base.loc;
         string_arg.m_value = string;
-        if( set ) {
-            set_arg.loc = set->base.loc;
-        } else {
-            set_arg.loc = x.base.base.loc;
-        }
+        set_arg.loc = set->base.loc;
         set_arg.m_value = set;
-        if( back ) {
+        back_arg.loc = x.base.base.loc;
+        if (back) {
             back_arg.loc = back->base.loc;
-        } else {
-            back_arg.loc = x.base.base.loc;
         }
         back_arg.m_value = back;
 
@@ -4927,6 +4929,7 @@ public:
         func_args.push_back(al, string_arg);
         func_args.push_back(al, set_arg);
         func_args.push_back(al, back_arg);
+
         ASR::symbol_t* function = current_scope->resolve_symbol(function_name);
         if( !function ) {
             function = resolve_intrinsic_function(x.base.base.loc, function_name);

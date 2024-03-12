@@ -154,11 +154,39 @@ subroutine date_and_time(date, time, zone, values)
     integer, intent(out), optional :: values(8)
 end subroutine
 
+function scan_util(string, set, back) result(r)
+    character(len=*) :: string
+    character(len=*) :: set
+    logical, optional :: back
+    integer :: r, i, j, start, end, inc
+    r = 0
+    start = 1
+    end = len(string)
+    inc = 1
+    if (present(back)) then
+        if (back .eqv. .true.) then
+            start = end
+            end = 1
+            inc = -1
+        end if
+    end if
+    do i = start, end, inc
+        do j = 1, len(set)
+            if (string(i:i) == set(j:j)) then
+                r = i
+                exit
+            end if
+        end do
+        if (r /= 0) exit
+    end do
+end function
+
 function scan_kind4(string, set, back) result(r)
     character(len=*) :: string
     character(len=*) :: set
     logical, optional :: back
     integer :: r
+    r = scan_util(string, set, back)
 end function
 
 function scan_kind8(string, set, back) result(r)
@@ -166,6 +194,7 @@ function scan_kind8(string, set, back) result(r)
     character(len=*) :: set
     logical, optional :: back
     integer(8) :: r
+    r = scan_util(string, set, back)
 end function
 
 function verify_kind4(string, set, back) result(r)
