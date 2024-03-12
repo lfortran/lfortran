@@ -162,6 +162,8 @@ class ASRBuilder {
         ASR::cast_kindType::RealToReal, real64, nullptr))
     #define r2r(x, t) EXPR(ASR::make_Cast_t(al, loc, x,                         \
         ASR::cast_kindType::RealToReal, t, nullptr))
+    #define r2i(x, t) EXPR(ASR::make_Cast_t(al, loc, x,                         \
+        ASR::cast_kindType::RealToInteger, t, nullptr))
     #define i2r(x, t) EXPR(ASR::make_Cast_t(al, loc, x,                         \
         ASR::cast_kindType::IntegerToReal, t, nullptr))
 
@@ -256,6 +258,9 @@ class ASRBuilder {
     #define i_BitXor(i, j, t) EXPR(ASR::make_IntegerBinOp_t(al, loc,            \
             i, ASR::binopType::BitXor, j, t, nullptr))
 
+    #define sConstant(s, type) EXPR(ASR::make_StringConstant_t(al, loc,         \
+        s2c(al, s), type))
+
     ASR::expr_t *Add(ASR::expr_t *left, ASR::expr_t *right) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
         ASR::ttype_t *type = expr_type(left);
@@ -311,6 +316,22 @@ class ASRBuilder {
                 return nullptr;
             }
         }
+    }
+
+    ASR::expr_t* CallIntrinsic(const Location& loc, SymbolTable* scope, std::vector<ASR::ttype_t*> types,
+                                std::vector<ASR::expr_t*> args,  ASR::ttype_t* return_type, int64_t overload_id,
+                                ASR::expr_t* (*intrinsic_func)(Allocator &, const Location &, SymbolTable *,
+                                Vec<ASR::ttype_t*>&, ASR::ttype_t *, Vec<ASR::call_arg_t>&, int64_t)) {
+        Vec<ASR::ttype_t*> arg_types; arg_types.reserve(al, types.size());
+        for (auto &x: types) arg_types.push_back(al, x);
+
+        Vec<ASR::call_arg_t> new_args; new_args.reserve(al, args.size());
+        for (auto &x: args) {
+            ASR::call_arg_t call_arg; call_arg.loc = loc; call_arg.m_value = x;
+            new_args.push_back(al, call_arg);
+        }
+
+        return intrinsic_func(al, loc, scope, arg_types, return_type, new_args, overload_id);
     }
 
     // Compare -----------------------------------------------------------------

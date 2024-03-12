@@ -1612,19 +1612,10 @@ namespace Anint {
         ASR::expr_t* zero = make_ConstantWithType(make_RealConstant_t, 0.0, arg_types[0], loc);
         test = make_Compare(make_RealCompare_t, args[0], Gt, zero);
 
-        Vec<ASR::ttype_t*> arg_types_aint; arg_types_aint.reserve(al, 1);
-        arg_types_aint.push_back(al, arg_types[0]);
-
-        Vec<ASR::call_arg_t> new_args_aint1; new_args_aint1.reserve(al, 1);
-        ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = rAdd(args[0], f(0.5, arg_types_aint[0]), arg_types_aint[0]);
-        new_args_aint1.push_back(al, arg1);
-
-        Vec<ASR::call_arg_t> new_args_aint2; new_args_aint2.reserve(al, 1);
-        ASR::call_arg_t arg2; arg2.loc = loc; arg2.m_value = rSub(args[0], f(0.5, arg_types_aint[0]), arg_types_aint[0]);
-        new_args_aint2.push_back(al, arg2);
-
-        ASR::expr_t* func_call_aint_pos = Aint::instantiate_Aint(al, loc, scope, arg_types_aint, return_type, new_args_aint1, 0);
-        ASR::expr_t* func_call_aint_neg = Aint::instantiate_Aint(al, loc, scope, arg_types_aint, return_type, new_args_aint2, 0);
+        ASR::expr_t* func_call_aint_pos = b.CallIntrinsic(loc, scope, {arg_types[0]}, {rAdd(args[0], f(0.5, arg_types[0]), arg_types[0])},
+                                        return_type, 0, Aint::instantiate_Aint);
+        ASR::expr_t* func_call_aint_neg = b.CallIntrinsic(loc, scope, {arg_types[0]}, {rSub(args[0], f(0.5, arg_types[0]), arg_types[0])},
+                                        return_type, 0, Aint::instantiate_Aint);
 
         Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
         if_body.push_back(al, b.Assignment(result, func_call_aint_pos));
@@ -1661,20 +1652,8 @@ namespace Nint {
         * r = nint(x)
         * r = int(anint(x))
         */
-
-        ASR::ttype_t* return_type_real = expr_type(args[0]);
-
-        Vec<ASR::ttype_t*> arg_types_mod; arg_types_mod.reserve(al, 1);
-        arg_types_mod.push_back(al, arg_types[0]);
-
-        Vec<ASR::call_arg_t> new_args_mod; new_args_mod.reserve(al, 1);
-        ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = args[0];
-        new_args_mod.push_back(al, arg1);
-
-        ASR::expr_t* func_call_anint = Anint::instantiate_Anint(al, loc, scope, arg_types_mod, return_type_real, new_args_mod, 0);
-        ASR::expr_t *cast = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, func_call_anint, ASR::cast_kindType::RealToInteger, return_type, nullptr));
-
-        body.push_back(al,b.Assignment(result,cast));
+        ASR::expr_t* func_call_anint = b.CallIntrinsic(loc, scope, {arg_types[0]}, {args[0]}, arg_types[0], 0, Anint::instantiate_Anint);
+        body.push_back(al,b.Assignment(result, r2i(func_call_anint, return_type)));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1999,15 +1978,7 @@ namespace Fraction {
         * r = fraction(x, y)
         * r = x * radix(x)**(-exp(x))
         */
-        ASR::ttype_t* return_type_int = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-
-        Vec<ASR::ttype_t*> arg_types_exp; arg_types_exp.reserve(al, 1);
-        arg_types_exp.push_back(al, arg_types[0]);
-
-        Vec<ASR::call_arg_t> new_args_exp; new_args_exp.reserve(al, 1);
-        ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = args[0];
-        new_args_exp.push_back(al, arg1);
-        ASR::expr_t* func_call_exponent = Exponent::instantiate_Exponent(al, loc, scope, arg_types_exp, return_type_int, new_args_exp, 0);
+        ASR::expr_t* func_call_exponent = b.CallIntrinsic(loc, scope, {arg_types[0]}, {args[0]}, int32, 0, Exponent::instantiate_Exponent);
         body.push_back(al, b.Assignment(result, r_tMul(args[0], rPow(i2r(i(2, int32),return_type), r_tMul(i2r(i(-1,int32), return_type),i2r(func_call_exponent, return_type), return_type), return_type), return_type)));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
@@ -2071,15 +2042,7 @@ namespace SetExponent {
         * r = setexponent(x, I)
         * r = fraction(x) * radix(x)**(I)
         */
-
-        Vec<ASR::ttype_t*> arg_types_exp; arg_types_exp.reserve(al, 1);
-        arg_types_exp.push_back(al, arg_types[0]);
-
-        Vec<ASR::call_arg_t> new_args_exp; new_args_exp.reserve(al, 1);
-        ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = args[0];
-        new_args_exp.push_back(al, arg1);
-
-        ASR::expr_t* func_call_fraction = Fraction::instantiate_Fraction(al, loc, scope, arg_types_exp, return_type, new_args_exp, 0);
+        ASR::expr_t* func_call_fraction = b.CallIntrinsic(loc, scope, {arg_types[0]}, {args[0]}, return_type, 0, Fraction::instantiate_Fraction);
         body.push_back(al, b.Assignment(result, r_tMul(func_call_fraction, rPow(i2r(i32(2),return_type),i2r(args[1], return_type), return_type), return_type)));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
@@ -2630,16 +2593,8 @@ namespace Trailz {
         body.push_back(al, b.Assignment(result, i(0, arg_types[0])));
         ASR::expr_t *two = i(2, arg_types[0]);
         int arg_0_kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
-
-        Vec<ASR::ttype_t*> arg_types_mod; arg_types_mod.reserve(al, 2);
-        arg_types_mod.push_back(al, arg_types[0]); arg_types_mod.push_back(al, ASRUtils::expr_type(two));
-
-        Vec<ASR::call_arg_t> new_args_mod; new_args_mod.reserve(al, 2);
-        ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = args[0];
-        ASR::call_arg_t arg2; arg2.loc = loc; arg2.m_value = two;
-        new_args_mod.push_back(al, arg1); new_args_mod.push_back(al, arg2);
-
-        ASR::expr_t* func_call_mod = Mod::instantiate_Mod(al, loc, scope, arg_types_mod, return_type, new_args_mod, 0);
+        ASR::expr_t* func_call_mod = b.CallIntrinsic(loc, scope, {arg_types[0], arg_types[0]},
+                                    {args[0], two}, return_type, 0, Mod::instantiate_Mod);
         ASR::expr_t *cond = iEq(func_call_mod, i(0, arg_types[0]));
 
         int64_t base = 32;
@@ -2713,15 +2668,8 @@ namespace Leadz {
         else body.push_back(al, b.Assignment(total_bits, i(64, arg_types[0])));
 
         ASR::expr_t *two = i(2, arg_types[0]);
-        Vec<ASR::ttype_t*> arg_types_mod; arg_types_mod.reserve(al, 2);
-        arg_types_mod.push_back(al, arg_types[0]); arg_types_mod.push_back(al, ASRUtils::expr_type(two));
-
-        Vec<ASR::call_arg_t> new_args_mod; new_args_mod.reserve(al, 2);
-        ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = number;
-        ASR::call_arg_t arg2; arg2.loc = loc; arg2.m_value = two;
-        new_args_mod.push_back(al, arg1); new_args_mod.push_back(al, arg2);
-
-        ASR::expr_t* func_call_mod = Mod::instantiate_Mod(al, loc, scope, arg_types_mod, return_type, new_args_mod, 0);
+        ASR::expr_t* func_call_mod = b.CallIntrinsic(loc, scope, {arg_types[0], arg_types[0]},
+                                    {number, two}, return_type, 0, Mod::instantiate_Mod);
         ASR::expr_t *if_cond = iLt(number, i(0, arg_types[0]));
         ASR::expr_t *loop_cond = iGt(total_bits, i(0, arg_types[0]));
 
@@ -2823,11 +2771,7 @@ namespace Hypot {
         } else {
             op1 = r64Mul(args[0], args[0]); op2 = r64Mul(args[1], args[1]); op3 = r64Add(op1, op2);
         }
-        Vec<ASR::ttype_t*> sqrt_arg_types; sqrt_arg_types.reserve(al, 1); sqrt_arg_types.push_back(al, ASRUtils::expr_type(op3));
-        Vec<ASR::call_arg_t> sqrt_args; sqrt_args.reserve(al, 1);
-        ASR::call_arg_t sqrt_arg; sqrt_arg.loc = loc; sqrt_arg.m_value = op3;
-        sqrt_args.push_back(al, sqrt_arg);
-        func_call_sqrt = Sqrt::instantiate_Sqrt(al, loc,scope, sqrt_arg_types, return_type, sqrt_args, 0);
+        func_call_sqrt = b.CallIntrinsic(loc, scope, {ASRUtils::expr_type(op3)}, {op3}, return_type, 0, Sqrt::instantiate_Sqrt);
         body.push_back(al, b.Assignment(result, func_call_sqrt));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -3301,21 +3245,17 @@ namespace ToLowerCase {
         end function
         */
 
+        ASR::expr_t *ichar_res, *ichar_A, *ichar_Z, *ichar_a;
+
         ASR::expr_t* ln = ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr));
         body.push_back(al, b.Assignment(itr, i32(1)));
 
         ASR::expr_t* cond = iLtE(itr, ln);
         ASR::expr_t* sliced_res = ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr));
-        ASR::expr_t* ichar_res = ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, sliced_res, int32, nullptr));
-        ASR::expr_t* ichar_A = ASRUtils::EXPR(ASR::make_Ichar_t(al, loc,
-                                    ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc,
-                                                s2c(al, "A"), arg_types[0])), int32, nullptr));
-        ASR::expr_t* ichar_Z = ASRUtils::EXPR(ASR::make_Ichar_t(al, loc,
-                                    ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc,
-                                                s2c(al, "Z"), arg_types[0])), int32, nullptr));
-        ASR::expr_t* ichar_a = ASRUtils::EXPR(ASR::make_Ichar_t(al, loc,
-                                    ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc,
-                                                s2c(al, "a"), arg_types[0])), int32, nullptr));
+        ichar_res = b.CallIntrinsic(loc, scope, {char_type}, {sliced_res}, int32, 0, Ichar::instantiate_Ichar);
+        ichar_A  = b.CallIntrinsic(loc, scope, {arg_types[0]}, {sConstant("A", arg_types[0])}, int32, 0, Ichar::instantiate_Ichar);
+        ichar_Z  = b.CallIntrinsic(loc, scope, {arg_types[0]}, {sConstant("Z", arg_types[0])}, int32, 0, Ichar::instantiate_Ichar);
+        ichar_a  = b.CallIntrinsic(loc, scope, {arg_types[0]}, {sConstant("a", arg_types[0])}, int32, 0, Ichar::instantiate_Ichar);
         ASR::expr_t* char_node = ASRUtils::EXPR(ASR::make_StringChr_t(al, loc, iSub(iAdd(ichar_res, ichar_a), ichar_A), return_type, nullptr));
         Vec<ASR::stmt_t*> while_loop_body; while_loop_body.reserve(al, 2);
         while_loop_body.push_back(al, b.If(And(iGtE(ichar_res, ichar_A), iLtE(ichar_res, ichar_Z)), {
@@ -3445,21 +3385,10 @@ namespace Rrspacing {
         * r = rrspacing(X)
         * r = abs(fraction(X)) * (radix(X)**digits(X))
         */
-
-        Vec<ASR::ttype_t*> arg_types_exp; arg_types_exp.reserve(al, 1);
-        arg_types_exp.push_back(al, arg_types[0]);
-        Vec<ASR::call_arg_t> new_args_exp; new_args_exp.reserve(al, 1);
-        ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = args[0];
-        new_args_exp.push_back(al, arg1);
-        ASR::expr_t* func_call_fraction = Fraction::instantiate_Fraction(al, loc, scope, arg_types_exp, return_type, new_args_exp, 0);
-        ASR::expr_t* func_call_digits = Digits::instantiate_Digits(al, loc, scope, arg_types_exp, int32, new_args_exp, 0);
-        ASR::expr_t *cast = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, func_call_digits, ASR::cast_kindType::IntegerToReal, return_type, nullptr));
-        Vec<ASR::call_arg_t> new_args_frac; new_args_frac.reserve(al, 1);
-        ASR::call_arg_t arg_frac_1; arg_frac_1.loc = loc; arg_frac_1.m_value = func_call_fraction;
-        new_args_frac.push_back(al, arg_frac_1);
-        ASR::expr_t* func_call_abs = Abs::instantiate_Abs(al, loc, scope, arg_types_exp, return_type, new_args_frac, 0);
-        body.push_back(al, b.Assignment(result, r_tMul(func_call_abs, rPow(i2r(i32(2),return_type), cast, return_type), return_type)));
-
+        ASR::expr_t* func_call_fraction = b.CallIntrinsic(loc, scope, {arg_types[0]}, {args[0]}, return_type, 0, Fraction::instantiate_Fraction);
+        ASR::expr_t* func_call_digits = b.CallIntrinsic(loc, scope, {arg_types[0]}, {args[0]}, int32, 0, Digits::instantiate_Digits);
+        ASR::expr_t* func_call_abs = b.CallIntrinsic(loc, scope, {arg_types[0]}, {func_call_fraction}, return_type, 0, Abs::instantiate_Abs);
+        body.push_back(al, b.Assignment(result, r_tMul(func_call_abs, rPow(i2r(i32(2),return_type), i2r(func_call_digits, return_type), return_type), return_type)));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
