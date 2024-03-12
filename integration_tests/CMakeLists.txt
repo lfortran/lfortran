@@ -697,6 +697,7 @@ RUN(NAME intrinsics_178 LABELS gfortran llvm) # rrspacing
 RUN(NAME intrinsics_179 LABELS gfortran llvm) # sum
 RUN(NAME intrinsics_180 LABELS gfortran llvm) # scan
 RUN(NAME intrinsics_181 LABELS gfortran llvm) # repeat
+RUN(NAME intrinsics_182 LABELS gfortran llvm) # dshiftl
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
