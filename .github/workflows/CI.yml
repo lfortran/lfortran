@@ -59,6 +59,8 @@ jobs:
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
+            export CXXFLAGS="-Werror"
+            export CFLAGS="-Werror"
             xonsh ci/build_tmp.xsh
 
       - name: Build (Windows)

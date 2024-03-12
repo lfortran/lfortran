@@ -3396,8 +3396,8 @@ namespace Rrspacing {
     static ASR::expr_t *eval_Rrspacing(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
-        double digits;
-        double fraction;
+        double digits = 0.0;
+        double fraction = 0.0;
         digits = (kind == 4) ? 24.00 : 53.00;
         if (kind == 4) {
             float x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
@@ -3431,8 +3431,8 @@ namespace Rrspacing {
         double radix = 2.00;
         double result = fraction * std::pow(radix, digits);
         return make_ConstantWithType(make_RealConstant_t, result, arg_type, loc);
-        
-        
+
+
     }
 
     static inline ASR::expr_t* instantiate_Rrspacing(Allocator &al, const Location &loc,
@@ -3464,7 +3464,7 @@ namespace Rrspacing {
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
-        
+
     }
 
 } // namespace Rrspacing
