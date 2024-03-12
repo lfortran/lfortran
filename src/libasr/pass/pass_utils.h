@@ -208,6 +208,11 @@ namespace LCompilers {
         }
 
         static inline ASR::ttype_t* replace_Args_(Allocator& al_, ASR::ttype_t* return_type, Vec<ASR::call_arg_t>& func_call_args, Vec<ASR::expr_t*> actual_args) {
+            /*
+                Responsible to replace the arguments in the return type of intrinsic functions.
+                Replaces argument with actual argument ( present in intrinsic function scope )
+                Tailored to handle runtime dim arrays, where dimensions are specified using Merge intrinsic.
+            */
             bool is_allocatable = ASR::is_a<ASR::Allocatable_t>(*return_type);
             ASR::ttype_t* ret_type = ASRUtils::type_get_past_allocatable(return_type);
             if (ASR::is_a<ASR::Array_t>(*return_type)) {
