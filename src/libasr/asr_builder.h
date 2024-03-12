@@ -127,7 +127,7 @@ class ASRBuilder {
     #define ListAppend(x, val) STMT(ASR::make_ListAppend_t(al, loc, x, val))
 
     #define StringSection(s, start, end) EXPR(ASR::make_StringSection_t(al, loc,\
-        s, start, end, nullptr, character(-2), nullptr))
+        s, start, end, i32(1), character(-2), nullptr))
     #define StringItem(x, idx) EXPR(ASR::make_StringItem_t(al, loc, x, idx,     \
         character(-2), nullptr))
     #define StringConstant(s, type) EXPR(ASR::make_StringConstant_t(al, loc,    \
