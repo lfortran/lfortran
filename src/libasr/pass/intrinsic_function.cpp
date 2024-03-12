@@ -290,7 +290,6 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
                 result_var_ = PassUtils::create_var(result_counter,
                     std::string(ASRUtils::symbol_name(x->m_name)) + "_res",
                     x->base.base.loc, x->m_type, al, current_scope);
-                ASR::expr_t* func_call_merge = nullptr;
                 if (func2intrinsicid[x_m_name] == ASRUtils::IntrinsicArrayFunctions::Sum) {
                     PassUtils::allocate_res_var(al, x, new_args, result_var_, pass_result, {0, 0, 1});
                 }
