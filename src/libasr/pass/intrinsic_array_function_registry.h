@@ -464,13 +464,14 @@ static inline ASR::asr_t* create_ArrIntrinsic(
         dims.reserve(al, (int) n_dims - 1);
         for( int it = 0; it < (int) n_dims - 1; it++ ) {
             Vec<ASR::expr_t*> args_merge; args_merge.reserve(al, 3);
-            args_merge.push_back(al, ArraySize(args[0], i32(it+1), int32));
-            args_merge.push_back(al, ArraySize(args[0], i32(it+2), int32));
-            args_merge.push_back(al, iLt(i32(it+1), args[1]));
+            ASRUtils::ASRBuilder b(al, loc);
+            args_merge.push_back(al, b.ArraySize(args[0], b.i32(it+1), int32));
+            args_merge.push_back(al, b.ArraySize(args[0], b.i32(it+2), int32));
+            args_merge.push_back(al, iLt(b.i32(it+1), args[1]));
             ASR::expr_t* merge = EXPR(Merge::create_Merge(al, loc, args_merge, diag));
             ASR::dimension_t dim;
             dim.loc = array->base.loc;
-            dim.m_start = i32(1);
+            dim.m_start = b.i32(1);
             dim.m_length = runtime_dim ? merge : nullptr;
             dims.push_back(al, dim);
         }
@@ -764,9 +765,9 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
                 std::min_element(m_eles.begin(), m_eles.end())) + 1;
         }
         if (!is_array(type)) {
-            return i(index, type);
+            return b.i(index, type);
         } else {
-            return b.ArrayConstant({i32(index)}, extract_type(type), false);
+            return b.ArrayConstant({b.i32(index)}, extract_type(type), false);
         }
     } else {
         return nullptr;
@@ -777,6 +778,7 @@ static inline ASR::asr_t* create_MaxMinLoc(Allocator& al, const Location& loc,
         Vec<ASR::expr_t*>& args, int intrinsic_id,
         diag::Diagnostics& diag) {
     std::string intrinsic_name = get_array_intrinsic_name(static_cast<int>(intrinsic_id));
+    ASRUtils::ASRBuilder b(al, loc);
     ASR::ttype_t *array_type = expr_type(args[0]);
     if ( !is_array(array_type) ) {
         append_error(diag, "`array` argument of `"+ intrinsic_name +"` must be an array", loc);
@@ -833,8 +835,8 @@ static inline ASR::asr_t* create_MaxMinLoc(Allocator& al, const Location& loc,
     } else {
         ASR::dimension_t tmp_dim;
         tmp_dim.loc = args[0]->base.loc;
-        tmp_dim.m_start = i32(1);
-        tmp_dim.m_length = i32(n_dims);
+        tmp_dim.m_start = b.i32(1);
+        tmp_dim.m_length = b.i32(n_dims);
         result_dims.push_back(al, tmp_dim);
     }
     if ( !return_type ) {
@@ -881,12 +883,12 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
         b.generate_reduction_intrinsic_stmts_for_scalar_output(
             loc, args[0], fn_symtab, body, idx_vars, doloop_body,
             [=, &al, &body, &b] () {
-                body.push_back(al, b.Assignment(result, i(1, type)));
+                body.push_back(al, b.Assignment(result, b.i(1, type)));
             }, [=, &al, &b, &idx_vars, &doloop_body] () {
                 std::vector<ASR::stmt_t *> if_body; if_body.reserve(n_dims);
                 Vec<ASR::expr_t *> result_idx; result_idx.reserve(al, n_dims);
                 for (int i = 0; i < n_dims; i++) {
-                    ASR::expr_t *idx = b.ArrayItem_01(result, {i32(i+1)});
+                    ASR::expr_t *idx = b.ArrayItem_01(result, {b.i32(i+1)});
                     if (extract_kind_from_ttype_t(type) != 4) {
                         if_body.push_back(b.Assignment(idx, b.i2i(idx_vars[i], type)));
                         result_idx.push_back(al, b.i2i32(idx));
@@ -912,7 +914,7 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
             loc, args[0], args[1], fn_symtab, body, idx_vars,
             target_idx_vars, doloop_body,
             [=, &al, &body, &b] () {
-                body.push_back(al, b.Assignment(result, i(1, type)));
+                body.push_back(al, b.Assignment(result, b.i(1, type)));
             }, [=, &al, &b, &idx_vars, &target_idx_vars, &doloop_body] () {
                 ASR::expr_t *result_ref, *array_ref_02;
                 if (is_array(return_type)) {
@@ -1033,11 +1035,11 @@ namespace Shape {
         auto result = declare(fn_name, return_type, ReturnVar);
         int iter = extract_n_dims_from_ttype(arg_types[0]) + 1;
         auto i = declare("i", int32, Local);
-        body.push_back(al, b.Assignment(i, i32(1)));
-        body.push_back(al, b.While(iLt(i, i32(iter)), {
+        body.push_back(al, b.Assignment(i, b.i32(1)));
+        body.push_back(al, b.While(iLt(i, b.i32(iter)), {
             b.Assignment(b.ArrayItem_01(result, {i}),
                 ArraySize_2(args[0], i, extract_type(return_type))),
-            b.Assignment(i, iAdd(i, i32(1)))
+            b.Assignment(i, iAdd(i, b.i32(1)))
         }));
         body.push_back(al, Return());
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -1724,17 +1726,17 @@ namespace MatMul {
         } else if (is_real(*expr_type(b_ref)) && is_integer(*expr_type(a_ref))) {
             mul_value = b.Mul(b.i2r(a_ref, expr_type(b_ref)), b_ref);
         } else if (is_real(*expr_type(a_ref)) && is_complex(*expr_type(b_ref))){
-            mul_value = b.Mul(EXPR(ASR::make_ComplexConstructor_t(al, loc, a_ref, f(0, expr_type(a_ref)), expr_type(b_ref), nullptr)), b_ref);
+            mul_value = b.Mul(EXPR(ASR::make_ComplexConstructor_t(al, loc, a_ref, b.f(0, expr_type(a_ref)), expr_type(b_ref), nullptr)), b_ref);
         } else if (is_complex(*expr_type(a_ref)) && is_real(*expr_type(b_ref))){
-            mul_value = b.Mul(a_ref, EXPR(ASR::make_ComplexConstructor_t(al, loc, b_ref, f(0, expr_type(b_ref)), expr_type(a_ref), nullptr)));
+            mul_value = b.Mul(a_ref, EXPR(ASR::make_ComplexConstructor_t(al, loc, b_ref, b.f(0, expr_type(b_ref)), expr_type(a_ref), nullptr)));
         } else if (is_integer(*expr_type(a_ref)) && is_complex(*expr_type(b_ref))) {
             int kind = ASRUtils::extract_kind_from_ttype_t(expr_type(b_ref));
             ASR::ttype_t* real_type = TYPE(ASR::make_Real_t(al, loc, kind));
-            mul_value = b.Mul(EXPR(ASR::make_ComplexConstructor_t(al, loc, b.i2r(a_ref, real_type), f(0, real_type), expr_type(b_ref), nullptr)), b_ref);
+            mul_value = b.Mul(EXPR(ASR::make_ComplexConstructor_t(al, loc, b.i2r(a_ref, real_type), b.f(0, real_type), expr_type(b_ref), nullptr)), b_ref);
         } else if (is_complex(*expr_type(a_ref)) && is_integer(*expr_type(b_ref))) {
             int kind = ASRUtils::extract_kind_from_ttype_t(expr_type(a_ref));
             ASR::ttype_t* real_type = TYPE(ASR::make_Real_t(al, loc, kind));
-            mul_value = b.Mul(a_ref, EXPR(ASR::make_ComplexConstructor_t(al, loc, b.i2r(b_ref, real_type), f(0, real_type), expr_type(a_ref), nullptr)));
+            mul_value = b.Mul(a_ref, EXPR(ASR::make_ComplexConstructor_t(al, loc, b.i2r(b_ref, real_type), b.f(0, real_type), expr_type(a_ref), nullptr)));
         } else {
             mul_value = b.Mul(a_ref, b_ref);
         }
@@ -1873,7 +1875,7 @@ namespace Count {
             for (int i = 0; i < array_rank; i++) {
                 do_loop_variables.push_back(declare("i_" + std::to_string(i), int32, Local));
             }
-            body.push_back(al, b.Assignment(result, i(0, return_type)));
+            body.push_back(al, b.Assignment(result, b.i(0, return_type)));
             ASR::stmt_t* do_loop = PassUtils::create_do_loop_helper_count(al, loc, do_loop_variables, args[0], result, array_rank);
             body.push_back(al, do_loop);
             body.push_back(al, Return());
@@ -1922,7 +1924,7 @@ namespace Count {
             }
             ASR::stmt_t* inner_most_do_loop = b.DoLoop(j, LBound(args[0], dim), UBound(args[0], dim), {
                 b.If(b.ArrayItem_01(args[0], idx), {
-                    b.Assignment(c, b.Add(c, i32(1))),
+                    b.Assignment(c, b.Add(c, b.i32(1))),
                 }, {})
             });
             ASR::stmt_t* do_loop = PassUtils::create_do_loop_helper_count_dim(al, loc,
@@ -2299,14 +2301,14 @@ namespace Pack {
             do_loop_variables.push_back(declare("i_" + std::to_string(i), int32, Local));
         }
         ASR::expr_t *k = declare("k", int32, Local);
-        body.push_back(al, b.Assignment(k, i32(1)));
+        body.push_back(al, b.Assignment(k, b.i32(1)));
         ASR::stmt_t* do_loop = PassUtils::create_do_loop_helper_pack(al, loc, do_loop_variables, args[0], args[1], result, k, array_rank);
         body.push_back(al, do_loop);
 
         if (overload_id == 3) {
             body.push_back(al, b.DoLoop(do_loop_variables[0], k, UBound(args[2], 1), {
                 b.Assignment(b.ArrayItem_01(result, {k}), b.ArrayItem_01(args[2], {k})),
-                b.Assignment(k, b.Add(k, i32(1)))
+                b.Assignment(k, b.Add(k, b.i32(1)))
             }));
         }
         body.push_back(al, Return());

@@ -106,36 +106,81 @@ class ASRBuilder {
     }
 
     // Expressions -------------------------------------------------------------
-    #define i(x, t)   ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, x, t))
-    #define i32(x)   ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, x, int32))
-    #define i64(x)   ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, x, int64))
-    #define i32_n(x) ASRUtils::EXPR(ASR::make_IntegerUnaryMinus_t(al, loc, i32(abs(x)),   \
-        int32, i32(x)))
-    #define i32_neg(x, t) ASRUtils::EXPR(ASR::make_IntegerUnaryMinus_t(al, loc, x, t, nullptr))
+    inline ASR::expr_t* i(int64_t x, ASR::ttype_t* t) {
+        return EXPR(ASR::make_IntegerConstant_t(al, loc, x, t));
+    }
 
-    #define f(x, t)   ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, x, t))
-    #define f32(x) ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, x, real32))
-    #define f32_neg(x, t) ASRUtils::EXPR(ASR::make_RealUnaryMinus_t(al, loc, x, t, nullptr))
+    inline ASR::expr_t* i32(int64_t x) {
+        return EXPR(ASR::make_IntegerConstant_t(al, loc, x, int32));
+    }
 
-    #define bool32(x)  ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, x, logical))
+    inline ASR::expr_t* i64(int64_t x) {
+        return EXPR(ASR::make_IntegerConstant_t(al, loc, x, int64));
+    }
 
-    #define complex(x, y, t) ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, loc, x, y, t))
-    #define c32(x, y) ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, loc, x, y, complex32))
+    inline ASR::expr_t* i32_n(int64_t x) {
+        return EXPR(ASR::make_IntegerUnaryMinus_t(al, loc, i32(abs(x)), int32, i32(x)));
+    }
 
-    #define ListItem(x, pos, type) EXPR(ASR::make_ListItem_t(al, loc, x, pos,   \
-        type, nullptr))
-    #define ListAppend(x, val) STMT(ASR::make_ListAppend_t(al, loc, x, val))
+    inline ASR::expr_t* i32_neg(ASR::expr_t* x, ASR::ttype_t* t) {
+        return EXPR(ASR::make_IntegerUnaryMinus_t(al, loc, x, t, nullptr));
+    }
 
-    #define StringSection(s, start, end) EXPR(ASR::make_StringSection_t(al, loc,\
-        s, start, end, i32(1), character(-2), nullptr))
-    #define StringItem(x, idx) EXPR(ASR::make_StringItem_t(al, loc, x, idx,     \
-        character(-2), nullptr))
-    #define StringConstant(s, type) EXPR(ASR::make_StringConstant_t(al, loc,    \
-        s2c(al, s), type))
-    #define StringLen(s) EXPR(ASR::make_StringLen_t(al, loc, s, int32, nullptr))
-    #define StringConcat(s1, s2, type) EXPR(ASR::make_StringConcat_t(al, loc, s1, s2, \
-        type, nullptr))
-    #define ArraySize(x, dim, t) EXPR(ASR::make_ArraySize_t(al, loc, x, dim, t, nullptr))
+    inline ASR::expr_t* f(double x, ASR::ttype_t* t) {
+        return EXPR(ASR::make_RealConstant_t(al, loc, x, t));
+    }
+
+    inline ASR::expr_t* f32(double x) {
+        return EXPR(ASR::make_RealConstant_t(al, loc, x, real32));
+    }
+
+    inline ASR::expr_t* f32_neg(ASR::expr_t* x, ASR::ttype_t* t) {
+        return EXPR(ASR::make_RealUnaryMinus_t(al, loc, x, t, nullptr));
+    }
+
+    inline ASR::expr_t* bool32(bool x) {
+        return EXPR(ASR::make_LogicalConstant_t(al, loc, x, logical));
+    }
+
+    inline ASR::expr_t* complex(double x, double y, ASR::ttype_t* t) {
+        return EXPR(ASR::make_ComplexConstant_t(al, loc, x, y, t));
+    }
+
+    inline ASR::expr_t* c32(double x, double y) {
+        return EXPR(ASR::make_ComplexConstant_t(al, loc, x, y, complex32));
+    }
+
+    inline ASR::expr_t* ListItem(ASR::expr_t* x, ASR::expr_t* pos, ASR::ttype_t* type) {
+        return EXPR(ASR::make_ListItem_t(al, loc, x, pos, type, nullptr));
+    }
+
+    inline ASR::stmt_t* ListAppend(ASR::expr_t* x, ASR::expr_t* val) {
+        return STMT(ASR::make_ListAppend_t(al, loc, x, val));
+    }
+
+    inline ASR::expr_t* StringSection(ASR::expr_t* s, ASR::expr_t* start, ASR::expr_t* end) {
+        return EXPR(ASR::make_StringSection_t(al, loc, s, start, end, i32(1), character(-2), nullptr));
+    }
+
+    inline ASR::expr_t* StringItem(ASR::expr_t* x, ASR::expr_t* idx) {
+        return EXPR(ASR::make_StringItem_t(al, loc, x, idx, character(-2), nullptr));
+    }
+
+    inline ASR::expr_t* StringConstant(std::string s, ASR::ttype_t* type) {
+        return EXPR(ASR::make_StringConstant_t(al, loc, s2c(al, s), type));
+    }
+
+    inline ASR::expr_t* StringLen(ASR::expr_t* s) {
+        return EXPR(ASR::make_StringLen_t(al, loc, s, int32, nullptr));
+    }
+
+    inline ASR::expr_t* StringConcat(ASR::expr_t* s1, ASR::expr_t* s2, ASR::ttype_t* type) {
+        return EXPR(ASR::make_StringConcat_t(al, loc, s1, s2, type, nullptr));
+    }
+
+    inline ASR::expr_t* ArraySize(ASR::expr_t* x, ASR::expr_t* dim, ASR::ttype_t* t) {
+        return EXPR(ASR::make_ArraySize_t(al, loc, x, dim, t, nullptr));
+    }
 
     // Cast --------------------------------------------------------------------
 
