@@ -6949,7 +6949,7 @@ public:
                 + " arguments, but " + std::to_string(n_args + n)
                 + " were provided",
                 {loc},
-                "incorrect number of arguments to " + std::string(fn_name)
+                "incorrect number of arguments to '" + std::string(fn_name) + "'"
             );
             return ;
         }

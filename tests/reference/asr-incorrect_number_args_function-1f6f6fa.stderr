@@ -1,5 +1,5 @@
 semantic error: More actual than formal arguments in procedure call
- --> tests/errors/incorrect_number_args_function.f90:5:25
+ --> tests/errors/incorrect_number_args_function.f90:3:25
   |
-5 |     print *, helloWorld(5.1, 2)
+3 |     print *, helloWorld(5.1, 2)
   |                         ^^^^^^ 

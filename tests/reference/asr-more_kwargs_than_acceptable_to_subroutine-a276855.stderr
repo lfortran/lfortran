@@ -2,4 +2,4 @@ semantic error: Procedure 'my_func' accepts 2 arguments, but 3 were provided
  --> tests/errors/more_kwargs_than_acceptable_to_subroutine.f90:4:5
   |
 4 |     call my_func(y=1, x=2, z=1)
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ incorrect number of arguments to my_func
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ incorrect number of arguments to 'my_func'

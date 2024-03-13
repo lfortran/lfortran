@@ -2,12 +2,12 @@
     "basename": "asr-incorrect_number_args_function-1f6f6fa",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/errors/incorrect_number_args_function.f90",
-    "infile_hash": "45ab7ef6277bc23670f0d86a6926027e3d38f49f776b4689a1c7f6e4",
+    "infile_hash": "2ce169328c06c00519157a9d7abae8902aa7fa8d165958d8abe359f0",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-incorrect_number_args_function-1f6f6fa.stderr",
-    "stderr_hash": "607fca10c14131311ec857974add55cde8ea85311fe99f0686e56bee",
+    "stderr_hash": "80c5bdc2270b2db7e4e1ab8899c12c9c1352e1089d22984a21133c1c",
     "returncode": 2
 }
