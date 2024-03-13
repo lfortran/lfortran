@@ -516,7 +516,7 @@ namespace LCompilers {
                 }
                 return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(mask, curr_idx), UBound(mask, curr_idx), {
                     b.If(b.ArrayItem_01(mask, vars), {
-                        b.Assignment(res, b.Add(res, i(1, ASRUtils::expr_type(res))))
+                        b.Assignment(res, b.Add(res, b.i(1, ASRUtils::expr_type(res))))
                     }, {}),
                 }, nullptr);
             }
