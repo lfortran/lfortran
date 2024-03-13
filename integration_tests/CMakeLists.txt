@@ -698,6 +698,7 @@ RUN(NAME intrinsics_179 LABELS gfortran llvm) # sum
 RUN(NAME intrinsics_180 LABELS gfortran llvm) # scan
 RUN(NAME intrinsics_181 LABELS gfortran llvm) # repeat
 RUN(NAME intrinsics_182 LABELS gfortran llvm) # dshiftl
+RUN(NAME intrinsics_183 LABELS gfortran llvm) # ibits
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
