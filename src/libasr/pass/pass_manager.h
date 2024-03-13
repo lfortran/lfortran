@@ -110,7 +110,6 @@ namespace LCompilers {
             {"promote_allocatable_to_nonallocatable", &pass_promote_allocatable_to_nonallocatable}
         };
 
-        bool is_fast;
         bool apply_default_passes;
         bool c_skip_pass; // This will contain the passes that are to be skipped in C
 
@@ -200,7 +199,7 @@ namespace LCompilers {
             }
         }
 
-        PassManager(): is_fast{false}, apply_default_passes{false},
+        PassManager(): apply_default_passes{false},
             c_skip_pass{false} {
             _passes = {
                 "nested_vars",
@@ -294,12 +293,10 @@ namespace LCompilers {
                           PassOptions& pass_options,
                           diag::Diagnostics &diagnostics) {
             if( !_user_defined_passes.empty() ) {
-                pass_options.fast = true;
                 apply_passes(al, asr, _user_defined_passes, pass_options,
                     diagnostics);
             } else if( apply_default_passes ) {
-                pass_options.fast = is_fast;
-                if( is_fast ) {
+                if( pass_options.fast ) {
                     apply_passes(al, asr, _with_optimization_passes, pass_options,
                         diagnostics);
                 } else {
@@ -376,14 +373,6 @@ namespace LCompilers {
                     std::cerr << "ASR Pass ends: '" << passes[i] << "'\n";
                 }
             }
-        }
-
-        void use_optimization_passes() {
-            is_fast = true;
-        }
-
-        void do_not_use_optimization_passes() {
-            is_fast = false;
         }
 
         void use_default_passes(bool _c_skip_pass=false) {
