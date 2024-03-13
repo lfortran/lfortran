@@ -70,6 +70,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Ibclr,
     Ibset,
     Btest,
+    Ibits,
     Leadz,
     ToLowerCase,
     Digits,
@@ -1592,6 +1593,42 @@ namespace Btest {
     }
 
 } // namespace Btest
+
+namespace Ibits {
+
+    static ASR::expr_t *eval_Ibits(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        int64_t val3 = ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n;
+        int64_t result;
+        result = (val1 >> val2) & ((1 << val3) - 1);
+        return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_Ibits(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_ibits_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("y", arg_types[1]);
+        fill_func_arg("z", arg_types[2]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        /*
+        * r = ibits(x, y, z)
+        * r = ( x >> y ) & ( ( 1 << z ) - 1 )
+        */
+        
+        ASR::expr_t *one = i(1, arg_types[0]);
+        body.push_back(al, b.Assignment(result, i_BitAnd(i_BitRshift(args[0], i2i(args[1], arg_types[0]), return_type), iSub(i_BitLshift(one, i2i(args[2], arg_types[0]), return_type), one), return_type)));
+        
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace Ibits
 
 namespace Aint {
 
