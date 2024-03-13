@@ -847,8 +847,8 @@ namespace Scale {
         * r = x * 2**y
         */
 
-       //TODO: Radix for most of the device is 2, so we can use the i2r32(2) instead of args[1]. Fix (find a way to get the radix of the device and use it here)
-        body.push_back(al, b.Assignment(result, r_tMul(args[0], i2r32(iPow(i(2, arg_types[1]), args[1], arg_types[1])), arg_types[0])));
+       //TODO: Radix for most of the device is 2, so we can use the b.i2r32(2) instead of args[1]. Fix (find a way to get the radix of the device and use it here)
+        body.push_back(al, b.Assignment(result, r_tMul(args[0], b.i2r32(iPow(i(2, arg_types[1]), args[1], arg_types[1])), arg_types[0])));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
@@ -875,7 +875,7 @@ namespace Dprod {
         * r = dprod(x, y)
         * r = x * y
         */
-        body.push_back(al, b.Assignment(result, r2r64(r32Mul(args[0],args[1]))));
+        body.push_back(al, b.Assignment(result, b.r2r64(r32Mul(args[0],args[1]))));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
@@ -1620,7 +1620,7 @@ namespace Ibits {
         */
         
         ASR::expr_t *one = i(1, arg_types[0]);
-        body.push_back(al, b.Assignment(result, i_BitAnd(i_BitRshift(args[0], i2i(args[1], arg_types[0]), return_type), iSub(i_BitLshift(one, i2i(args[2], arg_types[0]), return_type), one), return_type)));
+        body.push_back(al, b.Assignment(result, i_BitAnd(i_BitRshift(args[0], b.i2i(args[1], arg_types[0]), return_type), iSub(i_BitLshift(one, b.i2i(args[2], arg_types[0]), return_type), one), return_type)));
         
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1659,7 +1659,7 @@ namespace Aint {
 
         // Cast: Real -> Integer -> Real
         // TODO: this approach doesn't work for numbers > i64_max
-        body.push_back(al, b.Assignment(result, i2r(r2i64(args[0]), return_type)));
+        body.push_back(al, b.Assignment(result, b.i2r(b.r2i64(args[0]), return_type)));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1749,7 +1749,7 @@ namespace Nint {
         * r = int(anint(x))
         */
         ASR::expr_t* func_call_anint = b.CallIntrinsic(scope, {arg_types[0]}, {args[0]}, arg_types[0], 0, Anint::instantiate_Anint);
-        body.push_back(al,b.Assignment(result, r2i(func_call_anint, return_type)));
+        body.push_back(al,b.Assignment(result, b.r2i(func_call_anint, return_type)));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -2008,7 +2008,7 @@ namespace Exponent {
         ASR::expr_t* transfer = ASRUtils::EXPR(ASR::make_BitCast_t(al, loc, args[0], i32(0), nullptr, int32, nullptr));
         if (kind == 8) {
             transfer = ASRUtils::EXPR(ASR::make_BitCast_t(al, loc, args[0], i64(0), nullptr, int64, nullptr));
-            value = i2i32(i_tSub(i_tAnd(i_BitRshift(transfer, i64(52), int64), i64(0x7FF), int64), i64(1022), int64));
+            value = b.i2i32(i_tSub(i_tAnd(i_BitRshift(transfer, i64(52), int64), i64(0x7FF), int64), i64(1022), int64));
         } else {
             value = i_tSub(i_tAnd(i_BitRshift(transfer, i32(23), int32), i32(0x0FF), int32), i32(126), int32);
         }
@@ -2075,7 +2075,7 @@ namespace Fraction {
         * r = x * radix(x)**(-exp(x))
         */
         ASR::expr_t* func_call_exponent = b.CallIntrinsic(scope, {arg_types[0]}, {args[0]}, int32, 0, Exponent::instantiate_Exponent);
-        body.push_back(al, b.Assignment(result, r_tMul(args[0], rPow(i2r(i(2, int32),return_type), r_tMul(i2r(i(-1,int32), return_type),i2r(func_call_exponent, return_type), return_type), return_type), return_type)));
+        body.push_back(al, b.Assignment(result, r_tMul(args[0], rPow(b.i2r(i(2, int32),return_type), r_tMul(b.i2r(i(-1,int32), return_type),b.i2r(func_call_exponent, return_type), return_type), return_type), return_type)));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
@@ -2139,7 +2139,7 @@ namespace SetExponent {
         * r = fraction(x) * radix(x)**(I)
         */
         ASR::expr_t* func_call_fraction = b.CallIntrinsic(scope, {arg_types[0]}, {args[0]}, return_type, 0, Fraction::instantiate_Fraction);
-        body.push_back(al, b.Assignment(result, r_tMul(func_call_fraction, rPow(i2r(i32(2),return_type),i2r(args[1], return_type), return_type), return_type)));
+        body.push_back(al, b.Assignment(result, r_tMul(func_call_fraction, rPow(b.i2r(i32(2),return_type),b.i2r(args[1], return_type), return_type), return_type)));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
@@ -2173,7 +2173,7 @@ namespace Sngl {
         }
         fill_func_arg("a", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
-        body.push_back(al, b.Assignment(result, r2r32(args[0])));
+        body.push_back(al, b.Assignment(result, b.r2r32(args[0])));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -2209,7 +2209,7 @@ namespace Ifix {
         }
         fill_func_arg("a", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
-        body.push_back(al, b.Assignment(result, r2i32(args[0])));
+        body.push_back(al, b.Assignment(result, b.r2i32(args[0])));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -2245,7 +2245,7 @@ namespace Idint {
         }
         fill_func_arg("a", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
-        body.push_back(al, b.Assignment(result, r2i32(args[0])));
+        body.push_back(al, b.Assignment(result, b.r2i32(args[0])));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -2475,8 +2475,8 @@ namespace FloorDiv {
         ASR::expr_t *op1 = r64Div(CastingUtil::perform_casting(args[0], real64, al, loc),
             CastingUtil::perform_casting(args[1], real64, al, loc));
         body.push_back(al, b.Assignment(r, op1));
-        body.push_back(al, b.Assignment(tmp, r2i64(r)));
-        body.push_back(al, b.If(And(fLt(r, f(0.0, real64)), fNotEq(i2r64(tmp), r)), {
+        body.push_back(al, b.Assignment(tmp, b.r2i64(r)));
+        body.push_back(al, b.If(And(fLt(r, f(0.0, real64)), fNotEq(b.i2r64(tmp), r)), {
                 b.Assignment(tmp, i64Sub(tmp, i(1, int64)))
             }, {}));
         body.push_back(al, b.Assignment(result, CastingUtil::perform_casting(tmp, return_type, al, loc)));
@@ -2529,12 +2529,12 @@ namespace Mod {
         int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[1]);
         if (is_real(*arg_types[1])) {
             if (kind == 4) {
-                q = r2i32(r32Div(args[0], args[1]));
-                op1 = r32Mul(args[1], i2r32(q));
+                q = b.r2i32(r32Div(args[0], args[1]));
+                op1 = r32Mul(args[1], b.i2r32(q));
                 op2 = r32Sub(args[0], op1);
             } else {
-                q = r2i64(r64Div(args[0], args[1]));
-                op1 = r64Mul(args[1], i2r64(q));
+                q = b.r2i64(r64Div(args[0], args[1]));
+                op1 = r64Mul(args[1], b.i2r64(q));
                 op2 = r64Sub(args[0], op1);
             }
         } else {
@@ -3460,7 +3460,7 @@ namespace Rrspacing {
         ASR::expr_t* func_call_fraction = b.CallIntrinsic(scope, {arg_types[0]}, {args[0]}, return_type, 0, Fraction::instantiate_Fraction);
         ASR::expr_t* func_call_digits = b.CallIntrinsic(scope, {arg_types[0]}, {args[0]}, int32, 0, Digits::instantiate_Digits);
         ASR::expr_t* func_call_abs = b.CallIntrinsic(scope, {arg_types[0]}, {func_call_fraction}, return_type, 0, Abs::instantiate_Abs);
-        body.push_back(al, b.Assignment(result, r_tMul(func_call_abs, rPow(i2r(i32(2),return_type), i2r(func_call_digits, return_type), return_type), return_type)));
+        body.push_back(al, b.Assignment(result, r_tMul(func_call_abs, rPow(b.i2r(i32(2),return_type), b.i2r(func_call_digits, return_type), return_type), return_type)));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);

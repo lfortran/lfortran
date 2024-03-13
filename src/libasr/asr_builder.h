@@ -138,34 +138,62 @@ class ASRBuilder {
     #define ArraySize(x, dim, t) EXPR(ASR::make_ArraySize_t(al, loc, x, dim, t, nullptr))
 
     // Cast --------------------------------------------------------------------
-    #define r2i8(x) EXPR(ASR::make_Cast_t(al, loc, x,                           \
-        ASR::cast_kindType::RealToInteger, int8, nullptr))
-    #define r2i16(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
-        ASR::cast_kindType::RealToInteger, int16, nullptr))
-    #define r2i32(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
-        ASR::cast_kindType::RealToInteger, int32, nullptr))
-    #define r2i64(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
-        ASR::cast_kindType::RealToInteger, int64, nullptr))
-    #define i2r32(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
-        ASR::cast_kindType::IntegerToReal, real32, nullptr))
-    #define i2r64(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
-        ASR::cast_kindType::IntegerToReal, real64, nullptr))
-    #define i2i(x, t) EXPR(ASR::make_Cast_t(al, loc, x,                         \
-        ASR::cast_kindType::IntegerToInteger, t, nullptr))
-    #define i2i64(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
-        ASR::cast_kindType::IntegerToInteger, int64, nullptr))
-    #define i2i32(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
-        ASR::cast_kindType::IntegerToInteger, int32, nullptr))
-    #define r2r32(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
-        ASR::cast_kindType::RealToReal, real32, nullptr))
-    #define r2r64(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
-        ASR::cast_kindType::RealToReal, real64, nullptr))
-    #define r2r(x, t) EXPR(ASR::make_Cast_t(al, loc, x,                         \
-        ASR::cast_kindType::RealToReal, t, nullptr))
-    #define r2i(x, t) EXPR(ASR::make_Cast_t(al, loc, x,                         \
-        ASR::cast_kindType::RealToInteger, t, nullptr))
-    #define i2r(x, t) EXPR(ASR::make_Cast_t(al, loc, x,                         \
-        ASR::cast_kindType::IntegerToReal, t, nullptr))
+
+    inline ASR::expr_t* r2i8(ASR::expr_t* x) {
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToInteger, int8, nullptr));
+    }
+
+    inline ASR::expr_t* r2i16(ASR::expr_t* x) {
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToInteger, int16, nullptr));
+    }
+
+    inline ASR::expr_t* r2i32(ASR::expr_t* x) {
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToInteger, int32, nullptr));
+    }
+
+    inline ASR::expr_t* r2i64(ASR::expr_t* x) {
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToInteger, int64, nullptr));
+    }
+
+    inline ASR::expr_t* i2r32(ASR::expr_t* x) {
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToReal, real32, nullptr));
+    }
+
+    inline ASR::expr_t* i2r64(ASR::expr_t* x) {
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToReal, real64, nullptr));
+    }
+
+    inline ASR::expr_t* i2i(ASR::expr_t* x, ASR::ttype_t* t) {
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToInteger, t, nullptr));
+    }
+
+    inline ASR::expr_t* i2i64(ASR::expr_t* x) {
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToInteger, int64, nullptr));
+    }
+
+    inline ASR::expr_t* i2i32(ASR::expr_t* x) {
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToInteger, int32, nullptr));
+    }
+
+    inline ASR::expr_t* r2r32(ASR::expr_t* x) {
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToReal, real32, nullptr));
+    }
+
+    inline ASR::expr_t* r2r64(ASR::expr_t* x) {
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToReal, real64, nullptr));
+    }
+
+    inline ASR::expr_t* r2r(ASR::expr_t* x, ASR::ttype_t* t) {
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToReal, t, nullptr));
+    }
+
+    inline ASR::expr_t* r2i(ASR::expr_t* x, ASR::ttype_t* t) {
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToInteger, t, nullptr));
+    }
+
+    inline ASR::expr_t* i2r(ASR::expr_t* x, ASR::ttype_t* t) {
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToReal, t, nullptr));
+    }
 
     // Binop -------------------------------------------------------------------
     #define iAdd(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \

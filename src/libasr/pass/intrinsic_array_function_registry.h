@@ -888,8 +888,8 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                 for (int i = 0; i < n_dims; i++) {
                     ASR::expr_t *idx = b.ArrayItem_01(result, {i32(i+1)});
                     if (extract_kind_from_ttype_t(type) != 4) {
-                        if_body.push_back(b.Assignment(idx, i2i(idx_vars[i], type)));
-                        result_idx.push_back(al, i2i32(idx));
+                        if_body.push_back(b.Assignment(idx, b.i2i(idx_vars[i], type)));
+                        result_idx.push_back(al, b.i2i32(idx));
                     } else {
                         if_body.push_back(b.Assignment(idx, idx_vars[i]));
                         result_idx.push_back(al, idx);
@@ -919,7 +919,7 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                     result_ref = ArrayItem_02(result, target_idx_vars);
                     Vec<ASR::expr_t*> tmp_idx_vars;
                     tmp_idx_vars.from_pointer_n_copy(al, idx_vars.p, idx_vars.n);
-                    tmp_idx_vars.p[dim - 1] = i2i32(result_ref);
+                    tmp_idx_vars.p[dim - 1] = b.i2i32(result_ref);
                     array_ref_02 = ArrayItem_02(args[0], tmp_idx_vars);
                 } else {
                     // 1D scalar output
@@ -929,7 +929,7 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                 ASR::expr_t *array_ref_01 = ArrayItem_02(args[0], idx_vars);
                 ASR::expr_t *res_idx = idx_vars.p[dim - 1];
                 if (extract_kind_from_ttype_t(type) != 4) {
-                    res_idx = i2i(res_idx, type);
+                    res_idx = b.i2i(res_idx, type);
                 }
                 if (static_cast<int>(IntrinsicArrayFunctions::MaxLoc) == intrinsic_id) {
                     doloop_body.push_back(al, b.If(b.Gt(array_ref_01, array_ref_02), {
@@ -974,7 +974,8 @@ namespace Shape {
                 if (m_dims[i].m_length) {
                     ASR::expr_t *e = nullptr;
                     if (extract_kind_from_ttype_t(type) != 4) {
-                        e = i2i(m_dims[i].m_length, extract_type(type));
+                        ASRUtils::ASRBuilder b(al, loc);
+                        e = b.i2i(m_dims[i].m_length, extract_type(type));
                     } else {
                         e = m_dims[i].m_length;
                     }
@@ -1719,9 +1720,9 @@ namespace MatMul {
             character(assert_msg.size()))))));
         ASR::expr_t *mul_value;
         if (is_real(*expr_type(a_ref)) && is_integer(*expr_type(b_ref))) {
-            mul_value = b.Mul(a_ref, i2r(b_ref, expr_type(a_ref)));
+            mul_value = b.Mul(a_ref, b.i2r(b_ref, expr_type(a_ref)));
         } else if (is_real(*expr_type(b_ref)) && is_integer(*expr_type(a_ref))) {
-            mul_value = b.Mul(i2r(a_ref, expr_type(b_ref)), b_ref);
+            mul_value = b.Mul(b.i2r(a_ref, expr_type(b_ref)), b_ref);
         } else if (is_real(*expr_type(a_ref)) && is_complex(*expr_type(b_ref))){
             mul_value = b.Mul(EXPR(ASR::make_ComplexConstructor_t(al, loc, a_ref, f(0, expr_type(a_ref)), expr_type(b_ref), nullptr)), b_ref);
         } else if (is_complex(*expr_type(a_ref)) && is_real(*expr_type(b_ref))){
@@ -1729,11 +1730,11 @@ namespace MatMul {
         } else if (is_integer(*expr_type(a_ref)) && is_complex(*expr_type(b_ref))) {
             int kind = ASRUtils::extract_kind_from_ttype_t(expr_type(b_ref));
             ASR::ttype_t* real_type = TYPE(ASR::make_Real_t(al, loc, kind));
-            mul_value = b.Mul(EXPR(ASR::make_ComplexConstructor_t(al, loc, i2r(a_ref, real_type), f(0, real_type), expr_type(b_ref), nullptr)), b_ref);
+            mul_value = b.Mul(EXPR(ASR::make_ComplexConstructor_t(al, loc, b.i2r(a_ref, real_type), f(0, real_type), expr_type(b_ref), nullptr)), b_ref);
         } else if (is_complex(*expr_type(a_ref)) && is_integer(*expr_type(b_ref))) {
             int kind = ASRUtils::extract_kind_from_ttype_t(expr_type(a_ref));
             ASR::ttype_t* real_type = TYPE(ASR::make_Real_t(al, loc, kind));
-            mul_value = b.Mul(a_ref, EXPR(ASR::make_ComplexConstructor_t(al, loc, i2r(b_ref, real_type), f(0, real_type), expr_type(a_ref), nullptr)));
+            mul_value = b.Mul(a_ref, EXPR(ASR::make_ComplexConstructor_t(al, loc, b.i2r(b_ref, real_type), f(0, real_type), expr_type(a_ref), nullptr)));
         } else {
             mul_value = b.Mul(a_ref, b_ref);
         }
