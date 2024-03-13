@@ -285,7 +285,6 @@ int prompt(bool verbose, CompilerOptions &cu)
             LCompilers::LocationManager lm;
             LCompilers::PassManager lpm;
             lpm.use_default_passes();
-            lpm.do_not_use_optimization_passes();
             {
                 LCompilers::LocationManager::FileLocations fl;
                 fl.in_filename = "input";
@@ -2127,10 +2126,6 @@ int main_app(int argc, char *argv[]) {
     if(static_link && shared_link) {
         std::cerr << "Options '--static' and '--shared' cannot be used together" << std::endl;
         return 1;
-    }
-
-    if( compiler_options.po.fast ) {
-        lfortran_pass_manager.use_optimization_passes();
     }
 
     if (fmt) {

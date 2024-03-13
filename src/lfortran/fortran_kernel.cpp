@@ -189,7 +189,6 @@ namespace LCompilers::LFortran {
                 }
                 LCompilers::PassManager lpm;
                 lpm.use_default_passes();
-                lpm.do_not_use_optimization_passes();
                 diag::Diagnostics diagnostics;
                 Result<std::string>
                 res = e.get_llvm(code0, lm, lpm, diagnostics);
@@ -221,7 +220,6 @@ namespace LCompilers::LFortran {
                 }
                 LCompilers::PassManager lpm;
                 lpm.use_default_passes();
-                lpm.do_not_use_optimization_passes();
                 diag::Diagnostics diagnostics;
                 Result<std::string>
                 res = e.get_asm(code0, lm, lpm, diagnostics);
@@ -312,7 +310,6 @@ namespace LCompilers::LFortran {
             }
             LCompilers::PassManager lpm;
             lpm.use_default_passes();
-            lpm.do_not_use_optimization_passes();
             diag::Diagnostics diagnostics;
             Result<FortranEvaluator::EvalResult>
             res = e.evaluate(code0, false, lm, lpm, diagnostics);

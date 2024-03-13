@@ -383,7 +383,6 @@ end function)";
     LCompilers::LLVMEvaluator e;
     LCompilers::PassManager lpm;
     lpm.use_default_passes();
-    lpm.do_not_use_optimization_passes();
     CompilerOptions co;
     co.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
     co.platform = LCompilers::get_platform();
@@ -424,7 +423,6 @@ end function)";
     LCompilers::LLVMEvaluator e;
     LCompilers::PassManager lpm;
     lpm.use_default_passes();
-    lpm.do_not_use_optimization_passes();
     LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
         res = LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(), al,
             lpm, compiler_options, "f", "");
@@ -565,7 +563,6 @@ TEST_CASE("FortranEvaluator 6") {
     LCompilers::LocationManager lm;
     LCompilers::PassManager lpm;
     lpm.use_default_passes();
-    lpm.do_not_use_optimization_passes();
     {
         LCompilers::LocationManager::FileLocations fl;
         fl.in_filename = "input.f90";
