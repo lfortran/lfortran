@@ -112,6 +112,15 @@ static inline ASR::symbol_t *symbol_get_past_external(ASR::symbol_t *f)
     }
 }
 
+template <typename T>
+Location get_vec_loc(const Vec<T>& args) {
+    LCOMPILERS_ASSERT(args.size() > 0);
+    Location args_loc;
+    args_loc.first = args[0].loc.first;
+    args_loc.last = args[args.size() - 1].loc.last;
+    return args_loc;
+}
+
 static inline ASR::FunctionType_t* get_FunctionType(ASR::symbol_t* x) {
     ASR::symbol_t* a_name_ = ASRUtils::symbol_get_past_external(x);
     ASR::FunctionType_t* func_type = nullptr;

@@ -2872,12 +2872,10 @@ public:
             ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies);
         }
         ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
-        if( f ) {
+        if (f) {
             int offset = (v_expr != nullptr) && (!nopass);
             if (args.size() + offset > f->n_args) {
-                Location args_loc;
-                args_loc.first = args[0].loc.first;
-                args_loc.last = args[args.size() - 1].loc.last;
+                const Location args_loc { ASRUtils::get_vec_loc(args) };
                 throw SemanticError("More actual than formal arguments in procedure call", args_loc);
             }
             ASRUtils::set_absent_optional_arguments_to_null(args, f, al, v_expr, nopass);
