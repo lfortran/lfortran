@@ -77,7 +77,6 @@ struct IntrinsicProcedures {
             // So we shouldn't even encounter them here
             {"int", {m_builtin, &eval_int, false}},
             {"real", {m_builtin, &not_implemented, false}},
-            {"any", {m_builtin, &not_implemented, false}},
             {"is_iostat_eor", {m_builtin, &not_implemented, false}},
             {"is_iostat_end", {m_builtin, &not_implemented, false}},
             {"get_command_argument", {m_builtin, &not_implemented, false}},
@@ -98,7 +97,6 @@ struct IntrinsicProcedures {
             {"llt", {m_string, &not_implemented, false}},
             {"lge", {m_string, &not_implemented, false}},
             {"lle", {m_string, &not_implemented, false}},
-            {"len_adjustl", {m_string, &not_implemented, false}},
             {"new_line", {m_string, &eval_new_line, false}},
             {"scan_kind4", {m_string, &not_implemented, false}},
             {"scan_kind8", {m_string, &not_implemented, false}},
@@ -109,21 +107,14 @@ struct IntrinsicProcedures {
             {"cpu_time", {m_math, &not_implemented, false}},
             {"bit_size", {m_builtin, &eval_bit_size, false}},
             {"mvbits", {m_bit, &not_implemented, true}},
-            {"ibits", {m_bit, &not_implemented, true}},
-            {"count", {m_bit, &not_implemented, false}},
             {"achar", {m_builtin, &eval_achar, true}},
             {"move_alloc", {m_builtin, &not_implemented, false}},
-            {"shape", {m_builtin, &not_implemented, false}},
-            {"reshape", {m_builtin, &not_implemented, false}},
             {"present", {m_builtin, &not_implemented, false}},
             {"index", {m_string, &not_implemented, false}},
             {"system_clock", {m_math, &not_implemented, false}},
             {"random_number", {m_math, &not_implemented, false}},
             {"srand", {m_math, &not_implemented, false}},
             {"date_and_time", {m_string, &not_implemented, false}},
-
-            // Transformational function
-            {"all", {m_builtin, &not_implemented, false}},
 
             // IEEE Arithmetic
             {"ieee_value", {m_ieee_arithmetic, &not_implemented, false}},
