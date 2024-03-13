@@ -1841,55 +1841,43 @@ public:
         }
     }
 
+    void add_custom_operator(
+            std::pair<const std::string, std::vector<std::string>> &proc,
+            ASR::accessType access) {
+        // FIXME LOCATION (we need to pass Location in, not initialize it
+        // here)
+        Location loc;
+        loc.first = 1;
+        loc.last = 1;
+        Str s;
+        s.from_str_view(proc.first);
+        char *generic_name = s.c_str(al);
+        Vec<ASR::symbol_t*> symbols;
+        symbols.reserve(al, proc.second.size());
+        for (auto &pname : proc.second) {
+            ASR::symbol_t *x;
+            Str s;
+            s.from_str_view(pname);
+            char *name = s.c_str(al);
+            x = resolve_symbol(loc, to_lower(name));
+            symbols.push_back(al, x);
+        }
+        LCOMPILERS_ASSERT(strlen(generic_name) > 0);
+        ASR::asr_t *v = ASR::make_CustomOperator_t(al, loc, current_scope,
+                            generic_name, symbols.p, symbols.size(), access);
+        current_scope->add_symbol(proc.first, ASR::down_cast<ASR::symbol_t>(v));
+    }
+
     void add_overloaded_procedures() {
         for (auto &proc : overloaded_op_procs) {
-            // FIXME LOCATION (we need to pass Location in, not initialize it
-            // here)
-            Location loc;
-            loc.first = 1;
-            loc.last = 1;
-            Str s;
-            s.from_str_view(intrinsic2str[proc.first]);
-            char *generic_name = s.c_str(al);
-            Vec<ASR::symbol_t*> symbols;
-            symbols.reserve(al, proc.second.size());
-            for (auto &pname : proc.second) {
-                ASR::symbol_t *x;
-                Str s;
-                s.from_str_view(pname);
-                char *name = s.c_str(al);
-                x = resolve_symbol(loc, to_lower(name));
-                symbols.push_back(al, x);
-            }
-            LCOMPILERS_ASSERT(strlen(generic_name) > 0);
-            ASR::asr_t *v = ASR::make_CustomOperator_t(al, loc, current_scope,
-                                generic_name, symbols.p, symbols.size(), ASR::Public);
-            current_scope->add_symbol(intrinsic2str[proc.first], ASR::down_cast<ASR::symbol_t>(v));
+            std::pair<const std::string, std::vector<std::string>>
+                proc_ = {intrinsic2str[proc.first], proc.second};
+            add_custom_operator(proc_, ASR::accessType::Public);
         }
         overloaded_op_procs.clear();
 
         for (auto &proc : defined_op_procs) {
-            // FIXME LOCATION
-            Location loc;
-            loc.first = 1;
-            loc.last = 1;
-            Str s;
-            s.from_str_view(proc.first);
-            char *generic_name = s.c_str(al);
-            Vec<ASR::symbol_t*> symbols;
-            symbols.reserve(al, proc.second.size());
-            for (auto &pname : proc.second) {
-                ASR::symbol_t *x;
-                Str s;
-                s.from_str_view(pname);
-                char *name = s.c_str(al);
-                x = resolve_symbol(loc, name);
-                symbols.push_back(al, x);
-            }
-            LCOMPILERS_ASSERT(strlen(generic_name) > 0);
-            ASR::asr_t *v = ASR::make_CustomOperator_t(al, loc, current_scope,
-                                generic_name, symbols.p, symbols.size(), ASR::Public);
-            current_scope->add_symbol(proc.first, ASR::down_cast<ASR::symbol_t>(v));
+            add_custom_operator(proc, ASR::accessType::Public);
         }
         defined_op_procs.clear();
     }
@@ -1898,26 +1886,9 @@ public:
         if( assgn_proc_names.empty() ) {
             return ;
         }
-        Location loc;
-        loc.first = 1;
-        loc.last = 1;
-        std::string str_name = "~assign";
-        Str s;
-        s.from_str_view(str_name);
-        char *generic_name = s.c_str(al);
-        Vec<ASR::symbol_t*> symbols;
-        symbols.reserve(al, assgn_proc_names.size());
-        for (auto &pname : assgn_proc_names) {
-            ASR::symbol_t *x;
-            Str s;
-            s.from_str_view(pname);
-            char *name = s.c_str(al);
-            x = resolve_symbol(loc, name);
-            symbols.push_back(al, x);
-        }
-        ASR::asr_t *v = ASR::make_CustomOperator_t(al, loc, current_scope,
-                            generic_name, symbols.p, symbols.size(), assgn[current_scope]);
-        current_scope->add_symbol(str_name, ASR::down_cast<ASR::symbol_t>(v));
+        std::pair<const std::string, std::vector<std::string>>
+            proc = {"~assign", assgn_proc_names};
+        add_custom_operator(proc, assgn[current_scope]);
     }
 
     void add_generic_procedures() {
