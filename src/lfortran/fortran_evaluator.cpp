@@ -52,7 +52,6 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate2(const std::stri
     LocationManager lm;
     LCompilers::PassManager lpm;
     lpm.use_default_passes();
-    lpm.do_not_use_optimization_passes();
     {
         LocationManager::FileLocations fl;
         fl.in_filename = "input";

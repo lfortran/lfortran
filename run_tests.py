@@ -60,6 +60,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     x86 = is_included("x86")
     fortran = is_included("fortran")
     bin_ = is_included("bin")
+    fast = is_included("fast")
     print_leading_space = is_included("print_leading_space")
     interactive = is_included("interactive")
     pass_ = test.get("pass", None)
@@ -229,8 +230,12 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                     extra_args)
 
                 if pass_ is not None:
-                    cmd = "lfortran --pass=" + pass_ + \
-                        " --show-asr --no-color {infile} -o {outfile}"
+                    if fast:
+                        cmd = "lfortran --pass=" + pass_ + \
+                            " --show-asr --no-color --fast {infile} -o {outfile}"
+                    else:
+                        cmd = "lfortran --pass=" + pass_ + \
+                            " --show-asr --no-color {infile} -o {outfile}"
                     pass_ = pass_.replace(",", "_")
                     run_test(filename, "pass_{}".format(pass_), cmd,
                             filename,

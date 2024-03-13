@@ -2781,6 +2781,7 @@ filename = "../integration_tests/functions_05.f90"
 asr = true
 pass_with_llvm = true
 pass = "inline_function_calls"
+fast = true
 
 [[test]]
 filename = "../integration_tests/functions_06.f90"
@@ -2791,12 +2792,14 @@ filename = "../integration_tests/functions_07.f90"
 asr = true
 pass_with_llvm = true
 pass = "inline_function_calls"
+fast = true
 
 [[test]]
 filename = "../integration_tests/functions_08.f90"
 asr = true
 pass_with_llvm = true
 pass = "inline_function_calls"
+fast = true
 
 [[test]]
 filename = "../integration_tests/functions_09.f90"
