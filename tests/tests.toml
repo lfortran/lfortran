@@ -3869,3 +3869,7 @@ asr = true
 [[test]]
 filename = "optional_argument_subroutine_in_type.f90"
 asr = true
+
+[[test]]
+filename = "errors/more_kwargs_than_acceptable_to_subroutine.f90"
+asr = true

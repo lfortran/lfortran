@@ -6945,7 +6945,7 @@ public:
 
         if (n_args + n > fn_n_args) {
             diag.semantic_error_label(
-                "Procedure" + fn_name + " accepts " + std::to_string(fn_n_args)
+                "Procedure '" + fn_name + "' accepts " + std::to_string(fn_n_args)
                 + " arguments, but " + std::to_string(n_args + n)
                 + " were provided",
                 {loc},
