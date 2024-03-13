@@ -39,36 +39,6 @@
                                     Required
                                     .false.
                                 ),
-                            ibits:
-                                (ExternalSymbol
-                                    2
-                                    ibits
-                                    4 ibits
-                                    lfortran_intrinsic_bit
-                                    []
-                                    ibits
-                                    Private
-                                ),
-                            ibits@ibits32:
-                                (ExternalSymbol
-                                    2
-                                    ibits@ibits32
-                                    4 ibits32
-                                    lfortran_intrinsic_bit
-                                    []
-                                    ibits32
-                                    Private
-                                ),
-                            ibits@ibits64:
-                                (ExternalSymbol
-                                    2
-                                    ibits@ibits64
-                                    4 ibits64
-                                    lfortran_intrinsic_bit
-                                    []
-                                    ibits64
-                                    Private
-                                ),
                             res:
                                 (Variable
                                     2
@@ -116,14 +86,13 @@
                     )
                     (Assignment
                         (Var 2 res)
-                        (FunctionCall
-                            2 ibits@ibits32
-                            2 ibits
-                            [((Var 2 from))
-                            ((IntegerConstant 2 (Integer 4)))
-                            ((IntegerConstant 2 (Integer 4)))]
+                        (IntrinsicElementalFunction
+                            Ibits
+                            [(Var 2 from)
+                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))]
+                            0
                             (Integer 4)
-                            ()
                             ()
                         )
                         ()
@@ -143,14 +112,13 @@
                     )
                     (Assignment
                         (Var 2 res8)
-                        (FunctionCall
-                            2 ibits@ibits64
-                            2 ibits
-                            [((Var 2 from8))
-                            ((IntegerConstant 2 (Integer 4)))
-                            ((IntegerConstant 2 (Integer 4)))]
+                        (IntrinsicElementalFunction
+                            Ibits
+                            [(Var 2 from8)
+                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))]
+                            0
                             (Integer 8)
-                            ()
                             ()
                         )
                         ()
@@ -170,14 +138,13 @@
                     )
                     (Assignment
                         (Var 2 res)
-                        (FunctionCall
-                            2 ibits@ibits32
-                            2 ibits
-                            [((Var 2 from))
-                            ((IntegerConstant 0 (Integer 4)))
-                            ((IntegerConstant 2 (Integer 4)))]
+                        (IntrinsicElementalFunction
+                            Ibits
+                            [(Var 2 from)
+                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))]
+                            0
                             (Integer 4)
-                            ()
                             ()
                         )
                         ()
@@ -197,14 +164,13 @@
                     )
                     (Assignment
                         (Var 2 res8)
-                        (FunctionCall
-                            2 ibits@ibits64
-                            2 ibits
-                            [((Var 2 from8))
-                            ((IntegerConstant 0 (Integer 4)))
-                            ((IntegerConstant 2 (Integer 4)))]
+                        (IntrinsicElementalFunction
+                            Ibits
+                            [(Var 2 from8)
+                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))]
+                            0
                             (Integer 8)
-                            ()
                             ()
                         )
                         ()
@@ -242,14 +208,13 @@
                     )
                     (Assignment
                         (Var 2 res)
-                        (FunctionCall
-                            2 ibits@ibits32
-                            2 ibits
-                            [((Var 2 from))
-                            ((IntegerConstant 29 (Integer 4)))
-                            ((IntegerConstant 2 (Integer 4)))]
+                        (IntrinsicElementalFunction
+                            Ibits
+                            [(Var 2 from)
+                            (IntegerConstant 29 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))]
+                            0
                             (Integer 4)
-                            ()
                             ()
                         )
                         ()
@@ -269,14 +234,13 @@
                     )
                     (Assignment
                         (Var 2 res8)
-                        (FunctionCall
-                            2 ibits@ibits64
-                            2 ibits
-                            [((Var 2 from8))
-                            ((IntegerConstant 29 (Integer 4)))
-                            ((IntegerConstant 2 (Integer 4)))]
+                        (IntrinsicElementalFunction
+                            Ibits
+                            [(Var 2 from8)
+                            (IntegerConstant 29 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))]
+                            0
                             (Integer 8)
-                            ()
                             ()
                         )
                         ()
@@ -301,14 +265,13 @@
                     )
                     (Assignment
                         (Var 2 res)
-                        (FunctionCall
-                            2 ibits@ibits32
-                            2 ibits
-                            [((Var 2 from))
-                            ((IntegerConstant 2 (Integer 4)))
-                            ((IntegerConstant 2 (Integer 4)))]
+                        (IntrinsicElementalFunction
+                            Ibits
+                            [(Var 2 from)
+                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))]
+                            0
                             (Integer 4)
-                            ()
                             ()
                         )
                         ()
@@ -328,14 +291,13 @@
                     )
                     (Assignment
                         (Var 2 res8)
-                        (FunctionCall
-                            2 ibits@ibits64
-                            2 ibits
-                            [((Var 2 from8))
-                            ((IntegerConstant 2 (Integer 4)))
-                            ((IntegerConstant 2 (Integer 4)))]
+                        (IntrinsicElementalFunction
+                            Ibits
+                            [(Var 2 from8)
+                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))]
+                            0
                             (Integer 8)
-                            ()
                             ()
                         )
                         ()
@@ -358,11 +320,7 @@
                         )]
                         []
                     )]
-                ),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_bit:
-                (IntrinsicModule lfortran_intrinsic_bit)
+                )
         })
     []
 )
