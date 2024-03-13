@@ -3853,3 +3853,35 @@ asr = true
 [[test]]
 filename = "errors/end_function_name_not_match.f90"
 ast = true
+
+[[test]]
+filename = "errors/class_procedure_extra_args.f90"
+asr = true
+
+[[test]]
+filename = "errors/incorrect_number_args_function.f90"
+asr = true
+
+[[test]]
+filename = "errors/incorrect_number_args_subroutine.f90"
+asr = true
+
+[[test]]
+filename = "optional_argument_subroutine_in_type.f90"
+asr = true
+
+[[test]]
+filename = "errors/class_procedure_extra_args.f90"
+asr = true
+
+[[test]]
+filename = "errors/incorrect_number_args_function.f90"
+asr = true
+
+[[test]]
+filename = "errors/incorrect_number_args_subroutine.f90"
+asr = true
+
+[[test]]
+filename = "optional_argument_subroutine_in_type.f90"
+asr = true

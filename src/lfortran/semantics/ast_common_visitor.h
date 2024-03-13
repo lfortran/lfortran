@@ -4132,6 +4132,12 @@ public:
             current_module_dependencies.push_back(al, v_module->m_name);
         }
         ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
+        if (args.size() > func->n_args) {
+            Location args_loc;
+            args_loc.first = args[0].loc.first;
+            args_loc.last = args[args.size() - 1].loc.last;
+            throw SemanticError("More actual than formal arguments in procedure call", args_loc);
+        }
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
         legacy_array_sections_helper(v, args, loc);
         return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
