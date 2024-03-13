@@ -3471,7 +3471,7 @@ public:
                                                     a, int_type)));
                         }
                         ASR::expr_t* casted_left = CastingUtil::perform_casting(args[0].m_left, int_type, al, loc);
-                        l = i_vSub(casted_left, const_1, a_value);
+                        l = b.i_vSub(casted_left, const_1, a_value);
                     }
                     if (m_args[0].m_end) {
                         r = args[0].m_right;
@@ -3486,7 +3486,8 @@ public:
                         ASR::expr_t *a_len_expr = nullptr;
                         if (l && r) {
                             // TODO: Handle `args[0].m_step`
-                            a_len_expr = ASRUtils::iSub(r, l);
+                            ASRUtils::ASRBuilder b(al, loc);
+                            a_len_expr = b.iSub(r, l);
                             a_len = -3;
                         }
                         char_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc,

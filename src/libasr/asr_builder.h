@@ -241,98 +241,198 @@ class ASRBuilder {
     }
 
     // Binop -------------------------------------------------------------------
-    #define iAdd(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
-            ASR::binopType::Add, right, int32, nullptr))
-    #define i64Add(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,    \
-            ASR::binopType::Add, right, int64, nullptr))
-    #define rAdd(left, right, t) EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
-            ASR::binopType::Add, right, t, nullptr))
-    #define r32Add(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,       \
-            ASR::binopType::Add, right, real32, nullptr))
-    #define r64Add(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,       \
-            ASR::binopType::Add, right, real64, nullptr))
-    #define i_tAdd(left, right, t) EXPR(ASR::make_IntegerBinOp_t(al, loc, left, \
-            ASR::binopType::Add, right, t, nullptr))
 
-    #define iSub(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
-            ASR::binopType::Sub, right, ASRUtils::int32, nullptr))
-    #define i_vSub(left, right, value) ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
-            ASR::binopType::Sub, right, ASRUtils::int32, value))
-    #define i8Sub(left, right) ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, left,     \
-        ASR::binopType::Sub, right, int8, nullptr))
-    #define i16Sub(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,    \
-        ASR::binopType::Sub, right, int16, nullptr))
-    #define i64Sub(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,    \
-        ASR::binopType::Sub, right, int64, nullptr))
-    #define rSub(left, right, t) EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
-            ASR::binopType::Sub, right, t, nullptr))
-    #define r32Sub(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,       \
-            ASR::binopType::Sub, right, real32, nullptr))
-    #define r64Sub(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,       \
-            ASR::binopType::Sub, right, real64, nullptr))
-    #define i_tSub(left, right, t) EXPR(ASR::make_IntegerBinOp_t(al, loc, left, \
-            ASR::binopType::Sub, right, t, nullptr))
-    #define r_tSub(left, right, t) EXPR(ASR::make_RealBinOp_t(al, loc, left,    \
-            ASR::binopType::Sub, right, t, nullptr))
+    inline ASR::expr_t* iAdd(ASR::expr_t* left, ASR::expr_t* right) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Add, right, ASRUtils::int32, nullptr));
+    }
 
-    #define iDiv(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc,            \
-            left, ASR::binopType::Div, right, int32, nullptr))
-    #define i8Div(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc,           \
-            left, ASR::binopType::Div, right, int8, nullptr))
-    #define i16Div(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc,          \
-            left, ASR::binopType::Div, right, int16, nullptr))
-    #define i64Div(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc,          \
-            left, ASR::binopType::Div, right, int64, nullptr))
-    #define r32Div(left, right) EXPR(ASR::make_RealBinOp_t(al, loc,             \
-            left, ASR::binopType::Div, right, real32, nullptr))
-    #define r64Div(left, right) EXPR(ASR::make_RealBinOp_t(al, loc,             \
-            left, ASR::binopType::Div, right, real64, nullptr))
-    #define i_tDiv(left, right, t) EXPR(ASR::make_IntegerBinOp_t(al, loc,       \
-            left, ASR::binopType::Div, right, t, nullptr))
+    inline ASR::expr_t* i8Add(ASR::expr_t* left, ASR::expr_t* right) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Add, right, ASRUtils::int8, nullptr));
+    }
 
-    #define iMul(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
-            ASR::binopType::Mul, right, int32, nullptr))
-    #define i8Mul(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,     \
-            ASR::binopType::Mul, right, int8, nullptr))
-    #define i16Mul(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,    \
-            ASR::binopType::Mul, right, int16, nullptr))
-    #define i64Mul(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,    \
-            ASR::binopType::Mul, right, int64, nullptr))
-    #define r32Mul(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,       \
-            ASR::binopType::Mul, right, real32, nullptr))
-    #define r64Mul(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,       \
-            ASR::binopType::Mul, right, real64, nullptr))
-    #define i_tMul(left, right, t) EXPR(ASR::make_IntegerBinOp_t(al, loc, left, \
-            ASR::binopType::Mul, right, t, nullptr))
-    #define i_tAnd(left, right, t) EXPR(ASR::make_IntegerBinOp_t(al, loc, left, \
-            ASR::binopType::BitAnd, right, t, nullptr))
-    #define r_tMul(left, right, t) EXPR(ASR::make_RealBinOp_t(al, loc, left, \
-        ASR::binopType::Mul, right, t, nullptr))
+    inline ASR::expr_t* i16Add(ASR::expr_t* left, ASR::expr_t* right) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Add, right, ASRUtils::int16, nullptr));
+    }
 
-    #define iPow(left, right, t) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,   \
-            ASR::binopType::Pow, right, t, nullptr))
-    #define rPow(left, right, t) EXPR(ASR::make_RealBinOp_t(al, loc, left,   \
-            ASR::binopType::Pow, right, t, nullptr))
-    #define And(x, y) EXPR(ASR::make_LogicalBinOp_t(al, loc, x,                 \
-            ASR::logicalbinopType::And, y, logical, nullptr))
-    #define Or(x, y) EXPR(ASR::make_LogicalBinOp_t(al, loc, x,                  \
-            ASR::logicalbinopType::Or, y, logical, nullptr))
-    #define Not(x) EXPR(ASR::make_LogicalNot_t(al, loc, x, logical, nullptr))
+    inline ASR::expr_t* i64Add(ASR::expr_t* left, ASR::expr_t* right) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Add, right, ASRUtils::int64, nullptr));
+    }
 
-    #define i_BitRshift(n, bits, t) EXPR(ASR::make_IntegerBinOp_t(al, loc,      \
-            n, ASR::binopType::BitRShift, bits, t, nullptr))
-    #define i_BitLshift(n, bits, t) EXPR(ASR::make_IntegerBinOp_t(al, loc,      \
-            n, ASR::binopType::BitLShift, bits, t, nullptr))
-    #define i_BitNot(x, t) EXPR(ASR::make_IntegerBitNot_t(al, loc, x, t, nullptr))
-    #define i_BitAnd(i, j, t) EXPR(ASR::make_IntegerBinOp_t(al, loc,            \
-            i, ASR::binopType::BitAnd, j, t, nullptr))
-    #define i_BitOr(i, j, t) EXPR(ASR::make_IntegerBinOp_t(al, loc,             \
-            i, ASR::binopType::BitOr, j, t, nullptr))
-    #define i_BitXor(i, j, t) EXPR(ASR::make_IntegerBinOp_t(al, loc,            \
-            i, ASR::binopType::BitXor, j, t, nullptr))
+    inline ASR::expr_t* rAdd(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
+        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Add, right, t, nullptr));
+    }
 
-    #define sConstant(s, type) EXPR(ASR::make_StringConstant_t(al, loc,         \
-        s2c(al, s), type))
+    inline ASR::expr_t* r32Add(ASR::expr_t* left, ASR::expr_t* right) {
+        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Add, right, ASRUtils::real32, nullptr));
+    }
+
+    inline ASR::expr_t* r64Add(ASR::expr_t* left, ASR::expr_t* right) {
+        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Add, right, ASRUtils::real64, nullptr));
+    }
+
+    inline ASR::expr_t* i_tAdd(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Add, right, t, nullptr));
+    }
+
+    inline ASR::expr_t* iSub(ASR::expr_t* left, ASR::expr_t* right) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Sub, right, ASRUtils::int32, nullptr));
+    }
+
+    inline ASR::expr_t* i_vSub(ASR::expr_t* left, ASR::expr_t* right, ASR::expr_t* value) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Sub, right, ASRUtils::int32, value));
+    }
+
+    inline ASR::expr_t* i8Sub(ASR::expr_t* left, ASR::expr_t* right) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Sub, right, int8, nullptr));
+    }
+
+    inline ASR::expr_t* i16Sub(ASR::expr_t* left, ASR::expr_t* right) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Sub, right, int16, nullptr));
+    }
+
+    inline ASR::expr_t* i64Sub(ASR::expr_t* left, ASR::expr_t* right) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Sub, right, int64, nullptr));
+    }
+
+    inline ASR::expr_t* rSub(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
+        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Sub, right, t, nullptr));
+    }
+
+    inline ASR::expr_t* r32Sub(ASR::expr_t* left, ASR::expr_t* right) {
+        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Sub, right, ASRUtils::real32, nullptr));
+    }
+
+    inline ASR::expr_t* r64Sub(ASR::expr_t* left, ASR::expr_t* right) {
+        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Sub, right, ASRUtils::real64, nullptr));
+    }
+
+    inline ASR::expr_t* i_tSub(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Sub, right, t, nullptr));
+    }
+
+    inline ASR::expr_t* r_tSub(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
+        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Sub, right, t, nullptr));
+    }
+
+    inline ASR::expr_t* iDiv(ASR::expr_t* left, ASR::expr_t* right) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Div, right, ASRUtils::int32, nullptr));
+    }
+
+    inline ASR::expr_t* i8Div(ASR::expr_t* left, ASR::expr_t* right) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Div, right, ASRUtils::int8, nullptr));
+    }
+
+    inline ASR::expr_t* i16Div(ASR::expr_t* left, ASR::expr_t* right) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Div, right, ASRUtils::int16, nullptr));
+    }
+
+    inline ASR::expr_t* i64Div(ASR::expr_t* left, ASR::expr_t* right) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Div, right, ASRUtils::int64, nullptr));
+    }
+
+    inline ASR::expr_t* rDiv(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
+        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Div, right, t, nullptr));
+    }
+
+    inline ASR::expr_t* r32Div(ASR::expr_t* left, ASR::expr_t* right) {
+        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Div, right, ASRUtils::real32, nullptr));
+    }
+
+    inline ASR::expr_t* r64Div(ASR::expr_t* left, ASR::expr_t* right) {
+        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Div, right, ASRUtils::real64, nullptr));
+    }
+
+    inline ASR::expr_t* i_tDiv(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Div, right, t, nullptr));
+    }
+
+    inline ASR::expr_t* iMul(ASR::expr_t* left, ASR::expr_t* right) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Mul, right, ASRUtils::int32, nullptr));
+    }
+
+    inline ASR::expr_t* i8Mul(ASR::expr_t* left, ASR::expr_t* right) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Mul, right, ASRUtils::int8, nullptr));
+    }
+
+    inline ASR::expr_t* i16Mul(ASR::expr_t* left, ASR::expr_t* right) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Mul, right, ASRUtils::int16, nullptr));
+    }
+
+    inline ASR::expr_t* i64Mul(ASR::expr_t* left, ASR::expr_t* right) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Mul, right, ASRUtils::int64, nullptr));
+    }
+
+    inline ASR::expr_t* rMul(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
+        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Mul, right, t, nullptr));
+    }
+
+    inline ASR::expr_t* r32Mul(ASR::expr_t* left, ASR::expr_t* right) {
+        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Mul, right, ASRUtils::real32, nullptr));
+    }
+
+    inline ASR::expr_t* r64Mul(ASR::expr_t* left, ASR::expr_t* right) {
+        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Mul, right, ASRUtils::real64, nullptr));
+    }
+
+    inline ASR::expr_t* i_tMul(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Mul, right, t, nullptr));
+    }
+
+    inline ASR::expr_t* i_tAnd(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::BitAnd, right, t, nullptr));
+    }
+
+    inline ASR::expr_t* r_tMul(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
+        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Mul, right, t, nullptr));
+    }
+
+    inline ASR::expr_t* iPow(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Pow, right, t, nullptr));
+    }
+
+    inline ASR::expr_t* rPow(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
+        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Pow, right, t, nullptr));
+    }
+
+    inline ASR::expr_t* And(ASR::expr_t* x, ASR::expr_t* y) {
+        return EXPR(ASR::make_LogicalBinOp_t(al, loc, x, ASR::logicalbinopType::And, y, logical, nullptr));
+    }
+
+    inline ASR::expr_t* Or(ASR::expr_t* x, ASR::expr_t* y) {
+        return EXPR(ASR::make_LogicalBinOp_t(al, loc, x, ASR::logicalbinopType::Or, y, logical, nullptr));
+    }
+
+    inline ASR::expr_t* Not(ASR::expr_t* x) {
+        return EXPR(ASR::make_LogicalNot_t(al, loc, x, logical, nullptr));
+    }
+
+    inline ASR::expr_t* i_BitRshift(ASR::expr_t* n, ASR::expr_t* bits, ASR::ttype_t* t) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, n, ASR::binopType::BitRShift, bits, t, nullptr));
+    }
+
+    inline ASR::expr_t* i_BitLshift(ASR::expr_t* n, ASR::expr_t* bits, ASR::ttype_t* t) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, n, ASR::binopType::BitLShift, bits, t, nullptr));
+    }
+
+    inline ASR::expr_t* i_BitNot(ASR::expr_t* x, ASR::ttype_t* t) {
+        return EXPR(ASR::make_IntegerBitNot_t(al, loc, x, t, nullptr));
+    }
+
+    inline ASR::expr_t* i_BitAnd(ASR::expr_t* i, ASR::expr_t* j, ASR::ttype_t* t) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, i, ASR::binopType::BitAnd, j, t, nullptr));
+    }
+
+    inline ASR::expr_t* i_BitOr(ASR::expr_t* i, ASR::expr_t* j, ASR::ttype_t* t) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, i, ASR::binopType::BitOr, j, t, nullptr));
+    }
+
+    inline ASR::expr_t* i_BitXor(ASR::expr_t* i, ASR::expr_t* j, ASR::ttype_t* t) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, i, ASR::binopType::BitXor, j, t, nullptr));
+    }
+
+    inline ASR::expr_t* sConstant(std::string s, ASR::ttype_t* type) {
+        return EXPR(ASR::make_StringConstant_t(al, loc, s2c(al, s), type));
+    }
 
     ASR::expr_t *Add(ASR::expr_t *left, ASR::expr_t *right) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));

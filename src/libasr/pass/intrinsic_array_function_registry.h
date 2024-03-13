@@ -1039,7 +1039,7 @@ namespace Shape {
         body.push_back(al, b.While(iLt(i, b.i32(iter)), {
             b.Assignment(b.ArrayItem_01(result, {i}),
                 ArraySize_2(args[0], i, extract_type(return_type))),
-            b.Assignment(i, iAdd(i, b.i32(1)))
+            b.Assignment(i, b.iAdd(i, b.i32(1)))
         }));
         body.push_back(al, Return());
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -2871,7 +2871,7 @@ namespace DotProduct {
         if (is_logical(*return_type)) {
             body.push_back(al, b.Assignment(result, ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, false, return_type))));
             body.push_back(al, b.DoLoop(i, LBound(args[0], 1), UBound(args[0], 1), {
-                b.Assignment(result, b.LogicalOr(result, And(b.ArrayItem_01(args[0], {i}), b.ArrayItem_01(args[1], {i})), loc))
+                b.Assignment(result, b.LogicalOr(result, b.And(b.ArrayItem_01(args[0], {i}), b.ArrayItem_01(args[1], {i})), loc))
             }));
         } else if (is_complex(*return_type)) {
             body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexConstant_t(al, loc, 0.0, 0.0, return_type))));

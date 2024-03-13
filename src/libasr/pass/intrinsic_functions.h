@@ -278,47 +278,47 @@ static inline ASR::symbol_t *create_KMP_function(Allocator &al,
     body.push_back(al, b.Assignment(lps,
         EXPR(ASR::make_ListConstant_t(al, loc, nullptr, 0, List(int32)))));
     body.push_back(al, b.Assignment(i, b.i32(0)));
-    body.push_back(al, b.While(iLtE(i, iSub(pat_len, b.i32(1))), {
-        b.Assignment(i, iAdd(i, b.i32(1))),
+    body.push_back(al, b.While(iLtE(i, b.iSub(pat_len, b.i32(1))), {
+        b.Assignment(i, b.iAdd(i, b.i32(1))),
         b.ListAppend(lps, b.i32(0))
     }));
     body.push_back(al, b.Assignment(flag, b.bool32(false)));
     body.push_back(al, b.Assignment(i, b.i32(1)));
     body.push_back(al, b.Assignment(pi_len, b.i32(0)));
     body.push_back(al, b.While(iLt(i, pat_len), {
-        b.If(sEq(b.StringItem(args[1], iAdd(i, b.i32(1))),
-                 b.StringItem(args[1], iAdd(pi_len, b.i32(1)))), {
-            b.Assignment(pi_len, iAdd(pi_len, b.i32(1))),
+        b.If(sEq(b.StringItem(args[1], b.iAdd(i, b.i32(1))),
+                 b.StringItem(args[1], b.iAdd(pi_len, b.i32(1)))), {
+            b.Assignment(pi_len, b.iAdd(pi_len, b.i32(1))),
             b.Assignment(b.ListItem(lps, i, int32), pi_len),
-            b.Assignment(i, iAdd(i, b.i32(1)))
+            b.Assignment(i, b.iAdd(i, b.i32(1)))
         }, {
             b.If(iNotEq(pi_len, b.i32(0)), {
-                b.Assignment(pi_len, b.ListItem(lps, iSub(pi_len, b.i32(1)), int32))
+                b.Assignment(pi_len, b.ListItem(lps, b.iSub(pi_len, b.i32(1)), int32))
             }, {
-                b.Assignment(i, iAdd(i, b.i32(1)))
+                b.Assignment(i, b.iAdd(i, b.i32(1)))
             })
         })
     }));
     body.push_back(al, b.Assignment(j, b.i32(0)));
     body.push_back(al, b.Assignment(i, b.i32(0)));
-    body.push_back(al, b.While(And(iGtE(iSub(s_len, i),
-            iSub(pat_len, j)), Not(flag)), {
-        b.If(sEq(b.StringItem(args[1], iAdd(j, b.i32(1))),
-                b.StringItem(args[0], iAdd(i, b.i32(1)))), {
-            b.Assignment(i, iAdd(i, b.i32(1))),
-            b.Assignment(j, iAdd(j, b.i32(1)))
+    body.push_back(al, b.While(b.And(iGtE(b.iSub(s_len, i),
+            b.iSub(pat_len, j)), b.Not(flag)), {
+        b.If(sEq(b.StringItem(args[1], b.iAdd(j, b.i32(1))),
+                b.StringItem(args[0], b.iAdd(i, b.i32(1)))), {
+            b.Assignment(i, b.iAdd(i, b.i32(1))),
+            b.Assignment(j, b.iAdd(j, b.i32(1)))
         }, {}),
         b.If(iEq(j, pat_len), {
-            b.Assignment(result, iSub(i, j)),
+            b.Assignment(result, b.iSub(i, j)),
             b.Assignment(flag, b.bool32(true)),
-            b.Assignment(j, b.ListItem(lps, iSub(j, b.i32(1)), int32))
+            b.Assignment(j, b.ListItem(lps, b.iSub(j, b.i32(1)), int32))
         }, {
-            b.If(And(iLt(i, s_len), sNotEq(b.StringItem(args[1], iAdd(j, b.i32(1))),
-                    b.StringItem(args[0], iAdd(i, b.i32(1))))), {
+            b.If(b.And(iLt(i, s_len), sNotEq(b.StringItem(args[1], b.iAdd(j, b.i32(1))),
+                    b.StringItem(args[0], b.iAdd(i, b.i32(1))))), {
                 b.If(iNotEq(j, b.i32(0)), {
-                    b.Assignment(j, b.ListItem(lps, iSub(j, b.i32(1)), int32))
+                    b.Assignment(j, b.ListItem(lps, b.iSub(j, b.i32(1)), int32))
                 }, {
-                    b.Assignment(i, iAdd(i, b.i32(1)))
+                    b.Assignment(i, b.iAdd(i, b.i32(1)))
                 })
             }, {})
         })
@@ -852,7 +852,7 @@ namespace Scale {
         */
 
        //TODO: Radix for most of the device is 2, so we can use the b.i2r32(2) instead of args[1]. Fix (find a way to get the radix of the device and use it here)
-        body.push_back(al, b.Assignment(result, r_tMul(args[0], b.i2r32(iPow(b.i(2, arg_types[1]), args[1], arg_types[1])), arg_types[0])));
+        body.push_back(al, b.Assignment(result, b.r_tMul(args[0], b.i2r32(b.iPow(b.i(2, arg_types[1]), args[1], arg_types[1])), arg_types[0])));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
@@ -880,7 +880,7 @@ namespace Dprod {
         * r = dprod(x, y)
         * r = x * y
         */
-        body.push_back(al, b.Assignment(result, b.r2r64(r32Mul(args[0],args[1]))));
+        body.push_back(al, b.Assignment(result, b.r2r64(b.r32Mul(args[0],args[1]))));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
@@ -1002,7 +1002,7 @@ namespace Shiftr {
         * r = x / 2**y
         */
         ASR::expr_t *two = b.i(2, arg_types[0]);
-        body.push_back(al, b.Assignment(result, i_tDiv(args[0], iPow(two, args[1], arg_types[0]), arg_types[0])));
+        body.push_back(al, b.Assignment(result, b.i_tDiv(args[0], b.iPow(two, args[1], arg_types[0]), arg_types[0])));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1034,7 +1034,7 @@ namespace Rshift {
         * r = rshift(x, y)
         * r = x >> y
         */
-        body.push_back(al, b.Assignment(result, i_BitRshift(args[0], args[1], arg_types[0])));
+        body.push_back(al, b.Assignment(result, b.i_BitRshift(args[0], args[1], arg_types[0])));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1066,7 +1066,7 @@ namespace Shiftl {
         * r = shiftl(x, y)
         * r = x << y
         */
-        body.push_back(al, b.Assignment(result, i_BitLshift(args[0], args[1], arg_types[0])));
+        body.push_back(al, b.Assignment(result, b.i_BitLshift(args[0], args[1], arg_types[0])));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1119,10 +1119,10 @@ namespace Dshiftl {
         ASR::expr_t *four = b.i(4, int32);
         ASR::expr_t *kind = b.i(kind_arg, int32);
         ASR::expr_t *cast = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[2], ASR::cast_kindType::IntegerToInteger, return_type, nullptr));
-        body.push_back(al, b.Assignment(result, i_BitLshift(args[0], cast, return_type)));
+        body.push_back(al, b.Assignment(result, b.i_BitLshift(args[0], cast, return_type)));
         body.push_back(al, b.If(iEq(kind, four), 
-            {b.Assignment(result, i_BitOr(result, i_BitRshift(args[1], i_tSub(thirty_two, args[2], return_type), return_type), return_type))}, 
-            {b.Assignment(result, i_BitOr(result, i_BitRshift(args[1], i_tSub(sixty_four, args[2], return_type), return_type), return_type))}
+            {b.Assignment(result, b.i_BitOr(result, b.i_BitRshift(args[1], b.i_tSub(thirty_two, args[2], return_type), return_type), return_type))}, 
+            {b.Assignment(result, b.i_BitOr(result, b.i_BitRshift(args[1], b.i_tSub(sixty_four, args[2], return_type), return_type), return_type))}
             ));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -1168,9 +1168,9 @@ namespace Ishft {
         */
         ASR::expr_t *m_one = b.i(-1, arg_types[0]);
         body.push_back(al, b.If(iLtE(args[1], b.i(0, arg_types[0])), {
-            b.Assignment(result, i_BitRshift(args[0], iMul(m_one, args[1]), arg_types[0]))
+            b.Assignment(result, b.i_BitRshift(args[0], b.iMul(m_one, args[1]), arg_types[0]))
         }, {
-            b.Assignment(result, i_BitLshift(args[0], args[1], arg_types[0]))
+            b.Assignment(result, b.i_BitLshift(args[0], args[1], arg_types[0]))
         }));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -1211,7 +1211,7 @@ namespace Bgt {
         ASR::expr_t *zero = b.i(0, arg_types[0]);
         ASR::expr_t *val1 = args[0];
         ASR::expr_t *val2 = args[1];
-        body.push_back(al, b.If(Or(iGt(iMul(val1, val2), zero), And(iEq(iMul(val1, val2), zero), Or(iGt(val1, zero), iGt(val2, zero)))), {
+        body.push_back(al, b.If(b.Or(iGt(b.iMul(val1, val2), zero), b.And(iEq(b.iMul(val1, val2), zero), b.Or(iGt(val1, zero), iGt(val2, zero)))), {
             b.If(iGt(val1, val2), {
                 b.Assignment(result, b.bool32(1))
             }, {})
@@ -1259,7 +1259,7 @@ namespace Blt {
         ASR::expr_t *zero = b.i(0, arg_types[0]);
         ASR::expr_t *val1 = args[0];
         ASR::expr_t *val2 = args[1];
-        body.push_back(al, b.If(Or(iGt(iMul(val1, val2), zero), And(iEq(iMul(val1, val2), zero), Or(iGt(val1, zero), iGt(val2, zero)))), {
+        body.push_back(al, b.If(b.Or(iGt(b.iMul(val1, val2), zero), b.And(iEq(b.iMul(val1, val2), zero), b.Or(iGt(val1, zero), iGt(val2, zero)))), {
             b.If(iLt(val1, val2), {
                 b.Assignment(result, b.bool32(1))
             }, {})
@@ -1307,7 +1307,7 @@ namespace Bge {
         ASR::expr_t *zero = b.i(0, arg_types[0]);
         ASR::expr_t *val1 = args[0];
         ASR::expr_t *val2 = args[1];
-        body.push_back(al, b.If(Or(iGt(iMul(val1, val2), zero), And(iEq(iMul(val1, val2), zero), Or(iGt(val1, zero), iGt(val2, zero)))), {
+        body.push_back(al, b.If(b.Or(iGt(b.iMul(val1, val2), zero), b.And(iEq(b.iMul(val1, val2), zero), b.Or(iGt(val1, zero), iGt(val2, zero)))), {
             b.If(iGtE(val1, val2), {
                 b.Assignment(result, b.bool32(1))
             }, {})
@@ -1355,7 +1355,7 @@ namespace Ble {
         ASR::expr_t *zero = b.i(0, arg_types[0]);
         ASR::expr_t *val1 = args[0];
         ASR::expr_t *val2 = args[1];
-        body.push_back(al, b.If(Or(iGt(iMul(val1, val2), zero), And(iEq(iMul(val1, val2), zero), Or(iGt(val1, zero), iGt(val2, zero)))), {
+        body.push_back(al, b.If(b.Or(iGt(b.iMul(val1, val2), zero), b.And(iEq(b.iMul(val1, val2), zero), b.Or(iGt(val1, zero), iGt(val2, zero)))), {
             b.If(iLtE(val1, val2), {
                 b.Assignment(result, b.bool32(1))
             }, {})
@@ -1389,7 +1389,7 @@ namespace Not {
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         ASR::expr_t *val = args[0];
-        body.push_back(al, b.Assignment(result, i_BitNot(val, return_type)));
+        body.push_back(al, b.Assignment(result, b.i_BitNot(val, return_type)));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1421,7 +1421,7 @@ namespace Iand {
         ASR::expr_t *val1 = args[0];
         ASR::expr_t *val2 = args[1];
 
-        body.push_back(al, b.Assignment(result, i_BitAnd(val1, val2, return_type)));
+        body.push_back(al, b.Assignment(result, b.i_BitAnd(val1, val2, return_type)));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1453,7 +1453,7 @@ namespace Ior {
         ASR::expr_t *val1 = args[0];
         ASR::expr_t *val2 = args[1];
 
-        body.push_back(al, b.Assignment(result, i_BitOr(val1, val2, return_type)));
+        body.push_back(al, b.Assignment(result, b.i_BitOr(val1, val2, return_type)));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1485,7 +1485,7 @@ namespace Ieor {
         ASR::expr_t *val1 = args[0];
         ASR::expr_t *val2 = args[1];
 
-        body.push_back(al, b.Assignment(result, i_BitXor(val1, val2, return_type)));
+        body.push_back(al, b.Assignment(result, b.i_BitXor(val1, val2, return_type)));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1518,7 +1518,7 @@ namespace Ibclr {
         ASR::expr_t *val2 = args[1];
         ASR::expr_t *one = b.i(1, arg_types[0]);
 
-        body.push_back(al, b.Assignment(result, i_BitAnd(val1, i_BitNot(i_BitLshift(one, val2, return_type), return_type), return_type)));
+        body.push_back(al, b.Assignment(result, b.i_BitAnd(val1, b.i_BitNot(b.i_BitLshift(one, val2, return_type), return_type), return_type)));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1551,7 +1551,7 @@ namespace Ibset {
         ASR::expr_t *val2 = args[1];
         ASR::expr_t *one = b.i(1, arg_types[0]);
 
-        body.push_back(al, b.Assignment(result, i_BitOr(val1, i_BitLshift(one, val2, return_type), return_type)));
+        body.push_back(al, b.Assignment(result, b.i_BitOr(val1, b.i_BitLshift(one, val2, return_type), return_type)));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1586,7 +1586,7 @@ namespace Btest {
         ASR::expr_t *zero = b.i(0, arg_types[0]);
         ASR::expr_t *one = b.i(1, arg_types[0]);
 
-        body.push_back(al, b.If(iEq(i_BitAnd(val1, i_BitLshift(one, val2, arg_types[0]), arg_types[0]), zero), {
+        body.push_back(al, b.If(iEq(b.i_BitAnd(val1, b.i_BitLshift(one, val2, arg_types[0]), arg_types[0]), zero), {
             b.Assignment(result, b.bool32(0))
         }, {
             b.Assignment(result, b.bool32(1))
@@ -1626,7 +1626,7 @@ namespace Ibits {
         */
         
         ASR::expr_t *one = b.i(1, arg_types[0]);
-        body.push_back(al, b.Assignment(result, i_BitAnd(i_BitRshift(args[0], b.i2i(args[1], arg_types[0]), return_type), iSub(i_BitLshift(one, b.i2i(args[2], arg_types[0]), return_type), one), return_type)));
+        body.push_back(al, b.Assignment(result, b.i_BitAnd(b.i_BitRshift(args[0], b.i2i(args[1], arg_types[0]), return_type), b.iSub(b.i_BitLshift(one, b.i2i(args[2], arg_types[0]), return_type), one), return_type)));
         
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1716,9 +1716,9 @@ namespace Anint {
         ASR::expr_t* zero = make_ConstantWithType(make_RealConstant_t, 0.0, arg_types[0], loc);
         test = make_Compare(make_RealCompare_t, args[0], Gt, zero);
 
-        ASR::expr_t* func_call_aint_pos = b.CallIntrinsic(scope, {arg_types[0]}, {rAdd(args[0], b.f(0.5, arg_types[0]), arg_types[0])},
+        ASR::expr_t* func_call_aint_pos = b.CallIntrinsic(scope, {arg_types[0]}, {b.rAdd(args[0], b.f(0.5, arg_types[0]), arg_types[0])},
                                         return_type, 0, Aint::instantiate_Aint);
-        ASR::expr_t* func_call_aint_neg = b.CallIntrinsic(scope, {arg_types[0]}, {rSub(args[0], b.f(0.5, arg_types[0]), arg_types[0])},
+        ASR::expr_t* func_call_aint_neg = b.CallIntrinsic(scope, {arg_types[0]}, {b.rSub(args[0], b.f(0.5, arg_types[0]), arg_types[0])},
                                         return_type, 0, Aint::instantiate_Aint);
 
         Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
@@ -1799,8 +1799,8 @@ namespace Floor {
         ASR::expr_t *cast2 = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::RealToReal, return_type, nullptr));
 
         body.push_back(al, b.Assignment(result, cast));
-        body.push_back(al, b.If(And(fLtE(args[0], b.f(0, arg_types[0])), fNotEq(cast1,cast2)), {
-            b.Assignment(result,i_tSub(cast,one,return_type))}, {}));
+        body.push_back(al, b.If(b.And(fLtE(args[0], b.f(0, arg_types[0])), fNotEq(cast1,cast2)), {
+            b.Assignment(result,b.i_tSub(cast,one,return_type))}, {}));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
@@ -1852,7 +1852,7 @@ namespace Ceiling {
 
         body.push_back(al, b.If(fGtE(args[0], b.f(0, arg_types[0])), {
             b.If(fEq(cast2, cast1),
-            {b.Assignment(result,cast)}, {b.Assignment(result,i_tAdd(cast,one,return_type))})},
+            {b.Assignment(result,cast)}, {b.Assignment(result,b.i_tAdd(cast,one,return_type))})},
             {b.Assignment(result,cast)
         }));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -1910,7 +1910,7 @@ namespace Dim {
         if (is_real(*arg_types[0])) {
             ASR::expr_t *zero = b.f(0.0, arg_types[0]);
             body.push_back(al, b.If(fGt(args[0], args[1]), {
-                b.Assignment(result, r_tSub(args[0], args[1], arg_types[0]))
+                b.Assignment(result, b.r_tSub(args[0], args[1], arg_types[0]))
             }, {
                 b.Assignment(result, zero)
             }));
@@ -1918,7 +1918,7 @@ namespace Dim {
             LCOMPILERS_ASSERT(is_integer(*arg_types[0]));
             ASR::expr_t *zero = b.i(0, arg_types[0]);
             body.push_back(al, b.If(iGt(args[0], args[1]), {
-                b.Assignment(result, i_tSub(args[0], args[1], arg_types[0]))
+                b.Assignment(result, b.i_tSub(args[0], args[1], arg_types[0]))
             }, {
                 b.Assignment(result, zero)
             }));
@@ -2017,9 +2017,9 @@ namespace Exponent {
         ASR::expr_t* transfer = ASRUtils::EXPR(ASR::make_BitCast_t(al, loc, args[0], b.i32(0), nullptr, int32, nullptr));
         if (kind == 8) {
             transfer = ASRUtils::EXPR(ASR::make_BitCast_t(al, loc, args[0], b.i64(0), nullptr, int64, nullptr));
-            value = b.i2i32(i_tSub(i_tAnd(i_BitRshift(transfer, b.i64(52), int64), b.i64(0x7FF), int64), b.i64(1022), int64));
+            value = b.i2i32(b.i_tSub(b.i_tAnd(b.i_BitRshift(transfer, b.i64(52), int64), b.i64(0x7FF), int64), b.i64(1022), int64));
         } else {
-            value = i_tSub(i_tAnd(i_BitRshift(transfer, b.i32(23), int32), b.i32(0x0FF), int32), b.i32(126), int32);
+            value = b.i_tSub(b.i_tAnd(b.i_BitRshift(transfer, b.i32(23), int32), b.i32(0x0FF), int32), b.i32(126), int32);
         }
         body.push_back(al, b.If(fEq(args[0], b.f(0.0, arg_types[0])), {
             b.Assignment(result, b.i32(0))
@@ -2084,7 +2084,7 @@ namespace Fraction {
         * r = x * radix(x)**(-exp(x))
         */
         ASR::expr_t* func_call_exponent = b.CallIntrinsic(scope, {arg_types[0]}, {args[0]}, int32, 0, Exponent::instantiate_Exponent);
-        body.push_back(al, b.Assignment(result, r_tMul(args[0], rPow(b.i2r(b.i(2, int32),return_type), r_tMul(b.i2r(b.i(-1,int32), return_type),b.i2r(func_call_exponent, return_type), return_type), return_type), return_type)));
+        body.push_back(al, b.Assignment(result, b.r_tMul(args[0], b.rPow(b.i2r(b.i(2, int32),return_type), b.r_tMul(b.i2r(b.i(-1,int32), return_type),b.i2r(func_call_exponent, return_type), return_type), return_type), return_type)));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
@@ -2148,7 +2148,7 @@ namespace SetExponent {
         * r = fraction(x) * radix(x)**(I)
         */
         ASR::expr_t* func_call_fraction = b.CallIntrinsic(scope, {arg_types[0]}, {args[0]}, return_type, 0, Fraction::instantiate_Fraction);
-        body.push_back(al, b.Assignment(result, r_tMul(func_call_fraction, rPow(b.i2r(b.i32(2),return_type),b.i2r(args[1], return_type), return_type), return_type)));
+        body.push_back(al, b.Assignment(result, b.r_tMul(func_call_fraction, b.rPow(b.i2r(b.i32(2),return_type),b.i2r(args[1], return_type), return_type), return_type)));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
@@ -2383,8 +2383,8 @@ namespace FlipSign {
         */
 
         ASR::expr_t *two = b.i(2, arg_types[0]);
-        ASR::expr_t *q = iDiv(args[0], two);
-        ASR::expr_t *cond = iSub(args[0], iMul(two, q));
+        ASR::expr_t *q = b.iDiv(args[0], two);
+        ASR::expr_t *cond = b.iSub(args[0], b.iMul(two, q));
         body.push_back(al, b.If(iEq(cond, b.i(1, arg_types[0])), {
             b.Assignment(result, b.f32_neg(args[1], arg_types[1]))
         }, {
@@ -2482,12 +2482,12 @@ namespace FloorDiv {
         */
 
 
-        ASR::expr_t *op1 = r64Div(CastingUtil::perform_casting(args[0], real64, al, loc),
+        ASR::expr_t *op1 = b.r64Div(CastingUtil::perform_casting(args[0], real64, al, loc),
             CastingUtil::perform_casting(args[1], real64, al, loc));
         body.push_back(al, b.Assignment(r, op1));
         body.push_back(al, b.Assignment(tmp, b.r2i64(r)));
-        body.push_back(al, b.If(And(fLt(r, b.f(0.0, real64)), fNotEq(b.i2r64(tmp), r)), {
-                b.Assignment(tmp, i64Sub(tmp, b.i(1, int64)))
+        body.push_back(al, b.If(b.And(fLt(r, b.f(0.0, real64)), fNotEq(b.i2r64(tmp), r)), {
+                b.Assignment(tmp, b.i64Sub(tmp, b.i(1, int64)))
             }, {}));
         body.push_back(al, b.Assignment(result, CastingUtil::perform_casting(tmp, return_type, al, loc)));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -2539,31 +2539,31 @@ namespace Mod {
         int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[1]);
         if (is_real(*arg_types[1])) {
             if (kind == 4) {
-                q = b.r2i32(r32Div(args[0], args[1]));
-                op1 = r32Mul(args[1], b.i2r32(q));
-                op2 = r32Sub(args[0], op1);
+                q = b.r2i32(b.r32Div(args[0], args[1]));
+                op1 = b.r32Mul(args[1], b.i2r32(q));
+                op2 = b.r32Sub(args[0], op1);
             } else {
-                q = b.r2i64(r64Div(args[0], args[1]));
-                op1 = r64Mul(args[1], b.i2r64(q));
-                op2 = r64Sub(args[0], op1);
+                q = b.r2i64(b.r64Div(args[0], args[1]));
+                op1 = b.r64Mul(args[1], b.i2r64(q));
+                op2 = b.r64Sub(args[0], op1);
             }
         } else {
             if (kind == 1) {
-                q = i8Div(args[0], args[1]);
-                op1 = i8Mul(args[1], q);
-                op2 = i8Sub(args[0], op1);
+                q = b.i8Div(args[0], args[1]);
+                op1 = b.i8Mul(args[1], q);
+                op2 = b.i8Sub(args[0], op1);
             } else if (kind == 2) {
-                q = i16Div(args[0], args[1]);
-                op1 = i16Mul(args[1], q);
-                op2 = i16Sub(args[0], op1);
+                q = b.i16Div(args[0], args[1]);
+                op1 = b.i16Mul(args[1], q);
+                op2 = b.i16Sub(args[0], op1);
             } else if (kind == 4) {
-                q = iDiv(args[0], args[1]);
-                op1 = iMul(args[1], q);
-                op2 = iSub(args[0], op1);
+                q = b.iDiv(args[0], args[1]);
+                op1 = b.iMul(args[1], q);
+                op2 = b.iSub(args[0], op1);
             } else if (kind == 8) {
-                q = i64Div(args[0], args[1]);
-                op1 = i64Mul(args[1], q);
-                op2 = i64Sub(args[0], op1);
+                q = b.i64Div(args[0], args[1]);
+                op1 = b.i64Mul(args[1], q);
+                op2 = b.i64Sub(args[0], op1);
             } else {
                 LCOMPILERS_ASSERT(false);
             }
@@ -2608,8 +2608,8 @@ namespace Maskl {
         ASR::expr_t* one = b.i(1, return_type);
         ASR::expr_t* minus_one = b.i(-1, return_type);
         ASR::expr_t *cast = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::IntegerToInteger, return_type, nullptr));
-        ASR::expr_t *shifted_mask = i_tSub(i_BitLshift(one, cast, return_type), one, return_type);
-        ASR::expr_t *mask_left_shifted = i_BitLshift(shifted_mask, i_tSub(sixty_four, cast, return_type), return_type);
+        ASR::expr_t *shifted_mask = b.i_tSub(b.i_BitLshift(one, cast, return_type), one, return_type);
+        ASR::expr_t *mask_left_shifted = b.i_BitLshift(shifted_mask, b.i_tSub(sixty_four, cast, return_type), return_type);
         body.push_back(al, b.If((iEq(cast, sixty_four)), {b.Assignment(result, minus_one)},
                                 {b.Assignment(result, mask_left_shifted)}));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -2650,7 +2650,7 @@ namespace Maskr {
         ASR::expr_t* minus_one = b.i(-1, return_type);
         ASR::expr_t *cast = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::IntegerToInteger, return_type, nullptr));
         body.push_back(al, b.If((iEq(cast, sixty_four)), {b.Assignment(result,minus_one)},
-            {b.Assignment(result, i_tSub(i_BitLshift(one, cast, return_type), one, return_type))}));
+            {b.Assignment(result, b.i_tSub(b.i_BitLshift(one, cast, return_type), one, return_type))}));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
@@ -2706,11 +2706,11 @@ namespace Trailz {
         int64_t base = 32;
         std::vector<ASR::stmt_t*> while_loop_body;
         if (arg_0_kind == 4) {
-            while_loop_body.push_back(b.Assignment(args[0], iDiv(args[0], two)));
-            while_loop_body.push_back(b.Assignment(result, iAdd(result, b.i(1, arg_types[0]))));
+            while_loop_body.push_back(b.Assignment(args[0], b.iDiv(args[0], two)));
+            while_loop_body.push_back(b.Assignment(result, b.iAdd(result, b.i(1, arg_types[0]))));
         } else {
-            while_loop_body.push_back(b.Assignment(args[0], i64Div(args[0], two)));
-            while_loop_body.push_back(b.Assignment(result, i64Add(result, b.i(1, arg_types[0]))));
+            while_loop_body.push_back(b.Assignment(args[0], b.i64Div(args[0], two)));
+            while_loop_body.push_back(b.Assignment(result, b.i64Add(result, b.i(1, arg_types[0]))));
             base = 64;
         }
 
@@ -2781,12 +2781,12 @@ namespace Leadz {
 
         std::vector<ASR::stmt_t*> while_loop_body;
         while_loop_body.push_back(b.If(iEq(func_call_mod, b.i(0, arg_types[0])), {
-            b.Assignment(result, i_tAdd(result, b.i(1, arg_types[0]), arg_types[0]))
+            b.Assignment(result, b.i_tAdd(result, b.i(1, arg_types[0]), arg_types[0]))
         }, {
             b.Assignment(result, b.i(0, arg_types[0]))
         }));
-        while_loop_body.push_back(b.Assignment(number, i_tDiv(number, two, arg_types[0])));
-        while_loop_body.push_back(b.Assignment(total_bits, i_tSub(total_bits, b.i(1, arg_types[0]), arg_types[0])));
+        while_loop_body.push_back(b.Assignment(number, b.i_tDiv(number, two, arg_types[0])));
+        while_loop_body.push_back(b.Assignment(total_bits, b.i_tSub(total_bits, b.i(1, arg_types[0]), arg_types[0])));
 
         std::vector<ASR::stmt_t*> if_body; if_body.push_back(b.Assignment(result, b.i(0, arg_types[0])));
         std::vector<ASR::stmt_t*> else_body; else_body.push_back(b.While(loop_cond, while_loop_body));
@@ -2873,9 +2873,9 @@ namespace Hypot {
         ASR::expr_t *op1, *op2, *op3, *func_call_sqrt;
         int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
         if (kind == 4) {
-            op1 = r32Mul(args[0], args[0]); op2 = r32Mul(args[1], args[1]); op3 = r32Add(op1, op2);
+            op1 = b.r32Mul(args[0], args[0]); op2 = b.r32Mul(args[1], args[1]); op3 = b.r32Add(op1, op2);
         } else {
-            op1 = r64Mul(args[0], args[0]); op2 = r64Mul(args[1], args[1]); op3 = r64Add(op1, op2);
+            op1 = b.r64Mul(args[0], args[0]); op2 = b.r64Mul(args[1], args[1]); op3 = b.r64Add(op1, op2);
         }
         func_call_sqrt = b.CallIntrinsic(scope, {ASRUtils::expr_type(op3)}, {op3}, return_type, 0, Sqrt::instantiate_Sqrt);
         body.push_back(al, b.Assignment(result, func_call_sqrt));
@@ -2974,8 +2974,8 @@ namespace SelectedRealKind {
         body.push_back(al, b.Assignment(r, args[1]));
         body.push_back(al, b.Assignment(radix, args[2]));
 
-        ASR::expr_t *cond1 = And(And(iLt(p, b.i(7, arg_types[0])), iLt(r, b.i(38, arg_types[1]))), iEq(radix, b.i(2, arg_types[2])));
-        ASR::expr_t *cond2 = And(And(iLt(p, b.i(15, arg_types[0])), iLt(r, b.i(308, arg_types[1]))), iEq(radix, b.i(2, arg_types[2])));
+        ASR::expr_t *cond1 = b.And(b.And(iLt(p, b.i(7, arg_types[0])), iLt(r, b.i(38, arg_types[1]))), iEq(radix, b.i(2, arg_types[2])));
+        ASR::expr_t *cond2 = b.And(b.And(iLt(p, b.i(15, arg_types[0])), iLt(r, b.i(308, arg_types[1]))), iEq(radix, b.i(2, arg_types[2])));
         ASR::expr_t *cond3 = iNotEq(radix, b.i(2, arg_types[2]));
 
         body.push_back(al, b.If(cond1, {
@@ -3102,7 +3102,7 @@ namespace Adjustl {
         Vec<ASR::stmt_t*> whileloop_body; whileloop_body.reserve(al, 1);
         whileloop_body.push_back(al,
             b.If(comp_with_isspace, {
-                b.Assignment(itr, i_tAdd(itr, b.i32(1), int32))
+                b.Assignment(itr, b.i_tAdd(itr, b.i32(1), int32))
             }, {
                 b.Exit(whileloop_name)
             })
@@ -3112,11 +3112,11 @@ namespace Adjustl {
 
         body.push_back(al, whileloop);
 
-        ASR::expr_t* string_section = b.StringSection(args[0], i_tSub(itr, b.i32(1), int32), str_len);
+        ASR::expr_t* string_section = b.StringSection(args[0], b.i_tSub(itr, b.i32(1), int32), str_len);
         ASR::expr_t* result_string_section = b.StringSection(result, b.i32(0), tmp);
 
         body.push_back(al, b.If(iLtE(itr, str_len), {
-            b.Assignment(tmp, iAdd(iSub(str_len, itr), b.i32(1))),
+            b.Assignment(tmp, b.iAdd(b.iSub(str_len, itr), b.i32(1))),
             b.Assignment(result_string_section, string_section)
         }, {}));
 
@@ -3202,7 +3202,7 @@ namespace Adjustr {
         Vec<ASR::stmt_t*> whileloop_body; whileloop_body.reserve(al, 1);
         whileloop_body.push_back(al,
             b.If(comp_with_isspace, {
-                b.Assignment(itr, i_tSub(itr, b.i32(1), int32))
+                b.Assignment(itr, b.i_tSub(itr, b.i32(1), int32))
             }, {
                 b.Exit(whileloop_name)
             })
@@ -3213,10 +3213,10 @@ namespace Adjustr {
         body.push_back(al, whileloop);
 
         ASR::expr_t* string_section = b.StringSection(args[0], b.i32(0), itr);
-        ASR::expr_t* result_string_section = b.StringSection(result, iSub(tmp, b.i32(1)), str_len);
+        ASR::expr_t* result_string_section = b.StringSection(result, b.iSub(tmp, b.i32(1)), str_len);
 
         body.push_back(al, b.If(iNotEq(itr, b.i32(0)), {
-            b.Assignment(tmp, iAdd(iSub(str_len, itr), b.i32(1))),
+            b.Assignment(tmp, b.iAdd(b.iSub(str_len, itr), b.i32(1))),
             b.Assignment(result_string_section, string_section)
         }, {}));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -3338,17 +3338,17 @@ namespace ToLowerCase {
         ASR::expr_t* cond = iLtE(itr, ln);
         ASR::expr_t* sliced_res = ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr));
         ichar_res = b.CallIntrinsic(scope, {char_type}, {sliced_res}, int32, 0, Ichar::instantiate_Ichar);
-        ichar_A  = b.CallIntrinsic(scope, {arg_types[0]}, {sConstant("A", arg_types[0])}, int32, 0, Ichar::instantiate_Ichar);
-        ichar_Z  = b.CallIntrinsic(scope, {arg_types[0]}, {sConstant("Z", arg_types[0])}, int32, 0, Ichar::instantiate_Ichar);
-        ichar_a  = b.CallIntrinsic(scope, {arg_types[0]}, {sConstant("a", arg_types[0])}, int32, 0, Ichar::instantiate_Ichar);
-        ASR::expr_t* char_node = ASRUtils::EXPR(ASR::make_StringChr_t(al, loc, iSub(iAdd(ichar_res, ichar_a), ichar_A), return_type, nullptr));
+        ichar_A  = b.CallIntrinsic(scope, {arg_types[0]}, {b.sConstant("A", arg_types[0])}, int32, 0, Ichar::instantiate_Ichar);
+        ichar_Z  = b.CallIntrinsic(scope, {arg_types[0]}, {b.sConstant("Z", arg_types[0])}, int32, 0, Ichar::instantiate_Ichar);
+        ichar_a  = b.CallIntrinsic(scope, {arg_types[0]}, {b.sConstant("a", arg_types[0])}, int32, 0, Ichar::instantiate_Ichar);
+        ASR::expr_t* char_node = ASRUtils::EXPR(ASR::make_StringChr_t(al, loc, b.iSub(b.iAdd(ichar_res, ichar_a), ichar_A), return_type, nullptr));
         Vec<ASR::stmt_t*> while_loop_body; while_loop_body.reserve(al, 2);
-        while_loop_body.push_back(al, b.If(And(iGtE(ichar_res, ichar_A), iLtE(ichar_res, ichar_Z)), {
+        while_loop_body.push_back(al, b.If(b.And(iGtE(ichar_res, ichar_A), iLtE(ichar_res, ichar_Z)), {
             b.Assignment(result, b.StringConcat(result, char_node, char_type))
         }, {
             b.Assignment(result, b.StringConcat(result, sliced_res, char_type))
         }));
-        while_loop_body.push_back(al, b.Assignment(itr, i_tAdd(itr, b.i32(1), int32)));
+        while_loop_body.push_back(al, b.Assignment(itr, b.i_tAdd(itr, b.i32(1), int32)));
         ASR::stmt_t* whileloop = ASRUtils::STMT(ASR::make_WhileLoop_t(al, loc, nullptr, cond, while_loop_body.p, while_loop_body.n));
         body.push_back(al, whileloop);
         body.push_back(al, b.Assignment(result, result));
@@ -3473,7 +3473,7 @@ namespace Rrspacing {
         ASR::expr_t* func_call_fraction = b.CallIntrinsic(scope, {arg_types[0]}, {args[0]}, return_type, 0, Fraction::instantiate_Fraction);
         ASR::expr_t* func_call_digits = b.CallIntrinsic(scope, {arg_types[0]}, {args[0]}, int32, 0, Digits::instantiate_Digits);
         ASR::expr_t* func_call_abs = b.CallIntrinsic(scope, {arg_types[0]}, {func_call_fraction}, return_type, 0, Abs::instantiate_Abs);
-        body.push_back(al, b.Assignment(result, r_tMul(func_call_abs, rPow(b.i2r(b.i32(2),return_type), b.i2r(func_call_digits, return_type), return_type), return_type)));
+        body.push_back(al, b.Assignment(result, b.r_tMul(func_call_abs, b.rPow(b.i2r(b.i32(2),return_type), b.i2r(func_call_digits, return_type), return_type), return_type)));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
@@ -3546,11 +3546,11 @@ namespace Repeat {
         ASR::expr_t *cond = iLt(cnt, CastingUtil::perform_casting(args[1], int32, al, loc));
         std::vector<ASR::stmt_t*> while_loop_body;
 
-        while_loop_body.push_back(b.Assignment(b.StringSection(result, iSub(i, b.i32(1)), j),
+        while_loop_body.push_back(b.Assignment(b.StringSection(result, b.iSub(i, b.i32(1)), j),
             b.StringSection(args[0], 0, b.StringLen(args[0]))));
-        while_loop_body.push_back(b.Assignment(i, iAdd(j, b.i32(1))));
-        while_loop_body.push_back(b.Assignment(j, iSub(iAdd(i, m), b.i32(1))));
-        while_loop_body.push_back(b.Assignment(cnt, iAdd(cnt, b.i32(1))));
+        while_loop_body.push_back(b.Assignment(i, b.iAdd(j, b.i32(1))));
+        while_loop_body.push_back(b.Assignment(j, b.iSub(b.iAdd(i, m), b.i32(1))));
+        while_loop_body.push_back(b.Assignment(cnt, b.iAdd(cnt, b.i32(1))));
 
         body.push_back(al, b.While(cond, while_loop_body));
 
@@ -4478,7 +4478,7 @@ namespace Partition {
             }, {
                 b.Assignment(result, b.TupleConstant({
                     b.StringSection(args[0], b.i32(0), index), args[1],
-                    b.StringSection(args[0], iAdd(index, b.StringLen(args[1])),
+                    b.StringSection(args[0], b.iAdd(index, b.StringLen(args[1])),
                         b.StringLen(args[0]))}, return_type))
             }));
         body.push_back(al, Return());
