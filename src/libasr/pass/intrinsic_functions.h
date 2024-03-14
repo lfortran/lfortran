@@ -3072,10 +3072,10 @@ namespace SelectedCharKind {
         int64_t kind;
         ASRUtils::ASRBuilder b(al, loc);
         char* name = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
-
-        if (strcasecmp(name, "ASCII") == 0 || strcasecmp(name, "DEFAULT") == 0) {
+        std::string lowercase_name = to_lower(name);
+        if (lowercase_name == "ascii" || lowercase_name == "default") {
             kind = 1;
-        } else if (strcasecmp(name, "ISO_10646") == 0) {
+        } else if (lowercase_name == "iso_10646") {
             kind = 4;
         } else {
             kind = -1;
