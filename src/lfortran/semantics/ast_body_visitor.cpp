@@ -2873,7 +2873,7 @@ public:
         }
         ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
         if (f) {
-            int offset = (v_expr != nullptr) && (!nopass);
+            const int offset { ((v_expr != nullptr) && (!nopass)) ? 1 : 0 };
             if (args.size() + offset > f->n_args) {
                 const Location args_loc { ASRUtils::get_vec_loc(args) };
                 throw SemanticError("More actual than formal arguments in procedure call", args_loc);
