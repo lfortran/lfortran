@@ -11,6 +11,17 @@ program intrinsics_184
     character(9) :: ucs4_str = "ISO_10646"
     character(5) :: other_str = "other"
 
+    print*, selected_char_kind("ascii")
+    if (selected_char_kind("ascii") /= 1) error stop
+    print*, selected_char_kind("ASciI")
+    if (selected_char_kind("ASciI") /= 1) error stop
+    print*, selected_char_kind("default")
+    if (selected_char_kind("default") /= 1) error stop
+    print*, selected_char_kind("ISO_10646")
+    if (selected_char_kind("ISO_10646") /= 4) error stop
+    print*, selected_char_kind("other")
+    if (selected_char_kind("other") /= -1) error stop
+    
     print*, selected_char_kind(ascii_str)
     if (selected_char_kind(ascii_str) /= 1) error stop
     print*, selected_char_kind(ascii_case_str)
@@ -31,5 +42,5 @@ program intrinsics_184
     if (ucs4 /= 4) error stop
     print*, other
     if (other /= -1) error stop
-    
+
 end program
