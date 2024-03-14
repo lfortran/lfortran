@@ -80,6 +80,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Hypot)
         INTRINSIC_NAME_CASE(SelectedIntKind)
         INTRINSIC_NAME_CASE(SelectedRealKind)
+        INTRINSIC_NAME_CASE(SelectedCharKind)
         INTRINSIC_NAME_CASE(Adjustl)
         INTRINSIC_NAME_CASE(Adjustr)
         INTRINSIC_NAME_CASE(Ichar)
@@ -357,6 +358,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&SelectedIntKind::instantiate_SelectedIntKind, &SelectedIntKind::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedRealKind),
             {&SelectedRealKind::instantiate_SelectedRealKind, &SelectedRealKind::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedCharKind),
+            {&SelectedCharKind::instantiate_SelectedCharKind, &SelectedCharKind::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicSymbol),
             {nullptr, &SymbolicSymbol::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicAdd),
@@ -524,6 +527,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "selected_int_kind"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedRealKind),
             "selected_real_kind"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedCharKind),
+            "selected_char_kind"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Kind),
             "kind"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Rank),
@@ -716,6 +721,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"hypot", {&Hypot::create_Hypot, &Hypot::eval_Hypot}},
                 {"selected_int_kind", {&SelectedIntKind::create_SelectedIntKind, &SelectedIntKind::eval_SelectedIntKind}},
                 {"selected_real_kind", {&SelectedRealKind::create_SelectedRealKind, &SelectedRealKind::eval_SelectedRealKind}},
+                {"selected_char_kind", {&SelectedCharKind::create_SelectedCharKind, &SelectedCharKind::eval_SelectedCharKind}},
                 {"kind", {&Kind::create_Kind, &Kind::eval_Kind}},
                 {"rank", {&Rank::create_Rank, &Rank::eval_Rank}},
                 {"digits", {&Digits::create_Digits, &Digits::eval_Digits}},

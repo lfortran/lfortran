@@ -79,6 +79,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Hypot,
     SelectedIntKind,
     SelectedRealKind,
+    SelectedCharKind,
     Adjustl,
     Adjustr,
     Ichar,
@@ -2888,6 +2889,70 @@ namespace Hypot {
 
 } // namespace Hypot
 
+namespace ToLowerCase {
+
+    static ASR::expr_t *eval_ToLowerCase(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        
+        char* str = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
+        std::transform(str, str + std::strlen(str), str, [](unsigned char c) { return std::tolower(c); });
+        return make_ConstantWithType(make_StringConstant_t, str, t1, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_ToLowerCase(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("");
+        fill_func_arg("s", arg_types[0]);
+        ASR::ttype_t* char_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, 0, nullptr));
+        auto result = declare(fn_name, char_type, ReturnVar);
+        auto itr = declare("i", ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), Local);
+
+        /*
+        function toLowerCase(str) result(result)
+            character(len=5) :: str
+            character(len=len(str)) :: result
+            integer :: i, ln
+            i = 1
+            ln = len(str)
+            result = str
+            do while (i < ln)
+                if (result(i:i) >= 'A' .and. result(i:i) <= 'Z') then
+                    result(i:i) = char(ichar(result(i:i)) + ichar('a') - ichar('A'))
+                end if
+                i = i + 1
+            end do
+            print*, result
+        end function
+        */
+        
+        ASR::expr_t* ln = ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr));
+        body.push_back(al, b.Assignment(itr, b.i32(1)));
+
+        ASR::expr_t* cond = iLtE(itr, ln);
+        ASR::expr_t* sliced_res = ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr));
+        ASR::expr_t* ichar_res = ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, sliced_res, int32, nullptr));
+        ASR::expr_t* ichar_A = b.Ichar("A", arg_types[0], int32);
+        ASR::expr_t* ichar_Z = b.Ichar("Z", arg_types[0], int32);
+        ASR::expr_t* ichar_a = b.Ichar("a", arg_types[0], int32);
+        ASR::expr_t* char_node = ASRUtils::EXPR(ASR::make_StringChr_t(al, loc, b.iSub(b.iAdd(ichar_res, ichar_a), ichar_A), return_type, nullptr));
+        Vec<ASR::stmt_t*> while_loop_body; while_loop_body.reserve(al, 2);
+        while_loop_body.push_back(al, b.If(b.And(iGtE(ichar_res, ichar_A), iLtE(ichar_res, ichar_Z)), {
+            b.Assignment(result, b.StringConcat(result, char_node, char_type))
+        }, {
+            b.Assignment(result, b.StringConcat(result, sliced_res, char_type))
+        }));
+        while_loop_body.push_back(al, b.Assignment(itr, b.i_tAdd(itr, b.i32(1), int32)));
+        ASR::stmt_t* whileloop = ASRUtils::STMT(ASR::make_WhileLoop_t(al, loc, nullptr, cond, while_loop_body.p, while_loop_body.n));
+        body.push_back(al, whileloop);
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace ToLowerCase
+
 namespace SelectedIntKind {
 
     static ASR::expr_t *eval_SelectedIntKind(Allocator &al, const Location &loc,
@@ -2999,6 +3064,55 @@ namespace SelectedRealKind {
     }
 
 } // namespace SelectedRealKind
+
+namespace SelectedCharKind {
+
+    static inline ASR::expr_t *eval_SelectedCharKind(Allocator &al, const Location &loc,
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        int64_t kind;
+        ASRUtils::ASRBuilder b(al, loc);
+        char* name = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
+        std::string lowercase_name = to_lower(name);
+        if (lowercase_name == "ascii" || lowercase_name == "default") {
+            kind = 1;
+        } else if (lowercase_name == "iso_10646") {
+            kind = 4;
+        } else {
+            kind = -1;
+        }
+        return b.i32(kind);
+    }
+
+    static inline ASR::expr_t* instantiate_SelectedCharKind(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_selected_char_kind_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+
+        ASR::expr_t* func_call_lowercase = b.CallIntrinsic(scope, {arg_types[0]},
+                                    {args[0]}, arg_types[0], 0, ToLowerCase::instantiate_ToLowerCase);     
+        ASR::expr_t *cond1 = b.Or(sEq(func_call_lowercase, b.StringConstant("ascii", arg_types[0])), 
+                                sEq(func_call_lowercase, b.StringConstant("default", arg_types[0])));
+        ASR::expr_t *cond2 = sEq(func_call_lowercase, b.StringConstant("iso_10646", arg_types[0]));
+
+        body.push_back(al, b.If(cond1, {
+            b.Assignment(result, b.i(1, return_type))
+        }, {
+            b.If(cond2, {
+                b.Assignment(result, b.i(4, return_type))
+            }, {
+                b.Assignment(result, b.i(-1, return_type))
+            })
+        }));
+        
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace SelectedCharKind
 
 namespace Kind {
 
@@ -3292,73 +3406,6 @@ namespace Char {
     }
 
 } // namespace Char
-
-namespace ToLowerCase {
-
-    static ASR::expr_t *eval_ToLowerCase(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-
-        char* str = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
-        std::transform(str, str + std::strlen(str), str, [](unsigned char c) { return std::tolower(c); });
-        return make_ConstantWithType(make_StringConstant_t, str, t1, loc);
-    }
-
-    static inline ASR::expr_t* instantiate_ToLowerCase(Allocator &al, const Location &loc,
-            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("");
-        fill_func_arg("s", arg_types[0]);
-        ASR::ttype_t* char_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, 0, nullptr));
-        auto result = declare(fn_name, char_type, ReturnVar);
-        auto itr = declare("i", ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), Local);
-
-        /*
-        function toLowerCase(str) result(result)
-            character(len=5) :: str
-            character(len=len(str)) :: result
-            integer :: i, ln
-            i = 1
-            ln = len(str)
-            result = str
-            do while (i < ln)
-                if (result(i:i) >= 'A' .and. result(i:i) <= 'Z') then
-                    result(i:i) = char(ichar(result(i:i)) + ichar('a') - ichar('A'))
-                end if
-                i = i + 1
-            end do
-            print*, result
-        end function
-        */
-
-        ASR::expr_t *ichar_res, *ichar_A, *ichar_Z, *ichar_a;
-
-        ASR::expr_t* ln = ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr));
-        body.push_back(al, b.Assignment(itr, b.i32(1)));
-
-        ASR::expr_t* cond = iLtE(itr, ln);
-        ASR::expr_t* sliced_res = ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr));
-        ichar_res = b.CallIntrinsic(scope, {char_type}, {sliced_res}, int32, 0, Ichar::instantiate_Ichar);
-        ichar_A  = b.CallIntrinsic(scope, {arg_types[0]}, {b.sConstant("A", arg_types[0])}, int32, 0, Ichar::instantiate_Ichar);
-        ichar_Z  = b.CallIntrinsic(scope, {arg_types[0]}, {b.sConstant("Z", arg_types[0])}, int32, 0, Ichar::instantiate_Ichar);
-        ichar_a  = b.CallIntrinsic(scope, {arg_types[0]}, {b.sConstant("a", arg_types[0])}, int32, 0, Ichar::instantiate_Ichar);
-        ASR::expr_t* char_node = ASRUtils::EXPR(ASR::make_StringChr_t(al, loc, b.iSub(b.iAdd(ichar_res, ichar_a), ichar_A), return_type, nullptr));
-        Vec<ASR::stmt_t*> while_loop_body; while_loop_body.reserve(al, 2);
-        while_loop_body.push_back(al, b.If(b.And(iGtE(ichar_res, ichar_A), iLtE(ichar_res, ichar_Z)), {
-            b.Assignment(result, b.StringConcat(result, char_node, char_type))
-        }, {
-            b.Assignment(result, b.StringConcat(result, sliced_res, char_type))
-        }));
-        while_loop_body.push_back(al, b.Assignment(itr, b.i_tAdd(itr, b.i32(1), int32)));
-        ASR::stmt_t* whileloop = ASRUtils::STMT(ASR::make_WhileLoop_t(al, loc, nullptr, cond, while_loop_body.p, while_loop_body.n));
-        body.push_back(al, whileloop);
-        body.push_back(al, b.Assignment(result, result));
-        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
-        scope->add_symbol(fn_name, f_sym);
-        return b.Call(f_sym, new_args, return_type, nullptr);
-    }
-
-} // namespace ToLowerCase
 
 namespace Digits {
 

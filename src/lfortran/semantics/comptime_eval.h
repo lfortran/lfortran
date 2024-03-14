@@ -43,7 +43,6 @@ struct IntrinsicProceduresAsASRNodes {
 };
 
 struct IntrinsicProcedures {
-    const std::string m_kind = "lfortran_intrinsic_kind";
     const std::string m_builtin = "lfortran_intrinsic_builtin";
     const std::string m_math = "lfortran_intrinsic_math";
     const std::string m_math2 = "lfortran_intrinsic_math2";
@@ -87,7 +86,6 @@ struct IntrinsicProcedures {
 
             // Require evaluated arguments
             {"modulo", {m_math2, &eval_modulo, true}},
-            {"selected_char_kind", {m_kind, &eval_selected_char_kind, true}},
 
             // These will fail if used in symbol table visitor, but will be
             // left unevaluated in body visitor
@@ -379,20 +377,6 @@ struct IntrinsicProcedures {
         return ASR::down_cast<ASR::expr_t>(ASR::make_StringConstant_t(
                     al, loc, new_line_str,
                     ASRUtils::expr_type(args[0])));
-    }
-
-    static ASR::expr_t *eval_selected_char_kind(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
-        ASR::expr_t* real_expr = args[0];
-        ASR::ttype_t* real_type = ASRUtils::expr_type(real_expr);
-        if (ASR::is_a<ASR::Character_t>(*real_type)) {
-            ASR::ttype_t *type = ASRUtils::TYPE(
-                    ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
-            return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc,
-                    1, type));
-        } else {
-            throw SemanticError("integer_char_kind() must have one character argument", loc);
-        }
     }
 
 }; // ComptimeEval

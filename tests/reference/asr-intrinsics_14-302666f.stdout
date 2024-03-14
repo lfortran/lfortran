@@ -51,16 +51,15 @@
                                     k10
                                     []
                                     Local
-                                    (FunctionCall
-                                        2 selected_char_kind
-                                        ()
-                                        [((StringConstant
+                                    (IntrinsicElementalFunction
+                                        SelectedCharKind
+                                        [(StringConstant
                                             "default"
                                             (Character 1 7 ())
-                                        ))]
+                                        )]
+                                        0
                                         (Integer 4)
                                         (IntegerConstant 1 (Integer 4))
-                                        ()
                                     )
                                     (IntegerConstant 1 (Integer 4))
                                     Parameter
@@ -318,20 +317,10 @@
                                     Public
                                     Required
                                     .false.
-                                ),
-                            selected_char_kind:
-                                (ExternalSymbol
-                                    2
-                                    selected_char_kind
-                                    4 selected_char_kind
-                                    lfortran_intrinsic_kind
-                                    []
-                                    selected_char_kind
-                                    Private
                                 )
                         })
                     intrinsics_14
-                    [lfortran_intrinsic_kind]
+                    []
                     [(Assignment
                         (Var 2 s1)
                         (StringConstant
@@ -462,16 +451,15 @@
                         ()
                     )
                     (Print
-                        [(FunctionCall
-                            2 selected_char_kind
-                            ()
-                            [((StringConstant
+                        [(IntrinsicElementalFunction
+                            SelectedCharKind
+                            [(StringConstant
                                 "default"
                                 (Character 1 7 ())
-                            ))]
+                            )]
+                            0
                             (Integer 4)
                             (IntegerConstant 1 (Integer 4))
-                            ()
                         )
                         (Var 2 k10)]
                         ()
@@ -502,12 +490,11 @@
                         ()
                     )
                     (Print
-                        [(FunctionCall
-                            2 selected_char_kind
-                            ()
-                            [((Var 2 s1))]
+                        [(IntrinsicElementalFunction
+                            SelectedCharKind
+                            [(Var 2 s1)]
+                            0
                             (Integer 4)
-                            ()
                             ()
                         )]
                         ()
@@ -541,9 +528,7 @@
                         ()
                         ()
                     )]
-                ),
-            lfortran_intrinsic_kind:
-                (IntrinsicModule lfortran_intrinsic_kind)
+                )
         })
     []
 )

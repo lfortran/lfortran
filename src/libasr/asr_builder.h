@@ -182,6 +182,11 @@ class ASRBuilder {
         return EXPR(ASR::make_ArraySize_t(al, loc, x, dim, t, nullptr));
     }
 
+    inline ASR::expr_t* Ichar(std::string s, ASR::ttype_t* type, ASR::ttype_t* t) {
+        return EXPR(ASR::make_Ichar_t(al, loc,
+            EXPR(ASR::make_StringConstant_t(al, loc, s2c(al, s), type)), t, nullptr));
+    }
+
     // Cast --------------------------------------------------------------------
 
     inline ASR::expr_t* r2i8(ASR::expr_t* x) {
