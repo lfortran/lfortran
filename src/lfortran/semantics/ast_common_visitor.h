@@ -6943,17 +6943,6 @@ public:
         size_t n_args = args.size();
         std::string fn_name = fn->m_name;
 
-        if (n_args + n > fn_n_args) {
-            diag.semantic_error_label(
-                "Procedure '" + fn_name + "' accepts " + std::to_string(fn_n_args)
-                + " arguments, but " + std::to_string(n_args + n)
-                + " were provided",
-                {loc},
-                "incorrect number of arguments to '" + std::string(fn_name) + "'"
-            );
-            return ;
-        }
-
         std::vector<std::string> optional_args;
         std::vector<int> optional_args_idx;
         for( auto itr = fn->m_symtab->get_scope().begin();
@@ -6991,9 +6980,9 @@ public:
             auto search = std::find(fn_args2.begin(), fn_args2.end(), name);
             if (search == fn_args2.end()) {
                 diag.semantic_error_label(
-                    "Keyword argument not found " + name,
-                    {loc},
-                    name + " keyword argument not found.");
+                    "Keyword argument not found '" + name + "'",
+                    {kwargs[i].loc},
+                    "'" + name + "' keyword argument not found.");
                 return ;
             }
 
@@ -7001,15 +6990,15 @@ public:
             if (idx < n_args) {
                 diag.semantic_error_label(
                     "Keyword argument is already specified as a non-keyword argument",
-                    {loc},
-                    name + "keyword argument is already specified.");
+                    {kwargs[i].loc},
+                    "'" + name + "' keyword argument is already specified.");
                 return ;
             }
             if (args[idx].m_value != nullptr) {
                 diag.semantic_error_label(
-                    "Keyword argument " + name + " is already specified as another keyword argument",
-                    {loc},
-                    name + " keyword argument is already specified.");
+                    "Keyword argument '" + name + "' is already specified as a keyword argument",
+                    {kwargs[i].loc},
+                    "'" + name + "' keyword argument is already specified.");
                 return ;
             }
             args.p[idx].loc = expr->base.loc;
@@ -7027,6 +7016,17 @@ public:
                     "-th argument not specified for " + fn_name);
                 return ;
             }
+        }
+
+        if (n_args + n > fn_n_args) {
+            diag.semantic_error_label(
+                "Procedure '" + fn_name + "' accepts " + std::to_string(fn_n_args)
+                + " arguments, but " + std::to_string(n_args + n)
+                + " were provided",
+                {loc},
+                "incorrect number of arguments to '" + std::string(fn_name) + "'"
+            );
+            return ;
         }
     }
 
