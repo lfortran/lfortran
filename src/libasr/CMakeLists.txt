@@ -52,6 +52,7 @@ set(SRC
     pass/div_to_mul.cpp
     pass/replace_symbolic.cpp
     pass/intrinsic_function.cpp
+    pass/intrinsic_subroutine.cpp
     pass/fma.cpp
     pass/loop_vectorise.cpp
     pass/sign_from_value.cpp
