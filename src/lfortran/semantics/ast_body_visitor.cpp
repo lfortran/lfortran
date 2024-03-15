@@ -642,26 +642,16 @@ public:
             ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, a_fmt->base.loc,
                 a_fmt_constant, a_values_vec.p, a_values_vec.size(), ASR::string_format_kindType::FormatFortran,
                 type, nullptr));
-            Vec<ASR::expr_t*> write_args;
-            write_args.reserve(al, 1);
-            write_args.push_back(al, string_format);
-            if( _type == AST::stmtType::Write ) {
-                tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
-                    a_iomsg, a_iostat, a_id, write_args.p,
-                    write_args.size(), a_separator, a_end);
-            } else if( _type == AST::stmtType::Read ) {
-                tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
-                                    a_iomsg, a_iostat, a_id, write_args.p, write_args.size());
-            }
-        } else {
-            if( _type == AST::stmtType::Write ) {
-                tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
-                    a_iomsg, a_iostat, a_id, a_values_vec.p,
-                    a_values_vec.size(), a_separator, a_end);
-            } else if( _type == AST::stmtType::Read ) {
-                tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
-                                    a_iomsg, a_iostat, a_id, a_values_vec.p, a_values_vec.size());
-            }
+            a_values_vec.reserve(al, 1);
+            a_values_vec.push_back(al, string_format);
+        }
+        if( _type == AST::stmtType::Write ) {
+            tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
+                a_iomsg, a_iostat, a_id, a_values_vec.p,
+                a_values_vec.size(), a_separator, a_end);
+        } else if( _type == AST::stmtType::Read ) {
+            tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
+                a_iomsg, a_iostat, a_id, a_values_vec.p, a_values_vec.size());
         }
 
         tmp_vec.push_back(tmp);
