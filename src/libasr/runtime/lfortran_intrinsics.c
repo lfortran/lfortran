@@ -1880,12 +1880,12 @@ LFORTRAN_API double _lfortran_time()
 #endif
 }
 
-LFORTRAN_API void _lfortran_sp_rand_num(float *x) {
-    *x = rand() / (float) RAND_MAX;
+LFORTRAN_API float _lfortran_sp_rand_num() {
+    return rand() / (float) RAND_MAX;
 }
 
-LFORTRAN_API void _lfortran_dp_rand_num(double *x) {
-    *x = rand() / (double) RAND_MAX;
+LFORTRAN_API double _lfortran_dp_rand_num() {
+    return rand() / (double) RAND_MAX;
 }
 
 LFORTRAN_API int64_t _lpython_open(char *path, char *flags)
