@@ -30,6 +30,7 @@
 #include <libasr/pass/replace_div_to_mul.h>
 // #include <libasr/pass/replace_symbolic.h>
 #include <libasr/pass/replace_intrinsic_function.h>
+#include <libasr/pass/replace_intrinsic_subroutine.h>
 #include <libasr/pass/replace_fma.h>
 #include <libasr/pass/loop_unroll.h>
 #include <libasr/pass/replace_sign_from_value.h>
@@ -80,6 +81,7 @@ namespace LCompilers {
             {"array_op", &pass_replace_array_op},
             // {"symbolic", &pass_replace_symbolic},
             {"intrinsic_function", &pass_replace_intrinsic_function},
+            {"intrinsic_subroutine", &pass_replace_intrinsic_subroutine},
             {"arr_slice", &pass_replace_arr_slice},
             {"print_arr", &pass_replace_print_arr},
             {"print_list_tuple", &pass_replace_print_list_tuple},
@@ -215,6 +217,7 @@ namespace LCompilers {
                 "array_op",
                 // "symbolic",
                 "intrinsic_function",
+                "intrinsic_subroutine",
                 "subroutine_from_function",
                 "array_op",
                 "pass_array_by_data",
@@ -246,6 +249,7 @@ namespace LCompilers {
                 "array_op",
                 // "symbolic",
                 "intrinsic_function",
+                "intrinsic_subroutine",
                 "subroutine_from_function",
                 "array_op",
                 "pass_array_by_data",
