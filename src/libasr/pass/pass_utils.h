@@ -127,6 +127,10 @@ namespace LCompilers {
             ASR::stmt_t* inner_most_do_loop, ASR::expr_t* c, ASR::expr_t* mask, ASR::expr_t* res,
             int curr_idx, int dim);
 
+        ASR::stmt_t* create_do_loop_helper_random_number(Allocator &al, const Location &loc,
+            std::vector<ASR::expr_t*> do_loop_variables, ASR::symbol_t* s, ASR::expr_t* arr,
+            ASR::ttype_t* return_type, ASR::expr_t* arr_item, ASR::stmt_t* stmt, int curr_idx);
+
         static inline bool is_aggregate_type(ASR::expr_t* var) {
             return ASR::is_a<ASR::Struct_t>(*ASRUtils::expr_type(var));
         }
