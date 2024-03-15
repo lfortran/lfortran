@@ -124,6 +124,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Tiny,
     Conjg,
     Huge,
+    Popcnt,
     SymbolicSymbol,
     SymbolicAdd,
     SymbolicSub,
@@ -2178,7 +2179,6 @@ namespace SetExponent {
     }
 }  // namespace SetExponent
 
-
 namespace Sngl {
 
     static ASR::expr_t *eval_Sngl(Allocator &al, const Location &loc,
@@ -2600,6 +2600,94 @@ namespace Mod {
     }
 
 } // namespace Mod
+
+namespace Popcnt {
+
+    static ASR::expr_t *eval_Popcnt(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
+        if(kind == 4){
+            int32_t val = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+            if(val < 0){
+                int count = 0;
+                int32_t mask = 1;
+                while (mask != 0) {
+                    if (val & mask){
+                        count++;
+                    }
+                    mask = mask << 1;
+                }
+                return make_ConstantWithType(make_IntegerConstant_t, count, t1, loc);
+            } else {
+                int count = 0;
+                while (val) {
+                    count += val & 1; 
+                    val >>= 1; 
+                }
+                return make_ConstantWithType(make_IntegerConstant_t, count, t1, loc);
+            }
+        } else {
+            int64_t val = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+            if(val < 0){
+                int count = 0;
+                int64_t mask = 1;
+                while (mask != 0) {
+                    if (val & mask){
+                        count++;
+                    }
+                    mask = mask << 1;
+                }
+                return make_ConstantWithType(make_IntegerConstant_t, count, t1, loc);
+            } else {
+                int count = 0;
+                while (val) {
+                    count += val & 1; 
+                    val >>= 1; 
+                }
+                return make_ConstantWithType(make_IntegerConstant_t, count, t1, loc);
+            }
+        }
+        return nullptr;
+    }
+
+    static inline ASR::expr_t* instantiate_Popcnt(Allocator &al, const Location &loc,
+        SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+        Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+            declare_basic_variables("_lcompilers_popcnt_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("i", arg_types[0]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        int32_t kind = extract_kind_from_ttype_t(arg_types[0]);
+
+        auto count = declare("j", ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind)), Local);
+        auto val = declare("k", ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind)), Local);
+        auto mask = declare("l", ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind)), Local);
+        body.push_back(al, b.Assignment(count, b.i(0,arg_types[0])));
+        body.push_back(al, b.Assignment(val, args[0]));
+        body.push_back(al, b.Assignment(mask, b.i(1,arg_types[0])));
+
+        ASR::expr_t* whileloop_test_pos = iNotEq(val, b.i(0, arg_types[0]));
+        std::vector<ASR::stmt_t*> while_loop_body_pos;
+        while_loop_body_pos.push_back(b.Assignment(count, b.i_tAdd(count, b.CallIntrinsic(scope, {arg_types[0], arg_types[0]},
+                                    {val, b.i(2,arg_types[0])}, arg_types[0], 0, Mod::instantiate_Mod), arg_types[0])));
+        while_loop_body_pos.push_back(b.Assignment(val, b.i_BitRshift(val, b.i(1, arg_types[0]), arg_types[0])));
+
+        ASR::expr_t* whileloop_test_neg = iNotEq(mask, b.i(0, arg_types[0]));
+        std::vector<ASR::stmt_t*> while_loop_body_neg;
+        while_loop_body_neg.push_back(b.If(iNotEq(b.i(0,arg_types[0]), (b.i_BitAnd(val,mask, arg_types[0]))), {b.Assignment(count, b.i_tAdd(count, b.i(1, arg_types[0]), arg_types[0]))},
+                                {}));
+        while_loop_body_neg.push_back(b.Assignment(mask, b.i_BitLshift(mask, b.i(1, arg_types[0]), arg_types[0])));
+
+        body.push_back(al, b.If((iGtE(args[0], b.i(0,arg_types[0]))), {b.While(whileloop_test_pos, while_loop_body_pos)},
+                                {b.While(whileloop_test_neg, while_loop_body_neg)}));
+
+        ASR::expr_t *cast = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, count, ASR::cast_kindType::IntegerToInteger, return_type, nullptr));
+        body.push_back(al, b.Assignment(result, cast));
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace Popcnt
 
 namespace Maskl {
     static ASR::expr_t* eval_Maskl(Allocator& al, const Location& loc,
