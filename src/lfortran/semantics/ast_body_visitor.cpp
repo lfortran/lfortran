@@ -2800,6 +2800,11 @@ public:
                     nopass = class_proc->m_is_nopass;
                     final_sym = original_sym;
                     original_sym = nullptr;
+                    ASR::symbol_t* f4 = class_proc->m_proc;
+                    if (!ASR::is_a<ASR::Function_t>(*f4)) {
+                        throw SemanticError(std::string(class_proc->m_proc_name) + " is not a subroutine.", x.base.base.loc);
+                    }
+                    f = ASR::down_cast<ASR::Function_t>(f4);
                 } else if (ASR::is_a<ASR::Variable_t>(*final_sym)) {
                     nopass = true;
                     final_sym = original_sym;
@@ -2867,7 +2872,12 @@ public:
             ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies);
         }
         ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
-        if( f ) {
+        if (f) {
+            const int offset { (v_expr == nullptr || nopass) ? 0 : 1 };
+            if (args.size() + offset > f->n_args) {
+                const Location args_loc { ASRUtils::get_vec_loc(args) };
+                throw SemanticError("More actual than formal arguments in procedure call", args_loc);
+            }
             ASRUtils::set_absent_optional_arguments_to_null(args, f, al, v_expr, nopass);
         }
         ASR::stmt_t* cast_stmt = nullptr;

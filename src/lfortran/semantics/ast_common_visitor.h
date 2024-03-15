@@ -4132,6 +4132,10 @@ public:
             current_module_dependencies.push_back(al, v_module->m_name);
         }
         ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
+        if (args.size() > func->n_args) {
+            const Location args_loc { ASRUtils::get_vec_loc(args) };
+            throw SemanticError("More actual than formal arguments in procedure call", args_loc);
+        }
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
         legacy_array_sections_helper(v, args, loc);
         return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
@@ -6941,11 +6945,11 @@ public:
 
         if (n_args + n > fn_n_args) {
             diag.semantic_error_label(
-                "Procedure" + fn_name + " accepts " + std::to_string(fn_n_args)
+                "Procedure '" + fn_name + "' accepts " + std::to_string(fn_n_args)
                 + " arguments, but " + std::to_string(n_args + n)
                 + " were provided",
                 {loc},
-                "incorrect number of arguments to " + std::string(fn_name)
+                "incorrect number of arguments to '" + std::string(fn_name) + "'"
             );
             return ;
         }

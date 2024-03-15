@@ -1,0 +1,13 @@
+{
+    "basename": "asr-optional_argument_subroutine_in_type-0d81d24",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/optional_argument_subroutine_in_type.f90",
+    "infile_hash": "95ac054a65cebfbc2df3708d0b697fb981e5a485008e8a79dc6ab79d",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-optional_argument_subroutine_in_type-0d81d24.stdout",
+    "stdout_hash": "e90e9471193dcd0bf10bfc8ba73abb18014342b10fe5ef6875d6aba2",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -1,0 +1,5 @@
+semantic error: More actual than formal arguments in procedure call
+  --> tests/errors/class_procedure_extra_args.f90:30:33
+   |
+30 |     call myCircle%calculateArea(circleArea, 12)
+   |                                 ^^^^^^^^^^^^^^ 

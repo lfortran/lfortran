@@ -1,0 +1,13 @@
+{
+    "basename": "asr-more_kwargs_than_acceptable_to_subroutine-a276855",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/more_kwargs_than_acceptable_to_subroutine.f90",
+    "infile_hash": "53bcdc1ab7927132cd66432768e210576758731906f98e632f7d9874",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-more_kwargs_than_acceptable_to_subroutine-a276855.stderr",
+    "stderr_hash": "17aa57c1237631cb4ad11a7f81f495e987f715d878fddd46a7b660c2",
+    "returncode": 2
+}
