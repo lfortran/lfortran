@@ -544,7 +544,7 @@ RUN(NAME intrinsics_25 LABELS gfortran llvm) # ishft
 RUN(NAME intrinsics_26 LABELS gfortran llvm)
 RUN(NAME intrinsics_27 LABELS gfortran)
 RUN(NAME intrinsics_28 LABELS gfortran llvm wasm)
-RUN(NAME intrinsics_29 LABELS gfortran llvm) # random_number
+RUN(NAME intrinsics_29 LABELS gfortran llvm NOFAST fortran) # random_number
 RUN(NAME intrinsics_30 LABELS gfortran llvm fortran) # range
 RUN(NAME intrinsics_31 LABELS gfortran llvm wasm)
 RUN(NAME intrinsics_32 LABELS gfortran)
@@ -590,7 +590,7 @@ RUN(NAME intrinsics_70 LABELS gfortran llvm) # aint
 RUN(NAME intrinsics_71 LABELS gfortran llvm) # matmul
 RUN(NAME intrinsics_72 LABELS gfortran llvmImplicit) # datan2
 RUN(NAME intrinsics_73 LABELS gfortran llvm) # sngl
-RUN(NAME intrinsics_74 LABELS gfortran llvm c) # random_number
+RUN(NAME intrinsics_74 LABELS gfortran llvm c NOFAST fortran) # random_number
 RUN(NAME intrinsics_75 LABELS gfortran llvm)
 RUN(NAME intrinsics_76 LABELS gfortran llvm)
 RUN(NAME intrinsics_77 LABELS gfortran llvm)
@@ -641,8 +641,8 @@ RUN(NAME intrinsics_121 LABELS gfortran llvm) # leadz
 RUN(NAME intrinsics_122 LABELS gfortran llvm) # rank
 RUN(NAME intrinsics_123 LABELS gfortran llvm) # shiftl
 RUN(NAME intrinsics_124 LABELS gfortran llvm) # lshift
-RUN(NAME intrinsics_125 LABELS gfortran llvm) # random_number
-RUN(NAME intrinsics_126 LABELS gfortran llvm) # random_number
+RUN(NAME intrinsics_125 LABELS gfortran llvm NOFAST fortran) # random_number
+RUN(NAME intrinsics_126 LABELS gfortran llvm NOFAST) # random_number
 RUN(NAME intrinsics_127 LABELS gfortran llvm) # ifix
 RUN(NAME intrinsics_128 LABELS gfortran llvm) # idint
 RUN(NAME intrinsics_129 LABELS gfortran llvm) # abs
