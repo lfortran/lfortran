@@ -76,6 +76,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Digits,
     Rrspacing,
     Repeat,
+    StringContainsSet,
     Hypot,
     SelectedIntKind,
     SelectedRealKind,
@@ -3608,6 +3609,141 @@ namespace Repeat {
     }
 
 } // namespace Repeat
+
+namespace StringContainsSet {
+
+    static ASR::expr_t *eval_StringContainsSet(Allocator &al, const Location &loc,
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        char* string = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
+        char* set = ASR::down_cast<ASR::StringConstant_t>(args[1])->m_s;
+        bool back = ASR::down_cast<ASR::LogicalConstant_t>(args[2])->m_value;
+        int64_t kind = ASR::down_cast<ASR::IntegerConstant_t>(args[3])->m_n;
+        size_t len = std::strlen(string);
+        int64_t result = 0;
+        if (back) {
+            for (size_t i=0; i<len; i++) {
+                if (std::strchr(set, string[len-i-1]) == nullptr) {
+                    result = len-i;
+                    break;
+                }
+            }
+        } else {
+            for (size_t i=0; i<len; i++) {
+                if (std::strchr(set, string[i]) == nullptr) {
+                    result = i+1;
+                    break;
+                }
+            }
+        }
+        
+        ASR::ttype_t* return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
+        return make_ConstantWithType(make_IntegerConstant_t, result, return_type, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_StringContainsSet(Allocator &al, const Location &loc,
+            SymbolTable* scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_verify_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("y", arg_types[1]);
+        fill_func_arg("z", arg_types[2]);
+        fill_func_arg("k", arg_types[3]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        auto matched = declare("matched", arg_types[2], Local);
+        auto i = declare("i", return_type, Local);
+        auto j = declare("j", return_type, Local);
+        /*
+            function StringContainsSet_(string, set, back, kind) result(r)
+                character(len=*) :: string
+                character(len=*) :: set
+                logical, optional :: back
+                integer(kind) :: result = 0
+                integer :: i, j
+                logical :: matched
+                if (back) then
+                    i = len(string)
+                    do while (i >= 1)
+                        matched = .false.
+                        j = 1
+                        do while (j <= len(set))
+                            if (string(i:i) == set(j:j)) then
+                                matched = .true.
+                            end if
+                            j = j + 1
+                        end do
+                        if (.not. matched) then
+                            result = i
+                            exit
+                        end if
+                        i = i - 1
+                    end do
+                else
+                    i = 1
+                    do while (i <= len(string))
+                        matched = .false.
+                        j = 1
+                        do while (j <= len(set))
+                            if (string(i:i) == set(j:j)) then
+                                matched = .true.
+                            end if
+                            j = j + 1
+                        end do
+                        if (.not. matched) then
+                            result = i
+                            exit
+                        end if
+                        i = i + 1
+                    end do
+                end if
+            end function
+        */
+        body.push_back(al, b.Assignment(result, b.i(0, return_type)));
+        ASR::expr_t* str_len = b.StringLen(args[0]);
+        ASR::expr_t* set_len = b.StringLen(args[1]);
+        ASR::expr_t* string_section = b.StringSection(args[0], b.i_tSub(i, b.i(1, return_type), return_type), i);
+        ASR::expr_t* set_section = b.StringSection(args[1], b.i_tSub(j, b.i(1, return_type), return_type), j);       
+    
+        std::vector<ASR::stmt_t*> while_loop_body_inner;
+        while_loop_body_inner.push_back(b.If(sEq(string_section, set_section), {
+            b.Assignment(matched, b.bool32(1))
+        }, {}));
+        while_loop_body_inner.push_back(b.Assignment(j, b.i_tAdd(j, b.i(1, return_type), return_type)));
+
+        std::vector<ASR::stmt_t*> while_loop_body;
+        while_loop_body.push_back(b.Assignment(matched, b.bool32(0)));
+        while_loop_body.push_back(b.Assignment(j, b.i(1, return_type)));
+        while_loop_body.push_back(b.While(iLtE(j, set_len), while_loop_body_inner));
+        while_loop_body.push_back(b.If(boolEq(matched, b.bool32(0)), {
+            b.Assignment(result, i),
+            b.Exit(nullptr)
+        }, {}));
+        while_loop_body.push_back(b.Assignment(i, b.i_tSub(i, b.i(1, return_type), return_type)));
+        
+        std::vector<ASR::stmt_t*> while_loop_body_else;
+        while_loop_body_else.push_back(b.Assignment(matched, b.bool32(0)));
+        while_loop_body_else.push_back(b.Assignment(j, b.i(1, return_type)));
+        while_loop_body_else.push_back(b.While(iLtE(j, set_len), while_loop_body_inner));
+        while_loop_body_else.push_back(b.If(boolEq(matched, b.bool32(0)), {
+            b.Assignment(result, i),
+            b.Exit(nullptr)
+        }, {}));
+        while_loop_body_else.push_back(b.Assignment(i, b.i_tAdd(i, b.i(1, return_type), return_type)));
+        
+        body.push_back(al, b.If(boolEq(args[2], b.bool32(1)), {
+            b.Assignment(i, str_len),
+            b.While(iGtE(i, b.i(1, return_type)), while_loop_body)
+        }, {
+            b.Assignment(i, b.i(1, return_type)),
+            b.While(iLtE(i, str_len), while_loop_body_else)
+        }));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace StringContainsSet
 
 namespace MinExponent {
 
