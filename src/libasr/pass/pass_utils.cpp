@@ -585,6 +585,22 @@ namespace LCompilers {
             }, nullptr);
         }
 
+        ASR::stmt_t* create_do_loop_helper_random_number(Allocator &al, const Location &loc, std::vector<ASR::expr_t*> do_loop_variables, 
+                    ASR::symbol_t* s, ASR::expr_t* arr, ASR::ttype_t* return_type, ASR::expr_t* arr_item, ASR::stmt_t* stmt, int curr_idx) {
+            ASRUtils::ASRBuilder b(al, loc);
+            if (curr_idx == (int)do_loop_variables.size()) {
+                // ASR::expr_t* arr_item = b.ArrayItem_01(arr, do_loop_variables);
+                Vec<ASR::expr_t*> args; args.reserve(al, 1); args.push_back(al, arr_item);
+                return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(arr, curr_idx), UBound(arr, curr_idx), {
+                    stmt
+                }, nullptr);
+            }
+            return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(arr, curr_idx), UBound(arr, curr_idx), {
+                create_do_loop_helper_random_number(al, loc, do_loop_variables, s, arr, return_type, arr_item, stmt, curr_idx + 1)
+            }, nullptr);
+
+        }
+
         // Imports the function from an already loaded ASR module
         ASR::symbol_t* import_function2(std::string func_name, std::string module_name,
                                        Allocator& al, ASR::TranslationUnit_t& unit,

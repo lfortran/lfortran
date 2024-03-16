@@ -2536,8 +2536,46 @@ public:
         return ASR::make_CPtrToPointer_t(al, x.base.base.loc, cptr, fptr, shape, lower_bounds);
     }
 
+    ASR::asr_t* intrinsic_subroutine_as_node(const AST::SubroutineCall_t &x, std::string var_name) {
+        if (is_intrinsic_registry_subroutine(var_name)) {
+            if ( ASRUtils::IntrinsicImpureSubroutineRegistry::is_intrinsic_subroutine(var_name)) {
+                std::vector<IntrinsicSignature> signatures = get_intrinsic_signature(var_name);
+                Vec<ASR::expr_t*> args;
+                bool signature_matched = false;
+                for( auto& signature: signatures ) {
+                    signature_matched = handle_intrinsic_node_args(
+                        x, args, signature.kwarg_names,
+                        signature.positional_args, signature.max_args,
+                        var_name, true);
+                    if( signature_matched ) {
+                        break ;
+                    }
+                    args.n = 0;
+                }
+                if( !signature_matched ) {
+                    throw SemanticError("No matching signature found for intrinsic " + var_name,
+                                        x.base.base.loc);
+                }
+                if( ASRUtils::IntrinsicImpureSubroutineRegistry::is_intrinsic_subroutine(var_name) ) {
+                    fill_optional_kind_arg(var_name, args);
+
+                    ASRUtils::create_intrinsic_subroutine create_func =
+                        ASRUtils::IntrinsicImpureSubroutineRegistry::get_create_subroutine(var_name);
+                    tmp = create_func(al, x.base.base.loc, args, diag);
+                    return tmp;
+                }
+            }
+        }
+        return nullptr;
+    }
+
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
         std::string sub_name = to_lower(x.m_name);
+        ASR::asr_t* intrinsic_subroutine = intrinsic_subroutine_as_node(x, sub_name);
+        if( intrinsic_subroutine ) {
+            tmp = intrinsic_subroutine;
+            return;
+        }
         if (x.n_temp_args > 0) {
             ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
             sub_name = handle_templated(x.m_name, ASR::is_a<ASR::Template_t>(*ASRUtils::get_asr_owner(owner_sym)),

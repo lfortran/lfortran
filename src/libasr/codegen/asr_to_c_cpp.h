@@ -24,6 +24,8 @@
 #include <libasr/string_utils.h>
 #include <libasr/pass/unused_functions.h>
 #include <libasr/pass/intrinsic_function_registry.h>
+#include <libasr/pass/intrinsic_subroutine_registry.h>
+
 
 #include <map>
 #include <tuple>
@@ -3010,6 +3012,11 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
 
     #define SET_INTRINSIC_NAME(X, func_name)                                    \
         case (static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::X)) : {  \
+            out += func_name; break;                                            \
+        }
+    
+    #define SET_INTRINSIC_SUBROUTINE_NAME(X, func_name)                                    \
+        case (static_cast<int64_t>(ASRUtils::IntrinsicImpureSubroutines::X)) : {  \
             out += func_name; break;                                            \
         }
 

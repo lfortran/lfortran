@@ -9,6 +9,7 @@
 #include <libasr/string_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
+#include <libasr/pass/intrinsic_subroutine_registry.h>
 #include <lfortran/utils.h>
 #include <lfortran/semantics/comptime_eval.h>
 #include <libasr/pass/instantiate_template.h>
@@ -753,6 +754,7 @@ public:
         {"set_exponent", {IntrinsicSignature({"X", "I"}, 2, 2)}},
         {"rrspacing", {IntrinsicSignature({"X"}, 1, 1)}},
         {"dshiftl", {IntrinsicSignature({"i", "j", "shift"}, 3, 3)}},
+        {"random_number", {IntrinsicSignature({"r"}, 1, 1)}},
     };
 
     std::map<std::string, std::string> intrinsic_mapping = {
@@ -5047,6 +5049,13 @@ public:
             ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ||
             ASRUtils::IntrinsicImpureFunctionRegistry::is_intrinsic_function(var_name) ||
             is_double_precision_intrinsic) {
+            return true;
+        }
+        return false;
+    }
+
+    bool is_intrinsic_registry_subroutine( std::string var_name ) {
+        if ( ASRUtils::IntrinsicImpureSubroutineRegistry::is_intrinsic_subroutine(var_name) ) {
             return true;
         }
         return false;

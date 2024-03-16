@@ -1232,6 +1232,27 @@ public:
         src = out;
     }
 
+    void visit_IntrinsicImpureSubroutine( const ASR::IntrinsicImpureSubroutine_t &x ) {
+        std::string out;
+        out = "call ";
+        switch ( x.m_intrinsic_id ) {
+            SET_INTRINSIC_SUBROUTINE_NAME(RandomNumber, "random_number");
+            default : {
+                throw LCompilersException("IntrinsicImpureSubroutine: `"
+                    + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)
+                    + "` is not implemented");
+            }
+        }
+        out += "(";
+        for (size_t i = 0; i < x.n_args; i ++) {
+            visit_expr(*x.m_args[i]);
+            out += src;
+            if (i < x.n_args-1) out += ", ";
+        }
+        out += ")\n";
+        src = out;
+    }
+
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t &x) {
         std::string out;
         switch (x.m_intrinsic_id) {

@@ -312,26 +312,6 @@
                                     Required
                                     .false.
                                 ),
-                            random_number:
-                                (ExternalSymbol
-                                    6
-                                    random_number
-                                    8 random_number
-                                    lfortran_intrinsic_math
-                                    []
-                                    random_number
-                                    Private
-                                ),
-                            random_number@sp_rand_num:
-                                (ExternalSymbol
-                                    6
-                                    random_number@sp_rand_num
-                                    8 sp_rand_num
-                                    lfortran_intrinsic_math
-                                    []
-                                    sp_rand_num
-                                    Private
-                                ),
                             t:
                                 (Variable
                                     6
@@ -498,17 +478,15 @@
                         ()
                         ()
                     )
-                    (SubroutineCall
-                        6 random_number@sp_rand_num
-                        6 random_number
-                        [((Var 6 a))]
-                        ()
+                    (IntrinsicImpureSubroutine
+                        Kind
+                        [(Var 6 a)]
+                        0
                     )
-                    (SubroutineCall
-                        6 random_number@sp_rand_num
-                        6 random_number
-                        [((Var 6 b))]
-                        ()
+                    (IntrinsicImpureSubroutine
+                        Kind
+                        [(Var 6 b)]
+                        0
                     )
                     (Print
                         [(StringConstant

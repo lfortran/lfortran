@@ -53,6 +53,10 @@ class ASRBuilder {
         auto arg = declare(arg_name, type, In);                                 \
         args.push_back(al, arg); }
 
+    #define fill_func_arg_sub(arg_name, type, intent) {                                     \
+        auto arg = declare(arg_name, type, intent);                                 \
+        args.push_back(al, arg); }
+
     #define make_ASR_Function_t(name, symtab, dep, args, body, return_var, abi,     \
             deftype, bindc_name)                                                \
         ASR::down_cast<ASR::symbol_t>( ASRUtils::make_Function_t_util(al, loc,  \
@@ -496,6 +500,22 @@ class ASRBuilder {
         }
     }
 
+    ASR::stmt_t* CallIntrinsicSubroutine(SymbolTable* scope, std::vector<ASR::ttype_t*> types,
+                                std::vector<ASR::expr_t*> args, int64_t overload_id,
+                                ASR::stmt_t* (*intrinsic_subroutine)(Allocator &, const Location &, SymbolTable *,
+                                Vec<ASR::ttype_t*>&, Vec<ASR::call_arg_t>&, int64_t)) {
+        Vec<ASR::ttype_t*> arg_types; arg_types.reserve(al, types.size());
+        for (auto &x: types) arg_types.push_back(al, x);
+
+        Vec<ASR::call_arg_t> new_args; new_args.reserve(al, args.size());
+        for (auto &x: args) {
+            ASR::call_arg_t call_arg; call_arg.loc = loc; call_arg.m_value = x;
+            new_args.push_back(al, call_arg);
+        }
+
+        return intrinsic_subroutine(al, loc, scope, arg_types, new_args, overload_id);
+    }
+
     ASR::expr_t* CallIntrinsic(SymbolTable* scope, std::vector<ASR::ttype_t*> types,
                                 std::vector<ASR::expr_t*> args,  ASR::ttype_t* return_type, int64_t overload_id,
                                 ASR::expr_t* (*intrinsic_func)(Allocator &, const Location &, SymbolTable *,
@@ -760,6 +780,11 @@ class ASRBuilder {
                       ASR::ttype_t* return_type, ASR::expr_t* value) {
         return ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, loc,
                 s, s, args.p, args.size(), return_type, value, nullptr));
+    }
+
+    ASR::stmt_t* SubroutineCall(ASR::symbol_t* s, Vec<ASR::call_arg_t>& args) {
+        return ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, loc,
+                s, s, args.p, args.size(), nullptr, nullptr, false, false));
     }
 
     ASR::expr_t *ArrayItem_01(ASR::expr_t *arr, std::vector<ASR::expr_t*> idx) {
