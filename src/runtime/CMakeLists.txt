@@ -61,9 +61,6 @@ add_dependencies(lfortran_intrinsic_sin lfortran_intrinsic_builtin)
 add_dependencies(lfortran_intrinsic_sin lfortran_intrinsic_iso_fortran_env)
 add_dependencies(lfortran_intrinsic_sin lfortran_intrinsic_math)
 
-lfortran_compile_runtime(lfortran_intrinsic_bit impure)
-add_dependencies(lfortran_intrinsic_bit lfortran_intrinsic_iso_fortran_env)
-
 # Ideally this should be a target based install, not file based:
 # install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}/ DESTINATION ${CMAKE_INSTALL_LIBDIR})
 # but for historical reasons get_runtime_library_dir() looks under "/../../runtime"
@@ -81,7 +78,6 @@ install(
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_math.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_sin.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_string.mod
-  ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_bit.mod
   DESTINATION ${CMAKE_INSTALL_LIBDIR}
   )
 
