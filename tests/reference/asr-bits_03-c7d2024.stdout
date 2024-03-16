@@ -39,36 +39,6 @@
                                     Required
                                     .false.
                                 ),
-                            mvbits:
-                                (ExternalSymbol
-                                    2
-                                    mvbits
-                                    4 mvbits
-                                    lfortran_intrinsic_bit
-                                    []
-                                    mvbits
-                                    Private
-                                ),
-                            mvbits@mvbits32:
-                                (ExternalSymbol
-                                    2
-                                    mvbits@mvbits32
-                                    4 mvbits32
-                                    lfortran_intrinsic_bit
-                                    []
-                                    mvbits32
-                                    Private
-                                ),
-                            mvbits@mvbits64:
-                                (ExternalSymbol
-                                    2
-                                    mvbits@mvbits64
-                                    4 mvbits64
-                                    lfortran_intrinsic_bit
-                                    []
-                                    mvbits64
-                                    Private
-                                ),
                             to:
                                 (Variable
                                     2
@@ -124,14 +94,19 @@
                         (IntegerConstant 4 (Integer 8))
                         ()
                     )
-                    (SubroutineCall
-                        2 mvbits@mvbits32
-                        2 mvbits
-                        [((Var 2 from))
-                        ((IntegerConstant 2 (Integer 4)))
-                        ((IntegerConstant 2 (Integer 4)))
-                        ((Var 2 to))
-                        ((IntegerConstant 0 (Integer 4)))]
+                    (Assignment
+                        (Var 2 to)
+                        (IntrinsicElementalFunction
+                            Mvbits
+                            [(Var 2 from)
+                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))
+                            (Var 2 to)
+                            (IntegerConstant 0 (Integer 4))]
+                            0
+                            (Integer 4)
+                            ()
+                        )
                         ()
                     )
                     (If
@@ -160,14 +135,19 @@
                         )]
                         []
                     )
-                    (SubroutineCall
-                        2 mvbits@mvbits64
-                        2 mvbits
-                        [((Var 2 from8))
-                        ((IntegerConstant 2 (Integer 4)))
-                        ((IntegerConstant 2 (Integer 4)))
-                        ((Var 2 to8))
-                        ((IntegerConstant 0 (Integer 4)))]
+                    (Assignment
+                        (Var 2 to8)
+                        (IntrinsicElementalFunction
+                            Mvbits
+                            [(Var 2 from8)
+                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))
+                            (Var 2 to8)
+                            (IntegerConstant 0 (Integer 4))]
+                            0
+                            (Integer 8)
+                            ()
+                        )
                         ()
                     )
                     (If
@@ -201,14 +181,19 @@
                         )]
                         []
                     )
-                    (SubroutineCall
-                        2 mvbits@mvbits32
-                        2 mvbits
-                        [((Var 2 from))
-                        ((IntegerConstant 0 (Integer 4)))
-                        ((IntegerConstant 2 (Integer 4)))
-                        ((Var 2 to))
-                        ((IntegerConstant 2 (Integer 4)))]
+                    (Assignment
+                        (Var 2 to)
+                        (IntrinsicElementalFunction
+                            Mvbits
+                            [(Var 2 from)
+                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))
+                            (Var 2 to)
+                            (IntegerConstant 2 (Integer 4))]
+                            0
+                            (Integer 4)
+                            ()
+                        )
                         ()
                     )
                     (If
@@ -237,14 +222,19 @@
                         )]
                         []
                     )
-                    (SubroutineCall
-                        2 mvbits@mvbits64
-                        2 mvbits
-                        [((Var 2 from8))
-                        ((IntegerConstant 0 (Integer 4)))
-                        ((IntegerConstant 2 (Integer 4)))
-                        ((Var 2 to8))
-                        ((IntegerConstant 2 (Integer 4)))]
+                    (Assignment
+                        (Var 2 to8)
+                        (IntrinsicElementalFunction
+                            Mvbits
+                            [(Var 2 from8)
+                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))
+                            (Var 2 to8)
+                            (IntegerConstant 2 (Integer 4))]
+                            0
+                            (Integer 8)
+                            ()
+                        )
                         ()
                     )
                     (If
@@ -306,14 +296,19 @@
                         (IntegerConstant 4 (Integer 8))
                         ()
                     )
-                    (SubroutineCall
-                        2 mvbits@mvbits32
-                        2 mvbits
-                        [((Var 2 from))
-                        ((IntegerConstant 29 (Integer 4)))
-                        ((IntegerConstant 2 (Integer 4)))
-                        ((Var 2 to))
-                        ((IntegerConstant 2 (Integer 4)))]
+                    (Assignment
+                        (Var 2 to)
+                        (IntrinsicElementalFunction
+                            Mvbits
+                            [(Var 2 from)
+                            (IntegerConstant 29 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))
+                            (Var 2 to)
+                            (IntegerConstant 2 (Integer 4))]
+                            0
+                            (Integer 4)
+                            ()
+                        )
                         ()
                     )
                     (If
@@ -346,14 +341,19 @@
                         )]
                         []
                     )
-                    (SubroutineCall
-                        2 mvbits@mvbits64
-                        2 mvbits
-                        [((Var 2 from8))
-                        ((IntegerConstant 29 (Integer 4)))
-                        ((IntegerConstant 2 (Integer 4)))
-                        ((Var 2 to8))
-                        ((IntegerConstant 2 (Integer 4)))]
+                    (Assignment
+                        (Var 2 to8)
+                        (IntrinsicElementalFunction
+                            Mvbits
+                            [(Var 2 from8)
+                            (IntegerConstant 29 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))
+                            (Var 2 to8)
+                            (IntegerConstant 2 (Integer 4))]
+                            0
+                            (Integer 8)
+                            ()
+                        )
                         ()
                     )
                     (If
@@ -391,14 +391,19 @@
                         )]
                         []
                     )
-                    (SubroutineCall
-                        2 mvbits@mvbits32
-                        2 mvbits
-                        [((Var 2 from))
-                        ((IntegerConstant 2 (Integer 4)))
-                        ((IntegerConstant 2 (Integer 4)))
-                        ((Var 2 to))
-                        ((IntegerConstant 29 (Integer 4)))]
+                    (Assignment
+                        (Var 2 to)
+                        (IntrinsicElementalFunction
+                            Mvbits
+                            [(Var 2 from)
+                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))
+                            (Var 2 to)
+                            (IntegerConstant 29 (Integer 4))]
+                            0
+                            (Integer 4)
+                            ()
+                        )
                         ()
                     )
                     (If
@@ -431,14 +436,19 @@
                         )]
                         []
                     )
-                    (SubroutineCall
-                        2 mvbits@mvbits64
-                        2 mvbits
-                        [((Var 2 from8))
-                        ((IntegerConstant 2 (Integer 4)))
-                        ((IntegerConstant 2 (Integer 4)))
-                        ((Var 2 to8))
-                        ((IntegerConstant 29 (Integer 4)))]
+                    (Assignment
+                        (Var 2 to8)
+                        (IntrinsicElementalFunction
+                            Mvbits
+                            [(Var 2 from8)
+                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))
+                            (Var 2 to8)
+                            (IntegerConstant 29 (Integer 4))]
+                            0
+                            (Integer 8)
+                            ()
+                        )
                         ()
                     )
                     (If
@@ -476,11 +486,7 @@
                         )]
                         []
                     )]
-                ),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_bit:
-                (IntrinsicModule lfortran_intrinsic_bit)
+                )
         })
     []
 )
