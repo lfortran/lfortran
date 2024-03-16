@@ -118,7 +118,6 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         ASR::expr_t* func_call = current_expr_;
         *current_expr = current_expr_;
         if (ASR::is_a<ASR::FunctionCall_t>(*func_call)) {
-            std::cout<<"here2"<<'\n';
             ASR::symbol_t *call_sym = ASRUtils::symbol_get_past_external(
                 ASR::down_cast<ASR::FunctionCall_t>(func_call)->m_name);
             func2intrinsicid[call_sym] = (ASRUtils::IntrinsicArrayFunctions) x->m_arr_intrinsic_id;
