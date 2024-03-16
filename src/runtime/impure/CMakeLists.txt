@@ -8,5 +8,4 @@ add_library(lfortran_runtime_impure
     lfortran_intrinsic_math.f90
     lfortran_intrinsic_sin.f90
     lfortran_intrinsic_sin_c.c
-    lfortran_intrinsic_bit.f90
 )

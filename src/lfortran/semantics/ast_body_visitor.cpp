@@ -2569,11 +2569,51 @@ public:
         return nullptr;
     }
 
+    ASR::asr_t* handle_Mvbits(const AST::SubroutineCall_t &x, std::string var_name) {
+        if (to_lower(var_name) == "mvbits") {
+            if (ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name)) {
+                std::vector<IntrinsicSignature> signatures = get_intrinsic_signature(var_name);
+                Vec<ASR::expr_t*> args;
+                bool signature_matched = false;
+                for( auto& signature: signatures ) {
+                    signature_matched = handle_intrinsic_node_args(
+                        x, args, signature.kwarg_names,
+                        signature.positional_args, signature.max_args,
+                        var_name, true);
+                    if( signature_matched ) {
+                        break ;
+                    }
+                    args.n = 0;
+                }
+                if( !signature_matched ) {
+                    throw SemanticError("No matching signature found for intrinsic " + var_name,
+                                        x.base.base.loc);
+                }
+                if (ASRUtils::expr_value(args[3]) != nullptr) {
+                    throw SemanticError("`to` argument of `mvbits` must be a variable", args[3]->base.loc);
+                }
+                if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ) {
+                    fill_optional_kind_arg(var_name, args);
+
+                    ASRUtils::create_intrinsic_function create_func =
+                        ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
+                    ASR::asr_t* func_call = create_func(al, x.base.base.loc, args, diag);
+                    tmp = ASR::make_Assignment_t(al, x.base.base.loc, args[3], ASRUtils::EXPR(func_call), nullptr);
+                    return tmp;
+                }
+            }
+        }
+        return nullptr;
+    }
+
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
         std::string sub_name = to_lower(x.m_name);
         ASR::asr_t* intrinsic_subroutine = intrinsic_subroutine_as_node(x, sub_name);
         if( intrinsic_subroutine ) {
             tmp = intrinsic_subroutine;
+            return;
+        }
+        if (handle_Mvbits(x, sub_name)) {
             return;
         }
         if (x.n_temp_args > 0) {
