@@ -3644,14 +3644,14 @@ namespace StringContainsSet {
             SymbolTable* scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_verify_" + type_to_str_python(arg_types[0]));
-        fill_func_arg("x", arg_types[0]);
-        fill_func_arg("y", arg_types[1]);
-        fill_func_arg("z", arg_types[2]);
-        fill_func_arg("k", arg_types[3]);
+        fill_func_arg("str", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
+        fill_func_arg("set", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
+        fill_func_arg("back", ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)));
+        fill_func_arg("kind", ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)));
         auto result = declare(fn_name, return_type, ReturnVar);
         auto matched = declare("matched", arg_types[2], Local);
-        auto i = declare("i", return_type, Local);
-        auto j = declare("j", return_type, Local);
+        auto i = declare("i", ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), Local);
+        auto j = declare("j", ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), Local);
         /*
             function StringContainsSet_(string, set, back, kind) result(r)
                 character(len=*) :: string
