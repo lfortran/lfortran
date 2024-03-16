@@ -1161,16 +1161,6 @@
                                                     Public
                                                     Required
                                                     .false.
-                                                ),
-                                            verify_kind4:
-                                                (ExternalSymbol
-                                                    6
-                                                    verify_kind4
-                                                    34 verify_kind4
-                                                    lfortran_intrinsic_string
-                                                    []
-                                                    verify_kind4
-                                                    Private
                                                 )
                                         })
                                     is_fortran_name
@@ -1232,10 +1222,9 @@
                                                         )
                                                         And
                                                         (IntegerCompare
-                                                            (FunctionCall
-                                                                6 verify_kind4
-                                                                ()
-                                                                [((StringSection
+                                                            (IntrinsicElementalFunction
+                                                                StringContainsSet
+                                                                [(StringSection
                                                                     (Var 6 name)
                                                                     (IntegerBinOp
                                                                         (IntegerConstant 1 (Integer 4))
@@ -1260,8 +1249,8 @@
                                                                         ()
                                                                     ))
                                                                     ()
-                                                                ))
-                                                                ((StringConcat
+                                                                )
+                                                                (StringConcat
                                                                     (Var 6 lower)
                                                                     (Var 6 upper)
                                                                     (Character 1 52 ())
@@ -1269,10 +1258,14 @@
                                                                         "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
                                                                         (Character 1 52 ())
                                                                     )
-                                                                ))
-                                                                (())]
+                                                                )
+                                                                (LogicalConstant
+                                                                    .false.
+                                                                    (Logical 4)
+                                                                )
+                                                                (IntegerConstant 4 (Integer 4))]
+                                                                0
                                                                 (Integer 4)
-                                                                ()
                                                                 ()
                                                             )
                                                             Eq
@@ -1285,14 +1278,17 @@
                                                     )
                                                     And
                                                     (IntegerCompare
-                                                        (FunctionCall
-                                                            6 verify_kind4
-                                                            ()
-                                                            [((Var 6 name))
-                                                            ((Var 6 allowed))
-                                                            (())]
+                                                        (IntrinsicElementalFunction
+                                                            StringContainsSet
+                                                            [(Var 6 name)
+                                                            (Var 6 allowed)
+                                                            (LogicalConstant
+                                                                .false.
+                                                                (Logical 4)
+                                                            )
+                                                            (IntegerConstant 4 (Integer 4))]
+                                                            0
                                                             (Integer 4)
-                                                            ()
                                                             ()
                                                         )
                                                         Eq

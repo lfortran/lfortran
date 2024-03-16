@@ -76,6 +76,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Digits)
         INTRINSIC_NAME_CASE(Rrspacing)
         INTRINSIC_NAME_CASE(Repeat)
+        INTRINSIC_NAME_CASE(StringContainsSet)
         INTRINSIC_NAME_CASE(Range)
         INTRINSIC_NAME_CASE(Hypot)
         INTRINSIC_NAME_CASE(SelectedIntKind)
@@ -276,6 +277,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Rrspacing::instantiate_Rrspacing, &Rrspacing::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Repeat),
             {&Repeat::instantiate_Repeat, &Repeat::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::StringContainsSet),
+            {&StringContainsSet::instantiate_StringContainsSet, &StringContainsSet::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::MinExponent),
             {&MinExponent::instantiate_MinExponent, &MinExponent::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::MaxExponent),
@@ -539,6 +542,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "rrspacing"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Repeat),
             "Repeat"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::StringContainsSet),
+            "Verify"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::MinExponent),
             "minexponent"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::MaxExponent),
@@ -727,6 +732,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"digits", {&Digits::create_Digits, &Digits::eval_Digits}},
                 {"rrspacing", {&Rrspacing::create_Rrspacing, &Rrspacing::eval_Rrspacing}},
                 {"repeat", {&Repeat::create_Repeat, &Repeat::eval_Repeat}},
+                {"verify", {&StringContainsSet::create_StringContainsSet, &StringContainsSet::eval_StringContainsSet}},
                 {"minexponent", {&MinExponent::create_MinExponent, &MinExponent::eval_MinExponent}},
                 {"maxexponent", {&MaxExponent::create_MaxExponent, &MaxExponent::eval_MaxExponent}},
                 {"list.index", {&ListIndex::create_ListIndex, &ListIndex::eval_list_index}},

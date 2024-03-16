@@ -146,6 +146,10 @@ class ASRBuilder {
         return EXPR(ASR::make_LogicalConstant_t(al, loc, x, logical));
     }
 
+    inline ASR::expr_t* bool_t(bool x, ASR::ttype_t* t) {
+        return EXPR(ASR::make_LogicalConstant_t(al, loc, x, t));
+    }
+
     inline ASR::expr_t* complex(double x, double y, ASR::ttype_t* t) {
         return EXPR(ASR::make_ComplexConstant_t(al, loc, x, y, t));
     }
@@ -563,6 +567,9 @@ class ASRBuilder {
         ASR::cmpopType::Gt, y, logical, nullptr))
     #define fNotEq(x, y) EXPR(ASR::make_RealCompare_t(al, loc, x,                 \
         ASR::cmpopType::NotEq, y, logical, nullptr))
+
+    #define boolEq(x, y) EXPR(ASR::make_LogicalCompare_t(al, loc, x,             \
+        ASR::cmpopType::Eq, y, logical, nullptr))
 
     #define sEq(x, y) EXPR(ASR::make_StringCompare_t(al, loc, x,                \
         ASR::cmpopType::Eq, y, logical, nullptr))
