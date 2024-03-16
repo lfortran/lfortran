@@ -701,6 +701,7 @@ RUN(NAME intrinsics_182 LABELS gfortran llvm) # dshiftl
 RUN(NAME intrinsics_183 LABELS gfortran llvm) # ibits
 RUN(NAME intrinsics_184 LABELS gfortran llvm) # selected_char_kind
 RUN(NAME intrinsics_185 LABELS gfortran llvm) # verify
+RUN(NAME intrinsics_186 LABELS gfortran llvm) # verify
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
