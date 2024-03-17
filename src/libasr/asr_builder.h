@@ -537,46 +537,62 @@ class ASRBuilder {
     }
 
     // Compare -----------------------------------------------------------------
-    #define iEq(x, y) EXPR(ASR::make_IntegerCompare_t(al, loc, x,               \
-        ASR::cmpopType::Eq, y, logical, nullptr))
-    #define iNotEq(x, y) EXPR(ASR::make_IntegerCompare_t(al, loc, x,            \
-        ASR::cmpopType::NotEq, y, logical, nullptr))
-    #define iLt(x, y) EXPR(ASR::make_IntegerCompare_t(al, loc, x,               \
-        ASR::cmpopType::Lt, y, logical, nullptr))
-    #define iLtE(x, y) EXPR(ASR::make_IntegerCompare_t(al, loc, x,              \
-        ASR::cmpopType::LtE, y, logical, nullptr))
-    #define iGtE(x, y) EXPR(ASR::make_IntegerCompare_t(al, loc, x,              \
-        ASR::cmpopType::GtE, y, logical, nullptr))
-    #define iGt(x, y) EXPR(ASR::make_IntegerCompare_t(al, loc, x,               \
-        ASR::cmpopType::Gt, y, logical, nullptr))
+    inline ASR::expr_t* iEq(ASR::expr_t* x, ASR::expr_t* y) {
+        return EXPR(ASR::make_IntegerCompare_t(al, loc, x, ASR::cmpopType::Eq, y, logical, nullptr));
+    }
+    inline ASR::expr_t* iNotEq(ASR::expr_t* x, ASR::expr_t* y) {
+        return EXPR(ASR::make_IntegerCompare_t(al, loc, x, ASR::cmpopType::NotEq, y, logical, nullptr));
+    }
+    inline ASR::expr_t* iLt(ASR::expr_t* x, ASR::expr_t* y) {
+        return EXPR(ASR::make_IntegerCompare_t(al, loc, x, ASR::cmpopType::Lt, y, logical, nullptr));
+    }
+    inline ASR::expr_t* iLtE(ASR::expr_t* x, ASR::expr_t* y) {
+        return EXPR(ASR::make_IntegerCompare_t(al, loc, x, ASR::cmpopType::LtE, y, logical, nullptr));
+    }
+    inline ASR::expr_t* iGtE(ASR::expr_t* x, ASR::expr_t* y) {
+        return EXPR(ASR::make_IntegerCompare_t(al, loc, x, ASR::cmpopType::GtE, y, logical, nullptr));
+    }
+    inline ASR::expr_t* iGt(ASR::expr_t* x, ASR::expr_t* y) {
+        return EXPR(ASR::make_IntegerCompare_t(al, loc, x, ASR::cmpopType::Gt, y, logical, nullptr));
+    }
 
     #define ArraySize_1(x, dim) EXPR(make_ArraySize_t_util(al, loc, x, dim,     \
         int32, nullptr))
     #define ArraySize_2(x, dim, t) EXPR(make_ArraySize_t_util(al, loc, x, dim,  \
         t, nullptr))
 
-    #define fEq(x, y) EXPR(ASR::make_RealCompare_t(al, loc, x,               \
-        ASR::cmpopType::Eq, y, logical, nullptr))
-    #define fGtE(x, y) EXPR(ASR::make_RealCompare_t(al, loc, x,                 \
-        ASR::cmpopType::GtE, y, logical, nullptr))
-    #define fLtE(x, y) EXPR(ASR::make_RealCompare_t(al, loc, x,                  \
-        ASR::cmpopType::LtE, y, logical, nullptr))
-    #define fLt(x, y) EXPR(ASR::make_RealCompare_t(al, loc, x,                  \
-        ASR::cmpopType::Lt, y, logical, nullptr))
-    #define fGt(x, y) EXPR(ASR::make_RealCompare_t(al, loc, x,                  \
-        ASR::cmpopType::Gt, y, logical, nullptr))
-    #define fNotEq(x, y) EXPR(ASR::make_RealCompare_t(al, loc, x,                 \
-        ASR::cmpopType::NotEq, y, logical, nullptr))
+    inline ASR::expr_t* fEq(ASR::expr_t* x, ASR::expr_t* y) {
+        return EXPR(ASR::make_RealCompare_t(al, loc, x, ASR::cmpopType::Eq, y, logical, nullptr));
+    }
+    inline ASR::expr_t* fGtE(ASR::expr_t* x, ASR::expr_t* y) {
+        return EXPR(ASR::make_RealCompare_t(al, loc, x, ASR::cmpopType::GtE, y, logical, nullptr));
+    }
+    inline ASR::expr_t* fLtE(ASR::expr_t* x, ASR::expr_t* y) {
+        return EXPR(ASR::make_RealCompare_t(al, loc, x, ASR::cmpopType::LtE, y, logical, nullptr));
+    }
+    inline ASR::expr_t* fLt(ASR::expr_t* x, ASR::expr_t* y) {
+        return EXPR(ASR::make_RealCompare_t(al, loc, x, ASR::cmpopType::Lt, y, logical, nullptr));
+    }
+    inline ASR::expr_t* fGt(ASR::expr_t* x, ASR::expr_t* y) {
+        return EXPR(ASR::make_RealCompare_t(al, loc, x, ASR::cmpopType::Gt, y, logical, nullptr));
+    }
+    inline ASR::expr_t* fNotEq(ASR::expr_t* x, ASR::expr_t* y) {
+        return EXPR(ASR::make_RealCompare_t(al, loc, x, ASR::cmpopType::NotEq, y, logical, nullptr));
+    }
 
-    #define boolEq(x, y) EXPR(ASR::make_LogicalCompare_t(al, loc, x,             \
-        ASR::cmpopType::Eq, y, logical, nullptr))
+    inline ASR::expr_t* boolEq(ASR::expr_t* x, ASR::expr_t* y) {
+        return EXPR(ASR::make_LogicalCompare_t(al, loc, x, ASR::cmpopType::Eq, y, logical, nullptr));
+    }
 
-    #define sEq(x, y) EXPR(ASR::make_StringCompare_t(al, loc, x,                \
-        ASR::cmpopType::Eq, y, logical, nullptr))
-    #define sNotEq(x, y) EXPR(ASR::make_StringCompare_t(al, loc, x,             \
-        ASR::cmpopType::NotEq, y, logical, nullptr))
-    #define sLt(x, y) EXPR(ASR::make_StringCompare_t(al, loc, x,             \
-        ASR::cmpopType::Lt, y, logical, nullptr))
+    inline ASR::expr_t* sEq(ASR::expr_t* x, ASR::expr_t* y) {
+        return EXPR(ASR::make_StringCompare_t(al, loc, x, ASR::cmpopType::Eq, y, logical, nullptr));
+    }
+    inline ASR::expr_t* sNotEq(ASR::expr_t* x, ASR::expr_t* y) {
+        return EXPR(ASR::make_StringCompare_t(al, loc, x, ASR::cmpopType::NotEq, y, logical, nullptr));
+    }
+    inline ASR::expr_t* sLt(ASR::expr_t* x, ASR::expr_t* y) {
+        return EXPR(ASR::make_StringCompare_t(al, loc, x, ASR::cmpopType::Lt, y, logical, nullptr));
+    }
 
     ASR::expr_t *Gt(ASR::expr_t *left, ASR::expr_t *right) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
