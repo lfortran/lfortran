@@ -9,6 +9,8 @@ logical :: mask_4(4, 5, 3, 1)
 integer(kind=int32) :: res_4
 integer(kind=int64) :: res_8
 
+integer :: dim
+
 mask = reshape([ .true., .false., .true., .false., &
                  .true., .false., .true., .false., &
                  .true., .false., .true., .true.], [3, 4])
@@ -49,12 +51,26 @@ if (sum(count(mask, 1)) /= 7) error stop
 print *, count(mask, 2)
 if (sum(count(mask, 2)) /= 7) error stop
 
+dim = 1
+print *, count(mask, dim)
+if (sum(count(mask, dim)) /= 7) error stop
+dim = 2
+print *, count(mask, dim)
+if (sum(count(mask, dim)) /= 7) error stop
+
 print *, sum(count(mask_, 1))
 if (sum(count(mask_, 1)) /= 6) error stop
 print *, shape(count(mask_, 1))
 print *, sum(count(mask_, 2))
 if (sum(count(mask_, 2)) /= 6) error stop
 print *, shape(count(mask_, 2))
+
+dim = 1
+print *, sum(count(mask_, dim))
+if (sum(count(mask_, dim)) /= 6) error stop
+dim = 2
+print *, sum(count(mask_, dim))
+if (sum(count(mask_, dim)) /= 6) error stop
 
 print *, sum(count(mask_3, 1))
 if (sum(count(mask_3, 1)) /= 18) error stop
@@ -64,6 +80,16 @@ if (sum(count(mask_3, 2)) /= 18) error stop
 print *, shape(count(mask_3, 2))
 print *, sum(count(mask_3, 3))
 if (sum(count(mask_3, 3)) /= 18) error stop
+
+dim = 1
+print *, sum(count(mask_3, dim))
+if (sum(count(mask_3, dim)) /= 18) error stop
+dim = 2
+print *, sum(count(mask_3, dim))
+if (sum(count(mask_3, dim)) /= 18) error stop
+dim = 3
+print *, sum(count(mask_3, dim))
+if (sum(count(mask_3, dim)) /= 18) error stop
 
 print *, sum(count(mask_4, 1))
 if (sum(count(mask_4, 1)) /= 57) error stop
