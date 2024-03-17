@@ -1038,7 +1038,7 @@ namespace Shape {
         body.push_back(al, b.Assignment(i, b.i32(1)));
         body.push_back(al, b.While(b.iLt(i, b.i32(iter)), {
             b.Assignment(b.ArrayItem_01(result, {i}),
-                ArraySize_2(args[0], i, extract_type(return_type))),
+                b.ArraySize_2(args[0], i, extract_type(return_type))),
             b.Assignment(i, b.iAdd(i, b.i32(1)))
         }));
         body.push_back(al, Return());

@@ -556,10 +556,12 @@ class ASRBuilder {
         return EXPR(ASR::make_IntegerCompare_t(al, loc, x, ASR::cmpopType::Gt, y, logical, nullptr));
     }
 
-    #define ArraySize_1(x, dim) EXPR(make_ArraySize_t_util(al, loc, x, dim,     \
-        int32, nullptr))
-    #define ArraySize_2(x, dim, t) EXPR(make_ArraySize_t_util(al, loc, x, dim,  \
-        t, nullptr))
+    inline ASR::expr_t* ArraySize_1(ASR::expr_t* x, ASR::expr_t* dim) {
+        return EXPR(make_ArraySize_t_util(al, loc, x, dim, int32, nullptr));
+    }
+    inline ASR::expr_t* ArraySize_2(ASR::expr_t* x, ASR::expr_t* dim, ASR::ttype_t* t) {
+        return EXPR(make_ArraySize_t_util(al, loc, x, dim, t, nullptr));
+    }
 
     inline ASR::expr_t* fEq(ASR::expr_t* x, ASR::expr_t* y) {
         return EXPR(ASR::make_RealCompare_t(al, loc, x, ASR::cmpopType::Eq, y, logical, nullptr));
