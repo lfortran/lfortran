@@ -2,12 +2,6 @@
     (SymbolTable
         1
         {
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_string:
-                (IntrinsicModule lfortran_intrinsic_string),
             test_scan_module:
                 (Module
                     (SymbolTable
@@ -18,16 +12,7 @@
                                     (SymbolTable
                                         3
                                         {
-                                            scan_kind4:
-                                                (ExternalSymbol
-                                                    3
-                                                    scan_kind4
-                                                    7 scan_kind4
-                                                    lfortran_intrinsic_string
-                                                    []
-                                                    scan_kind4
-                                                    Private
-                                                )
+                                            
                                         })
                                     test_scan_intrinsic
                                     (FunctionType
@@ -48,26 +33,32 @@
                                     []
                                     [(If
                                         (IntegerCompare
-                                            (FunctionCall
-                                                3 scan_kind4
-                                                ()
-                                                [((StringConstant
+                                            (IntrinsicElementalFunction
+                                                Scan
+                                                [(StringConstant
                                                     "fortran"
                                                     (Character 1 7 ())
-                                                ))
-                                                ((StringConstant
+                                                )
+                                                (StringConstant
                                                     "ao"
                                                     (Character 1 2 ())
-                                                ))
-                                                (())]
+                                                )
+                                                (LogicalConstant
+                                                    .false.
+                                                    (Logical 4)
+                                                )
+                                                (IntegerConstant 4 (Integer 4))]
+                                                0
                                                 (Integer 4)
-                                                ()
-                                                ()
+                                                (IntegerConstant 2 (Integer 4))
                                             )
                                             NotEq
                                             (IntegerConstant 2 (Integer 4))
                                             (Logical 4)
-                                            ()
+                                            (LogicalConstant
+                                                .false.
+                                                (Logical 4)
+                                            )
                                         )
                                         [(ErrorStop
                                             ()
@@ -76,29 +67,32 @@
                                     )
                                     (If
                                         (IntegerCompare
-                                            (FunctionCall
-                                                3 scan_kind4
-                                                ()
-                                                [((StringConstant
+                                            (IntrinsicElementalFunction
+                                                Scan
+                                                [(StringConstant
                                                     "fortran"
                                                     (Character 1 7 ())
-                                                ))
-                                                ((StringConstant
+                                                )
+                                                (StringConstant
                                                     "ao"
                                                     (Character 1 2 ())
-                                                ))
-                                                ((LogicalConstant
+                                                )
+                                                (LogicalConstant
                                                     .true.
                                                     (Logical 4)
-                                                ))]
+                                                )
+                                                (IntegerConstant 4 (Integer 4))]
+                                                0
                                                 (Integer 4)
-                                                ()
-                                                ()
+                                                (IntegerConstant 6 (Integer 4))
                                             )
                                             NotEq
                                             (IntegerConstant 6 (Integer 4))
                                             (Logical 4)
-                                            ()
+                                            (LogicalConstant
+                                                .false.
+                                                (Logical 4)
+                                            )
                                         )
                                         [(ErrorStop
                                             ()
@@ -107,26 +101,32 @@
                                     )
                                     (If
                                         (IntegerCompare
-                                            (FunctionCall
-                                                3 scan_kind4
-                                                ()
-                                                [((StringConstant
+                                            (IntrinsicElementalFunction
+                                                Scan
+                                                [(StringConstant
                                                     "fortran"
                                                     (Character 1 7 ())
-                                                ))
-                                                ((StringConstant
+                                                )
+                                                (StringConstant
                                                     "c++"
                                                     (Character 1 3 ())
-                                                ))
-                                                (())]
+                                                )
+                                                (LogicalConstant
+                                                    .false.
+                                                    (Logical 4)
+                                                )
+                                                (IntegerConstant 4 (Integer 4))]
+                                                0
                                                 (Integer 4)
-                                                ()
-                                                ()
+                                                (IntegerConstant 0 (Integer 4))
                                             )
                                             NotEq
                                             (IntegerConstant 0 (Integer 4))
                                             (Logical 4)
-                                            ()
+                                            (LogicalConstant
+                                                .false.
+                                                (Logical 4)
+                                            )
                                         )
                                         [(ErrorStop
                                             ()
@@ -141,7 +141,7 @@
                                 )
                         })
                     test_scan_module
-                    [lfortran_intrinsic_string]
+                    []
                     .false.
                     .false.
                 ),
