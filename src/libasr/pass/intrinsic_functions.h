@@ -4670,26 +4670,27 @@ namespace Max {
     static inline ASR::expr_t* instantiate_Max(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        std::string func_name = "_lcompilers_max0_" + type_to_str_python(arg_types[0])
-            + "_" + std::to_string(new_args.n);
-        std::string fn_name = scope->get_unique_name(func_name);
-        SymbolTable *fn_symtab = al.make_new<SymbolTable>(scope);
-        Vec<ASR::expr_t*> args;
-        args.reserve(al, new_args.size());
-        ASRBuilder b(al, loc);
-        Vec<ASR::stmt_t*> body; body.reserve(al, args.size());
-        SetChar dep; dep.reserve(al, 1);
-        if (scope->get_symbol(func_name)) {
-            ASR::symbol_t *s = scope->get_symbol(func_name);
-            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
-            return b.Call(s, new_args, expr_type(f->m_return_var), nullptr);
-        }
-        for (size_t i = 0; i < new_args.size(); i++) {
-            fill_func_arg("x" + std::to_string(i), arg_types[0]);
+        std::string func_name = "_lcompilers_max0_" + type_to_str_python(arg_types[0]);
+        declare_basic_variables(func_name);
+        int64_t kind = extract_kind_from_ttype_t(arg_types[0]);
+        if (ASR::is_a<ASR::Character_t>(*arg_types[0])) {
+            for (size_t i = 0; i < new_args.size(); i++) {
+                fill_func_arg("x" + std::to_string(i), ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
+            }
+            return_type = TYPE(ASR::make_Character_t(al, loc, 1, -3, EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr))));
+        } else if (ASR::is_a<ASR::Real_t>(*arg_types[0])) {
+            for (size_t i = 0; i < new_args.size(); i++) {
+                fill_func_arg("x" + std::to_string(i), ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind)));
+            }
+        } else if (ASR::is_a<ASR::Integer_t>(*arg_types[0])) {
+            for (size_t i = 0; i < new_args.size(); i++) {
+                fill_func_arg("x" + std::to_string(i), ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind)));
+            }
+        } else {
+            throw LCompilersException("Arguments to max0 must be of real, integer or character type");
         }
 
         auto result = declare(fn_name, return_type, ReturnVar);
-
         ASR::expr_t* test;
         body.push_back(al, b.Assignment(result, args[0]));
         if (ASR::is_a<ASR::Integer_t>(*return_type)) {
@@ -4716,6 +4717,7 @@ namespace Max {
                 body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
                     if_body.p, if_body.n, nullptr, 0)));
             }
+            return_type = TYPE(ASR::make_Character_t(al, loc, 1, -3, EXPR(ASR::make_StringLen_t(al, loc, new_args[0].m_value, int32, nullptr))));
         } else {
             throw LCompilersException("Arguments to max0 must be of real, integer or character type");
         }
