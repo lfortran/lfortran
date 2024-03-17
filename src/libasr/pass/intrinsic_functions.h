@@ -2672,14 +2672,14 @@ namespace Popcnt {
         body.push_back(al, b.Assignment(val, args[0]));
         body.push_back(al, b.Assignment(mask, b.i(1,arg_types[0])));
 
-        body.push_back(al, b.If(iGtE(args[0], b.i(0,arg_types[0])), {
-            b.While(iNotEq(val, b.i(0, arg_types[0])), {
+        body.push_back(al, b.If(b.iGtE(args[0], b.i(0,arg_types[0])), {
+            b.While(b.iNotEq(val, b.i(0, arg_types[0])), {
                 b.Assignment(count, b.i_tAdd(count, Mod::MOD(b, val, b.i(2, arg_types[0]), scope), arg_types[0])),
                 b.Assignment(val, b.i_tDiv(val, b.i(2, arg_types[0]), arg_types[0]))
                 })
         }, {
-            b.While(iNotEq(mask, b.i(0, arg_types[0])), {
-                b.If(iNotEq(b.i(0,arg_types[0]), (b.i_BitAnd(val,mask, arg_types[0]))), {b.Assignment(count, b.i_tAdd(count, b.i(1, arg_types[0]), arg_types[0]))},
+            b.While(b.iNotEq(mask, b.i(0, arg_types[0])), {
+                b.If(b.iNotEq(b.i(0,arg_types[0]), (b.i_BitAnd(val,mask, arg_types[0]))), {b.Assignment(count, b.i_tAdd(count, b.i(1, arg_types[0]), arg_types[0]))},
                             {}),
                 b.Assignment(mask, b.i_BitLshift(mask, b.i(1, arg_types[0]), arg_types[0]))
             })
