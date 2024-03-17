@@ -1311,6 +1311,22 @@ public:
                 out = "";
                 break;
             }
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Count)) : {
+                out += "count";
+                visit_expr(*x.m_args[0]);
+                out += "(" + src + ", ";
+                visit_expr(*x.m_args[1]);
+                out += src;
+                if (x.n_args == 3) {
+                    out += ", ";
+                    visit_expr(*x.m_args[2]);
+                    out += src;
+                }
+                out += ")";
+                src = out;
+                out = "";
+                break;
+            }
             default : {
                 throw LCompilersException("IntrinsicArrayFunction: `"
                     + ASRUtils::get_array_intrinsic_name(x.m_arr_intrinsic_id)
