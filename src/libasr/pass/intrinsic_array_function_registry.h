@@ -467,7 +467,7 @@ static inline ASR::asr_t* create_ArrIntrinsic(
             ASRUtils::ASRBuilder b(al, loc);
             args_merge.push_back(al, b.ArraySize(args[0], b.i32(it+1), int32));
             args_merge.push_back(al, b.ArraySize(args[0], b.i32(it+2), int32));
-            args_merge.push_back(al, iLt(b.i32(it+1), args[1]));
+            args_merge.push_back(al, b.iLt(b.i32(it+1), args[1]));
             ASR::expr_t* merge = EXPR(Merge::create_Merge(al, loc, args_merge, diag));
             ASR::dimension_t dim;
             dim.loc = array->base.loc;
@@ -1036,9 +1036,9 @@ namespace Shape {
         int iter = extract_n_dims_from_ttype(arg_types[0]) + 1;
         auto i = declare("i", int32, Local);
         body.push_back(al, b.Assignment(i, b.i32(1)));
-        body.push_back(al, b.While(iLt(i, b.i32(iter)), {
+        body.push_back(al, b.While(b.iLt(i, b.i32(iter)), {
             b.Assignment(b.ArrayItem_01(result, {i}),
-                ArraySize_2(args[0], i, extract_type(return_type))),
+                b.ArraySize_2(args[0], i, extract_type(return_type))),
             b.Assignment(i, b.iAdd(i, b.i32(1)))
         }));
         body.push_back(al, Return());
@@ -1682,7 +1682,7 @@ namespace MatMul {
         extract_dimensions_from_ttype(arg_types[1], matrix_b_dims);
         ASR::expr_t *res_ref, *a_ref, *b_ref, *a_lbound, *b_lbound;
         ASR::expr_t *dim_mismatch_check, *a_ubound, *b_ubound;
-        dim_mismatch_check = iEq(UBound(args[0], 2), UBound(args[1], 1));
+        dim_mismatch_check = b.iEq(UBound(args[0], 2), UBound(args[1], 1));
         a_lbound = LBound(args[0], 1); a_ubound = UBound(args[0], 1);
         b_lbound = LBound(args[1], 2); b_ubound = UBound(args[1], 2);
         std::string assert_msg = "'MatMul' intrinsic dimension mismatch: "
@@ -1695,7 +1695,7 @@ namespace MatMul {
             b_ref   = b.ArrayItem_01(args[1], {k, j});
             a_ubound = a_lbound;
             alloc_dims.push_back(al, b.set_dim(LBound(args[1], 2), UBound(args[1], 2)));
-            dim_mismatch_check = iEq(UBound(args[0], 1), UBound(args[1], 1));
+            dim_mismatch_check = b.iEq(UBound(args[0], 1), UBound(args[1], 1));
             assert_msg += "`matrix_a(k)` and `matrix_b(k, j)`";
         } else if ( overload_id == 2 ) {
             // r(i) = r(i) + a(i, k) * b(k)
