@@ -228,7 +228,7 @@ namespace LCompilers {
                     dim.m_length = nullptr; dim.m_start = nullptr;
                     if (len == nullptr) {
                         dims.push_back(al_, dim);
-                        break;
+                        continue;
                     }
                     ASRUtils::ExprStmtDuplicator expr_duplicator(al_);
                     len = expr_duplicator.duplicate_expr(len);
