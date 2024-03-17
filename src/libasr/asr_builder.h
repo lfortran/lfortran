@@ -780,10 +780,24 @@ class ASRBuilder {
             ASRUtils::TYPE(ASR::make_Logical_t( al, loc, 4)), nullptr));
     }
 
+    ASR::expr_t* ElementalXor(ASR::expr_t* left, ASR::expr_t* right,
+        const Location& loc) {
+        return ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, loc,
+            left, ASR::Xor, right,
+            ASRUtils::TYPE(ASR::make_Logical_t( al, loc, 4)), nullptr));
+    }
+
     ASR::expr_t* LogicalOr(ASR::expr_t* left, ASR::expr_t* right,
         const Location& loc) {
         return ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, loc,
             left, ASR::Or, right, ASRUtils::expr_type(left),
+            nullptr));
+    }
+
+    ASR::expr_t* LogicalXor(ASR::expr_t* left, ASR::expr_t* right,
+        const Location& loc) {
+        return ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, loc,
+            left, ASR::Xor, right, ASRUtils::expr_type(left),
             nullptr));
     }
 
