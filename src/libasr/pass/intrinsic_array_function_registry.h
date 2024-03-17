@@ -1808,6 +1808,7 @@ namespace Count {
             }
         }
         ASR::expr_t *value = nullptr;
+        bool runtime_dim = false;
         Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 2);
         ASR::expr_t *mask_value = ASRUtils::expr_value(mask);
         arg_values.push_back(al, mask_value);
@@ -1815,24 +1816,34 @@ namespace Count {
             ASR::expr_t *mask_value = ASRUtils::expr_value(mask);
             arg_values.push_back(al, mask_value);
         }
+        if ( dim_ ) {
+            ASR::expr_t *dim_value = ASRUtils::expr_value(dim_);
+            runtime_dim = dim_value == nullptr;
+        }
 
         ASR::ttype_t* return_type = nullptr;
         if( overload_id == id_mask ) {
             return_type = int32;
         } else if( overload_id == id_mask_dim ) {
+            ASRUtils::ASRBuilder b(al, loc);
             Vec<ASR::dimension_t> dims;
             size_t n_dims = ASRUtils::extract_n_dims_from_ttype(mask_type);
             dims.reserve(al, (int) n_dims - 1);
             for( int i = 0; i < (int) n_dims - 1; i++ ) {
+                Vec<ASR::expr_t*> args_merge; args_merge.reserve(al, 3);
+                args_merge.push_back(al, b.ArraySize(args[0], b.i32(i+1), int32));
+                args_merge.push_back(al, b.ArraySize(args[0], b.i32(i+2), int32));
+                args_merge.push_back(al, iLt(b.i32(i+1), args[1]));
+                ASR::expr_t* merge = EXPR(Merge::create_Merge(al, loc, args_merge, diag));
                 ASR::dimension_t dim;
                 dim.loc = mask->base.loc;
-                dim.m_length = nullptr;
-                dim.m_start = nullptr;
+                dim.m_start = b.i32(1);
+                dim.m_length = runtime_dim ? merge : nullptr;
                 dims.push_back(al, dim);
             }
             return_type = ASRUtils::make_Array_t_util(al, loc,
                 int32, dims.p, dims.n, ASR::abiType::Source,
-                false);
+                false, ASR::array_physical_typeType::DescriptorArray, true);
         } else if ( kind ) {
             int kind_value = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(kind))->m_n;
             return_type = TYPE(ASR::make_Integer_t(al, loc, kind_value));
@@ -1885,8 +1896,12 @@ namespace Count {
             return b.Call(fn_sym, m_args, return_type, nullptr);
         } else {
             fill_func_arg("dim", duplicate_type_with_empty_dims(al, arg_types[1]));
-            ASR::expr_t *result = declare("result", return_type, Out);
+            ASR::ttype_t* ret_type = PassUtils::replace_Args_(al, return_type, m_args, args);
+            ASR::expr_t *result = declare("result", ret_type, Out);
             args.push_back(al, result);
+            ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+                    body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+            scope->add_symbol(fn_name, fn_sym);
             /*
                 for array of rank 3, the following code is generated:
                 dim == 2
@@ -1902,9 +1917,49 @@ namespace Count {
                     end do
                 end do
             */
-            int dim = ASR::down_cast<ASR::IntegerConstant_t>(m_args[1].m_value)->m_n;
             ASR::dimension_t* array_dims = nullptr;
             int array_rank = extract_dimensions_from_ttype(arg_types[0], array_dims);
+            if (m_args[1].m_value && !ASR::is_a<ASR::IntegerConstant_t>(*m_args[1].m_value)) {
+                /*
+                    For runtime dimension, the following code is generated:
+                    dim = 3 ( runtime dimension )
+                    if (dim == 1) call count(mask, 1, result)
+                    if (dim == 2) call count(mask, 2, result)
+                    if (dim == 3) call count(mask, 3, result)
+                */
+                for (int itr = 0; itr < array_rank; itr++) {
+                    Vec<ASR::dimension_t> dims;
+                    size_t n_dims = ASRUtils::extract_n_dims_from_ttype(arg_types[0]);
+                    dims.reserve(al, (int) n_dims - 1);
+                    for( int i = 0; i < (int) n_dims - 1; i++ ) {
+                        ASR::dimension_t dim;
+                        dim.loc = args[0]->base.loc;
+                        dim.m_length = nullptr;
+                        dim.m_start = nullptr;
+                        dims.push_back(al, dim);
+                    }
+                    return_type = ASRUtils::make_Array_t_util(al, loc,
+                        int32, dims.p, dims.n, ASR::abiType::Source,
+                        false, ASR::array_physical_typeType::DescriptorArray, true);
+                    ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(
+                        b.CallIntrinsic(scope, {arg_types[0], int32}, {args[0], b.i(itr + 1, int32)}, return_type, overload_id, Count::instantiate_Count)
+                    );
+                    Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 3);
+                    ASR::call_arg_t call_arg; call_arg.loc = args[0]->base.loc; call_arg.m_value = args[0]; call_args.push_back(al, call_arg);
+                    ASR::call_arg_t call_arg_1; call_arg_1.loc = args[1]->base.loc; call_arg_1.m_value = b.i(itr + 1, int32); call_args.push_back(al, call_arg_1);
+                    ASR::call_arg_t call_arg_2; call_arg_2.loc = result->base.loc; call_arg_2.m_value = result; call_args.push_back(al, call_arg_2);
+                    body.push_back(al, b.If(iEq(args[1], b.i(itr + 1, arg_types[1])), {
+                        b.SubroutineCall(func_call->m_name, call_args),
+                        Return()
+                    }, {}));
+                }
+                body.push_back(al, Return());
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(scope->get_symbol(fn_name));
+                func->m_body = body.p;
+                func->n_body = body.n;
+                return b.Call(fn_sym, m_args, return_type, nullptr);
+            }
+            int dim = ASR::down_cast<ASR::IntegerConstant_t>(m_args[1].m_value)->m_n;
             std::vector<ASR::expr_t*> res_idx;
             for (int i = 0; i < array_rank - 1; i++) {
                 res_idx.push_back(declare("i_" + std::to_string(i), int32, Local));
@@ -1931,9 +1986,9 @@ namespace Count {
                                     idx, res_idx, inner_most_do_loop, c, args[0], result, 0, dim);
             body.push_back(al, do_loop);
             body.push_back(al, Return());
-            ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-                    body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
-            scope->add_symbol(fn_name, fn_sym);
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(scope->get_symbol(fn_name));
+            func->m_body = body.p;
+            func->n_body = body.n;
             return b.Call(fn_sym, m_args, return_type, nullptr);
         }
     }
