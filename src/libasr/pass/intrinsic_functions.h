@@ -1404,23 +1404,19 @@ namespace Lgt {
     static inline ASR::expr_t* instantiate_Lgt(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-                std::cout<<"here1"<<'\n';
         declare_basic_variables("_lcompilers_lgt_" + type_to_str_python(type_get_past_allocatable(arg_types[0])));
         fill_func_arg("x", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
         fill_func_arg("y", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
         auto result = declare(fn_name, return_type, ReturnVar);
-        std::cout<<"here2"<<'\n';
         body.push_back(al, b.If(sGt(args[0], args[1]), {
             b.Assignment(result, b.bool32(1))
         }, {
             b.Assignment(result, b.bool32(0))
         }));
-        std::cout<<"here3"<<'\n';
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
-        std::cout<<"here4"<<'\n';
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
@@ -1446,13 +1442,11 @@ namespace Llt {
         fill_func_arg("x", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
         fill_func_arg("y", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
         auto result = declare(fn_name, return_type, ReturnVar);
-        body.push_back(al, b.Assignment(result, b.bool32(0)));
-        ASR::expr_t *val1 = args[0];
-        ASR::expr_t *val2 = args[1];
-
-        body.push_back(al, b.If(sLt(val1, val2), {
+        body.push_back(al, b.If(sLt(args[0], args[1]), {
             b.Assignment(result, b.bool32(1))
-        }, {}));
+        }, {
+            b.Assignment(result, b.bool32(0))
+        }));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1482,13 +1476,11 @@ namespace Lge {
         fill_func_arg("x", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
         fill_func_arg("y", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
         auto result = declare(fn_name, return_type, ReturnVar);
-        body.push_back(al, b.Assignment(result, b.bool32(0)));
-        ASR::expr_t *val1 = args[0];
-        ASR::expr_t *val2 = args[1];
-
-        body.push_back(al, b.If(sGtE(val1, val2), {
+        body.push_back(al, b.If(sGtE(args[0], args[1]), {
             b.Assignment(result, b.bool32(1))
-        }, {}));
+        }, {
+            b.Assignment(result, b.bool32(0))
+        }));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1518,13 +1510,11 @@ namespace Lle {
         fill_func_arg("x", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
         fill_func_arg("y", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
         auto result = declare(fn_name, return_type, ReturnVar);
-        body.push_back(al, b.Assignment(result, b.bool32(0)));
-        ASR::expr_t *val1 = args[0];
-        ASR::expr_t *val2 = args[1];
-
-        body.push_back(al, b.If(sLtE(val1, val2), {
+        body.push_back(al, b.If(sLtE(args[0], args[1]), {
             b.Assignment(result, b.bool32(1))
-        }, {}));
+        }, {
+            b.Assignment(result, b.bool32(0))
+        }));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
