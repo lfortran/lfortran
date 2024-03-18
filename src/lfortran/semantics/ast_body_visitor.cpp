@@ -585,7 +585,7 @@ public:
                     body.push_back(al, ASRUtils::STMT(
                         ASR::make_FileWrite_t(al, loc, 0, a_unit,
                         nullptr, nullptr, nullptr,
-                        nullptr, 0, nullptr, newline)));
+                        nullptr, 0, nullptr, newline, nullptr)));
                     // TODO: Compare with "no" (case-insensitive) in else part
                     // Throw runtime error if advance expression does not match "no"
                     newline_for_advance.push_back(ASR::make_If_t(al, loc, test, body.p,
@@ -622,11 +622,11 @@ public:
                 if( _type == AST::stmtType::Write ) {
                     tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
                         a_iomsg, a_iostat, a_id, a_values_vec.p,
-                        a_values_vec.size(), a_separator, a_end);
+                        a_values_vec.size(), a_separator, a_end, nullptr);
                     print_statements[tmp] = std::make_pair(&w->base,label);
                 } else if( _type == AST::stmtType::Read ) {
                     tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
-                                        a_iomsg, a_iostat, a_id, a_values_vec.p, a_values_vec.size());
+                                a_iomsg, a_iostat, a_id, a_values_vec.p, a_values_vec.size(), nullptr);
                     print_statements[tmp] = std::make_pair(&r->base,label);
                 }
                 return;
@@ -2990,7 +2990,7 @@ public:
                 args.p, args.size(), nullptr, empty_string);
         } else {
             return ASR::make_FileWrite_t(al, loc, 0, nullptr, nullptr,
-                nullptr, nullptr, args.p, args.size(), nullptr, empty_string);
+                nullptr, nullptr, args.p, args.size(), nullptr, empty_string, nullptr);
         }
     }
 
