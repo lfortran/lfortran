@@ -1828,11 +1828,19 @@ public:
             fill_interface_proc_names(x, assgn_proc_names);
         }  else if (AST::is_a<AST::InterfaceHeaderWrite_t>(*x.m_header)) {
             std::string op_name = to_lower(AST::down_cast<AST::InterfaceHeaderWrite_t>(x.m_header)->m_id);
+            if (op_name != "formatted" && op_name != "unformatted") {
+                throw SemanticError("Can only be `formatted` or `unformatted`", x.m_header->base.loc);
+            }
+            op_name = "~write_" + op_name;
             std::vector<std::string> proc_names;
             fill_interface_proc_names(x, proc_names);
             defined_op_procs[op_name] = proc_names;
         }  else if (AST::is_a<AST::InterfaceHeaderRead_t>(*x.m_header)) {
             std::string op_name = to_lower(AST::down_cast<AST::InterfaceHeaderRead_t>(x.m_header)->m_id);
+            if (op_name != "formatted" && op_name != "unformatted") {
+                throw SemanticError("Can only be `formatted` or `unformatted`", x.m_header->base.loc);
+            }
+            op_name = "~read_" + op_name;
             std::vector<std::string> proc_names;
             fill_interface_proc_names(x, proc_names);
             defined_op_procs[op_name] = proc_names;
@@ -2598,11 +2606,19 @@ public:
                     case AST::use_symbolType::UseWrite: {
                         remote_sym = AST::down_cast<AST::UseWrite_t>(
                             x.m_symbols[i])->m_id;
+                        if (remote_sym != "formatted" && remote_sym != "unformatted") {
+                            throw SemanticError("Can only be `formatted` or `unformatted`", x.m_symbols[i]->base.loc);
+                        }
+                        remote_sym = "~write_" + remote_sym;
                         break;
                     }
                     case AST::use_symbolType::UseRead: {
                         remote_sym = AST::down_cast<AST::UseRead_t>(
                             x.m_symbols[i])->m_id;
+                        if (remote_sym != "formatted" && remote_sym != "unformatted") {
+                            throw SemanticError("Can only be `formatted` or `unformatted`", x.m_symbols[i]->base.loc);
+                        }
+                        remote_sym = "~read_" + remote_sym;
                         break;
                     }
                     default:
