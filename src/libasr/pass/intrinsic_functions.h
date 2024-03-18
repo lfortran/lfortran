@@ -81,7 +81,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Rrspacing,
     Repeat,
     StringContainsSet,
-    Scan,
+    StringFindSet,
     Hypot,
     SelectedIntKind,
     SelectedRealKind,
@@ -4054,9 +4054,9 @@ namespace StringContainsSet {
 
 } // namespace StringContainsSet
 
-namespace Scan {
+namespace StringFindSet {
 
-    static ASR::expr_t *eval_Scan(Allocator &al, const Location &loc,
+    static ASR::expr_t *eval_StringFindSet(Allocator &al, const Location &loc,
             ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         char* string = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
         char* set = ASR::down_cast<ASR::StringConstant_t>(args[1])->m_s;
@@ -4084,7 +4084,7 @@ namespace Scan {
         return make_ConstantWithType(make_IntegerConstant_t, result, return_type, loc);
     }
 
-    static inline ASR::expr_t* instantiate_Scan(Allocator &al, const Location &loc,
+    static inline ASR::expr_t* instantiate_StringFindSet(Allocator &al, const Location &loc,
             SymbolTable* scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_scan_" + type_to_str_python(arg_types[0]));
@@ -4096,7 +4096,7 @@ namespace Scan {
         auto i = declare("i", ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), Local);
         auto j = declare("j", ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), Local);
         /*
-            function Scan_(string, set, back, kind) result(r)
+            function StringFindSet_(string, set, back, kind) result(r)
                 character(len=*) :: string
                 character(len=*) :: set
                 logical, optional :: back
@@ -4177,7 +4177,7 @@ namespace Scan {
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
-} // namespace Scan
+} // namespace StringFindSet
 
 namespace MinExponent {
 
