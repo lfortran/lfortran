@@ -2,11 +2,11 @@
     "basename": "asr-array_02_pack-233bae0",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/array_02_pack.f90",
-    "infile_hash": "e8cba947b5e36421a6fb8cd26366ae14e60a3fa9b71c7d6c563d09af",
+    "infile_hash": "8d58570ab351e8b1ec04ca39b9a3dd9c099cffdcdf4ea487fe742f35",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-array_02_pack-233bae0.stdout",
-    "stdout_hash": "8e3c7a1a3843555a1d48bfc38f9a5d441e4210706d1294f270111804",
+    "stdout_hash": "c18962762de9f8e2cff31bf7609fabb08053ad1c55252e7fa582b123",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
