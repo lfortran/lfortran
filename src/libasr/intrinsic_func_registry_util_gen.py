@@ -104,6 +104,12 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 3
         }
     ],
+    "SubstrIndex": [
+        {
+            "args": [("char", "char", "bool", "int")],
+            "ret_type_arg_idx": 3
+        }
+    ],
     "MinExponent": [
         {
             "args": [("real",)],
