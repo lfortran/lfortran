@@ -1265,6 +1265,7 @@ public:
             SET_INTRINSIC_NAME(Sin, "sin");
             SET_INTRINSIC_NAME(Char, "char");
             SET_INTRINSIC_NAME(StringContainsSet, "verify");
+            SET_INTRINSIC_NAME(StringFindSet, "scan");
             default : {
                 throw LCompilersException("IntrinsicElementalFunction: `"
                     + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)

@@ -1,4 +1,5 @@
 program intrinsic_186
+    
     character(7) :: string
     print*, verify(maybe(string), "foo")
     contains
@@ -8,4 +9,5 @@ program intrinsic_186
         character(len=len(string)) :: maybe_string
         maybe_string = "fortran"
     end function maybe
-end
+
+end program

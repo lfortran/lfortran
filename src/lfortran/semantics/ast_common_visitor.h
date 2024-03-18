@@ -723,6 +723,7 @@ public:
         {"mod", {IntrinsicSignature({"a", "p"}, 2, 2)}},
         {"repeat", {IntrinsicSignature({"string", "ncopies"}, 2, 2)}},
         {"verify", {IntrinsicSignature({"string", "set", "back", "kind"}, 2, 4)}},
+        {"scan", {IntrinsicSignature({"string", "set", "back", "kind"}, 2, 4)}},
         {"adjustl", {IntrinsicSignature({"string"}, 1, 1)}},
         {"hypot", {IntrinsicSignature({"x", "y"}, 2, 2)}},
         {"shiftr", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
@@ -5099,7 +5100,7 @@ public:
             if (args[2] == nullptr) {
                 args.p[2] = two;
             }
-        } else if (intrinsic_name == "verify") {
+        } else if (intrinsic_name == "verify" || intrinsic_name == "scan") {
             ASR::ttype_t *bool_type = ASRUtils::TYPE(
                     ASR::make_Logical_t(al, loc, 4));
             ASR::ttype_t *int_type = ASRUtils::TYPE(
@@ -5219,10 +5220,6 @@ public:
                 tmp = create_Iachar(x);
             } else if( var_name == "char" ) {
                 tmp = create_StringChr(x);
-            } else if( var_name == "scan" ) {
-                tmp = create_ScanVerify_util(x, var_name);
-            } else if( var_name == "verify" ) {
-                tmp = create_ScanVerify_util(x, var_name);
             } else if( var_name == "len" ) {
                 tmp = create_StringLen(x);
             } else if( var_name == "null" ) {

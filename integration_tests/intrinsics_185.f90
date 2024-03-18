@@ -29,4 +29,4 @@ program intrinsics_185
     print*, verify(fortran, fortran)  
     if ( verify(fortran, fortran) /= 0 ) error stop 
   
-end
+end program
