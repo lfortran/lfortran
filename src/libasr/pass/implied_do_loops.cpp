@@ -601,7 +601,21 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             }
         }
 
+        void visit_FileRead(const ASR::FileRead_t &x) {
+            if (x.m_overloaded) {
+                this->visit_stmt(*x.m_overloaded);
+                remove_original_statement = false;
+                return;
+            }
+        }
+
         void visit_FileWrite(const ASR::FileWrite_t &x) {
+            if (x.m_overloaded) {
+                this->visit_stmt(*x.m_overloaded);
+                remove_original_statement = false;
+                return;
+            }
+
             /*
                 integer :: i
                 write(*,*) (i, i=1, 10)
