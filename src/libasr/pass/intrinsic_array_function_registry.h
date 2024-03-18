@@ -1943,30 +1943,32 @@ namespace Count {
 } // namespace Count
 
 namespace Parity {
+
     static inline void verify_array(ASR::expr_t* array, ASR::ttype_t* return_type,
         const Location& loc, diag::Diagnostics& diagnostics) {
         ASR::ttype_t* array_type = ASRUtils::expr_type(array);
         ASRUtils::require_impl(ASRUtils::is_logical(*array_type),
-            "Input to 'Parity' intrinsic must be of logical type, found: " +
-            ASRUtils::get_type_code(array_type), loc, diagnostics);
+            "Input to 'parity' intrinsic must be of logical type, found: " + ASRUtils::get_type_code(array_type),
+            loc, diagnostics);
         int array_n_dims = ASRUtils::extract_n_dims_from_ttype(array_type);
-        ASRUtils::require_impl(array_n_dims > 0, "Input to Any intrinsic must always be an array",
+        ASRUtils::require_impl(array_n_dims > 0, "Input to 'parity' intrinsic must always be an array",
             loc, diagnostics);
         ASRUtils::require_impl(ASRUtils::is_logical(*return_type),
             "'Parity' intrinsic must return a logical output", loc, diagnostics);
         int return_n_dims = ASRUtils::extract_n_dims_from_ttype(return_type);
         ASRUtils::require_impl(return_n_dims == 0,
-            "'Parity' intrinsic output for array only input should be a scalar", loc, diagnostics);
+        "'Parity' intrinsic output for array only input should be a scalar",
+        loc, diagnostics);
     }
 
     static inline void verify_array_dim(ASR::expr_t* array, ASR::expr_t* dim,
         ASR::ttype_t* return_type, const Location& loc, diag::Diagnostics& diagnostics) {
         ASR::ttype_t* array_type = ASRUtils::expr_type(array);
         ASRUtils::require_impl(ASRUtils::is_logical(*ASRUtils::type_get_past_pointer(array_type)),
-            "Input to 'Parity' intrinsic must be of logical type, found: " + ASRUtils::get_type_code(array_type),
+            "Input to 'parity' intrinsic must be of logical type, found: " + ASRUtils::get_type_code(array_type),
             loc, diagnostics);
         int array_n_dims = ASRUtils::extract_n_dims_from_ttype(array_type);
-        ASRUtils::require_impl(array_n_dims > 0, "Input to 'Parity' intrinsic must always be an array",
+        ASRUtils::require_impl(array_n_dims > 0, "Input to 'parity' intrinsic must always be an array",
             loc, diagnostics);
 
         ASRUtils::require_impl(ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(ASRUtils::expr_type(dim))),
@@ -1986,7 +1988,7 @@ namespace Parity {
             x.base.base.loc, diagnostics);
         ASRUtils::require_impl(x.m_args[0] != nullptr, "Array argument to any intrinsic cannot be nullptr",
             x.base.base.loc, diagnostics);
-        switch(x.m_overload_id) {
+        switch( x.m_overload_id ) {
             case 0: {
                 verify_array(x.m_args[0], x.m_type, x.base.base.loc, diagnostics);
                 break;
@@ -1999,77 +2001,83 @@ namespace Parity {
                 break;
             }
             default: {
-                require_impl(false, "Unrecognised overload id in Any intrinsic",
-                    x.base.base.loc, diagnostics);
+                require_impl(false, "Unrecognised overload id in 'Parity' intrinsic",
+                            x.base.base.loc, diagnostics);
             }
         }
     }
 
-    static inline ASR::expr_t* eval_Parity(Allocator & /*al*/,
-        const Location & /*loc*/, ASR::ttype_t * /*t*/, Vec<ASR::expr_t*>& /*args*/,
+    static inline ASR::expr_t *eval_Parity(Allocator & /*al*/,
+        const Location & /*loc*/, ASR::ttype_t */*t*/, Vec<ASR::expr_t*>& /*args*/,
         diag::Diagnostics& /*diag*/) {
         return nullptr;
     }
 
-    static inline ASR::asr_t* create_Parity(Allocator& al, const Location& loc,
-        Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
-        int overload_id { 0 };
+    static inline ASR::asr_t* create_Parity(
+        Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
+        diag::Diagnostics& diag) {
+        int64_t overload_id = 0;
+        Vec<ASR::expr_t*> any_args;
+        any_args.reserve(al, 2);
+
         ASR::expr_t* array = args[0];
         ASR::expr_t* axis = nullptr;
-        // args.size()[1] is 'nullptr', if 'axis' is absent
-        axis = args[1];
-        size_t array_n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(array));
-
-        if (array_n_dims == 0) {
-            append_error(diag, "'mask' argument to 'parity' must be an array and not a scalar",
+        if( args.size() == 2 ) {
+            axis = args[1];
+        }
+        if( ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(array)) == 0 ) {
+            append_error(diag, "mask argument to 'parity' must be an array and must not be a scalar",
                 array->base.loc);
             return nullptr;
         }
 
+        // TODO: Add a check for range of values axis can take
+        // if axis is available at compile time
+
+        ASR::expr_t *value = nullptr;
         Vec<ASR::expr_t*> arg_values;
         arg_values.reserve(al, 2);
-        ASR::expr_t* array_value = ASRUtils::expr_value(array);
+        ASR::expr_t *array_value = ASRUtils::expr_value(array);
         arg_values.push_back(al, array_value);
-        if (axis) {
-            ASR::expr_t* axis_value = ASRUtils::expr_value(axis);
+        if( axis ) {
+            ASR::expr_t *axis_value = ASRUtils::expr_value(axis);
             arg_values.push_back(al, axis_value);
         }
 
-        ASR::ttype_t* logical_return_type { nullptr };
-        if (axis) {
+        ASR::ttype_t* logical_return_type = nullptr;
+        if( axis == nullptr ) {
+            overload_id = 0;
+            logical_return_type = ASRUtils::TYPE(ASR::make_Logical_t(
+                                    al, loc, 4));
+        } else {
             overload_id = 1;
             Vec<ASR::dimension_t> dims;
-            dims.reserve(al, (int) array_n_dims - 1);
-            for (int i = 0; i < (int) array_n_dims - 1; i++) {
+            size_t n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(array));
+            dims.reserve(al, (int) n_dims - 1);
+            for( int i = 0; i < (int) n_dims - 1; i++ ) {
                 ASR::dimension_t dim;
                 dim.loc = array->base.loc;
                 dim.m_length = nullptr;
                 dim.m_start = nullptr;
                 dims.push_back(al, dim);
             }
-
-            if (dims.size() > 0) {
+            if( dims.size() > 0 ) {
                 logical_return_type = ASRUtils::make_Array_t_util(al, loc,
                     ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), dims.p, dims.size());
             } else {
                 logical_return_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
             }
-        } else {
-            overload_id = 0;
-            logical_return_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
         }
+        value = eval_Parity(al, loc, logical_return_type, arg_values, diag);
 
-        Vec<ASR::expr_t*> parity_args;
-        parity_args.reserve(al, 2);
-        ASR::expr_t* value { eval_Parity(al, loc, logical_return_type, arg_values, diag) };
-        parity_args.push_back(al, array);
-        if (axis) {
-            parity_args.push_back(al, axis);
+        any_args.push_back(al, array);
+        if( axis ) {
+            any_args.push_back(al, axis);
         }
 
         return ASRUtils::make_IntrinsicArrayFunction_t_util(al, loc,
             static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Parity),
-            parity_args.p, parity_args.n, overload_id, logical_return_type, value);
+            any_args.p, any_args.n, overload_id, logical_return_type, value);
     }
 
     static inline void generate_body_for_scalar_output(Allocator& al, const Location& loc,

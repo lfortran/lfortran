@@ -15,5 +15,4 @@ program intrinsics_parity
     parity_result_dim2 = parity(x, dim=2)
     if (parity_result_dim2(1) .neqv. .TRUE.) error stop
     if (parity_result_dim2(2) .neqv. .TRUE.) error stop
-    print *, parity_result_dim2
 end program intrinsics_parity
