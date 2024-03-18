@@ -34,7 +34,7 @@
                                     [(If
                                         (IntegerCompare
                                             (IntrinsicElementalFunction
-                                                Scan
+                                                StringFindSet
                                                 [(StringConstant
                                                     "fortran"
                                                     (Character 1 7 ())
@@ -68,7 +68,7 @@
                                     (If
                                         (IntegerCompare
                                             (IntrinsicElementalFunction
-                                                Scan
+                                                StringFindSet
                                                 [(StringConstant
                                                     "fortran"
                                                     (Character 1 7 ())
@@ -102,7 +102,7 @@
                                     (If
                                         (IntegerCompare
                                             (IntrinsicElementalFunction
-                                                Scan
+                                                StringFindSet
                                                 [(StringConstant
                                                     "fortran"
                                                     (Character 1 7 ())
