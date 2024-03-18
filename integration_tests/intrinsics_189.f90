@@ -18,6 +18,6 @@ program intrinsics_189
     print*, scan(fortran, c_plus_plus) 
     if (scan(fortran, c_plus_plus) /= 0) error stop
 
-end
+end program
   
   

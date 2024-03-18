@@ -4141,7 +4141,7 @@ namespace Scan {
         ASR::expr_t* set_section = b.StringSection(args[1], b.i_tSub(j, b.i(1, return_type), return_type), j);       
     
         std::vector<ASR::stmt_t*> while_loop_body_inner;
-        while_loop_body_inner.push_back(b.If(sEq(string_section, set_section), {
+        while_loop_body_inner.push_back(b.If(b.sEq(string_section, set_section), {
             b.Assignment(result, i),
             b.Exit(nullptr)
         }, {}));
@@ -4149,26 +4149,26 @@ namespace Scan {
 
         std::vector<ASR::stmt_t*> while_loop_body;
         while_loop_body.push_back(b.Assignment(j, b.i(1, return_type)));
-        while_loop_body.push_back(b.While(iLtE(j, set_len), while_loop_body_inner));
-        while_loop_body.push_back(b.If(iNotEq(result, b.i(0, return_type)), {
+        while_loop_body.push_back(b.While(b.iLtE(j, set_len), while_loop_body_inner));
+        while_loop_body.push_back(b.If(b.iNotEq(result, b.i(0, return_type)), {
             b.Exit(nullptr)
         }, {}));
         while_loop_body.push_back(b.Assignment(i, b.i_tSub(i, b.i(1, return_type), return_type)));
         
         std::vector<ASR::stmt_t*> while_loop_body_else;
         while_loop_body_else.push_back(b.Assignment(j, b.i(1, return_type)));
-        while_loop_body_else.push_back(b.While(iLtE(j, set_len), while_loop_body_inner));
-        while_loop_body_else.push_back(b.If(iNotEq(result, b.i(0, return_type)), {
+        while_loop_body_else.push_back(b.While(b.iLtE(j, set_len), while_loop_body_inner));
+        while_loop_body_else.push_back(b.If(b.iNotEq(result, b.i(0, return_type)), {
             b.Exit(nullptr)
         }, {}));
         while_loop_body_else.push_back(b.Assignment(i, b.i_tAdd(i, b.i(1, return_type), return_type)));
         
-        body.push_back(al, b.If(boolEq(args[2], b.bool32(1)), {
+        body.push_back(al, b.If(b.boolEq(args[2], b.bool32(1)), {
             b.Assignment(i, str_len),
-            b.While(iGtE(i, b.i(1, return_type)), while_loop_body)
+            b.While(b.iGtE(i, b.i(1, return_type)), while_loop_body)
         }, {
             b.Assignment(i, b.i(1, return_type)),
-            b.While(iLtE(i, str_len), while_loop_body_else)
+            b.While(b.iLtE(i, str_len), while_loop_body_else)
         }));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
