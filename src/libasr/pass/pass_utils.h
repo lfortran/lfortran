@@ -147,8 +147,7 @@ namespace LCompilers {
             ASR::Function_t* sum = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x->m_name));
             ASR::symbol_t* res = sum->m_symtab->resolve_symbol("result");
             if (res) {
-                ASR::Variable_t* res_var = ASR::down_cast<ASR::Variable_t>(res);
-                ASR::ttype_t* type = ASRUtils::duplicate_type(al, res_var->m_type);
+                ASR::ttype_t* type = ASRUtils::duplicate_type(al, x->m_type);
                 ASR::Array_t* res_arr = ASR::down_cast<ASR::Array_t>(type);
                 for (size_t i = 0; i < res_arr->n_dims; i++) {
                     if (ASR::is_a<ASR::FunctionCall_t>(*res_arr->m_dims[i].m_length)) {
@@ -183,7 +182,7 @@ namespace LCompilers {
                     alloc_arg.n_dims = res_arr->n_dims;
                     alloc_args.push_back(al, alloc_arg);
 
-                    ASR::stmt_t* allocate_stmt = ASRUtils::STMT(ASR::make_Allocate_t(al, 
+                    ASR::stmt_t* allocate_stmt = ASRUtils::STMT(ASR::make_Allocate_t(al,
                                             x->base.base.loc, alloc_args.p, alloc_args.n, nullptr, nullptr, nullptr));
                     pass_result.push_back(al, allocate_stmt);
                 }
@@ -209,68 +208,6 @@ namespace LCompilers {
                 }
             }
             return arg;
-        }
-
-        static inline ASR::ttype_t* replace_Args_(Allocator& al_, ASR::ttype_t* return_type, Vec<ASR::call_arg_t>& func_call_args, Vec<ASR::expr_t*> actual_args) {
-            /*
-                Responsible to replace the arguments in the return type of intrinsic functions.
-                Replaces argument with actual argument ( present in intrinsic function scope )
-                Tailored to handle runtime dim arrays, where dimensions are specified using Merge intrinsic.
-            */
-            bool is_allocatable = ASR::is_a<ASR::Allocatable_t>(*return_type);
-            ASR::ttype_t* ret_type = ASRUtils::type_get_past_allocatable(return_type);
-            if (ASR::is_a<ASR::Array_t>(*return_type)) {
-                ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(ret_type);
-                Vec<ASR::dimension_t> dims; dims.reserve(al_, arr->n_dims);
-                for (size_t i = 0; i < arr->n_dims; i++) {
-                    ASR::expr_t* len = arr->m_dims[i].m_length;
-                    ASR::dimension_t dim; dim.loc = return_type->base.loc;
-                    dim.m_length = nullptr; dim.m_start = nullptr;
-                    if (len == nullptr) {
-                        dims.push_back(al_, dim);
-                        break;
-                    }
-                    ASRUtils::ExprStmtDuplicator expr_duplicator(al_);
-                    len = expr_duplicator.duplicate_expr(len);
-                    if (ASR::is_a<ASR::IntrinsicArrayFunction_t>(*len)) {
-                        ASR::IntrinsicArrayFunction_t* fc = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(len);
-                        for (size_t j = 0; j < fc->n_args; j++) {
-                            if (ASR::is_a<ASR::ArraySize_t>(*fc->m_args[j])) {
-                                ASR::ArraySize_t* as = ASR::down_cast<ASR::ArraySize_t>(fc->m_args[j]);
-                                as->m_v = get_actual_arg_(as->m_v, func_call_args, actual_args);
-                            } else if (ASR::is_a<ASR::IntegerCompare_t>(*fc->m_args[j])) {
-                                ASR::IntegerCompare_t* ic = ASR::down_cast<ASR::IntegerCompare_t>(fc->m_args[j]);
-                                ic->m_left = get_actual_arg_(ic->m_left, func_call_args, actual_args);
-                                ic->m_right = get_actual_arg_(ic->m_right, func_call_args, actual_args);
-                            }
-                        }
-                        dim.m_start = arr->m_dims[i].m_start;
-                        dim.m_length = ASRUtils::EXPR((ASR::asr_t*) fc);
-                    } else if (ASR::is_a<ASR::FunctionCall_t>(*len)) {
-                        ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(len);
-                        for (size_t j = 0; j < fc->n_args; j++) {
-                            if (fc->m_args[j].m_value == nullptr) continue;
-                            if (ASR::is_a<ASR::ArraySize_t>(*fc->m_args[j].m_value)) {
-                                ASR::ArraySize_t* as = ASR::down_cast<ASR::ArraySize_t>(fc->m_args[j].m_value);
-                                as->m_v = get_actual_arg_(as->m_v, func_call_args, actual_args);
-                            } else if (ASR::is_a<ASR::IntegerCompare_t>(*fc->m_args[j].m_value)) {
-                                ASR::IntegerCompare_t* ic = ASR::down_cast<ASR::IntegerCompare_t>(fc->m_args[j].m_value);
-                                ic->m_left = get_actual_arg_(ic->m_left, func_call_args, actual_args);
-                                ic->m_right = get_actual_arg_(ic->m_right, func_call_args, actual_args);
-                            }
-                        }
-                        dim.m_start = arr->m_dims[i].m_start;
-                        dim.m_length = ASRUtils::EXPR((ASR::asr_t*) fc);
-                    }
-                    dims.push_back(al_, dim);
-                }
-                ret_type = ASRUtils::TYPE(ASR::make_Array_t(al_, arr->base.base.loc, arr->m_type,
-                            dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray));
-                if (is_allocatable) {
-                    ret_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al_, arr->base.base.loc, ret_type));
-                }
-            }
-            return ret_type;
         }
 
         template <class Struct>
