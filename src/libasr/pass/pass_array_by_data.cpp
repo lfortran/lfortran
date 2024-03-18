@@ -569,12 +569,10 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 }
                 if( !(min_args <= new_args.size() &&
                     new_args.size() <= max_args) ) {
-                    throw LCompilersException("Number of arguments in the new "
-                                            "function call doesn't satisfy "
-                                            "min_args <= new_args.size() <= max_args, " +
-                                            std::to_string(min_args) + " <= " +
-                                            std::to_string(new_args.size()) + " <= " +
-                                            std::to_string(max_args));
+                    throw LCompilersException("Number of arguments in the new function call " +
+                        std::string(ASRUtils::symbol_name(subrout_sym)) + " doesn't satisfy "
+                        "min_args <= new_args.size() <= max_args, " + std::to_string(min_args) + " <= " +
+                        std::to_string(new_args.size()) + " <= " + std::to_string(max_args));
                 }
             }
             ASR::symbol_t* new_func_sym_ = new_func_sym;
