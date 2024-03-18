@@ -1408,11 +1408,7 @@ namespace Lgt {
         fill_func_arg("x", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
         fill_func_arg("y", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
         auto result = declare(fn_name, return_type, ReturnVar);
-        body.push_back(al, b.If(sGt(args[0], args[1]), {
-            b.Assignment(result, b.bool32(1))
-        }, {
-            b.Assignment(result, b.bool32(0))
-        }));
+        body.push_back(al, b.Assignment(result, b.sGt(args[0], args[1])));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1442,11 +1438,7 @@ namespace Llt {
         fill_func_arg("x", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
         fill_func_arg("y", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
         auto result = declare(fn_name, return_type, ReturnVar);
-        body.push_back(al, b.If(sLt(args[0], args[1]), {
-            b.Assignment(result, b.bool32(1))
-        }, {
-            b.Assignment(result, b.bool32(0))
-        }));
+        body.push_back(al, b.Assignment(result, b.sLt(args[0], args[1])));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1476,11 +1468,7 @@ namespace Lge {
         fill_func_arg("x", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
         fill_func_arg("y", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
         auto result = declare(fn_name, return_type, ReturnVar);
-        body.push_back(al, b.If(sGtE(args[0], args[1]), {
-            b.Assignment(result, b.bool32(1))
-        }, {
-            b.Assignment(result, b.bool32(0))
-        }));
+        body.push_back(al, b.Assignment(result, b.sGtE(args[0], args[1])));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1510,11 +1498,7 @@ namespace Lle {
         fill_func_arg("x", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
         fill_func_arg("y", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
         auto result = declare(fn_name, return_type, ReturnVar);
-        body.push_back(al, b.If(sLtE(args[0], args[1]), {
-            b.Assignment(result, b.bool32(1))
-        }, {
-            b.Assignment(result, b.bool32(0))
-        }));
+        body.push_back(al, b.Assignment(result, b.sLtE(args[0], args[1])));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
