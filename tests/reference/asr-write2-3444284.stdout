@@ -50,6 +50,7 @@
                             ""
                             (Character 1 0 ())
                         )
+                        ()
                     )
                     (FileRead
                         0
@@ -59,6 +60,7 @@
                         ()
                         ()
                         [(Var 2 i)]
+                        ()
                     )
                     (Print
                         [(StringConstant

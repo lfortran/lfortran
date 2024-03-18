@@ -66,6 +66,7 @@
                             ""
                             (Character 1 0 ())
                         )
+                        ()
                     )
                     (FileWrite
                         0
@@ -80,6 +81,7 @@
                         (Var 2 x)]
                         ()
                         ()
+                        ()
                     )
                     (Print
                         [(StringConstant
@@ -115,6 +117,7 @@
                             ""
                             (Character 1 0 ())
                         )
+                        ()
                     )
                     (FileWrite
                         0
@@ -126,6 +129,7 @@
                             "ok"
                             (Character 1 2 ())
                         )]
+                        ()
                         ()
                         ()
                     )]

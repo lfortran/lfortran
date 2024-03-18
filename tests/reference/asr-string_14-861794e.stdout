@@ -18,13 +18,6 @@
                     (SymbolTable
                         2
                         {
-                            formatted:
-                                (CustomOperator
-                                    2
-                                    formatted
-                                    [2 read_formatted]
-                                    Public
-                                ),
                             read_formatted:
                                 (Function
                                     (SymbolTable
@@ -379,6 +372,20 @@
                                     .false.
                                     .false.
                                     ()
+                                ),
+                            ~read_formatted:
+                                (CustomOperator
+                                    2
+                                    ~read_formatted
+                                    [2 read_formatted]
+                                    Public
+                                ),
+                            ~write_formatted:
+                                (CustomOperator
+                                    2
+                                    ~write_formatted
+                                    [2 write_formatted]
+                                    Public
                                 )
                         })
                     string_14_stdlib_string_type

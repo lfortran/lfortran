@@ -1015,6 +1015,102 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
     return found;
 }
 
+void process_overloaded_read_write_function(std::string &read_write, ASR::symbol_t* proc, Vec<ASR::expr_t*> &args,
+    ASR::ttype_t* arg_type, bool& found, Allocator& al, const Location& arg_loc,
+    SymbolTable* curr_scope, SetChar& current_function_dependencies,
+    SetChar& current_module_dependencies, ASR::asr_t*& asr, ASR::symbol_t* sym, const Location& loc, ASR::expr_t* expr_dt,
+    const std::function<void (const std::string &, const Location &)> err, char* pass_arg=nullptr) {
+    ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(proc);
+    std::string matched_subrout_name = "";
+    ASR::ttype_t* func_arg_type = ASRUtils::expr_type(subrout->m_args[0]);
+    if( ASRUtils::types_equal(func_arg_type, arg_type) ) {
+        std::string arg0_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(subrout->m_args[0])->m_v);
+        if( pass_arg != nullptr ) {
+            std::string pass_arg_str = std::string(pass_arg);
+            if( (arg0_name == pass_arg_str && args[0] != expr_dt) ) {
+                err(std::string(subrout->m_name) + " is not a procedure of " +
+                    ASRUtils::type_to_str(arg_type),
+                    loc);
+            }
+        }
+        found = true;
+        Vec<ASR::call_arg_t> a_args;
+        a_args.reserve(al, args.size());
+        for (size_t i = 0; i < args.size(); i++) {
+            ASR::call_arg_t arg;
+            arg.loc = arg_loc;
+            arg.m_value = args[i];
+            a_args.push_back(al, arg);
+        }
+        std::string subrout_name = to_lower(subrout->m_name);
+        if( curr_scope->resolve_symbol(subrout_name) ) {
+            matched_subrout_name = subrout_name;
+        } else {
+            std::string mangled_name = subrout_name + "@" + read_write;
+            matched_subrout_name = mangled_name;
+        }
+        ASR::symbol_t *a_name = curr_scope->resolve_symbol(matched_subrout_name);
+        if( a_name == nullptr ) {
+            err("Unable to resolve matched subroutine for read/write overloading, " + matched_subrout_name, loc);
+        }
+        if (ASRUtils::symbol_parent_symtab(a_name)->get_counter() != curr_scope->get_counter()) {
+            ADD_ASR_DEPENDENCIES_WITH_NAME(curr_scope, a_name, current_function_dependencies, s2c(al, matched_subrout_name));
+        }
+        ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
+        ASRUtils::set_absent_optional_arguments_to_null(a_args, subrout, al);
+        asr = ASRUtils::make_SubroutineCall_t_util(al, loc, a_name, sym,
+                                        a_args.p, a_args.n, nullptr, nullptr, false, false);
+    }
+}
+
+bool use_overloaded_file_read_write(std::string &read_write, Vec<ASR::expr_t*> args,
+                               SymbolTable* curr_scope, ASR::asr_t*& asr,
+                               Allocator &al, const Location& loc,
+                               SetChar& current_function_dependencies,
+                               SetChar& current_module_dependencies,
+                               const std::function<void (const std::string &, const Location &)> err) {
+    ASR::ttype_t *arg_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(args[0]));
+    bool found = false;
+    ASR::symbol_t* sym = curr_scope->resolve_symbol(read_write);
+    ASR::expr_t* expr_dt = nullptr;
+    if( sym == nullptr ) {
+        if( ASR::is_a<ASR::Struct_t>(*arg_type) ) {
+            ASR::StructType_t* arg_struct = ASR::down_cast<ASR::StructType_t>(
+                ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Struct_t>(arg_type)->m_derived_type));
+            sym = arg_struct->m_symtab->resolve_symbol(read_write);
+            expr_dt = args[0];
+        }
+    } else {
+        ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
+        ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
+        for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {
+            ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(gen_proc->m_procs[i]);
+            switch( proc->type ) {
+                case ASR::symbolType::Function: {
+                    process_overloaded_read_write_function(read_write, proc, args, arg_type,
+                        found, al, args[0]->base.loc, curr_scope,
+                        current_function_dependencies, current_module_dependencies, asr, sym,
+                        loc, expr_dt, err);
+                    break;
+                }
+                case ASR::symbolType::ClassProcedure: {
+                    ASR::ClassProcedure_t* class_proc = ASR::down_cast<ASR::ClassProcedure_t>(proc);
+                    ASR::symbol_t* proc_func = ASR::down_cast<ASR::ClassProcedure_t>(proc)->m_proc;
+                    process_overloaded_read_write_function(read_write, proc_func, args, arg_type,
+                        found, al, args[0]->base.loc, curr_scope,
+                        current_function_dependencies, current_module_dependencies, asr, proc_func, loc,
+                        expr_dt, err, class_proc->m_self_argument);
+                    break;
+                }
+                default: {
+                    err("Only functions and class procedures can be used for generic read/write statement, found " + std::to_string(proc->type), loc);
+                }
+            }
+        }
+    }
+    return found;
+}
+
 bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     ASR::cmpopType op, std::string& intrinsic_op_name,
                     SymbolTable* curr_scope, ASR::asr_t*& asr,

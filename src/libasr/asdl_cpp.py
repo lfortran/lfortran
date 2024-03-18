@@ -450,7 +450,7 @@ class ASRPassWalkVisitorVisitor(ASDLVisitor):
                 symtab_field_name = field.name
             if is_stmt_present and is_symtab_present:
                 break
-        if is_stmt_present and name not in ("Assignment", "ForAllSingle"):
+        if is_stmt_present and name not in ("Assignment", "ForAllSingle", "FileRead", "FileWrite"):
             self.emit("    %s_t& xx = const_cast<%s_t&>(x);" % (name, name), 1)
         self.used = False
 
@@ -562,7 +562,7 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
                 symtab_field_name = field.name
             if is_stmt_present and is_symtab_present:
                 break
-        if is_stmt_present and name not in ("Assignment", "ForAllSingle"):
+        if is_stmt_present and name not in ("Assignment", "ForAllSingle", "FileRead", "FileWrite"):
             self.emit("    %s_t& xx = const_cast<%s_t&>(x);" % (name, name), 1)
         self.used = False
 
