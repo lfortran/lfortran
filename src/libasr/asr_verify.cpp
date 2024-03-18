@@ -1124,7 +1124,7 @@ public:
     void visit_ArrayConstant(const ArrayConstant_t& x) {
         require(ASRUtils::is_array(x.m_type),
             "Type of ArrayConstant must be an array");
-        
+
         for (size_t i = 0; i < x.n_args; i++) {
             require(!ASR::is_a<ASR::ArrayConstant_t>(*x.m_args[i]),
                 "ArrayConstant cannot have ArrayConstant as its elements");

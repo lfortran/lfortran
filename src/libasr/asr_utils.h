@@ -4923,7 +4923,7 @@ inline void flatten_ArrayConstant(Allocator& al, ASR::expr_t** a_args, size_t n_
         if (ASR::is_a<ASR::ArrayConstant_t>(*a_args[i])) {
             ASR::ArrayConstant_t* a_arg = ASR::down_cast<ASR::ArrayConstant_t>(a_args[i]);
             flatten_ArrayConstant(al, a_arg->m_args, a_arg->n_args, new_args);
-        } else if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(a_args[i]))) { 
+        } else if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(a_args[i]))) {
             ASR::ArrayConstant_t* a_arg = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(a_args[i]));
             flatten_ArrayConstant(al, a_arg->m_args, a_arg->n_args, new_args);
         } else {

@@ -1135,8 +1135,8 @@ namespace Dshiftl {
         ASR::expr_t *kind = b.i(kind_arg, int32);
         ASR::expr_t *cast = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[2], ASR::cast_kindType::IntegerToInteger, return_type, nullptr));
         body.push_back(al, b.Assignment(result, b.i_BitLshift(args[0], cast, return_type)));
-        body.push_back(al, b.If(b.iEq(kind, four), 
-            {b.Assignment(result, b.i_BitOr(result, b.i_BitRshift(args[1], b.i_tSub(thirty_two, args[2], return_type), return_type), return_type))}, 
+        body.push_back(al, b.If(b.iEq(kind, four),
+            {b.Assignment(result, b.i_BitOr(result, b.i_BitRshift(args[1], b.i_tSub(thirty_two, args[2], return_type), return_type), return_type))},
             {b.Assignment(result, b.i_BitOr(result, b.i_BitRshift(args[1], b.i_tSub(sixty_four, args[2], return_type), return_type), return_type))}
             ));
 
@@ -1771,10 +1771,10 @@ namespace Ibits {
         * r = ibits(x, y, z)
         * r = ( x >> y ) & ( ( 1 << z ) - 1 )
         */
-        
+
         ASR::expr_t *one = b.i(1, arg_types[0]);
         body.push_back(al, b.Assignment(result, b.i_BitAnd(b.i_BitRshift(args[0], b.i2i(args[1], arg_types[0]), return_type), b.iSub(b.i_BitLshift(one, b.i2i(args[2], arg_types[0]), return_type), one), return_type)));
-        
+
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
@@ -2741,7 +2741,7 @@ namespace Popcnt {
 
     static ASR::expr_t *eval_Popcnt(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);           
+        int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
         int64_t val = static_cast<int64_t>(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n);
         int64_t mask1 = 1;
         int32_t mask2 = 1;
@@ -2750,8 +2750,8 @@ namespace Popcnt {
             count = kind == 4 ? compute_count(mask2, val) : compute_count(mask1, val);
         } else {
             while (val) {
-                count += val & 1; 
-                val >>= 1; 
+                count += val & 1;
+                val >>= 1;
             }
         }
         return make_ConstantWithType(make_IntegerConstant_t, count, t1, loc);
@@ -2791,7 +2791,7 @@ namespace Popcnt {
         auto count = declare("j", arg_types[0], Local);
         auto val = declare("k", arg_types[0], Local);
         auto mask = declare("l", arg_types[0], Local);
-        
+
         body.push_back(al, b.Assignment(count, b.i(0,arg_types[0])));
         body.push_back(al, b.Assignment(val, args[0]));
         body.push_back(al, b.Assignment(mask, b.i(1,arg_types[0])));
@@ -3202,7 +3202,7 @@ namespace ToLowerCase {
 
     static ASR::expr_t *eval_ToLowerCase(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        
+
         char* str = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
         std::transform(str, str + std::strlen(str), str, [](unsigned char c) { return std::tolower(c); });
         return make_ConstantWithType(make_StringConstant_t, str, t1, loc);
@@ -3234,7 +3234,7 @@ namespace ToLowerCase {
             print*, result
         end function
         */
-        
+
         ASR::expr_t* ln = ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr));
         body.push_back(al, b.Assignment(itr, b.i32(1)));
 
@@ -3400,8 +3400,8 @@ namespace SelectedCharKind {
         auto result = declare(fn_name, return_type, ReturnVar);
 
         ASR::expr_t* func_call_lowercase = b.CallIntrinsic(scope, {arg_types[0]},
-                                    {args[0]}, arg_types[0], 0, ToLowerCase::instantiate_ToLowerCase);     
-        ASR::expr_t *cond1 = b.Or(b.sEq(func_call_lowercase, b.StringConstant("ascii", arg_types[0])), 
+                                    {args[0]}, arg_types[0], 0, ToLowerCase::instantiate_ToLowerCase);
+        ASR::expr_t *cond1 = b.Or(b.sEq(func_call_lowercase, b.StringConstant("ascii", arg_types[0])),
                                 b.sEq(func_call_lowercase, b.StringConstant("default", arg_types[0])));
         ASR::expr_t *cond2 = b.sEq(func_call_lowercase, b.StringConstant("iso_10646", arg_types[0]));
 
@@ -3414,7 +3414,7 @@ namespace SelectedCharKind {
                 b.Assignment(result, b.i(-1, return_type))
             })
         }));
-        
+
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
@@ -3943,7 +3943,7 @@ namespace StringContainsSet {
                 }
             }
         }
-        
+
         ASR::ttype_t* return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
         return make_ConstantWithType(make_IntegerConstant_t, result, return_type, loc);
     }
@@ -4009,8 +4009,8 @@ namespace StringContainsSet {
         ASR::expr_t* str_len = b.StringLen(args[0]);
         ASR::expr_t* set_len = b.StringLen(args[1]);
         ASR::expr_t* string_section = b.StringSection(args[0], b.i_tSub(i, b.i(1, return_type), return_type), i);
-        ASR::expr_t* set_section = b.StringSection(args[1], b.i_tSub(j, b.i(1, return_type), return_type), j);       
-    
+        ASR::expr_t* set_section = b.StringSection(args[1], b.i_tSub(j, b.i(1, return_type), return_type), j);
+
         std::vector<ASR::stmt_t*> while_loop_body_inner;
         while_loop_body_inner.push_back(b.If(b.sEq(string_section, set_section), {
             b.Assignment(matched, b.bool32(1))
@@ -4026,7 +4026,7 @@ namespace StringContainsSet {
             b.Exit(nullptr)
         }, {}));
         while_loop_body.push_back(b.Assignment(i, b.i_tSub(i, b.i(1, return_type), return_type)));
-        
+
         std::vector<ASR::stmt_t*> while_loop_body_else;
         while_loop_body_else.push_back(b.Assignment(matched, b.bool32(0)));
         while_loop_body_else.push_back(b.Assignment(j, b.i(1, return_type)));
@@ -4036,7 +4036,7 @@ namespace StringContainsSet {
             b.Exit(nullptr)
         }, {}));
         while_loop_body_else.push_back(b.Assignment(i, b.i_tAdd(i, b.i(1, return_type), return_type)));
-        
+
         body.push_back(al, b.If(b.boolEq(args[2], b.bool32(1)), {
             b.Assignment(i, str_len),
             b.While(b.iGtE(i, b.i(1, return_type)), while_loop_body)
@@ -5096,7 +5096,7 @@ namespace Conjg {
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
-        return b.Call(f_sym, new_args, return_type, nullptr);
+        return b.Call(f_sym, new_args, ASRUtils::extract_type(return_type), nullptr);
     }
 
 } // namespace Conjg
