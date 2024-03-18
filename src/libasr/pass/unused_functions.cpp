@@ -45,6 +45,7 @@ public:
         for (size_t i=0; i<x.n_body; i++) {
             visit_stmt(*x.m_body[i]);
         }
+        visit_ttype(*x.m_function_signature);
     }
 
     void visit_GenericProcedure(const ASR::GenericProcedure_t &x) {
