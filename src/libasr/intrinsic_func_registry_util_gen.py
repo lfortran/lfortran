@@ -247,6 +247,30 @@ intrinsic_funcs_args = {
             "return": "logical"
         },
     ],
+    "Lgt": [
+        {
+            "args": [("char", "char")],
+            "return": "logical"
+        },
+    ],
+    "Llt": [
+        {
+            "args": [("char", "char")],
+            "return": "logical"
+        },
+    ],
+    "Lge": [
+        {
+            "args": [("char", "char")],
+            "return": "logical"
+        },
+    ],
+    "Lle": [
+        {
+            "args": [("char", "char")],
+            "return": "logical"
+        },
+    ],
     "Not": [
         {
             "args": [("int",)],

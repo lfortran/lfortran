@@ -61,6 +61,10 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Blt)
         INTRINSIC_NAME_CASE(Bge)
         INTRINSIC_NAME_CASE(Ble)
+        INTRINSIC_NAME_CASE(Lgt)
+        INTRINSIC_NAME_CASE(Llt)
+        INTRINSIC_NAME_CASE(Lge)
+        INTRINSIC_NAME_CASE(Lle)
         INTRINSIC_NAME_CASE(Exponent)
         INTRINSIC_NAME_CASE(Fraction)
         INTRINSIC_NAME_CASE(SetExponent)
@@ -249,6 +253,14 @@ namespace IntrinsicElementalFunctionRegistry {
             {&SetExponent::instantiate_SetExponent, &SetExponent::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ble),
             {&Ble::instantiate_Ble, &Ble::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Lgt),
+            {&Lgt::instantiate_Lgt, &Lgt::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Llt),
+            {&Llt::instantiate_Llt, &Llt::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Lge),
+            {&Lge::instantiate_Lge, &Lge::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Lle),
+            {&Lle::instantiate_Lle, &Lle::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Not),
             {&Not::instantiate_Not, &Not::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Iand),
@@ -506,6 +518,14 @@ namespace IntrinsicElementalFunctionRegistry {
             "bge"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ble),
             "ble"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Lgt),
+            "lgt"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Llt),
+            "llt"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Lge),
+            "lge"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Lle),
+            "lle"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Exponent),
             "exponent"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Fraction),
@@ -721,6 +741,10 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"blt", {&Blt::create_Blt, &Blt::eval_Blt}},
                 {"bge", {&Bge::create_Bge, &Bge::eval_Bge}},
                 {"ble", {&Ble::create_Ble, &Ble::eval_Ble}},
+                {"lgt", {&Lgt::create_Lgt, &Lgt::eval_Lgt}},
+                {"llt", {&Llt::create_Llt, &Llt::eval_Llt}},
+                {"lge", {&Lge::create_Lge, &Lge::eval_Lge}},
+                {"lle", {&Lle::create_Lle, &Lle::eval_Lle}},
                 {"exponent", {&Exponent::create_Exponent, &Exponent::eval_Exponent}},
                 {"fraction", {&Fraction::create_Fraction, &Fraction::eval_Fraction}},
                 {"set_exponent", {&SetExponent::create_SetExponent, &SetExponent::eval_SetExponent}},

@@ -555,14 +555,12 @@ class ASRBuilder {
     inline ASR::expr_t* iGt(ASR::expr_t* x, ASR::expr_t* y) {
         return EXPR(ASR::make_IntegerCompare_t(al, loc, x, ASR::cmpopType::Gt, y, logical, nullptr));
     }
-
     inline ASR::expr_t* ArraySize_1(ASR::expr_t* x, ASR::expr_t* dim) {
         return EXPR(make_ArraySize_t_util(al, loc, x, dim, int32, nullptr));
     }
     inline ASR::expr_t* ArraySize_2(ASR::expr_t* x, ASR::expr_t* dim, ASR::ttype_t* t) {
         return EXPR(make_ArraySize_t_util(al, loc, x, dim, t, nullptr));
     }
-
     inline ASR::expr_t* fEq(ASR::expr_t* x, ASR::expr_t* y) {
         return EXPR(ASR::make_RealCompare_t(al, loc, x, ASR::cmpopType::Eq, y, logical, nullptr));
     }
@@ -581,11 +579,9 @@ class ASRBuilder {
     inline ASR::expr_t* fNotEq(ASR::expr_t* x, ASR::expr_t* y) {
         return EXPR(ASR::make_RealCompare_t(al, loc, x, ASR::cmpopType::NotEq, y, logical, nullptr));
     }
-
     inline ASR::expr_t* boolEq(ASR::expr_t* x, ASR::expr_t* y) {
         return EXPR(ASR::make_LogicalCompare_t(al, loc, x, ASR::cmpopType::Eq, y, logical, nullptr));
     }
-
     inline ASR::expr_t* sEq(ASR::expr_t* x, ASR::expr_t* y) {
         return EXPR(ASR::make_StringCompare_t(al, loc, x, ASR::cmpopType::Eq, y, logical, nullptr));
     }
@@ -594,6 +590,15 @@ class ASRBuilder {
     }
     inline ASR::expr_t* sLt(ASR::expr_t* x, ASR::expr_t* y) {
         return EXPR(ASR::make_StringCompare_t(al, loc, x, ASR::cmpopType::Lt, y, logical, nullptr));
+    }
+    inline ASR::expr_t* sLtE(ASR::expr_t* x, ASR::expr_t* y) {
+        return EXPR(ASR::make_StringCompare_t(al, loc, x, ASR::cmpopType::LtE, y, logical, nullptr));
+    }
+    inline ASR::expr_t* sGt(ASR::expr_t* x, ASR::expr_t* y) {
+        return EXPR(ASR::make_StringCompare_t(al, loc, x, ASR::cmpopType::Gt, y, logical, nullptr));
+    }
+    inline ASR::expr_t* sGtE(ASR::expr_t* x, ASR::expr_t* y) {
+        return EXPR(ASR::make_StringCompare_t(al, loc, x, ASR::cmpopType::GtE, y, logical, nullptr));
     }
 
     ASR::expr_t *Gt(ASR::expr_t *left, ASR::expr_t *right) {
