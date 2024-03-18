@@ -7366,6 +7366,11 @@ public:
     }
 
     void visit_FileRead(const ASR::FileRead_t &x) {
+        if( x.m_overloaded ) {
+            this->visit_stmt(*x.m_overloaded);
+            return ;
+        }
+
         llvm::Value *unit_val, *iostat;
         bool is_string = false;
         if (x.m_unit == nullptr) {
@@ -7654,6 +7659,11 @@ public:
     }
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
+        if( x.m_overloaded ) {
+            this->visit_stmt(*x.m_overloaded);
+            return ;
+        }
+
         if (x.m_unit == nullptr) {
             handle_print(x);
             return;
