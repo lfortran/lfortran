@@ -467,6 +467,9 @@ public:
 
         ASR::expr_t *a_unit, *a_fmt, *a_iomsg, *a_iostat, *a_id, *a_separator, *a_end, *a_fmt_constant;
         a_unit = a_fmt = a_iomsg = a_iostat = a_id = a_separator = a_end = a_fmt_constant = nullptr;
+        ASR::stmt_t *overloaded_stmt = nullptr;
+        std::string read_write = "";
+        bool formatted = (n_args == 2);
         Vec<ASR::expr_t*> a_values_vec;
         a_values_vec.reserve(al, n_values);
 
@@ -615,6 +618,49 @@ public:
             this->visit_expr(*m_values[i]);
             a_values_vec.push_back(al, ASRUtils::EXPR(tmp));
         }
+
+        read_write = (_type == AST::stmtType::Write) ? "~write" : "~read";
+        read_write += (formatted) ? "_formatted" : "_unformatted";
+        Vec<ASR::expr_t*> overload_args;
+        overload_args.reserve(al, 1);
+        overload_args.push_back(al, a_values_vec[0]);
+        overload_args.push_back(al, a_unit);
+        if (formatted) {
+            if (a_fmt) { // iotype
+                overload_args.push_back(al, a_fmt);
+            } else {
+                ASR::ttype_t* char_type = ASRUtils::TYPE(
+                    ASR::make_Character_t(al, loc, 1, 12, nullptr));
+                ASR::expr_t* list_directed = ASRUtils::EXPR(
+                    ASR::make_StringConstant_t(al, loc, s2c(al, "LISTDIRECTED"), char_type));
+                overload_args.push_back(al, list_directed);
+            }
+            const Location& loc = read_write_stmt.base.loc;
+            ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            // v_list
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, 1);
+            ASR::dimension_t dim;
+            dim.loc = loc;
+            dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));
+            dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, int_type));
+            dims.push_back(al, dim);
+            ASR::ttype_t* arr_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, int_type, dims.p, dims.n,
+                ASR::array_physical_typeType::FixedSizeArray));
+            Vec<ASR::expr_t*> arr_args;
+            arr_args.reserve(al, 0);
+            overload_args.push_back(al, ASRUtils::EXPR(ASR::make_ArrayConstant_t(
+                    al, loc, arr_args.p, arr_args.n, arr_type, ASR::arraystorageType::ColMajor)));
+        }
+        overload_args.push_back(al, a_iostat);
+        overload_args.push_back(al, a_iomsg);
+        if( n_values > 0 && ASRUtils::use_overloaded_file_read_write(read_write, overload_args,
+            current_scope, asr, al, read_write_stmt.base.loc, current_function_dependencies,
+            current_module_dependencies,
+            [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }) ) {
+            overloaded_stmt = ASRUtils::STMT(asr);
+        }
+
         if (a_fmt && ASR::is_a<ASR::IntegerConstant_t>(*a_fmt)) {
             ASR::IntegerConstant_t* a_fmt_int = ASR::down_cast<ASR::IntegerConstant_t>(a_fmt);
             int64_t label = a_fmt_int->m_n;
@@ -648,10 +694,10 @@ public:
         if( _type == AST::stmtType::Write ) {
             tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
                 a_iomsg, a_iostat, a_id, a_values_vec.p,
-                a_values_vec.size(), a_separator, a_end);
+                a_values_vec.size(), a_separator, a_end, overloaded_stmt);
         } else if( _type == AST::stmtType::Read ) {
             tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
-                a_iomsg, a_iostat, a_id, a_values_vec.p, a_values_vec.size());
+                a_iomsg, a_iostat, a_id, a_values_vec.p, a_values_vec.size(), overloaded_stmt);
         }
 
         tmp_vec.push_back(tmp);

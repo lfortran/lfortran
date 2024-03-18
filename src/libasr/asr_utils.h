@@ -1998,6 +1998,13 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                                SetChar& /*current_module_dependencies*/,
                                const std::function<void (const std::string &, const Location &)> err);
 
+bool use_overloaded_file_read_write(std::string &read_write, Vec<ASR::expr_t*> args,
+                               SymbolTable* curr_scope, ASR::asr_t*& asr,
+                               Allocator &al, const Location& loc,
+                               SetChar& current_function_dependencies,
+                               SetChar& /*current_module_dependencies*/,
+                               const std::function<void (const std::string &, const Location &)> err);
+
 void set_intrinsic(ASR::symbol_t* sym);
 
 static inline bool is_pointer(ASR::ttype_t *x) {
