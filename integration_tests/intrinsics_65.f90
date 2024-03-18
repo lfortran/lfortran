@@ -17,9 +17,11 @@ a_02 = a_01(1, :)
 a_03 = a_01(2, :)
 b_02 = b_01(:, 3)
 
+print *, sum(matmul(a_01, b_01))
 if (sum(matmul(a_01, b_01)) /= -130358) error stop
 
 res_01 = matmul(a_01, b_02) + 2 * matmul(a_02, b_01)
+print *, size(res_01), res_01
 if (size(res_01) /= 4) error stop
 res_02 = matmul(a_01, c_01)
 

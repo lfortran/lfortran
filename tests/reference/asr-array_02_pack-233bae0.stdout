@@ -142,6 +142,58 @@
                             ()
                         )
                         ()
+                    )
+                    (Print
+                        [(Var 2 p)]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntrinsicArrayFunction
+                            Any
+                            [(ArrayPhysicalCast
+                                (IntegerCompare
+                                    (Var 2 p)
+                                    NotEq
+                                    (ArrayConstant
+                                        [(IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4))]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 4 (Integer 4)))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                )
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            )]
+                            0
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
                     )]
                 )
         })

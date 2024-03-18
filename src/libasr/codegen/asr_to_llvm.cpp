@@ -4875,24 +4875,19 @@ public:
                     is_target_data_only_array = true;
                 }
                 llvm::Value *target_data = nullptr, *value_data = nullptr, *llvm_size = nullptr;
+                llvm_size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1));
                 if( is_target_data_only_array ) {
                     target_data = target;
                     ASR::dimension_t* target_dims = nullptr;
                     int target_ndims = ASRUtils::extract_dimensions_from_ttype(target_type, target_dims);
-                    size_t target_size = 1;
                     data_only_copy = true;
                     for( int i = 0; i < target_ndims; i++ ) {
-                        int dim_length = -1;
-                        if( !ASRUtils::extract_value(ASRUtils::expr_value(target_dims[i].m_length), dim_length) ) {
+                        if( target_dims[i].m_length == nullptr ) {
                             data_only_copy = false;
                             break;
                         }
-                        target_size *= dim_length;
-                    }
-                    if( data_only_copy ) {
-                        llvm_size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
-                                                           llvm::APInt(32, target_size));
-                        data_only_copy = false;
+                        this->visit_expr_wrapper(target_dims[i].m_length, true);
+                        llvm_size = builder->CreateMul(llvm_size, tmp);
                     }
                 } else {
                     target_data = LLVM::CreateLoad(*builder, arr_descr->get_pointer_to_data(target));
@@ -4901,32 +4896,28 @@ public:
                     value_data = value;
                     ASR::dimension_t* value_dims = nullptr;
                     int value_ndims = ASRUtils::extract_dimensions_from_ttype(value_type, value_dims);
-                    size_t value_size = 1;
-                    data_only_copy = true;
-                    for( int i = 0; i < value_ndims; i++ ) {
-                        int dim_length = -1;
-                        if( !ASRUtils::extract_value(ASRUtils::expr_value(value_dims[i].m_length), dim_length) ) {
-                            data_only_copy = false;
-                            break;
+                    if( !data_only_copy ) {
+                        llvm_size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1));
+                        data_only_copy = true;
+                        for( int i = 0; i < value_ndims; i++ ) {
+                            if( value_dims[i].m_length == nullptr ) {
+                                data_only_copy = false;
+                                break;
+                            }
+                            this->visit_expr_wrapper(value_dims[i].m_length, true);
+                            llvm_size = builder->CreateMul(llvm_size, tmp);
                         }
-                        value_size *= dim_length;
-                    }
-                    if( data_only_copy ) {
-                        llvm_size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
-                                                           llvm::APInt(32, value_size));
-                        data_only_copy = false;
                     }
                 } else {
                     value_data = LLVM::CreateLoad(*builder, arr_descr->get_pointer_to_data(value));
                 }
-                if( llvm_size ) {
-                    llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(
-                        ASRUtils::type_get_past_allocatable(
-                            ASRUtils::type_get_past_pointer(
-                                ASRUtils::type_get_past_array(target_type))), module.get());
-                    arr_descr->copy_array_data_only(value_data, target_data, module.get(),
-                                                    llvm_data_type, llvm_size);
-                }
+                LCOMPILERS_ASSERT(data_only_copy);
+                llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(
+                    ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(
+                            ASRUtils::type_get_past_array(target_type))), module.get());
+                arr_descr->copy_array_data_only(value_data, target_data, module.get(),
+                                                llvm_data_type, llvm_size);
             } else if ( is_target_simd_array ) {
                 if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
                     int idx = 1;

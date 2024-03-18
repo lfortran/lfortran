@@ -874,7 +874,7 @@ namespace LCompilers {
             uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
             llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
             num_elements = builder->CreateMul(num_elements, llvm_size);
-            builder->CreateMemCpy(src, llvm::MaybeAlign(), dest, llvm::MaybeAlign(), num_elements);
+            builder->CreateMemCpy(dest, llvm::MaybeAlign(), src, llvm::MaybeAlign(), num_elements);
         }
 
     } // LLVMArrUtils

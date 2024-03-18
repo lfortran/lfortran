@@ -525,7 +525,7 @@ namespace LCompilers {
             }, nullptr);
         }
 
-        ASR::stmt_t* create_do_loop_helper_count_dim(Allocator &al, const Location &loc, std::vector<ASR::expr_t*> do_loop_variables, 
+        ASR::stmt_t* create_do_loop_helper_count_dim(Allocator &al, const Location &loc, std::vector<ASR::expr_t*> do_loop_variables,
                     std::vector<ASR::expr_t*> res_idx, ASR::stmt_t* inner_most_do_loop,
                     ASR::expr_t* c, ASR::expr_t* mask, ASR::expr_t* res, int curr_idx, int dim) {
             ASRUtils::ASRBuilder b(al, loc);
@@ -780,8 +780,8 @@ namespace LCompilers {
             Allocator& al, SymbolTable*& current_scope, ASR::stmt_t*& assign_stmt) {
             ASR::asr_t* expr_sym = ASR::make_Variable_t(al, expr->base.loc, current_scope, s2c(al, name), nullptr, 0,
                                                     ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
-                                                    ASRUtils::duplicate_type(al, ASRUtils::expr_type(expr)), nullptr, ASR::abiType::Source, ASR::accessType::Public,
-                                                    ASR::presenceType::Required, false);
+                                                    ASRUtils::duplicate_type(al, ASRUtils::extract_type(ASRUtils::expr_type(expr))),
+                                                    nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false);
             if( current_scope->get_symbol(name) == nullptr ) {
                 current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(expr_sym));
             } else {

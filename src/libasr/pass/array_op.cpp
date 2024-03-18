@@ -1357,8 +1357,12 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 ASR::ttype_t* sibling_type = ASRUtils::expr_type(operand);
                 ASR::dimension_t* m_dims; int ndims;
                 PassUtils::get_dim_rank(sibling_type, m_dims, ndims);
-                ASR::ttype_t* arr_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, x->m_type,
-                                        m_dims, ndims, ASR::array_physical_typeType::FixedSizeArray));
+                ASR::ttype_t* arr_type = ASRUtils::make_Array_t_util(
+                    al, loc, x->m_type, m_dims, ndims);
+                if( ASRUtils::extract_physical_type(arr_type) ==
+                    ASR::array_physical_typeType::DescriptorArray ) {
+                    arr_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, arr_type));
+                }
                 result_var = PassUtils::create_var(result_counter, res_prefix,
                                 loc, arr_type, al, current_scope);
             } else {
@@ -1419,6 +1423,12 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
     void replace_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t* x) {
         if(!ASRUtils::IntrinsicArrayFunctionRegistry::is_elemental(x->m_arr_intrinsic_id)) {
+            // ASR::BaseExprReplacer<ReplaceArrayOp>::replace_IntrinsicArrayFunction(x);
+            if( op_expr == &(x->base) ) {
+                op_dims = nullptr;
+                op_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                    ASRUtils::expr_type(*current_expr), op_dims);
+            }
             return ;
         }
         replace_intrinsic_function(x);
@@ -1509,8 +1519,12 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                         ASR::dimension_t* m_dims = nullptr; int ndims = 0;
                         PassUtils::get_dim_rank(sibling_type, m_dims, ndims);
                         LCOMPILERS_ASSERT(m_dims != nullptr);
-                        ASR::ttype_t* arr_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, ASRUtils::expr_type(func->m_return_var),
-                                                m_dims, ndims, ASR::array_physical_typeType::FixedSizeArray));
+                        ASR::ttype_t* arr_type = ASRUtils::make_Array_t_util(
+                            al, loc, ASRUtils::expr_type(func->m_return_var), m_dims, ndims);
+                        if( ASRUtils::extract_physical_type(arr_type) ==
+                            ASR::array_physical_typeType::DescriptorArray ) {
+                            arr_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, arr_type));
+                        }
                         result_var = PassUtils::create_var(result_counter, res_prefix,
                                         loc, arr_type, al, current_scope);
                     } else {
