@@ -1904,6 +1904,7 @@ public:
             SET_INTRINSIC_NAME(Kind, "kind");
             SET_INTRINSIC_NAME(StringContainsSet, "verify");
             SET_INTRINSIC_NAME(StringFindSet, "scan");
+            SET_INTRINSIC_NAME(SubstrIndex, "index");
             default : {
                 throw LCompilersException("IntrinsicFunction: `"
                     + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)

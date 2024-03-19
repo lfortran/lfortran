@@ -82,6 +82,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Repeat,
     StringContainsSet,
     StringFindSet,
+    SubstrIndex,
     Hypot,
     SelectedIntKind,
     SelectedRealKind,
@@ -4178,6 +4179,129 @@ namespace StringFindSet {
     }
 
 } // namespace StringFindSet
+
+namespace SubstrIndex {
+
+    static ASR::expr_t *eval_SubstrIndex(Allocator &al, const Location &loc,
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        char* string = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
+        char* substring = ASR::down_cast<ASR::StringConstant_t>(args[1])->m_s;
+        bool back = ASR::down_cast<ASR::LogicalConstant_t>(args[2])->m_value;
+        int64_t kind = ASR::down_cast<ASR::IntegerConstant_t>(args[3])->m_n;
+        size_t len = std::strlen(string);
+        int64_t result = 0;
+        if (back) {
+            for (size_t i=0; i<len; i++) {
+                if (std::strncmp(string+len-i-1, substring, std::strlen(substring)) == 0) {
+                    result = len-i;
+                    break;
+                }
+            }
+        } else {
+            for (size_t i=0; i<len; i++) {
+                if (std::strncmp(string+i, substring, std::strlen(substring)) == 0) {
+                    result = i+1;
+                    break;
+                }
+            }
+        }
+        
+        ASR::ttype_t* return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
+        return make_ConstantWithType(make_IntegerConstant_t, result, return_type, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_SubstrIndex(Allocator &al, const Location &loc,
+            SymbolTable* scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_index_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("str", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
+        fill_func_arg("substr", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
+        fill_func_arg("back", ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)));
+        fill_func_arg("kind", ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)));
+        auto idx = declare(fn_name, return_type, ReturnVar);
+        auto found = declare("found", arg_types[2], Local);
+        auto i = declare("i", ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), Local);
+        auto j = declare("j", ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), Local);
+        auto k = declare("k", ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), Local);
+        auto pos = declare("pos", ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), Local);
+
+        /*
+            function SubstrIndex_(string, substring, back, kind) result(r)
+                character(len=*) :: string
+                character(len=*) :: substring
+                logical, optional :: back
+                integer(kind) :: idx = 0
+                integer :: i, j, k, pos, len_str, len_sub, idx
+                logical :: found = .true.
+                i = 1
+                len_str = len(string)
+                len_sub = len(substring)
+
+                if (len_str < len_sub) then
+                    found = .false.
+                end if
+
+                do while (i < len_str .and. found)
+                    k = 0
+                    j = 1
+                    do while (j <= len_sub .and. found)
+                        pos = i + k
+                        if( string(pos:pos) /= substring(j:j) ) then
+                            found = .false.
+                        end if
+                        k = k + 1
+                        j = j + 1
+                    end do
+                    if (found) then
+                        idx = i
+                        if (back .eqv. .true.) then
+                            found = .true.
+                        else
+                            found = .false.
+                        end if
+                    else
+                        found = .true.
+                    end if
+                    i = i + 1
+                end do
+            end function
+        */
+        body.push_back(al, b.Assignment(idx, b.i(0, return_type)));
+        body.push_back(al, b.Assignment(i, b.i(1, return_type)));
+        body.push_back(al, b.Assignment(found, b.bool32(1)));   
+        body.push_back(al, b.If(b.iLt(b.StringLen(args[0]), b.StringLen(args[1])), {
+            b.Assignment(found, b.bool32(0))
+        }, {}));
+
+        body.push_back(al, b.While(b.And(b.iLt(i, b.StringLen(args[0])), b.boolEq(found, b.bool32(1))), {
+            b.Assignment(k, b.i(0, return_type)),
+            b.Assignment(j, b.i(1, return_type)),
+            b.While(b.And(b.iLtE(j, b.StringLen(args[1])), b.boolEq(found, b.bool32(1))), {
+                b.Assignment(pos, b.i_tAdd(i, k, return_type)),
+                b.If(b.sNotEq(
+                    b.StringSection(args[0], b.i_tSub(pos, b.i(1, return_type), return_type), pos), 
+                    b.StringSection(args[1], b.i_tSub(j, b.i(1, return_type), return_type), j)), {
+                        b.Assignment(found, b.bool32(0))
+                }, {}),
+                b.Assignment(j, b.i_tAdd(j, b.i(1, return_type), return_type)),
+                b.Assignment(k, b.i_tAdd(k, b.i(1, return_type), return_type)),
+            }),
+            b.If(b.boolEq(found, b.bool32(1)), {
+                b.Assignment(idx, i),
+                b.Assignment(found, args[2])
+            }, {
+                b.Assignment(found, b.bool32(1))
+            }),
+            b.Assignment(i, b.i_tAdd(i, b.i(1, return_type), return_type)),
+        }));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, idx, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace SubstrIndex
 
 namespace MinExponent {
 

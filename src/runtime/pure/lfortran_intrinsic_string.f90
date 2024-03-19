@@ -26,48 +26,6 @@ function trim(x) result(r)
     end do
 end function
 
-integer elemental function index(string_, substring_, back) result(idx)
-    character(len=*), intent(in) :: string_
-    character(len=*), intent(in) :: substring_
-    logical, optional, intent(in) :: back
-    integer :: i, j, k, pos, len_str, len_sub
-    logical :: found
-    found = .true.
-    idx = 0
-    i = 1
-    len_str = len(string_)
-    len_sub = len(substring_)
-
-    if (len_str < len_sub) then
-        found = .false.
-        return
-    end if
-
-    do while (i < len_str .and. found)
-        k = 0
-        j = 1
-        do while (j <= len_sub .and. found)
-            pos = i + k
-            if( string_(pos:pos) /= substring_(j:j) ) then
-                found = .false.
-            end if
-            k = k + 1
-            j = j + 1
-        end do
-        if (found) then
-            idx = i
-            if (back .eqv. .true.) then
-                found = .true.
-            else
-                found = .false.
-            end if
-        else
-            found = .true.
-        end if
-        i = i + 1
-    end do
-end function
-
 function new_line(c) result(r)
     character(len=1), intent(in) :: c
     character(len=1) :: r

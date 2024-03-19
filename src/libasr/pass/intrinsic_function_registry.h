@@ -83,6 +83,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Repeat)
         INTRINSIC_NAME_CASE(StringContainsSet)
         INTRINSIC_NAME_CASE(StringFindSet)
+        INTRINSIC_NAME_CASE(SubstrIndex)
         INTRINSIC_NAME_CASE(Range)
         INTRINSIC_NAME_CASE(Hypot)
         INTRINSIC_NAME_CASE(SelectedIntKind)
@@ -298,6 +299,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&StringContainsSet::instantiate_StringContainsSet, &StringContainsSet::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::StringFindSet),
             {&StringFindSet::instantiate_StringFindSet, &StringFindSet::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SubstrIndex),
+            {&SubstrIndex::instantiate_SubstrIndex, &SubstrIndex::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::MinExponent),
             {&MinExponent::instantiate_MinExponent, &MinExponent::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::MaxExponent),
@@ -576,7 +579,9 @@ namespace IntrinsicElementalFunctionRegistry {
         {static_cast<int64_t>(IntrinsicElementalFunctions::StringContainsSet),
             "Verify"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::StringFindSet),
-            "scan"},
+            "Scan"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SubstrIndex),
+            "Index"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::MinExponent),
             "minexponent"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::MaxExponent),
@@ -774,6 +779,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"repeat", {&Repeat::create_Repeat, &Repeat::eval_Repeat}},
                 {"verify", {&StringContainsSet::create_StringContainsSet, &StringContainsSet::eval_StringContainsSet}},
                 {"scan", {&StringFindSet::create_StringFindSet, &StringFindSet::eval_StringFindSet}},
+                {"index", {&SubstrIndex::create_SubstrIndex, &SubstrIndex::eval_SubstrIndex}},
                 {"minexponent", {&MinExponent::create_MinExponent, &MinExponent::eval_MinExponent}},
                 {"maxexponent", {&MaxExponent::create_MaxExponent, &MaxExponent::eval_MaxExponent}},
                 {"list.index", {&ListIndex::create_ListIndex, &ListIndex::eval_list_index}},
