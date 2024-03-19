@@ -50,6 +50,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     FlipSign,
     Mod,
     Trailz,
+    BesselJ0,
     Mvbits,
     Shiftr,
     Rshift,
@@ -2966,6 +2967,62 @@ namespace Trailz {
     }
 
 } // namespace Trailz
+
+namespace BesselJ0 {
+
+    static ASR::expr_t *eval_BesselJ0(Allocator &/*al*/, const Location &/*loc*/,
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
+        return nullptr;
+    }
+
+    static inline ASR::expr_t* instantiate_BesselJ0(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        std::string c_func_name;
+        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 4) {
+            c_func_name = "_lfortran_sbesselj0";
+        } else {
+            c_func_name = "_lfortran_dbesselj0";
+        }
+        std::string new_name = "_lcompilers_bessel_j0_"+ type_to_str_python(arg_types[0]);
+
+        declare_basic_variables(new_name);
+        if (scope->get_symbol(new_name)) {
+            ASR::symbol_t *s = scope->get_symbol(new_name);
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
+            return b.Call(s, new_args, expr_type(f->m_return_var));
+        }
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(new_name, return_type, ReturnVar);
+        {
+            SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
+            Vec<ASR::expr_t*> args_1;
+            {
+                args_1.reserve(al, 1);
+                ASR::expr_t *arg = b.Variable(fn_symtab_1, "x", arg_types[0],
+                    ASR::intentType::In, ASR::abiType::BindC, true);
+                args_1.push_back(al, arg);
+            }
+
+            ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
+                return_type, ASRUtils::intent_return_var, ASR::abiType::BindC, false);
+
+            SetChar dep_1; dep_1.reserve(al, 1);
+            Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
+            ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
+                body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
+            fn_symtab->add_symbol(c_func_name, s);
+            dep.push_back(al, s2c(al, c_func_name));
+            body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
+        }
+
+        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, new_symbol);
+        return b.Call(new_symbol, new_args, return_type);
+    }
+
+} // namespace BesselJ0
 
 namespace Mvbits {
 
