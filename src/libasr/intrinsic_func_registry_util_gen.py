@@ -4,7 +4,7 @@ import os
 intrinsic_funcs_args = {
     "Kind": [
         {
-            "args": [("int",), ("real",), ("bool",), ("char",)],
+            "args": [("int",), ("real",), ("bool",), ("char",), (("complex",))],
             "return": "int32"
         },
     ],
