@@ -4268,37 +4268,32 @@ namespace SubstrIndex {
         */
         body.push_back(al, b.Assignment(idx, b.i(0, return_type)));
         body.push_back(al, b.Assignment(i, b.i(1, return_type)));
-        body.push_back(al, b.Assignment(found, b.bool32(1)));
-        ASR::expr_t* str_len = b.StringLen(args[0]);
-        ASR::expr_t* sub_len = b.StringLen(args[1]);
-        ASR::expr_t* string_section = b.StringSection(args[0], b.i_tSub(pos, b.i(1, return_type), return_type), pos);
-        ASR::expr_t* substring_section = b.StringSection(args[1], b.i_tSub(j, b.i(1, return_type), return_type), j);       
-
-        body.push_back(al, b.If(b.iLt(str_len, sub_len), {
+        body.push_back(al, b.Assignment(found, b.bool32(1)));   
+        body.push_back(al, b.If(b.iLt(b.StringLen(args[0]), b.StringLen(args[1])), {
             b.Assignment(found, b.bool32(0))
         }, {}));
 
-        std::vector<ASR::stmt_t*> while_loop_body_inner;
-        while_loop_body_inner.push_back(b.Assignment(pos, b.i_tAdd(i, k, return_type)));
-        while_loop_body_inner.push_back(b.If(b.sNotEq(string_section, substring_section), {
-            b.Assignment(found, b.bool32(0))
-        }, {}));
-        while_loop_body_inner.push_back(b.Assignment(j, b.i_tAdd(j, b.i(1, return_type), return_type)));
-        while_loop_body_inner.push_back(b.Assignment(k, b.i_tAdd(k, b.i(1, return_type), return_type)));
-
-        std::vector<ASR::stmt_t*> while_loop_body;
-        while_loop_body.push_back(b.Assignment(k, b.i(0, return_type)));
-        while_loop_body.push_back(b.Assignment(j, b.i(1, return_type)));
-        while_loop_body.push_back(b.While(b.And(b.iLtE(j, sub_len), b.boolEq(found, b.bool32(1))), while_loop_body_inner));
-        while_loop_body.push_back(b.If(b.boolEq(found, b.bool32(1)), {
-            b.Assignment(idx, i),
-            b.Assignment(found, args[2])
-        }, {
-            b.Assignment(found, b.bool32(1))
+        body.push_back(al, b.While(b.And(b.iLt(i, b.StringLen(args[0])), b.boolEq(found, b.bool32(1))), {
+            b.Assignment(k, b.i(0, return_type)),
+            b.Assignment(j, b.i(1, return_type)),
+            b.While(b.And(b.iLtE(j, b.StringLen(args[1])), b.boolEq(found, b.bool32(1))), {
+                b.Assignment(pos, b.i_tAdd(i, k, return_type)),
+                b.If(b.sNotEq(
+                    b.StringSection(args[0], b.i_tSub(pos, b.i(1, return_type), return_type), pos), 
+                    b.StringSection(args[1], b.i_tSub(j, b.i(1, return_type), return_type), j)), {
+                        b.Assignment(found, b.bool32(0))
+                }, {}),
+                b.Assignment(j, b.i_tAdd(j, b.i(1, return_type), return_type)),
+                b.Assignment(k, b.i_tAdd(k, b.i(1, return_type), return_type)),
+            }),
+            b.If(b.boolEq(found, b.bool32(1)), {
+                b.Assignment(idx, i),
+                b.Assignment(found, args[2])
+            }, {
+                b.Assignment(found, b.bool32(1))
+            }),
+            b.Assignment(i, b.i_tAdd(i, b.i(1, return_type), return_type)),
         }));
-        while_loop_body.push_back(b.Assignment(i, b.i_tAdd(i, b.i(1, return_type), return_type)));
-                
-        body.push_back(al, b.While(b.And(b.iLt(i, str_len), b.boolEq(found, b.bool32(1))), while_loop_body));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, idx, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
