@@ -5129,6 +5129,9 @@ public:
                 Vec<ASR::expr_t*> args; args.reserve(al, 1);
                 args.push_back(al, arg);
                 array->m_args[i] = ASRUtils::expr_value(ASRUtils::EXPR(create_func(al, loc, args, diag)));
+                ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(array->m_type);
+                array->m_type = ASRUtils::make_Array_t_util(al, arr_type->base.base.loc, ASRUtils::expr_type(array->m_args[i]),
+                                arr_type->m_dims, arr_type->n_dims, ASR::abiType::Source, false, arr_type->m_physical_type, true, false);
             }
         }
     }
