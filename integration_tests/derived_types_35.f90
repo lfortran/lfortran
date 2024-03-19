@@ -19,7 +19,7 @@ module derived_types_35_my_mod
         integer, intent(out) :: iostat
         character(len=*), intent(inout) :: iomsg
 
-        print*, " I am called"
+        read(unit, *) mt%a
     end subroutine
 
 end module
@@ -35,7 +35,7 @@ program derived_types_35
     x%a = 10
     print *, x%a
 
-    open(newunit=io, form="formatted", file="file_derived_types_35.txt")
+    open(newunit=io, form="formatted", file="derived_types_35_file.txt")
     read(io, *, iostat=iostat, iomsg=iomsg) x
     close(io)
 
