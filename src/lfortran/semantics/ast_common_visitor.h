@@ -5118,22 +5118,43 @@ public:
         }
     }
 
-    void compiletime_broadcast_elemental_intrinsic(ASR::ArrayConstant_t* array, ASRUtils::create_intrinsic_function create_func,
-                                                  const Location& loc, Allocator& al) {
+    template<bool HasKind>
+    void compiletime_broadcast_elemental_intrinsic_impl(ASR::ArrayConstant_t* array, 
+                                                        ASRUtils::create_intrinsic_function create_func,
+                                                        const Location& loc, Allocator& al, 
+                                                        ASR::expr_t* kind = nullptr) {
         for (size_t i = 0; i < array->n_args; i++) {
             ASR::expr_t* arg = array->m_args[i];
             if (ASR::is_a<ASR::ArrayConstant_t>(*arg)) {
-                compiletime_broadcast_elemental_intrinsic(
-                    ASR::down_cast<ASR::ArrayConstant_t>(arg), create_func, loc, al);
+                // Recursive call with the same HasKind value
+                compiletime_broadcast_elemental_intrinsic_impl<HasKind>(
+                    ASR::down_cast<ASR::ArrayConstant_t>(arg), create_func, loc, al, kind);
             } else {
-                Vec<ASR::expr_t*> args; args.reserve(al, 1);
+                Vec<ASR::expr_t*> args;
+                args.reserve(al, HasKind ? 2 : 1);
                 args.push_back(al, arg);
+                if (HasKind) {
+                    args.push_back(al, kind);
+                }
                 array->m_args[i] = ASRUtils::expr_value(ASRUtils::EXPR(create_func(al, loc, args, diag)));
                 ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(array->m_type);
-                array->m_type = ASRUtils::make_Array_t_util(al, arr_type->base.base.loc, ASRUtils::expr_type(array->m_args[i]),
-                                arr_type->m_dims, arr_type->n_dims, ASR::abiType::Source, false, arr_type->m_physical_type, true, false);
+                array->m_type = ASRUtils::make_Array_t_util(al, arr_type->base.base.loc, 
+                                ASRUtils::expr_type(array->m_args[i]), arr_type->m_dims, 
+                                arr_type->n_dims, ASR::abiType::Source, false, arr_type->m_physical_type, true, false);
             }
         }
+    }
+
+    void compiletime_broadcast_elemental_intrinsic(ASR::ArrayConstant_t* array, 
+                                                ASRUtils::create_intrinsic_function create_func,
+                                                const Location& loc, Allocator& al) {
+        compiletime_broadcast_elemental_intrinsic_impl<false>(array, create_func, loc, al);
+    }
+
+    void compiletime_broadcast_elemental_intrinsic(ASR::ArrayConstant_t* array, ASR::expr_t* kind,
+                                                ASRUtils::create_intrinsic_function create_func,
+                                                const Location& loc, Allocator& al) {
+        compiletime_broadcast_elemental_intrinsic_impl<true>(array, create_func, loc, al, kind);
     }
 
     ASR::expr_t* fetch_arrayconstant(ASR::expr_t* var_value) {
@@ -5175,17 +5196,27 @@ public:
 
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
-                    if (args.size() == 1 &&
+                    // broadcast when either,
+                    // 1. the only argument is an array
+                    // 2. or arg.size() is 2 and first arg is an array, and second arg "kind" is
+                    //   distributed to each broadcasted call
+                    // 
+                    if ((args.size() == 2 || args.size() == 1) &&
+                        ASRUtils::all_args_evaluated(args, true) &&
                         var_name != "tiny" && var_name != "rank" &&
-                        ASRUtils::all_args_evaluated(args) &&
                         ( ASR::is_a<ASR::ArrayConstant_t>(*args[0]) ||
                             (ASRUtils::expr_value(args[0]) && ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(args[0])))
-                        )) {
+                        ))
+                    {
                         ASR::expr_t* arg = ASRUtils::expr_value(args[0]);
                         ASRUtils::ExprStmtDuplicator expr_duplicator(al);
                         ASR::expr_t* arg_ = expr_duplicator.duplicate_expr(arg);
                         ASR::ArrayConstant_t *array = ASR::down_cast<ASR::ArrayConstant_t>(arg_);
-                        compiletime_broadcast_elemental_intrinsic(array, create_func, x.base.base.loc, al);
+                        if (args.size() == 1) {
+                            compiletime_broadcast_elemental_intrinsic(array, create_func, x.base.base.loc, al);
+                        } else {
+                            compiletime_broadcast_elemental_intrinsic(array, args[1], create_func, x.base.base.loc, al);
+                        }
                         tmp = (ASR::asr_t*) array;
                     } else {
                         tmp = create_func(al, x.base.base.loc, args, diag);

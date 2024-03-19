@@ -1224,8 +1224,9 @@ static inline bool is_value_in_range(ASR::expr_t* start, ASR::expr_t* end, ASR::
 }
 
 // Returns true if all arguments are evaluated
-static inline bool all_args_evaluated(const Vec<ASR::expr_t*> &args) {
+static inline bool all_args_evaluated(const Vec<ASR::expr_t*> &args, bool ignore_null=false) {
     for (auto &a : args) {
+        if (ignore_null && !a) continue;
         ASR::expr_t* a_value = ASRUtils::expr_value(a);
         if( !is_value_constant(a_value) ) {
             return false;

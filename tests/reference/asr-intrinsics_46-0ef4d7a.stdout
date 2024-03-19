@@ -123,6 +123,31 @@
                                     Required
                                     .false.
                                 ),
+                            dp:
+                                (Variable
+                                    2
+                                    dp
+                                    []
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        Kind
+                                        [(RealConstant
+                                            0.000000
+                                            (Real 8)
+                                        )]
+                                        0
+                                        (Integer 4)
+                                        (IntegerConstant 8 (Integer 4))
+                                    )
+                                    (IntegerConstant 8 (Integer 4))
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
                             e:
                                 (Variable
                                     2
@@ -154,6 +179,27 @@
                                     ()
                                     Default
                                     (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            int_res:
+                                (Variable
+                                    2
+                                    int_res
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 8)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
                                     ()
                                     Source
                                     Public
@@ -487,6 +533,235 @@
                                 (Integer 8)
                                 (IntegerConstant 122 (Integer 8))
                             )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 int_res)
+                        (ArrayConstant
+                            [(IntegerConstant 32 (Integer 8))
+                            (IntegerConstant 99 (Integer 8))
+                            (IntegerConstant 100 (Integer 8))
+                            (IntegerConstant 101 (Integer 8))]
+                            (Array
+                                (Integer 8)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 4 (Integer 4)))]
+                                FixedSizeArray
+                            )
+                            ColMajor
+                        )
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (ArrayItem
+                                (Var 2 int_res)
+                                [(()
+                                (IntegerConstant 1 (Integer 4))
+                                ())]
+                                (Integer 8)
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (Cast
+                                (IntegerConstant 32 (Integer 4))
+                                IntegerToInteger
+                                (Integer 8)
+                                (IntegerConstant 32 (Integer 8))
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (IntegerCompare
+                            (IntrinsicElementalFunction
+                                Kind
+                                [(ArrayItem
+                                    (Var 2 int_res)
+                                    [(()
+                                    (IntegerConstant 1 (Integer 4))
+                                    ())]
+                                    (Integer 8)
+                                    ColMajor
+                                    ()
+                                )]
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (Var 2 dp)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (IntegerCompare
+                            (ArrayItem
+                                (Var 2 int_res)
+                                [(()
+                                (IntegerConstant 2 (Integer 4))
+                                ())]
+                                (Integer 8)
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (Cast
+                                (IntegerConstant 99 (Integer 4))
+                                IntegerToInteger
+                                (Integer 8)
+                                (IntegerConstant 99 (Integer 8))
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (IntegerCompare
+                            (IntrinsicElementalFunction
+                                Kind
+                                [(ArrayItem
+                                    (Var 2 int_res)
+                                    [(()
+                                    (IntegerConstant 2 (Integer 4))
+                                    ())]
+                                    (Integer 8)
+                                    ColMajor
+                                    ()
+                                )]
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (Var 2 dp)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (IntegerCompare
+                            (ArrayItem
+                                (Var 2 int_res)
+                                [(()
+                                (IntegerConstant 3 (Integer 4))
+                                ())]
+                                (Integer 8)
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (Cast
+                                (IntegerConstant 100 (Integer 4))
+                                IntegerToInteger
+                                (Integer 8)
+                                (IntegerConstant 100 (Integer 8))
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (IntegerCompare
+                            (IntrinsicElementalFunction
+                                Kind
+                                [(ArrayItem
+                                    (Var 2 int_res)
+                                    [(()
+                                    (IntegerConstant 3 (Integer 4))
+                                    ())]
+                                    (Integer 8)
+                                    ColMajor
+                                    ()
+                                )]
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (Var 2 dp)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (IntegerCompare
+                            (ArrayItem
+                                (Var 2 int_res)
+                                [(()
+                                (IntegerConstant 4 (Integer 4))
+                                ())]
+                                (Integer 8)
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (Cast
+                                (IntegerConstant 101 (Integer 4))
+                                IntegerToInteger
+                                (Integer 8)
+                                (IntegerConstant 101 (Integer 8))
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (IntegerCompare
+                            (IntrinsicElementalFunction
+                                Kind
+                                [(ArrayItem
+                                    (Var 2 int_res)
+                                    [(()
+                                    (IntegerConstant 4 (Integer 4))
+                                    ())]
+                                    (Integer 8)
+                                    ColMajor
+                                    ()
+                                )]
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (Var 2 dp)
                             (Logical 4)
                             ()
                         )
