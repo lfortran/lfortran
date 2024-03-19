@@ -90,6 +90,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     SelectedCharKind,
     Adjustl,
     Adjustr,
+    LenTrim,
     Ichar,
     Char,
     MinExponent,
@@ -3522,6 +3523,57 @@ namespace Adjustr {
 
 } // namespace Adjustr
 
+namespace LenTrim {
+
+    static ASR::expr_t *eval_LenTrim(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        char* str = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
+        size_t len = std::strlen(str);
+        for (int i = len - 1; i >= 0; i--) {
+            if (!std::isspace(str[i])) {
+                return make_ConstantWithType(make_IntegerConstant_t, i + 1, t1, loc);
+            }
+        }
+        return make_ConstantWithType(make_IntegerConstant_t, 0, t1, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_LenTrim(Allocator &al, const Location &loc,
+        SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+        Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_optimization_len_trim_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("str", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
+        auto result = declare("result", return_type, ReturnVar);
+
+        /*
+            function len_trim(string) result(r)
+                character(len=*), intent(in) :: string
+                r = len(string)
+                if (r/= 0) then
+                    do while(string(r:r) == " ")
+                        r = r - 1
+                        if (r == 0) exit
+                    end do
+                end if
+            end function
+        */
+
+        body.push_back(al, b.Assignment(result, b.StringLen(args[0])));
+        body.push_back(al, b.If(b.iNotEq(result, b.i32(0)), {
+            b.While(b.sEq(b.StringItem(args[0], result), b.StringConstant(" ", arg_types[0])), {
+                b.Assignment(result, b.i_tSub(result, b.i32(1), int32)),
+                b.If(b.iEq(result, b.i32(0)), {
+                    b.Exit(nullptr)
+                }, {})
+            })
+        }, {}));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace LenTrim
 
 namespace Ichar {
 

@@ -725,7 +725,6 @@ public:
         {"verify", {IntrinsicSignature({"string", "set", "back", "kind"}, 2, 4)}},
         {"scan", {IntrinsicSignature({"string", "set", "back", "kind"}, 2, 4)}},
         {"index", {IntrinsicSignature({"string", "substring", "back", "kind"}, 2, 4)}},
-        {"adjustl", {IntrinsicSignature({"string"}, 1, 1)}},
         {"hypot", {IntrinsicSignature({"x", "y"}, 2, 2)}},
         {"shiftr", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
         {"rshift", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
@@ -740,6 +739,7 @@ public:
         {"llt", {IntrinsicSignature({"string_A", "string_B"}, 2, 2)}},
         {"lge", {IntrinsicSignature({"string_A", "string_B"}, 2, 2)}},
         {"lle", {IntrinsicSignature({"string_A", "string_B"}, 2, 2)}},
+        {"len_trim", {IntrinsicSignature({"String", "Kind"}, 1, 2)}},
         {"iand", {IntrinsicSignature({"i", "j"}, 2, 2)}},
         {"ior", {IntrinsicSignature({"i", "j"}, 2, 2)}},
         {"ieor", {IntrinsicSignature({"i", "j"}, 2, 2)}},
@@ -759,9 +759,7 @@ public:
         {"ichar", {IntrinsicSignature({"C", "kind"}, 1, 2)}},
         {"char", {IntrinsicSignature({"I", "kind"}, 1, 2)}},
         {"set_exponent", {IntrinsicSignature({"X", "I"}, 2, 2)}},
-        {"rrspacing", {IntrinsicSignature({"X"}, 1, 1)}},
         {"dshiftl", {IntrinsicSignature({"i", "j", "shift"}, 3, 3)}},
-        {"random_number", {IntrinsicSignature({"r"}, 1, 1)}},
         {"mvbits", {IntrinsicSignature({"from", "frompos", "len", "to", "topos"}, 5, 5)}},
     };
 
@@ -4840,27 +4838,6 @@ public:
         return ASR::make_ComplexConstructor_t(al, x.base.base.loc, x_, y_, type, cc_expr);
     }
 
-    ASR::asr_t* create_Ichar(const AST::FuncCallOrArray_t& x) {
-        Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"C", "kind"};
-        handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "ichar");
-        ASR::expr_t *arg = args[0], *kind = args[1];
-        int64_t kind_value = handle_kind(kind);
-        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_value));
-        ASR::expr_t* ichar_value = nullptr;
-        ASR::expr_t* arg_value = ASRUtils::expr_value(arg);
-        if( arg_value ) {
-            std::string arg_str;
-            bool is_const_value = ASRUtils::is_value_constant(arg_value, arg_str);
-            if( is_const_value ) {
-                int64_t ascii_code = arg_str[0];
-                ichar_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
-                                ascii_code, type));
-            }
-        }
-        return ASR::make_Ichar_t(al, x.base.base.loc, arg, type, ichar_value);
-    }
-
     ASR::asr_t* create_Iachar(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"C", "kind"};
@@ -4880,90 +4857,6 @@ public:
             }
         }
         return ASR::make_Iachar_t(al, x.base.base.loc, arg, type, iachar_value);
-    }
-
-    ASR::asr_t* create_StringChr(const AST::FuncCallOrArray_t& x) {
-        Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"I", "kind"};
-        handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "char");
-        ASR::expr_t *arg = args[0];
-        if (!is_integer(*ASRUtils::expr_type(arg))) {
-            throw SemanticError("`x` argument of `char()` must be an integer",
-                x.base.base.loc);
-        }
-        ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Character_t(al,
-            x.base.base.loc, 1, 1, nullptr));
-        ASR::expr_t* char_value = nullptr; int64_t ascii_code;
-        if( ASRUtils::extract_value(arg, ascii_code) ) {
-            ascii_code = (uint8_t) ascii_code;
-            if (! (ascii_code >= 0 && ascii_code <= 255) ) {
-                throw SemanticError("'x' argument of char(x) must be in the "
-                    "range 0 <= x <= 255", x.base.base.loc);
-            }
-            std::string cvalue;
-            cvalue += char(ascii_code);
-             char_value = ASRUtils::EXPR(ASR::make_StringConstant_t(al,
-                x.base.base.loc, s2c(al, cvalue), type));
-        }
-        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
-            x.base.base.loc, compiler_options.po.default_integer_kind));
-        ImplicitCastRules::set_converted_value(al, x.base.base.loc, &arg, ASRUtils::expr_type(arg), int_type);
-        return ASR::make_StringChr_t(al, x.base.base.loc, arg, type, char_value);
-    }
-
-    ASR::asr_t* create_ScanVerify_util(const AST::FuncCallOrArray_t& x, std::string func_name) {
-        ASR::expr_t *string, *set, *back, *kind;
-        ASR::ttype_t *type;
-        string = nullptr, set = nullptr, back = nullptr;
-        type = nullptr, kind = nullptr;
-        Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"string", "set", "back", "kind"};
-        handle_intrinsic_node_args(x, args, kwarg_names, 2, 4, func_name);
-        string = args[0], set = args[1];
-        back = kind = nullptr;
-        if (args.size() >= 3) {
-            back = args[2];
-            if (args.size() == 4) {
-                kind = args[3];
-            }
-        }
-        int64_t kind_value = handle_kind(kind);
-        type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_value));
-        std::string function_name = func_name + "_kind" + std::to_string(kind_value);
-
-        ASR::call_arg_t string_arg, set_arg, back_arg;
-        string_arg.loc = string->base.loc;
-        string_arg.m_value = string;
-        set_arg.loc = set->base.loc;
-        set_arg.m_value = set;
-        back_arg.loc = x.base.base.loc;
-        if (back) {
-            back_arg.loc = back->base.loc;
-        }
-        back_arg.m_value = back;
-
-        Vec<ASR::call_arg_t> func_args;
-        func_args.reserve(al, 3);
-        func_args.push_back(al, string_arg);
-        func_args.push_back(al, set_arg);
-        func_args.push_back(al, back_arg);
-
-        ASR::symbol_t* function = current_scope->resolve_symbol(function_name);
-        if( !function ) {
-            function = resolve_intrinsic_function(x.base.base.loc, function_name);
-            ASR::Module_t* function_module = ASRUtils::get_sym_module(ASRUtils::symbol_get_past_external(function));
-            if( function_module ) {
-                char* module_name = function_module->m_name;
-                current_module_dependencies.push_back(al, module_name);
-            }
-        }
-        if (ASRUtils::symbol_parent_symtab(function)->get_counter() != current_scope->get_counter()) {
-            ADD_ASR_DEPENDENCIES_WITH_NAME(current_scope, function, current_function_dependencies, s2c(al, function_name));
-
-        }
-        ASRUtils::insert_module_dependency(function, al, current_module_dependencies);
-        return ASRUtils::make_FunctionCall_t_util(al, x.base.base.loc, function, nullptr, func_args.p,
-            func_args.size(), type, nullptr, nullptr);
     }
 
     ASR::asr_t* create_ArrayAll(const AST::FuncCallOrArray_t& x) {
@@ -5217,12 +5110,8 @@ public:
                 tmp = create_DCmplx(x);
             } else if( var_name == "reshape" ) {
                 tmp = create_ArrayReshape(x);
-            } else if( var_name == "ichar" ) {
-                tmp = create_Ichar(x);
             } else if( var_name == "iachar" ) {
                 tmp = create_Iachar(x);
-            } else if( var_name == "char" ) {
-                tmp = create_StringChr(x);
             } else if( var_name == "len" ) {
                 tmp = create_StringLen(x);
             } else if( var_name == "null" ) {

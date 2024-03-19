@@ -170,6 +170,13 @@ intrinsic_funcs_args = {
             "return": "character(-1)"
         }
     ],
+    "LenTrim": [
+        {
+            "args": [("char",)],
+            "return": "int32",
+            "kind_arg": True
+        }
+    ],
     "Aint": [
         {
             "args": [("real",)],
