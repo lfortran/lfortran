@@ -130,7 +130,7 @@ public:
     }
 
     ASR::stmt_t* create_formatstmt(std::vector<ASR::expr_t*> &print_body, ASR::StringFormat_t* format, const Location &loc, ASR::stmtType _type,
-        ASR::expr_t* unit = nullptr, ASR::expr_t* separator = nullptr, ASR::expr_t* end = nullptr) {
+        ASR::expr_t* unit = nullptr, ASR::expr_t* separator = nullptr, ASR::expr_t* end = nullptr, ASR::stmt_t* overloaded = nullptr) {
         Vec<ASR::expr_t*> body;
         body.reserve(al, print_body.size());
         for (size_t j=0; j<print_body.size(); j++) {
@@ -148,7 +148,7 @@ public:
                 print_args.p, print_args.size(), nullptr, nullptr));
         } else if (_type == ASR::stmtType::FileWrite) {
             statement = ASRUtils::STMT(ASR::make_FileWrite_t(al, loc, 0, unit,
-                nullptr, nullptr, nullptr, print_args.p, print_args.size(), separator, end, nullptr));
+                nullptr, nullptr, nullptr, print_args.p, print_args.size(), separator, end, overloaded));
         }
         print_body.clear();
         return statement;
@@ -333,7 +333,9 @@ public:
                         print_fixed_sized_array(format->m_args[i], write_body, x.base.base.loc);
                     } else {
                         if (write_body.size() > 0) {
-                            write_stmt = create_formatstmt(write_body, format, x.base.base.loc, ASR::stmtType::FileWrite, x.m_unit, x.m_separator, x.m_end);
+                            write_stmt = create_formatstmt(write_body, format,
+                                x.base.base.loc, ASR::stmtType::FileWrite, x.m_unit, x.m_separator,
+                                x.m_end, x.m_overloaded);
                             pass_result.push_back(al, write_stmt);
                         }
                         write_stmt = write_array_using_doloop(format->m_args[i], format, x.m_unit, x.base.base.loc);
@@ -345,7 +347,9 @@ public:
                 }
             }
             if (write_body.size() > 0) {
-                write_stmt = create_formatstmt(write_body, format, x.base.base.loc, ASR::stmtType::FileWrite, x.m_unit, x.m_separator, x.m_end);
+                write_stmt = create_formatstmt(write_body, format, x.base.base.loc,
+                    ASR::stmtType::FileWrite, x.m_unit, x.m_separator,
+                    x.m_end, x.m_overloaded);
                 pass_result.push_back(al, write_stmt);
             }
             return;
