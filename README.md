@@ -2,7 +2,7 @@
 
 [![project chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg)](https://lfortran.zulipchat.com/)
 
-LFortran is a modern open-source (BSD licensed) interactive Fortran compiler
+XLFortran is a modern open-source (BSD licensed) interactive Fortran compiler
 built on top of LLVM. It can execute user's code interactively to allow
 exploratory work (much like Python, MATLAB or Julia) as well as compile to
 binaries with the goal to run user's code on modern architectures such as
