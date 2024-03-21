@@ -492,6 +492,12 @@ intrinsic_funcs_args = {
            "return": "int32",
        },
    ],
+   "Poppar": [
+       {
+           "args": [("int",)],
+           "return": "int32",
+       },
+   ],
 
 }
 
