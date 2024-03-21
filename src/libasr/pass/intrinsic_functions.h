@@ -3042,6 +3042,15 @@ namespace Poppar {
             declare_basic_variables("_lcompilers_poppar_" + type_to_str_python(arg_types[0]));
         fill_func_arg("i", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
+        /*
+        function poppar(n) result(result)
+            integer, intent(in) :: n
+            integer :: result
+            integer :: count
+            count = popcnt(n)
+            result = mod(count, 2)
+        end function
+        */
         ASR::expr_t *func_call_poppar =Popcnt::POPCNT(b, args[0], return_type, scope);
         body.push_back(al, b.Assignment(result, Mod::MOD(b, func_call_poppar, b.i(2, return_type), scope)));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
