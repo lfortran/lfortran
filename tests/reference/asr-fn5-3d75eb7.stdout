@@ -12,16 +12,6 @@
                                     (SymbolTable
                                         3
                                         {
-                                            len_trim:
-                                                (ExternalSymbol
-                                                    3
-                                                    len_trim
-                                                    6 len_trim
-                                                    lfortran_intrinsic_string
-                                                    []
-                                                    len_trim
-                                                    Private
-                                                ),
                                             length:
                                                 (Variable
                                                     3
@@ -74,7 +64,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     present
-                                                    14 present
+                                                    13 present
                                                     lfortran_intrinsic_builtin
                                                     []
                                                     present
@@ -98,12 +88,11 @@
                                                                 3 trim
                                                                 ()
                                                                 [((Var 3 line))]
-                                                                (Character 1 -3 (FunctionCall
-                                                                    3 len_trim
-                                                                    ()
-                                                                    [((Var 3 line))]
+                                                                (Character 1 -3 (IntrinsicElementalFunction
+                                                                    LenTrim
+                                                                    [(Var 3 line)]
+                                                                    0
                                                                     (Integer 4)
-                                                                    ()
                                                                     ()
                                                                 ))
                                                                 ()
@@ -271,16 +260,6 @@
                                                     Public
                                                     Required
                                                     .false.
-                                                ),
-                                            len_trim:
-                                                (ExternalSymbol
-                                                    4
-                                                    len_trim
-                                                    6 len_trim
-                                                    lfortran_intrinsic_string
-                                                    []
-                                                    len_trim
-                                                    Private
                                                 ),
                                             present_in:
                                                 (Variable
@@ -478,15 +457,14 @@
                                                                 "KEYWORD"
                                                                 (Character 1 7 ())
                                                             ))]
-                                                            (Character 1 -3 (FunctionCall
-                                                                4 len_trim
-                                                                ()
-                                                                [((StringConstant
+                                                            (Character 1 -3 (IntrinsicElementalFunction
+                                                                LenTrim
+                                                                [(StringConstant
                                                                     "KEYWORD"
                                                                     (Character 1 7 ())
-                                                                ))]
+                                                                )]
+                                                                0
                                                                 (Integer 4)
-                                                                ()
                                                                 ()
                                                             ))
                                                             ()
@@ -614,10 +592,9 @@
                                                                     ColMajor
                                                                     ()
                                                                 ))]
-                                                                (Character 1 -3 (FunctionCall
-                                                                    4 len_trim
-                                                                    ()
-                                                                    [((ArrayItem
+                                                                (Character 1 -3 (IntrinsicElementalFunction
+                                                                    LenTrim
+                                                                    [(ArrayItem
                                                                         (Var 4 keywords)
                                                                         [(()
                                                                         (Var 4 i)
@@ -625,9 +602,9 @@
                                                                         (Character 1 -2 ())
                                                                         ColMajor
                                                                         ()
-                                                                    ))]
+                                                                    )]
+                                                                    0
                                                                     (Integer 4)
-                                                                    ()
                                                                     ()
                                                                 ))
                                                                 ()
@@ -728,10 +705,9 @@
                                                                     ColMajor
                                                                     ()
                                                                 ))]
-                                                                (Character 1 -3 (FunctionCall
-                                                                    4 len_trim
-                                                                    ()
-                                                                    [((ArrayItem
+                                                                (Character 1 -3 (IntrinsicElementalFunction
+                                                                    LenTrim
+                                                                    [(ArrayItem
                                                                         (Var 4 keywords)
                                                                         [(()
                                                                         (Var 4 i)
@@ -739,9 +715,9 @@
                                                                         (Character 1 -2 ())
                                                                         ColMajor
                                                                         ()
-                                                                    ))]
+                                                                    )]
+                                                                    0
                                                                     (Integer 4)
-                                                                    ()
                                                                     ()
                                                                 ))
                                                                 ()

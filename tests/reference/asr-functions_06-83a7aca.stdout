@@ -380,16 +380,6 @@
                                     (SymbolTable
                                         3
                                         {
-                                            len_trim:
-                                                (ExternalSymbol
-                                                    3
-                                                    len_trim
-                                                    8 len_trim
-                                                    lfortran_intrinsic_string
-                                                    []
-                                                    len_trim
-                                                    Private
-                                                ),
                                             r:
                                                 (Variable
                                                     3
@@ -460,12 +450,11 @@
                                             3 trim
                                             ()
                                             [((Var 3 s))]
-                                            (Character 1 -3 (FunctionCall
-                                                3 len_trim
-                                                ()
-                                                [((Var 3 s))]
+                                            (Character 1 -3 (IntrinsicElementalFunction
+                                                LenTrim
+                                                [(Var 3 s)]
+                                                0
                                                 (Integer 4)
-                                                ()
                                                 ()
                                             ))
                                             ()
