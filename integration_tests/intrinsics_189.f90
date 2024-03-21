@@ -1,5 +1,4 @@
 program intrinsics_189
-
     character(7) :: fortran = "FORTRAN"
     character(2) :: ao = "AO"
     character(3) :: c_plus_plus = "C++"
