@@ -1198,7 +1198,9 @@ LFORTRAN_API double _lfortran_dbesselj0( double x ) {
 	rs = rational_psqs( y2 );
 	f = ONE_DIV_SQRT_PI / sqrt(x);
 
-    __sincos(x, &si, &co);
+    // __sincos(x, &si, &co);
+    si = sin(x);
+    co = cos(x);
     return f * ( ( rc * (co+si) ) - ( (y*rs) * (si-co) ) );
 }
 
