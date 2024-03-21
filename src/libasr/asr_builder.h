@@ -287,6 +287,10 @@ class ASRBuilder {
         return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Add, right, t, nullptr));
     }
 
+    inline ASR::expr_t* r_tAdd(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
+        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Add, right, t, nullptr));
+    }
+
     inline ASR::expr_t* iSub(ASR::expr_t* left, ASR::expr_t* right) {
         return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Sub, right, ASRUtils::int32, nullptr));
     }
