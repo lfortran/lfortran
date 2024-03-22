@@ -5155,12 +5155,12 @@ public:
             }
             // Call the intrinsic function for the current combination of arguments
             result_array->m_args[i] = ASRUtils::expr_value(ASRUtils::EXPR(create_func(al, loc, intrinsic_args, diag)));
-            ASR::Array_t* result_arr_type = ASR::down_cast<ASR::Array_t>(result_array->m_type);
-            result_array->m_type = ASRUtils::make_Array_t_util(al, result_arr_type->base.base.loc,
-                                        ASRUtils::expr_type(result_array->m_args[i]), result_arr_type->m_dims,
-                                        result_arr_type->n_dims, ASR::abiType::Source, false,
-                                        result_arr_type->m_physical_type);
         }
+        ASR::Array_t* result_arr_type = ASR::down_cast<ASR::Array_t>(result_array->m_type);
+        result_array->m_type = ASRUtils::make_Array_t_util(al, result_arr_type->base.base.loc,
+                                    ASRUtils::expr_type(result_array->m_args[0]), result_arr_type->m_dims,
+                                    result_arr_type->n_dims, ASR::abiType::Source, false,
+                                    result_arr_type->m_physical_type);
     }
 
     std::vector<int> find_array_indices_in_args(const Vec<ASR::expr_t*>& args) {
