@@ -1,0 +1,5 @@
+semantic error: Keyword argument not found 'z'
+ --> tests/errors/kwarg_not_found.f90:4:23
+  |
+4 |     call my_func(y=1, z=2)
+  |                       ^^^ 'z' keyword argument not found.

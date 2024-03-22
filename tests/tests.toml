@@ -3873,3 +3873,19 @@ asr = true
 [[test]]
 filename = "errors/more_kwargs_than_acceptable_to_subroutine.f90"
 asr = true
+
+[[test]]
+filename = "errors/kwarg_not_found.f90"
+asr = true
+
+[[test]]
+filename = "errors/kwarg_not_found_with_more_args.f90"
+asr = true
+
+[[test]]
+filename = "errors/kwarg_already_specified_as_arg.f90"
+asr = true
+
+[[test]]
+filename = "errors/kwarg_already_specified_as_kwarg.f90"
+asr = true

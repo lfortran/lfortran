@@ -1,0 +1,5 @@
+semantic error: Keyword argument is already specified as a non-keyword argument
+ --> tests/errors/kwarg_already_specified_as_arg.f90:4:26
+  |
+4 |     call my_func(1, y=1, x=2)
+  |                          ^^^ 'x' keyword argument is already specified.

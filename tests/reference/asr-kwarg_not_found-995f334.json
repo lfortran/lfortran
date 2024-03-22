@@ -1,0 +1,13 @@
+{
+    "basename": "asr-kwarg_not_found-995f334",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/kwarg_not_found.f90",
+    "infile_hash": "e425b8e0e51bb23a9f7abb982820a17726664e14bb7264cbafddacdc",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-kwarg_not_found-995f334.stderr",
+    "stderr_hash": "3e0f08fb2fa20ffa6e580f47c2ce8864f87f08e1c09ff94dc3268429",
+    "returncode": 2
+}

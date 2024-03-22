@@ -1,0 +1,13 @@
+{
+    "basename": "asr-kwarg_already_specified_as_kwarg-a7f4f9d",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/kwarg_already_specified_as_kwarg.f90",
+    "infile_hash": "4abb577a4de36b6f62683318cb9b2e5cdeadbc6fec1e667eac9bf547",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-kwarg_already_specified_as_kwarg-a7f4f9d.stderr",
+    "stderr_hash": "f39cbb761602f76bdce3156b1ff18a29c23020e80d16e86d09ca12f1",
+    "returncode": 2
+}
