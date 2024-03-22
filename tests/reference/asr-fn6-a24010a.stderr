@@ -1,0 +1,5 @@
+ASR verify pass error: Unexpected args, LenTrim expects (char) as arguments
+ --> tests/fn6.f90:1:1
+  |
+1 | module fn6
+  | ^ failed here

@@ -34,16 +34,6 @@
                                     Required
                                     .false.
                                 ),
-                            len_trim:
-                                (ExternalSymbol
-                                    2
-                                    len_trim
-                                    4 len_trim
-                                    lfortran_intrinsic_string
-                                    []
-                                    len_trim
-                                    Private
-                                ),
                             message:
                                 (Variable
                                     2
@@ -155,12 +145,11 @@
                             2 trim
                             ()
                             [((Var 2 num))]
-                            (Character 1 -3 (FunctionCall
-                                2 len_trim
-                                ()
-                                [((Var 2 num))]
+                            (Character 1 -3 (IntrinsicElementalFunction
+                                LenTrim
+                                [(Var 2 num)]
+                                0
                                 (Integer 4)
-                                ()
                                 ()
                             ))
                             ()
@@ -204,12 +193,11 @@
                                 (IntegerConstant 0 (Integer 4))
                             )
                             (IntegerBinOp
-                                (FunctionCall
-                                    2 len_trim
-                                    ()
-                                    [((Var 2 num))]
+                                (IntrinsicElementalFunction
+                                    LenTrim
+                                    [(Var 2 num)]
+                                    0
                                     (Integer 4)
-                                    ()
                                     ()
                                 )
                                 Add
@@ -220,12 +208,11 @@
                             (IntegerConstant 1 (Integer 4))
                             (Character 1 -3 (IntegerBinOp
                                 (IntegerBinOp
-                                    (FunctionCall
-                                        2 len_trim
-                                        ()
-                                        [((Var 2 num))]
+                                    (IntrinsicElementalFunction
+                                        LenTrim
+                                        [(Var 2 num)]
+                                        0
                                         (Integer 4)
-                                        ()
                                         ()
                                     )
                                     Add

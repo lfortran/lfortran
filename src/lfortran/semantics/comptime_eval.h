@@ -48,7 +48,6 @@ struct IntrinsicProcedures {
     const std::string m_math2 = "lfortran_intrinsic_math2";
     const std::string m_math3 = "lfortran_intrinsic_math3";
     const std::string m_string = "lfortran_intrinsic_string";
-    const std::string m_bit = "lfortran_intrinsic_bit";
     const std::string m_ieee_arithmetic = "lfortran_intrinsic_ieee_arithmetic";
     const std::string m_iso_c_binding = "lfortran_intrinsic_iso_c_binding";
     const std::string m_custom = "lfortran_intrinsic_custom";
@@ -89,19 +88,15 @@ struct IntrinsicProcedures {
 
             // These will fail if used in symbol table visitor, but will be
             // left unevaluated in body visitor
-            {"trim", {m_string, &not_implemented, false}},
-            {"len_trim", {m_string, &not_implemented, false}},
             {"new_line", {m_string, &eval_new_line, false}},
 
             // Subroutines
             {"cpu_time", {m_math, &not_implemented, false}},
             {"bit_size", {m_builtin, &eval_bit_size, false}},
-            {"mvbits", {m_bit, &not_implemented, true}},
             {"achar", {m_builtin, &eval_achar, true}},
             {"move_alloc", {m_builtin, &not_implemented, false}},
             {"present", {m_builtin, &not_implemented, false}},
             {"system_clock", {m_math, &not_implemented, false}},
-            {"random_number", {m_math, &not_implemented, false}},
             {"srand", {m_math, &not_implemented, false}},
             {"date_and_time", {m_string, &not_implemented, false}},
 
