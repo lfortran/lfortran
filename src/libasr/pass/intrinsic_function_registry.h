@@ -92,7 +92,8 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(SelectedCharKind)
         INTRINSIC_NAME_CASE(Adjustl)
         INTRINSIC_NAME_CASE(Adjustr)
-        INTRINSIC_NAME_CASE(LenTrim)
+        INTRINSIC_NAME_CASE(StringLenTrim)
+        INTRINSIC_NAME_CASE(StringTrim)
         INTRINSIC_NAME_CASE(Ichar)
         INTRINSIC_NAME_CASE(Char)
         INTRINSIC_NAME_CASE(MinExponent)
@@ -234,8 +235,10 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Adjustl::instantiate_Adjustl, &Adjustl::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Adjustr),
             {&Adjustr::instantiate_Adjustr, &Adjustr::verify_args}},
-        {static_cast<int64_t>(IntrinsicElementalFunctions::LenTrim),
-            {&LenTrim::instantiate_LenTrim, &LenTrim::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::StringLenTrim),
+            {&StringLenTrim::instantiate_StringLenTrim, &StringLenTrim::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::StringTrim),
+            {&StringTrim::instantiate_StringTrim, &StringTrim::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ichar),
             {&Ichar::instantiate_Ichar, &Ichar::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Char),
@@ -517,8 +520,10 @@ namespace IntrinsicElementalFunctionRegistry {
             "adjustl"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Adjustr),
             "adjustr"},
-        {static_cast<int64_t>(IntrinsicElementalFunctions::LenTrim),
+        {static_cast<int64_t>(IntrinsicElementalFunctions::StringLenTrim),
             "len_trim"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::StringTrim),
+            "trim"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ichar),
             "ichar"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Char),
@@ -809,7 +814,8 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"max0", {&Max::create_Max, &Max::eval_Max}},
                 {"adjustl", {&Adjustl::create_Adjustl, &Adjustl::eval_Adjustl}},
                 {"adjustr", {&Adjustr::create_Adjustr, &Adjustr::eval_Adjustr}},
-                {"len_trim", {&LenTrim::create_LenTrim, &LenTrim::eval_LenTrim}},
+                {"len_trim", {&StringLenTrim::create_StringLenTrim, &StringLenTrim::eval_StringLenTrim}},
+                {"trim", {&StringTrim::create_StringTrim, &StringTrim::eval_StringTrim}},
                 {"ichar", {&Ichar::create_Ichar, &Ichar::eval_Ichar}},
                 {"char", {&Char::create_Char, &Char::eval_Char}},
                 {"min0", {&Min::create_Min, &Min::eval_Min}},

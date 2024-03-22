@@ -90,7 +90,8 @@ enum class IntrinsicElementalFunctions : int64_t {
     SelectedCharKind,
     Adjustl,
     Adjustr,
-    LenTrim,
+    StringLenTrim,
+    StringTrim,
     Ichar,
     Char,
     MinExponent,
@@ -3523,9 +3524,9 @@ namespace Adjustr {
 
 } // namespace Adjustr
 
-namespace LenTrim {
+namespace StringLenTrim {
 
-    static ASR::expr_t *eval_LenTrim(Allocator &al, const Location &loc,
+    static ASR::expr_t *eval_StringLenTrim(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         char* str = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
         size_t len = std::strlen(str);
@@ -3537,7 +3538,7 @@ namespace LenTrim {
         return make_ConstantWithType(make_IntegerConstant_t, 0, t1, loc);
     }
 
-    static inline ASR::expr_t* instantiate_LenTrim(Allocator &al, const Location &loc,
+    static inline ASR::expr_t* instantiate_StringLenTrim(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_optimization_len_trim_" + type_to_str_python(arg_types[0]));
@@ -3572,8 +3573,55 @@ namespace LenTrim {
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
+    static inline ASR::expr_t* StringLenTrim(ASRBuilder &b, ASR::expr_t* a, ASR::ttype_t *return_type, SymbolTable* scope) {
+        return b.CallIntrinsic(scope, {expr_type(a)}, {a}, return_type, 0, StringLenTrim::instantiate_StringLenTrim);
+    }
 
-} // namespace LenTrim
+} // namespace StringLenTrim
+
+namespace StringTrim {
+
+    static ASR::expr_t *eval_StringTrim(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        char* str = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
+        size_t len = strlen(str);
+        if (len > 0) {
+            char* endptr = str + len - 1;
+            while (endptr >= str && std::isspace(*endptr)) {
+                *endptr = '\0';
+                --endptr;
+            }
+        }
+        return make_ConstantWithType(make_StringConstant_t, str, t1, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_StringTrim(Allocator &al, const Location &loc,
+        SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+        Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_optimization_trim_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("str", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
+        ASR::expr_t* func_call_lentrim = StringLenTrim::StringLenTrim(b, args[0], int32, scope);
+        return_type = TYPE(ASR::make_Character_t(al, loc, 1, -3, func_call_lentrim));
+        auto result = declare("result", return_type, ReturnVar);
+
+        /*
+            function trim(string) result(r)
+                character(len=*), intent(in) :: string
+                l = len_trim(string)
+                r = x(1:l)
+            end function
+        */
+        
+        body.push_back(al, b.Assignment(result, b.StringSection(args[0], b.i32(0), func_call_lentrim)));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        return_type = TYPE(ASR::make_Character_t(al, loc, 1, -3, EXPR(ASR::make_StringLen_t(al, loc, new_args[0].m_value, int32, nullptr))));
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace StringTrim
 
 namespace Ichar {
 
