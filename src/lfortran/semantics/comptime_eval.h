@@ -88,7 +88,6 @@ struct IntrinsicProcedures {
 
             // These will fail if used in symbol table visitor, but will be
             // left unevaluated in body visitor
-            {"trim", {m_string, &not_implemented, false}},
             {"new_line", {m_string, &eval_new_line, false}},
 
             // Subroutines
