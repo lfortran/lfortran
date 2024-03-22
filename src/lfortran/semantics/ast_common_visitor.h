@@ -5130,7 +5130,8 @@ public:
         const Location& loc,
         Allocator& al)
     {
-        size_t max_array_size = ASR::down_cast<ASR::ArrayConstant_t>(args[array_indices_in_args[0]])->n_args;
+        ASR::expr_t* first_arg_ = ASRUtils::expr_value(args[array_indices_in_args[0]]);
+        size_t max_array_size = ASR::down_cast<ASR::ArrayConstant_t>(first_arg_)->n_args;
 
         for (size_t i = 0; i < max_array_size; i++) {
             Vec<ASR::expr_t*> intrinsic_args;
@@ -5139,7 +5140,9 @@ public:
             for (size_t j = 0; j < args.size(); j++) {
                 if (std::find(array_indices_in_args.begin(), array_indices_in_args.end(), j) != array_indices_in_args.end()) {
                     // Current argument is an array
-                    ASR::ArrayConstant_t* array_arg = ASR::down_cast<ASR::ArrayConstant_t>(args[j]);
+
+                    ASR::expr_t* arg_ = ASRUtils::expr_value(args[j]);
+                    ASR::ArrayConstant_t* array_arg = ASR::down_cast<ASR::ArrayConstant_t>(arg_);
                     if (max_array_size != array_arg->n_args) {
                         throw SemanticError("Different shape of arguments for broadcasting " +
                             std::to_string(max_array_size) + " and " + std::to_string(array_arg->n_args), loc);
@@ -5164,7 +5167,11 @@ public:
         std::vector<int> array_indices_in_args;
 
         for (size_t i = 0; i < args.size(); i++) {
-            if (args[i] && ASR::is_a<ASR::ArrayConstant_t>(*args[i])) {
+            if (!args[i]) {
+                continue;
+            }
+            ASR::expr_t* arg = ASRUtils::expr_value(args[i]);
+            if (arg && ASR::is_a<ASR::ArrayConstant_t>(*arg)) {
                 array_indices_in_args.push_back(i);
             }
         }
