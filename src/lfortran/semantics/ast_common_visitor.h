@@ -5121,6 +5121,11 @@ public:
     /**
      * Broadcast `create_func` to elements of `args`, out of which atleast
      * one element is an array (i.e not a scalar)
+     * 
+     * e.g. of broadcasting:
+     * min([-1, 2, 3], 2, 5, [4, 4, 5], [5, -8, 7]) is broadcasted as:
+     * [min(-1, 2, 5, 4, 5), min(2, 2, 5, 4, -8), min(3, 2, 5, 5, 7)]
+     * 
     */
     void compiletime_broadcast_elemental_intrinsic(
         Vec<ASR::expr_t*> args,
