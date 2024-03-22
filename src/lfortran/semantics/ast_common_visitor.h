@@ -5119,7 +5119,7 @@ public:
     }
 
     /**
-     * Broadcast "create_func" to elements of 'args', out of which atleast
+     * Broadcast `create_func` to elements of `args`, out of which atleast
      * one element is an array (i.e not a scalar)
     */
     void compiletime_broadcast_elemental_intrinsic(
@@ -5140,7 +5140,10 @@ public:
                 if (std::find(array_indices_in_args.begin(), array_indices_in_args.end(), j) != array_indices_in_args.end()) {
                     // Current argument is an array
                     ASR::ArrayConstant_t* array_arg = ASR::down_cast<ASR::ArrayConstant_t>(args[j]);
-                    LCOMPILERS_ASSERT(max_array_size == array_arg->n_args);
+                    if (max_array_size != array_arg->n_args) {
+                        throw SemanticError("Different shape of arguments for broadcasting " +
+                            std::to_string(max_array_size) + " and " + std::to_string(array_arg->n_args), loc);
+                    }
                     intrinsic_args.push_back(al, array_arg->m_args[i]);
                 } else {
                     // Current argument is a scalar, use as is
