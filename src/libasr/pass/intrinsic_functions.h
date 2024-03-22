@@ -76,6 +76,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Ibset,
     Btest,
     Ibits,
+    Logical,
     Leadz,
     ToLowerCase,
     Digits,
@@ -1742,6 +1743,30 @@ namespace Ibits {
     }
 
 } // namespace Ibits
+
+namespace Logical {
+
+    static ASR::expr_t *eval_Logical(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        bool result = ASR::down_cast<ASR::LogicalConstant_t>(args[0])->m_value;
+        return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_Logical(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_optimization_logical_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(fn_name, logical, ReturnVar);
+        body.push_back(al, b.Assignment(result, args[0]));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace Logical
 
 namespace Aint {
 
