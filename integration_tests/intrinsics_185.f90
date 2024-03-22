@@ -6,6 +6,7 @@ program intrinsics_185
     character(3) :: c_plus_plus = "C++"
     character(6) :: fortr = "FORTR"
     character(1) :: n = "N"
+    integer :: arr2(2)
   
     print*, verify("FORTRAN", "AF", .true., 4)    
     if ( verify("FORTRAN", "AF", .true., 4) /= 7 ) error stop   
@@ -28,5 +29,13 @@ program intrinsics_185
     if ( verify(fortr, n, .true., 8) /= 6_8 ) error stop
     print*, verify(fortran, fortran)  
     if ( verify(fortran, fortran) /= 0 ) error stop 
-  
+
+    ! make sure that broadcasting is done correctly for `verify`
+    arr2 = verify(["FORTRAN", "GORTRAN"], ["FO", "GR"])
+    if (arr2(1) /= 3) error stop
+    if (arr2(2) /= 2) error stop
+
+    arr2 = verify(["FORTRAN", "GORTRAN"], ["FN", "NA"], .TRUE.)
+    if (arr2(1) /= 6) error stop
+    if (arr2(2) /= 5) error stop
 end program
