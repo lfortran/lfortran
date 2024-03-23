@@ -5118,22 +5118,69 @@ public:
         }
     }
 
-    void compiletime_broadcast_elemental_intrinsic(ASR::ArrayConstant_t* array, ASRUtils::create_intrinsic_function create_func,
-                                                  const Location& loc, Allocator& al) {
-        for (size_t i = 0; i < array->n_args; i++) {
-            ASR::expr_t* arg = array->m_args[i];
-            if (ASR::is_a<ASR::ArrayConstant_t>(*arg)) {
-                compiletime_broadcast_elemental_intrinsic(
-                    ASR::down_cast<ASR::ArrayConstant_t>(arg), create_func, loc, al);
-            } else {
-                Vec<ASR::expr_t*> args; args.reserve(al, 1);
-                args.push_back(al, arg);
-                array->m_args[i] = ASRUtils::expr_value(ASRUtils::EXPR(create_func(al, loc, args, diag)));
-                ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(array->m_type);
-                array->m_type = ASRUtils::make_Array_t_util(al, arr_type->base.base.loc, ASRUtils::expr_type(array->m_args[i]),
-                                arr_type->m_dims, arr_type->n_dims, ASR::abiType::Source, false, arr_type->m_physical_type, true, false);
+    /**
+     * Broadcast `create_func` to elements of `args`, out of which atleast
+     * one element is an array (i.e not a scalar)
+     * 
+     * e.g. of broadcasting:
+     * min([-1, 2, 3], 2, 5, [4, 4, 5], [5, -8, 7]) is broadcasted as:
+     * [min(-1, 2, 5, 4, 5), min(2, 2, 5, 4, -8), min(3, 2, 5, 5, 7)]
+     * 
+    */
+    void compiletime_broadcast_elemental_intrinsic(
+        Vec<ASR::expr_t*> args,
+        ASR::ArrayConstant_t* result_array,
+        std::vector<int> array_indices_in_args,
+        ASRUtils::create_intrinsic_function create_func,
+        const Location& loc,
+        Allocator& al)
+    {
+        ASR::expr_t* first_arg_ = ASRUtils::expr_value(args[array_indices_in_args[0]]);
+        size_t max_array_size = ASR::down_cast<ASR::ArrayConstant_t>(first_arg_)->n_args;
+
+        for (size_t i = 0; i < max_array_size; i++) {
+            Vec<ASR::expr_t*> intrinsic_args;
+            intrinsic_args.reserve(al, args.size());
+
+            for (size_t j = 0; j < args.size(); j++) {
+                if (std::find(array_indices_in_args.begin(), array_indices_in_args.end(), j) != array_indices_in_args.end()) {
+                    // Current argument is an array
+
+                    ASR::expr_t* arg_ = ASRUtils::expr_value(args[j]);
+                    ASR::ArrayConstant_t* array_arg = ASR::down_cast<ASR::ArrayConstant_t>(arg_);
+                    if (max_array_size != array_arg->n_args) {
+                        throw SemanticError("Different shape of arguments for broadcasting " +
+                            std::to_string(max_array_size) + " and " + std::to_string(array_arg->n_args), loc);
+                    }
+                    intrinsic_args.push_back(al, array_arg->m_args[i]);
+                } else {
+                    // Current argument is a scalar, use as is
+                    intrinsic_args.push_back(al, args[j]);
+                }
+            }
+            // Call the intrinsic function for the current combination of arguments
+            result_array->m_args[i] = ASRUtils::expr_value(ASRUtils::EXPR(create_func(al, loc, intrinsic_args, diag)));
+        }
+        ASR::Array_t* result_arr_type = ASR::down_cast<ASR::Array_t>(result_array->m_type);
+        result_array->m_type = ASRUtils::make_Array_t_util(al, result_arr_type->base.base.loc,
+                                    ASRUtils::expr_type(result_array->m_args[0]), result_arr_type->m_dims,
+                                    result_arr_type->n_dims, ASR::abiType::Source, false,
+                                    result_arr_type->m_physical_type);
+    }
+
+    std::vector<int> find_array_indices_in_args(const Vec<ASR::expr_t*>& args) {
+        std::vector<int> array_indices_in_args;
+
+        for (size_t i = 0; i < args.size(); i++) {
+            if (!args[i]) {
+                continue;
+            }
+            ASR::expr_t* arg = ASRUtils::expr_value(args[i]);
+            if (arg && ASR::is_a<ASR::ArrayConstant_t>(*arg)) {
+                array_indices_in_args.push_back(i);
             }
         }
+        return array_indices_in_args;
     }
 
     ASR::expr_t* fetch_arrayconstant(ASR::expr_t* var_value) {
@@ -5171,22 +5218,24 @@ public:
                                         x.base.base.loc);
                 }
                 if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ) {
+                    const bool are_all_args_evaluated { ASRUtils::all_args_evaluated(args, true) };
                     fill_optional_kind_arg(var_name, args);
 
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
-                    if (args.size() == 1 &&
+
+                    std::vector<int> array_indices_in_args = find_array_indices_in_args(args);
+                    if (are_all_args_evaluated &&
                         var_name != "tiny" && var_name != "rank" &&
-                        ASRUtils::all_args_evaluated(args) &&
-                        ( ASR::is_a<ASR::ArrayConstant_t>(*args[0]) ||
-                            (ASRUtils::expr_value(args[0]) && ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(args[0])))
-                        )) {
-                        ASR::expr_t* arg = ASRUtils::expr_value(args[0]);
+                        !array_indices_in_args.empty())
+                    {
+                        ASR::expr_t* arg = ASRUtils::expr_value(args[array_indices_in_args[0]]);
                         ASRUtils::ExprStmtDuplicator expr_duplicator(al);
                         ASR::expr_t* arg_ = expr_duplicator.duplicate_expr(arg);
-                        ASR::ArrayConstant_t *array = ASR::down_cast<ASR::ArrayConstant_t>(arg_);
-                        compiletime_broadcast_elemental_intrinsic(array, create_func, x.base.base.loc, al);
-                        tmp = (ASR::asr_t*) array;
+                        ASR::ArrayConstant_t* result_array = ASR::down_cast<ASR::ArrayConstant_t>(arg_);
+
+                        compiletime_broadcast_elemental_intrinsic(args, result_array, array_indices_in_args, create_func, x.base.base.loc, al);;
+                        tmp = (ASR::asr_t*) result_array;
                     } else {
                         tmp = create_func(al, x.base.base.loc, args, diag);
                     }

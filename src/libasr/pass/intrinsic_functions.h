@@ -4691,9 +4691,9 @@ namespace Max {
     static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args > 1, "Call to max0 must have at least two arguments",
             x.base.base.loc, diagnostics);
-        ASRUtils::require_impl(ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(x.m_args[0])) ||
-            ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[0])) ||
-            ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_args[0])),
+        ASR::ttype_t* arg0_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(x.m_args[0]));
+        ASRUtils::require_impl(ASR::is_a<ASR::Real_t>(*arg0_type) ||
+            ASR::is_a<ASR::Integer_t>(*arg0_type) || ASR::is_a<ASR::Character_t>(*arg0_type),
              "Arguments to max0 must be of real, integer or character type",
             x.base.base.loc, diagnostics);
         for(size_t i=0;i<x.n_args;i++){

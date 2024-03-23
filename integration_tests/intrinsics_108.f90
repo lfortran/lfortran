@@ -1,6 +1,7 @@
 program intrinsics_108
     integer(4) :: x, y
     integer(8) :: i, j
+    integer :: arr3(3)
     x = 16
     y = 2
     i = 8
@@ -29,4 +30,15 @@ program intrinsics_108
 
     print*, shiftr(8, 2)
     if ( shiftr(8, 2) /= 2 ) error stop
+
+    ! test broadcasting of `shiftr`
+    arr3 = shiftr([20, 11, 8], 1)
+    if (arr3(1) /= 10) error stop
+    if (arr3(2) /= 5) error stop
+    if (arr3(3) /= 4) error stop
+
+    arr3 = shiftr([20, 11, 8], [1, 2, 3])
+    if (arr3(1) /= 10) error stop
+    if (arr3(2) /= 2) error stop
+    if (arr3(3) /= 1) error stop
 end

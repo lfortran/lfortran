@@ -4,6 +4,8 @@ program test_ichar
     ! Compile_time
     integer :: i, j, c
     integer(8) :: li_1, lj_1, li_2, lj_2
+    integer(8) :: int_res(4)
+    integer, parameter :: dp = kind(0d0)
     character(len=1) :: c_1 = 'b'
     character(len = 1) :: a = 'a'
     character(len = 1) :: b = 'b'
@@ -27,6 +29,17 @@ program test_ichar
     if (lj_1 /= 97) error stop
     if (li_2 /= 90) error stop
     if (lj_2 /= 122) error stop
+
+    ! Compile time with broadcasting
+    int_res = ichar([' ', 'c', 'd', 'e'], kind=8)
+    if (int_res(1) /= 32) error stop
+    if (kind(int_res(1)) /= dp) error stop
+    if (int_res(2) /= 99) error stop
+    if (kind(int_res(2)) /= dp) error stop
+    if (int_res(3) /= 100) error stop
+    if (kind(int_res(3)) /= dp) error stop
+    if (int_res(4) /= 101) error stop
+    if (kind(int_res(4)) /= dp) error stop
 
     ! Run_time
     c = ichar(c_1)
