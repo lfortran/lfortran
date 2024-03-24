@@ -1017,7 +1017,7 @@ LFORTRAN_API double _lfortran_dlog_gamma(double x)
 * @param x    value at which to evaluate the rational function
 * @return     evaluated rational function
 */
-static double rational_p1q1( const double x ) {
+static double besselj0_rational_p1q1( const double x ) {
 	double ax;
 	double ix;
 	double s1;
@@ -1054,7 +1054,7 @@ static double rational_p1q1( const double x ) {
 * @param x    value at which to evaluate the rational function
 * @return     evaluated rational function
 */
-static double rational_p2q2( const double x ) {
+static double besselj0_rational_p2q2( const double x ) {
 	double ax;
 	double ix;
 	double s1;
@@ -1091,7 +1091,7 @@ static double rational_p2q2( const double x ) {
 * @param x    value at which to evaluate the rational function
 * @return     evaluated rational function
 */
-static double rational_pcqc( const double x ) {
+static double besselj0_rational_pcqc( const double x ) {
 	double ax;
 	double ix;
 	double s1;
@@ -1128,7 +1128,7 @@ static double rational_pcqc( const double x ) {
 * @param x    value at which to evaluate the rational function
 * @return     evaluated rational function
 */
-static double rational_psqs( const double x ) {
+static double besselj0_rational_psqs( const double x ) {
 	double ax;
 	double ix;
 	double s1;
@@ -1163,7 +1163,6 @@ LFORTRAN_API double _lfortran_dbesselj0( double x ) {
 	double f;
 
 	double ONE_DIV_SQRT_PI = 0.5641895835477563;
-    double FOURTH_PI = 7.85398163397448309616e-1;
 	double x1 = 2.4048255576957727686e+00;
 	double x2 = 5.5200781102863106496e+00;
 	double x11 = 6.160e+02;
@@ -1182,20 +1181,20 @@ LFORTRAN_API double _lfortran_dbesselj0( double x ) {
 	}
 	if ( x <= 4.0 ) {
 		y = x * x;
-		r = rational_p1q1( y );
+		r = besselj0_rational_p1q1( y );
 		f = ( x+x1 ) * ( (x - (x11/256.0)) - x12 );
 		return f * r;
 	}
 	if ( x <= 8.0 ) {
 		y = 1.0 - ( ( x*x )/64.0 );
-		r = rational_p2q2( y );
+		r = besselj0_rational_p2q2( y );
 		f = ( x+x2 ) * ( (x - (x21/256.0)) - x22 );
 		return f * r;
 	}
 	y = 8.0 / x;
 	y2 = y * y;
-	rc = rational_pcqc( y2 );
-	rs = rational_psqs( y2 );
+	rc = besselj0_rational_pcqc( y2 );
+	rs = besselj0_rational_psqs( y2 );
 	f = ONE_DIV_SQRT_PI / sqrt(x);
 
     // __sincos(x, &si, &co);
@@ -1206,6 +1205,222 @@ LFORTRAN_API double _lfortran_dbesselj0( double x ) {
 
 LFORTRAN_API float _lfortran_sbesselj0( float x ) {
     return (float)_lfortran_dbesselj0((double)x);
+}
+
+// besselj1 --------------------------------------------------------------------
+
+/**
+* Ported from implementation done at:
+* https://github.com/stdlib-js/stdlib/blob/develop/lib/node_modules/%40stdlib/math/base/special/besselj1/lib/main.js
+*
+* All credits to the original authors of the implementation.
+*/
+
+/**
+* Evaluates a rational function (i.e., the ratio of two polynomials described by the coefficients stored in \\(P\\) and \\(Q\\)).
+*
+* ## Notes
+*
+* -   Coefficients should be sorted in ascending degree.
+* -   The implementation uses [Horner's rule][horners-method] for efficient computation.
+*
+* [horners-method]: https://en.wikipedia.org/wiki/Horner%27s_method
+*
+* @param x    value at which to evaluate the rational function
+* @return     evaluated rational function
+*/
+static double besselj1_rational_p1q1( const double x ) {
+	double ax;
+	double ix;
+	double s1;
+	double s2;
+	if ( x == 0.0 ) {
+		return -0.03405537391318949;
+	}
+	if ( x < 0.0 ) {
+		ax = -x;
+	} else {
+		ax = x;
+	}
+	if ( ax <= 1.0 ) {
+		s1 = -142585098013.66644 + (x * (6678104126.14924 + (x * (-115486967.64841276 + (x * (980629.0409895825 + (x * (-4461.579298277507 + (x * (10.650724020080236 + (x * -0.010767857011487301)))))))))));
+		s2 = 4186860446082.0176 + (x * (42091902282.58013 + (x * (202283751.40097034 + (x * (591176.1449417479 + (x * (1074.227223951738 + (x * (1.0 + (x * 0.0)))))))))));
+	} else {
+		ix = 1.0 / x;
+		s1 = -0.010767857011487301 + (ix * (10.650724020080236 + (ix * (-4461.579298277507 + (ix * (980629.0409895825 + (ix * (-115486967.64841276 + (ix * (6678104126.14924 + (ix * -142585098013.66644)))))))))));
+		s2 = 0.0 + (ix * (1.0 + (ix * (1074.227223951738 + (ix * (591176.1449417479 + (ix * (202283751.40097034 + (ix * (42091902282.58013 + (ix * 4186860446082.0176)))))))))));
+	}
+	return s1 / s2;
+}
+
+/**
+* Evaluates a rational function (i.e., the ratio of two polynomials described by the coefficients stored in \\(P\\) and \\(Q\\)).
+*
+* ## Notes
+*
+* -   Coefficients should be sorted in ascending degree.
+* -   The implementation uses [Horner's rule][horners-method] for efficient computation.
+*
+* [horners-method]: https://en.wikipedia.org/wiki/Horner%27s_method
+*
+* @param x    value at which to evaluate the rational function
+* @return     evaluated rational function
+*/
+static double besselj1_rational_p2q2( const double x ) {
+	double ax;
+	double ix;
+	double s1;
+	double s2;
+	if ( x == 0.0 ) {
+		return -0.010158790774176108;
+	}
+	if ( x < 0.0 ) {
+		ax = -x;
+	} else {
+		ax = x;
+	}
+	if ( ax <= 1.0 ) {
+		s1 = -17527881995806512.0 + (x * (1660853173129901.8 + (x * (-36658018905416.664 + (x * (355806656709.1062 + (x * (-1811393126.9860668 + (x * (5079326.614801118 + (x * (-7502.334222078161 + (x * 4.6179191852758255)))))))))))));
+		s2 = 1725390588844768000.0 + (x * (17128800897135812.0 + (x * (84899346165481.42 + (x * (276227772862.44086 + (x * (648725028.9959639 + (x * (1126712.5065029138 + (x * (1388.6978985861358 + (x * 1.0)))))))))))));
+	} else {
+		ix = 1.0 / x;
+		s1 = 4.6179191852758255 + (ix * (-7502.334222078161 + (ix * (5079326.614801118 + (ix * (-1811393126.9860668 + (ix * (355806656709.1062 + (ix * (-36658018905416.664 + (ix * (1660853173129901.8 + (ix * -17527881995806512.0)))))))))))));
+		s2 = 1.0 + (ix * (1388.6978985861358 + (ix * (1126712.5065029138 + (ix * (648725028.9959639 + (ix * (276227772862.44086 + (ix * (84899346165481.42 + (ix * (17128800897135812.0 + (ix * 1725390588844768000.0)))))))))))));
+	}
+	return s1 / s2;
+}
+
+/**
+* Evaluates a rational function (i.e., the ratio of two polynomials described by the coefficients stored in \\(P\\) and \\(Q\\)).
+*
+* ## Notes
+*
+* -   Coefficients should be sorted in ascending degree.
+* -   The implementation uses [Horner's rule][horners-method] for efficient computation.
+*
+* [horners-method]: https://en.wikipedia.org/wiki/Horner%27s_method
+*
+* @param x    value at which to evaluate the rational function
+* @return     evaluated rational function
+*/
+static double besselj1_rational_pcqc( const double x ) {
+	double ax;
+	double ix;
+	double s1;
+	double s2;
+	if ( x == 0.0 ) {
+		return 1.0;
+	}
+	if ( x < 0.0 ) {
+		ax = -x;
+	} else {
+		ax = x;
+	}
+	if ( ax <= 1.0 ) {
+		s1 = -4435757.816794128 + (x * (-9942246.505077641 + (x * (-6603373.248364939 + (x * (-1523529.3511811374 + (x * (-109824.05543459347 + (x * (-1611.6166443246102 + (x * 0.0)))))))))));
+		s2 = -4435757.816794128 + (x * (-9934124.389934586 + (x * (-6585339.4797230875 + (x * (-1511809.5066341609 + (x * (-107263.8599110382 + (x * (-1455.0094401904962 + (x * 1.0)))))))))));
+	} else {
+		ix = 1.0 / x;
+		s1 = 0.0 + (ix * (-1611.6166443246102 + (ix * (-109824.05543459347 + (ix * (-1523529.3511811374 + (ix * (-6603373.248364939 + (ix * (-9942246.505077641 + (ix * -4435757.816794128)))))))))));
+		s2 = 1.0 + (ix * (-1455.0094401904962 + (ix * (-107263.8599110382 + (ix * (-1511809.5066341609 + (ix * (-6585339.4797230875 + (ix * (-9934124.389934586 + (ix * -4435757.816794128)))))))))));
+	}
+	return s1 / s2;
+}
+
+/**
+* Evaluates a rational function (i.e., the ratio of two polynomials described by the coefficients stored in \\(P\\) and \\(Q\\)).
+*
+* ## Notes
+*
+* -   Coefficients should be sorted in ascending degree.
+* -   The implementation uses [Horner's rule][horners-method] for efficient computation.
+*
+* [horners-method]: https://en.wikipedia.org/wiki/Horner%27s_method
+*
+* @param x    value at which to evaluate the rational function
+* @return     evaluated rational function
+*/
+static double besselj1_rational_psqs( const double x ) {
+	double ax;
+	double ix;
+	double s1;
+	double s2;
+	if ( x == 0.0 ) {
+		return 0.046875;
+	}
+	if ( x < 0.0 ) {
+		ax = -x;
+	} else {
+		ax = x;
+	}
+	if ( ax <= 1.0 ) {
+		s1 = 33220.913409857225 + (x * (85145.1606753357 + (x * (66178.83658127084 + (x * (18494.262873223866 + (x * (1706.375429020768 + (x * (35.26513384663603 + (x * 0.0)))))))))));
+		s2 = 708712.8194102874 + (x * (1819458.0422439973 + (x * (1419460.669603721 + (x * (400294.43582266977 + (x * (37890.2297457722 + (x * (863.8367769604992 + (x * 1.0)))))))))));
+	} else {
+		ix = 1.0 / x;
+		s1 = 0.0 + (ix * (35.26513384663603 + (ix * (1706.375429020768 + (ix * (18494.262873223866 + (ix * (66178.83658127084 + (ix * (85145.1606753357 + (ix * 33220.913409857225)))))))))));
+		s2 = 1.0 + (ix * (863.8367769604992 + (ix * (37890.2297457722 + (ix * (400294.43582266977 + (ix * (1419460.669603721 + (ix * (1819458.0422439973 + (ix * 708712.8194102874)))))))))));
+	}
+	return s1 / s2;
+}
+
+LFORTRAN_API double _lfortran_dbesselj1( double x ) {
+    double value;
+	double rc;
+	double rs;
+    double si;
+    double co;
+	double y2;
+	double r;
+	double y;
+	double f;
+    double w;
+
+    double SQRT_PI = 1.7724538509055160;
+    double x1 = 3.8317059702075123156e+00;
+    double x2 = 7.0155866698156187535e+00;
+    double x11 = 9.810e+02;
+    double x12 = -3.2527979248768438556e-04;
+    double x21 = 1.7960e+03;
+    double x22 = -3.8330184381246462950e-05;
+
+    w = fabs( x );
+    if ( x == 0.0 ) {
+		return 0.0;
+	}
+	if ( w == HUGE_VAL ) {
+		return 0.0;
+	}
+    if ( w <= 4.0 ) {
+		y = x * x;
+        r = besselj1_rational_p1q1( y );
+        f = w * ( w+x1 ) * ( ( w - (x11/256.0) ) - x12 );
+		value = f * r;
+    } else if ( w <= 8.0 ) {
+        y = x * x;
+        r = besselj1_rational_p2q2( y );
+        f = w * ( w+x2 ) * ( ( w - (x21/256.0) ) - x22 );
+        value = f * r;
+    } else {
+        y = 8.0 / w;
+		y2 = y * y;
+        rc = besselj1_rational_pcqc( y2 );
+        rs = besselj1_rational_psqs( y2 );
+        f = 1.0 / ( sqrt(w) * SQRT_PI );
+
+        // __sincos(w, &si, &co);
+        si = sin(w);
+        co = cos(w);
+        value = f * ( ( rc * (si-co) ) + ( (y*rs) * (si+co) ) );
+    }
+    if ( x < 0.0 ) {
+        value = -1.0 * value;
+    }
+    return value;
+}
+
+LFORTRAN_API float _lfortran_sbesselj1( float x ) {
+    return (float)_lfortran_dbesselj1((double)x);
 }
 
 // sin -------------------------------------------------------------------------
