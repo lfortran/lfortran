@@ -1,4 +1,4 @@
-program intrinsics_190
+program intrinsics_192
     use, intrinsic :: iso_fortran_env, only: dp => real64, sp => real32
     real(8) :: x(40)
     real(8) :: expected(40)
