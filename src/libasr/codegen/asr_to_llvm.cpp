@@ -7489,7 +7489,6 @@ public:
                         llvm::Function::ExternalLinkage, runtime_func_name,
                             *module);
             }
-            this->visit_expr_wrapper(x.m_unit, true);
             builder->CreateCall(fn, {unit_val, iostat});
         }
     }
