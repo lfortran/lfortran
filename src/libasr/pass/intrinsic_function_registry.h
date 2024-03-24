@@ -52,6 +52,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Mod)
         INTRINSIC_NAME_CASE(Trailz)
         INTRINSIC_NAME_CASE(BesselJ0)
+        INTRINSIC_NAME_CASE(BesselJ1)
         INTRINSIC_NAME_CASE(Mvbits)
         INTRINSIC_NAME_CASE(Shiftr)
         INTRINSIC_NAME_CASE(Rshift)
@@ -225,6 +226,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Trailz::instantiate_Trailz, &Trailz::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselJ0),
             {&BesselJ0::instantiate_BesselJ0, &BesselJ0::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::BesselJ1),
+            {&BesselJ1::instantiate_BesselJ1, &BesselJ1::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Mvbits),
             {&Mvbits::instantiate_Mvbits, &Mvbits::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Shiftr),
@@ -751,6 +754,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"mod", {&Mod::create_Mod, &Mod::eval_Mod}},
                 {"trailz", {&Trailz::create_Trailz, &Trailz::eval_Trailz}},
                 {"bessel_j0", {&BesselJ0::create_BesselJ0, &BesselJ0::eval_BesselJ0}},
+                {"bessel_j1", {&BesselJ1::create_BesselJ1, &BesselJ1::eval_BesselJ1}},
                 {"mvbits", {&Mvbits::create_Mvbits, &Mvbits::eval_Mvbits}},
                 {"shiftr", {&Shiftr::create_Shiftr, &Shiftr::eval_Shiftr}},
                 {"rshift", {&Rshift::create_Rshift, &Rshift::eval_Rshift}},
