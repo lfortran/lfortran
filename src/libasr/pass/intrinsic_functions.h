@@ -1108,8 +1108,7 @@ namespace Dshiftl {
         * r = x << shift | y >> (32 - shift) ! kind = 4
         * r = x << shift | y >> (64 - shift) ! kind = 8
         */
-        body.push_back(al, b.Assignment(result, b.i_BitLshift(args[0], 
-            ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[2], ASR::cast_kindType::IntegerToInteger, return_type, nullptr)), return_type)));
+        body.push_back(al, b.Assignment(result, b.i_BitLshift(args[0], b.i2i(args[2], return_type), return_type)));
         body.push_back(al, b.If(b.iEq(b.i(extract_kind_from_ttype_t(arg_types[0]), int32), b.i(4, int32)), {
             b.Assignment(result, b.i_BitOr(result, b.i_BitRshift(args[1], b.i_tSub(b.i(32, return_type), args[2], return_type), return_type), return_type))
         }, {
@@ -1864,12 +1863,10 @@ namespace Floor {
         *  r = int(x) - 1
         * }
         */
-        body.push_back(al, b.Assignment(result, ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::RealToInteger, return_type, nullptr))));
-        body.push_back(al, b.If(b.And(b.fLtE(args[0], b.f(0, arg_types[0])), b.fNotEq(ASRUtils::EXPR(ASR::make_Cast_t(al, loc, 
-            ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::RealToInteger, return_type, nullptr)), ASR::cast_kindType::IntegerToReal, return_type, nullptr)),
-            ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::RealToReal, return_type, nullptr)))), 
+        body.push_back(al, b.Assignment(result, b.r2i(args[0], return_type)));
+        body.push_back(al, b.If(b.And(b.fLtE(args[0], b.f(0, arg_types[0])), b.fNotEq(b.i2r(b.r2i(args[0], return_type), return_type), b.r2r(args[0], return_type))), 
         {
-            b.Assignment(result, b.i_tSub(ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::RealToInteger, return_type, nullptr)), b.i(1, return_type), return_type))
+            b.Assignment(result, b.i_tSub(b.r2i(args[0], return_type), b.i(1, return_type), return_type))
         }, {}));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1917,16 +1914,16 @@ namespace Ceiling {
         */
         body.push_back(al, b.If(b.fGtE(args[0], b.f(0, arg_types[0])), 
         {
-            b.If(b.fEq(ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::RealToReal, return_type, nullptr)),
-                ASRUtils::EXPR(ASR::make_Cast_t(al, loc, ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::RealToInteger, return_type, nullptr)),
-                ASR::cast_kindType::IntegerToReal, return_type, nullptr))), 
+            b.If(b.fEq(b.r2r(args[0], return_type),
+                b.i2r(b.r2i(args[0], return_type), return_type)
+                ), 
             {
-                b.Assignment(result, ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::RealToInteger, return_type, nullptr)))
+                b.Assignment(result, b.r2i(args[0], return_type))
             }, {
-                b.Assignment(result, b.i_tAdd(ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::RealToInteger, return_type, nullptr)), b.i(1, return_type), return_type))
+                b.Assignment(result, b.i_tAdd(b.r2i(args[0], return_type), b.i(1, return_type), return_type))
             })
         }, {
-            b.Assignment(result, ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::RealToInteger, return_type, nullptr)))
+            b.Assignment(result, b.r2i(args[0], return_type))
         }));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -2707,11 +2704,11 @@ namespace Maskl {
         * r = Maskl(x)
         * r = (x == 64) ? -1 : ((1 << x) - 1) << (64 - x)
         */
-        body.push_back(al, b.If((b.iEq(ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::IntegerToInteger, return_type, nullptr)), b.i(64, return_type))), {
+        body.push_back(al, b.If((b.iEq(b.i2i(args[0], return_type), b.i(64, return_type))), {
             b.Assignment(result, b.i(-1, return_type))
         }, {
-            b.Assignment(result, b.i_BitLshift(b.i_tSub(b.i_BitLshift(b.i(1, return_type), ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::IntegerToInteger, return_type, nullptr)), return_type), b.i(1, return_type), return_type),
-                b.i_tSub(b.i(64, return_type), ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::IntegerToInteger, return_type, nullptr)), return_type), return_type))
+            b.Assignment(result, b.i_BitLshift(b.i_tSub(b.i_BitLshift(b.i(1, return_type), b.i2i(args[0], return_type), return_type), b.i(1, return_type), return_type),
+                b.i_tSub(b.i(64, return_type), b.i2i(args[0], return_type), return_type), return_type))
         }));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
@@ -2746,10 +2743,10 @@ namespace Maskr {
         * r = Maskr(x)
         * r = (1 << x) - 1
         */
-        body.push_back(al, b.If((b.iEq(ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::IntegerToInteger, return_type, nullptr)), b.i(64, return_type))), {
+        body.push_back(al, b.If((b.iEq(b.i2i(args[0], return_type), b.i(64, return_type))), {
             b.Assignment(result, b.i(-1, return_type))
         }, {
-            b.Assignment(result, b.i_tSub(b.i_BitLshift(b.i(1, return_type), ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::IntegerToInteger, return_type, nullptr)), return_type), b.i(1, return_type), return_type))
+            b.Assignment(result, b.i_tSub(b.i_BitLshift(b.i(1, return_type), b.i2i(args[0], return_type), return_type), b.i(1, return_type), return_type))
         }));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
@@ -3541,10 +3538,10 @@ namespace Ichar {
         auto result = declare("result", return_type, ReturnVar);
         auto itr = declare("i", ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), Local);
         body.push_back(al, b.Assignment(itr, b.i32(1)));
-        body.push_back(al, b.Assignment(result, ASRUtils::EXPR(ASR::make_Cast_t(al, loc, 
+        body.push_back(al, b.Assignment(result, b.i2i(
             ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, 
             ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)), nullptr)), int32, nullptr)), 
-            ASR::cast_kindType::IntegerToInteger, return_type, nullptr))));
+            return_type)));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -3575,7 +3572,7 @@ namespace Char {
         fill_func_arg("i", arg_types[0]);
         auto result = declare("result", return_type, ReturnVar);
 
-        body.push_back(al, b.Assignment(result, ASRUtils::EXPR(ASR::make_StringChr_t(al, loc, ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[0], ASR::cast_kindType::IntegerToInteger, int32, nullptr)), return_type, nullptr))));
+        body.push_back(al, b.Assignment(result, ASRUtils::EXPR(ASR::make_StringChr_t(al, loc, b.i2i(args[0], int32), return_type, nullptr))));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
