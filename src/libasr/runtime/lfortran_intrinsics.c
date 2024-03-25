@@ -2792,7 +2792,7 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num)
     }
 }
 
-LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, char* fmt, int32_t no_of_args, ...)
+LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, char* fmt, int32_t no_of_args, ...)
 {
     if (!streql(fmt, "(a)")) {
         printf("Only (a) supported as fmt currently");
@@ -2828,7 +2828,9 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, ch
     if (streql(*arg, "\n")) {
         *iostat = -2;
     }
-    (*arg)[strcspn(*arg, "\n")] = 0;
+    int len = strcspn(*arg, "\n");
+    *chunk = len;
+    (*arg)[len] = 0;
     va_end(args);
 }
 
