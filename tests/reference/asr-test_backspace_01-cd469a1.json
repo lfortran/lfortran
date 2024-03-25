@@ -6,7 +6,7 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-test_backspace_01-cd469a1.stdout",
-    "stdout_hash": "c35881930d7538825cd8615f776bf1b80594c085e0fb710e96dd596a",
+    "stdout_hash": "f19b947e01dd1ea6b9a4c1dce6ed638116ea8f417936a0c489d24491",
     "stderr": "asr-test_backspace_01-cd469a1.stderr",
     "stderr_hash": "37978d9611a71a9ea200ae1454274cecfbb7bdc5731e1e6946d55734",
     "returncode": 0
