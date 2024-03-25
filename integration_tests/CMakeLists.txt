@@ -655,6 +655,7 @@ RUN(NAME intrinsics_135 LABELS gfortran llvm) # nint
 RUN(NAME intrinsics_136 LABELS gfortran llvm) # rshift
 RUN(NAME intrinsics_137 LABELS gfortran llvm) # huge
 RUN(NAME intrinsics_138 LABELS gfortran llvm fortran) # precision
+RUN(NAME intrinsics_139 LABELS gfortran llvm) # modulo
 RUN(NAME intrinsics_140 LABELS gfortran llvm) # selected_int_kind
 RUN(NAME intrinsics_141 LABELS gfortran llvm) # scale
 RUN(NAME intrinsics_142 LABELS gfortran llvm) # dot_product
