@@ -36,6 +36,7 @@
 
 #ifdef HAVE_LFORTRAN_MACHO
 #  include <mach-o/dyld.h>
+#  include <limits.h> // PATH_MAX
 #endif
 
 #ifdef HAVE_LFORTRAN_BFD
