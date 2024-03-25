@@ -465,8 +465,8 @@ public:
             m_values = r->m_values; n_values = r->n_values;
         }
 
-        ASR::expr_t *a_unit, *a_fmt, *a_iomsg, *a_iostat, *a_id, *a_separator, *a_end, *a_fmt_constant;
-        a_unit = a_fmt = a_iomsg = a_iostat = a_id = a_separator = a_end = a_fmt_constant = nullptr;
+        ASR::expr_t *a_unit, *a_fmt, *a_iomsg, *a_iostat, *a_size, *a_id, *a_separator, *a_end, *a_fmt_constant;
+        a_unit = a_fmt = a_iomsg = a_iostat = a_size = a_id = a_separator = a_end = a_fmt_constant = nullptr;
         ASR::stmt_t *overloaded_stmt = nullptr;
         std::string read_write = "";
         bool formatted = (n_args == 2);
@@ -526,6 +526,18 @@ public:
                    (!ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_pointer(a_iomsg_type))) ) {
                         throw SemanticError("`iomsg` must be of type, Character", loc);
                     }
+            } else if( m_arg_str == std::string("size") ) {
+                if( a_size != nullptr ) {
+                    throw SemanticError(R"""(Duplicate value of `size` found, `size` has already been specified via arguments or keyword arguments)""",
+                                        loc);
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_size = ASRUtils::EXPR(tmp);
+                ASR::ttype_t* a_size_type = ASRUtils::expr_type(a_size);
+                if( a_size->type != ASR::exprType::Var ||
+                    (!ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_size_type))) ) {
+                        throw SemanticError("`size` must be of type, Integer", loc);
+                }
             } else if( m_arg_str == std::string("id") ) {
                 if( a_id != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `id` found, it has already been specified via arguments or keyword arguments)""",
@@ -672,7 +684,7 @@ public:
                     print_statements[tmp] = std::make_pair(&w->base,label);
                 } else if( _type == AST::stmtType::Read ) {
                     tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
-                                a_iomsg, a_iostat, a_id, a_values_vec.p, a_values_vec.size(), nullptr);
+                                a_iomsg, a_iostat, a_size, a_id, a_values_vec.p, a_values_vec.size(), nullptr);
                     print_statements[tmp] = std::make_pair(&r->base,label);
                 }
                 return;
@@ -697,7 +709,7 @@ public:
                 a_values_vec.size(), a_separator, a_end, overloaded_stmt);
         } else if( _type == AST::stmtType::Read ) {
             tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
-                a_iomsg, a_iostat, a_id, a_values_vec.p, a_values_vec.size(), overloaded_stmt);
+                a_iomsg, a_iostat, a_size, a_id, a_values_vec.p, a_values_vec.size(), overloaded_stmt);
         }
 
         tmp_vec.push_back(tmp);

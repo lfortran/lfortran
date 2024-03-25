@@ -7371,7 +7371,7 @@ public:
             return ;
         }
 
-        llvm::Value *unit_val, *iostat;
+        llvm::Value *unit_val, *iostat, *read_size;
         bool is_string = false;
         if (x.m_unit == nullptr) {
             // Read from stdin
@@ -7394,10 +7394,22 @@ public:
                         llvm::Type::getInt32Ty(context), nullptr);
         }
 
+        if (x.m_size) {
+            int ptr_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(x.m_size, false);
+            ptr_loads = ptr_copy;
+            read_size = tmp;
+        } else {
+            read_size = builder->CreateAlloca(
+                        llvm::Type::getInt32Ty(context), nullptr);
+        }
+
         if (x.m_fmt) {
             std::vector<llvm::Value*> args;
             args.push_back(unit_val);
             args.push_back(iostat);
+            args.push_back(read_size);
             this->visit_expr_wrapper(x.m_fmt, true);
             args.push_back(tmp);
             args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, x.n_values)));
@@ -7414,6 +7426,7 @@ public:
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
                         llvm::Type::getVoidTy(context), {
                             llvm::Type::getInt32Ty(context),
+                            llvm::Type::getInt32Ty(context)->getPointerTo(),
                             llvm::Type::getInt32Ty(context)->getPointerTo(),
                             character_type,
                             llvm::Type::getInt32Ty(context)
