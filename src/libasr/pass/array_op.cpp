@@ -1576,7 +1576,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                     ASR::expr_t* op_el_wise = nullptr;
                     op_el_wise = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, loc,
                                     x->m_name, x->m_original_name, ref_args.p, ref_args.size(), dim_less_type,
-                                    nullptr, x->m_dt));
+                                    nullptr, x->m_dt, false));
                     ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al, current_scope);
                     ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, res, op_el_wise, nullptr));
                     doloop_body.push_back(al, assign);

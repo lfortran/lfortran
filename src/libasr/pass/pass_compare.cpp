@@ -128,7 +128,8 @@ public:
 
                 return ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, loc,
                     fn, nullptr, args.p, args.n,
-                    bool_type, nullptr, nullptr));
+                    bool_type, nullptr, nullptr,
+                    false));
             }
             case ASR::ttypeType::List: {
                 ASR::symbol_t *fn = get_list_compare_func(loc, global_scope, type);
@@ -144,7 +145,8 @@ public:
 
                 return ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, loc,
                     fn, nullptr, args.p, args.n,
-                    bool_type, nullptr, nullptr));
+                    bool_type, nullptr, nullptr,
+                    false));
             }
             default: {
                 LCOMPILERS_ASSERT(false);
@@ -262,7 +264,7 @@ public:
         ASR::symbol_t *fn_sym = get_tuple_compare_func(unit.base.base.loc,
                 unit.m_symtab, ASRUtils::expr_type(x->m_left));
         *current_expr = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, loc,
-            fn_sym, nullptr, args.p, args.n, bool_type, nullptr, nullptr));
+            fn_sym, nullptr, args.p, args.n, bool_type, nullptr, nullptr, false));
         if (x->m_op == ASR::cmpopType::NotEq) {
             *current_expr = ASRUtils::EXPR(ASR::make_LogicalNot_t(al, loc,
                         *current_expr, bool_type, nullptr));
@@ -447,7 +449,8 @@ public:
         ASR::symbol_t *fn_sym = get_list_compare_func(unit.base.base.loc,
                 unit.m_symtab, ASRUtils::expr_type(x->m_left));
         *current_expr = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, loc,
-            fn_sym, nullptr, args.p, args.n, bool_type, nullptr, nullptr));
+            fn_sym, nullptr, args.p, args.n, bool_type, nullptr, nullptr,
+            false));
         if (x->m_op == ASR::cmpopType::NotEq) {
             *current_expr = ASRUtils::EXPR(ASR::make_LogicalNot_t(al, loc,
                         *current_expr, bool_type, nullptr));

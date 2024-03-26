@@ -1,0 +1,265 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            calculatesquare:
+                (Program
+                    (SymbolTable
+                        5
+                        {
+                            1_square:
+                                (ExternalSymbol
+                                    5
+                                    1_square
+                                    3 square
+                                    calculator
+                                    []
+                                    square
+                                    Public
+                                ),
+                            calc:
+                                (Variable
+                                    5
+                                    calc
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        5 calculator
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            calculator:
+                                (ExternalSymbol
+                                    5
+                                    calculator
+                                    2 calculator
+                                    calculator_mod
+                                    []
+                                    calculator
+                                    Public
+                                ),
+                            number:
+                                (Variable
+                                    5
+                                    number
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            result:
+                                (Variable
+                                    5
+                                    result
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            square:
+                                (ExternalSymbol
+                                    5
+                                    square
+                                    2 square
+                                    calculator_mod
+                                    []
+                                    square
+                                    Public
+                                )
+                        })
+                    calculatesquare
+                    [calculator_mod]
+                    [(Assignment
+                        (Var 5 number)
+                        (IntegerConstant 4 (Integer 4))
+                        ()
+                    )
+                    (Assignment
+                        (Var 5 result)
+                        (FunctionCall
+                            5 1_square
+                            ()
+                            [((Var 5 number))]
+                            (Integer 4)
+                            ()
+                            (Var 5 calc)
+                        )
+                        ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "The square of "
+                            (Character 1 14 ())
+                        )
+                        (Var 5 number)
+                        (StringConstant
+                            " is "
+                            (Character 1 4 ())
+                        )
+                        (Var 5 result)]
+                        ()
+                        ()
+                    )]
+                ),
+            calculator_mod:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            calculator:
+                                (StructType
+                                    (SymbolTable
+                                        3
+                                        {
+                                            square:
+                                                (ClassProcedure
+                                                    3
+                                                    square
+                                                    ()
+                                                    square
+                                                    2 square
+                                                    Source
+                                                    .false.
+                                                    .true.
+                                                )
+                                        })
+                                    calculator
+                                    []
+                                    []
+                                    Source
+                                    Private
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                ),
+                            square:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            present:
+                                                (ExternalSymbol
+                                                    4
+                                                    present
+                                                    7 present
+                                                    lfortran_intrinsic_builtin
+                                                    []
+                                                    present
+                                                    Private
+                                                ),
+                                            square_result:
+                                                (Variable
+                                                    4
+                                                    square_result
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            x:
+                                                (Variable
+                                                    4
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Optional
+                                                    .false.
+                                                )
+                                        })
+                                    square
+                                    (FunctionType
+                                        [(Integer 4)]
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 4 x)]
+                                    [(If
+                                        (FunctionCall
+                                            4 present
+                                            ()
+                                            [((Var 4 x))]
+                                            (Logical 4)
+                                            ()
+                                            ()
+                                        )
+                                        [(Assignment
+                                            (Var 4 square_result)
+                                            (IntegerBinOp
+                                                (Var 4 x)
+                                                Mul
+                                                (Var 4 x)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            ()
+                                        )]
+                                        [(Assignment
+                                            (Var 4 square_result)
+                                            (IntegerConstant 1 (Integer 4))
+                                            ()
+                                        )]
+                                    )]
+                                    (Var 4 square_result)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    calculator_mod
+                    [lfortran_intrinsic_builtin]
+                    .false.
+                    .false.
+                ),
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin)
+        })
+    []
+)
