@@ -274,6 +274,7 @@
                                 110
                                 110
                             )]
+                            []
                         )
                         (DoLoop
                             ()
@@ -312,11 +313,13 @@
                                 120
                                 120
                             )]
+                            []
                         )
                         (GoToTarget
                             140
                             140
                         )]
+                        []
                     )
                     (Assignment
                         (Var 2 indx)
@@ -444,6 +447,7 @@
                                     210
                                     210
                                 )]
+                                []
                             )
                             (Assignment
                                 (ArrayItem
@@ -476,11 +480,13 @@
                                 220
                                 220
                             )]
+                            []
                         )
                         (GoToTarget
                             230
                             230
                         )]
+                        []
                     )
                     (Return)]
                     ()

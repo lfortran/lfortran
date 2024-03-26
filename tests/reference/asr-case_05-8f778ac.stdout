@@ -47,6 +47,7 @@
                                 ()
                                 ()
                             )]
+                            .false.
                         )
                         (CaseStmt
                             [(StringConstant
@@ -54,6 +55,7 @@
                                 (Character 1 1 ())
                             )]
                             []
+                            .false.
                         )
                         (CaseStmt
                             [(StringConstant
@@ -68,6 +70,7 @@
                                 ()
                                 ()
                             )]
+                            .false.
                         )
                         (CaseStmt
                             [(StringConstant
@@ -82,6 +85,7 @@
                                 ()
                                 ()
                             )]
+                            .false.
                         )
                         (CaseStmt
                             [(StringConstant
@@ -96,6 +100,7 @@
                                 ()
                                 ()
                             )]
+                            .false.
                         )]
                         [(Print
                             [(StringConstant
@@ -105,6 +110,7 @@
                             ()
                             ()
                         )]
+                        .false.
                     )
                     (Print
                         [(StringConstant

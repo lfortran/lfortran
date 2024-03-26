@@ -48,7 +48,7 @@ define i32 @main(i32 %0, i8** %1) {
   %array_bound13 = alloca i32, align 4
   %array_bound5 = alloca i32, align 4
   %array_bound = alloca i32, align 4
-  call void @_lpython_set_argv(i32 %0, i8** %1)
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %a = alloca [196 x i32], align 4
   %b = alloca [96 x i32], align 4
   %c = alloca [35 x i32], align 4
@@ -564,6 +564,6 @@ ifcont156:                                        ; preds = %else155, %then154
   ret i32 0
 }
 
-declare void @_lpython_set_argv(i32, i8**)
+declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare void @_lfortran_printf(i8*, ...)

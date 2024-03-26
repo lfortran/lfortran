@@ -446,7 +446,7 @@ define i32 @main(i32 %0, i8** %1) {
   %call_arg_value19 = alloca i32, align 4
   %call_arg_value7 = alloca i32, align 4
   %call_arg_value = alloca i32, align 4
-  call void @_lpython_set_argv(i32 %0, i8** %1)
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %__1_t = alloca i32, align 4
   %__1_u = alloca i32, align 4
   %__1_v = alloca i32, align 4
@@ -2007,7 +2007,7 @@ ifcont64:                                         ; preds = %else63, %then62
   ret i32 0
 }
 
-declare void @_lpython_set_argv(i32, i8**)
+declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare i8* @_lfortran_malloc(i32, ...)
 

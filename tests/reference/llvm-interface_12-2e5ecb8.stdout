@@ -21,9 +21,9 @@ return:                                           ; preds = %.entry
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
-  call void @_lpython_set_argv(i32 %0, i8** %1)
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   call void @find_fit(void ([1 x float]*)* @expression)
   ret i32 0
 }
 
-declare void @_lpython_set_argv(i32, i8**)
+declare void @_lpython_call_initial_functions(i32, i8**)

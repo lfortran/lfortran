@@ -96,7 +96,7 @@ define i32 @main(i32 %0, i8** %1) {
   %call_arg_value2 = alloca i32, align 4
   %call_arg_value1 = alloca i32, align 4
   %call_arg_value = alloca i32, align 4
-  call void @_lpython_set_argv(i32 %0, i8** %1)
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %c = alloca i32, align 4
   store i32 1, i32* %call_arg_value, align 4
   %2 = call i32 @__module_many_returns_b(i32* %call_arg_value)
@@ -121,4 +121,4 @@ define i32 @main(i32 %0, i8** %1) {
   ret i32 0
 }
 
-declare void @_lpython_set_argv(i32, i8**)
+declare void @_lpython_call_initial_functions(i32, i8**)

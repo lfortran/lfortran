@@ -369,7 +369,9 @@
                                 ()
                                 ()
                             )]
+                            []
                         )]
+                        []
                     )
                     (CPtrToPointer
                         (Var 2 queries)
@@ -451,7 +453,9 @@
                                 ()
                                 ()
                             )]
+                            []
                         )]
+                        []
                     )
                     (CPtrToPointer
                         (Var 2 queries)
@@ -543,7 +547,9 @@
                                 ()
                                 ()
                             )]
+                            []
                         )]
+                        []
                     )
                     (If
                         (PointerAssociated

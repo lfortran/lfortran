@@ -338,6 +338,7 @@
                                         [(AssociateBlockCall
                                             9 associate_block
                                         )]
+                                        []
                                     )
                                     (ImplicitDeallocate
                                         [(Var 9 build_dirs)]
@@ -706,6 +707,7 @@
                                         [(AssociateBlockCall
                                             13 associate_block
                                         )]
+                                        []
                                     )
                                     (ImplicitDeallocate
                                         [(Var 13 build_dirs)]

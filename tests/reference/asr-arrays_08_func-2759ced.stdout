@@ -132,6 +132,7 @@
                                             )
                                             ()
                                         )]
+                                        []
                                     )]
                                     ()
                                     Public
@@ -332,6 +333,7 @@
                                             )
                                             ()
                                         )]
+                                        []
                                     )]
                                     (Var 4 r)
                                     Public
@@ -408,6 +410,7 @@
                             (Var 2 i)
                             ()
                         )]
+                        []
                     )
                     (SubroutineCall
                         2 copy_from_to

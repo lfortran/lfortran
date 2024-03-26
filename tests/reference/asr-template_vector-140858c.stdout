@@ -461,6 +461,7 @@
                                                             )
                                                             ()
                                                         )]
+                                                        []
                                                     )
                                                     (Allocate
                                                         [((StructInstanceMember
@@ -1118,6 +1119,7 @@
                                                             )
                                                             ()
                                                         )]
+                                                        []
                                                     )
                                                     (Allocate
                                                         [((StructInstanceMember
