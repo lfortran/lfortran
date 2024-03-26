@@ -168,6 +168,7 @@
                             )
                             ()
                         )]
+                        []
                     )
                     (Assignment
                         (ArrayItem

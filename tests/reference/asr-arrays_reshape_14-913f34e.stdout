@@ -415,6 +415,7 @@
                                             )
                                             ()
                                         )]
+                                        []
                                     )
                                     (Assignment
                                         (ArrayItem
@@ -561,7 +562,9 @@
                                                 )]
                                                 []
                                             )]
+                                            []
                                         )]
+                                        []
                                     )
                                     (Assignment
                                         (ArrayItem
@@ -747,8 +750,11 @@
                                                     )]
                                                     []
                                                 )]
+                                                []
                                             )]
+                                            []
                                         )]
+                                        []
                                     )]
                                     ()
                                     Public
@@ -1165,6 +1171,7 @@
                                             )]
                                             []
                                         )]
+                                        []
                                     )
                                     (DoLoop
                                         ()
@@ -1252,8 +1259,11 @@
                                                     )
                                                     ()
                                                 )]
+                                                []
                                             )]
+                                            []
                                         )]
+                                        []
                                     )
                                     (Assignment
                                         (ArrayItem
@@ -1458,6 +1468,7 @@
                                             )]
                                             []
                                         )]
+                                        []
                                     )]
                                     ()
                                     Public
@@ -1662,7 +1673,9 @@
                                                 )
                                                 ()
                                             )]
+                                            []
                                         )]
+                                        []
                                     )
                                     (SubroutineCall
                                         2 test_nd_to_1d
@@ -1814,6 +1827,7 @@
                                             )
                                             ()
                                         )]
+                                        []
                                     )
                                     (SubroutineCall
                                         2 test_1d_to_nd

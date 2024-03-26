@@ -479,12 +479,12 @@
                         ()
                     )
                     (IntrinsicImpureSubroutine
-                        Kind
+                        ObjectType
                         [(Var 6 a)]
                         0
                     )
                     (IntrinsicImpureSubroutine
-                        Kind
+                        ObjectType
                         [(Var 6 b)]
                         0
                     )
@@ -529,6 +529,7 @@
                             )
                             ()
                         )]
+                        []
                     )
                     (SubroutineCall
                         6 cpu_time
@@ -730,6 +731,7 @@
                             ((Var 6 c2))]
                             ()
                         )]
+                        []
                     )
                     (SubroutineCall
                         6 cpu_time
@@ -993,6 +995,7 @@
                             ((Var 6 c2))]
                             ()
                         )]
+                        []
                     )
                     (SubroutineCall
                         6 cpu_time
@@ -3180,6 +3183,7 @@
                                             )
                                             ()
                                         )]
+                                        []
                                     )
                                     (Assignment
                                         (ArraySection
@@ -3913,8 +3917,11 @@
                                                     )
                                                     ()
                                                 )]
+                                                []
                                             )]
+                                            []
                                         )]
+                                        []
                                     )]
                                     ()
                                     Public
@@ -4349,10 +4356,15 @@
                                                             ((Var 5 s1))]
                                                             ()
                                                         )]
+                                                        []
                                                     )]
+                                                    []
                                                 )]
+                                                []
                                             )]
+                                            []
                                         )]
+                                        []
                                     )]
                                     ()
                                     Public

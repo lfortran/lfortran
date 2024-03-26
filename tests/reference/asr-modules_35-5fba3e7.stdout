@@ -168,7 +168,7 @@
                                             )]
                                             [(Assignment
                                                 (Var 3 strings)
-                                                (ArrayConstant
+                                                (ArrayConstructor
                                                     []
                                                     (Array
                                                         (Character 1 1 ())
@@ -176,6 +176,7 @@
                                                         (IntegerConstant 0 (Integer 4)))]
                                                         FixedSizeArray
                                                     )
+                                                    ()
                                                     ColMajor
                                                 )
                                                 ()
@@ -193,7 +194,7 @@
                                         )
                                         [(Assignment
                                             (Var 3 strings)
-                                            (ArrayConstant
+                                            (ArrayConstructor
                                                 []
                                                 (Array
                                                     (Character 1 1 ())
@@ -201,6 +202,7 @@
                                                     (IntegerConstant 0 (Integer 4)))]
                                                     FixedSizeArray
                                                 )
+                                                ()
                                                 ColMajor
                                             )
                                             ()

@@ -30,7 +30,7 @@ return:                                           ; preds = %.entry
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
-  call void @_lpython_set_argv(i32 %0, i8** %1)
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %f = alloca i32, align 4
   %2 = call i32 @__module_module_13_f1()
   store i32 %2, i32* %f, align 4
@@ -39,6 +39,6 @@ define i32 @main(i32 %0, i8** %1) {
   ret i32 0
 }
 
-declare void @_lpython_set_argv(i32, i8**)
+declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare void @_lfortran_printf(i8*, ...)

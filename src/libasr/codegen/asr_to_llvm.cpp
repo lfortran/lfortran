@@ -63,6 +63,7 @@ using ASRUtils::intent_local;
 using ASRUtils::intent_return_var;
 using ASRUtils::determine_module_dependencies;
 using ASRUtils::is_arg_dummy;
+using ASRUtils::is_argument_of_type_CPtr;
 
 void string_init(llvm::LLVMContext &context, llvm::Module &module,
         llvm::IRBuilder<> &builder, llvm::Value* arg_size, llvm::Value* arg_string) {
@@ -1245,8 +1246,12 @@ public:
         llvm::Value* const_list = builder->CreateAlloca(const_list_type, nullptr, "const_list");
         list_api->list_init(type_code, const_list, *module, x.n_args, x.n_args);
         int64_t ptr_loads_copy = ptr_loads;
-        ptr_loads = 1;
         for( size_t i = 0; i < x.n_args; i++ ) {
+            if (is_argument_of_type_CPtr(x.m_args[i])) {
+                ptr_loads = 0;
+             } else {
+                ptr_loads = 1;
+             }
             this->visit_expr(*x.m_args[i]);
             llvm::Value* item = tmp;
             llvm::Value* pos = llvm::ConstantInt::get(context, llvm::APInt(32, i));
@@ -1724,7 +1729,7 @@ public:
     }
 
     void visit_ListCount(const ASR::ListCount_t& x) {
-        ASR::ttype_t* asr_el_type = ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_arg));
+        ASR::ttype_t *asr_el_type = ASRUtils::get_contained_type(ASRUtils::type_get_past_const(ASRUtils::expr_type(x.m_arg)));
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_arg);
@@ -1739,7 +1744,7 @@ public:
 
     void generate_ListIndex(ASR::expr_t* m_arg, ASR::expr_t* m_ele,
             ASR::expr_t* m_start=nullptr, ASR::expr_t* m_end=nullptr) {
-        ASR::ttype_t* asr_el_type = ASRUtils::get_contained_type(ASRUtils::expr_type(m_arg));
+        ASR::ttype_t *asr_el_type = ASRUtils::get_contained_type(ASRUtils::type_get_past_const(ASRUtils::expr_type(m_arg)));
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*m_arg);
@@ -2816,6 +2821,14 @@ public:
                 llvm::ConstantStruct::get(dict_type,
                 llvm::Constant::getNullValue(dict_type)));
             llvm_symtab[h] = ptr;
+        } else if(x.m_type->type == ASR::ttypeType::Set) {
+            llvm::StructType* set_type = static_cast<llvm::StructType*>(
+                llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get()));
+            llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name, set_type);
+            module->getNamedGlobal(x.m_name)->setInitializer(
+                llvm::ConstantStruct::get(set_type,
+                llvm::Constant::getNullValue(set_type)));
+            llvm_symtab[h] = ptr;
         } else if (x.m_type->type == ASR::ttypeType::TypeParameter) {
             // Ignore type variables
         } else {
@@ -3039,11 +3052,11 @@ public:
         }
         builder->SetInsertPoint(BB);
 
-        // Call the `_lpython_set_argv` function to assign command line argument
-        // values to `argc` and `argv`.
+        // Call the `_lpython_call_initial_functions` function to assign command line argument
+        // values to `argc` and `argv`, and set the random seed to the system clock.
         {
             if (compiler_options.emit_debug_info) debug_emit_loc(x);
-            llvm::Function *fn = module->getFunction("_lpython_set_argv");
+            llvm::Function *fn = module->getFunction("_lpython_call_initial_functions");
             if(!fn) {
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
                     llvm::Type::getVoidTy(context), {
@@ -3051,7 +3064,7 @@ public:
                         character_type->getPointerTo()
                     }, false);
                 fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, "_lpython_set_argv", *module);
+                    llvm::Function::ExternalLinkage, "_lpython_call_initial_functions", *module);
             }
             std::vector<llvm::Value *> args;
             for (llvm::Argument &llvm_arg : F->args()) {
@@ -3551,7 +3564,7 @@ public:
                         }
                     }
                     if( init_expr != nullptr &&
-                        !ASR::is_a<ASR::List_t>(*v->m_type)) {
+                        !is_list) {
                         target_var = ptr;
                         tmp = nullptr;
                         if (v->m_value != nullptr) {
@@ -3628,7 +3641,7 @@ public:
                                 throw CodeGenError("Unsupported len value in ASR " + std::to_string(strlen));
                             }
                         } else if (is_list) {
-                            ASR::List_t* asr_list = ASR::down_cast<ASR::List_t>(v->m_type);
+                            ASR::List_t* asr_list = ASR::down_cast<ASR::List_t>(ASRUtils::type_get_past_const(v->m_type));
                             std::string type_code = ASRUtils::get_type_code(asr_list->m_type);
                             list_api->list_init(type_code, ptr, *module);
                         }
@@ -8117,7 +8130,8 @@ public:
                         if( !ASRUtils::is_array(arg->m_type) ) {
 
                             if (x_abi == ASR::abiType::Source && ASR::is_a<ASR::CPtr_t>(*arg->m_type)) {
-                                if (arg->m_intent == intent_local) {
+                                if ( orig_arg_intent != ASRUtils::intent_out &&
+                                        arg->m_intent == intent_local ) {
                                     // Local variable of type
                                     // CPtr is a void**, so we
                                     // have to load it
@@ -8164,9 +8178,10 @@ public:
                                             }
                                         }
                                     } else if (is_a<ASR::CPtr_t>(*arg_type)) {
-                                        if (arg->m_intent == intent_local) {
-                                            // Local variable of type
-                                            // CPtr is a void**, so we
+                                        if ( arg->m_intent == intent_local ||
+                                                arg->m_intent == ASRUtils::intent_out) {
+                                            // Local variable or Dummy out argument
+                                            // of type CPtr is a void**, so we
                                             // have to load it
                                             tmp = CreateLoad(tmp);
                                         }
@@ -8375,6 +8390,10 @@ public:
                     }
                     case (ASR::ttypeType::FunctionType): {
                         target_type = llvm_utils->get_type_from_ttype_t_util(arg_type_, module.get());
+                        break;
+                    }
+                    case (ASR::ttypeType::Const): {
+                        target_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::get_contained_type(arg_type), module.get());
                         break;
                     }
                     default :

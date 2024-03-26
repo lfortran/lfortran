@@ -18,6 +18,7 @@ set(SRC
     codegen/asr_to_cpp.cpp
     codegen/asr_to_c.cpp
     codegen/asr_to_julia.cpp
+    codegen/asr_to_python.cpp
     codegen/asr_to_fortran.cpp
     codegen/asr_to_py.cpp
     codegen/x86_assembler.cpp
@@ -34,6 +35,7 @@ set(SRC
     pass/param_to_const.cpp
     pass/do_loops.cpp
     pass/for_all.cpp
+    pass/while_else.cpp
     pass/global_stmts.cpp
     pass/select_case.cpp
     pass/init_expr.cpp

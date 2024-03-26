@@ -28,7 +28,7 @@ declare float @_lfortran_scos(float)
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
-  call void @_lpython_set_argv(i32 %0, i8** %1)
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %a = alloca float, align 4
   %myreal = alloca float, align 4
   %theta = alloca float, align 4
@@ -93,7 +93,7 @@ ifcont:                                           ; preds = %else, %then
   ret i32 0
 }
 
-declare void @_lpython_set_argv(i32, i8**)
+declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare void @_lfortran_printf(i8*, ...)
 

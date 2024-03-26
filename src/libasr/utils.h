@@ -57,9 +57,12 @@ struct PassOptions {
     bool visualize = false;
     bool tree = false;
     bool with_intrinsic_mods = false;
+    bool c_mangling = false;
 };
 
 struct CompilerOptions {
+    std::vector<std::string> runtime_linker_paths;
+
     // TODO: Convert to std::filesystem::path (also change find_and_load_module())
     PassOptions po;
 

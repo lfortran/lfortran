@@ -66,6 +66,7 @@
                                 1
                                 1
                             )]
+                            .false.
                         )
                         (CaseStmt
                             [(IntegerConstant 2 (Integer 4))]
@@ -73,6 +74,7 @@
                                 2
                                 2
                             )]
+                            .false.
                         )
                         (CaseStmt
                             [(IntegerConstant 3 (Integer 4))]
@@ -80,8 +82,10 @@
                                 3
                                 3
                             )]
+                            .false.
                         )]
                         []
+                        .false.
                     )
                     (Assignment
                         (Var 2 a)
@@ -166,6 +170,7 @@
                                 4
                                 4
                             )]
+                            .false.
                         )
                         (CaseStmt
                             [(IntegerConstant 2 (Integer 4))]
@@ -173,6 +178,7 @@
                                 5
                                 5
                             )]
+                            .false.
                         )
                         (CaseStmt
                             [(IntegerConstant 3 (Integer 4))]
@@ -180,8 +186,10 @@
                                 6
                                 6
                             )]
+                            .false.
                         )]
                         []
+                        .false.
                     )
                     (Assignment
                         (Var 2 a)
@@ -266,6 +274,7 @@
                                 7
                                 7
                             )]
+                            .false.
                         )
                         (CaseStmt
                             [(IntegerConstant 2 (Integer 4))]
@@ -273,6 +282,7 @@
                                 8
                                 8
                             )]
+                            .false.
                         )
                         (CaseStmt
                             [(IntegerConstant 3 (Integer 4))]
@@ -280,8 +290,10 @@
                                 9
                                 9
                             )]
+                            .false.
                         )]
                         []
+                        .false.
                     )
                     (Assignment
                         (Var 2 a)

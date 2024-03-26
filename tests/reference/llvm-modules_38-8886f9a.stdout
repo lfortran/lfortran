@@ -54,7 +54,7 @@ define i32 @main(i32 %0, i8** %1) {
   %array_descriptor = alloca %array, align 8
   %i = alloca i32, align 4
   %array_size = alloca i32, align 4
-  call void @_lpython_set_argv(i32 %0, i8** %1)
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %compiler_arg = alloca %compiler_t, align 8
   %2 = getelementptr %compiler_t, %compiler_t* %compiler_arg, i32 0, i32 2
   store i8* null, i8** %2, align 8
@@ -123,7 +123,7 @@ loop.end:                                         ; preds = %loop.head
   ret i32 0
 }
 
-declare void @_lpython_set_argv(i32, i8**)
+declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare i8* @_lfortran_malloc(i32, ...)
 

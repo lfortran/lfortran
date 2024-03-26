@@ -1517,6 +1517,7 @@ namespace LCompilers {
                 break;
             }
             case (ASR::ttypeType::CPtr) : {
+                a_kind = 8;
                 llvm_type = llvm::Type::getVoidTy(context)->getPointerTo();
                 break;
             }

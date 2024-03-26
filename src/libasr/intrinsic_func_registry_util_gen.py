@@ -672,7 +672,10 @@ def add_create_func_return_src(func_name):
             src += indent * 3 + f"args_values.push_back(al, expr_value(m_args[{_i}]));\n"
         src += indent * 3 +     f"m_value = eval_{func_name}(al, loc, return_type, args_values, diag);\n"
         src += indent * 2 + "}\n"
-        src += indent * 2 + f"return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::{func_name}), m_args.p, m_args.n, 0, return_type, m_value);\n"
+        if "null" in intrinsic_funcs_ret_type.get(func_name, []):
+            src += indent * 2 + f"return ASR::make_Expr_t(al, loc, ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::{func_name}), m_args.p, m_args.n, 0, return_type, m_value)));\n"
+        else:
+            src += indent * 2 + f"return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::{func_name}), m_args.p, m_args.n, 0, return_type, m_value);\n"
 
 def gen_verify_args(func_name):
     global src

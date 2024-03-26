@@ -1206,7 +1206,7 @@ public:
                     case_body_vec.reserve(al, Case_Stmt->n_body);
                     transform_stmts(case_body_vec, Case_Stmt->n_body, Case_Stmt->m_body);
                     tmp = ASR::make_CaseStmt_t(al, x.base.loc, a_test_vec.p, a_test_vec.size(),
-                                        case_body_vec.p, case_body_vec.size());
+                                        case_body_vec.p, case_body_vec.size(), false);
                     break;
                 } else {
                     // For now we only support exactly one range
@@ -1264,7 +1264,7 @@ public:
             }
         }
         tmp = ASR::make_Select_t(al, x.base.base.loc, a_test, a_body_vec.p,
-                           a_body_vec.size(), def_body.p, def_body.size());
+                           a_body_vec.size(), def_body.p, def_body.size(), false);
     }
 
     void visit_SelectType(const AST::SelectType_t& x) {
@@ -3210,7 +3210,7 @@ public:
         body.reserve(al, x.n_body);
         transform_stmts(body, x.n_body, x.m_body);
         tmp = ASR::make_WhileLoop_t(al, x.base.base.loc, x.m_stmt_name, test, body.p,
-                body.size());
+                body.size(), nullptr, 0);
     }
 
     #define cast_as_loop_var(conv_candidate) \
@@ -3268,14 +3268,14 @@ public:
         head.m_increment = increment;
         if (head.m_v != nullptr) {
             head.loc = head.m_v->base.loc;
-            tmp = ASR::make_DoLoop_t(al, x.base.base.loc, x.m_stmt_name, head, body.p, body.size());
+            tmp = ASR::make_DoLoop_t(al, x.base.base.loc, x.m_stmt_name, head, body.p, body.size(), nullptr, 0);
             do_loop_variables.pop_back();
         } else {
             ASR::ttype_t* cond_type
                 = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
             ASR::expr_t* cond = ASRUtils::EXPR(
                 ASR::make_LogicalConstant_t(al, x.base.base.loc, true, cond_type));
-            tmp = ASR::make_WhileLoop_t(al, x.base.base.loc, x.m_stmt_name, cond, body.p, body.size());
+            tmp = ASR::make_WhileLoop_t(al, x.base.base.loc, x.m_stmt_name, cond, body.p, body.size(), nullptr, 0);
         }
     }
 
@@ -3413,11 +3413,11 @@ public:
                         comparator_one.reserve(al, 1);
                         ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
                         comparator_one.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, i+1, int_type)));
-                        a_body_vec.push_back(al, ASR::down_cast<ASR::case_stmt_t>(ASR::make_CaseStmt_t(al, x.base.base.loc, comparator_one.p, 1, body.p, 1)));
+                        a_body_vec.push_back(al, ASR::down_cast<ASR::case_stmt_t>(ASR::make_CaseStmt_t(al, x.base.base.loc, comparator_one.p, 1, body.p, 1, false)));
                     }
                 }
                 tmp = ASR::make_Select_t(al, x.base.base.loc, goto_label, a_body_vec.p,
-                           a_body_vec.size(), def_body.p, def_body.size());
+                           a_body_vec.size(), def_body.p, def_body.size(), false);
             }
         } else if (x.m_int_var) {
             std::string label{x.m_int_var};
@@ -3465,7 +3465,7 @@ public:
                     comparator_one.reserve(al, 1);
                     ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
                     comparator_one.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, num, int_type)));
-                    a_body_vec.push_back(al, ASR::down_cast<ASR::case_stmt_t>(ASR::make_CaseStmt_t(al, x.base.base.loc, comparator_one.p, 1, body.p, 1)));
+                    a_body_vec.push_back(al, ASR::down_cast<ASR::case_stmt_t>(ASR::make_CaseStmt_t(al, x.base.base.loc, comparator_one.p, 1, body.p, 1, false)));
                 }
             } else {
                 for (size_t i = 0; i < x.n_labels; ++i) {
@@ -3481,13 +3481,13 @@ public:
                         comparator_one.reserve(al, 1);
                         ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
                         comparator_one.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, l->m_n, int_type)));
-                        a_body_vec.push_back(al, ASR::down_cast<ASR::case_stmt_t>(ASR::make_CaseStmt_t(al, x.base.base.loc, comparator_one.p, 1, body.p, 1)));
+                        a_body_vec.push_back(al, ASR::down_cast<ASR::case_stmt_t>(ASR::make_CaseStmt_t(al, x.base.base.loc, comparator_one.p, 1, body.p, 1, false)));
                     }
                 }
             }
             ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym));
             tmp = ASR::make_Select_t(al, x.base.base.loc, var_expr, a_body_vec.p,
-                           a_body_vec.size(), def_body.p, def_body.size());
+                           a_body_vec.size(), def_body.p, def_body.size(), false);
         } else {
             throw SemanticError("There must be a target to GOTO.",
                 x.base.base.loc);

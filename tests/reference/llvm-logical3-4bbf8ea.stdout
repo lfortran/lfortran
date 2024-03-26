@@ -103,7 +103,7 @@ source_filename = "LFortran"
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
-  call void @_lpython_set_argv(i32 %0, i8** %1)
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %a = alloca i1, align 1
   %b = alloca i1, align 1
   store i1 true, i1* %a, align 1
@@ -270,7 +270,7 @@ ifcont24:                                         ; preds = %else23, %then22
   ret i32 0
 }
 
-declare void @_lpython_set_argv(i32, i8**)
+declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare void @_lfortran_printf(i8*, ...)
 

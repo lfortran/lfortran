@@ -18,6 +18,7 @@ the code size.
 */
 
 enum class IntrinsicElementalFunctions : int64_t {
+    ObjectType,
     Kind, // if kind is reordered, update `extract_kind` in `asr_utils.h`
     Rank,
     Sin,
@@ -513,6 +514,57 @@ create_unary_function(LogGamma, lgamma, log_gamma)
 create_unary_function(Log10, log10, log10)
 create_unary_function(Erf, erf, erf)
 create_unary_function(Erfc, erfc, erfc)
+
+namespace ObjectType {
+
+     static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 1,
+            "ASR Verify: type() takes only 1 argument `object`",
+            x.base.base.loc, diagnostics);
+    }
+
+    static ASR::expr_t *eval_ObjectType(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*>& /*args*/, diag::Diagnostics& /*diag*/) {
+        ASRBuilder b(al, loc);
+        std::string object_type = "<class '";
+        switch (t1->type) {
+            case ASR::ttypeType::Integer : {
+                object_type += "int"; break;
+            } case ASR::ttypeType::Real : {
+                object_type += "float"; break;
+            } case ASR::ttypeType::Character : {
+                object_type += "str"; break;
+            } case ASR::ttypeType::List : {
+                object_type += "list"; break;
+            } case ASR::ttypeType::Dict : {
+               object_type += "dict"; break;
+            } default: {
+                LCOMPILERS_ASSERT_MSG(false, "Unsupported type");
+                break;
+            }
+        }
+        object_type += "'>";
+        return b.StringConstant(object_type, character(object_type.length()));
+    }
+
+    static inline ASR::asr_t* create_ObjectType(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        if (args.size() != 1) {
+            append_error(diag, "type() takes exactly 1 argument `object` for now", loc);
+        }
+        ASR::expr_t *m_value = nullptr;
+        Vec<ASR::expr_t *> arg_values;
+
+
+        m_value = eval_ObjectType(al, loc, expr_type(args[0]), arg_values, diag);
+
+
+        return ASR::make_IntrinsicElementalFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicElementalFunctions::ObjectType),
+            args.p, args.n, 0, ASRUtils::expr_type(m_value), m_value);
+    }
+
+} // namespace ObjectType
 
 namespace Fix {
     static inline ASR::expr_t *eval_Fix(Allocator &al, const Location &loc,
@@ -1866,7 +1918,7 @@ namespace Floor {
         * }
         */
         body.push_back(al, b.Assignment(result, b.r2i(args[0], return_type)));
-        body.push_back(al, b.If(b.And(b.fLtE(args[0], b.f(0, arg_types[0])), b.fNotEq(b.i2r(b.r2i(args[0], return_type), return_type), b.r2r(args[0], return_type))), 
+        body.push_back(al, b.If(b.And(b.fLtE(args[0], b.f(0, arg_types[0])), b.fNotEq(b.i2r(b.r2i(args[0], return_type), return_type), b.r2r(args[0], return_type))),
         {
             b.Assignment(result, b.i_tSub(b.r2i(args[0], return_type), b.i(1, return_type), return_type))
         }, {}));
@@ -1914,11 +1966,11 @@ namespace Ceiling {
         *   r = int(x)
         * }
         */
-        body.push_back(al, b.If(b.fGtE(args[0], b.f(0, arg_types[0])), 
+        body.push_back(al, b.If(b.fGtE(args[0], b.f(0, arg_types[0])),
         {
             b.If(b.fEq(b.r2r(args[0], return_type),
                 b.i2r(b.r2i(args[0], return_type), return_type)
-                ), 
+                ),
             {
                 b.Assignment(result, b.r2i(args[0], return_type))
             }, {
@@ -2098,7 +2150,7 @@ namespace Exponent {
                 b.i32(23), int32), b.i32(0x0FF), int32), b.i32(126), int32))
             }));
         }
-        
+
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
@@ -2795,12 +2847,12 @@ namespace Trailz {
         end function
         */
         body.push_back(al, b.Assignment(result, b.i(0, arg_types[0])));
-        body.push_back(al, b.If(b.iEq(args[0], b.i(0, arg_types[0])), { 
+        body.push_back(al, b.If(b.iEq(args[0], b.i(0, arg_types[0])), {
             b.Assignment(result, b.i(8*ASRUtils::extract_kind_from_ttype_t(arg_types[0]), arg_types[0]))
-        }, { 
+        }, {
             b.While(b.iEq(b.CallIntrinsic(scope, {arg_types[0], arg_types[0]
             }, {
-            args[0], b.i(2, arg_types[0])}, return_type, 0, Mod::instantiate_Mod), b.i(0, arg_types[0])), 
+            args[0], b.i(2, arg_types[0])}, return_type, 0, Mod::instantiate_Mod), b.i(0, arg_types[0])),
             {
                 b.Assignment(args[0], b.i_tDiv(args[0], b.i(2, arg_types[0]), arg_types[0])),
                 b.Assignment(result, b.i_tAdd(result, b.i(1, arg_types[0]), arg_types[0]))
@@ -2987,7 +3039,7 @@ namespace Poppar {
 
     static ASR::expr_t *eval_Poppar(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
-        ASR::expr_t* count = Popcnt::eval_Popcnt(al, loc, t1, args, diag);  
+        ASR::expr_t* count = Popcnt::eval_Popcnt(al, loc, t1, args, diag);
         int result = ASR::down_cast<ASR::IntegerConstant_t>(count)->m_n;
         result = result % 2 == 0 ? 0 : 1;
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
@@ -3278,15 +3330,15 @@ namespace ToLowerCase {
 
         body.push_back(al, b.Assignment(itr, b.i32(1)));
         body.push_back(al, b.While(b.iLtE(itr, b.StringLen(args[0])), {
-            b.If(b.And(b.iGtE(ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)), int32, nullptr)), b.Ichar("A", arg_types[0], int32)), 
+            b.If(b.And(b.iGtE(ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)), int32, nullptr)), b.Ichar("A", arg_types[0], int32)),
                 b.iLtE(ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)), int32, nullptr)), b.Ichar("Z", arg_types[0], int32))), {
-                b.Assignment(result, b.StringConcat(result, ASRUtils::EXPR(ASR::make_StringChr_t(al, loc, 
-            b.iSub(b.iAdd(ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)), int32, nullptr)), b.Ichar("a", arg_types[0], int32)), 
+                b.Assignment(result, b.StringConcat(result, ASRUtils::EXPR(ASR::make_StringChr_t(al, loc,
+            b.iSub(b.iAdd(ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)), int32, nullptr)), b.Ichar("a", arg_types[0], int32)),
             b.Ichar("A", arg_types[0], int32)), return_type, nullptr)), char_type))
             }, {
                 b.Assignment(result, b.StringConcat(result, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)), char_type))
             }),
-            b.Assignment(itr, b.i_tAdd(itr, b.i32(1), int32)),            
+            b.Assignment(itr, b.i_tAdd(itr, b.i32(1), int32)),
         }));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -3532,9 +3584,9 @@ namespace Adjustl {
 
         body.push_back(al, b.Assignment(itr, b.i32(1)));
         body.push_back(al, b.While(b.iLtE(itr, b.StringLen(args[0])), {
-            b.If(b.iEq(ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, 
-                ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, 
-                ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)), nullptr)), int32, nullptr)), 
+            b.If(b.iEq(ASRUtils::EXPR(ASR::make_Ichar_t(al, loc,
+                ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr,
+                ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)), nullptr)), int32, nullptr)),
                 b.Ichar(" ", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, 1, nullptr)), int32)), {
                 b.Assignment(itr, b.i_tAdd(itr, b.i32(1), int32))
             }, {
@@ -3609,8 +3661,8 @@ namespace Adjustr {
 
         body.push_back(al, b.Assignment(itr, b.StringLen(args[0])));
         body.push_back(al, b.While(b.iGtE(itr, b.i32(1)), {
-            b.If(b.iEq(ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, 
-                ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, 
+            b.If(b.iEq(ASRUtils::EXPR(ASR::make_Ichar_t(al, loc,
+                ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr,
                 ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)), nullptr)), int32, nullptr)),
                 b.Ichar(" ", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, 1, nullptr)), int32)), {
                 b.Assignment(itr, b.i_tSub(itr, b.i32(1), int32))
@@ -3654,8 +3706,8 @@ namespace Ichar {
         auto itr = declare("i", ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), Local);
         body.push_back(al, b.Assignment(itr, b.i32(1)));
         body.push_back(al, b.Assignment(result, b.i2i(
-            ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, 
-            ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)), nullptr)), int32, nullptr)), 
+            ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr,
+            ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)), nullptr)), int32, nullptr)),
             return_type)));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -3807,8 +3859,8 @@ namespace Rrspacing {
         */
         body.push_back(al, b.Assignment(result, b.r_tMul(b.CallIntrinsic(scope, {arg_types[0]}, {
             b.CallIntrinsic(scope, {arg_types[0]}, {args[0]}, return_type, 0, Fraction::instantiate_Fraction)},
-            return_type, 0, Abs::instantiate_Abs), b.rPow(b.i2r(b.i32(2),return_type), 
-            b.i2r(b.CallIntrinsic(scope, {arg_types[0]}, {args[0]}, int32, 0, Digits::instantiate_Digits), 
+            return_type, 0, Abs::instantiate_Abs), b.rPow(b.i2r(b.i32(2),return_type),
+            b.i2r(b.CallIntrinsic(scope, {arg_types[0]}, {args[0]}, int32, 0, Digits::instantiate_Digits),
             return_type), return_type), return_type)));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -3989,7 +4041,7 @@ namespace StringContainsSet {
                 b.Assignment(matched, b.bool32(0)),
                 b.Assignment(j, b.i(1, return_type)),
                 b.While(b.iLtE(j, b.StringLen(args[1])), {
-                    b.If(b.sEq(b.StringSection(args[0], b.i_tSub(i, b.i(1, return_type), return_type), i), 
+                    b.If(b.sEq(b.StringSection(args[0], b.i_tSub(i, b.i(1, return_type), return_type), i),
                     b.StringSection(args[1], b.i_tSub(j, b.i(1, return_type), return_type), j)), {
                         b.Assignment(matched, b.bool32(1))
                     }, {}),
@@ -4007,7 +4059,7 @@ namespace StringContainsSet {
                 b.Assignment(matched, b.bool32(0)),
                 b.Assignment(j, b.i(1, return_type)),
                 b.While(b.iLtE(j, b.StringLen(args[1])), {
-                    b.If(b.sEq(b.StringSection(args[0], b.i_tSub(i, b.i(1, return_type), return_type), i), 
+                    b.If(b.sEq(b.StringSection(args[0], b.i_tSub(i, b.i(1, return_type), return_type), i),
                     b.StringSection(args[1], b.i_tSub(j, b.i(1, return_type), return_type), j)), {
                         b.Assignment(matched, b.bool32(1))
                     }, {}),
@@ -4054,7 +4106,7 @@ namespace StringFindSet {
                 }
             }
         }
-        
+
         ASR::ttype_t* return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
         return make_ConstantWithType(make_IntegerConstant_t, result, return_type, loc);
     }
@@ -4077,7 +4129,7 @@ namespace StringFindSet {
                 logical, optional :: back
                 integer(kind) :: r = 0
                 integer :: i, j
-                if (back) then 
+                if (back) then
                     i = len(string)
                     do while (i >= 1)
                         j = 1
@@ -4109,13 +4161,13 @@ namespace StringFindSet {
             end function
         */
 
-        body.push_back(al, b.Assignment(result, b.i(0, return_type)));        
+        body.push_back(al, b.Assignment(result, b.i(0, return_type)));
         body.push_back(al, b.If(b.boolEq(args[2], b.bool32(1)), {
             b.Assignment(i, b.StringLen(args[0])),
             b.While(b.iGtE(i, b.i(1, return_type)), {
                 b.Assignment(j, b.i(1, return_type)),
                 b.While(b.iLtE(j, b.StringLen(args[1])), {
-                    b.If(b.sEq(b.StringSection(args[0], b.i_tSub(i, b.i(1, return_type), return_type), i), 
+                    b.If(b.sEq(b.StringSection(args[0], b.i_tSub(i, b.i(1, return_type), return_type), i),
                     b.StringSection(args[1], b.i_tSub(j, b.i(1, return_type), return_type), j)), {
                         b.Assignment(result, i),
                         b.Exit(nullptr)
@@ -4132,7 +4184,7 @@ namespace StringFindSet {
             b.While(b.iLtE(i, b.StringLen(args[0])), {
                 b.Assignment(j, b.i(1, return_type)),
                 b.While(b.iLtE(j, b.StringLen(args[1])), {
-                    b.If(b.sEq(b.StringSection(args[0], b.i_tSub(i, b.i(1, return_type), return_type), i), 
+                    b.If(b.sEq(b.StringSection(args[0], b.i_tSub(i, b.i(1, return_type), return_type), i),
                     b.StringSection(args[1], b.i_tSub(j, b.i(1, return_type), return_type), j)), {
                         b.Assignment(result, i),
                         b.Exit(nullptr)
@@ -4179,7 +4231,7 @@ namespace SubstrIndex {
                 }
             }
         }
-        
+
         ASR::ttype_t* return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
         return make_ConstantWithType(make_IntegerConstant_t, result, return_type, loc);
     }
@@ -4242,7 +4294,7 @@ namespace SubstrIndex {
         */
         body.push_back(al, b.Assignment(idx, b.i(0, return_type)));
         body.push_back(al, b.Assignment(i, b.i(1, return_type)));
-        body.push_back(al, b.Assignment(found, b.bool32(1)));   
+        body.push_back(al, b.Assignment(found, b.bool32(1)));
         body.push_back(al, b.If(b.iLt(b.StringLen(args[0]), b.StringLen(args[1])), {
             b.Assignment(found, b.bool32(0))
         }, {}));
@@ -4253,7 +4305,7 @@ namespace SubstrIndex {
             b.While(b.And(b.iLtE(j, b.StringLen(args[1])), b.boolEq(found, b.bool32(1))), {
                 b.Assignment(pos, b.i_tAdd(i, k, return_type)),
                 b.If(b.sNotEq(
-                    b.StringSection(args[0], b.i_tSub(pos, b.i(1, return_type), return_type), pos), 
+                    b.StringSection(args[0], b.i_tSub(pos, b.i(1, return_type), return_type), pos),
                     b.StringSection(args[1], b.i_tSub(j, b.i(1, return_type), return_type), j)), {
                         b.Assignment(found, b.bool32(0))
                 }, {}),
@@ -4447,9 +4499,9 @@ namespace ListIndex {
 static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
     ASRUtils::require_impl(x.n_args <= 4, "Call to list.index must have at most four arguments",
         x.base.base.loc, diagnostics);
-    ASRUtils::require_impl(ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(x.m_args[0])) &&
-        ASRUtils::check_equal_type(ASRUtils::expr_type(x.m_args[1]),
-            ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_args[0]))),
+    ASR::ttype_t* arg0_type = ASRUtils::type_get_past_const(ASRUtils::expr_type(x.m_args[0]));
+    ASRUtils::require_impl(ASR::is_a<ASR::List_t>(*arg0_type) &&
+        ASRUtils::check_equal_type(ASRUtils::expr_type(x.m_args[1]), ASRUtils::get_contained_type(arg0_type)),
         "First argument to list.index must be of list type and "
         "second argument must be of same type as list elemental type",
         x.base.base.loc, diagnostics);
@@ -4483,7 +4535,7 @@ static inline ASR::asr_t* create_ListIndex(Allocator& al, const Location& loc,
     int64_t overload_id = 0;
     ASR::expr_t* list_expr = args[0];
     ASR::ttype_t *type = ASRUtils::expr_type(list_expr);
-    ASR::ttype_t *list_type = ASR::down_cast<ASR::List_t>(type)->m_type;
+    ASR::ttype_t *list_type = ASR::down_cast<ASR::List_t>(ASRUtils::type_get_past_const(type))->m_type;
     ASR::ttype_t *ele_type = ASRUtils::expr_type(args[1]);
     if (!ASRUtils::check_equal_type(ele_type, list_type)) {
         std::string fnd = ASRUtils::get_type_code(ele_type);

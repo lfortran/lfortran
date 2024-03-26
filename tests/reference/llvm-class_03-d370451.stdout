@@ -22,7 +22,7 @@ source_filename = "LFortran"
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
-  call void @_lpython_set_argv(i32 %0, i8** %1)
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %jack = alloca %person, align 8
   %2 = getelementptr %person, %person* %jack, i32 0, i32 2
   %3 = getelementptr %person, %person* %jack, i32 0, i32 0
@@ -89,6 +89,6 @@ define i32 @main(i32 %0, i8** %1) {
   ret i32 0
 }
 
-declare void @_lpython_set_argv(i32, i8**)
+declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare void @_lfortran_printf(i8*, ...)

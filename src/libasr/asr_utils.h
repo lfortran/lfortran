@@ -2014,9 +2014,10 @@ static inline bool is_pointer(ASR::ttype_t *x) {
 
 static inline bool is_integer(ASR::ttype_t &x) {
     return ASR::is_a<ASR::Integer_t>(
-        *type_get_past_array(
+        *type_get_past_const(
+            type_get_past_array(
             type_get_past_allocatable(
-                type_get_past_pointer(&x))));
+                type_get_past_pointer(&x)))));
 }
 
 static inline bool is_unsigned_integer(ASR::ttype_t &x) {
@@ -2070,7 +2071,6 @@ static inline bool is_type_parameter(ASR::ttype_t &x) {
 }
 
 // Checking if the symbol 'x' is a virtual function defined inside a requirement
-/*
 static inline bool is_requirement_function(ASR::symbol_t *x) {
     ASR::symbol_t* x2 = symbol_get_past_external(x);
     switch (x2->type) {
@@ -2081,9 +2081,8 @@ static inline bool is_requirement_function(ASR::symbol_t *x) {
         default: return false;
     }
 }
-*/
+
 // Checking if the symbol 'x' is a generic function defined inside a template
-/*
 static inline bool is_generic_function(ASR::symbol_t *x) {
     ASR::symbol_t* x2 = symbol_get_past_external(x);
     switch (x2->type) {
@@ -2105,7 +2104,6 @@ static inline bool is_generic_function(ASR::symbol_t *x) {
         default: return false;
     }
 }
-*/
 
 // Checking if the string `arg_name` corresponds to one of the arguments of the template `x`
 static inline bool is_template_arg(ASR::symbol_t *x, std::string arg_name) {
@@ -2608,6 +2606,9 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
                 ft->m_static, ft->m_restrictions, ft->n_restrictions,
                 ft->m_is_restriction));
         }
+        case ASR::ttypeType::SymbolicExpression: {
+            return ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, t->base.loc));
+        }
         default : throw LCompilersException("Not implemented " + std::to_string(t->type));
     }
     LCOMPILERS_ASSERT(t_ != nullptr);
@@ -2796,8 +2797,8 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
         case ASR::exprType::IntrinsicElementalFunction: {
             ASR::IntrinsicElementalFunction_t* kind_isf =
                 ASR::down_cast<ASR::IntrinsicElementalFunction_t>(kind_expr);
-            if (kind_isf->m_intrinsic_id == 0 && kind_isf->m_value) {
-                // m_intrinsic_id: 0 -> kind intrinsic
+            if (kind_isf->m_intrinsic_id == 1 && kind_isf->m_value) {
+                // m_intrinsic_id: 1 -> kind intrinsic
                 LCOMPILERS_ASSERT( ASR::is_a<ASR::IntegerConstant_t>(*kind_isf->m_value) );
                 ASR::IntegerConstant_t* kind_ic =
                     ASR::down_cast<ASR::IntegerConstant_t>(kind_isf->m_value);
@@ -4783,6 +4784,44 @@ static inline int KMP_string_match(std::string &s_var, std::string &sub) {
     return res;
 }
 
+static inline int KMP_string_match_count(std::string &s_var, std::string &sub) {
+    int str_len = s_var.size();
+    int sub_len = sub.size();
+    int count = 0;
+    std::vector<int> lps(sub_len, 0);
+    if (sub_len == 0) {
+        count = str_len + 1;
+    } else {
+        for(int i = 1, len = 0; i < sub_len;) {
+            if (sub[i] == sub[len]) {
+                lps[i++] = ++len;
+            } else {
+                if (len != 0) {
+                    len = lps[len - 1];
+                } else {
+                    lps[i++] = 0;
+                }
+            }
+        }
+        for (int i = 0, j = 0; (str_len - i) >= (sub_len - j);) {
+            if (sub[j] == s_var[i]) {
+                j++, i++;
+            }
+            if (j == sub_len) {
+                count++;
+                j = lps[j - 1];
+            } else if (i < str_len && sub[j] != s_var[i]) {
+                if (j != 0) {
+                    j = lps[j - 1];
+                } else {
+                    i = i + 1;
+                }
+            }
+        }
+    }
+    return count;
+}
+
 static inline void visit_expr_list(Allocator &al, Vec<ASR::call_arg_t>& exprs,
         Vec<ASR::expr_t*>& exprs_vec) {
     LCOMPILERS_ASSERT(exprs_vec.reserve_called);
@@ -4964,7 +5003,7 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
     }
 
     LCOMPILERS_ASSERT(ASRUtils::is_array(a_type));
-    bool all_expr_evaluated = true;
+    bool all_expr_evaluated = n_args > 0;
     for (size_t i = 0; i < n_args; i++) {
         ASR::expr_t* a_value = ASRUtils::expr_value(a_args[i]);
         if (!is_value_constant(a_value)) {
@@ -5332,6 +5371,26 @@ static inline bool is_simd_array(ASR::expr_t *v) {
     return (ASR::is_a<ASR::Array_t>(*expr_type(v)) &&
         ASR::down_cast<ASR::Array_t>(expr_type(v))->m_physical_type
             == ASR::array_physical_typeType::SIMDArray);
+}
+
+static inline bool is_argument_of_type_CPtr(ASR::expr_t *var) {
+    bool is_argument = false;
+    if (ASR::is_a<ASR::CPtr_t>(*expr_type(var))) {
+        if (ASR::is_a<ASR::Var_t>(*var)) {
+            ASR::symbol_t *var_sym = ASR::down_cast<ASR::Var_t>(var)->m_v;
+            if (ASR::is_a<ASR::Variable_t>(*var_sym)) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(var_sym);
+                if (v->m_intent == intent_local ||
+                    v->m_intent == intent_return_var ||
+                    !v->m_intent) {
+                    is_argument = false;
+                } else {
+                    is_argument = true;
+                }
+            }
+        }
+    }
+    return is_argument;
 }
 
 } // namespace ASRUtils

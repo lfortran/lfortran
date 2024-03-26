@@ -90,7 +90,7 @@ define i32 @main(i32 %0, i8** %1) {
   %call_arg_value2 = alloca float, align 4
   %call_arg_value1 = alloca i32, align 4
   %call_arg_value = alloca i32, align 4
-  call void @_lpython_set_argv(i32 %0, i8** %1)
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %a = alloca [3 x float], align 4
   %b = alloca float, align 4
   %2 = getelementptr [3 x float], [3 x float]* %a, i32 0, i32 0
@@ -123,7 +123,7 @@ ifcont:                                           ; preds = %else, %then
   ret i32 0
 }
 
-declare void @_lpython_set_argv(i32, i8**)
+declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare void @_lcompilers_print_error(i8*, ...)
 

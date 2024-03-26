@@ -125,11 +125,13 @@
                                 320
                                 320
                             )]
+                            []
                         )
                         (GoToTarget
                             330
                             330
                         )]
+                        []
                     )
                     (Assignment
                         (Var 2 do330i)

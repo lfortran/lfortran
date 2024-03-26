@@ -110,6 +110,7 @@
                             (Var 2 i)
                             ()
                         )]
+                        []
                     )
                     (DoLoop
                         ()
@@ -130,6 +131,7 @@
                             ()
                             ()
                         )]
+                        []
                     )
                     (ImplicitDeallocate
                         [(Var 2 array)]
