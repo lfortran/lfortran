@@ -16,6 +16,7 @@
 
 #include <libasr/pass/replace_do_loops.h>
 #include <libasr/pass/replace_for_all.h>
+#include <libasr/pass/while_else.h>
 #include <libasr/pass/replace_init_expr.h>
 #include <libasr/pass/replace_implied_do_loops.h>
 #include <libasr/pass/replace_array_op.h>
@@ -28,7 +29,7 @@
 #include <libasr/pass/replace_arr_slice.h>
 #include <libasr/pass/replace_flip_sign.h>
 #include <libasr/pass/replace_div_to_mul.h>
-// #include <libasr/pass/replace_symbolic.h>
+#include <libasr/pass/replace_symbolic.h>
 #include <libasr/pass/replace_intrinsic_function.h>
 #include <libasr/pass/replace_intrinsic_subroutine.h>
 #include <libasr/pass/replace_fma.h>
@@ -76,10 +77,11 @@ namespace LCompilers {
         std::vector<std::string> _skip_passes, _c_skip_passes;
         std::map<std::string, pass_function> _passes_db = {
             {"do_loops", &pass_replace_do_loops},
+            {"while_else", &pass_while_else},
             {"global_stmts", &pass_wrap_global_stmts},
             {"implied_do_loops", &pass_replace_implied_do_loops},
             {"array_op", &pass_replace_array_op},
-            // {"symbolic", &pass_replace_symbolic},
+            {"symbolic", &pass_replace_symbolic},
             {"intrinsic_function", &pass_replace_intrinsic_function},
             {"intrinsic_subroutine", &pass_replace_intrinsic_subroutine},
             {"arr_slice", &pass_replace_arr_slice},
@@ -215,7 +217,7 @@ namespace LCompilers {
                 "function_call_in_declaration",
                 "subroutine_from_function",
                 "array_op",
-                // "symbolic",
+                "symbolic",
                 "intrinsic_function",
                 "intrinsic_subroutine",
                 "subroutine_from_function",
@@ -228,6 +230,7 @@ namespace LCompilers {
                 "array_dim_intrinsics_update",
                 "do_loops",
                 "forall",
+                "while_else",
                 "select_case",
                 "inline_function_calls",
                 "unused_functions",
@@ -247,7 +250,7 @@ namespace LCompilers {
                 "function_call_in_declaration",
                 "subroutine_from_function",
                 "array_op",
-                // "symbolic",
+                "symbolic",
                 "intrinsic_function",
                 "intrinsic_subroutine",
                 "subroutine_from_function",
@@ -261,6 +264,7 @@ namespace LCompilers {
                 "array_dim_intrinsics_update",
                 "do_loops",
                 "forall",
+                "while_else",
                 "dead_code_removal",
                 "select_case",
                 "unused_functions",

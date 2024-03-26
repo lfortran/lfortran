@@ -141,6 +141,14 @@ namespace LCompilers {
                     ASR::is_a<ASR::SymbolicExpression_t>(*ASRUtils::expr_type(var)));
         }
 
+        static inline bool is_symbolic_list_type(ASR::expr_t* var) {
+            if (ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(var))) {
+                ASR::List_t *list = ASR::down_cast<ASR::List_t>(ASRUtils::expr_type(var));
+                return (list->m_type->type == ASR::ttypeType::SymbolicExpression);
+            }
+            return false;
+        }
+
         static inline void allocate_res_var(Allocator& al, ASR::FunctionCall_t* x, Vec<ASR::call_arg_t> &new_args,
                             ASR::expr_t* result_var_, Vec<ASR::stmt_t*>& pass_result, std::vector<int> map) {
             ASR::expr_t* func_call_merge = nullptr;
@@ -697,7 +705,7 @@ namespace LCompilers {
                 }
             }
             ASR::stmt_t* doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, arr_var->base.loc,
-                                                                    nullptr, head, doloop_body.p, doloop_body.size()));
+                nullptr, head, doloop_body.p, doloop_body.size(), nullptr, 0));
             result_vec->push_back(al, doloop);
         }
 
@@ -726,7 +734,7 @@ namespace LCompilers {
                     doloop_body.push_back(al, doloop);
                 }
                 doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head,
-                            doloop_body.p, doloop_body.size()));
+                    doloop_body.p, doloop_body.size(), nullptr, 0));
             }
             result_vec->push_back(al, doloop);
         }
@@ -759,7 +767,7 @@ namespace LCompilers {
                     doloop_body.push_back(al, doloop);
                 }
                 doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head,
-                            doloop_body.p, doloop_body.size()));
+                            doloop_body.p, doloop_body.size(), nullptr, 0));
             }
             result_vec->push_back(al, doloop);
         }
@@ -995,7 +1003,7 @@ namespace LCompilers {
             * in avoiding deep copies and the destination memory directly gets
             * filled inside the function.
             */
-            if( is_array_or_struct_or_symbolic(x->m_return_var)) {
+            if( is_array_or_struct_or_symbolic(x->m_return_var) || is_symbolic_list_type(x->m_return_var)) {
                 for( auto& s_item: x->m_symtab->get_scope() ) {
                     ASR::symbol_t* curr_sym = s_item.second;
                     if( curr_sym->type == ASR::symbolType::Variable ) {

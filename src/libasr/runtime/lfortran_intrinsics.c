@@ -1566,7 +1566,7 @@ LFORTRAN_API double _lfortran_dbessely0( double x ) {
     double co;
 
 	if ( x < 0.0 ) {
-		return nan("1");        
+		return nan("1");
 	}
 	if ( x == 0.0 ) {
 		return -1*HUGE_VAL;
@@ -1576,21 +1576,21 @@ LFORTRAN_API double _lfortran_dbessely0( double x ) {
 	}
 	if ( x <= 3.0 ) {
 		y = x * x;
-		z = ( _lfortran_dlog(x/x1) * _lfortran_dbesselj0(x) ) * TWO_DIV_PI;       
+		z = ( _lfortran_dlog(x/x1) * _lfortran_dbesselj0(x) ) * TWO_DIV_PI;
 		r = bessely0_rational_p1q1( y );
 		f = ( x+x1 ) * ( ( x - (x11/256.0) ) - x12 );
 		return z + ( f*r );
 	}
     if ( x <= 5.5 ) {
 		y = x * x;
-		z = ( _lfortran_dlog(x/x1) * _lfortran_dbesselj0(x) ) * TWO_DIV_PI;      
+		z = ( _lfortran_dlog(x/x1) * _lfortran_dbesselj0(x) ) * TWO_DIV_PI;
 		r = bessely0_rational_p2q2( y );
 		f = ( x+x2 ) * ( (x - (x21/256.0)) - x22 );
 		return z + ( f*r );
 	}
 	if ( x <= 8.0 ) {
 		y = x * x;
-		z = ( _lfortran_dlog(x/x1) * _lfortran_dbesselj0(x) ) * TWO_DIV_PI;        
+		z = ( _lfortran_dlog(x/x1) * _lfortran_dbesselj0(x) ) * TWO_DIV_PI;
 		r = bessely0_rational_p3q3( y );
 		f = ( x+x3 ) * ( (x - (x31/256.0)) - x32 );
 		return z + ( f*r );
@@ -3162,6 +3162,13 @@ LFORTRAN_API char *_lpython_get_argv(int32_t index) {
 }
 
 // << Command line arguments << ------------------------------------------------
+
+// Initial setup
+LFORTRAN_API void _lpython_call_initial_functions(int32_t argc_1, char *argv_1[]) {
+    _lpython_set_argv(argc_1, argv_1);
+    _lfortran_init_random_clock();
+}
+// << Initial setup << ---------------------------------------------------------
 
 // >> Runtime Stacktrace >> ----------------------------------------------------
 #ifdef HAVE_RUNTIME_STACKTRACE

@@ -36,7 +36,7 @@ stmt
     | ExplicitDeallocate(expr* vars)
     | ImplicitDeallocate(expr* vars)
     | DoConcurrentLoop(do_loop_head head, stmt* body)
-    | DoLoop(identifier? name, do_loop_head head, stmt* body)
+    | DoLoop(identifier? name, do_loop_head head, stmt* body, stmt* orelse)
     | ErrorStop(expr? code)
     | Exit(identifier? stmt_name)
     | ForAllSingle(do_loop_head head, stmt assign_stmt)
@@ -53,13 +53,13 @@ stmt
     | FileInquire(int label, expr? unit, expr? file, expr? iostat, expr? err, expr? exist, expr? opened, expr? number, expr? named, expr? name, expr? access, expr? sequential, expr? direct, expr? form, expr? formatted, expr? unformatted, expr? recl, expr? nextrec, expr? blank, expr? position, expr? action, expr? read, expr? write, expr? readwrite, expr? delim, expr? pad, expr? flen, expr? blocksize, expr? convert, expr? carriagecontrol, expr? iolength)
     | FileWrite(int label, expr? unit, expr? iomsg, expr? iostat, expr? id, expr* values, expr? separator, expr? end, stmt? overloaded)
     | Return()
-    | Select(expr test, case_stmt* body, stmt* default)
+    | Select(expr test, case_stmt* body, stmt* default, bool enable_fall_through)
     | Stop(expr? code)
     | Assert(expr test, expr? msg)
     | SubroutineCall(symbol name, symbol? original_name, call_arg* args, expr? dt)
     | IntrinsicImpureSubroutine(int intrinsic_id, expr* args, int overload_id)
     | Where(expr test, stmt* body, stmt* orelse)
-    | WhileLoop(identifier? name, expr test, stmt* body)
+    | WhileLoop(identifier? name, expr test, stmt* body, stmt* orelse)
     | Nullify(symbol* vars)
     | Flush(int label, expr unit, expr? err, expr? iomsg, expr? iostat)
     | ListAppend(expr a, expr ele)
@@ -207,7 +207,7 @@ ttype
     | Array(ttype type, dimension* dims, array_physical_type physical_type)
     | FunctionType(ttype* arg_types, ttype? return_var_type, abi abi, deftype deftype, string? bindc_name, bool elemental, bool pure, bool module, bool inline, bool static, symbol* restrictions, bool is_restriction)
 
-cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | IntegerToInteger | RealToComplex | IntegerToComplex | IntegerToLogical | RealToLogical | CharacterToLogical | CharacterToInteger | CharacterToList | ComplexToLogical | ComplexToComplex | ComplexToReal | ComplexToInteger | LogicalToInteger | RealToCharacter | IntegerToCharacter | LogicalToCharacter | UnsignedIntegerToInteger | UnsignedIntegerToUnsignedInteger | UnsignedIntegerToReal | UnsignedIntegerToLogical | IntegerToUnsignedInteger | RealToUnsignedInteger | CPtrToUnsignedInteger | UnsignedIntegerToCPtr | IntegerToSymbolicExpression
+cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | IntegerToInteger | RealToComplex | IntegerToComplex | IntegerToLogical | RealToLogical | CharacterToLogical | CharacterToInteger | CharacterToList | ComplexToLogical | ComplexToComplex | ComplexToReal | ComplexToInteger | LogicalToInteger | RealToCharacter | IntegerToCharacter | LogicalToCharacter | UnsignedIntegerToInteger | UnsignedIntegerToUnsignedInteger | UnsignedIntegerToReal | UnsignedIntegerToLogical | IntegerToUnsignedInteger | RealToUnsignedInteger | CPtrToUnsignedInteger | UnsignedIntegerToCPtr | IntegerToSymbolicExpression | ListToArray
 storage_type = Default | Save | Parameter
 access = Public | Private
 intent = Local | In | Out | InOut | ReturnVar | Unspecified
@@ -222,7 +222,7 @@ call_arg = (expr? value)
 tbind = Bind(string lang, string name)
 array_index = (expr? left, expr? right, expr? step)
 do_loop_head = (expr? v, expr? start, expr? end, expr? increment)
-case_stmt = CaseStmt(expr* test, stmt* body) | CaseStmt_Range(expr? start, expr? end, stmt* body)
+case_stmt = CaseStmt(expr* test, stmt* body, bool fall_through) | CaseStmt_Range(expr? start, expr? end, stmt* body)
 type_stmt = TypeStmtName(symbol sym, stmt* body) | ClassStmt(symbol sym, stmt* body) | TypeStmtType(ttype type, stmt* body)
 enumtype = IntegerConsecutiveFromZero | IntegerUnique | IntegerNotUnique | NonInteger
 require_instantiation = Require(identifier name, identifier* args)

@@ -2738,6 +2738,10 @@ def main(argv):
     elif subs["MOD"] == "AST":
          subs["MOD"] = "LFortran::AST"
          subs["lcompiler"] = "lfortran"
+    elif subs["MOD"] == "LC":
+        subs["MOD"] = "LC::AST"
+        subs["mod"] = "ast"
+        subs["lcompiler"] = "lc"
     else:
         subs["lcompiler"] = "lfortran"
     is_asr = (mod.name.upper() == "ASR")

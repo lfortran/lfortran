@@ -362,7 +362,7 @@ def run_test(testname, basename, cmd, infile, update_reference=False,
         log.debug(s + " " + check())
 
 
-def tester_main(compiler, single_test):
+def tester_main(compiler, single_test, is_lcompilers_executable_installed=False):
     parser = argparse.ArgumentParser(description=f"{compiler} Test Suite")
     parser.add_argument("-u", "--update", action="store_true",
                         help="update all reference results")
@@ -416,8 +416,9 @@ def tester_main(compiler, single_test):
     no_color = args.no_color
 
     # So that the tests find the `lcompiler` executable
-    os.environ["PATH"] = os.path.join(SRC_DIR, "bin") \
-        + os.pathsep + os.environ["PATH"]
+    if not is_lcompilers_executable_installed:
+        os.environ["PATH"] = os.path.join(SRC_DIR, "bin") \
+            + os.pathsep + os.environ["PATH"]
     test_data = toml.load(open(os.path.join(ROOT_DIR, "tests", "tests.toml")))
     filtered_tests = test_data["test"]
     if specific_tests:

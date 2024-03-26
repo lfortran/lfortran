@@ -124,6 +124,20 @@ public:
         current_symtab = nullptr;
     }
 
+    void visit_Select(const Select_t& x) {
+        bool fall_through = false;
+        for( size_t i = 0; i < x.n_body; i++ ) {
+            if( ASR::is_a<ASR::CaseStmt_t>(*x.m_body[i]) ) {
+                ASR::CaseStmt_t* case_stmt_t = ASR::down_cast<ASR::CaseStmt_t>(x.m_body[i]);
+                fall_through = fall_through || case_stmt_t->m_fall_through;
+            }
+        }
+        require(fall_through == x.m_enable_fall_through,
+            "Select_t::m_enable_fall_through should be " +
+            std::to_string(x.m_enable_fall_through));
+        BaseWalkVisitor<VerifyVisitor>::visit_Select(x);
+    }
+
     // --------------------------------------------------------
     // symbol instances:
 
@@ -698,6 +712,7 @@ public:
             ASR::Module_t *m = ASRUtils::get_sym_module(x.m_external);
             ASR::StructType_t* sm = nullptr;
             ASR::EnumType_t* em = nullptr;
+            ASR::UnionType_t* um = nullptr;
             ASR::Function_t* fm = nullptr;
             bool is_valid_owner = false;
             is_valid_owner = m != nullptr && ((ASR::symbol_t*) m == ASRUtils::get_asr_owner(x.m_external));
@@ -706,13 +721,17 @@ public:
                 ASR::symbol_t* asr_owner_sym = ASRUtils::get_asr_owner(x.m_external);
                 is_valid_owner = (ASR::is_a<ASR::StructType_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::EnumType_t>(*asr_owner_sym) ||
-                                  ASR::is_a<ASR::Function_t>(*asr_owner_sym));
+                                  ASR::is_a<ASR::Function_t>(*asr_owner_sym) ||
+                                  ASR::is_a<ASR::UnionType_t>(*asr_owner_sym));
                 if( ASR::is_a<ASR::StructType_t>(*asr_owner_sym) ) {
                     sm = ASR::down_cast<ASR::StructType_t>(asr_owner_sym);
                     asr_owner_name = sm->m_name;
                 } else if( ASR::is_a<ASR::EnumType_t>(*asr_owner_sym) ) {
                     em = ASR::down_cast<ASR::EnumType_t>(asr_owner_sym);
                     asr_owner_name = em->m_name;
+                } else if( ASR::is_a<ASR::UnionType_t>(*asr_owner_sym) ) {
+                    um = ASR::down_cast<ASR::UnionType_t>(asr_owner_sym);
+                    asr_owner_name = um->m_name;
                 } else if( ASR::is_a<ASR::Function_t>(*asr_owner_sym) ) {
                     fm = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
                     asr_owner_name = fm->m_name;
@@ -741,6 +760,8 @@ public:
                 s = em->m_symtab->resolve_symbol(std::string(x.m_original_name));
             } else if( fm ) {
                 s = fm->m_symtab->resolve_symbol(std::string(x.m_original_name));
+            } else if( um ) {
+                s = um->m_symtab->resolve_symbol(std::string(x.m_original_name));
             }
             require(s != nullptr,
                 "ExternalSymbol::m_original_name ('"
@@ -1128,13 +1149,9 @@ public:
         for (size_t i = 0; i < x.n_args; i++) {
             require(!ASR::is_a<ASR::ArrayConstant_t>(*x.m_args[i]),
                 "ArrayConstant cannot have ArrayConstant as its elements");
+            ASR::expr_t* arg_value = ASRUtils::expr_value(x.m_args[i]);
             require(
-                ASR::is_a<ASR::IntegerConstant_t>(*x.m_args[i]) ||
-                ASR::is_a<ASR::RealConstant_t>(*x.m_args[i]) ||
-                ASR::is_a<ASR::ComplexConstant_t>(*x.m_args[i]) ||
-                ASR::is_a<ASR::LogicalConstant_t>(*x.m_args[i]) ||
-                ASR::is_a<ASR::StringConstant_t>(*x.m_args[i]) ||
-                ASR::is_a<ASR::UnsignedIntegerConstant_t>(*x.m_args[i]),
+                ASRUtils::is_value_constant(arg_value),
                 "ArrayConstant must have constant values");
         }
 
