@@ -2,246 +2,6 @@
     (SymbolTable
         1
         {
-            _lcompilers_optimization_flipsign_f32:
-                (Function
-                    (SymbolTable
-                        3
-                        {
-                            _lcompilers_optimization_flipsign_f32:
-                                (Variable
-                                    3
-                                    _lcompilers_optimization_flipsign_f32
-                                    []
-                                    ReturnVar
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
-                            signal:
-                                (Variable
-                                    3
-                                    signal
-                                    []
-                                    In
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
-                            variable:
-                                (Variable
-                                    3
-                                    variable
-                                    []
-                                    In
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                )
-                        })
-                    _lcompilers_optimization_flipsign_f32
-                    (FunctionType
-                        [(Integer 4)
-                        (Real 4)]
-                        (Real 4)
-                        Source
-                        Implementation
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                        []
-                        .false.
-                    )
-                    []
-                    [(Var 3 signal)
-                    (Var 3 variable)]
-                    [(If
-                        (IntegerCompare
-                            (IntegerBinOp
-                                (Var 3 signal)
-                                Sub
-                                (IntegerBinOp
-                                    (IntegerConstant 2 (Integer 4))
-                                    Mul
-                                    (IntegerBinOp
-                                        (Var 3 signal)
-                                        Div
-                                        (IntegerConstant 2 (Integer 4))
-                                        (Integer 4)
-                                        ()
-                                    )
-                                    (Integer 4)
-                                    ()
-                                )
-                                (Integer 4)
-                                ()
-                            )
-                            Eq
-                            (IntegerConstant 1 (Integer 4))
-                            (Logical 4)
-                            ()
-                        )
-                        [(Assignment
-                            (Var 3 _lcompilers_optimization_flipsign_f32)
-                            (RealUnaryMinus
-                                (Var 3 variable)
-                                (Real 4)
-                                ()
-                            )
-                            ()
-                        )]
-                        [(Assignment
-                            (Var 3 _lcompilers_optimization_flipsign_f32)
-                            (Var 3 variable)
-                            ()
-                        )]
-                    )]
-                    (Var 3 _lcompilers_optimization_flipsign_f32)
-                    Public
-                    .false.
-                    .false.
-                    ()
-                ),
-            _lcompilers_optimization_flipsign_f321:
-                (Function
-                    (SymbolTable
-                        4
-                        {
-                            _lcompilers_optimization_flipsign_f321:
-                                (Variable
-                                    4
-                                    _lcompilers_optimization_flipsign_f321
-                                    []
-                                    ReturnVar
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
-                            signal:
-                                (Variable
-                                    4
-                                    signal
-                                    []
-                                    In
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
-                            variable:
-                                (Variable
-                                    4
-                                    variable
-                                    []
-                                    In
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                )
-                        })
-                    _lcompilers_optimization_flipsign_f321
-                    (FunctionType
-                        [(Integer 4)
-                        (Real 4)]
-                        (Real 4)
-                        Source
-                        Implementation
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                        []
-                        .false.
-                    )
-                    []
-                    [(Var 4 signal)
-                    (Var 4 variable)]
-                    [(If
-                        (IntegerCompare
-                            (IntegerBinOp
-                                (Var 4 signal)
-                                Sub
-                                (IntegerBinOp
-                                    (IntegerConstant 2 (Integer 4))
-                                    Mul
-                                    (IntegerBinOp
-                                        (Var 4 signal)
-                                        Div
-                                        (IntegerConstant 2 (Integer 4))
-                                        (Integer 4)
-                                        ()
-                                    )
-                                    (Integer 4)
-                                    ()
-                                )
-                                (Integer 4)
-                                ()
-                            )
-                            Eq
-                            (IntegerConstant 1 (Integer 4))
-                            (Logical 4)
-                            ()
-                        )
-                        [(Assignment
-                            (Var 4 _lcompilers_optimization_flipsign_f321)
-                            (RealUnaryMinus
-                                (Var 4 variable)
-                                (Real 4)
-                                ()
-                            )
-                            ()
-                        )]
-                        [(Assignment
-                            (Var 4 _lcompilers_optimization_flipsign_f321)
-                            (Var 4 variable)
-                            ()
-                        )]
-                    )]
-                    (Var 4 _lcompilers_optimization_flipsign_f321)
-                    Public
-                    .false.
-                    .false.
-                    ()
-                ),
             flip_sign_dead_code:
                 (Program
                     (SymbolTable
@@ -469,18 +229,31 @@
                         )
                         ()
                     )
-                    (Assignment
-                        (Var 2 x)
-                        (FunctionCall
-                            1 _lcompilers_optimization_flipsign_f32
-                            1 _lcompilers_optimization_flipsign_f32
-                            [((Var 2 number))
-                            ((Var 2 x))]
-                            (Real 4)
-                            ()
+                    (If
+                        (IntegerCompare
+                            (IntrinsicElementalFunction
+                                Modulo
+                                [(Var 2 number)
+                                (IntegerConstant 2 (Integer 4))]
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            Eq
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
                             ()
                         )
-                        ()
+                        [(Assignment
+                            (Var 2 x)
+                            (RealUnaryMinus
+                                (Var 2 x)
+                                (Real 4)
+                                ()
+                            )
+                            ()
+                        )]
+                        []
                     )
                     (If
                         (RealCompare
@@ -530,18 +303,31 @@
                         )
                         ()
                     )
-                    (Assignment
-                        (Var 2 x)
-                        (FunctionCall
-                            1 _lcompilers_optimization_flipsign_f321
-                            1 _lcompilers_optimization_flipsign_f321
-                            [((Var 2 number))
-                            ((Var 2 x))]
-                            (Real 4)
-                            ()
+                    (If
+                        (IntegerCompare
+                            (IntrinsicElementalFunction
+                                Modulo
+                                [(Var 2 number)
+                                (IntegerConstant 2 (Integer 4))]
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            Eq
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
                             ()
                         )
-                        ()
+                        [(Assignment
+                            (Var 2 x)
+                            (RealUnaryMinus
+                                (Var 2 x)
+                                (Real 4)
+                                ()
+                            )
+                            ()
+                        )]
+                        []
                     )
                     (If
                         (RealCompare
