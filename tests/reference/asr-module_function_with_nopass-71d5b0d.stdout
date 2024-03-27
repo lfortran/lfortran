@@ -2,7 +2,9 @@
     (SymbolTable
         1
         {
-            calculatesquare:
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin),
+            module_function_with_nopass:
                 (Program
                     (SymbolTable
                         5
@@ -40,7 +42,7 @@
                                     5
                                     calculator
                                     2 calculator
-                                    calculator_mod
+                                    modules_module_function_with_nopass
                                     []
                                     calculator
                                     Public
@@ -82,14 +84,14 @@
                                     5
                                     square
                                     2 square
-                                    calculator_mod
+                                    modules_module_function_with_nopass
                                     []
                                     square
                                     Public
                                 )
                         })
-                    calculatesquare
-                    [calculator_mod]
+                    module_function_with_nopass
+                    [modules_module_function_with_nopass]
                     [(Assignment
                         (Var 5 number)
                         (IntegerConstant 4 (Integer 4))
@@ -107,22 +109,27 @@
                         )
                         ()
                     )
-                    (Print
-                        [(StringConstant
-                            "The square of "
-                            (Character 1 14 ())
+                    (If
+                        (IntegerCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(Var 5 result)]
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
+                            ()
                         )
-                        (Var 5 number)
-                        (StringConstant
-                            " is "
-                            (Character 1 4 ())
-                        )
-                        (Var 5 result)]
-                        ()
-                        ()
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
                     )]
                 ),
-            calculator_mod:
+            modules_module_function_with_nopass:
                 (Module
                     (SymbolTable
                         2
@@ -253,13 +260,11 @@
                                     ()
                                 )
                         })
-                    calculator_mod
+                    modules_module_function_with_nopass
                     [lfortran_intrinsic_builtin]
                     .false.
                     .false.
-                ),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin)
+                )
         })
     []
 )
