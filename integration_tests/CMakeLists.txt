@@ -713,6 +713,7 @@ RUN(NAME intrinsics_194 LABELS gfortran llvm) # min
 RUN(NAME intrinsics_195 LABELS gfortran llvm) # max
 RUN(NAME intrinsics_196 LABELS gfortran llvm) # besselj1
 RUN(NAME intrinsics_197 LABELS gfortran llvm) # bessely0
+RUN(NAME intrinsics_198 LABELS gfortran llvm) # sum
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
