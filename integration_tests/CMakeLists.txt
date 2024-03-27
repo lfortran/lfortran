@@ -1480,3 +1480,4 @@ RUN(NAME types_real_to_complex_cast LABELS gfortran llvm)
 RUN(NAME types_real_array_to_complex_array_cast LABELS gfortran llvm)
 
 RUN(NAME lbound_01 LABELS gfortran llvm)
+RUN(NAME module_function_with_nopass gfortran)

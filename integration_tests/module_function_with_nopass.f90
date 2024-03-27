@@ -33,5 +33,5 @@ program module_function_with_nopass
     number = 4
 
     result = calc%SQUARE(number)
-    if (abs(result) /= 1) error stop
+    if (abs(result) /= 16) error stop
 end program module_function_with_nopass

@@ -418,9 +418,15 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             if( x.m_dt )
             visit_expr(*x.m_dt);
         }
+        ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(x.m_name);
+        bool nopass { false };
+        if (ASR::is_a<ASR::ClassProcedure_t>(*func_sym)) {
+            ASR::ClassProcedure_t* class_proc = ASR::down_cast<ASR::ClassProcedure_t>(func_sym);
+            nopass = class_proc->m_is_nopass;
+        }
         ASR::FunctionCall_t& xx = const_cast<ASR::FunctionCall_t&>(x);
         ASRUtils::Call_t_body(al, xx.m_name, xx.m_args, xx.n_args, x.m_dt,
-            nullptr, false, false);
+            nullptr, false, nopass);
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
