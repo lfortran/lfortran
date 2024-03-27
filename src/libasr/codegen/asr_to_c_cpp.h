@@ -1157,6 +1157,9 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                         + "' not implemented");
             }
         } else {
+            if (fn_name == "main") {
+                fn_name = "_xx_lcompilers_changed_main_xx";
+            }
             src = fn_name + "(" + construct_call_args(fn, x.n_args, x.m_args) + ")";
         }
         last_expr_precedence = 2;
@@ -3066,7 +3069,6 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             SET_INTRINSIC_NAME(StringContainsSet, "verify");
             SET_INTRINSIC_NAME(StringFindSet, "scan");
             SET_INTRINSIC_NAME(SubstrIndex, "index");
-            SET_INTRINSIC_NAME(Modulo, "modulo");
             case (static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::FMA)) : {
                 this->visit_expr(*x.m_args[0]);
                 std::string a = src;

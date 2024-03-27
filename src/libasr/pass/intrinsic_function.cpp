@@ -348,7 +348,7 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
                 alloc_arg.n_dims = alloc_dims.size();
                 alloc_args.push_back(al, alloc_arg);
 
-                ASR::stmt_t* allocate_stmt = ASRUtils::STMT(ASR::make_Allocate_t(al, 
+                ASR::stmt_t* allocate_stmt = ASRUtils::STMT(ASR::make_Allocate_t(al,
                                         x->base.base.loc, alloc_args.p, alloc_args.n, nullptr, nullptr, nullptr));
                 pass_result.push_back(al, allocate_stmt);
             }
