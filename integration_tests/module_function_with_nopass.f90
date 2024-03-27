@@ -1,4 +1,4 @@
-module calculator_mod
+module modules_module_function_with_nopass
     implicit none
     private
     public :: calculator, SQUARE  ! Expose both the type and the SQUARE function
@@ -22,10 +22,10 @@ contains
         end if
     end function SQUARE
 
-end module calculator_mod
+end module modules_module_function_with_nopass
 
-program CalculateSquare
-    use calculator_mod
+program module_function_with_nopass
+    use modules_module_function_with_nopass
     implicit none
     type(calculator) :: calc
     integer :: number, result
@@ -33,5 +33,5 @@ program CalculateSquare
     number = 4
 
     result = calc%SQUARE(number)
-    print *, 'The square of ', number, ' is ', result
-end program CalculateSquare
+    if (abs(result) /= 1) error stop
+end program module_function_with_nopass
