@@ -49,30 +49,12 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::vector<ASR::stmt_t*> &data_structure);
 
-void load_rtlib(Allocator &al, ASR::TranslationUnit_t &tu, CompilerOptions &compiler_options) {
-    SymbolTable *tu_symtab = tu.m_symtab;
+void load_rtlib() {
     const std::string m_builtin = "lfortran_intrinsic_builtin";
     const std::string m_math = "lfortran_intrinsic_math";
     const std::string m_math3 = "lfortran_intrinsic_math3";
     const std::string m_string = "lfortran_intrinsic_string";
-    const std::string m_bit = "lfortran_intrinsic_bit";
     const std::string m_ieee_arithmetic = "lfortran_intrinsic_ieee_arithmetic";
-    std::vector<std::string> intrinsic_modules = {
-        //
-    };
-    for (auto &module_name : intrinsic_modules) {
-        Location loc;
-        loc.first = 1;
-        loc.last = 1;
-        try {
-            ASRUtils::load_module(al, tu_symtab, module_name,
-                    loc, true, compiler_options.po, true,
-                    [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }
-                    );
-        } catch (const SemanticError &e) {
-            throw LCompilersException(e.d.message);
-        }
-    }
 }
 
 Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
@@ -127,7 +109,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
         } else {
             return res.error;
         }
-        if (compiler_options.rtlib) load_rtlib(al, *tu, compiler_options);
+        if (compiler_options.rtlib) load_rtlib();
         if (compiler_options.po.dump_all_passes) {
             std::ofstream outfile ("pass_00_initial_asr_02.clj");
             outfile << ";; Initial ASR after Body Visitor\n" << pickle(*tu, false, true, compiler_options.po.with_intrinsic_mods) << "\n";
