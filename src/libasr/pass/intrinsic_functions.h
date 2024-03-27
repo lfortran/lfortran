@@ -2905,7 +2905,7 @@ namespace Modulo {
         function modulo(a, p) result(d)
             if ( a*p >= 0 ) then
                 d = mod(a, p)
-            else 
+            else
                 d = mod(a, p) + p
             end if
         end function
@@ -2913,15 +2913,15 @@ namespace Modulo {
 
         if (is_real(*arg_types[0])) {
             body.push_back(al, b.If(b.fGtE(b.r_tMul(args[0], args[1], arg_types[0]), b.f(0.0, arg_types[0])), {
-                b.Assignment(result, Mod::MOD(b, args[0], args[1], scope)) 
+                b.Assignment(result, Mod::MOD(b, args[0], args[1], scope))
             }, {
-                b.Assignment(result, b.r_tAdd(Mod::MOD(b, args[0], args[1], scope), args[1], arg_types[0])) 
+                b.Assignment(result, b.r_tAdd(Mod::MOD(b, args[0], args[1], scope), args[1], arg_types[0]))
             }));
         } else {
             body.push_back(al, b.If(b.iGtE(b.i_tMul(args[0], args[1], arg_types[0]), b.i(0, arg_types[0])), {
-                b.Assignment(result, Mod::MOD(b, args[0], args[1], scope)) 
+                b.Assignment(result, Mod::MOD(b, args[0], args[1], scope))
             }, {
-                b.Assignment(result, b.i_tAdd(Mod::MOD(b, args[0], args[1], scope), args[1], arg_types[0])) 
+                b.Assignment(result, b.i_tAdd(Mod::MOD(b, args[0], args[1], scope), args[1], arg_types[0]))
             }));
         }
 
