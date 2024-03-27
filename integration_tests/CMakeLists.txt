@@ -622,7 +622,7 @@ RUN(NAME intrinsics_102 LABELS gfortran llvm fortran)
 RUN(NAME intrinsics_103 LABELS gfortran llvm)
 RUN(NAME intrinsics_104 LABELS gfortran llvm c wasm)
 RUN(NAME intrinsics_105 LABELS gfortran llvm) # shape
-RUN(NAME intrinsics_106 LABELS gfortran llvm) # merge
+RUN(NAME intrinsics_106 LABELS gfortran llvm fortran) # merge
 RUN(NAME intrinsics_107 LABELS gfortran llvm) # trailz
 RUN(NAME intrinsics_108 LABELS gfortran llvm) # shiftr
 RUN(NAME intrinsics_109 LABELS gfortran llvm)
@@ -687,7 +687,7 @@ RUN(NAME intrinsics_168 LABELS gfortran llvm NOFAST) # ibclr
 RUN(NAME intrinsics_169 LABELS gfortran llvm) # mod
 RUN(NAME intrinsics_170 LABELS gfortran llvm) # exponent
 RUN(NAME intrinsics_171 LABELS llvm) # tolowercase
-RUN(NAME intrinsics_172 LABELS gfortran llvm NOFAST) # count
+RUN(NAME intrinsics_172 LABELS gfortran llvm NOFAST fortran) # count
 RUN(NAME intrinsics_173 LABELS gfortran llvm) # fraction
 RUN(NAME intrinsics_174 LABELS gfortran llvm) # shape
 RUN(NAME intrinsics_175 LABELS gfortran llvm) # pack
