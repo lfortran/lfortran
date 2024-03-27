@@ -1313,6 +1313,39 @@ public:
                 out = "";
                 break;
             }
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Merge)) : {
+                // merge(size(x, 1), size(x, 2), mask=1<dim)
+                out += "merge";
+                visit_expr(*x.m_args[0]);
+                out += "(" + src + ", ";
+                visit_expr(*x.m_args[1]);
+                out += src + ", mask=";
+                visit_expr(*x.m_args[2]);
+                out += src + ")";
+                src = out;
+                out = "";
+                break;
+            }
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Count)) : {
+                // count(mask, dim, kind)
+                out += "count";
+                visit_expr(*x.m_args[0]);
+                out += "(" + src;
+                if (x.n_args > 1) {
+                    out += ", ";
+                    visit_expr(*x.m_args[1]);
+                    out += src;
+                    if (x.n_args == 3) {
+                        out += ", ";
+                        visit_expr(*x.m_args[2]);
+                        out += src;
+                    }
+                }
+                out += ")";
+                src = out;
+                out = "";
+                break;
+            }
             default : {
                 throw LCompilersException("IntrinsicArrayFunction: `"
                     + ASRUtils::get_array_intrinsic_name(x.m_arr_intrinsic_id)
