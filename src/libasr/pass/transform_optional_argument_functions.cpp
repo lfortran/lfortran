@@ -259,11 +259,20 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
             ASR::down_cast<ASR::symbol_t>(scope->asr_owner));
     }
     ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(x.m_name);
-    if( !ASR::is_a<ASR::Function_t>(*func_sym) ) {
+    ASR::Function_t* func { nullptr };
+    bool no_pass { false };
+    if (ASR::is_a<ASR::ClassProcedure_t>(*func_sym)) {
+        ASR::ClassProcedure_t* class_proc = ASR::down_cast<ASR::ClassProcedure_t>(func_sym);
+        no_pass = class_proc->m_is_nopass;
+        func_sym = class_proc->m_proc;
+    }
+
+    if (ASR::is_a<ASR::Function_t>(*func_sym)) {
+        func = ASR::down_cast<ASR::Function_t>(func_sym);
+    } else {
         return false;
     }
 
-    ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(func_sym);
     bool replace_func_call = false;
     for( size_t i = 0; i < func->n_args; i++ ) {
         if (std::find(sym2optionalargidx[func_sym].begin(),
