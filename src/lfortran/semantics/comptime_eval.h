@@ -45,10 +45,8 @@ struct IntrinsicProceduresAsASRNodes {
 struct IntrinsicProcedures {
     const std::string m_builtin = "lfortran_intrinsic_builtin";
     const std::string m_math = "lfortran_intrinsic_math";
-    const std::string m_math2 = "lfortran_intrinsic_math2";
     const std::string m_math3 = "lfortran_intrinsic_math3";
     const std::string m_string = "lfortran_intrinsic_string";
-    const std::string m_bit = "lfortran_intrinsic_bit";
     const std::string m_ieee_arithmetic = "lfortran_intrinsic_ieee_arithmetic";
     const std::string m_iso_c_binding = "lfortran_intrinsic_iso_c_binding";
     const std::string m_custom = "lfortran_intrinsic_custom";
@@ -84,9 +82,6 @@ struct IntrinsicProcedures {
             {"get_environment_variable", {m_builtin, &not_implemented, false}},
             {"newunit", {m_custom, &not_implemented, false}},
 
-            // Require evaluated arguments
-            {"modulo", {m_math2, &eval_modulo, true}},
-
             // These will fail if used in symbol table visitor, but will be
             // left unevaluated in body visitor
             {"trim", {m_string, &not_implemented, false}},
@@ -96,7 +91,6 @@ struct IntrinsicProcedures {
             // Subroutines
             {"cpu_time", {m_math, &not_implemented, false}},
             {"bit_size", {m_builtin, &eval_bit_size, false}},
-            {"mvbits", {m_bit, &not_implemented, true}},
             {"achar", {m_builtin, &eval_achar, true}},
             {"move_alloc", {m_builtin, &not_implemented, false}},
             {"present", {m_builtin, &not_implemented, false}},
@@ -266,40 +260,6 @@ struct IntrinsicProcedures {
         } else {
             throw SemanticError("Arguments for this intrinsic function must be Real or Integer", loc);
         }
-    }
-
-    static double lfortran_modulo(double x, double y) {
-        if (x > 0 && y > 0) {
-            return std::fmod(x, y);
-        } else if (x < 0 && y < 0) {
-            return -std::fmod(-x, -y);
-        } else {
-            return std::remainder(x, y);
-        }
-    }
-
-    static int64_t lfortran_modulo_i(int64_t x, int64_t y) {
-        if (x > 0 && y > 0) {
-            return std::fmod(x, y);
-        } else if (x < 0 && y < 0) {
-            return -std::fmod(-x, -y);
-        } else {
-            return std::remainder(x, y);
-        }
-    }
-
-    static double lfortran_mod(double x, double y) {
-        return std::fmod(x, y);
-    }
-
-    static int64_t lfortran_mod_i(int64_t x, int64_t y) {
-        return std::fmod(x, y);
-    }
-
-    static ASR::expr_t *eval_modulo(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        return eval_2args_ri(al, loc, args, compiler_options,
-            &IntrinsicProcedures::lfortran_modulo,
-            &IntrinsicProcedures::lfortran_modulo_i);
     }
 
     static ASR::expr_t *eval_int(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {

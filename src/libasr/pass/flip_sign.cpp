@@ -5,6 +5,7 @@
 #include <libasr/asr_verify.h>
 #include <libasr/pass/replace_flip_sign.h>
 #include <libasr/pass/pass_utils.h>
+#include <libasr/pass/intrinsic_function_registry.h>
 
 #include <vector>
 #include <utility>
@@ -66,7 +67,7 @@ private:
 
     bool is_if_present;
     bool is_compare_present;
-    bool is_function_call_present, is_function_modulo, is_divisor_2;
+    bool is_function_modulo, is_divisor_2;
     bool is_one_present;
     bool is_unary_op_present, is_operand_same_as_input;
     bool is_flip_sign_present;
@@ -82,7 +83,6 @@ public:
     void visit_If(const ASR::If_t& x) {
         is_if_present = true;
         is_compare_present = false;
-        is_function_call_present = false;
         is_function_modulo = false, is_divisor_2 = false;
         is_one_present = false;
         is_unary_op_present = false;
@@ -109,12 +109,12 @@ public:
     void set_flip_sign() {
         is_flip_sign_present = (is_if_present &&
                                 is_compare_present &&
-                                is_function_call_present &&
                                 is_function_modulo &&
                                 is_divisor_2 &&
                                 is_one_present &&
                                 is_unary_op_present &&
                                 is_operand_same_as_input);
+
     }
 
     void visit_Assignment(const ASR::Assignment_t& x) {
@@ -159,10 +159,10 @@ public:
         is_compare_present = true;
         ASR::expr_t* potential_one = nullptr;
         ASR::expr_t* potential_func_call = nullptr;
-        if( x.m_left->type == ASR::exprType::FunctionCall ) {
+        if (x.m_left->type == ASR::IntrinsicElementalFunction) {
             potential_one = x.m_right;
             potential_func_call = x.m_left;
-        } else if( x.m_right->type == ASR::exprType::FunctionCall ) {
+        } else if (x.m_right->type == ASR::IntrinsicElementalFunction) {
             potential_one = x.m_left;
             potential_func_call = x.m_right;
         }
@@ -176,24 +176,13 @@ public:
         }
     }
 
-    void visit_FunctionCall(const ASR::FunctionCall_t& x) {
-        is_function_call_present = true;
-        ASR::symbol_t* func_name = nullptr;
-        if( x.m_original_name ) {
-            func_name = x.m_original_name;
-        } else if( x.m_name ) {
-            func_name = x.m_name;
-        }
-        if( func_name && func_name->type == ASR::symbolType::ExternalSymbol ) {
-            ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(func_name);
-            if( std::string(ext_sym->m_original_name) == "modulo" &&
-                std::string(ext_sym->m_module_name) == "lfortran_intrinsic_math2" ) {
-                is_function_modulo = true;
-            }
+    void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
+        if (ASRUtils::get_intrinsic_name(x.m_intrinsic_id) == "Modulo") {
+            is_function_modulo = true;
         }
         if( is_function_modulo && x.n_args == 2) {
-            ASR::expr_t* arg0 = x.m_args[0].m_value;
-            ASR::expr_t* arg1 = x.m_args[1].m_value;
+            ASR::expr_t* arg0 = x.m_args[0];
+            ASR::expr_t* arg1 = x.m_args[1];
             bool cond_for_arg0 = false, cond_for_arg1 = false;
             ASR::ttype_t* arg0_ttype = ASRUtils::expr_type(arg0);
             cond_for_arg0 = arg0_ttype->type == ASR::ttypeType::Integer;

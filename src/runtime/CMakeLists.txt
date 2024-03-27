@@ -35,10 +35,6 @@ lfortran_compile_runtime(lfortran_intrinsic_custom custom)
 lfortran_compile_runtime(lfortran_intrinsic_optimization builtin)
 add_dependencies(lfortran_intrinsic_optimization lfortran_intrinsic_iso_fortran_env)
 
-lfortran_compile_runtime(lfortran_intrinsic_math2 pure)
-add_dependencies(lfortran_intrinsic_math2 lfortran_intrinsic_iso_fortran_env)
-add_dependencies(lfortran_intrinsic_math2 lfortran_intrinsic_builtin)
-
 lfortran_compile_runtime(lfortran_intrinsic_ieee_arithmetic pure)
 add_dependencies(lfortran_intrinsic_ieee_arithmetic lfortran_intrinsic_iso_fortran_env)
 
@@ -53,7 +49,6 @@ lfortran_compile_runtime(lfortran_intrinsic_math impure)
 add_dependencies(lfortran_intrinsic_math lfortran_intrinsic_iso_c_binding)
 add_dependencies(lfortran_intrinsic_math lfortran_intrinsic_builtin)
 add_dependencies(lfortran_intrinsic_math lfortran_intrinsic_iso_fortran_env)
-add_dependencies(lfortran_intrinsic_math lfortran_intrinsic_math2)
 
 lfortran_compile_runtime(lfortran_intrinsic_sin impure)
 add_dependencies(lfortran_intrinsic_sin lfortran_intrinsic_iso_c_binding)
@@ -74,7 +69,6 @@ install(
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_iso_fortran_env.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_ieee_arithmetic.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_iso_c_binding.mod
-  ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_math2.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_math.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_sin.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_string.mod

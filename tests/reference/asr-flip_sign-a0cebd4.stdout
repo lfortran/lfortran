@@ -29,26 +29,6 @@
                                     Required
                                     .false.
                                 ),
-                            modulo:
-                                (ExternalSymbol
-                                    2
-                                    modulo
-                                    4 modulo
-                                    lfortran_intrinsic_math2
-                                    []
-                                    modulo
-                                    Private
-                                ),
-                            modulo@imodulo:
-                                (ExternalSymbol
-                                    2
-                                    modulo@imodulo
-                                    4 imodulo
-                                    lfortran_intrinsic_math2
-                                    []
-                                    imodulo
-                                    Private
-                                ),
                             number:
                                 (Variable
                                     2
@@ -99,13 +79,12 @@
                     )
                     (If
                         (IntegerCompare
-                            (FunctionCall
-                                2 modulo@imodulo
-                                2 modulo
-                                [((Var 2 number))
-                                ((IntegerConstant 2 (Integer 4)))]
+                            (IntrinsicElementalFunction
+                                Modulo
+                                [(Var 2 number)
+                                (IntegerConstant 2 (Integer 4))]
+                                0
                                 (Integer 4)
-                                ()
                                 ()
                             )
                             Eq
@@ -174,13 +153,12 @@
                     )
                     (If
                         (IntegerCompare
-                            (FunctionCall
-                                2 modulo@imodulo
-                                2 modulo
-                                [((Var 2 number))
-                                ((IntegerConstant 2 (Integer 4)))]
+                            (IntrinsicElementalFunction
+                                Modulo
+                                [(Var 2 number)
+                                (IntegerConstant 2 (Integer 4))]
+                                0
                                 (Integer 4)
-                                ()
                                 ()
                             )
                             Eq
@@ -227,13 +205,7 @@
                         )]
                         []
                     )]
-                ),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math2:
-                (IntrinsicModule lfortran_intrinsic_math2)
+                )
         })
     []
 )
