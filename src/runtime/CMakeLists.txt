@@ -32,10 +32,6 @@ lfortran_compile_runtime(lfortran_intrinsic_iso_fortran_env pure)
 
 lfortran_compile_runtime(lfortran_intrinsic_custom custom)
 
-lfortran_compile_runtime(lfortran_intrinsic_math2 pure)
-add_dependencies(lfortran_intrinsic_math2 lfortran_intrinsic_iso_fortran_env)
-add_dependencies(lfortran_intrinsic_math2 lfortran_intrinsic_builtin)
-
 lfortran_compile_runtime(lfortran_intrinsic_ieee_arithmetic pure)
 add_dependencies(lfortran_intrinsic_ieee_arithmetic lfortran_intrinsic_iso_fortran_env)
 
