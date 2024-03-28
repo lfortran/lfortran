@@ -580,7 +580,7 @@ public:
             ADD_ASR_DEPENDENCIES(current_scope, name, dependencies);
         }
         return ASRUtils::make_FunctionCall_t_util(al, x->base.base.loc, name, x->m_original_name,
-            args.p, args.size(), type, value, dt);
+            args.p, args.size(), type, value, dt, false);
     }
 
     ASR::asr_t* duplicate_SubroutineCall(ASR::SubroutineCall_t *x) {
@@ -1600,7 +1600,7 @@ public:
         }
 
         return ASRUtils::make_FunctionCall_t_util(al, x->base.base.loc, name,
-            x->m_original_name, args.p, args.size(), type, value, dt);
+            x->m_original_name, args.p, args.size(), type, value, dt, false);
     }
 
     ASR::asr_t* duplicate_SubroutineCall(ASR::SubroutineCall_t* x) {

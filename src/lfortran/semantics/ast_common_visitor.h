@@ -3823,7 +3823,7 @@ public:
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
         return ASRUtils::make_FunctionCall_t_util(al, loc,
             final_sym, v, args.p, args.size(), return_type,
-            value, nullptr);
+            value, nullptr, false);
     }
 
     ASR::asr_t* symbol_resolve_external_generic_procedure(
@@ -3889,7 +3889,7 @@ public:
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al, v_expr, v_class_proc->m_is_nopass);
         return ASRUtils::make_FunctionCall_t_util(al, loc,
                 v, nullptr, args.p, args.size(), type, nullptr,
-                v_expr);
+                v_expr, v_class_proc->m_is_nopass);
     }
 
     ASR::asr_t* create_GenericProcedure(const Location &loc,
@@ -3937,7 +3937,7 @@ public:
             ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
             return ASRUtils::make_FunctionCall_t_util(al, loc,
                 final_sym, v, args.p, args.size(), type,
-                nullptr, nullptr);
+                nullptr, nullptr, false);
         }
     }
 
@@ -3995,7 +3995,7 @@ public:
                 ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
                 return ASRUtils::make_FunctionCall_t_util(al, loc,
                     cp_s, v, args.p, args.size(), type,
-                    nullptr, nullptr);
+                    nullptr, nullptr, false);
             } else {
                 if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->get_counter()) {
                     ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies);
@@ -4005,7 +4005,7 @@ public:
                 ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
                 return ASRUtils::make_FunctionCall_t_util(al, loc,
                     final_sym, v, args.p, args.size(), type,
-                    nullptr, nullptr);
+                    nullptr, nullptr, false);
             }
         }
     }
@@ -4150,7 +4150,7 @@ public:
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
         legacy_array_sections_helper(v, args, loc);
         return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
-            args.p, args.size(), return_type, value, nullptr);
+            args.p, args.size(), return_type, value, nullptr, false);
     }
 
     ASR::asr_t* create_FunctionFromFunctionTypeVariable(const Location &loc,
@@ -4166,10 +4166,10 @@ public:
             ASR::expr_t* dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
                 al, loc, args.p[0].m_value, v, ASRUtils::symbol_type(v), nullptr));
             return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
-                args.p + 1, args.size() - 1, return_type, nullptr, dt);
+                args.p + 1, args.size() - 1, return_type, nullptr, dt, false);
         } else {
             return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
-                args.p, args.size(), return_type, nullptr, nullptr);
+                args.p, args.size(), return_type, nullptr, nullptr, false);
         }
     }
 
@@ -4964,7 +4964,7 @@ public:
         }
         ASRUtils::insert_module_dependency(function, al, current_module_dependencies);
         return ASRUtils::make_FunctionCall_t_util(al, x.base.base.loc, function, nullptr, func_args.p,
-            func_args.size(), type, nullptr, nullptr);
+            func_args.size(), type, nullptr, nullptr, false);
     }
 
     ASR::asr_t* create_ArrayAll(const AST::FuncCallOrArray_t& x) {
@@ -6681,7 +6681,7 @@ public:
                         ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al);
                         tmp = ASRUtils::make_FunctionCall_t_util(al, x.base.base.loc,
                             a_name, sym, a_args.p, 2, return_type,
-                            nullptr, nullptr);
+                            nullptr, nullptr, false);
                     } else {
                         throw SemanticError("Arguements type and Parameters type "
                             "does not match", proc->base.loc);
@@ -6783,7 +6783,8 @@ public:
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
             ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
             tmp = ASRUtils::make_FunctionCall_t_util(al, x.base.base.loc, v,
-                v, args.p, args.size(), return_type, nullptr, nullptr);
+                v, args.p, args.size(), return_type, nullptr, nullptr,
+                false);
             tmp = ASR::make_OverloadedStringConcat_t(al, x.base.base.loc,
                 left, right, return_type, nullptr, ASRUtils::EXPR(tmp));
         }

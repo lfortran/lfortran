@@ -692,7 +692,8 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             asr = ASRUtils::make_FunctionCall_t_util(al, loc, a_name, sym,
                                                             a_args.p, 2,
                                                             return_type,
-                                                            nullptr, nullptr);
+                                                            nullptr, nullptr,
+                                                            false);
                         }
                     }
                     break;
@@ -784,7 +785,8 @@ void process_overloaded_unary_minus_function(ASR::symbol_t* proc, ASR::expr_t* o
             asr = ASRUtils::make_FunctionCall_t_util(al, loc, a_name, proc,
                                             a_args.p, 1,
                                             return_type,
-                                            nullptr, nullptr);
+                                            nullptr, nullptr,
+                                            false);
         }
     }
 }
@@ -1202,7 +1204,8 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             asr = ASRUtils::make_FunctionCall_t_util(al, loc, a_name, sym,
                                                             a_args.p, 2,
                                                             return_type,
-                                                            nullptr, nullptr);
+                                                            nullptr, nullptr,
+                                                            false);
                         }
                     }
                     break;
@@ -1391,7 +1394,8 @@ ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
         return ASRUtils::make_FunctionCall_t_util(al, loc, final_sym,
                                         v, args.p, args.size(),
                                         return_type,
-                                        nullptr, nullptr);
+                                        nullptr, nullptr,
+                                        false);
     }
 }
 
