@@ -258,8 +258,14 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
         owning_function = ASR::down_cast<ASR::Function_t>(
             ASR::down_cast<ASR::symbol_t>(scope->asr_owner));
     }
+
     ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(x.m_name);
-    if( !ASR::is_a<ASR::Function_t>(*func_sym) ) {
+    if (ASR::is_a<ASR::ClassProcedure_t>(*func_sym)) {
+        ASR::ClassProcedure_t* class_proc = ASR::down_cast<ASR::ClassProcedure_t>(func_sym);
+        func_sym = class_proc->m_proc;
+    }
+
+    if (!ASR::is_a<ASR::Function_t>(*func_sym)) {
         return false;
     }
 
@@ -409,10 +415,16 @@ class ReplaceFunctionCallsWithOptionalArguments: public ASR::BaseExprReplacer<Re
             new_func_calls.find(*current_expr) != new_func_calls.end() ) {
             return ;
         }
+        bool is_nopass { false };
+        ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external((*x).m_name);
+        if (ASR::is_a<ASR::ClassProcedure_t>(*func_sym)) {
+            ASR::ClassProcedure_t* class_proc = ASR::down_cast<ASR::ClassProcedure_t>(func_sym);
+            is_nopass = class_proc->m_is_nopass;
+        }
         *current_expr = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al,
                             x->base.base.loc, x->m_name, x->m_original_name,
                             new_args.p, new_args.size(), x->m_type, x->m_value,
-                            x->m_dt, false));
+                            x->m_dt, is_nopass));
         new_func_calls.insert(*current_expr);
     }
 
