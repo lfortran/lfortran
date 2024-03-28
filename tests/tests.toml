@@ -3878,3 +3878,8 @@ asr = true
 filename = "../integration_tests/module_function_with_nopass.f90"
 asr = true
 llvm = true
+
+[[test]]
+filename = "../integration_tests/module_function_without_nopass.f90"
+asr = true
+llvm = true

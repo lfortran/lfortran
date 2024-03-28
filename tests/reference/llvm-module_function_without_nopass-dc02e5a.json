@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-module_function_without_nopass-dc02e5a",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/module_function_without_nopass.f90",
+    "infile_hash": "0e9b9c9491e38e9402e46e54dd955b20922bd6d88c54116125164167",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-module_function_without_nopass-dc02e5a.stdout",
+    "stdout_hash": "bcbcb99e0b43aad360c233eb3a8cd5b02016eba90607d4491101fd8c",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
