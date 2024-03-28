@@ -57,13 +57,20 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
     {}
 
     void replace_ArraySize(ASR::ArraySize_t* x) {
-        if( !ASR::is_a<ASR::Var_t>(*x->m_v) ||
+        ASR::expr_t* x_m_v = x->m_v;
+        if ( ASR::is_a<ASR::Cast_t>(*x_m_v) ) {
+            ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(x_m_v);
+            if( ASR::is_a<ASR::Var_t>(*cast->m_arg) ) {
+                x_m_v = cast->m_arg;
+            }
+        }
+        if( !ASR::is_a<ASR::Var_t>(*x_m_v) ||
             (x->m_dim != nullptr && !ASRUtils::is_value_constant(x->m_dim)) ) {
             return ;
         }
 
-        ASR::Variable_t* v = ASRUtils::EXPR2VAR(x->m_v);
-        ASR::ttype_t* array_type = ASRUtils::expr_type(x->m_v);
+        ASR::Variable_t* v = ASRUtils::EXPR2VAR(x_m_v);
+        ASR::ttype_t* array_type = ASRUtils::expr_type(x_m_v);
         ASR::dimension_t* dims = nullptr;
         int n = ASRUtils::extract_dimensions_from_ttype(array_type, dims);
         bool is_argument = v->m_intent == ASRUtils::intent_in || v->m_intent == ASRUtils::intent_out || v->m_intent == ASRUtils::intent_inout;
