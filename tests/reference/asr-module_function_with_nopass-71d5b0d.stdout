@@ -7,11 +7,21 @@
             module_function_with_nopass:
                 (Program
                     (SymbolTable
-                        5
+                        6
                         {
+                            1_area:
+                                (ExternalSymbol
+                                    6
+                                    1_area
+                                    3 area
+                                    calculator
+                                    []
+                                    area
+                                    Public
+                                ),
                             1_square:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     1_square
                                     3 square
                                     calculator
@@ -19,9 +29,67 @@
                                     square
                                     Public
                                 ),
+                            area:
+                                (ExternalSymbol
+                                    6
+                                    area
+                                    2 area
+                                    modules_module_function_with_nopass
+                                    []
+                                    area
+                                    Public
+                                ),
+                            area1:
+                                (Variable
+                                    6
+                                    area1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            area2:
+                                (Variable
+                                    6
+                                    area2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            area3:
+                                (Variable
+                                    6
+                                    area3
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
                             calc:
                                 (Variable
-                                    5
+                                    6
                                     calc
                                     []
                                     Local
@@ -29,7 +97,7 @@
                                     ()
                                     Default
                                     (Struct
-                                        5 calculator
+                                        6 calculator
                                     )
                                     ()
                                     Source
@@ -39,7 +107,7 @@
                                 ),
                             calculator:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     calculator
                                     2 calculator
                                     modules_module_function_with_nopass
@@ -49,7 +117,7 @@
                                 ),
                             number:
                                 (Variable
-                                    5
+                                    6
                                     number
                                     []
                                     Local
@@ -65,7 +133,7 @@
                                 ),
                             result:
                                 (Variable
-                                    5
+                                    6
                                     result
                                     []
                                     Local
@@ -81,7 +149,7 @@
                                 ),
                             square:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     square
                                     2 square
                                     modules_module_function_with_nopass
@@ -93,33 +161,105 @@
                     module_function_with_nopass
                     [modules_module_function_with_nopass]
                     [(Assignment
-                        (Var 5 number)
+                        (Var 6 number)
                         (IntegerConstant 4 (Integer 4))
                         ()
                     )
                     (Assignment
-                        (Var 5 result)
+                        (Var 6 result)
                         (FunctionCall
-                            5 1_square
+                            6 1_square
                             ()
-                            [((Var 5 number))]
+                            [((Var 6 number))]
                             (Integer 4)
                             ()
-                            (Var 5 calc)
+                            (Var 6 calc)
                         )
                         ()
                     )
                     (If
                         (IntegerCompare
-                            (IntrinsicElementalFunction
-                                Abs
-                                [(Var 5 result)]
-                                0
-                                (Integer 4)
-                                ()
-                            )
+                            (Var 6 result)
                             NotEq
                             (IntegerConstant 16 (Integer 4))
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 6 area1)
+                        (FunctionCall
+                            6 1_area
+                            ()
+                            [(())
+                            (())]
+                            (Integer 4)
+                            ()
+                            (Var 6 calc)
+                        )
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 6 area1)
+                            NotEq
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 6 area2)
+                        (FunctionCall
+                            6 1_area
+                            ()
+                            [((IntegerConstant 1 (Integer 4)))
+                            ((IntegerConstant 2 (Integer 4)))]
+                            (Integer 4)
+                            ()
+                            (Var 6 calc)
+                        )
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 6 area2)
+                            NotEq
+                            (IntegerConstant 2 (Integer 4))
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 6 area3)
+                        (FunctionCall
+                            6 1_area
+                            ()
+                            [((IntegerConstant 1 (Integer 4)))
+                            (())]
+                            (Integer 4)
+                            ()
+                            (Var 6 calc)
+                        )
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 6 area3)
+                            NotEq
+                            (IntegerConstant 1 (Integer 4))
                             (Logical 4)
                             ()
                         )
@@ -134,11 +274,150 @@
                     (SymbolTable
                         2
                         {
+                            area:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            area_result:
+                                                (Variable
+                                                    5
+                                                    area_result
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            present:
+                                                (ExternalSymbol
+                                                    5
+                                                    present
+                                                    8 present
+                                                    lfortran_intrinsic_builtin
+                                                    []
+                                                    present
+                                                    Private
+                                                ),
+                                            x:
+                                                (Variable
+                                                    5
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            y:
+                                                (Variable
+                                                    5
+                                                    y
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Optional
+                                                    .false.
+                                                )
+                                        })
+                                    area
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 5 x)
+                                    (Var 5 y)]
+                                    [(If
+                                        (LogicalBinOp
+                                            (FunctionCall
+                                                5 present
+                                                ()
+                                                [((Var 5 x))]
+                                                (Logical 4)
+                                                ()
+                                                ()
+                                            )
+                                            And
+                                            (FunctionCall
+                                                5 present
+                                                ()
+                                                [((Var 5 y))]
+                                                (Logical 4)
+                                                ()
+                                                ()
+                                            )
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Assignment
+                                            (Var 5 area_result)
+                                            (IntegerBinOp
+                                                (Var 5 x)
+                                                Mul
+                                                (Var 5 y)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            ()
+                                        )]
+                                        [(Assignment
+                                            (Var 5 area_result)
+                                            (IntegerConstant 1 (Integer 4))
+                                            ()
+                                        )]
+                                    )]
+                                    (Var 5 area_result)
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             calculator:
                                 (StructType
                                     (SymbolTable
                                         3
                                         {
+                                            area:
+                                                (ClassProcedure
+                                                    3
+                                                    area
+                                                    ()
+                                                    area
+                                                    2 area
+                                                    Source
+                                                    .false.
+                                                    .true.
+                                                ),
                                             square:
                                                 (ClassProcedure
                                                     3
@@ -171,7 +450,7 @@
                                                 (ExternalSymbol
                                                     4
                                                     present
-                                                    7 present
+                                                    8 present
                                                     lfortran_intrinsic_builtin
                                                     []
                                                     present

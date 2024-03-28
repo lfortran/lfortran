@@ -2,11 +2,11 @@
     "basename": "asr-module_function_with_nopass-71d5b0d",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/module_function_with_nopass.f90",
-    "infile_hash": "7d1f71d1c311c45854514d29047ee7518ed2e8fe0436218bd0fc03d7",
+    "infile_hash": "7b759bd052f29372b1c80be4a3aa5451523442d6da588b4763a01ae6",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-module_function_with_nopass-71d5b0d.stdout",
-    "stdout_hash": "5e911b1cfc47b729abd829b54790c31d42233019a099ce7ae41caad5",
+    "stdout_hash": "926ef07f6aba77e57dbd6fa48e4e1a537f998de2b9f7e55e65ce9c79",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
