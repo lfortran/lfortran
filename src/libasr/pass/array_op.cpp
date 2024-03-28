@@ -1017,6 +1017,9 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
 
     void replace_Cast(ASR::Cast_t* x) {
+        if (ASR::is_a<ASR::IntrinsicArrayFunction_t>(*x->m_arg)) {
+            return;
+        }
         if( x->m_kind == ASR::cast_kindType::ListToArray ) {
             return ;
         }
