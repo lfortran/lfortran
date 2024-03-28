@@ -205,9 +205,15 @@ class FixArrayPhysicalCast: public ASR::BaseExprReplacer<FixArrayPhysicalCast> {
 
         void replace_FunctionCall(ASR::FunctionCall_t* x) {
             ASR::BaseExprReplacer<FixArrayPhysicalCast>::replace_FunctionCall(x);
+            ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external((*x).m_name);
+            bool is_nopass { false };
+            if (ASR::is_a<ASR::ClassProcedure_t>(*func_sym)) {
+                ASR::ClassProcedure_t* class_proc = ASR::down_cast<ASR::ClassProcedure_t>(func_sym);
+                is_nopass = class_proc->m_is_nopass;
+            }
             ASR::expr_t* call = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(
                 al, x->base.base.loc, x->m_name, x->m_original_name, x->m_args,
-                x->n_args, x->m_type, x->m_value, x->m_dt, false));
+                x->n_args, x->m_type, x->m_value, x->m_dt, is_nopass));
             ASR::FunctionCall_t* function_call = ASR::down_cast<ASR::FunctionCall_t>(call);
             x->m_args = function_call->m_args;
             x->n_args = function_call->n_args;
