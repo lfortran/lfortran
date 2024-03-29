@@ -5006,8 +5006,8 @@ public:
         std::vector<std::string> kwarg_names = {"x", "y"};
         handle_intrinsic_node_args(x, args, kwarg_names, 2, 2, "complex");
 
-        ASR::ttype_t *arg_type0 = ASRUtils::type_get_past_const(ASRUtils::expr_type(args[0]));
-        ASR::ttype_t *arg_type1 = ASRUtils::type_get_past_const(ASRUtils::expr_type(args[1]));
+        ASR::ttype_t *arg_type0 = ASRUtils::expr_type(args[0]);
+        ASR::ttype_t *arg_type1 = ASRUtils::expr_type(args[1]);
         if(!((is_integer(*arg_type0) && is_integer(*arg_type1))
             || (is_real(*arg_type0) && is_real(*arg_type1))
             || (is_integer(*arg_type0) && is_real(*arg_type1))
