@@ -10,7 +10,72 @@
 #include <vector>
 #include <string>
 
+/*
+Since LLVM IR does not directly support optional arguments, this ASR pass converts optional
+arguments of a function/subroutine and function call or subroutine call to two
+non-optional arguments, the first argument same as the original argument and the second
+boolean argument to denote the presence of the optional argument (i.e. `is_var_present_`).
 
+For e.g. for a function named 'square' with one integer argument 'x' it's ASR signature before
+and after this pass would be:
+
+before transformation
+```
+(FunctionType
+    [(Integer 4)]       // Original optional integer argument 'x'
+    (Integer 4)
+    Source
+    Implementation
+    ()
+    .false.
+    .false.
+    .false.
+    .false.
+    .false.
+    []
+    .false.
+)
+```
+
+after transformation
+```
+(FunctionType
+    [(Integer 4)        // Retained original argument 'x'
+    (Logical 4)]        // Added new logical argument to indicate the presence of 'x'
+    (Integer 4)
+    Source
+    Implementation
+    ()
+    .false.
+    .false.
+    .false.
+    .false.
+    .false.
+    []
+    .false.
+)
+```
+
+similarly if a call to the above function is made with "present" argument (e.g. `square(4)`), it's
+ASR's FunctionCall before and after would like below:
+
+```
+[(FunctionCall                                  [(FunctionCall
+    2 square                                        2 square
+    ()                                              ()
+    [((IntegerConstant 4 (Integer 4)))]             [((IntegerConstant 4 (Integer 4)))
+    (Integer 4)                                     ((LogicalConstant
+    ()                                                  .true.
+    ()                                                  (Logical 4)
+)]                                                  ))]
+                                                    (Integer 4)
+                                                    ()
+                                                    ()
+                                                )]
+```
+
+This same change is done for every optional argument(s) present in the function/subroutine.
+*/
 namespace LCompilers {
 
 using ASR::down_cast;
