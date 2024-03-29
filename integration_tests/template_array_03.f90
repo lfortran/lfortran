@@ -84,7 +84,7 @@ module template_array_03_m
             integer, parameter, intent(in) :: i, j, k
             type(t), intent(in) :: a(i,j), b(j,k)
             type(t) :: r(i,k)
-            integer, parameter :: x = 1, y = 1, z = 1
+            integer :: x = 1, y = 1, z = 1
             type(t) :: elem
             do x = 1, i
                 do z = 1, k
