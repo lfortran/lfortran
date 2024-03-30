@@ -10,7 +10,52 @@
 #include <vector>
 #include <string>
 
+/*
+Need for the pass
+==================
 
+Since LLVM IR does not directly support optional arguments, this ASR pass converts optional
+arguments of a function/subroutine and function call or subroutine call to two
+non-optional arguments, the first argument is same as the original argument and the second
+boolean argument to denote the presence of the original optional argument (i.e. `is_var_present_`).
+
+Transformation by the pass
+==========================
+
+Consider a function named 'square' with one integer argument 'x' and 'integer(4)' return type,
+and with call made to it, it's Fortran code before this pass would look like:
+
+```fortran
+integer(4) function square(x)
+    integer(4), intent(in), optional :: x   ! one optional argument
+    if (present(x)) then
+        square = x*x
+    else
+        square = 1
+    end if
+end function square
+
+print *, square(4)                          ! function call with present optional argument '4'
+```
+
+and after `transform_optional_argument_functions` pass it would look like:
+
+```fortran
+integer(4) function square(x, is_x_present_)
+    logical(4), intent(in) :: is_x_present_     ! boolean non-optional argument
+    integer(4), intent(in) :: x             ! optional argument 'x' is now non-optional argument
+    if (is_x_present_) then
+        square = x*x
+    else
+        square = 1
+    end if
+end function square
+
+print *, square(4, .true.)                  ! function call with second boolean argument set to .true.
+```
+
+This same change is done for every optional argument(s) present in the function/subroutine.
+*/
 namespace LCompilers {
 
 using ASR::down_cast;
