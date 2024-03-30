@@ -477,16 +477,10 @@ class ReplaceFunctionCallsWithOptionalArguments: public ASR::BaseExprReplacer<Re
             new_func_calls.find(*current_expr) != new_func_calls.end() ) {
             return ;
         }
-        bool is_nopass { false };
-        ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external((*x).m_name);
-        if (ASR::is_a<ASR::ClassProcedure_t>(*func_sym)) {
-            ASR::ClassProcedure_t* class_proc = ASR::down_cast<ASR::ClassProcedure_t>(func_sym);
-            is_nopass = class_proc->m_is_nopass;
-        }
         *current_expr = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al,
                             x->base.base.loc, x->m_name, x->m_original_name,
                             new_args.p, new_args.size(), x->m_type, x->m_value,
-                            x->m_dt, is_nopass));
+                            x->m_dt, ASRUtils::get_class_proc_nopass_val((*x).m_name)));
         new_func_calls.insert(*current_expr);
     }
 
