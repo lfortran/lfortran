@@ -98,7 +98,7 @@ public:
 inline static void compare_helper(Allocator &al, size_t n, Vec<ASR::expr_t *> &args, ASR::cmpopType asr_op,
                                 std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>> comptime_values, const Location& loc) {
     args.reserve(al, n);
-    bool result;
+    bool result = true;
     for (size_t i = 0; i < comptime_values.size(); i++) {
         switch (asr_op) {
             case (ASR::cmpopType::Eq):  { result = result && (comptime_values[i].first == comptime_values[i].second); break; }
