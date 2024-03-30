@@ -17,16 +17,6 @@
                                     build_model
                                     Public
                                 ),
-                            filewrite:
-                                (ExternalSymbol
-                                    8
-                                    filewrite
-                                    4 filewrite
-                                    modules_39_module_fpm_filesystem_39
-                                    []
-                                    filewrite
-                                    Public
-                                ),
                             join_path:
                                 (ExternalSymbol
                                     8
@@ -200,16 +190,6 @@
                                     .false.
                                     ()
                                 ),
-                            filewrite:
-                                (ExternalSymbol
-                                    2
-                                    filewrite
-                                    4 filewrite
-                                    modules_39_module_fpm_filesystem_39
-                                    []
-                                    filewrite
-                                    Public
-                                ),
                             filewrite_character____1:
                                 (ExternalSymbol
                                     2
@@ -241,80 +221,6 @@
                     (SymbolTable
                         4
                         {
-                            filewrite:
-                                (Function
-                                    (SymbolTable
-                                        5
-                                        {
-                                            filedata:
-                                                (Variable
-                                                    5
-                                                    filedata
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Array
-                                                        (Character 1 -1 ())
-                                                        [(()
-                                                        ())]
-                                                        CharacterArraySinglePointer
-                                                    )
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            filename:
-                                                (Variable
-                                                    5
-                                                    filename
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Character 1 -1 ())
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    filewrite
-                                    (FunctionType
-                                        [(Character 1 -1 ())
-                                        (Array
-                                            (Character 1 -1 ())
-                                            [(()
-                                            ())]
-                                            CharacterArraySinglePointer
-                                        )]
-                                        ()
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                    )
-                                    []
-                                    [(Var 5 filename)
-                                    (Var 5 filedata)]
-                                    []
-                                    ()
-                                    Public
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
                             filewrite_character____1:
                                 (Function
                                     (SymbolTable

@@ -644,10 +644,29 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
             std::vector<std::string> to_be_erased;
 
             for( auto& item: current_scope->get_scope() ) {
-                if( v.proc2newproc.find(item.second) != v.proc2newproc.end() &&
-                    not_to_be_erased.find(item.second) == not_to_be_erased.end() ) {
+                if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                    ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(item.second);
+                    if (func_type->n_arg_types >= 1 && ASR::is_a<ASR::Class_t>(*func_type->m_arg_types[0])) {
+                        continue;
+                    }
+                }
+                ASR::symbol_t* sym = item.second;
+                if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                    sym = ASR::down_cast<ASR::ExternalSymbol_t>(item.second)->m_external;
+                }
+                if( v.proc2newproc.find(sym) != v.proc2newproc.end() &&
+                    not_to_be_erased.find(sym) == not_to_be_erased.end() ) {
                     LCOMPILERS_ASSERT(item.first == ASRUtils::symbol_name(item.second))
                     to_be_erased.push_back(item.first);
+                }
+                if ( ASR::is_a<ASR::Module_t>(*item.second) ||
+                    ASR::is_a<ASR::Program_t>(*item.second) ||
+                    ASR::is_a<ASR::Function_t>(*item.second) ||
+                    ASR::is_a<ASR::StructType_t>(*item.second) ||
+                    ASR::is_a<ASR::Block_t>(*item.second)) {
+                    SymbolTable* current_scope_copy = current_scope;
+                    visit_symbol(*item.second);
+                    current_scope = current_scope_copy;
                 }
             }
 
@@ -665,6 +684,22 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
         }
 
         void visit_Function(const ASR::Function_t& x) {
+            visit_Unit(x);
+        }
+
+        void visit_Module(const ASR::Module_t& x) {
+            if (x.m_intrinsic) {
+                return ;
+            }
+
+            visit_Unit(x);
+        }
+
+        void visit_StructType(const ASR::StructType_t& x) {
+            visit_Unit(x);
+        }
+
+        void visit_Block(const ASR::Block_t& x) {
             visit_Unit(x);
         }
 

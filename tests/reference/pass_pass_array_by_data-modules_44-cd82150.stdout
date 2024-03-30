@@ -54,16 +54,6 @@
                                     Public
                                     Required
                                     .false.
-                                ),
-                            warnwrite:
-                                (ExternalSymbol
-                                    9
-                                    warnwrite
-                                    4 warnwrite
-                                    modules_44_module_fpm_filesystem
-                                    []
-                                    warnwrite
-                                    Public
                                 )
                         })
                     modules_44
@@ -296,16 +286,6 @@
                                     ()
                                     2 fpm_cmd_settings
                                 ),
-                            warnwrite:
-                                (ExternalSymbol
-                                    2
-                                    warnwrite
-                                    4 warnwrite
-                                    modules_44_module_fpm_filesystem
-                                    []
-                                    warnwrite
-                                    Public
-                                ),
                             warnwrite_character____1:
                                 (ExternalSymbol
                                     2
@@ -327,80 +307,6 @@
                     (SymbolTable
                         4
                         {
-                            warnwrite:
-                                (Function
-                                    (SymbolTable
-                                        5
-                                        {
-                                            data:
-                                                (Variable
-                                                    5
-                                                    data
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Array
-                                                        (Character 1 -1 ())
-                                                        [(()
-                                                        ())]
-                                                        CharacterArraySinglePointer
-                                                    )
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            fname:
-                                                (Variable
-                                                    5
-                                                    fname
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Character 1 -1 ())
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    warnwrite
-                                    (FunctionType
-                                        [(Character 1 -1 ())
-                                        (Array
-                                            (Character 1 -1 ())
-                                            [(()
-                                            ())]
-                                            CharacterArraySinglePointer
-                                        )]
-                                        ()
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                    )
-                                    []
-                                    [(Var 5 fname)
-                                    (Var 5 data)]
-                                    []
-                                    ()
-                                    Public
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
                             warnwrite_character____1:
                                 (Function
                                     (SymbolTable
