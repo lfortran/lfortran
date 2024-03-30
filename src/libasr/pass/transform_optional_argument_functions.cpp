@@ -11,67 +11,47 @@
 #include <string>
 
 /*
+Need for the pass
+==================
+
 Since LLVM IR does not directly support optional arguments, this ASR pass converts optional
 arguments of a function/subroutine and function call or subroutine call to two
-non-optional arguments, the first argument same as the original argument and the second
-boolean argument to denote the presence of the optional argument (i.e. `is_var_present_`).
+non-optional arguments, the first argument is same as the original argument and the second
+boolean argument to denote the presence of the original optional argument (i.e. `is_var_present_`).
 
-For e.g. for a function named 'square' with one integer argument 'x' it's ASR signature before
-and after this pass would be:
+Transformation by the pass
+==========================
 
-before transformation
-```
-(FunctionType
-    [(Integer 4)]       // Original optional integer argument 'x'
-    (Integer 4)
-    Source
-    Implementation
-    ()
-    .false.
-    .false.
-    .false.
-    .false.
-    .false.
-    []
-    .false.
-)
+Consider a function named 'square' with one integer argument 'x' and 'integer(4)' return type,
+and with call made to it, it's Fortran code before this pass would look like:
+
+```fortran
+integer(4) function square(x)
+    integer(4), intent(in), optional :: x   ! one optional argument
+    if (present(x)) then
+        square = x*x
+    else
+        square = 1
+    end if
+end function square
+
+print *, square(4)                          ! function call with present optional argument '4'
 ```
 
-after transformation
-```
-(FunctionType
-    [(Integer 4)        // Retained original argument 'x'
-    (Logical 4)]        // Added new logical argument to indicate the presence of 'x'
-    (Integer 4)
-    Source
-    Implementation
-    ()
-    .false.
-    .false.
-    .false.
-    .false.
-    .false.
-    []
-    .false.
-)
-```
+and after `transform_optional_argument_functions` pass it would look like:
 
-similarly if a call to the above function is made with "present" argument (e.g. `square(4)`), it's
-ASR's FunctionCall before and after would like below:
+```fortran
+integer(4) function square(x, is_x_present_)
+    logical(4), intent(in) :: is_x_present_     ! boolean non-optional argument
+    integer(4), intent(in) :: x             ! optional argument 'x' is now non-optional argument
+    if (is_x_present_) then
+        square = x*x
+    else
+        square = 1
+    end if
+end function square
 
-```
-[(FunctionCall                                  [(FunctionCall
-    2 square                                        2 square
-    ()                                              ()
-    [((IntegerConstant 4 (Integer 4)))]             [((IntegerConstant 4 (Integer 4)))
-    (Integer 4)                                     ((LogicalConstant
-    ()                                                  .true.
-    ()                                                  (Logical 4)
-)]                                                  ))]
-                                                    (Integer 4)
-                                                    ()
-                                                    ()
-                                                )]
+print *, square(4, .true.)                  ! function call with second boolean argument set to .true.
 ```
 
 This same change is done for every optional argument(s) present in the function/subroutine.
