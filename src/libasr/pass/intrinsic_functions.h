@@ -749,8 +749,8 @@ namespace Abs {
         ASR::ttype_t* output_type = x.m_type;
         std::string input_type_str = ASRUtils::get_type_code(input_type);
         std::string output_type_str = ASRUtils::get_type_code(output_type);
-        if( ASR::is_a<ASR::Complex_t>(*ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_array(input_type))) ) {
-            ASRUtils::require_impl(ASR::is_a<ASR::Real_t>(*output_type),
+        if (ASRUtils::is_complex(*input_type)) {
+            ASRUtils::require_impl(ASRUtils::is_real(*output_type),
                 "Abs intrinsic must return output of real for complex input, found: " + output_type_str,
                 loc, diagnostics);
             int input_kind = ASRUtils::extract_kind_from_ttype_t(input_type);
@@ -803,13 +803,23 @@ namespace Abs {
                 args[0]->base.loc);
             return nullptr;
         }
+        // if the argument is "complex" (scalar or array or pointer ...)
+        // the return argument is of type "real", so we change "type" accordingly
         if (is_complex(*type)) {
-            type = TYPE(ASR::make_Real_t(al, type->base.loc,
-                ASRUtils::extract_kind_from_ttype_t(type)));
+            ASR::ttype_t* real_type = TYPE(ASR::make_Real_t(al, type->base.loc,
+                                        ASRUtils::extract_kind_from_ttype_t(type)));
+            if (ASR::is_a<ASR::Array_t>(*type)) {
+                ASR::Array_t* e = ASR::down_cast<ASR::Array_t>(type);
+                type = TYPE(ASR::make_Array_t(al, type->base.loc, real_type,
+                                    e->m_dims, e->n_dims, e->m_physical_type));
+            } else if (ASR::is_a<ASR::Allocatable_t>(*type)) {
+                type = TYPE(ASR::make_Allocatable_t(al, type->base.loc, real_type));
+            } else {
+                type = real_type;
+            }
         }
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_Abs,
-            static_cast<int64_t>(IntrinsicElementalFunctions::Abs), 0,
-            ASRUtils::type_get_past_allocatable(type), diag);
+            static_cast<int64_t>(IntrinsicElementalFunctions::Abs), 0, type, diag);
     }
 
     static inline ASR::expr_t* instantiate_Abs(Allocator &al, const Location &loc,
