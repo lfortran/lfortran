@@ -51,6 +51,7 @@
 #include <libasr/pass/nested_vars.h>
 #include <libasr/pass/unique_symbols.h>
 #include <libasr/pass/insert_deallocate.h>
+#include <libasr/pass/simplifier.h>
 #include <libasr/pass/replace_print_struct_type.h>
 #include <libasr/pass/promote_allocatable_to_nonallocatable.h>
 #include <libasr/pass/replace_function_call_in_declaration.h>
@@ -113,7 +114,8 @@ namespace LCompilers {
             {"print_struct_type", &pass_replace_print_struct_type},
             {"unique_symbols", &pass_unique_symbols},
             {"insert_deallocate", &pass_insert_deallocate},
-            {"promote_allocatable_to_nonallocatable", &pass_promote_allocatable_to_nonallocatable}
+            {"promote_allocatable_to_nonallocatable", &pass_promote_allocatable_to_nonallocatable},
+            {"simplifier", &pass_simplifier}
         };
 
         bool apply_default_passes;
