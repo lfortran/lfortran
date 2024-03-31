@@ -2,6 +2,7 @@
 #include <libasr/containers.h>
 #include <libasr/asr_utils.h>
 #include <libasr/pass/simplifier.h>
+#include <libasr/pass/pass_utils.h>
 
 #include <vector>
 #include <utility>
@@ -98,6 +99,10 @@ void insert_allocate_stmt(Allocator& al, ASR::expr_t* temporary_var,
     alloc_arg.m_type = nullptr;
     alloc_args.push_back(al, alloc_arg);
 
+    Vec<ASR::expr_t*> dealloc_args; dealloc_args.reserve(al, 1);
+    dealloc_args.push_back(al, temporary_var);
+    current_body->push_back(al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al,
+        temporary_var->base.loc, dealloc_args.p, dealloc_args.size())));
     current_body->push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al,
         temporary_var->base.loc, alloc_args.p, alloc_args.size(),
         nullptr, nullptr, nullptr)));
@@ -157,6 +162,8 @@ void pass_simplifier(Allocator &al, ASR::TranslationUnit_t &unit,
                      const PassOptions &/*pass_options*/) {
     Simplifier v(al);
     v.visit_TranslationUnit(unit);
+    PassUtils::UpdateDependenciesVisitor u(al);
+    u.visit_TranslationUnit(unit);
 }
 
 
