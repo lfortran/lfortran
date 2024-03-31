@@ -30,6 +30,7 @@ set(SRC
     codegen/wasm_utils.cpp
 
     pass/nested_vars.cpp
+    pass/simplifier.cpp
     pass/where.cpp
     pass/function_call_in_declaration.cpp
     pass/openmp.cpp
