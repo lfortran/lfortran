@@ -812,14 +812,13 @@ namespace Abs {
                 ASR::Array_t* e = ASR::down_cast<ASR::Array_t>(type);
                 type = TYPE(ASR::make_Array_t(al, type->base.loc, real_type,
                                     e->m_dims, e->n_dims, e->m_physical_type));
-            } else if (ASR::is_a<ASR::Allocatable_t>(*type)) {
-                type = TYPE(ASR::make_Allocatable_t(al, type->base.loc, real_type));
             } else {
                 type = real_type;
             }
         }
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_Abs,
-            static_cast<int64_t>(IntrinsicElementalFunctions::Abs), 0, type, diag);
+            static_cast<int64_t>(IntrinsicElementalFunctions::Abs), 0,
+            ASRUtils::type_get_past_allocatable(type), diag);
     }
 
     static inline ASR::expr_t* instantiate_Abs(Allocator &al, const Location &loc,
