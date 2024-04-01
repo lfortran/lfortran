@@ -95,25 +95,212 @@ static inline int64_t stmt_label(AST::stmt_t *f)
 class CommonVisitorMethods {
 public:
 
-inline static void compare_helper(Allocator &al, size_t n, Vec<ASR::expr_t *> &args, ASR::cmpopType asr_op,
-                                std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>> comptime_values, const Location& loc) {
-    args.reserve(al, n);
-    bool result = true;
-    for (size_t i = 0; i < comptime_values.size(); i++) {
+// static inline ASR::expr_t* compare_helper(Allocator &al, size_t n, Vec<ASR::expr_t *> args, ASR::cmpopType asr_op,
+//                                 std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>> comptime_values, const Location& loc) {
+//     args.reserve(al, n);
+//     bool result = true;
+//     for (size_t i = 0; i < comptime_values.size(); i++) {
+//         switch (asr_op) {
+//             case (ASR::cmpopType::Eq):  { result = result && (comptime_values[i].first == comptime_values[i].second); break; }
+//             case (ASR::cmpopType::Gt): { result = result && (comptime_values[i].first > comptime_values[i].second); break; }
+//             case (ASR::cmpopType::GtE): { result = result && (comptime_values[i].first >= comptime_values[i].second); break; }
+//             case (ASR::cmpopType::Lt): { result = result && (comptime_values[i].first < comptime_values[i].second); break; }
+//             case (ASR::cmpopType::LtE): { result = result && (comptime_values[i].first <= comptime_values[i].second); break; }
+//             case (ASR::cmpopType::NotEq): { result = result && (comptime_values[i].first != comptime_values[i].second); break; }
+//             default: {
+//                 throw SemanticError("Comparison operator not implemented",
+//                                     loc);
+//             }
+//         }
+//         args.push_back(al, ASRUtils::EXPR(ASR::make_LogicalConstant_t(
+//             al, loc, result, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)))));
+//     }
+//     return args;
+// }
+
+static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value, ASR::expr_t* right_value, ASR::cmpopType asr_op, const Location loc) {
+    if (ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(left_value))) {
+        int64_t left_val = ASR::down_cast<ASR::IntegerConstant_t>(left_value)->m_n;
+        int64_t right_val = ASR::down_cast<ASR::IntegerConstant_t>(right_value)->m_n;
+        bool result = true;
         switch (asr_op) {
-            case (ASR::cmpopType::Eq):  { result = result && (comptime_values[i].first == comptime_values[i].second); break; }
-            case (ASR::cmpopType::Gt): { result = result && (comptime_values[i].first > comptime_values[i].second); break; }
-            case (ASR::cmpopType::GtE): { result = result && (comptime_values[i].first >= comptime_values[i].second); break; }
-            case (ASR::cmpopType::Lt): { result = result && (comptime_values[i].first < comptime_values[i].second); break; }
-            case (ASR::cmpopType::LtE): { result = result && (comptime_values[i].first <= comptime_values[i].second); break; }
-            case (ASR::cmpopType::NotEq): { result = result && (comptime_values[i].first != comptime_values[i].second); break; }
+            case (ASR::cmpopType::Eq):  { result = result && (left_val == right_val); break; }
+            case (ASR::cmpopType::Gt): { result = result && (left_val > right_val); break; }
+            case (ASR::cmpopType::GtE): { result = result && (left_val >= right_val); break; }
+            case (ASR::cmpopType::Lt): { result = result && (left_val < right_val); break; }
+            case (ASR::cmpopType::LtE): { result = result && (left_val <= right_val); break; }
+            case (ASR::cmpopType::NotEq): { result = result && (left_val != right_val); break; }
             default: {
                 throw SemanticError("Comparison operator not implemented",
                                     loc);
             }
         }
-        args.push_back(al, ASRUtils::EXPR(ASR::make_LogicalConstant_t(
-            al, loc, result, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)))));
+        return ASRUtils::EXPR(ASR::make_LogicalConstant_t(
+            al, loc, result, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))));
+
+    } else if (ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(left_value))) {
+        double left_val = ASR::down_cast<ASR::RealConstant_t>(left_value)->m_r;
+        double right_val = ASR::down_cast<ASR::RealConstant_t>(right_value)->m_r;
+        bool result = true;
+        switch (asr_op) {
+            case (ASR::cmpopType::Eq):  { result = result && (left_val == right_val); break; }
+            case (ASR::cmpopType::Gt): { result = result && (left_val > right_val); break; }
+            case (ASR::cmpopType::GtE): { result = result && (left_val >= right_val); break; }
+            case (ASR::cmpopType::Lt): { result = result && (left_val < right_val); break; }
+            case (ASR::cmpopType::LtE): { result = result && (left_val <= right_val); break; }
+            case (ASR::cmpopType::NotEq): { result = result && (left_val != right_val); break; }
+            default: {
+                throw SemanticError("Comparison operator not implemented",
+                                    loc);
+            }
+        }
+        return ASRUtils::EXPR(ASR::make_LogicalConstant_t(
+            al, loc, result, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))));
+
+    } else if (ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(left_value))) {
+        ASR::ComplexConstant_t *left0
+            = ASR::down_cast<ASR::ComplexConstant_t>(left_value);
+        ASR::ComplexConstant_t *right0
+            = ASR::down_cast<ASR::ComplexConstant_t>(right_value);
+        std::complex<double> left_val(left0->m_re, left0->m_im);
+        std::complex<double> right_val(right0->m_re, right0->m_im);
+        bool result = true;
+        switch (asr_op) {
+            case (ASR::cmpopType::Eq) : {
+                result = result && (left_val.real() == right_val.real() &&
+                        left_val.imag() == right_val.imag());
+                break;
+            }
+            case (ASR::cmpopType::NotEq) : {
+                result = result && (left_val.real() != right_val.real() ||
+                        left_val.imag() != right_val.imag());
+                break;
+            }
+            default: {
+                throw SemanticError("'" + ASRUtils::cmpop_to_str(asr_op) +
+                                    "' comparison is not supported between complex numbers",
+                                    loc);
+            }
+        }
+        return ASRUtils::EXPR(ASR::make_LogicalConstant_t(
+            al, loc, result, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))));
+
+    } else if (ASR::is_a<ASR::Logical_t>(*ASRUtils::expr_type(left_value))) {
+
+        bool left_val = ASR::down_cast<ASR::LogicalConstant_t>(
+                                left_value)->m_value;
+        bool right_val = ASR::down_cast<ASR::LogicalConstant_t>(
+                                right_value)->m_value;
+        bool result = true;
+        switch (asr_op) {
+            case (ASR::cmpopType::Eq):  { result = result && (left_val == right_val); break; }
+            case (ASR::cmpopType::Gt): { result = result && (left_val > right_val); break; }
+            case (ASR::cmpopType::GtE): { result = result && (left_val >= right_val); break; }
+            case (ASR::cmpopType::Lt): { result = result && (left_val < right_val); break; }
+            case (ASR::cmpopType::LtE): { result = result && (left_val <= right_val); break; }
+            case (ASR::cmpopType::NotEq): { result = result && (left_val != right_val); break; }
+            default: {
+                throw SemanticError("Comparison operator not implemented",
+                                    loc);
+            }
+        }
+        return ASRUtils::EXPR(ASR::make_LogicalConstant_t(
+            al, loc, result, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))));
+    } else if (ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(left_value))) {
+        char* left_val = ASR::down_cast<ASR::StringConstant_t>(
+                                left_value)->m_s;
+        char* right_val = ASR::down_cast<ASR::StringConstant_t>(
+                                right_value)->m_s;
+        std::string left_str = ASRUtils::remove_trailing_white_spaces(std::string(left_val));
+        std::string right_str = ASRUtils::remove_trailing_white_spaces(std::string(right_val));
+        int8_t strcmp = left_str.compare(right_str);
+        bool result = true;
+        switch (asr_op) {
+            case (ASR::cmpopType::Eq) : {
+                result = (strcmp == 0);
+                break;
+            }
+            case (ASR::cmpopType::NotEq) : {
+                result = (strcmp != 0);
+                break;
+            }
+            case (ASR::cmpopType::Gt) : {
+                result = (strcmp > 0);
+                break;
+            }
+            case (ASR::cmpopType::GtE) : {
+                result = (strcmp > 0 || strcmp == 0);
+                break;
+            }
+            case (ASR::cmpopType::Lt) : {
+                result = (strcmp < 0);
+                break;
+            }
+            case (ASR::cmpopType::LtE) : {
+                result = (strcmp < 0 || strcmp == 0);
+                break;
+            }
+            default: LCOMPILERS_ASSERT(false); // should never happen
+        }
+        return ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(
+            al, loc, result, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))));
+    } else {
+        throw SemanticError("Comparison operator not implemented",
+                            loc);
+        return nullptr;
+    }
+}
+
+
+static inline ASR::expr_t* evaluate_compiletime_values(Allocator &al, std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>> &compiletime_values,
+                            ASR::expr_t* left, ASR::expr_t* right, ASR::cmpopType asr_op, ASR::ttype_t* type, const Location loc) {
+
+    if (compiletime_values.size() == 0) {
+        return compare_helper(al, ASRUtils::expr_value(left), ASRUtils::expr_value(right), asr_op, loc);
+    } else {
+        Vec<ASR::expr_t*> args; args.reserve(al, compiletime_values.size());
+        for (size_t i = 0; i < compiletime_values.size(); i++) {
+            ASR::expr_t* left_val = compiletime_values[i].first;
+            ASR::expr_t* right_val = compiletime_values[i].second;
+            args.push_back(al, compare_helper(al, left_val, right_val, asr_op, loc));
+        }
+        return ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, args.p, args.size(), type, ASR::arraystorageType::ColMajor));
+    }
+}
+
+static inline void populate_compiletime_values(std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>> &compiletime_values,
+                                    ASR::expr_t* left, ASR::expr_t* right) {
+    int fixed_size_left_array = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(ASRUtils::expr_value(left))); //0
+    int fixed_size_right_array = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(ASRUtils::expr_value(right))); //0
+
+    if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(left))) {
+        ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(left));
+        for (size_t i=0; i<array->n_args; i++) {
+            compiletime_values.push_back({array->m_args[i], nullptr});
+        }
+    }
+    if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(right))) {
+        ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(right));
+        for (size_t i=0; i<array->n_args; i++) {
+            if(compiletime_values.size() > i) {
+                compiletime_values[i].second = array->m_args[i];
+            } else {
+                compiletime_values.push_back({nullptr, array->m_args[i]});
+            }
+        }
+    }
+
+    if (fixed_size_left_array == 0 && fixed_size_right_array == 0) {
+        return;
+    } else {
+        for (size_t i = 0; i < compiletime_values.size(); i++) {
+            if (compiletime_values[i].first == nullptr) {
+                compiletime_values[i].first = ASRUtils::expr_value(left);
+            }
+            if (compiletime_values[i].second == nullptr) {
+                compiletime_values[i].second = ASRUtils::expr_value(right);
+            }
+        }
     }
 }
 
@@ -230,207 +417,20 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
             type, result_shape, result_dims);
 
     ASR::expr_t *value = nullptr;
+    if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
+        std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>> comptime_values;
+        populate_compiletime_values(comptime_values, left, right);
+        value = evaluate_compiletime_values(al, comptime_values, left, right, asr_op, type, x.base.base.loc);
+    }
     if (ASRUtils::is_integer(*dest_type)) {
-        if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
-            std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>> comptime_values;
-            Vec<ASR::expr_t*> args;
-            if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(left)) && ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(right))) {
-                ASR::ArrayConstant_t* left_array = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(left));
-                ASR::ArrayConstant_t* right_array = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(right));
-                size_t n = left_array->n_args;
-                for (size_t i = 0; i < n; i++) {
-                    comptime_values.push_back(std::make_pair(left_array->m_args[i], right_array->m_args[i]));
-                }
-                compare_helper(al, n, args, asr_op,
-                                comptime_values, x.base.base.loc);
-                value = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, x.base.base.loc, args.p, args.size(), type, ASR::arraystorageType::ColMajor));
-            }
-            else if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(left)) && !ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(right))) {
-                ASR::ArrayConstant_t* left_array = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(left));
-                size_t n = left_array->n_args;
-                for (size_t i = 0; i < n; i++) {
-                    comptime_values.push_back(std::make_pair(left_array->m_args[i],
-                                                   right));
-                }
-                compare_helper(al, n, args, asr_op,
-                                comptime_values, x.base.base.loc);
-                value = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, x.base.base.loc, args.p, args.size(), type, ASR::arraystorageType::ColMajor));
-            } else if (ASR::is_a<ASR::IntegerConstant_t>(*ASRUtils::expr_value(left)) && ASR::is_a<ASR::IntegerConstant_t>(*ASRUtils::expr_value(right))) {
-                int64_t left_value = ASR::down_cast<ASR::IntegerConstant_t>(
-                                        ASRUtils::expr_value(left))->m_n;
-                int64_t right_value = ASR::down_cast<ASR::IntegerConstant_t>(
-                                        ASRUtils::expr_value(right))->m_n;
-                bool result;
-                switch (asr_op) {
-                    case (ASR::cmpopType::Eq):  { result = left_value == right_value; break; }
-                    case (ASR::cmpopType::Gt): { result = left_value > right_value; break; }
-                    case (ASR::cmpopType::GtE): { result = left_value >= right_value; break; }
-                    case (ASR::cmpopType::Lt): { result = left_value < right_value; break; }
-                    case (ASR::cmpopType::LtE): { result = left_value <= right_value; break; }
-                    case (ASR::cmpopType::NotEq): { result = left_value != right_value; break; }
-                    default: {
-                        throw SemanticError("Comparison operator not implemented",
-                                            x.base.base.loc);
-                    }
-                }
-                value = ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(
-                    al, x.base.base.loc, result, type));
-            }
-        }
         asr = ASR::make_IntegerCompare_t(al, x.base.base.loc, left, asr_op, right, type, value);
-
     } else if (ASRUtils::is_real(*dest_type)) {
-
-        if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
-            std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>> comptime_values;
-            Vec<ASR::expr_t*> args;
-            if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(left)) && ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(right))) {
-                ASR::ArrayConstant_t* left_array = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(left));
-                ASR::ArrayConstant_t* right_array = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(right));
-                size_t n = left_array->n_args;
-                for (size_t i = 0; i < n; i++) {
-                    comptime_values.push_back(std::make_pair(left_array->m_args[i], right_array->m_args[i]));
-                }
-                compare_helper(al, n, args, asr_op,
-                                comptime_values, x.base.base.loc);
-                value = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, x.base.base.loc, args.p, args.size(), type, ASR::arraystorageType::ColMajor));
-            }
-            else if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(left)) && !ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(right))) {
-                ASR::ArrayConstant_t* left_array = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(left));
-                size_t n = left_array->n_args;
-                for (size_t i = 0; i < n; i++) {
-                    comptime_values.push_back(std::make_pair(left_array->m_args[i],
-                                                   right));
-                }
-                compare_helper(al, n, args, asr_op,
-                                comptime_values, x.base.base.loc);
-                value = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, x.base.base.loc, args.p, args.size(), type, ASR::arraystorageType::ColMajor));
-            } else if (ASR::is_a<ASR::RealConstant_t>(*ASRUtils::expr_value(left)) && ASR::is_a<ASR::RealConstant_t>(*ASRUtils::expr_value(right))) {
-                double left_value = ASR::down_cast<ASR::RealConstant_t>(
-                                        ASRUtils::expr_value(left))->m_r;
-                double right_value = ASR::down_cast<ASR::RealConstant_t>(
-                                        ASRUtils::expr_value(right))->m_r;
-                bool result;
-                switch (asr_op) {
-                    case (ASR::cmpopType::Eq):  { result = left_value == right_value; break; }
-                    case (ASR::cmpopType::Gt): { result = left_value > right_value; break; }
-                    case (ASR::cmpopType::GtE): { result = left_value >= right_value; break; }
-                    case (ASR::cmpopType::Lt): { result = left_value < right_value; break; }
-                    case (ASR::cmpopType::LtE): { result = left_value <= right_value; break; }
-                    case (ASR::cmpopType::NotEq): { result = left_value != right_value; break; }
-                    default: {
-                        throw SemanticError("Comparison operator not implemented",
-                                            x.base.base.loc);
-                    }
-                }
-                value = ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(
-                    al, x.base.base.loc, result, type));
-            }
-        }
-
         asr = ASR::make_RealCompare_t(al, x.base.base.loc, left, asr_op, right, type, value);
-
     } else if (ASRUtils::is_complex(*dest_type)) {
-
-        if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
-            ASR::ComplexConstant_t *left0
-                = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(left));
-            ASR::ComplexConstant_t *right0
-                = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(right));
-            std::complex<double> left_value(left0->m_re, left0->m_im);
-            std::complex<double> right_value(right0->m_re, right0->m_im);
-            bool result;
-            switch (asr_op) {
-                case (ASR::cmpopType::Eq) : {
-                    result = left_value.real() == right_value.real() &&
-                            left_value.imag() == right_value.imag();
-                    break;
-                }
-                case (ASR::cmpopType::NotEq) : {
-                    result = left_value.real() != right_value.real() ||
-                            left_value.imag() != right_value.imag();
-                    break;
-                }
-                default: {
-                    throw SemanticError("'" + ASRUtils::cmpop_to_str(asr_op) +
-                                        "' comparison is not supported between complex numbers",
-                                        x.base.base.loc);
-                }
-            }
-            value = ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(
-                al, x.base.base.loc, result, type));
-        }
-
         asr = ASR::make_ComplexCompare_t(al, x.base.base.loc, left, asr_op, right, type, value);
-
     } else if (ASRUtils::is_logical(*dest_type)) {
-
-        if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
-            bool left_value = ASR::down_cast<ASR::LogicalConstant_t>(
-                                    ASRUtils::expr_value(left))->m_value;
-            bool right_value = ASR::down_cast<ASR::LogicalConstant_t>(
-                                    ASRUtils::expr_value(right))->m_value;
-            bool result;
-            switch (asr_op) {
-                case (ASR::cmpopType::Eq):  { result = left_value == right_value; break; }
-                case (ASR::cmpopType::Gt): { result = left_value > right_value; break; }
-                case (ASR::cmpopType::GtE): { result = left_value >= right_value; break; }
-                case (ASR::cmpopType::Lt): { result = left_value < right_value; break; }
-                case (ASR::cmpopType::LtE): { result = left_value <= right_value; break; }
-                case (ASR::cmpopType::NotEq): { result = left_value != right_value; break; }
-                default: {
-                    throw SemanticError("Comparison operator not implemented",
-                                        x.base.base.loc);
-                }
-            }
-            value = ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(
-                al, x.base.base.loc, result, type));
-        }
-
         asr = ASR::make_LogicalCompare_t(al, x.base.base.loc, left, asr_op, right, type, value);
-
     } else if (ASRUtils::is_character(*dest_type)) {
-
-        if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
-            char* left_value = ASR::down_cast<ASR::StringConstant_t>(
-                                    ASRUtils::expr_value(left))->m_s;
-            char* right_value = ASR::down_cast<ASR::StringConstant_t>(
-                                    ASRUtils::expr_value(right))->m_s;
-            std::string left_str = ASRUtils::remove_trailing_white_spaces(std::string(left_value));
-            std::string right_str = ASRUtils::remove_trailing_white_spaces(std::string(right_value));
-            int8_t strcmp = left_str.compare(right_str);
-            bool result;
-            switch (asr_op) {
-                case (ASR::cmpopType::Eq) : {
-                    result = (strcmp == 0);
-                    break;
-                }
-                case (ASR::cmpopType::NotEq) : {
-                    result = (strcmp != 0);
-                    break;
-                }
-                case (ASR::cmpopType::Gt) : {
-                    result = (strcmp > 0);
-                    break;
-                }
-                case (ASR::cmpopType::GtE) : {
-                    result = (strcmp > 0 || strcmp == 0);
-                    break;
-                }
-                case (ASR::cmpopType::Lt) : {
-                    result = (strcmp < 0);
-                    break;
-                }
-                case (ASR::cmpopType::LtE) : {
-                    result = (strcmp < 0 || strcmp == 0);
-                    break;
-                }
-                default: LCOMPILERS_ASSERT(false); // should never happen
-            }
-            value = ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(
-                al, x.base.base.loc, result, type));
-        }
-
         if( (ASRUtils::is_allocatable(left) && ASRUtils::is_array(ASRUtils::expr_type(left)))
             || (ASRUtils::is_allocatable(right) && ASRUtils::is_array(ASRUtils::expr_type(right))) ) {
             type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc,
@@ -442,9 +442,9 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
         asr = ASR::make_OverloadedCompare_t(al, x.base.base.loc, left, asr_op, right, type,
             value, overloaded);
     }
-  }
+}
 
-  inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
+inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
                                   ASR::expr_t *&left, ASR::expr_t *&right,
                                   ASR::asr_t *&asr, diag::Diagnostics &diag) {
     ASR::logicalbinopType op;
