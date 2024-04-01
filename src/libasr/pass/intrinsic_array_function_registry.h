@@ -2251,6 +2251,7 @@ namespace Pack {
             ASR::expr_t* count = EXPR(Count::create_Count(al, loc, args_count, diag));
             result_dims.push_back(al, b.set_dim(array_dims[0].m_start, count));
             ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims, ASR::array_physical_typeType::DescriptorArray, true);
+            is_type_allocatable = true;
         }
         if (is_type_allocatable) {
             ret_type = TYPE(ASR::make_Allocatable_t(al, loc, ret_type));
@@ -2282,7 +2283,7 @@ namespace Pack {
         }
         ASR::ttype_t* ret_type = return_type;
         if (overload_id == 2) {
-            ret_type = ASRUtils::duplicate_type(al, return_type, nullptr, ASRUtils::extract_physical_type(return_type), true);
+            ret_type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable(return_type), nullptr, ASRUtils::extract_physical_type(return_type), true);
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Array_t>(*ret_type));
             ASR::Array_t *ret_type_array = ASR::down_cast<ASR::Array_t>(ret_type);
             if (ASR::is_a<ASR::FunctionCall_t>(*ret_type_array->m_dims[0].m_length)) {

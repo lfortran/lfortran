@@ -320,7 +320,11 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
                         ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(func_call_count);
                         if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*func_call->m_args[0].m_value)) {
                             ASR::ArrayPhysicalCast_t *array_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(func_call->m_args[0].m_value);
+                            if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*new_args[1].m_value)) {
                             array_cast->m_arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(new_args[1].m_value)->m_arg;
+                            } else {
+                                array_cast->m_arg = new_args[1].m_value;
+                            }
                             array_cast->m_old = ASRUtils::extract_physical_type(ASRUtils::expr_type(array_cast->m_arg));
                             array_cast->m_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(array_cast->m_arg), nullptr,
                                                 ASR::array_physical_typeType::DescriptorArray, true);
@@ -333,7 +337,8 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
             result_var_ = PassUtils::create_var(result_counter,
                 std::string(ASRUtils::symbol_name(x->m_name)) + "_res",
                 x->base.base.loc, x->m_type, al, current_scope);
-            if (func_call_count) {
+            if (ASRUtils::is_allocatable(ASRUtils::expr_type(result_var_)) &&
+                func_call_count) {
                 // allocate result array
                 Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
                 Vec<ASR::dimension_t> alloc_dims; alloc_dims.reserve(al, 2);
