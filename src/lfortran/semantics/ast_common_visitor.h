@@ -95,28 +95,6 @@ static inline int64_t stmt_label(AST::stmt_t *f)
 class CommonVisitorMethods {
 public:
 
-// static inline ASR::expr_t* compare_helper(Allocator &al, size_t n, Vec<ASR::expr_t *> args, ASR::cmpopType asr_op,
-//                                 std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>> comptime_values, const Location& loc) {
-//     args.reserve(al, n);
-//     bool result = true;
-//     for (size_t i = 0; i < comptime_values.size(); i++) {
-//         switch (asr_op) {
-//             case (ASR::cmpopType::Eq):  { result = result && (comptime_values[i].first == comptime_values[i].second); break; }
-//             case (ASR::cmpopType::Gt): { result = result && (comptime_values[i].first > comptime_values[i].second); break; }
-//             case (ASR::cmpopType::GtE): { result = result && (comptime_values[i].first >= comptime_values[i].second); break; }
-//             case (ASR::cmpopType::Lt): { result = result && (comptime_values[i].first < comptime_values[i].second); break; }
-//             case (ASR::cmpopType::LtE): { result = result && (comptime_values[i].first <= comptime_values[i].second); break; }
-//             case (ASR::cmpopType::NotEq): { result = result && (comptime_values[i].first != comptime_values[i].second); break; }
-//             default: {
-//                 throw SemanticError("Comparison operator not implemented",
-//                                     loc);
-//             }
-//         }
-//         args.push_back(al, ASRUtils::EXPR(ASR::make_LogicalConstant_t(
-//             al, loc, result, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)))));
-//     }
-//     return args;
-// }
 
 static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value, ASR::expr_t* right_value, ASR::cmpopType asr_op, const Location loc) {
     if (ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(left_value))) {
