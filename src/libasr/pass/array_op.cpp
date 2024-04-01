@@ -1952,64 +1952,64 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
         }
 
         void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
-            ASR::symbol_t* sym = x.m_original_name;
-            if (sym && ASR::is_a<ASR::ExternalSymbol_t>(*sym)) {
-                ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(sym);
-                std::string name = ext_sym->m_name;
-                std::string module_name = ext_sym->m_module_name;
-                if (module_name == "lfortran_intrinsic_math" && name == "random_number") {
-                    // iterate over args and check if any of them is an array
-                    ASR::expr_t* arg = nullptr;
-                    for (size_t i=0; i<x.n_args; i++) {
-                        if (ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_value))) {
-                            arg = x.m_args[i].m_value;
-                            break;
-                        }
-                    }
-                    if (arg) {
-                        /*
-                            real :: b(3)
-                            call random_number(b)
-                                To
-                            real :: b(3)
-                            do i=lbound(b,1),ubound(b,1)
-                                call random_number(b(i))
-                            end do
-                        */
-                        int var_rank = PassUtils::get_rank(arg);
-                        int result_rank = PassUtils::get_rank(arg);
-                        Vec<ASR::expr_t*> idx_vars, loop_vars, idx_vars_value;
-                        std::vector<int> loop_var_indices;
-                        Vec<ASR::stmt_t*> doloop_body;
-                        create_do_loop(arg->base.loc, arg, var_rank, result_rank, idx_vars,
-                        loop_vars, idx_vars_value, loop_var_indices, doloop_body,
-                        arg, 2,
-                        [=, &idx_vars_value, &idx_vars, &doloop_body]() {
-                            Vec<ASR::array_index_t> array_index; array_index.reserve(al, idx_vars.size());
-                            for( size_t i = 0; i < idx_vars.size(); i++ ) {
-                                ASR::array_index_t idx;
-                                idx.m_left = nullptr;
-                                idx.m_right = idx_vars_value[i];
-                                idx.m_step = nullptr;
-                                idx.loc = idx_vars_value[i]->base.loc;
-                                array_index.push_back(al, idx);
-                            }
-                            ASR::expr_t* array_item = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, x.base.base.loc,
-                                                    arg, array_index.p, array_index.size(),
-                                                    ASRUtils::type_get_past_array(ASRUtils::type_get_past_pointer(
-                                                        ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(arg)))),
-                                                    ASR::arraystorageType::ColMajor, nullptr));
-                            Vec<ASR::call_arg_t> ref_args; ref_args.reserve(al, 1);
-                            ASR::call_arg_t ref_arg; ref_arg.loc = array_item->base.loc; ref_arg.m_value = array_item;
-                            ref_args.push_back(al, ref_arg);
-                            ASR::stmt_t* subroutine_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, x.base.base.loc,
-                                                    x.m_name, x.m_original_name, ref_args.p, ref_args.n, nullptr, nullptr, false, ASRUtils::get_class_proc_nopass_val(x.m_name)));
-                            doloop_body.push_back(al, subroutine_call);
-                        });
-                        remove_original_statement = true;
-                    }
-                }
-            }
+            // ASR::symbol_t* sym = x.m_original_name;
+            // if (sym && ASR::is_a<ASR::ExternalSymbol_t>(*sym)) {
+            //     ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(sym);
+            //     std::string name = ext_sym->m_name;
+            //     std::string module_name = ext_sym->m_module_name;
+            //     if (module_name == "lfortran_intrinsic_math" && name == "random_number") {
+            //         // iterate over args and check if any of them is an array
+            //         ASR::expr_t* arg = nullptr;
+            //         for (size_t i=0; i<x.n_args; i++) {
+            //             if (ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_value))) {
+            //                 arg = x.m_args[i].m_value;
+            //                 break;
+            //             }
+            //         }
+            //         if (arg) {
+            //             /*
+            //                 real :: b(3)
+            //                 call random_number(b)
+            //                     To
+            //                 real :: b(3)
+            //                 do i=lbound(b,1),ubound(b,1)
+            //                     call random_number(b(i))
+            //                 end do
+            //             */
+            //             int var_rank = PassUtils::get_rank(arg);
+            //             int result_rank = PassUtils::get_rank(arg);
+            //             Vec<ASR::expr_t*> idx_vars, loop_vars, idx_vars_value;
+            //             std::vector<int> loop_var_indices;
+            //             Vec<ASR::stmt_t*> doloop_body;
+            //             create_do_loop(arg->base.loc, arg, var_rank, result_rank, idx_vars,
+            //             loop_vars, idx_vars_value, loop_var_indices, doloop_body,
+            //             arg, 2,
+            //             [=, &idx_vars_value, &idx_vars, &doloop_body]() {
+            //                 Vec<ASR::array_index_t> array_index; array_index.reserve(al, idx_vars.size());
+            //                 for( size_t i = 0; i < idx_vars.size(); i++ ) {
+            //                     ASR::array_index_t idx;
+            //                     idx.m_left = nullptr;
+            //                     idx.m_right = idx_vars_value[i];
+            //                     idx.m_step = nullptr;
+            //                     idx.loc = idx_vars_value[i]->base.loc;
+            //                     array_index.push_back(al, idx);
+            //                 }
+            //                 ASR::expr_t* array_item = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, x.base.base.loc,
+            //                                         arg, array_index.p, array_index.size(),
+            //                                         ASRUtils::type_get_past_array(ASRUtils::type_get_past_pointer(
+            //                                             ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(arg)))),
+            //                                         ASR::arraystorageType::ColMajor, nullptr));
+            //                 Vec<ASR::call_arg_t> ref_args; ref_args.reserve(al, 1);
+            //                 ASR::call_arg_t ref_arg; ref_arg.loc = array_item->base.loc; ref_arg.m_value = array_item;
+            //                 ref_args.push_back(al, ref_arg);
+            //                 ASR::stmt_t* subroutine_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, x.base.base.loc,
+            //                                         x.m_name, x.m_original_name, ref_args.p, ref_args.n, nullptr, nullptr, false, ASRUtils::get_class_proc_nopass_val(x.m_name)));
+            //                 doloop_body.push_back(al, subroutine_call);
+            //             });
+            //             remove_original_statement = true;
+            //         }
+            //     }
+            // }
             for (size_t i=0; i<x.n_args; i++) {
                 visit_call_arg(x.m_args[i]);
             }
