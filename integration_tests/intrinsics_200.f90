@@ -2,8 +2,8 @@ program intrinsics_200
 integer, dimension(5) :: x
 logical, dimension(5) :: mask
 
-x = (/1, 2, 3, 4, 5/)
-mask = (/ .true., .false., .true., .false., .true./)
+x = [1, 2, 3, 4, 5]
+mask = [.true., .false., .true., .false., .true.]
 
 print *, median_all_mask_1_iint8_dp(x, mask)
 if (abs(median_all_mask_1_iint8_dp(x, mask) - 9.0) > 1e-8) error stop
