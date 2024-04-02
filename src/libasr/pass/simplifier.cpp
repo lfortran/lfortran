@@ -9,6 +9,27 @@
 
 namespace LCompilers {
 
+/*
+This pass collector that the BinOp only Var nodes and nothing else.
+*/
+class ArrayVarCollector: public ASR::BaseWalkVisitor<ArrayVarCollector> {
+    private:
+
+    Allocator& al;
+    Vec<ASR::expr_t*>& vars;
+
+    public:
+
+    ArrayVarCollector(Allocator& al_, Vec<ASR::expr_t*>& vars_): al(al_), vars(vars_) {}
+
+    void visit_Var(const ASR::Var_t& x) {
+        if( ASRUtils::is_array(ASRUtils::symbol_type(x.m_v)) ) {
+            vars.push_back(al, const_cast<ASR::expr_t*>(&(x.base)));
+        }
+    }
+
+};
+
 ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
     ASR::expr_t* value, SymbolTable* scope, std::string name_hint) {
     ASR::ttype_t* value_type = ASRUtils::expr_type(value);
@@ -72,6 +93,68 @@ bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t
             }
             break ;
         }
+        case ASR::exprType::IntegerBinOp:
+        case ASR::exprType::RealBinOp:
+        case ASR::exprType::ComplexBinOp:
+        case ASR::exprType::LogicalBinOp:
+        case ASR::exprType::UnsignedIntegerBinOp:
+        case ASR::exprType::IntegerCompare:
+        case ASR::exprType::RealCompare:
+        case ASR::exprType::ComplexCompare:
+        case ASR::exprType::LogicalCompare:
+        case ASR::exprType::UnsignedIntegerCompare:
+        case ASR::exprType::IntegerUnaryMinus:
+        case ASR::exprType::RealUnaryMinus:
+        case ASR::exprType::ComplexUnaryMinus: {
+            /*
+                Collect all the variables from these expressions,
+                then take the size of one of the arrays having
+                maximum dimensions for now. For now LFortran will
+                assume that broadcasting is doable for arrays with lesser
+                dimensions and the array having maximum dimensions
+                has compatible size of each dimension with other arrays.
+            */
+
+            Vec<ASR::expr_t*> array_vars; array_vars.reserve(al, 1);
+            ArrayVarCollector array_var_collector(al, array_vars);
+            array_var_collector.visit_expr(*value);
+            Vec<ASR::expr_t*> arrays_with_maximum_rank;
+            arrays_with_maximum_rank.reserve(al, 1);
+            size_t max_rank = 0;
+            for( size_t i = 0; i < array_vars.size(); i++ ) {
+                size_t rank = ASRUtils::extract_n_dims_from_ttype(
+                    ASRUtils::expr_type(array_vars[i]));
+                if( rank > max_rank ) {
+                    max_rank = rank;
+                }
+            }
+            LCOMPILERS_ASSERT(max_rank > 0);
+            for( size_t i = 0; i < array_vars.size(); i++ ) {
+                if( (size_t) ASRUtils::extract_n_dims_from_ttype(
+                        ASRUtils::expr_type(array_vars[i])) == max_rank ) {
+                    arrays_with_maximum_rank.push_back(al, array_vars[i]);
+                }
+            }
+
+            LCOMPILERS_ASSERT(arrays_with_maximum_rank.size() > 0);
+            ASR::expr_t* selected_array = arrays_with_maximum_rank[0];
+            allocate_dims.reserve(al, max_rank);
+            for( size_t i = 0; i < max_rank; i++ ) {
+                ASR::dimension_t allocate_dim;
+                Location loc; loc.first = 1, loc.last = 1;
+                allocate_dim.loc = loc;
+                // Assume 1 for Fortran.
+                allocate_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+                ASR::expr_t* dim = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, loc, i + 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+                allocate_dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                    al, loc, selected_array, dim, ASRUtils::TYPE(
+                        ASR::make_Integer_t(al, loc, 4)), nullptr));
+                allocate_dims.push_back(al, allocate_dim);
+            }
+            break;
+        }
         default: {
             LCOMPILERS_ASSERT_MSG(false, "ASR::exprType::" + std::to_string(value->type)
                 + " not handled yet in set_allocation_size");
@@ -123,7 +206,7 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
         Vec<ASR::stmt_t*>* current_body_copy = current_body;
         Vec<ASR::stmt_t*> current_body_vec; current_body_vec.reserve(al, 1);
-        current_body_vec.from_pointer_n(m_body, n_body);
+        current_body_vec.reserve(al, n_body);
         current_body = &current_body_vec;
         for (size_t i = 0; i < n_body; i++) {
             visit_stmt(*m_body[i]);
