@@ -1,4 +1,6 @@
-module math_operations
+!> test that user-defined elemental subroutines
+!> get broadcasted correctly
+module elemental_09_module
 implicit none
 contains
 
@@ -15,11 +17,11 @@ contains
         z = x * y
     end subroutine multiply_elements
 
-end module math_operations
+end module elemental_09_module
 
 
-program test_elemental
-    use math_operations
+program elemental_09
+    use elemental_09_module
     implicit none
     real, parameter :: epsilon = 1e-7
     real, dimension(5) :: arr_in1 = [1.0, 2.0, 3.0, 4.0, 5.0]
@@ -58,4 +60,4 @@ program test_elemental
     if (abs(arr_out(3) - 9) > epsilon ) error stop
     if (abs(arr_out(4) - 12) > epsilon ) error stop
     if (abs(arr_out(5) - 15) > epsilon ) error stop
-end program test_elemental
+end program elemental_09
