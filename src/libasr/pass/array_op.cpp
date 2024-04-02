@@ -1951,64 +1951,121 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
 
         }
 
-        void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
-            ASR::symbol_t* sym = x.m_original_name;
-            if (sym && ASR::is_a<ASR::ExternalSymbol_t>(*sym)) {
-                ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(sym);
-                std::string name = ext_sym->m_name;
-                std::string module_name = ext_sym->m_module_name;
-                if (module_name == "lfortran_intrinsic_math" && name == "random_number") {
-                    // iterate over args and check if any of them is an array
-                    ASR::expr_t* arg = nullptr;
-                    for (size_t i=0; i<x.n_args; i++) {
-                        if (ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_value))) {
-                            arg = x.m_args[i].m_value;
-                            break;
-                        }
-                    }
-                    if (arg) {
-                        /*
-                            real :: b(3)
-                            call random_number(b)
-                                To
-                            real :: b(3)
-                            do i=lbound(b,1),ubound(b,1)
-                                call random_number(b(i))
-                            end do
-                        */
-                        int var_rank = PassUtils::get_rank(arg);
-                        int result_rank = PassUtils::get_rank(arg);
-                        Vec<ASR::expr_t*> idx_vars, loop_vars, idx_vars_value;
-                        std::vector<int> loop_var_indices;
-                        Vec<ASR::stmt_t*> doloop_body;
-                        create_do_loop(arg->base.loc, arg, var_rank, result_rank, idx_vars,
-                        loop_vars, idx_vars_value, loop_var_indices, doloop_body,
-                        arg, 2,
-                        [=, &idx_vars_value, &idx_vars, &doloop_body]() {
-                            Vec<ASR::array_index_t> array_index; array_index.reserve(al, idx_vars.size());
-                            for( size_t i = 0; i < idx_vars.size(); i++ ) {
-                                ASR::array_index_t idx;
-                                idx.m_left = nullptr;
-                                idx.m_right = idx_vars_value[i];
-                                idx.m_step = nullptr;
-                                idx.loc = idx_vars_value[i]->base.loc;
-                                array_index.push_back(al, idx);
-                            }
-                            ASR::expr_t* array_item = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, x.base.base.loc,
-                                                    arg, array_index.p, array_index.size(),
-                                                    ASRUtils::type_get_past_array(ASRUtils::type_get_past_pointer(
-                                                        ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(arg)))),
-                                                    ASR::arraystorageType::ColMajor, nullptr));
-                            Vec<ASR::call_arg_t> ref_args; ref_args.reserve(al, 1);
-                            ASR::call_arg_t ref_arg; ref_arg.loc = array_item->base.loc; ref_arg.m_value = array_item;
-                            ref_args.push_back(al, ref_arg);
-                            ASR::stmt_t* subroutine_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, x.base.base.loc,
-                                                    x.m_name, x.m_original_name, ref_args.p, ref_args.n, nullptr, nullptr, false, ASRUtils::get_class_proc_nopass_val(x.m_name)));
-                            doloop_body.push_back(al, subroutine_call);
-                        });
-                        remove_original_statement = true;
-                    }
+        void process_subroutine_arguments(
+            const ASR::SubroutineCall_t& x,
+            std::vector<ASR::expr_t*>& operands,
+            std::vector<bool>& array_mask,
+            ASR::expr_t*& first_array_operand
+        ) {
+            bool at_least_one_array = false;
+            for( size_t iarg = 0; iarg < x.n_args; iarg++ ) {
+                array_mask[iarg] = (x.m_args[iarg].m_value != nullptr &&
+                    ASRUtils::is_array(ASRUtils::expr_type(x.m_args[iarg].m_value)));
+                at_least_one_array = at_least_one_array || array_mask[iarg];
+            }
+            if (!at_least_one_array) {
+                return ;
+            }
+            bool is_all_rank_0 = true;
+            ASR::expr_t* operand = nullptr;
+            int common_rank = 0;
+            bool are_all_rank_same = true;
+            for( size_t iarg = 0; iarg < x.n_args; iarg++ ) {
+                if (x.m_args[iarg].m_value == nullptr) {
+                    operands.push_back(nullptr);
+                    continue;
                 }
+                ASR::expr_t** current_expr_copy_9 = current_expr;
+                current_expr = &(x.m_args[iarg].m_value);
+                call_replacer();
+                operand = *current_expr;
+                current_expr = current_expr_copy_9;
+                operands.push_back(operand);
+                int rank_operand = PassUtils::get_rank(operand);
+                if( rank_operand > 0 && first_array_operand == nullptr ) {
+                    first_array_operand = operand;
+                }
+                if( common_rank == 0 ) {
+                    common_rank = rank_operand;
+                }
+                if( common_rank != rank_operand &&
+                    rank_operand > 0 ) {
+                    are_all_rank_same = false;
+                }
+                array_mask[iarg] = (rank_operand > 0);
+                is_all_rank_0 = is_all_rank_0 && (rank_operand <= 0);
+            }
+            if( is_all_rank_0 ) {
+                return ;
+            }
+            if( !are_all_rank_same ) {
+                throw LCompilersException("Broadcasting support not yet available "
+                                        "for different shape arrays.");
+            }
+        }
+
+        // Processes a user-defined elemental subroutine call. This function ensures that if any
+        // of the subroutine call's arguments are arrays, a 'do loop' structure is generated to
+        // individually apply the subroutine to each element of the array(s).
+        void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+            ASR::symbol_t* sym = x.m_name;
+            if (sym && ASR::is_a<ASR::ExternalSymbol_t>(*sym) && PassUtils::is_elemental(sym)) {
+                if (!x.n_args) {
+                    return;
+                }
+                std:: vector<ASR::expr_t*> operands;
+                std::vector<bool> array_mask(x.n_args, false);
+                ASR::expr_t* first_array_operand { nullptr };
+                process_subroutine_arguments(x, operands, array_mask, first_array_operand);
+                if (!operands.size()) {
+                    return;
+                }
+
+                const int var_rank { PassUtils::get_rank(first_array_operand) };
+                const int result_rank { var_rank };
+                Vec<ASR::expr_t*> idx_vars, loop_vars, idx_vars_value;
+                std::vector<int> loop_var_indices;
+                Vec<ASR::stmt_t*> doloop_body;
+                create_do_loop(first_array_operand->base.loc, first_array_operand, var_rank, result_rank, idx_vars,
+                loop_vars, idx_vars_value, loop_var_indices, doloop_body,
+                first_array_operand, 2,
+                [=, &idx_vars_value, &idx_vars, &doloop_body]() {
+                    Vec<ASR::array_index_t> array_index;
+                    array_index.reserve(al, idx_vars.size());
+                    for (size_t i=0; i < idx_vars.size(); i++) {
+                        ASR::array_index_t idx;
+                        idx.m_left = nullptr;
+                        idx.m_right = idx_vars_value[i];
+                        idx.m_step = nullptr;
+                        idx.loc = idx_vars_value[i]->base.loc;
+                        array_index.push_back(al, idx);
+                    }
+                    // construct scalar subroutine call arguments
+                    Vec<ASR::call_arg_t> ref_args;
+                    ref_args.reserve(al, operands.size());
+                    for (size_t i=0; i < operands.size(); i++) {
+                        ASR::ttype_t* operand_type = ASRUtils::expr_type(operands[i]);
+                        ASR::expr_t* array_item;
+                        if (array_mask[i]) {
+                            array_item = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, x.base.base.loc,
+                                operands[i], array_index.p, array_index.size(),
+                                ASRUtils::type_get_past_array_pointer_allocatable(operand_type),
+                                ASR::arraystorageType::ColMajor, nullptr)
+                            );
+                        } else {
+                            array_item = operands[i];
+                        }
+                        ASR::call_arg_t ref_arg;
+                        ref_arg.loc = array_item->base.loc;
+                        ref_arg.m_value = array_item;
+                        ref_args.push_back(al, ref_arg);
+                    }
+                    ASR::stmt_t* subroutine_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, x.base.base.loc,
+                                            x.m_name, x.m_original_name, ref_args.p, ref_args.n, nullptr, nullptr, false,
+                                            ASRUtils::get_class_proc_nopass_val(x.m_name)));
+                    doloop_body.push_back(al, subroutine_call);
+                });
+                remove_original_statement = true;
             }
             for (size_t i=0; i<x.n_args; i++) {
                 visit_call_arg(x.m_args[i]);
