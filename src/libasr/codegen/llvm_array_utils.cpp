@@ -772,7 +772,7 @@ namespace LCompilers {
                 llvm::Value* dim_size_ptr = llvm_utils->create_gep(dim_val, 2);
                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 1)), l_val);
                 builder->CreateStore(LLVM::CreateLoad(*builder, prod), s_val);
-                llvm::Value* dim_size = LLVM::CreateLoad(*builder, llvm_utils->create_ptr_gep(shape_data, r_val));
+                llvm::Value* dim_size = builder->CreateSExtOrTrunc(LLVM::CreateLoad(*builder, llvm_utils->create_ptr_gep(shape_data, r_val)), llvm::Type::getInt32Ty(context));
                 builder->CreateStore(builder->CreateMul(LLVM::CreateLoad(*builder, prod), dim_size), prod);
                 builder->CreateStore(dim_size, dim_size_ptr);
                 r_val = builder->CreateAdd(r_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
