@@ -719,6 +719,7 @@ RUN(NAME intrinsics_197 LABELS gfortran llvm) # bessely0
 RUN(NAME intrinsics_198 LABELS gfortran llvm) # sum
 RUN(NAME intrinsics_199 LABELS gfortran llvm) # count
 RUN(NAME intrinsics_200 LABELS gfortran llvm) # pack
+RUN(NAME intrinsics_201 LABELS gfortran llvm) # any
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
