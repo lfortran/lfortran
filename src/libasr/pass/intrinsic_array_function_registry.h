@@ -636,7 +636,9 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al,
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
             int orig_array_rank = ASRUtils::extract_n_dims_from_ttype(
                                     ASRUtils::expr_type(f->m_args[0]));
-            if (ASRUtils::types_equal(ASRUtils::expr_type(f->m_args[0]),
+            bool same_allocatable_type = (ASRUtils::is_allocatable(arg_type) ==
+                                    ASRUtils::is_allocatable(ASRUtils::expr_type(f->m_args[0])));
+            if (same_allocatable_type && ASRUtils::types_equal(ASRUtils::expr_type(f->m_args[0]),
                     arg_type) && orig_array_rank == rank) {
                 return builder.Call(s, new_args, return_type, nullptr);
             } else {
@@ -1272,8 +1274,10 @@ namespace Any {
                 ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
                 int orig_array_rank = ASRUtils::extract_n_dims_from_ttype(
                                         ASRUtils::expr_type(f->m_args[0]));
-                if (ASRUtils::types_equal(ASRUtils::expr_type(f->m_args[0]),
-                        arg_type) && orig_array_rank == rank) {
+                bool same_allocatable_type = (ASRUtils::is_allocatable(arg_type) ==
+                                        ASRUtils::is_allocatable(ASRUtils::expr_type(f->m_args[0])));
+                if (same_allocatable_type && ASRUtils::types_equal(ASRUtils::expr_type(f->m_args[0]),
+                        ASRUtils::expr_type(new_args[0].m_value), true) && orig_array_rank == rank) {
                     return builder.Call(s, new_args, logical_return_type, nullptr);
                 } else {
                     new_func_name += std::to_string(i);
