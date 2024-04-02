@@ -216,7 +216,8 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
         current_body = current_body_copy;
     }
 
-    void visit_Print(const ASR::Print_t& x) {
+    template <typename T>
+    void visit_IO(const T& x, const std::string& name_hint) {
         const Location& loc = x.base.base.loc;
         Vec<ASR::expr_t*> x_m_values; x_m_values.reserve(al, x.n_values);
         /* For frontends like LC, we will need to traverse the print statement arguments
@@ -224,7 +225,7 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
         for( size_t i = 0; i < x.n_values; i++ ) {
             if( ASRUtils::is_array(ASRUtils::expr_type(x.m_values[i])) ) {
                 ASR::expr_t* array_var_temporary = create_temporary_variable_for_array(
-                    al, x.m_values[i], current_scope, "print");
+                    al, x.m_values[i], current_scope, name_hint);
                 insert_allocate_stmt(al, array_var_temporary, x.m_values[i], current_body);
                 current_body->push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
                     al, loc, array_var_temporary, x.m_values[i], nullptr)));
@@ -234,9 +235,17 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
             }
         }
 
-        ASR::Print_t& xx = const_cast<ASR::Print_t&>(x);
+        T& xx = const_cast<T&>(x);
         xx.m_values = x_m_values.p;
         xx.n_values = x_m_values.size();
+    }
+
+    void visit_Print(const ASR::Print_t& x) {
+        visit_IO(x, "print");
+    }
+
+    void visit_FileWrite(const ASR::FileWrite_t& x) {
+        visit_IO(x, "file_write");
     }
 
 };
