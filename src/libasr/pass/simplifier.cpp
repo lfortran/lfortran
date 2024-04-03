@@ -248,6 +248,34 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
         visit_IO(x, "file_write");
     }
 
+    void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+        LCOMPILERS_ASSERT(!x.m_dt || !ASRUtils::is_array(ASRUtils::expr_type(x.m_dt)));
+        const Location& loc = x.base.base.loc;
+        Vec<ASR::call_arg_t> x_m_args; x_m_args.reserve(al, x.n_args);
+        /* For other frontends, we might need to traverse the arguments
+           in reverse order. */
+        for( size_t i = 0; i < x.n_args; i++ ) {
+            if( ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_value)) ) {
+                ASR::expr_t* array_var_temporary = create_temporary_variable_for_array(
+                    al, x.m_args[i].m_value, current_scope, "_subroutine_call");
+                insert_allocate_stmt(al, array_var_temporary, x.m_args[i].m_value, current_body);
+                current_body->push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
+                    array_var_temporary, ASRUtils::get_past_array_physical_cast(x.m_args[i].m_value),
+                    nullptr)));
+                ASR::call_arg_t call_arg;
+                call_arg.loc = array_var_temporary->base.loc;
+                call_arg.m_value = array_var_temporary;
+                x_m_args.push_back(al, call_arg);
+            } else {
+                x_m_args.push_back(al, x.m_args[i]);
+            }
+        }
+
+        ASR::SubroutineCall_t& xx = const_cast<ASR::SubroutineCall_t&>(x);
+        xx.m_args = x_m_args.p;
+        xx.n_args = x_m_args.size();
+    }
+
 };
 
 void pass_simplifier(Allocator &al, ASR::TranslationUnit_t &unit,

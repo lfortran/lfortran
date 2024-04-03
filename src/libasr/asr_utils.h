@@ -175,6 +175,13 @@ static inline ASR::ttype_t *type_get_past_allocatable(ASR::ttype_t *f)
     }
 }
 
+static inline ASR::expr_t* get_past_array_physical_cast(ASR::expr_t* x) {
+    if( !ASR::is_a<ASR::ArrayPhysicalCast_t>(*x) ) {
+        return x;
+    }
+    return ASR::down_cast<ASR::ArrayPhysicalCast_t>(x)->m_arg;
+}
+
 static inline ASR::ttype_t *type_get_past_array(ASR::ttype_t *f)
 {
     if (ASR::is_a<ASR::Array_t>(*f)) {
