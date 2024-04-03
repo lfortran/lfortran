@@ -469,7 +469,11 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 }
                 ASR::expr_t* length = compile_time_dims[i].m_length;
                 if( length == nullptr ) {
-                    length = ASRUtils::get_size(array, i + 1, al);
+                    if (ASRUtils::is_allocatable(array_type)) {
+                        length = ASRUtils::get_size(array, i + 1, al);
+                    } else {
+                        length = PassUtils::get_bound(array, i + 1, "ubound", al);
+                    }
                 }
                 dims.push_back(al, start);
                 dims.push_back(al, length);
