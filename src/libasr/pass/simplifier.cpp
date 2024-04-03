@@ -3,6 +3,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/pass/simplifier.h>
 #include <libasr/pass/pass_utils.h>
+#include <libasr/pass/intrinsic_function_registry.h>
 
 #include <vector>
 #include <utility>
@@ -246,6 +247,31 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
 
     void visit_FileWrite(const ASR::FileWrite_t& x) {
         visit_IO(x, "file_write");
+    }
+
+    void visit_IntrinsicImpureSubroutine(const ASR::IntrinsicImpureSubroutine_t& x) {
+        const Location& loc = x.base.base.loc;
+        Vec<ASR::expr_t*> x_m_args; x_m_args.reserve(al, x.n_args);
+        /* For other frontends, we might need to traverse the arguments
+           in reverse order. */
+        for( size_t i = 0; i < x.n_args; i++ ) {
+            if( ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i])) ) {
+                ASR::expr_t* array_var_temporary = create_temporary_variable_for_array(
+                    al, x.m_args[i], current_scope, "_intrinsic_impure_subroutine_" +
+                        ASRUtils::get_impure_intrinsic_name(x.m_intrinsic_id));
+                insert_allocate_stmt(al, array_var_temporary, x.m_args[i], current_body);
+                current_body->push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
+                    array_var_temporary, ASRUtils::get_past_array_physical_cast(x.m_args[i]),
+                    nullptr)));
+                x_m_args.push_back(al, array_var_temporary);
+            } else {
+                x_m_args.push_back(al, x.m_args[i]);
+            }
+        }
+
+        ASR::IntrinsicImpureSubroutine_t& xx = const_cast<ASR::IntrinsicImpureSubroutine_t&>(x);
+        xx.m_args = x_m_args.p;
+        xx.n_args = x_m_args.size();
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
