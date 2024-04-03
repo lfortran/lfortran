@@ -451,6 +451,7 @@ RUN(NAME arrays_40 LABELS gfortran llvm)
 RUN(NAME arrays_41 LABELS gfortran llvm)
 RUN(NAME arrays_42 LABELS gfortran llvm)
 RUN(NAME arrays_43 LABELS gfortran llvm)
+RUN(NAME arrays_44 LABELS gfortran llvm fortran)
 
 # GFortran
 RUN(NAME arrays_02 LABELS gfortran)
