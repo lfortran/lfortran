@@ -25,6 +25,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Cos)
         INTRINSIC_NAME_CASE(Tan)
         INTRINSIC_NAME_CASE(Asin)
+        INTRINSIC_NAME_CASE(Asind)
         INTRINSIC_NAME_CASE(Acos)
         INTRINSIC_NAME_CASE(Atan)
         INTRINSIC_NAME_CASE(Sinh)
@@ -227,6 +228,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&FloorDiv::instantiate_FloorDiv, &FloorDiv::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Mod),
             {&Mod::instantiate_Mod, &Mod::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Asind),
+            {&Asind::instantiate_Asind, &Asind::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Trailz),
             {&Trailz::instantiate_Trailz, &Trailz::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Modulo),
@@ -514,6 +517,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "floordiv"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Mod),
             "mod"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Asind),
+            "asind"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Trailz),
             "trailz"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Modulo),
@@ -768,6 +773,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"fma", {&FMA::create_FMA, &FMA::eval_FMA}},
                 {"floordiv", {&FloorDiv::create_FloorDiv, &FloorDiv::eval_FloorDiv}},
                 {"mod", {&Mod::create_Mod, &Mod::eval_Mod}},
+                {"asind", {&Asind::create_Asind, &Asind::eval_Asind}},
                 {"trailz", {&Trailz::create_Trailz, &Trailz::eval_Trailz}},
                 {"modulo", {&Modulo::create_Modulo, &Modulo::eval_Modulo}},
                 {"bessel_j0", {&BesselJ0::create_BesselJ0, &BesselJ0::eval_BesselJ0}},
