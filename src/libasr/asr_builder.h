@@ -1043,6 +1043,24 @@ class ASRBuilder {
             nullptr, nullptr));
     }
 
+    ASR::symbol_t* create_c_func(ASRUtils::ASRBuilder b, std::string c_func_name, SymbolTable* fn_symtab, ASR::ttype_t* return_type, int n_args) {
+        SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
+        Vec<ASR::expr_t*> args_1; args_1.reserve(al, n_args);
+        for (int i = 0; i < n_args; i++) {
+            ASR::ttype_t *arg_type = nullptr;
+            args_1.push_back(al, b.Variable(fn_symtab_1, "x_"+std::to_string(i), arg_type,
+                ASR::intentType::In, ASR::abiType::BindC, true));
+        }
+        ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
+            return_type, ASRUtils::intent_return_var, ASR::abiType::BindC, false);
+
+        SetChar dep_1; dep_1.reserve(al, 1);
+        Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
+        ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
+            body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
+        return s;
+    }
+
 };
 
 } // namespace LCompilers::ASRUtils

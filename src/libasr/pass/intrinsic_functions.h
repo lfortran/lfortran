@@ -3080,23 +3080,7 @@ namespace BesselY0 {
         fill_func_arg("x", arg_types[0]);
         auto result = declare(new_name, return_type, ReturnVar);
         {
-            SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
-            Vec<ASR::expr_t*> args_1;
-            {
-                args_1.reserve(al, 1);
-                ASR::expr_t *arg = b.Variable(fn_symtab_1, "x", arg_types[0],
-                    ASR::intentType::In, ASR::abiType::BindC, true);
-                args_1.push_back(al, arg);
-            }
-
-            ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
-                return_type, ASRUtils::intent_return_var, ASR::abiType::BindC, false);
-
-            SetChar dep_1; dep_1.reserve(al, 1);
-            Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
-            ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
-                body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
-            fn_symtab->add_symbol(c_func_name, s);
+            ASR::symbol_t *s = b.create_c_func(b, c_func_name, fn_symtab, return_type, 1);
             dep.push_back(al, s2c(al, c_func_name));
             body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
         }
