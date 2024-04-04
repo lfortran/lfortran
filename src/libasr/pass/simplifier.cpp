@@ -280,7 +280,8 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
         xx.n_args = x_m_args.size();
     }
 
-    void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+    template <typename T>
+    void visit_Call(const T& x, const std::string& name_hint) {
         LCOMPILERS_ASSERT(!x.m_dt || !ASRUtils::is_array(ASRUtils::expr_type(x.m_dt)));
         Vec<ASR::call_arg_t> x_m_args; x_m_args.reserve(al, x.n_args);
         /* For other frontends, we might need to traverse the arguments
@@ -290,7 +291,7 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
                 !ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value) ) {
                 visit_call_arg(x.m_args[i]);
                 ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
-                    x.m_args[i].m_value, std::string("_subroutine_call_") + ASRUtils::symbol_name(x.m_name));
+                    x.m_args[i].m_value, name_hint + ASRUtils::symbol_name(x.m_name));
                 ASR::call_arg_t call_arg;
                 call_arg.loc = array_var_temporary->base.loc;
                 call_arg.m_value = array_var_temporary;
@@ -300,9 +301,17 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
             }
         }
 
-        ASR::SubroutineCall_t& xx = const_cast<ASR::SubroutineCall_t&>(x);
+        T& xx = const_cast<T&>(x);
         xx.m_args = x_m_args.p;
         xx.n_args = x_m_args.size();
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+        visit_Call(x, "_subroutine_call_");
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        visit_Call(x, "_function_call_");
     }
 
     void visit_ComplexConstructor(const ASR::ComplexConstructor_t& x) {
