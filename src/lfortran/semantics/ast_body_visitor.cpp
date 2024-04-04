@@ -3220,6 +3220,7 @@ public:
 
     void visit_DoLoop(const AST::DoLoop_t &x) {
         ASR::expr_t *var, *start, *end;
+        ASR::ttype_t* type = nullptr;
         var = start = end = nullptr;
         if (x.m_var) {
             var = replace_with_common_block_variables(ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(x.m_var))));
@@ -3227,11 +3228,27 @@ public:
         if (x.m_start) {
             visit_expr(*x.m_start);
             start = ASRUtils::EXPR(tmp);
+            type = ASRUtils::expr_type(start);
+            if (!ASR::is_a<ASR::Integer_t>(*type)) {
+                diag.semantic_warning_label(
+                    "Start expression in DO loop must be integer",
+                    {start->base.loc},
+                    ""
+                );
+            }
             cast_as_loop_var(&start);
         }
         if (x.m_end) {
             visit_expr(*x.m_end);
             end = ASRUtils::EXPR(tmp);
+            type = ASRUtils::expr_type(end);
+            if (!ASR::is_a<ASR::Integer_t>(*type)) {
+                diag.semantic_warning_label(
+                    "End expression in DO loop must be integer",
+                    {end->base.loc},
+                    ""
+                );
+            }
             cast_as_loop_var(&end);
         }
 
@@ -3244,6 +3261,15 @@ public:
                 ASR::IntegerConstant_t* inc = ASR::down_cast<ASR::IntegerConstant_t>(increment);
                 if (inc->m_n == 0) {
                     throw SemanticError("Step expression (Increment) in DO loop cannot be zero", increment->base.loc);
+                }
+            } else {
+                type = ASRUtils::expr_type(increment);
+                if (!ASR::is_a<ASR::Integer_t>(*type)) {
+                    diag.semantic_warning_label(
+                        "Step expression (increment) in DO loop must be integer",
+                        {increment->base.loc},
+                        ""
+                    );
                 }
             }
             cast_as_loop_var(&increment);
