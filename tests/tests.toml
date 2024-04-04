@@ -3873,3 +3873,7 @@ asr = true
 [[test]]
 filename = "errors/more_kwargs_than_acceptable_to_subroutine.f90"
 asr = true
+
+[[test]]
+filename = "warnings/doloop_01.f90"
+asr = true
