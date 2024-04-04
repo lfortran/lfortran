@@ -653,7 +653,7 @@ jobs:
             export PATH="$(pwd)/../src/bin:$PATH"
 
             git checkout lf19
-            git checkout d5dc8664094dceedc2656c65ce94b96c8c7cab19
+            git checkout f138beaf0b921745ae1459627525ec10e353269d
             micromamba install -c conda-forge fypp
             ./build_test_lf.sh
             ./build_test_gf.sh
