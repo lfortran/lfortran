@@ -226,6 +226,7 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
         for( size_t i = 0; i < x.n_values; i++ ) {
             if( ASRUtils::is_array(ASRUtils::expr_type(x.m_values[i])) &&
                 !ASR::is_a<ASR::Var_t>(x.m_values[i]) ) {
+                visit_expr(*x.m_values[i]);
                 ASR::expr_t* array_var_temporary = create_temporary_variable_for_array(
                     al, x.m_values[i], current_scope, name_hint);
                 insert_allocate_stmt(al, array_var_temporary, x.m_values[i], current_body);
@@ -258,6 +259,7 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
         for( size_t i = 0; i < x.n_args; i++ ) {
             if( ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i])) &&
                 !ASR::is_a<ASR::Var_t>(x.m_args[i]) ) {
+                visit_expr(*x.m_args[i]);
                 ASR::expr_t* array_var_temporary = create_temporary_variable_for_array(
                     al, x.m_args[i], current_scope, "_intrinsic_impure_subroutine_" +
                         ASRUtils::get_impure_intrinsic_name(x.m_intrinsic_id));
@@ -285,6 +287,7 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
         for( size_t i = 0; i < x.n_args; i++ ) {
             if( ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_value)) &&
                 !ASR::is_a<ASR::Var_t>(x.m_args[i].m_value) ) {
+                visit_call_arg(x.m_args[i]);
                 ASR::expr_t* array_var_temporary = create_temporary_variable_for_array(
                     al, x.m_args[i].m_value, current_scope, "_subroutine_call");
                 insert_allocate_stmt(al, array_var_temporary, x.m_args[i].m_value, current_body);
