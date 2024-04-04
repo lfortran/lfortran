@@ -32,7 +32,7 @@ program intrinsics_204
 
     do i = 1, size(x)
         print *, bessel_y1(x(i)), "i = ", i
-        if (abs(bessel_y1(x(i)) - expected(i)) > 1e-12) error stop
+        if (abs(bessel_y1(x(i)) - expected(i)) > 1e-12_dp) error stop
     end do
 
 
