@@ -724,6 +724,7 @@ RUN(NAME intrinsics_200 LABELS gfortran llvm) # pack
 RUN(NAME intrinsics_201 LABELS gfortran llvm) # any
 RUN(NAME intrinsics_202 LABELS gfortran llvm)
 RUN(NAME intrinsics_203 LABELS gfortran llvm) # asind
+RUN(NAME intrinsics_204 LABELS gfortran llvm) # bessely1
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
