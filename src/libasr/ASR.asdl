@@ -44,20 +44,20 @@ stmt
     | GoToTarget(int id, identifier name)
     | If(expr test, stmt* body, stmt* orelse)
     | IfArithmetic(expr test, int lt_label, int eq_label, int gt_label)
-    | Print(expr* values, expr? separator, expr? end) -- temporary needed (for all its array arguments create an assignment)
+    | Print(expr* values, expr? separator, expr? end) -- temporary needed (for all its array arguments create an assignment), contains array
     | FileOpen(int label, expr? newunit, expr? filename, expr? status, expr? form)
     | FileClose(int label, expr? unit, expr? iostat, expr? iomsg, expr? err, expr? status)
     | FileRead(int label, expr? unit, expr? fmt, expr? iomsg, expr? iostat, expr? size, expr? id, expr* values, stmt? overloaded)
     | FileBackspace(int label, expr? unit, expr? iostat, expr? err)
     | FileRewind(int label, expr? unit, expr? iostat, expr? err)
     | FileInquire(int label, expr? unit, expr? file, expr? iostat, expr? err, expr? exist, expr? opened, expr? number, expr? named, expr? name, expr? access, expr? sequential, expr? direct, expr? form, expr? formatted, expr? unformatted, expr? recl, expr? nextrec, expr? blank, expr? position, expr? action, expr? read, expr? write, expr? readwrite, expr? delim, expr? pad, expr? flen, expr? blocksize, expr? convert, expr? carriagecontrol, expr? iolength)
-    | FileWrite(int label, expr? unit, expr? iomsg, expr? iostat, expr? id, expr* values, expr? separator, expr? end, stmt? overloaded) -- temporary needed (for all its array arguments)
+    | FileWrite(int label, expr? unit, expr? iomsg, expr? iostat, expr? id, expr* values, expr? separator, expr? end, stmt? overloaded) -- temporary needed (for all its array arguments), contains array
     | Return()
     | Select(expr test, case_stmt* body, stmt* default, bool enable_fall_through)
     | Stop(expr? code)
     | Assert(expr test, expr? msg)
-    | SubroutineCall(symbol name, symbol? original_name, call_arg* args, expr? dt)  -- temporary needed (for all its array arguments create an assignment)
-    | IntrinsicImpureSubroutine(int intrinsic_id, expr* args, int overload_id)  -- temporary needed (for all its array arguments create an assignment)
+    | SubroutineCall(symbol name, symbol? original_name, call_arg* args, expr? dt)  -- temporary needed (for all its array arguments create an assignment), contains array
+    | IntrinsicImpureSubroutine(int intrinsic_id, expr* args, int overload_id)  -- temporary needed (for all its array arguments create an assignment), contains array
     | Where(expr test, stmt* body, stmt* orelse)  -- to be handled very carefully
     | WhileLoop(identifier? name, expr test, stmt* body, stmt* orelse)
     | Nullify(symbol* vars)
