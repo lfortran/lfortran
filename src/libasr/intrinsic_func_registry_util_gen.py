@@ -223,6 +223,12 @@ intrinsic_funcs_args = {
             "kind_arg": True
         }
     ],
+    "Asind": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
     "Sqrt": [
         {
             "args": [("real",), ("complex",)],

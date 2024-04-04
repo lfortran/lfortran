@@ -723,6 +723,7 @@ RUN(NAME intrinsics_199 LABELS gfortran llvm) # count
 RUN(NAME intrinsics_200 LABELS gfortran llvm) # pack
 RUN(NAME intrinsics_201 LABELS gfortran llvm) # any
 RUN(NAME intrinsics_202 LABELS gfortran llvm)
+RUN(NAME intrinsics_203 LABELS gfortran llvm) # asind
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
