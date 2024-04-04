@@ -1,0 +1,69 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            doloop_01:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            i:
+                                (Variable
+                                    2
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    doloop_01
+                    []
+                    [(DoLoop
+                        ()
+                        ((Var 2 i)
+                        (Cast
+                            (RealConstant
+                                1.500000
+                                (Real 4)
+                            )
+                            RealToInteger
+                            (Integer 4)
+                            (IntegerConstant 1 (Integer 4))
+                        )
+                        (Cast
+                            (RealConstant
+                                10.500000
+                                (Real 4)
+                            )
+                            RealToInteger
+                            (Integer 4)
+                            (IntegerConstant 10 (Integer 4))
+                        )
+                        (Cast
+                            (RealConstant
+                                2.400000
+                                (Real 4)
+                            )
+                            RealToInteger
+                            (Integer 4)
+                            (IntegerConstant 2 (Integer 4))
+                        ))
+                        [(Print
+                            [(Var 2 i)]
+                            ()
+                            ()
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)
