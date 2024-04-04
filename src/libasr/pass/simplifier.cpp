@@ -258,7 +258,8 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
         visit_IO(x, "file_write");
     }
 
-    void visit_IntrinsicImpureSubroutine(const ASR::IntrinsicImpureSubroutine_t& x) {
+    template <typename T>
+    void visit_IntrinsicCall(const T& x, const std::string& name_hint) {
         Vec<ASR::expr_t*> x_m_args; x_m_args.reserve(al, x.n_args);
         /* For other frontends, we might need to traverse the arguments
            in reverse order. */
@@ -267,17 +268,26 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
                 !ASR::is_a<ASR::Var_t>(*x.m_args[i]) ) {
                 visit_expr(*x.m_args[i]);
                 ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
-                    x.m_args[i], "_intrinsic_impure_subroutine_" + ASRUtils::get_impure_intrinsic_name(
-                        x.m_intrinsic_id));
+                    x.m_args[i], name_hint);
                 x_m_args.push_back(al, array_var_temporary);
             } else {
                 x_m_args.push_back(al, x.m_args[i]);
             }
         }
 
-        ASR::IntrinsicImpureSubroutine_t& xx = const_cast<ASR::IntrinsicImpureSubroutine_t&>(x);
+        T& xx = const_cast<T&>(x);
         xx.m_args = x_m_args.p;
         xx.n_args = x_m_args.size();
+    }
+
+    void visit_IntrinsicImpureSubroutine(const ASR::IntrinsicImpureSubroutine_t& x) {
+        visit_IntrinsicCall(x, "_intrinsic_impure_subroutine_" +
+            ASRUtils::get_impure_intrinsic_name(x.m_intrinsic_id));
+    }
+
+    void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
+        visit_IntrinsicCall(x, "_intrinsic_elemental_function_" +
+            ASRUtils::get_intrinsic_name(x.m_intrinsic_id));
     }
 
     template <typename T>
